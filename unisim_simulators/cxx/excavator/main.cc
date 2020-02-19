@@ -969,7 +969,16 @@ void Help()
 	std::cerr << "\t]," << std::endl;
 	std::cerr << "\t\"builtin-functions\" :" << std::endl;
 	std::cerr << "\t[" << std::endl;
-	std::cerr << "\t\t\"fprintf\"" << std::endl;
+	std::cerr << "\t\t\"snprintf\"," << std::endl;
+	std::cerr << "\t\t\"sprintf\"," << std::endl;
+	std::cerr << "\t\t\"sscanf\"," << std::endl;
+	std::cerr << "\t\t\"strcspn\"," << std::endl;
+	std::cerr << "\t\t\"strncasecmp\"," << std::endl;
+	std::cerr << "\t\t\"strncat\"," << std::endl;
+	std::cerr << "\t\t\"vsnprintf\"," << std::endl;
+	std::cerr << "\t\t\"strspn\"," << std::endl;
+	std::cerr << "\t\t\"bcmp\"," << std::endl;
+	std::cerr << "\t\t\"fabs\"" << std::endl;
 	std::cerr << "\t]," << std::endl;
 	std::cerr << "\t\"output\" : \"out.c\"," << std::endl;
 	std::cerr << "\t\"verbose\" : true," << std::endl;
@@ -982,7 +991,7 @@ void Help()
 	std::cerr << "  - builtin-functions: functions to be considered as compiler builtins." << std::endl;
 	std::cerr << "  - output: output file of the analysis (mandatory option); the result of the analysis is a reversed engineered C source code." << std::endl;
 	std::cerr << "  - verbose: a flag to enable/disable verbosity during analysis." << std::endl;
-	std::cerr << "  - dwarf-html-output-dir: directory where to dump DWARF debugging information as HTML." << std::endl;
+	std::cerr << "  - dwarf-html-output-dir: directory where to dump DWARF debugging information as HTML; if not specified or empty, it means no dump." << std::endl;
 	std::cerr << std::endl;
 }
 
