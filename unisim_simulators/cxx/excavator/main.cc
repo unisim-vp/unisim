@@ -81,17 +81,19 @@ struct JSON_ConfigReader : unisim::util::json::JSON_Lexer<JSON_ConfigReader>
 	const std::string& GetOutput() const { return output; }
 	const Sources& GetSources() const { return sources; }
 	const BuiltinFunctions& GetBuiltinFunctions() const { return builtin_functions; }
+	const std::string& GetDWARF_HTML_OutputDir() const { return dwarf_html_output_dir; }
 	
 	void Error(const std::string& msg) { err << msg; }
 	
 private:
-	typedef enum { UNKNOWN, VERBOSE, BINARY, SOURCES, BUILTIN_FUNCTIONS, OUTPUT } MemberType;
+	typedef enum { UNKNOWN, VERBOSE, BINARY, SOURCES, BUILTIN_FUNCTIONS, OUTPUT, DWARF_HTML_OUTPUT_DIR } MemberType;
 	std::ostream& err;
 	bool verbose;
 	std::string binary;
 	std::string output;
 	Sources sources;
 	BuiltinFunctions builtin_functions;
+	std::string dwarf_html_output_dir;
 	
 	bool ParseRoot(std::istream& stream);
 	bool ParseRootMembers(std::istream& stream);
@@ -771,11 +773,12 @@ bool JSON_ConfigReader::ParseRootMember(std::istream& stream)
 	}
 	
 	const std::string& member_name = Lexer::GetStringValue();
-	MemberType member_type = ( member_name == "verbose"          ) ? VERBOSE           :
-	                         ((member_name == "binary"           ) ? BINARY            :
-	                         ((member_name == "sources"          ) ? SOURCES           :
-	                         ((member_name == "builtin-functions") ? BUILTIN_FUNCTIONS :
-	                         ((member_name == "output"           ) ? OUTPUT            : UNKNOWN))));
+	MemberType member_type = ( member_name == "verbose"              ) ? VERBOSE           :
+	                         ((member_name == "binary"               ) ? BINARY            :
+	                         ((member_name == "sources"              ) ? SOURCES           :
+	                         ((member_name == "builtin-functions"    ) ? BUILTIN_FUNCTIONS :
+	                         ((member_name == "output"               ) ? OUTPUT            :
+	                         ((member_name == "dwarf-html-output-dir") ? DWARF_HTML_OUTPUT_DIR : UNKNOWN)))));
 	
 	if(member_type == UNKNOWN)
 	{
@@ -835,6 +838,12 @@ bool JSON_ConfigReader::ParseRootMember(std::istream& stream)
 				return false;
 			}
 			break;
+		case DWARF_HTML_OUTPUT_DIR:
+			if(!ParseString(stream, dwarf_html_output_dir))
+			{
+				Lexer::ParseError(stream, *this, std::string("expecting a string for Member \"dwarf-html-output-dir\""));
+				return false;
+			}
 	}
 	
 	return true;
@@ -944,6 +953,11 @@ bool JSON_ConfigReader::ParseStringArrayElements(std::istream& stream, std::set<
 
 void Help()
 {
+	std::cerr << "UNISIM Excavator: a tool to dig DWARF debug information in ELF executable binaries" << std::endl;
+	std::cerr << "Copyright (C) 2020, Commissariat a l'Energie Atomique (CEA)" << std::endl;
+	std::cerr << "License: BSD (see file COPYING)" << std::endl;
+	std::cerr << "Authors: Gilles Mouchard <gilles.mouchard@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>" << std::endl;
+	std::cerr << std::endl;
 	std::cerr << "Usage: excavator <JSON configuration file>" << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "Sample JSON configuration file:" << std::endl;
@@ -951,15 +965,24 @@ void Help()
 	std::cerr << "\t\"binary\" : \"vmlinux\"," << std::endl;
 	std::cerr << "\t\"sources\" :" << std::endl;
 	std::cerr << "\t[" << std::endl;
-	std::cerr << "\t\t\"drivers/tty/serial/uartlite.c\"" << std::endl;
+	std::cerr << "\t\t\"drivers/watchdog/at91sam9_wdt.c\"" << std::endl;
 	std::cerr << "\t]," << std::endl;
 	std::cerr << "\t\"builtin-functions\" :" << std::endl;
 	std::cerr << "\t[" << std::endl;
 	std::cerr << "\t\t\"fprintf\"" << std::endl;
 	std::cerr << "\t]," << std::endl;
 	std::cerr << "\t\"output\" : \"out.c\"," << std::endl;
-	std::cerr << "\t\"verbose\" : true" << std::endl;
+	std::cerr << "\t\"verbose\" : true," << std::endl;
+	std::cerr << "\t\"dwarf-html-output-dir\" : \"dwarf\"" << std::endl;
 	std::cerr << "}" << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "Options:" << std::endl;
+	std::cerr << "  - binary: input ELF executable binary to analyze (mandatory option)." << std::endl;
+	std::cerr << "  - sources: names of compilation units to process; if not specified or empty, it means all compilation units." << std::endl;
+	std::cerr << "  - builtin-functions: functions to be considered as compiler builtins." << std::endl;
+	std::cerr << "  - output: output file of the analysis (mandatory option); the result of the analysis is a reversed engineered C source code." << std::endl;
+	std::cerr << "  - verbose: a flag to enable/disable verbosity during analysis." << std::endl;
+	std::cerr << "  - dwarf-html-output-dir: directory where to dump DWARF debugging information as HTML." << std::endl;
 	std::cerr << std::endl;
 }
 
@@ -1041,6 +1064,7 @@ int main(int argc, char *argv[])
 				elf32_loader.SetFileName(binary_filename.c_str());
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, json_config_reader.GetVerbose());
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, true);
+				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, json_config_reader.GetDWARF_HTML_OutputDir().c_str());
 				
 				// Load binary file
 				if(elf32_loader.Load())
@@ -1072,6 +1096,7 @@ int main(int argc, char *argv[])
 				elf64_loader.SetFileName(binary_filename.c_str());
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, json_config_reader.GetVerbose());
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, true);
+				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, json_config_reader.GetDWARF_HTML_OutputDir().c_str());
 				
 				// Load binary file
 				if(elf64_loader.Load())
