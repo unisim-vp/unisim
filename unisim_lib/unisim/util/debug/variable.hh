@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,50 +32,34 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
+#ifndef __UNISIM_UTIL_DEBUG_VARIABLE_HH__
+#define __UNISIM_UTIL_DEBUG_VARIABLE_HH__
 
-#include <unisim/util/debug/subprogram.hh>
-#include <cstdint>
+#include <unisim/util/debug/type.hh>
 #include <string>
-#include <vector>
-#include <iosfwd>
 
 namespace unisim {
 namespace util {
 namespace debug {
-namespace dwarf {
 
-template <class ADDRESS>
-class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
+class Variable
 {
 public:
-	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const Type *return_type);
-	virtual ~DWARF_SubProgram();
-	
-	void AddFormalParameter(const FormalParameter *formal_param);
-	
-	virtual const char *GetName() const;
-	virtual bool IsExternal() const;
-	virtual bool IsDeclaration() const;
-	virtual bool IsInline() const;
-	virtual bool IsInlined() const;
-	virtual const Type *GetReturnType() const;
-	virtual unsigned int GetArity() const;
-	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const;
-	
+	Variable();
+	virtual ~Variable();
+	virtual const char *GetName() const = 0;
+	virtual bool IsExternal() const = 0;
+	virtual bool IsDeclaration() const = 0;
+	virtual const Type *GetType() const = 0;
+	std::string BuildCDecl() const;
+	void Catch() const;
+	void Release() const;
 private:
-	std::string name;
-	bool external_flag;
-	bool declaration_flag;
-	uint8_t inline_code;
-	const Type *return_type;
-	std::vector<const FormalParameter *> formal_params;
+	mutable unsigned int ref_count;
 };
 
-} // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
+#endif // __UNISIM_UTIL_DEBUG_VARIABLE_HH__

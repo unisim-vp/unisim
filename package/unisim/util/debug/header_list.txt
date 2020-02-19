@@ -16,5 +16,6 @@ unisim/util/debug/symbol.hh
 unisim/util/debug/symbol_table.hh
 unisim/util/debug/trap_event.hh
 unisim/util/debug/type.hh
+unisim/util/debug/variable.hh
 unisim/util/debug/watchpoint.hh
 unisim/util/debug/watchpoint_registry.hh

@@ -30,4 +30,5 @@ unisim/util/debug/dwarf/stmt_prog.hh
 unisim/util/debug/dwarf/stmt_vm.hh
 unisim/util/debug/dwarf/subprogram.hh
 unisim/util/debug/dwarf/util.hh
+unisim/util/debug/dwarf/variable.hh
 unisim/util/debug/dwarf/version.hh

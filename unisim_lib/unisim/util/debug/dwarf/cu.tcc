@@ -454,7 +454,7 @@ template <class MEMORY_ADDR>
 const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetName() const
 {
 	const DWARF_String<MEMORY_ADDR> *dw_at_name = 0;
-	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_name, dw_at_name)) return 0;
+	if(!GetAttributeValue(DW_AT_name, dw_at_name)) return 0;
 	return dw_at_name->GetValue();
 }
 
@@ -462,7 +462,7 @@ template <class MEMORY_ADDR>
 uint16_t DWARF_CompilationUnit<MEMORY_ADDR>::GetLanguage() const
 {
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_language = 0;
-	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_language, dw_at_language)) return 0;
+	if(!GetAttributeValue(DW_AT_language, dw_at_language)) return 0;
 	return dw_at_language->to_uint();
 }
 
@@ -470,7 +470,7 @@ template <class MEMORY_ADDR>
 const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetProducer() const
 {
 	const DWARF_String<MEMORY_ADDR> *dw_at_producer = 0;
-	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_producer, dw_at_producer)) return 0;
+	if(!GetAttributeValue(DW_AT_producer, dw_at_producer)) return 0;
 	return dw_at_producer->GetValue();
 }
 
@@ -545,6 +545,115 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultLowerBound(int64_t& lower_bou
 			return true;
 	}
 	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_addr_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_block_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Constant<MEMORY_ADDR> * & p_dw_const_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_const_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_UnsignedConstant<MEMORY_ADDR> * & p_dw_uconst_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_uconst_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_SignedConstant<MEMORY_ADDR> * & p_dw_sconst_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_sconst_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_UnsignedLEB128Constant<MEMORY_ADDR> * & p_dw_uconst_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_uconst_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_SignedLEB128Constant<MEMORY_ADDR> * & p_dw_sconst_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_sconst_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Flag<MEMORY_ADDR> * & p_dw_flag_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_flag_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_LinePtr<MEMORY_ADDR> * & p_dw_lineptr_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_lineptr_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_LocListPtr<MEMORY_ADDR> * & p_dw_loclist_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_loclist_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_MacPtr<MEMORY_ADDR> * & p_dw_macptr_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_macptr_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_RangeListPtr<MEMORY_ADDR> * & p_dw_ranges_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_ranges_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Reference<MEMORY_ADDR> * & p_dw_ref_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_ref_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_String<MEMORY_ADDR> * & p_dw_str_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_str_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const
+{
+	return dw_die && dw_die->GetAttributeValue(dw_at, p_dw_expr_attr);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, uint64_t& value) const
+{
+	return dw_die && dw_die->GetAttributeStaticDynamicValue(prc_num, dw_at, value); 
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, int64_t& value) const
+{
+	return dw_die && dw_die->GetAttributeStaticDynamicValue(prc_num, dw_at, value); 
+}
+
+template <class MEMORY_ADDR>
+template <typename VISITOR>
+void DWARF_CompilationUnit<MEMORY_ADDR>::Scan(VISITOR& visitor) const
+{
+	visitor.Visit(dw_die);
 }
 
 } // end of namespace dwarf

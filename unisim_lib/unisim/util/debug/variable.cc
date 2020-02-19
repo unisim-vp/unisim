@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,50 +32,53 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-
-#include <unisim/util/debug/subprogram.hh>
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <iosfwd>
+#include <unisim/util/debug/variable.hh>
+#include <sstream>
 
 namespace unisim {
 namespace util {
 namespace debug {
-namespace dwarf {
 
-template <class ADDRESS>
-class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
+Variable::Variable()
+	: ref_count(0)
 {
-public:
-	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const Type *return_type);
-	virtual ~DWARF_SubProgram();
-	
-	void AddFormalParameter(const FormalParameter *formal_param);
-	
-	virtual const char *GetName() const;
-	virtual bool IsExternal() const;
-	virtual bool IsDeclaration() const;
-	virtual bool IsInline() const;
-	virtual bool IsInlined() const;
-	virtual const Type *GetReturnType() const;
-	virtual unsigned int GetArity() const;
-	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const;
-	
-private:
-	std::string name;
-	bool external_flag;
-	bool declaration_flag;
-	uint8_t inline_code;
-	const Type *return_type;
-	std::vector<const FormalParameter *> formal_params;
-};
+}
 
-} // end of namespace dwarf
+Variable::~Variable()
+{
+}
+
+std::string Variable::BuildCDecl() const
+{
+	std::stringstream sstr;
+	char const *variable_name = GetName();
+	Type const *variable_type = GetType();
+	std::string s(variable_type->BuildCDecl(&variable_name, true));
+	sstr << s;
+	if(variable_name)
+	{
+		if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+		sstr << variable_name;
+	}
+	return sstr.str();
+}
+
+void Variable::Catch() const
+{
+	++ref_count;
+}
+
+void Variable::Release() const
+{
+	if(ref_count)
+	{
+		if(--ref_count == 0)
+		{
+			delete this;
+		}
+	}
+}
+
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
-
-#endif // __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__

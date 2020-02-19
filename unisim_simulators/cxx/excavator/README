@@ -1,0 +1,3 @@
+This package contains:
+  - UNISIM Excavator: a tool to dig DWARF debug information in ELF executable binaries
+See INSTALL for installation instructions.

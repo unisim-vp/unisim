@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,50 +32,49 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-
-#include <unisim/util/debug/subprogram.hh>
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <iosfwd>
+#include <unisim/util/debug/dwarf/variable.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
-template <class ADDRESS>
-class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
+DWARF_Variable::DWARF_Variable(char const *_name, bool _external_flag, bool _declaration_flag, unisim::util::debug::Type const *_type)
+	: unisim::util::debug::Variable()
+	, name(_name ? _name : "")
+	, external_flag(_external_flag)
+	, declaration_flag(_declaration_flag)
+	, type(_type)
 {
-public:
-	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const Type *return_type);
-	virtual ~DWARF_SubProgram();
-	
-	void AddFormalParameter(const FormalParameter *formal_param);
-	
-	virtual const char *GetName() const;
-	virtual bool IsExternal() const;
-	virtual bool IsDeclaration() const;
-	virtual bool IsInline() const;
-	virtual bool IsInlined() const;
-	virtual const Type *GetReturnType() const;
-	virtual unsigned int GetArity() const;
-	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const;
-	
-private:
-	std::string name;
-	bool external_flag;
-	bool declaration_flag;
-	uint8_t inline_code;
-	const Type *return_type;
-	std::vector<const FormalParameter *> formal_params;
-};
+	if(type) type->Catch();
+}
+
+DWARF_Variable::~DWARF_Variable()
+{
+	if(type) type->Release();
+}
+
+const char *DWARF_Variable::GetName() const
+{
+	return name.c_str();
+}
+
+bool DWARF_Variable::IsExternal() const
+{
+	return external_flag;
+}
+
+bool DWARF_Variable::IsDeclaration() const
+{
+	return declaration_flag;
+}
+
+const unisim::util::debug::Type *DWARF_Variable::GetType() const
+{
+	return type;
+}
 
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
-
-#endif // __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__

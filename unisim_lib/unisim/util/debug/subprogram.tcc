@@ -32,50 +32,92 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-
 #include <unisim/util/debug/subprogram.hh>
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <iosfwd>
+
+#ifndef __UNISIM_UTIL_DEBUG_SUBPROGRAM_TCC__
+#define __UNISIM_UTIL_DEBUG_SUBPROGRAM_TCC__
+
+#include <sstream>
 
 namespace unisim {
 namespace util {
 namespace debug {
-namespace dwarf {
 
 template <class ADDRESS>
-class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
+SubProgram<ADDRESS>::SubProgram()
+	: ref_count(0)
 {
-public:
-	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const Type *return_type);
-	virtual ~DWARF_SubProgram();
-	
-	void AddFormalParameter(const FormalParameter *formal_param);
-	
-	virtual const char *GetName() const;
-	virtual bool IsExternal() const;
-	virtual bool IsDeclaration() const;
-	virtual bool IsInline() const;
-	virtual bool IsInlined() const;
-	virtual const Type *GetReturnType() const;
-	virtual unsigned int GetArity() const;
-	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const;
-	
-private:
-	std::string name;
-	bool external_flag;
-	bool declaration_flag;
-	uint8_t inline_code;
-	const Type *return_type;
-	std::vector<const FormalParameter *> formal_params;
-};
+}
 
-} // end of namespace dwarf
+template <class ADDRESS>
+SubProgram<ADDRESS>::~SubProgram()
+{
+}
+
+template <class ADDRESS>
+std::string SubProgram<ADDRESS>::BuildCDecl() const
+{
+	std::stringstream sstr;
+	Type const *return_type = GetReturnType();
+	std::string s(return_type->BuildCDecl(0, true));
+	sstr << s;
+	if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+	sstr << GetName() << "(";
+	unsigned int arity = GetArity();
+	for(unsigned int i = 0; i < arity; ++i)
+	{
+		if(i != 0) sstr << ", ";
+		FormalParameter const *formal_param = GetFormalParameter(i);
+		
+		Type const *formal_param_type = formal_param->GetType();
+		std::string formal_param_name = formal_param->GetName();
+		char const *formal_param_name_cstr = formal_param_name.c_str();
+		std::string s(formal_param_type->BuildCDecl(&formal_param_name_cstr, true));
+		sstr << s;
+		if(formal_param_name_cstr)
+		{
+			if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+			sstr << formal_param_name_cstr;
+		}
+	}
+	sstr << ")";
+	
+	return sstr.str();
+}
+
+template <class ADDRESS>
+void SubProgram<ADDRESS>::Catch() const
+{
+	++ref_count;
+}
+
+template <class ADDRESS>
+void SubProgram<ADDRESS>::Release() const
+{
+	if(ref_count)
+	{
+		if(--ref_count == 0)
+		{
+			delete this;
+		}
+	}
+}
+
+template <class ADDRESS>
+template <typename VISITOR> void SubProgram<ADDRESS>::Scan(VISITOR& visitor) const
+{
+	Type const *return_type = GetReturnType();
+	if(!return_type->Visit(visitor)) return;
+	unsigned int arity = GetArity();
+	for(unsigned int i = 0; i < arity; ++i)
+	{
+		FormalParameter const *formal_param = GetFormalParameter(i);
+		if(!visitor.Visit(formal_param)) break;
+	}
+}
+
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
+#endif // __UNISIM_UTIL_DEBUG_SUBPROGRAM_TCC__

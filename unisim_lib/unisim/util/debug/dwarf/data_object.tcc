@@ -54,13 +54,20 @@ DWARF_DataObjectInfo<MEMORY_ADDR>::DWARF_DataObjectInfo(const DWARF_Location<MEM
 	: dw_data_object_loc(_dw_data_object_loc)
 	, dw_data_object_type(_dw_data_object_type)
 {
+	if(dw_data_object_type)
+	{
+		dw_data_object_type->Catch();
+	}
 }
 
 template <class MEMORY_ADDR>
 DWARF_DataObjectInfo<MEMORY_ADDR>::~DWARF_DataObjectInfo()
 {
 	if(dw_data_object_loc) delete dw_data_object_loc;
-	if(dw_data_object_type) delete dw_data_object_type;
+	if(dw_data_object_type)
+	{
+		dw_data_object_type->Release();
+	}
 }
 
 template <class MEMORY_ADDR>

@@ -3188,7 +3188,12 @@ void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObjec
 	if(data_object->Exists())
 	{
 		const unisim::util::debug::Type *data_object_type = data_object->GetType();
-		(*std_output_stream) << data_object_type->BuildCDecl(data_object_name) << ";" << std::endl;
+		(*std_output_stream) << data_object_type->BuildCDecl(&data_object_name);
+		if(data_object_name)
+		{
+			(*std_output_stream) << " " << data_object_name;
+		}
+		(*std_output_stream) << ";" << std::endl;
 	}
 	else
 	{
@@ -3218,18 +3223,7 @@ void InlineDebugger<ADDRESS>::InfoSubProgram(const char *subprogram_name)
 	
 	if(subprogram)
 	{
-		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" found" << std::endl;
-		(*std_output_stream) << "Arity: " << subprogram->GetArity() << std::endl;
-		for(unsigned i = 0; i < subprogram->GetArity(); i++)
-		{
-			const unisim::util::debug::FormalParameter *formal_param = subprogram->GetFormalParameter(i);
-			
-			const char *formal_param_name = formal_param->GetName();
-			const unisim::util::debug::Type *formal_param_type = formal_param->GetType();
-			(*std_output_stream) << "Type of parameter #" << i << ": " << formal_param_type->BuildCDecl(formal_param_name) << std::endl;
-		}
-		
-		delete subprogram;
+		(*std_output_stream) << subprogram->BuildCDecl() << ";" << std::endl;
 	}
 	else
 	{

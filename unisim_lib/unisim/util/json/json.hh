@@ -399,6 +399,7 @@ private:
 	void Error(std::istream& stream, VISITOR& visitor, const std::string& msg, bool parse_error);
 	
 	bool eof;
+	bool error;
 	Token token;
 	Token look_ahead;
 	std::string line;

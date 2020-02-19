@@ -39,6 +39,7 @@
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
+#include <unisim/util/debug/variable.hh>
 #include <list>
 #include <vector>
 #include <set>
@@ -713,13 +714,13 @@ public:
 	bool GetArrayElementCount(unsigned int prc_num, unsigned int dim, uint64_t& count) const;
 	bool GetByteSize(unsigned int prc_num, uint64_t& byte_size) const;
 	bool GetBitSize(unsigned int prc_num, uint64_t& bit_size) const;
-	bool GetArrayElementBitSize(unsigned int prc_num, uint64_t& bit_size) const;
+	bool GetArrayElementPaddedBitSize(unsigned int prc_num, uint64_t& bit_size) const;
 	bool GetBitOffset(unsigned int prc_num, int64_t& bit_offset) const;
 	bool GetBitStride(unsigned int prc_num, uint64_t& bit_stride) const;
 	bool GetDataBitOffset(unsigned int prc_num, int64_t& data_bit_offset) const;
-	bool GetObjectBitSize(unsigned int prc_num, uint64_t& bit_size) const;
 	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
 	bool GetLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool HasRanges() const;
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
 	bool GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
@@ -730,11 +731,16 @@ public:
 	unsigned int GetSubRangeCount() const;
 	const DWARF_DIE<MEMORY_ADDR> *GetAbstractOrigin() const;
 	const DWARF_DIE<MEMORY_ADDR> *GetSpecification() const;
+	bool GetConstValue(int64_t& const_value) const;
+	bool GetConstValue(uint64_t& const_value) const;
+	const DWARF_DIE<MEMORY_ADDR> *GetTypeDIE() const;
+	bool GetInlineCode(uint8_t& inline_code) const;
 	
-	const unisim::util::debug::Type *BuildType(unsigned int prc_num, bool following_pointer = false, unsigned int array_dim = 0) const;
-	const unisim::util::debug::Type *BuildTypeOf(unsigned int prc_num) const;
+	const unisim::util::debug::Type *GetType(unsigned int prc_num, bool following_pointer = false, unsigned int array_dim = 0) const;
+	const unisim::util::debug::Type *GetTypeOf(unsigned int prc_num) const;
 	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *BuildSubProgram(unsigned int prc_num) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *GetSubProgram(unsigned int prc_num) const;
+	const unisim::util::debug::Variable *GetVariable(unsigned int prc_num) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;
@@ -753,6 +759,9 @@ public:
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const;
 	bool GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, uint64_t& value) const;
 	bool GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, int64_t& value) const;
+	
+	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR> void ScanType(VISITOR& visitor) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
@@ -766,6 +775,10 @@ private:
 	const DWARF_Abbrev *abbrev;
 	std::vector<DWARF_DIE<MEMORY_ADDR> *> children;
 	std::vector<DWARF_Attribute<MEMORY_ADDR> *> attributes;
+	typedef std::vector<unisim::util::debug::Type const *> TypeCache; 
+	mutable TypeCache type_cache;
+	mutable unisim::util::debug::SubProgram<MEMORY_ADDR> *cached_subprogram;
+	mutable unisim::util::debug::Variable *cached_variable;
 };
 
 

@@ -35,22 +35,31 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_TCC__
 
+#include <unisim/util/debug/subprogram.tcc>
+
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
-template <class MEMORY_ADDR>
-DWARF_SubProgram<MEMORY_ADDR>::DWARF_SubProgram()
-	: name()
-	, return_type(0)
+template <class ADDRESS>
+DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(char const *_name, bool _external_flag, bool _declaration_flag, uint8_t _inline_code, const Type *_return_type)
+	: unisim::util::debug::SubProgram<ADDRESS>()
+	, name(_name ? _name : "")
+	, external_flag(_external_flag)
+	, declaration_flag(_declaration_flag)
+	, inline_code(_inline_code)
+	, return_type(_return_type)
 	, formal_params()
 {
+	if(return_type) return_type->Catch();
 }
 
-template <class MEMORY_ADDR>
-DWARF_SubProgram<MEMORY_ADDR>::~DWARF_SubProgram()
+template <class ADDRESS>
+DWARF_SubProgram<ADDRESS>::~DWARF_SubProgram()
 {
+	if(return_type) return_type->Release();
+	
 	unsigned int arity = formal_params.size();
 	unsigned int idx;
 	
@@ -60,39 +69,56 @@ DWARF_SubProgram<MEMORY_ADDR>::~DWARF_SubProgram()
 	}
 }
 
-template <class MEMORY_ADDR>
-void DWARF_SubProgram<MEMORY_ADDR>::SetReturnType(const Type *type)
-{
-	if(return_type) delete return_type;
-	return_type = type;
-}
-
-template <class MEMORY_ADDR>
-void DWARF_SubProgram<MEMORY_ADDR>::AddFormalParameter(const FormalParameter *formal_param)
+template <class ADDRESS>
+void DWARF_SubProgram<ADDRESS>::AddFormalParameter(const FormalParameter *formal_param)
 {
 	formal_params.push_back(formal_param);
 }
 
-template <class MEMORY_ADDR>
-const char *DWARF_SubProgram<MEMORY_ADDR>::GetName() const
+template <class ADDRESS>
+const char *DWARF_SubProgram<ADDRESS>::GetName() const
 {
 	return name.c_str();
 }
 
-template <class MEMORY_ADDR>
-const Type *DWARF_SubProgram<MEMORY_ADDR>::GetReturnType() const
+template <class ADDRESS>
+bool DWARF_SubProgram<ADDRESS>::IsExternal() const
+{
+	return external_flag;
+}
+
+template <class ADDRESS>
+bool DWARF_SubProgram<ADDRESS>::IsDeclaration() const
+{
+	return declaration_flag;
+}
+
+template <class ADDRESS>
+bool DWARF_SubProgram<ADDRESS>::IsInline() const
+{
+	return (inline_code == DW_INL_declared_inlined) || (inline_code == DW_INL_declared_not_inlined);
+}
+
+template <class ADDRESS>
+bool DWARF_SubProgram<ADDRESS>::IsInlined() const
+{
+	return (inline_code == DW_INL_inlined) || (inline_code == DW_INL_declared_inlined);
+}
+
+template <class ADDRESS>
+const Type *DWARF_SubProgram<ADDRESS>::GetReturnType() const
 {
 	return return_type;
 }
 
-template <class MEMORY_ADDR>
-unsigned int DWARF_SubProgram<MEMORY_ADDR>::GetArity() const
+template <class ADDRESS>
+unsigned int DWARF_SubProgram<ADDRESS>::GetArity() const
 {
 	return formal_params.size();
 }
 
-template <class MEMORY_ADDR>
-const FormalParameter *DWARF_SubProgram<MEMORY_ADDR>::GetFormalParameter(unsigned int idx) const
+template <class ADDRESS>
+const FormalParameter *DWARF_SubProgram<ADDRESS>::GetFormalParameter(unsigned int idx) const
 {
 	if(idx >= formal_params.size()) return 0;
 	return formal_params[idx];

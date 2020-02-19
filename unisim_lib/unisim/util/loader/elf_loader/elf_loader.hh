@@ -104,6 +104,7 @@ public:
 	void GetOption(Option opt, bool& flag) const;
 	
 	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *GetDWARFHandler() const;
 	
 	typedef typename unisim::util::debug::Symbol<MEMORY_ADDR> Symbol;
 
@@ -128,6 +129,7 @@ public:
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	
 private:
 	std::ostream *debug_info_stream;
 	std::ostream *debug_warning_stream;

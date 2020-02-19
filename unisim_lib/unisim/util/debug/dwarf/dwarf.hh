@@ -44,6 +44,7 @@
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
+#include <unisim/util/debug/variable.hh>
 #include <unisim/util/endian/endian.hh>
 
 #include <unisim/util/debug/dwarf/fmt.hh>
@@ -72,6 +73,10 @@
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
 #include <unisim/util/debug/dwarf/c_loc_expr_parser.hh>
 #include <unisim/util/debug/dwarf/cfa.hh>
+#include <unisim/util/debug/dwarf/frame.hh>
+#include <unisim/util/debug/dwarf/data_object.hh>
+#include <unisim/util/debug/dwarf/subprogram.hh>
+#include <unisim/util/debug/dwarf/variable.hh>
 
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -104,6 +109,7 @@ public:
 	void GetOption(Option opt, std::string& s) const;
 	void GetOption(Option opt, bool& flag) const;
 
+	bool HasDebugInfo() const;
 	void Parse();
 	void to_XML(const char *output_filename);
 	void to_HTML(const char *output_dir);
@@ -143,7 +149,7 @@ public:
 	
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;
@@ -176,6 +182,8 @@ public:
 	std::ostream& GetDebugInfoStream() const;
 	std::ostream& GetDebugWarningStream() const;
 	std::ostream& GetDebugErrorStream() const;
+	
+	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:
 	endian_type file_endianness;
 	endian_type arch_endianness;

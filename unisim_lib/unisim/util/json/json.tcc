@@ -47,6 +47,7 @@ namespace json {
 template <typename VISITOR>
 JSON_Lexer<VISITOR>::JSON_Lexer()
 	: eof(false)
+	, error(false)
 	, token(TOK_VOID)
 	, look_ahead(TOK_VOID)
 	, line()
@@ -646,6 +647,9 @@ void JSON_Lexer<VISITOR>::ScanError(std::istream& stream, VISITOR& visitor, cons
 template <typename VISITOR>
 void JSON_Lexer<VISITOR>::Error(std::istream& stream, VISITOR& visitor, const std::string& msg, bool parse_error)
 {
+	if(error) return;
+	error = true;
+	
 	std::ostringstream sstr;
 	sstr << "At line #" << (parse_error ? token_lineno : lineno) << ", column #" << (parse_error ? token_colno : colno) << ", " << msg << std::endl;
 	do
@@ -663,6 +667,7 @@ void JSON_Lexer<VISITOR>::Error(std::istream& stream, VISITOR& visitor, const st
 		line += c;
 	}
 	while(1);
+	look_ahead = TOK_ERROR;
 	
 	for(unsigned int i = 0; i < line.length(); i++)
 	{
@@ -763,6 +768,7 @@ typename VISITOR::JSON_OBJECT_TYPE JSON_Parser<VISITOR>::ParseObject(std::istrea
 	JSON_MEMBERS_TYPE members = ParseMembers(stream, visitor);
 	if(!members)
 	{
+		Lexer::ParseError(stream, visitor, std::string("expecting object members"));
 		return JSON_OBJECT_TYPE();
 	}
 	
@@ -786,11 +792,18 @@ typename VISITOR::JSON_MEMBERS_TYPE JSON_Parser<VISITOR>::ParseMembers(std::istr
 	JSON_MEMBER_TYPE member = ParseMember(stream, visitor);
 	if(!member)
 	{
+		Lexer::ParseError(stream, visitor, std::string("expecting an object member"));
 		visitor.Release(_members);
 		return JSON_MEMBERS_TYPE();
 	}
 	
 	JSON_MEMBERS_TYPE members = visitor.Members(_members, member);
+	if(!members)
+	{
+		visitor.Release(member);
+		visitor.Release(_members);
+		return JSON_MEMBERS_TYPE();
+	}
 	
 	Token token = Lexer::Next(stream, visitor);
 	if(token < 0)
@@ -823,6 +836,7 @@ typename VISITOR::JSON_MEMBER_TYPE JSON_Parser<VISITOR>::ParseMember(std::istrea
 	}
 	
 	JSON_STRING_TYPE member_name = visitor.MemberName(Lexer::GetStringValue());
+	if(!member_name) return JSON_MEMBER_TYPE();
 	
 	token = Lexer::Next(stream, visitor);
 	if(token < 0)
@@ -841,6 +855,7 @@ typename VISITOR::JSON_MEMBER_TYPE JSON_Parser<VISITOR>::ParseMember(std::istrea
 	JSON_VALUE_TYPE member_value = ParseValue(stream, visitor);
 	if(!member_value)
 	{
+		Lexer::ParseError(stream, visitor, std::string("expecting a member value"));
 		visitor.Release(member_name);
 		return JSON_MEMBER_TYPE();
 	}
@@ -873,7 +888,11 @@ typename VISITOR::JSON_ARRAY_TYPE JSON_Parser<VISITOR>::ParseArray(std::istream&
 	Lexer::Back();
 	
 	JSON_ELEMENTS_TYPE elements = ParseElements(stream, visitor);
-	if(!elements) return JSON_ARRAY_TYPE();
+	if(!elements)
+	{
+		Lexer::ParseError(stream, visitor, std::string("expecting array elements"));
+		return JSON_ARRAY_TYPE();
+	}
 	
 	token = Lexer::Next(stream, visitor);
 	
@@ -895,16 +914,23 @@ typename VISITOR::JSON_ELEMENTS_TYPE JSON_Parser<VISITOR>::ParseElements(std::is
 	JSON_VALUE_TYPE value = ParseValue(stream, visitor);
 	if(!value)
 	{
+		Lexer::ParseError(stream, visitor, std::string("expecting an array element"));
 		visitor.Release(_elements);
 		return JSON_ELEMENTS_TYPE();
 	}
 	
 	JSON_ELEMENTS_TYPE elements = visitor.Elements(_elements, value);
+	if(!elements)
+	{
+		visitor.Release(value);
+		visitor.Release(_elements);
+		return JSON_ELEMENTS_TYPE();
+	}
 	
 	Token token = Lexer::Next(stream, visitor);
 	if(token < 0)
 	{
-		visitor.Release(value);
+		visitor.Release(elements);
 		return JSON_ELEMENTS_TYPE();
 	}
 	

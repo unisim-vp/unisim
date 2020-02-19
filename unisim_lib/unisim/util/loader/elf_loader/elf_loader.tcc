@@ -37,6 +37,7 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/debug/dwarf/dwarf.tcc>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -672,6 +673,12 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 const typename unisim::util::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
 {
 	return blob ? blob : const_blob;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDWARFHandler() const
+{
+	return dw_handler;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
