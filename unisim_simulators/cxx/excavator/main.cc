@@ -996,7 +996,7 @@ int main(int argc, char *argv[])
 	}
 	
 	// Checking that a binary filename was specified in JSON configuration file
-	const std::string binary_filename = json_config_reader.GetBinary();
+	const std::string& binary_filename = json_config_reader.GetBinary();
 	
 	if(binary_filename.empty())
 	{
@@ -1005,7 +1005,7 @@ int main(int argc, char *argv[])
 	}
 	
 	// Checking that an output filename was specified in JSON configuration file
-	const std::string output_filename = json_config_reader.GetOutput();
+	const std::string& output_filename = json_config_reader.GetOutput();
 	
 	if(output_filename.empty())
 	{
