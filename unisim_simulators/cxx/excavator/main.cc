@@ -951,14 +951,14 @@ bool JSON_ConfigReader::ParseStringArrayElements(std::istream& stream, std::set<
 
 //////////////////////////////////// Help /////////////////////////////////////
 
-void Help()
+void Help(const char *program_name)
 {
 	std::cerr << "UNISIM Excavator: a tool to dig DWARF debug information in ELF executable binaries" << std::endl;
 	std::cerr << "Copyright (C) 2020, Commissariat a l'Energie Atomique (CEA)" << std::endl;
 	std::cerr << "License: BSD (see file COPYING)" << std::endl;
 	std::cerr << "Authors: Gilles Mouchard <gilles.mouchard@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>" << std::endl;
 	std::cerr << std::endl;
-	std::cerr << "Usage: excavator <JSON configuration file>" << std::endl;
+	std::cerr << "Usage: " << program_name << " <JSON configuration file>" << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "Sample JSON configuration file:" << std::endl;
 	std::cerr << "{" << std::endl;
@@ -1001,7 +1001,7 @@ int main(int argc, char *argv[])
 {
 	if(argc < 2)
 	{
-		Help();
+		Help(argv[0]);
 		return 0;
 	}
 	
@@ -1023,7 +1023,7 @@ int main(int argc, char *argv[])
 	{
 		std::cerr << "ERROR! Parse error in JSON configuration File \"" << json_config_filename << "\"" << std::endl;
 		std::cerr << std::endl;
-		Help();
+		Help(argv[0]);
 		return -1;
 	}
 	
@@ -1033,6 +1033,7 @@ int main(int argc, char *argv[])
 	if(binary_filename.empty())
 	{
 		std::cerr << "ERROR! No binary specified in JSON configuration File \"" << json_config_filename << "\"" << std::endl;
+		Help(argv[0]);
 		return -1;
 	}
 	
@@ -1042,6 +1043,7 @@ int main(int argc, char *argv[])
 	if(output_filename.empty())
 	{
 		std::cerr << "ERROR! No output specified in JSON configuration File \"" << json_config_filename << "\"" << std::endl;
+		Help(argv[0]);
 		return -1;
 	}
 	
