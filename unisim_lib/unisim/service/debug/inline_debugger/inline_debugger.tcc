@@ -3188,12 +3188,8 @@ void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObjec
 	if(data_object->Exists())
 	{
 		const unisim::util::debug::Type *data_object_type = data_object->GetType();
-		(*std_output_stream) << data_object_type->BuildCDecl(&data_object_name);
-		if(data_object_name)
-		{
-			(*std_output_stream) << " " << data_object_name;
-		}
-		(*std_output_stream) << ";" << std::endl;
+		(*std_output_stream) << "Type of Data Object \"" << data_object_name << "\" is \"";
+		(*std_output_stream) << data_object_type->BuildCDecl(0, true) << "\"" << std::endl;
 	}
 	else
 	{

@@ -79,7 +79,7 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob, const unisim::util::debug::SymbolTable<MEMORY_ADDR> *_symbol_table)
 	: file_endianness(_blob->GetEndian())
 	, arch_endianness(_blob->GetEndian())
 	, file_address_size(0)
@@ -97,6 +97,7 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::blob::Blob<MEMORY_
 	, debug_str_section(_blob->FindSection(".debug_str", false))
 	, debug_loc_section(_blob->FindSection(".debug_loc", false))
 	, debug_ranges_section(_blob->FindSection(".debug_ranges", false))
+	, symbol_table(_symbol_table)
 	, debug_info_stream(&std::cout)
 	, debug_warning_stream(&std::cerr)
 	, debug_error_stream(&std::cerr)
@@ -305,61 +306,95 @@ void DWARF_Handler<MEMORY_ADDR>::SetMemoryInterface(unsigned int prc_num, unisim
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, const char *s)
+bool DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, const char *s)
 {
 	switch(opt)
 	{
 		case OPT_REG_NUM_MAPPING_FILENAME:
 			reg_num_mapping_filename = s;
-			break;
+			return true;
 		default:
 			break;
 	}
+	return false;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, bool flag)
+bool DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, bool flag)
 {
 	switch(opt)
 	{
 		case OPT_VERBOSE:
 			verbose = flag;
-			break;
+			return true;
 		case OPT_DEBUG:
 			debug = flag;
-			break;
+			return true;
 		default:
 			break;
 	}
+	return false;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, std::string& s) const
+bool DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, std::string& s) const
 {
 	switch(opt)
 	{
 		case OPT_REG_NUM_MAPPING_FILENAME:
 			s = reg_num_mapping_filename;
-			break;
+			return true;
 		default:
 			break;
 	}
+	return false;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, bool& flag) const
+bool DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, bool& flag) const
 {
 	switch(opt)
 	{
 		case OPT_VERBOSE:
 			flag = verbose;
-			break;
+			return true;
 		case OPT_DEBUG:
 			flag = debug;
-			break;
+			return true;
 		default:
 			break;
 	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+const bool& DWARF_Handler<MEMORY_ADDR>::GetOptionFlag(Option opt) const
+{
+	switch(opt)
+	{
+		case OPT_VERBOSE:
+			return verbose;
+		case OPT_DEBUG:
+			return debug;
+		default:
+			break;
+	}
+	static bool dummy_flag = false;
+	return dummy_flag;
+}
+
+template <class MEMORY_ADDR>
+const std::string& DWARF_Handler<MEMORY_ADDR>::GetOptionString(Option opt) const
+{
+	switch(opt)
+	{
+		case OPT_REG_NUM_MAPPING_FILENAME:
+			return reg_num_mapping_filename;
+		default:
+			break;
+	}
+	static std::string dummy_string;
+	return dummy_string;
 }
 
 template <class MEMORY_ADDR>
@@ -2090,6 +2125,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 		debug_info_cus << "<th>Version</th>" << std::endl;
 		debug_info_cus << "<th>Address size</th>" << std::endl;
 		debug_info_cus << "<th>DIEs</th>" << std::endl;
+		debug_info_cus << "<th>Name</th>" << std::endl;
 		debug_info_cus << "</tr>" << std::endl;
 		unsigned int count = 0;
 		while(count < cus_per_file && dw_cu_iter != dw_cus.end())
@@ -2960,7 +2996,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetDat
 	
 	if(!c_loc_expr_parser.Parse(c_loc_operation_stream)) return 0;
 	
-	return new DWARF_DataObject<MEMORY_ADDR>(this, prc_num, data_object_name, c_loc_operation_stream, debug);
+	return new DWARF_DataObject<MEMORY_ADDR>(this, prc_num, data_object_name, c_loc_operation_stream);
 }
 
 template <class MEMORY_ADDR>
@@ -2980,7 +3016,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 	if(FindDataObject(c_loc_operation_stream, prc_num, pc, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
 	{
-		return new DWARF_DataObject<MEMORY_ADDR>(this, prc_num, matched_data_object_name.c_str(), c_loc_operation_stream, pc, dw_data_object_loc, dw_data_object_type, debug);
+		return new DWARF_DataObject<MEMORY_ADDR>(this, prc_num, matched_data_object_name.c_str(), c_loc_operation_stream, pc, dw_data_object_loc, dw_data_object_type);
 	}
 	
 	return 0;
@@ -3095,10 +3131,9 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 		return true;
 	}
 
-	// Determine the reference to the DIE that describes the type of the data object
-	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
-	
-	if(!dw_die_data_object->GetAttributeValue(DW_AT_type, dw_type_ref))
+	// Determine the DIE that describes the type of the data object
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_die_data_object->GetTypeDIE();
+	if(!dw_die_type)
 	{
 		if(debug)
 		{
@@ -3118,9 +3153,6 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 	// Explore the imbricated type definitions
 	do
 	{
-		// Determine the DIE that describes the type of the data object
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
-		
 		// Several cases for type:
 		// (1) structure/class/union
 		// (2) multidimensional arrays
@@ -3191,18 +3223,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						break;
 					}
 					
-					if(dw_data_object_loc->GetType() != DW_LOC_SIMPLE_MEMORY)
-					{
-						GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" relative to data Object \"" << matched_data_object_name << "\" because data Object \"" << matched_data_object_name << "\" has no address" << std::endl;
-						status = false;
-						break;
-					}
-					MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
-// 					if(dw_data_object_loc) delete dw_data_object_loc;
-// 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
-					dw_data_object_loc->Clear();
-					
-					if(!dw_die_data_member->GetDataMemberLocation(prc_num, pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
+					if(!dw_die_data_member->GetDataMemberLocation(prc_num, pc, has_frame_base, frame_base, *dw_data_object_loc))
 					{
 						GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << std::endl;
 						status = false;
@@ -3233,7 +3254,8 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						break;
 					}
 
-					if(!dw_die_data_member->GetAttributeValue(DW_AT_type, dw_type_ref))
+					// Determine the DIE that describes the type of the data object
+					if(!(dw_die_type = dw_die_data_member->GetTypeDIE()))
 					{
 						GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine type of data Object \"" << matched_data_object_name << "\"" << std::endl;
 						status = false;
@@ -3276,7 +3298,6 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						break;
 					}
 					
-					dw_data_object_loc->SetBitOffset(0);
 					dw_data_object_loc->SetEncoding(0);
 					unsigned int dim = 0;
 					unsigned int i = 0;
@@ -3376,7 +3397,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 							}
 							
 							dw_data_object_loc->SetBitSize(array_element_count * array_element_bitsize);
-							dw_data_object_loc->SetBitOffset(dw_data_object_loc->GetBitOffset() + (normalized_subscript * dw_data_object_loc->GetBitSize()));
+							dw_data_object_loc->IncBitOffset(normalized_subscript * dw_data_object_loc->GetBitSize());
 							dw_data_object_loc->SetByteSize((dw_data_object_loc->GetBitSize() + 7) / 8);
 							
 							matched_data_object_name += '[';
@@ -3425,23 +3446,8 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 					
 					if(status && !match_or_optimized_out)
 					{
-						// advance data object location address, and zero bit offset
-						MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
-						int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
-						uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
-						uint64_t dw_data_object_byte_size = dw_data_object_loc->GetByteSize();
-						
-						dw_data_object_loc->Clear(); // this effectively zeroes everything in data object location
-						dw_data_object_loc->SetAddress(object_addr + (dw_data_object_bit_offset / 8));
-						dw_data_object_loc->SetBitSize(dw_data_object_bit_size);
-						dw_data_object_loc->SetByteSize(dw_data_object_byte_size);
-						
-						if(debug)
-						{
-							GetDebugInfoStream() << "In File \"" << GetFilename() << "\", location of data Object \"" << matched_data_object_name << "\" is:" << std::endl << (*dw_data_object_loc) << std::endl;
-						}
-						
-						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+						// Determine the DIE that describes the type of the data object
+						if(!(dw_die_type = dw_die_type->GetTypeDIE()))
 						{
 							GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data element type of data array \"" << matched_data_object_name << "\"" << std::endl;
 							status = false;
@@ -3495,7 +3501,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 					c_loc_op = 0;
 					
 					// (1)
-					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, prc_num, matched_data_object_name.c_str(), dw_data_object_c_loc_operation_stream, pc, dw_data_object_loc, new unisim::util::debug::Type(), debug);
+					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, prc_num, matched_data_object_name.c_str(), dw_data_object_c_loc_operation_stream, pc, dw_data_object_loc, new unisim::util::debug::Type());
 					
 					// (2)
 					if(!dw_data_object->Fetch())
@@ -3544,14 +3550,13 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						c_loc_op = 0;
 						
 						// get type of pointed element
-						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+						// Determine the DIE that describes the type of the data object
+						if(!(dw_die_type = dw_die_type->GetTypeDIE()))
 						{
-							GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << std::endl;
+							GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine type of element pointer by \"" << matched_data_object_name << "\"" << std::endl;
 							status = false;
 							break;
 						}
-						
-						const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
 						
 						// get byte size of pointed element data type
 						uint64_t dw_data_object_byte_size = 0;
@@ -3611,9 +3616,10 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 					}
 					else
 					{
-						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+						// Determine the DIE that describes the type of the data object
+						if(!(dw_die_type = dw_die_type->GetTypeDIE()))
 						{
-							GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << std::endl;
+							GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data type of element pointer by \"" << matched_data_object_name << "\"" << std::endl;
 							status = false;
 							break;
 						}
@@ -3628,12 +3634,11 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						
 						if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 						{
+							const DWARF_DIE<MEMORY_ADDR> *dw_die_pointed_type = dw_die_type;
+							
 							// match or optimized out
 							if(dw_data_object_loc->GetType() != DW_LOC_NULL)
 							{
-								// Determine the DIE that describes the type of the pointed data object
-								const DWARF_DIE<MEMORY_ADDR> *dw_die_pointed_type = dw_type_ref->GetValue();
-								
 								// Determine the size in bytes (including padding bits) of the pointed data object
 								uint64_t dw_data_object_byte_size = 0;
 								if(!dw_die_pointed_type->GetByteSize(prc_num, dw_data_object_byte_size))
@@ -3663,7 +3668,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 								dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 							}
 							
-							dw_data_object_type = dw_die_type->GetTypeOf(prc_num);
+							dw_data_object_type = dw_die_pointed_type->GetType(prc_num);
 							match_or_optimized_out = true;
 						}
 						
@@ -3675,7 +3680,8 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 				}
 				break;
 			case DW_TAG_typedef:
-				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+				// Determine the DIE that describes the type of the data object
+				if(!(dw_die_type = dw_die_type->GetTypeDIE()))
 				{
 					GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data type defined by a typedef for \"" << matched_data_object_name << "\"" << std::endl;
 					status = false;
@@ -3684,7 +3690,8 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 				break;
 				
 			case DW_TAG_const_type:
-				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+				// Determine the DIE that describes the type of the data object
+				if(!(dw_die_type = dw_die_type->GetTypeDIE()))
 				{
 					GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data type of const construction for \"" << matched_data_object_name << "\"" << std::endl;
 					status = false;
@@ -3693,7 +3700,8 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 				break;
 
 			case DW_TAG_volatile_type:
-				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+				// Determine the DIE that describes the type of the data object
+				if(!(dw_die_type = dw_die_type->GetTypeDIE()))
 				{
 					GetDebugErrorStream() << "In File \"" << GetFilename() << "\", can't determine data type of volatile construction for \"" << matched_data_object_name << "\"" << std::endl;
 					status = false;
@@ -3752,7 +3760,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 				break;
 		}
 	}
-	while(status && !match_or_optimized_out && dw_type_ref);
+	while(status && !match_or_optimized_out && dw_die_type);
 	
 	if(match_or_optimized_out)
 	{
@@ -4158,6 +4166,12 @@ template <class MEMORY_ADDR>
 std::ostream& DWARF_Handler<MEMORY_ADDR>::GetDebugErrorStream() const
 {
 	return *debug_error_stream;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::SymbolTable<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetSymbolTable() const
+{
+	return symbol_table;
 }
 
 template <class MEMORY_ADDR>

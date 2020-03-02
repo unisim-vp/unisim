@@ -295,6 +295,12 @@ void DWARF_Location<MEMORY_ADDR>::SetBitOffset(int64_t _dw_bit_offset)
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::IncBitOffset(int64_t _dw_bit_offset)
+{
+	dw_bit_offset += _dw_bit_offset;
+}
+
+template <class MEMORY_ADDR>
 void DWARF_Location<MEMORY_ADDR>::SetBitSize(uint64_t _dw_bit_size)
 {
 	dw_bit_size = _dw_bit_size;
@@ -457,12 +463,11 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, has_object_addr(false)
 	, pc(0)
 	, has_pc(false)
-	, debug(false)
+	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, debug_info_stream(_dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
 	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 {
-	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -482,12 +487,11 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, has_object_addr(false)
 	, pc(0)
 	, has_pc(false)
-	, debug(false)
+	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, debug_info_stream(_dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
 	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 {
-	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 

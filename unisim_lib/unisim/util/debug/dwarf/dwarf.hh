@@ -45,6 +45,7 @@
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <unisim/util/debug/variable.hh>
+#include <unisim/util/debug/symbol_table.hh>
 #include <unisim/util/endian/endian.hh>
 
 #include <unisim/util/debug/dwarf/fmt.hh>
@@ -94,7 +95,7 @@ template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *blob);
+	DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *blob, const unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table);
 	~DWARF_Handler();
 
 	void SetDebugInfoStream(std::ostream& debug_info_stream);
@@ -103,11 +104,14 @@ public:
 	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	
-	void SetOption(Option opt, const char *s);
-	void SetOption(Option opt, bool flag);
+	bool SetOption(Option opt, const char *s);
+	bool SetOption(Option opt, bool flag);
 
-	void GetOption(Option opt, std::string& s) const;
-	void GetOption(Option opt, bool& flag) const;
+	bool GetOption(Option opt, std::string& s) const;
+	bool GetOption(Option opt, bool& flag) const;
+	
+	const bool& GetOptionFlag(Option opt) const;
+	const std::string& GetOptionString(Option opt) const;
 
 	bool HasDebugInfo() const;
 	void Parse();
@@ -183,6 +187,8 @@ public:
 	std::ostream& GetDebugWarningStream() const;
 	std::ostream& GetDebugErrorStream() const;
 	
+	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *GetSymbolTable() const;
+	
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:
 	endian_type file_endianness;
@@ -204,6 +210,9 @@ private:
 	const unisim::util::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
 	const unisim::util::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
 	const unisim::util::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
+	
+	// Sumbol Table
+	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
 	std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> stmt_matrix;    // Result of running dw_stmt_progs on dw_stmt_vms

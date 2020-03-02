@@ -197,6 +197,7 @@ public:
 	Member(const char *name, const Type *type, uint64_t bit_size);
 	virtual ~Member();
 	const char *GetName() const;
+	bool HasName() const;
 	const Type *GetType() const;
 	uint64_t GetBitSize() const;
 	std::string BuildCDecl() const;
@@ -204,6 +205,7 @@ public:
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:
 	std::string name;
+	bool has_name;
 	const Type *type;
 	uint64_t bit_size;
 };
@@ -276,6 +278,7 @@ public:
 	PointerType(const Type *type_of_dereferenced_object);
 	virtual ~PointerType();
 	const Type *GetTypeOfDereferencedObject() const;
+	bool IsNullTerminatedStringPointer() const;
 	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;

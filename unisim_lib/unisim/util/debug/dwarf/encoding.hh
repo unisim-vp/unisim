@@ -385,12 +385,24 @@ const uint16_t DW_AT_GNU_addr_base                  = 0x2133;
 const uint16_t DW_AT_GNU_pubnames                   = 0x2134;
 const uint16_t DW_AT_GNU_pubtypes                   = 0x2135;
 
+// Attribute for discriminator
+const uint16_t DW_AT_GNU_discriminator              = 0x2136;
+const uint16_t DW_AT_GNU_locviews                   = 0x2137;
+const uint16_t DW_AT_GNU_entry_view                 = 0x2138;
+
 // VMS extensions
 const uint16_t DW_AT_VMS_rtnbeg_pd_address = 0x2201;
 
 // GNAT extensions
 const uint16_t DW_AT_use_GNAT_descriptive_type = 0x2301;
 const uint16_t DW_AT_GNAT_descriptive_type     = 0x2302;
+
+// Rational constant extension
+const uint16_t DW_AT_GNU_numerator             = 0x2303;
+const uint16_t DW_AT_GNU_denominator           = 0x2304;
+
+// Biased integer extension
+const uint16_t DW_AT_GNU_bias           = 0x2305;
 
 // UPC extension
 const uint16_t DW_AT_upc_threads_scaled = 0x3210;

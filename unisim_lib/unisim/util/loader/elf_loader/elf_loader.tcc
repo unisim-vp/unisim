@@ -195,12 +195,14 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_VERBOSE:
 			verbose = flag;
+			if(dw_handler) dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
 			break;
 		case OPT_PARSE_DWARF:
 			parse_dwarf = flag;
 			break;
 		case OPT_DEBUG_DWARF:
 			debug_dwarf = flag;
+			if(dw_handler) dw_handler->SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
 			break;
 		default:
 			break;
@@ -611,7 +613,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(parse_dwarf)
 	{
-		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob);
+		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob, symtab_handler ? symtab_handler->GetSymbolTable() : 0);
 
 		if(dw_handler)
 		{

@@ -371,6 +371,12 @@ std::ostream& operator << (std::ostream& os, const Token& token);
 
 std::string PrettyString(const Token& token, const std::string& text);
 
+enum JSON_OPTION
+{
+	OPT_ENABLE_C_COMMENTS,  // enable C-like comments beginning with /* and ending with */
+	OPT_ENABLE_CPP_COMMENTS // enable C++-like comments beginning with //
+};
+
 // JSON Lexer
 template <typename VISITOR>
 struct JSON_Lexer
@@ -378,6 +384,9 @@ struct JSON_Lexer
 	JSON_Lexer();
 	~JSON_Lexer();
 	
+	bool SetOption(JSON_OPTION option, bool value);
+	bool GetOption(JSON_OPTION option, bool& value) const;
+	bool GetOptionFlag(JSON_OPTION option) const;
 	void Reset();
 protected:
 	Token Next(std::istream& stream, VISITOR& visitor);
@@ -398,6 +407,8 @@ private:
 	void ScanError(std::istream& stream, VISITOR& visitor, const std::string& msg);
 	void Error(std::istream& stream, VISITOR& visitor, const std::string& msg, bool parse_error);
 	
+	bool enable_c_comments;
+	bool enable_cpp_comments;
 	bool eof;
 	bool error;
 	Token token;

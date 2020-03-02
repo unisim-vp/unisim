@@ -31,16 +31,15 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/util/debug/symbol_table.hh>
-#include <unisim/util/debug/symbol_table.tcc>
+
+#include <unisim/util/debug/simple_symbol_table.tcc>
 #include <inttypes.h>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-template class SymbolTable<uint64_t>;
+template class SimpleSymbolTable<uint32_t>;
 
 } // end of namespace debug
 } // end of namespace util

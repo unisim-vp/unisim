@@ -70,7 +70,7 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 	
 	unisim::util::endian::endian_type endian = blob->GetEndian();
 	
-	symbol_table = new SymbolTable<MEMORY_ADDR>();
+	symbol_table = new SimpleSymbolTable<MEMORY_ADDR>();
 	
 	const typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
 	typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
@@ -160,6 +160,12 @@ template <class MEMORY_ADDR, class Elf_Sym>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
 {
 	return symbol_table ? symbol_table->FindSymbolByAddr(addr, type) : 0;
+}
+
+template <class MEMORY_ADDR, class Elf_Sym>
+unisim::util::debug::SymbolTable<MEMORY_ADDR> const *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::GetSymbolTable()
+{
+	return symbol_table;
 }
 
 } // end of namespace elf_symtab

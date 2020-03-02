@@ -76,7 +76,7 @@ public:
 	unsigned int GetBitOffset() const;
 private:
 	MEMORY_ADDR dw_addr;
-	unsigned int dw_bit_offset;
+	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 };
 
 template <class MEMORY_ADDR>
@@ -90,7 +90,7 @@ public:
 	unsigned int GetBitOffset() const;
 private:
 	unsigned int dw_reg_num;
-	unsigned int dw_bit_offset;
+	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 };
 
 const unsigned int DW_LOC_NULL                  = 0;
@@ -124,6 +124,7 @@ public:
 	const DWARF_Block<MEMORY_ADDR> *GetImplicitBlockValue() const;
 	void SetByteSize(uint64_t byte_size);
 	void SetBitOffset(int64_t bit_offset);
+	void IncBitOffset(int64_t bit_offset);
 	void SetBitSize(uint64_t bit_size);
 	void SetEncoding(uint8_t encoding);
 	void SetRanges(const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges);
@@ -141,9 +142,9 @@ private:
 	MEMORY_ADDR dw_addr;
 	MEMORY_ADDR dw_implicit_simple_value;
 	DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value;
-	uint64_t dw_byte_size;
-	int64_t dw_bit_offset;
-	uint64_t dw_bit_size;
+	uint64_t dw_byte_size; // byte size (padding included)
+	int64_t dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
+	uint64_t dw_bit_size; // actual bit size (padding excluded)
 	uint8_t dw_encoding;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
 	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
@@ -180,7 +181,7 @@ private:
 	bool has_object_addr;
 	MEMORY_ADDR pc;
 	bool has_pc;
-	bool debug;
+	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;

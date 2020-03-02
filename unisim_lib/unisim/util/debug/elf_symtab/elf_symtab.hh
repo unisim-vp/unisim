@@ -37,7 +37,7 @@
 
 #include <unisim/util/blob/blob.hh>
 #include <unisim/util/debug/symbol.hh>
-#include <unisim/util/debug/symbol_table.hh>
+#include <unisim/util/debug/simple_symbol_table.hh>
 #include <iostream>
 #include <list>
 
@@ -61,12 +61,14 @@ public:
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	
+	unisim::util::debug::SymbolTable<MEMORY_ADDR> const *GetSymbolTable();
 private:
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
 	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
-	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
+	unisim::util::debug::SimpleSymbolTable<MEMORY_ADDR> *symbol_table;
 };
 
 } // end of namespace elf_symtab

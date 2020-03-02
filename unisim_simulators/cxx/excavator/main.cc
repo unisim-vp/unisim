@@ -319,6 +319,10 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 				}
 				dw_cu->Scan(*this);
 			}
+			else
+			{
+				std::cerr << "Skipping Compilation Unit #" << dw_cu->GetId() << " (" << dw_cu_name << ")" << std::endl;
+			}
 			return true;
 		}
 		
@@ -504,6 +508,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 				case unisim::util::debug::dwarf::DW_TAG_const_type:
 				case unisim::util::debug::dwarf::DW_TAG_volatile_type:
 				case unisim::util::debug::dwarf::DW_TAG_array_type:
+				case unisim::util::debug::dwarf::DW_TAG_subroutine_type:
 				{
 					dw_die->ScanType(*this);
 					break;
@@ -660,16 +665,29 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 
 	file << std::endl;
 	file << "///////////////////////////////////////////////////////////////////////////////" << std::endl;
+	file << "//                              Public Functions                             //" << std::endl;
+	file << "///////////////////////////////////////////////////////////////////////////////" << std::endl;
+	file << std::endl;
+	for(typename DebugInfoVisitor::SubPrograms::const_iterator it = debug_info_visitor.subprogram_definitions.begin(); it != debug_info_visitor.subprogram_definitions.end(); ++it)
+	{
+		unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram = *it;
+		if(!subprogram->IsExternal()) continue;
+		if(subprogram->IsInline())
+		{
+			file << "inline ";
+		}
+		file << subprogram->BuildCDecl() << " { }" << std::endl;
+	}
+	file << std::endl;
+	file << "///////////////////////////////////////////////////////////////////////////////" << std::endl;
 	file << "//                              Private Functions                            //" << std::endl;
 	file << "///////////////////////////////////////////////////////////////////////////////" << std::endl;
 	file << std::endl;
 	for(typename DebugInfoVisitor::SubPrograms::const_iterator it = debug_info_visitor.subprogram_definitions.begin(); it != debug_info_visitor.subprogram_definitions.end(); ++it)
 	{
 		unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram = *it;
-		if(!subprogram->IsExternal())
-		{
-			file << "static ";
-		}
+		if(subprogram->IsExternal()) continue;
+		file << "static ";
 		if(subprogram->IsInline())
 		{
 			file << "inline ";
@@ -697,6 +715,8 @@ JSON_ConfigReader::JSON_ConfigReader(std::ostream& _err)
 	, sources()
 	, builtin_functions()
 {
+	SetOption(unisim::util::json::OPT_ENABLE_C_COMMENTS, true);
+	SetOption(unisim::util::json::OPT_ENABLE_CPP_COMMENTS, true);
 }
 
 bool JSON_ConfigReader::ParseRoot(std::istream& stream)
@@ -730,7 +750,7 @@ bool JSON_ConfigReader::ParseRoot(std::istream& stream)
 	
 	if(token != unisim::util::json::TOK_RIGHT_BRACE)
 	{
-		Lexer::ParseError(stream, *this, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_RIGHT_BRACE));
+		Lexer::ParseError(stream, *this, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_COMMA) + " or " + ToString(unisim::util::json::TOK_RIGHT_BRACE));
 		return false;
 	}
 	
@@ -916,7 +936,7 @@ bool JSON_ConfigReader::ParseStringArray(std::istream& stream, std::set<std::str
 	
 	if(token != unisim::util::json::TOK_RIGHT_BRACKET)
 	{
-		Lexer::ParseError(stream, *this, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_RIGHT_BRACKET));
+		Lexer::ParseError(stream, *this, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_COMMA) + " or " + ToString(unisim::util::json::TOK_RIGHT_BRACKET));
 		return false;
 	}
 	

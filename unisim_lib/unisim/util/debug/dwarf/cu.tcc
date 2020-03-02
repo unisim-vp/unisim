@@ -50,7 +50,7 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 	, debug_info_stream(_dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
 	, debug_error_stream(_dw_handler->GetDebugErrorStream())
-	, debug(false)
+	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, dw_fmt(FMT_DWARF_UNKNOWN)
 	, dw_ver(DW_VER_UNKNOWN)
 	, offset(0xffffffffffffffffULL)
@@ -60,7 +60,6 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 	, address_size(0)
 	, dw_die(0)
 {
-	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -297,6 +296,13 @@ std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_HTML(std::ostream& os)
 	os << "<td>" << id << "</td><td>" << offset << "</td><td>" << (uint32_t) version << "</td><td>" << (uint32_t) address_size << "</td>" << std::endl;
 	os << "<td>";
 	os << "<a href=\"../../" << dw_die->GetHREF() << "\">die #" << dw_die->GetId() << "</a>";
+	os << "</td>";
+	os << "<td>";
+	const char *name = GetName();
+	if(name)
+	{
+		c_string_to_HTML(os, name);
+	}
 	os << "</td>" << std::endl;
 	os << "</tr>" << std::endl;
 

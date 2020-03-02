@@ -52,16 +52,26 @@ DWARF_DIE<MEMORY_ADDR>::DWARF_DIE(DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, DW
 	, debug_info_stream(dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(dw_handler->GetDebugWarningStream())
 	, debug_error_stream(dw_handler->GetDebugErrorStream())
-	, debug(false)
+	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, offset(0xffffffffffffffffULL)
 	, abbrev(0)
 	, children()
 	, attributes()
+	, cached_name()
+	, cached_declaration_flag()
+	, cached_external_flag()
+	, cached_specification()
+	, cached_dw_abstract_origin()
+	, cached_dw_type_die()
+	, cached_dw_defining_die()
+	, cached_low_pc()
+	, cached_high_pc()
+	, cached_high_pc_offset()
+	, cached_ranges()
 	, type_cache()
-	, cached_subprogram(0)
-	, cached_variable(0)
+	, cached_subprogram()
+	, cached_variable()
 {
-	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -86,14 +96,14 @@ DWARF_DIE<MEMORY_ADDR>::~DWARF_DIE()
 		if(cached_type) cached_type->Release();
 	}
 	
-	if(cached_subprogram)
+	if(cached_subprogram.Valid())
 	{
-		cached_subprogram->Release();
+		(*cached_subprogram).Release();
 	}
 	
-	if(cached_variable)
+	if(cached_variable.Valid())
 	{
-		cached_variable->Release();
+		(*cached_variable).Release();
 	}
 }
 
@@ -1180,12 +1190,24 @@ void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::multimap<MEMORY_ADDR, con
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::HasRanges() const
 {
-	return FindAttribute(DW_AT_ranges) || FindAttribute(DW_AT_low_pc);
+	const DWARF_RangeListEntry<MEMORY_ADDR> *range_list_entry = 0;
+	if(GetRanges(range_list_entry) && range_list_entry) return true;
+	MEMORY_ADDR low_pc = 0;
+	if(GetLowPC(low_pc)) return true;
+	return false;
+// 	return FindAttribute(DW_AT_ranges) || FindAttribute(DW_AT_low_pc);
 }
 
 template <class MEMORY_ADDR>
-void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const
+bool DWARF_DIE<MEMORY_ADDR>::GetRanges(const DWARF_RangeListEntry<MEMORY_ADDR> *& range_list_entry) const
 {
+	if(cached_ranges.Valid())
+	{
+		if(!cached_ranges.Present()) return false;
+		range_list_entry = cached_ranges;
+		return true;
+	}
+	
 	// DW_AT_ranges is only available in DWARF3 and more
 	const DWARF_Attribute<MEMORY_ADDR> *dw_at_ranges = FindAttribute(DW_AT_ranges);
 	
@@ -1196,12 +1218,30 @@ void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_AD
 		{
 			const DWARF_RangeListPtr<MEMORY_ADDR> *range_list_ptr = (const DWARF_RangeListPtr<MEMORY_ADDR> *) dw_at_ranges_value;
 			
-			const DWARF_RangeListEntry<MEMORY_ADDR> *range_list_entry = range_list_ptr->GetValue();
-			
+			cached_ranges = range_list_entry = range_list_ptr->GetValue();
+			return true;
+		}
+		
+		cached_ranges = 0; // DW_AT_ranges is present but has an unexpected form
+		return true;
+	}
+	
+	cached_ranges.Present(false);
+	return false;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const
+{
+	const DWARF_RangeListEntry<MEMORY_ADDR> *range_list_entry = 0;
+	if(GetRanges(range_list_entry))
+	{
+		if(range_list_entry)
+		{
 			bool has_base_addr = false;
 			bool has_queried_cu_default_base_address = false;
 			MEMORY_ADDR base_addr = 0;
-			do
+			while(range_list_entry && !range_list_entry->IsEndOfList())
 			{
 				if(range_list_entry->IsBaseAddressSelection())
 				{
@@ -1218,11 +1258,10 @@ void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_AD
 							has_queried_cu_default_base_address = true;
 						}
 					}
-					ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(range_list_entry->GetBegin(), range_list_entry->GetEnd()));
+					ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(base_addr + range_list_entry->GetBegin(), base_addr + range_list_entry->GetEnd()));
 				}
-				if(range_list_entry->IsEndOfList()) break;
+				range_list_entry = range_list_entry->GetNext();
 			}
-			while((range_list_entry = range_list_entry->GetNext()) != 0);
 		}
 		return;
 	}
@@ -1250,43 +1289,32 @@ void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_AD
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
-	// DW_AT_ranges is only available in DWARF3 and more
-	const DWARF_Attribute<MEMORY_ADDR> *dw_at_ranges = FindAttribute(DW_AT_ranges);
-	
-	if(dw_at_ranges)
+	const DWARF_RangeListEntry<MEMORY_ADDR> *range_list_entry = 0;
+	if(GetRanges(range_list_entry))
 	{
-		const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_ranges_value = dw_at_ranges->GetValue();
-		if(dw_at_ranges_value->GetClass() == DW_CLASS_RANGELISTPTR)
+		bool has_base_addr = false;
+		bool has_queried_cu_default_base_address = false;
+		MEMORY_ADDR base_addr = 0;
+		while(range_list_entry && !range_list_entry->IsEndOfList())
 		{
-			const DWARF_RangeListPtr<MEMORY_ADDR> *range_list_ptr = (const DWARF_RangeListPtr<MEMORY_ADDR> *) dw_at_ranges_value;
-			
-			const DWARF_RangeListEntry<MEMORY_ADDR> *range_list_entry = range_list_ptr->GetValue();
-			
-			bool has_base_addr = false;
-			bool has_queried_cu_default_base_address = false;
-			MEMORY_ADDR base_addr = 0;
-			do
+			if(range_list_entry->IsBaseAddressSelection())
 			{
-				if(range_list_entry->IsBaseAddressSelection())
-				{
-					base_addr = range_list_entry->GetBaseAddress();
-					has_base_addr = true;
-				}
-				else
-				{
-					if(!has_base_addr)
-					{
-						if(!has_queried_cu_default_base_address)
-						{
-							has_base_addr = dw_cu->GetDefaultBaseAddress(base_addr);
-							has_queried_cu_default_base_address = true;
-						}
-					}
-					if(range_list_entry->HasOverlap(base_addr, addr, length)) return true;
-				}
-				if(range_list_entry->IsEndOfList()) break;
+				base_addr = range_list_entry->GetBaseAddress();
+				has_base_addr = true;
 			}
-			while((range_list_entry = range_list_entry->GetNext()) != 0);
+			else
+			{
+				if(!has_base_addr)
+				{
+					if(!has_queried_cu_default_base_address)
+					{
+						has_base_addr = dw_cu->GetDefaultBaseAddress(base_addr);
+						has_queried_cu_default_base_address = true;
+					}
+				}
+				if(range_list_entry->HasOverlap(base_addr, addr, length)) return true;
+			}
+			range_list_entry = range_list_entry->GetNext();
 		}
 	}
 
@@ -1363,7 +1391,23 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByName(unsigned int
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char *name) const
 {
-	if(GetTag() == DW_TAG_inlined_subroutine)
+	if(GetTag() == DW_TAG_GNU_call_site)
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+		
+		if(dw_at_abstract_origin)
+		{
+			return dw_at_abstract_origin->FindDataObject(name);
+		}
+		
+		if(debug)
+		{
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " which is a GNU call site doesn't have an abstract origin" << std::endl;
+		}
+		
+		return 0;
+	}
+	else if(GetTag() == DW_TAG_inlined_subroutine)
 	{
 		if(debug)
 		{
@@ -1374,11 +1418,6 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char 
 		
 		if(dw_at_abstract_origin)
 		{
-			if(debug)
-			{
-				debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-			}
-
 			return dw_at_abstract_origin->FindDataObject(name);
 		}
 		
@@ -1436,9 +1475,35 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char 
 			case DW_TAG_member:
 				{
 					const char *child_name = dw_child->GetName();
-					if(child_name)
+					if(child_name && (*child_name != 0))
 					{
 						if(strcmp(child_name, name) == 0) return dw_child;
+					}
+					else
+					{
+						switch(dw_cu->GetLanguage())
+						{
+							case DW_LANG_C89:
+							case DW_LANG_C:
+							case DW_LANG_C99:
+							{
+								// member is unnamed
+								const DWARF_DIE<MEMORY_ADDR> *dw_child_die_type = dw_child->GetTypeDIE();
+								if(dw_child_die_type &&
+								   ((dw_child_die_type->GetTag() == DW_TAG_structure_type) ||
+								   (dw_child_die_type->GetTag() == DW_TAG_union_type)))
+								{
+									// member type is struct or union
+									const char *child_type_name = dw_child_die_type->GetName();
+									if(!child_type_name || (*child_type_name == 0)) // struct/union has no name (anonymous)
+									{
+										// behave as if members of anonymous struct are members of container
+										return dw_child_die_type->FindDataMember(name);
+									}
+								}
+								break;
+							}
+						}
 					}
 				}
 				break;
@@ -1491,10 +1556,10 @@ void DWARF_DIE<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& nam
 		
 		if(dw_at_abstract_origin)
 		{
-			if(debug)
-			{
-				debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-			}
+// 			if(debug)
+// 			{
+// 				debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+// 			}
 
 			dw_at_abstract_origin->EnumerateDataObjectNames(name_set);
 		}
@@ -1528,43 +1593,40 @@ void DWARF_DIE<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& nam
 template <class MEMORY_ADDR>
 const char *DWARF_DIE<MEMORY_ADDR>::GetName() const
 {
+	if(cached_name.Valid()) return cached_name;
+	
 	const DWARF_String<MEMORY_ADDR> *dw_at_name;
 	if(GetAttributeValue(DW_AT_name, dw_at_name))
 	{
-		return dw_at_name->GetValue();
+		return cached_name = dw_at_name->GetValue();
 	}
 	
 	bool declaration_flag = false;
-	GetDeclarationFlag(declaration_flag);
-	
-	if(declaration_flag)
+	if(GetDeclarationFlag(declaration_flag) && declaration_flag)
 	{
 		const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
-		if(dw_die_specification) return dw_die_specification->GetName();
+		if(dw_die_specification) return cached_name = dw_die_specification->GetName();
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	if(dw_at_abstract_origin)
-	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
-
-		return dw_at_abstract_origin->GetName();
-	}
-	
-	return 0;
+	return cached_name = dw_at_abstract_origin ? dw_at_abstract_origin->GetName() : 0;
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetLowPC(MEMORY_ADDR& low_pc) const
 {
+	if(cached_low_pc.Valid())
+	{
+		if(!cached_low_pc.Present()) return false;
+		low_pc = cached_low_pc;
+		return true;
+	}
+	
 	const DWARF_Address<MEMORY_ADDR> *dw_at_low_pc;
 	if(GetAttributeValue(DW_AT_low_pc, dw_at_low_pc))
 	{
-		low_pc = dw_at_low_pc->GetValue();
+		cached_low_pc = low_pc = dw_at_low_pc->GetValue();
 		return true;
 	}
 	
@@ -1572,24 +1634,42 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLowPC(MEMORY_ADDR& low_pc) const
 	
 	if(dw_at_abstract_origin)
 	{
-		if(debug)
+		if(dw_at_abstract_origin->GetLowPC(low_pc))
 		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+			cached_low_pc = low_pc;
+			return true;
 		}
-
-		return dw_at_abstract_origin->GetLowPC(low_pc);
 	}
 	
+	cached_low_pc.Present(false);
 	return false;
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) const
 {
+	if(cached_high_pc.Valid())
+	{
+		if(!cached_high_pc.Present()) return false;
+		
+		high_pc = cached_high_pc;
+		is_offset = false;
+		return true;
+	}
+	
+	if(cached_high_pc_offset.Valid())
+	{
+		if(!cached_high_pc_offset.Present()) return false;
+
+		high_pc = cached_high_pc_offset;
+		is_offset = true;
+		return true;
+	}
+	
 	const DWARF_Address<MEMORY_ADDR> *dw_at_high_pc_addr;
 	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc_addr))
 	{
-		high_pc = dw_at_high_pc_addr->GetValue();
+		cached_high_pc = high_pc = dw_at_high_pc_addr->GetValue();
 		is_offset = false;
 		return true;
 	}
@@ -1597,7 +1677,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) co
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_high_pc_offset;
 	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc_offset))
 	{
-		high_pc = dw_at_high_pc_offset->to_uint();
+		cached_high_pc_offset = high_pc = dw_at_high_pc_offset->to_uint();
 		is_offset = true;
 		return true;
 	}
@@ -1606,14 +1686,22 @@ bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) co
 	
 	if(dw_at_abstract_origin)
 	{
-		if(debug)
+		if(dw_at_abstract_origin->GetHighPC(high_pc, is_offset))
 		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+			if(is_offset)
+			{
+				cached_high_pc = high_pc;
+			}
+			else
+			{
+				cached_high_pc_offset = high_pc;
+			}
+			return true;
 		}
-
-		return dw_at_abstract_origin->GetHighPC(high_pc, is_offset);
 	}
 	
+	cached_high_pc.Present(false);
+	cached_high_pc_offset.Present(false);
 	return false;
 }
 
@@ -1641,17 +1729,7 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetNonContigous
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	if(dw_at_abstract_origin)
-	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
-
-		return dw_at_abstract_origin->GetNonContigousAddressRange();
-	}
-	
-	return 0;
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetNonContigousAddressRange() : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -1677,17 +1755,7 @@ const DWARF_Expression<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSegment() const
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	if(dw_at_abstract_origin)
-	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
-
-		return dw_at_abstract_origin->GetSegment();
-	}
-	
-	return 0;
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetSegment() : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -1707,17 +1775,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCallingConvention(uint8_t& calling_convention) c
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	if(dw_at_abstract_origin)
-	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
-
-		return dw_at_abstract_origin->GetCallingConvention(calling_convention);
-	}
-	
-	return false;
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetCallingConvention(calling_convention) : false;
 }
 
 template <class MEMORY_ADDR>
@@ -1942,10 +2000,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLowerBound(unsigned int prc_num, int64_t& lower_
 	
 	if(dw_at_abstract_origin)
 	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
+// 		if(debug)
+// 		{
+// 			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+// 		}
 
 		return dw_at_abstract_origin->GetLowerBound(prc_num, lower_bound);
 	}
@@ -1965,10 +2023,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetUpperBound(unsigned int prc_num, int64_t& upper_
 	
 	if(dw_at_abstract_origin)
 	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
+// 		if(debug)
+// 		{
+// 			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+// 		}
 
 		return dw_at_abstract_origin->GetUpperBound(prc_num, upper_bound);
 	}
@@ -1985,10 +2043,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCount(unsigned int prc_num, uint64_t& count) con
 	
 	if(dw_at_abstract_origin)
 	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-		}
+// 		if(debug)
+// 		{
+// 			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
+// 		}
 		
 		if(dw_at_abstract_origin->GetCount(prc_num, count))
 		{
@@ -2379,24 +2437,61 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(unsigned int prc_num, MEMORY_ADDR pc, b
 			return false;
 		}
 		
-		const DWARF_DIE<MEMORY_ADDR> *dw_defining_die = dw_cu->FindDIEByName(GetTag(), name, false);
-		
-		if(!dw_defining_die) dw_defining_die = dw_handler->FindDIEByName(GetTag(), name, true);
-		
-		if(dw_defining_die)
+		const DWARF_DIE<MEMORY_ADDR> *dw_defining_die = 0;
+		if(cached_dw_defining_die.Valid())
 		{
-			if(debug)
-			{
-				debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", defining DIE #" << dw_defining_die->GetId() << " for non-defining DIE #" << id << std::endl;
-			}
+			dw_defining_die = cached_dw_defining_die;
 		}
 		else
 		{
+			dw_defining_die = dw_cu->FindDIEByName(GetTag(), name, false);
+		
+			if(!dw_defining_die) dw_defining_die = dw_handler->FindDIEByName(GetTag(), name, true);
+			
+			cached_dw_defining_die = dw_defining_die;
+		}
+		
+		if(!dw_defining_die)
+		{
 			if(debug)
 			{
-				debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", can't get defining DIE of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << std::endl;
+				debug_warning_stream << "In File \"" << dw_handler->GetFilename() << "\", can't get defining DIE of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << std::endl;
 			}
+			
+			bool external_flag = false;
+			if((GetTag() == DW_TAG_variable) && (GetExternalFlag(external_flag) && external_flag))
+			{
+				const unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table = dw_handler->GetSymbolTable();
+				if(symbol_table)
+				{
+					const unisim::util::debug::Symbol<MEMORY_ADDR> *symbol = symbol_table->FindSymbolByName(name, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT);
+					if(symbol)
+					{
+						if(debug)
+						{
+							debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", found Symbol \"" << symbol->GetName() << "\" corresponding to DIE #" << id << std::endl;
+						}
+						loc.Clear();
+						loc.SetAddress(symbol->GetAddress());
+						loc.SetByteSize(symbol->GetSize());
+						GetRanges(loc.GetRanges());
+						return true;
+					}
+					
+					debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", symbol \"" << name << "\" not found" << std::endl;
+					return false;
+				}
+
+				debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", no symbol table" << std::endl;
+				return false;
+			}
+			
 			return false;
+		}
+		
+		if(debug)
+		{
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", defining DIE #" << dw_defining_die->GetId() << " for non-defining DIE #" << id << std::endl;
 		}
 		
 		return dw_defining_die->GetLocation(prc_num, pc, has_frame_base, frame_base, loc);
@@ -2455,32 +2550,45 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(unsigned int prc_num, MEMORY_ADDR pc, b
 	}
 	loc.SetBitSize(dw_bit_size);
 
-	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = GetTypeDIE();
+	uint8_t dw_at_encoding = 0;
 	
-	if(GetAttributeValue(DW_AT_type, dw_type_ref))
+	if(!dw_die_type || !dw_die_type->GetEncoding(dw_at_encoding))
 	{
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
-
-		uint8_t dw_at_encoding = 0;
-		if(!dw_die_type->GetEncoding(dw_at_encoding))
-		{
-			dw_at_encoding = 0;
-		}
-		loc.SetEncoding(dw_at_encoding);
+		dw_at_encoding = 0;
 	}
+	loc.SetEncoding(dw_at_encoding);
 
 	return true;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const
 {
+	uint64_t dw_byte_size = 0;
+	if(!GetByteSize(prc_num, dw_byte_size))
+	{
+		if(debug)
+		{
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data member for DIE #" << id << std::endl;
+		}
+	}
+
+	uint64_t dw_bit_size = 0;
+	if(!GetBitSize(prc_num, dw_bit_size))
+	{
+		if(debug)
+		{
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data member for DIE #" << id << std::endl;
+		}
+	}
+	
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_const_value = 0;
 	if(GetAttributeValue(DW_AT_data_member_location, dw_at_const_value))
 	{
 		// constant offset from beginning of data object
 		MEMORY_ADDR offset = dw_at_const_value->to_uint();
-		loc.SetAddress(object_addr + offset);
+		loc.IncBitOffset(offset * 8);
 	}
 	else
 	{
@@ -2498,9 +2606,14 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(unsigned int prc_num, MEMORY_
 			MEMORY_ADDR addr;
 			DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 			if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
-			dw_loc_expr_vm.SetObjectAddress(object_addr);
 			dw_loc_expr_vm.SetPC(pc);
-			dw_loc_expr_vm.Push(object_addr);
+			if(loc.GetType() == DW_LOC_SIMPLE_MEMORY)
+			{
+				MEMORY_ADDR object_addr = loc.GetAddress();
+				dw_loc_expr_vm.SetObjectAddress(object_addr);
+				dw_loc_expr_vm.Push(object_addr);
+			}
+			loc.Clear();
 			bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
 			if(!dw_loc_expr_vm_status)
 			{
@@ -2513,55 +2626,31 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(unsigned int prc_num, MEMORY_
 		}
 		else
 		{
-			loc.SetAddress(object_addr);
+			int64_t dw_bit_offset = 0;
+			int64_t dw_data_member_bit_offset = 0;
+			if(GetBitOffset(prc_num, dw_data_member_bit_offset))
+			{
+				dw_bit_offset = (dw_handler->GetArchEndianness() == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_byte_size) - dw_bit_size - dw_data_member_bit_offset;
+			}
+			else if(!GetDataBitOffset(prc_num, dw_bit_offset))
+			{
+				dw_bit_offset = 0;
+			}
+			loc.IncBitOffset(dw_bit_offset);
 		}
 	}
 	
-	uint64_t dw_byte_size = 0;
-	if(!GetByteSize(prc_num, dw_byte_size))
-	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data member for DIE #" << id << std::endl;
-		}
-	}
 	loc.SetByteSize(dw_byte_size);
-
-	uint64_t dw_bit_size = 0;
-	if(!GetBitSize(prc_num, dw_bit_size))
-	{
-		if(debug)
-		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data member for DIE #" << id << std::endl;
-		}
-	}
 	loc.SetBitSize(dw_bit_size);
 	
-	int64_t dw_bit_offset = 0;
-	int64_t dw_data_member_bit_offset = 0;
-	if(GetBitOffset(prc_num, dw_data_member_bit_offset))
-	{
-		dw_bit_offset = (dw_handler->GetArchEndianness() == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_byte_size) - dw_bit_size - dw_data_member_bit_offset;
-	}
-	else if(!GetDataBitOffset(prc_num, dw_bit_offset))
-	{
-		dw_bit_offset = 0;
-	}
-	loc.SetBitOffset(dw_bit_offset);
-
-	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = GetTypeDIE();
+	uint8_t dw_at_encoding = 0;
 	
-	if(GetAttributeValue(DW_AT_type, dw_type_ref))
+	if(!dw_die_type || !dw_die_type->GetEncoding(dw_at_encoding))
 	{
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
-		
-		uint8_t dw_at_encoding = 0;
-		if(!dw_die_type->GetEncoding(dw_at_encoding))
-		{
-			dw_at_encoding = 0;
-		}
-		loc.SetEncoding(dw_at_encoding);
+		dw_at_encoding = 0;
 	}
+	loc.SetEncoding(dw_at_encoding);
 
 	return true;
 }
@@ -2569,31 +2658,67 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(unsigned int prc_num, MEMORY_
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetExternalFlag(bool& external_flag) const
 {
+	if(cached_external_flag.Valid())
+	{
+		if(!cached_external_flag.Present()) return false;
+		
+		external_flag = cached_external_flag;
+		return true;
+	}
+	
 	const DWARF_Flag<MEMORY_ADDR> *dw_at_external_value = 0;
 	if(GetAttributeValue(DW_AT_external, dw_at_external_value))
 	{
-		external_flag = dw_at_external_value->GetValue();
+		cached_external_flag = external_flag = dw_at_external_value->GetValue();
 		return true;
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	return dw_at_abstract_origin ? dw_at_abstract_origin->GetExternalFlag(external_flag) : false;
+	if(dw_at_abstract_origin)
+	{
+		if(dw_at_abstract_origin->GetExternalFlag(external_flag))
+		{
+			cached_external_flag = external_flag;
+			return true;
+		}
+	}
+	
+	cached_external_flag.Present(false);
+	return false;
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetDeclarationFlag(bool& declaration_flag) const
 {
+	if(cached_declaration_flag.Valid())
+	{
+		if(!cached_declaration_flag.Present()) return false;
+		
+		declaration_flag = cached_declaration_flag;
+		return true;
+	}
+	
 	const DWARF_Flag<MEMORY_ADDR> *dw_at_declaration_value = 0;
 	if(GetAttributeValue(DW_AT_declaration, dw_at_declaration_value))
 	{
-		declaration_flag = dw_at_declaration_value->GetValue();
+		cached_declaration_flag = declaration_flag = dw_at_declaration_value->GetValue();
 		return true;
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	return dw_at_abstract_origin ? dw_at_abstract_origin->GetDeclarationFlag(declaration_flag) : false;
+	if(dw_at_abstract_origin)
+	{
+		if(dw_at_abstract_origin->GetDeclarationFlag(declaration_flag))
+		{
+			cached_declaration_flag = declaration_flag;
+			return true;
+		}
+	}
+	
+	cached_declaration_flag.Present(false);
+	return false;
 }
 
 template <class MEMORY_ADDR>
@@ -2669,22 +2794,19 @@ unsigned int DWARF_DIE<MEMORY_ADDR>::GetSubRangeCount() const
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetAbstractOrigin() const
 {
+	if(cached_dw_abstract_origin.Valid()) return cached_dw_abstract_origin;
+	
 	const DWARF_Reference<MEMORY_ADDR> *dw_at_abstract_origin_ref = 0;
-	if(!GetAttributeValue(DW_AT_abstract_origin, dw_at_abstract_origin_ref)) return 0;
+	if(!GetAttributeValue(DW_AT_abstract_origin, dw_at_abstract_origin_ref)) return cached_dw_abstract_origin = 0;
 	
-	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = dw_at_abstract_origin_ref->GetValue();
-	
-	if(debug)
-	{
-		debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << std::endl;
-	}
-	
-	return dw_at_abstract_origin;
+	return cached_dw_abstract_origin = dw_at_abstract_origin_ref->GetValue();
 }
 
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSpecification() const
 {
+	if(cached_specification.Valid()) return cached_specification;
+	
 	const DWARF_Reference<MEMORY_ADDR> *dw_at_specification_ref = 0;
 	if(GetAttributeValue(DW_AT_specification, dw_at_specification_ref))
 	{
@@ -2695,12 +2817,12 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSpecification() const
 			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", specification of DIE #" << id << " is DIE #" << dw_at_specification->GetId() << std::endl;
 		}
 		
-		return dw_at_specification;
+		return cached_specification = dw_at_specification;
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	return dw_at_abstract_origin ? dw_at_abstract_origin->GetSpecification() : 0;
+	return cached_specification = dw_at_abstract_origin ? dw_at_abstract_origin->GetSpecification() : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -2736,15 +2858,17 @@ bool DWARF_DIE<MEMORY_ADDR>::GetConstValue(uint64_t& const_value) const
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetTypeDIE() const
 {
+	if(cached_dw_type_die.Valid()) return cached_dw_type_die;
+	
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	if(GetAttributeValue(DW_AT_type, dw_type_ref))
 	{
-		return dw_type_ref->GetValue();
+		return cached_dw_type_die = dw_type_ref->GetValue();
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	return dw_at_abstract_origin ? dw_at_abstract_origin->GetTypeDIE() : 0;
+	return cached_dw_type_die = dw_at_abstract_origin ? dw_at_abstract_origin->GetTypeDIE() : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -2873,8 +2997,8 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 								{
 									const DWARF_DIE<MEMORY_ADDR> *dw_die_member = dw_child;
 									const char *member_name = dw_die_member->GetName();
-									if(member_name)
-									{
+// 									if(member_name)
+// 									{
 										const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type = dw_die_member->GetTypeDIE();
 										if(dw_die_member_type)
 										{
@@ -2891,7 +3015,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 											
 											comp_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->GetType(prc_num) : new unisim::util::debug::Type(), bit_size));
 										}
-									}
+// 									}
 								}
 								break;
 						}
@@ -3318,7 +3442,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetTypeOf(unsigned int 
 template <class MEMORY_ADDR>
 const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSubProgram(unsigned int prc_num) const
 {
-	if(cached_subprogram) return cached_subprogram;
+	if(cached_subprogram.Valid()) return cached_subprogram;
 	
 	bool external_flag = false;
 	bool declaration_flag = false;
@@ -3359,7 +3483,7 @@ const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetS
 template <class MEMORY_ADDR>
 const unisim::util::debug::Variable *DWARF_DIE<MEMORY_ADDR>::GetVariable(unsigned int prc_num) const
 {
-	if(cached_variable) return cached_variable;
+	if(cached_variable.Valid()) return cached_variable;
 	
 	bool external_flag = false;
 	bool declaration_flag = false;

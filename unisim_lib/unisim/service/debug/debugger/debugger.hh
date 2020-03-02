@@ -93,6 +93,7 @@ struct CONFIG
 template <typename CONFIG>
 class Debugger
 	: public unisim::kernel::Client<unisim::service::interfaces::Blob<typename CONFIG::ADDRESS> >
+	, public unisim::kernel::VariableBaseListener
 {
 public:
 	typedef typename CONFIG::ADDRESS ADDRESS;
@@ -607,6 +608,8 @@ private:
 	
 	void Lock();
 	void Unlock();
+	
+	virtual void VariableBaseNotify(const unisim::kernel::VariableBase *var);
 };
 
 } // end of namespace debugger

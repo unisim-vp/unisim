@@ -108,6 +108,9 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 	, enable_elf64_loaders()
 	, enable_coff_loaders()
 {
+	param_verbose.AddListener(this);
+	param_debug_dwarf.AddListener(this);
+	
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_init(&schedule_mutex, NULL);
 	
@@ -2107,6 +2110,41 @@ template <typename CONFIG>
 void Debugger<CONFIG>::Unlock()
 {
 	pthread_mutex_unlock(&mutex);
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::VariableBaseNotify(const unisim::kernel::VariableBase *var)
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		if(var == &param_verbose)
+		{
+			elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+		}
+		else if(var == &param_debug_dwarf)
+		{
+			elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+		}
+		
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		if(var == &param_verbose)
+		{
+			elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+		}
+		else if(var == &param_debug_dwarf)
+		{
+			elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+		}
+	}
 }
 
 } // end of namespace debugger

@@ -721,8 +721,9 @@ public:
 	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
 	bool GetLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool HasRanges() const;
+	bool GetRanges(const DWARF_RangeListEntry<MEMORY_ADDR> *& range_list_entry) const;
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
 	bool GetDeclarationFlag(bool& declaration_flag) const;
 	bool GetOrdering(uint8_t& ordering) const;
@@ -763,22 +764,49 @@ public:
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 	template <typename VISITOR> void ScanType(VISITOR& visitor) const;
 private:
+	template <typename T>
+	struct CachedValue
+	{
+		CachedValue() : status(0), value() {}
+		CachedValue<T>& operator = (const T& v) { value = v; Present(true); return *this; }
+		const CachedValue<T>& operator = (const T& v) const { value = v; Present(true); return *this; }
+		operator const T& () const { return value; }
+		operator T& () { return value; }
+		bool Valid() const { return status & 1; }
+		bool Present() const { return status & 2; }
+		void Present(bool present) const { status = present ? 3 : 1; }
+	private:
+		mutable uint8_t status;
+		mutable T value;
+	};
+	
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
-	bool debug;
+	const bool& debug;
 	uint64_t offset;
 	unsigned int id;
 	const DWARF_Abbrev *abbrev;
 	std::vector<DWARF_DIE<MEMORY_ADDR> *> children;
 	std::vector<DWARF_Attribute<MEMORY_ADDR> *> attributes;
+	CachedValue<const char *> cached_name;
+	CachedValue<bool> cached_declaration_flag;
+	CachedValue<bool> cached_external_flag;
+	CachedValue<const DWARF_DIE<MEMORY_ADDR> *> cached_specification;
+	CachedValue<const DWARF_DIE<MEMORY_ADDR> *> cached_dw_abstract_origin;
+	CachedValue<const DWARF_DIE<MEMORY_ADDR> *> cached_dw_type_die;
+	CachedValue<const DWARF_DIE<MEMORY_ADDR> *> cached_dw_defining_die;
+	CachedValue<MEMORY_ADDR> cached_low_pc;
+	CachedValue<MEMORY_ADDR> cached_high_pc;
+	CachedValue<MEMORY_ADDR> cached_high_pc_offset;
+	CachedValue<const DWARF_RangeListEntry<MEMORY_ADDR> *> cached_ranges;
 	typedef std::vector<unisim::util::debug::Type const *> TypeCache; 
 	mutable TypeCache type_cache;
-	mutable unisim::util::debug::SubProgram<MEMORY_ADDR> *cached_subprogram;
-	mutable unisim::util::debug::Variable *cached_variable;
+	CachedValue<const unisim::util::debug::SubProgram<MEMORY_ADDR> *> cached_subprogram;
+	CachedValue<const unisim::util::debug::Variable *> cached_variable;
 };
 
 

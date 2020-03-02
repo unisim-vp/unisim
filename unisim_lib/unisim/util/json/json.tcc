@@ -46,7 +46,9 @@ namespace json {
 
 template <typename VISITOR>
 JSON_Lexer<VISITOR>::JSON_Lexer()
-	: eof(false)
+	: enable_c_comments(false)
+	, enable_cpp_comments(false)
+	, eof(false)
 	, error(false)
 	, token(TOK_VOID)
 	, look_ahead(TOK_VOID)
@@ -94,6 +96,39 @@ void JSON_Lexer<VISITOR>::Reset()
 	colno = 1;
 	token_lineno = 1;
 	token_colno = 1;
+}
+
+template <typename VISITOR>
+bool JSON_Lexer<VISITOR>::SetOption(JSON_OPTION option, bool value)
+{
+	switch(option)
+	{
+		case OPT_ENABLE_C_COMMENTS  : enable_c_comments = value; return true;
+		case OPT_ENABLE_CPP_COMMENTS: enable_cpp_comments = value; return true;
+	}
+	return false;
+}
+
+template <typename VISITOR>
+bool JSON_Lexer<VISITOR>::GetOption(JSON_OPTION option, bool& value) const
+{
+	switch(option)
+	{
+		case OPT_ENABLE_C_COMMENTS  : value = enable_c_comments; return true;
+		case OPT_ENABLE_CPP_COMMENTS: value = enable_cpp_comments; return true;
+	}
+	return false;
+}
+
+template <typename VISITOR>
+bool JSON_Lexer<VISITOR>::GetOptionFlag(JSON_OPTION option) const
+{
+	switch(option)
+	{
+		case OPT_ENABLE_C_COMMENTS  :return enable_c_comments;
+		case OPT_ENABLE_CPP_COMMENTS: return enable_cpp_comments;
+	}
+	return false;
 }
 
 template <typename VISITOR>
@@ -202,6 +237,14 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					Append(c);
 					colno++;
 					state = 21;
+					break;
+				}
+				if((enable_c_comments || enable_cpp_comments) && (c == '/'))
+				{
+					text.clear();
+					line += c;
+					colno++;
+					state = 30;
 					break;
 				}
 
@@ -604,6 +647,116 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 				}
 				token = TOK_FLOAT;
 				break;
+				
+			case 30: // slash
+				if(stream.get(c).good())
+				{
+					if(enable_c_comments && (c == '*')) // begin of C comment?
+					{
+						line += c;
+						colno++;
+						state = 31;
+						break;
+					}
+					if(enable_cpp_comments && (c == '/')) // begin of C++ comment?
+					{
+						line += c;
+						colno++;
+						state = 33;
+						break;
+					}
+					break;
+				}
+				token = TOK_ERROR;
+				break;
+				
+			case 31: // C comment
+				if(stream.get(c).good())
+				{
+					if(c == '*') // star in C comment?
+					{
+						line += c;
+						colno++;
+						state = 32; 
+						break;
+					}
+					if(c == '\\') // escape?
+					{
+						line += c;
+						colno++;
+						state = 34;
+						break;
+					}
+					if(c == '\r') break;
+					if(c == '\n') { lineno++; token_lineno = lineno; token_colno = colno = 1; line.clear(); break; }
+					line += c;
+					colno++;
+					break;
+				}
+				token = TOK_ERROR;
+				break;
+				
+			case 32: // star in C comment
+				if(stream.get(c).good())
+				{
+					if(c == '/') // end of comment?
+					{
+						line += c;
+						colno++;
+						state = 0;
+						break;
+					}
+					if(c == '\r') break;
+					if(c == '\n') { lineno++; token_lineno = lineno; token_colno = colno = 1; line.clear(); state = 31; break; }
+					line += c;
+					colno++;
+					state = 31;
+					break;
+				}
+				token = TOK_ERROR;
+				break;
+			case 33: // C++ comment
+				if(stream.get(c).good())
+				{
+					if(c == '\\') // escape?
+					{
+						line += c;
+						colno++;
+						state = 35;
+						break;
+					}
+					if(c == '\r') break;
+					if(c == '\n') { lineno++; token_lineno = lineno; token_colno = colno = 1; line.clear(); state = 0; break; }
+					line += c;
+					colno++;
+					break;
+				}
+				token = TOK_ERROR;
+				break;
+			case 34: // escape in C comment
+				if(stream.get(c).good())
+				{
+					if(c == '\r') break;
+					if(c == '\n') { lineno++; token_lineno = lineno; token_colno = colno = 1; line.clear(); break; }
+					line += c;
+					colno++;
+					state = 31;
+					break;
+				}
+				token = TOK_ERROR;
+				break;
+			case 35: // escape in C++ comment
+				if(stream.get(c).good())
+				{
+					if(c == '\r') break;
+					if(c == '\n') { lineno++; token_lineno = lineno; token_colno = colno = 1; line.clear();  break; }
+					line += c;
+					colno++;
+					state = 33;
+					break;
+				}
+				token = TOK_ERROR;
+				break;
 		}
 	}
 	while(!token);
@@ -776,7 +929,7 @@ typename VISITOR::JSON_OBJECT_TYPE JSON_Parser<VISITOR>::ParseObject(std::istrea
 	
 	if(token != TOK_RIGHT_BRACE)
 	{
-		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_RIGHT_BRACE));
+		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_COMMA) + " or " + ToString(TOK_RIGHT_BRACE));
 		visitor.Release(members);
 		return JSON_OBJECT_TYPE();
 	}
@@ -898,7 +1051,7 @@ typename VISITOR::JSON_ARRAY_TYPE JSON_Parser<VISITOR>::ParseArray(std::istream&
 	
 	if(token != TOK_RIGHT_BRACKET)
 	{
-		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_RIGHT_BRACKET));
+		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_COMMA) + " or " + ToString(unisim::util::json::TOK_RIGHT_BRACKET));
 		visitor.Release(elements);
 		return JSON_ARRAY_TYPE();
 	}

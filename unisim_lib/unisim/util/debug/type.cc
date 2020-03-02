@@ -274,7 +274,8 @@ std::string BooleanType::BuildCDecl(char const **identifier, bool collapsed) con
 }
 
 Member::Member(const char *_name, const Type *_type, uint64_t _bit_size)
-	: name(_name)
+	: name(_name ? _name : "")
+	, has_name(_name != 0)
 	, type(_type)
 	, bit_size(_bit_size)
 {
@@ -297,6 +298,11 @@ const char *Member::GetName() const
 	return name.c_str();
 }
 
+bool Member::HasName() const
+{
+	return has_name;
+}
+
 const Type *Member::GetType() const
 {
 	return type;
@@ -310,7 +316,12 @@ uint64_t Member::GetBitSize() const
 void Member::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
 {
 	visitor->Visit(this);
-	std::string member_path = path + '.' + name;
+	std::string member_path = path;
+	if(has_name)
+	{
+		member_path += '.';
+		member_path += name;
+	}
 	type->DFS(member_path, visitor, follow_pointer);
 }
 
@@ -570,6 +581,62 @@ const Type *PointerType::GetTypeOfDereferencedObject() const
 	return type_of_dereferenced_object;
 }
 
+bool PointerType::IsNullTerminatedStringPointer() const
+{
+	if(type_of_dereferenced_object->GetClass() == T_CHAR)
+	{
+		// char *
+		return true;
+	}
+	else
+	{
+		if(type_of_dereferenced_object->GetClass() == T_CONST)
+		{
+			const ConstType *const_type = static_cast<const ConstType *>(type_of_dereferenced_object);
+			if(const_type->GetType()->GetClass() == T_VOLATILE)
+			{
+				const VolatileType *volatile_type = static_cast<const VolatileType *>(const_type->GetType());
+				if(volatile_type->GetType()->GetClass() == T_CHAR)
+				{
+					// char volatile const *
+					return true;
+				}
+			}
+			else
+			{
+				if(const_type->GetType()->GetClass() == T_CHAR)
+				{
+					// char const *
+					return true;
+				}
+			}
+		}
+		else if(type_of_dereferenced_object->GetClass() == T_VOLATILE)
+		{
+			const VolatileType *volatile_type = static_cast<const VolatileType *>(type_of_dereferenced_object);
+			if(volatile_type->GetType()->GetClass() == T_CONST)
+			{
+				const ConstType *const_type = static_cast<const ConstType *>(volatile_type->GetType());
+				if(const_type->GetClass() == T_CHAR)
+				{
+					// char const volatile *
+					return true;
+				}
+			}
+			else
+			{
+				if(volatile_type->GetType()->GetClass() == T_CHAR)
+				{
+					// char volatile *
+					return true;
+				}
+			}
+		}
+	}
+	
+	return false;
+}
+
 void PointerType::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
 {
 	if(follow_pointer)
@@ -585,8 +652,28 @@ void PointerType::DFS(const std::string& path, const TypeVisitor *visitor, bool 
 
 std::string PointerType::BuildCDecl(char const **identifier, bool collapsed) const
 {
+	const Type *nested_type = type_of_dereferenced_object;
+	do
+	{
+		if(nested_type->GetClass() == T_FUNCTION) break;
+		if(nested_type->GetClass() == T_ARRAY) break;
+		if(nested_type->GetClass() == T_CONST)
+		{
+			nested_type = static_cast<const ConstType *>(nested_type)->GetType();
+		}
+		if(nested_type->GetClass() == T_VOLATILE)
+		{
+			nested_type = static_cast<const VolatileType *>(nested_type)->GetType();
+		}
+		else
+		{
+			break;
+		}
+	}
+	while(1);
+	
 	std::stringstream sstr;
-	if((type_of_dereferenced_object->GetClass() == T_FUNCTION) || (type_of_dereferenced_object->GetClass() == T_ARRAY))
+	if((nested_type->GetClass() == T_FUNCTION) || (nested_type->GetClass() == T_ARRAY))
 	{
 		std::string s("(*");
 		if(identifier && (*identifier))
@@ -803,7 +890,8 @@ std::string ConstType::BuildCDecl(char const **identifier, bool collapsed) const
 		}
 		return sstr.str();
 	}
-	
+
+	// Discarding const for arrays
 	return type->BuildCDecl(identifier, collapsed);
 }
 
@@ -929,10 +1017,36 @@ void VolatileType::DFS(const std::string& path, const TypeVisitor *visitor, bool
 
 std::string VolatileType::BuildCDecl(char const **identifier, bool collapsed) const
 {
-	std::stringstream sstr;
+// 	std::stringstream sstr;
+// 	
+// 	sstr << type->BuildCDecl(identifier, true) << " volatile";
+// 	return sstr.str();
+	if(type->GetClass() != T_ARRAY)
+	{
+		std::stringstream sstr;
 	
-	sstr << type->BuildCDecl(identifier, true) << " volatile";
-	return sstr.str();
+		if(identifier && (*identifier))
+		{
+			std::string s("volatile");
+			s += ' ';
+			s += (*identifier);
+			char const *s_cstr = s.c_str();
+			sstr << type->BuildCDecl(&s_cstr, collapsed);
+			if(!s_cstr)
+			{
+				*identifier = 0;
+			}
+		}
+		else
+		{
+			sstr << type->BuildCDecl(0, collapsed);
+			sstr << " volatile";
+		}
+		return sstr.str();
+	}
+	
+	// Discarding volatile for arrays
+	return type->BuildCDecl(identifier, collapsed);
 }
 
 } // end of namespace debug

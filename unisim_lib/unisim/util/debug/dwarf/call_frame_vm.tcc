@@ -709,12 +709,11 @@ std::ostream& operator << (std::ostream& os, const DWARF_CFI<MEMORY_ADDR>& cfi)
 template <class MEMORY_ADDR>
 DWARF_CallFrameVM<MEMORY_ADDR>::DWARF_CallFrameVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, debug(false)
+	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, debug_info_stream(_dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
 	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 {
-	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>

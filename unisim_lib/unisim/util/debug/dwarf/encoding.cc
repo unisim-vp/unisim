@@ -325,9 +325,15 @@ const char *DWARF_GetATName(uint16_t dw_at)
 		case DW_AT_GNU_addr_base: return "DW_AT_GNU_addr_base";
 		case DW_AT_GNU_pubnames: return "DW_AT_GNU_pubnames";
 		case DW_AT_GNU_pubtypes: return "DW_AT_GNU_pubtypes";
+		case DW_AT_GNU_discriminator: return "DW_AT_GNU_discriminator";
+		case DW_AT_GNU_locviews: return "DW_AT_GNU_locviews";
+		case DW_AT_GNU_entry_view: return "DW_AT_GNU_entry_view";
 		case DW_AT_VMS_rtnbeg_pd_address: return "DW_AT_VMS_rtnbeg_pd_address";
 		case DW_AT_use_GNAT_descriptive_type: return "DW_AT_use_GNAT_descriptive_type";
 		case DW_AT_GNAT_descriptive_type: return "DW_AT_GNAT_descriptive_type";
+		case DW_AT_GNU_numerator: return "DW_AT_GNU_numerator";
+		case DW_AT_GNU_denominator: return "DW_AT_GNU_denominator";
+		case DW_AT_GNU_bias : return "DW_AT_GNU_bias";
 		case DW_AT_upc_threads_scaled: return "DW_AT_upc_threads_scaled";
 		case DW_AT_PGI_lbase: return "DW_AT_PGI_lbase";
 		case DW_AT_PGI_soffset: return "DW_AT_PGI_soffset ";

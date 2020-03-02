@@ -121,7 +121,7 @@ private:
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
-	bool debug;
+	const bool& debug;
 	DWARF_Format dw_fmt;
 	DWARF_Version dw_ver;
 	
