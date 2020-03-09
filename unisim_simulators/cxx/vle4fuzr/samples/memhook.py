@@ -34,7 +34,7 @@ src = 0x2000
 dst = 0x3000
 unipy.EMU_mem_init(ctx, src, 0x1000, perms=1) # source memory (read only)
 unipy.EMU_mem_init(ctx, dst, 0x1000, perms=2) # destination memory (write only)
-unipy.EMU_mem_write(ctx,src, ''.join(chr(x+65) for x in range(size)))
+unipy.EMU_mem_write(ctx,src, (''.join(chr(x+65) for x in range(size))).encode('ascii'))
 
 # initialize machine registers
 unipy.EMU_reg_write(ctx, unipy.EMU_ARM_REG_R(0), dst)
