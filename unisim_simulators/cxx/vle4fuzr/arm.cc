@@ -394,7 +394,7 @@ void
 ArmProcessor::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("Bad size");
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not unisim::component::cxx::processor::arm::sctlr::A.Get( this->SCTLR )))
