@@ -58,8 +58,12 @@ struct GIL : public CLI, public Opts
   }
   
   GIL()
-    : inputname( 0 )
+    : inputname( 0 ), lookupdirs()
   {}
+
+  virtual char const* appname() const override { return GENISSLIB; }
+  virtual ConstStr locate( char const* _name ) const override;
+  bool add_lookupdir( char const* _dir );
   
   bool setminwordsize( char const* _arg )
   {
@@ -187,6 +191,7 @@ struct GIL : public CLI, public Opts
   }
 
   char const*      inputname;
+  std::vector<ConstStr>   lookupdirs;
 };
 
 int
@@ -272,7 +277,7 @@ Opts::Opts()
 {}
 
 bool
-Opts::add_lookupdir( char const* _dir )
+GIL::add_lookupdir( char const* _dir )
 {
   if (not _dir)
     return false;
@@ -340,11 +345,11 @@ Opts::add_lookupdir( char const* _dir )
 }
 
 ConstStr
-Opts::locate( char const* _name )
+GIL::locate( char const* _name ) const
 {
-  for (std::vector<ConstStr>::iterator iter = lookupdirs.begin(); iter != lookupdirs.end(); iter++)
+  for (auto const& dir : lookupdirs)
     {
-      std::string buffer = std::string() + iter->str() + "/" + _name;
+      std::string buffer = std::string() + dir.str() + "/" + _name;
       if (access( buffer.c_str(), R_OK ) != 0) continue;
       return buffer.c_str();
     }

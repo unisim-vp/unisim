@@ -16,7 +16,6 @@
  ***************************************************************************/
 
 #include <isa.hh>
-#include <main.hh>
 #include <operation.hh>
 #include <subdecoder.hh>
 #include <strtools.hh>

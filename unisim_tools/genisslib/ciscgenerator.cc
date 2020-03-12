@@ -17,7 +17,6 @@
 
 #include <ciscgenerator.hh>
 #include <product.hh>
-#include <main.hh>
 #include <isa.hh>
 #include <scanner.hh>
 #include <operation.hh>
