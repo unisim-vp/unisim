@@ -33,7 +33,7 @@
 // external options (environ, command-line...)
 struct Opts
 {
-  Opts();
+  Opts(char const*);
   
   char const*             outputprefix;
   unsigned int            verbosity;
@@ -47,6 +47,7 @@ struct Opts
   
   virtual ConstStr        locate( char const* _name ) const = 0;
   virtual char const*     appname() const = 0;
+  virtual char const*     appversion() const = 0;
 };
 
 struct Isa

@@ -58,10 +58,11 @@ struct GIL : public CLI, public Opts
   }
   
   GIL()
-    : inputname( 0 ), lookupdirs()
+    : CLI(), Opts(DEFAULT_OUTPUT), inputname( 0 ), lookupdirs()
   {}
 
   virtual char const* appname() const override { return GENISSLIB; }
+  virtual char const* appversion() const override { return GENISSLIB_VERSION; }
   virtual ConstStr locate( char const* _name ) const override;
   bool add_lookupdir( char const* _dir );
   
@@ -263,18 +264,6 @@ GIL_MAIN (int argc, char** argv, char** envp)
   
   return 0;
 }
-
-Opts::Opts()
-  : outputprefix( DEFAULT_OUTPUT )
-  , verbosity( 1 )
-  , expandname( 0 )
-  , depfilename( 0 )
-  , minwordsize( 32 )
-  , sourcelines( true )
-  , privatemembers( true )
-  , specialization( true )
-  , comments( true )
-{}
 
 bool
 GIL::add_lookupdir( char const* _dir )
