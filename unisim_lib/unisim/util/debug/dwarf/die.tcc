@@ -68,6 +68,7 @@ DWARF_DIE<MEMORY_ADDR>::DWARF_DIE(DWARF_CompilationUnit<MEMORY_ADDR> *_dw_cu, DW
 	, cached_high_pc()
 	, cached_high_pc_offset()
 	, cached_ranges()
+	, cached_decl_location()
 	, type_cache()
 	, cached_subprogram()
 	, cached_variable()
@@ -90,6 +91,14 @@ DWARF_DIE<MEMORY_ADDR>::~DWARF_DIE()
 		delete children[i];
 	}
 	
+	if(cached_decl_location.Valid())
+	{
+		if(cached_decl_location)
+		{
+			(*cached_decl_location).Release();
+		}
+	}
+
 	for(typename TypeCache::const_iterator it = type_cache.begin(); it != type_cache.end(); ++it)
 	{
 		unisim::util::debug::Type const *cached_type = *it;
@@ -98,12 +107,18 @@ DWARF_DIE<MEMORY_ADDR>::~DWARF_DIE()
 	
 	if(cached_subprogram.Valid())
 	{
-		(*cached_subprogram).Release();
+		if(cached_subprogram)
+		{
+			(*cached_subprogram).Release();
+		}
 	}
 	
 	if(cached_variable.Valid())
 	{
-		(*cached_variable).Release();
+		if(cached_variable)
+		{
+			(*cached_variable).Release();
+		}
 	}
 }
 
@@ -1495,7 +1510,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char 
 								{
 									// member type is struct or union
 									const char *child_type_name = dw_child_die_type->GetName();
-									if(!child_type_name || (*child_type_name == 0)) // struct/union has no name (anonymous)
+									if(!child_type_name || (*child_type_name == 0)) // struct/union has no name or name is an empty string (anonymous)
 									{
 										// behave as if members of anonymous struct are members of container
 										return dw_child_die_type->FindDataMember(name);
@@ -1540,6 +1555,57 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindSubProgram(const char 
 	}
 	
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindVariable(const char *name) const
+{
+	uint16_t tag = GetTag();
+	switch(tag)
+	{
+		case unisim::util::debug::dwarf::DW_TAG_subprogram:
+		case unisim::util::debug::dwarf::DW_TAG_inlined_subroutine:
+		case unisim::util::debug::dwarf::DW_TAG_entry_point:
+			return 0;
+	}
+	
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+
+		switch(dw_child->GetTag())
+		{
+			case DW_TAG_variable:
+			{
+				bool child_external_flag = false;
+				if(dw_child->GetExternalFlag(child_external_flag) && child_external_flag)
+				{
+					bool child_declaration_flag = false;
+					if(!dw_child->GetDeclarationFlag(child_declaration_flag) || !child_declaration_flag)
+					{
+						const char *child_name = dw_child->GetName();
+						if(child_name)
+						{
+							if(strcmp(child_name, name) == 0) return dw_child;
+						}
+					}
+				}
+				break;
+			}
+				
+			default:
+			{
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_variable = dw_child->FindVariable(name);
+				if(dw_die_variable) return dw_die_variable;
+				break;
+			}
+		}
+	}
+	
+	return 0;
+	
 }
 
 template <class MEMORY_ADDR>
@@ -1601,12 +1667,8 @@ const char *DWARF_DIE<MEMORY_ADDR>::GetName() const
 		return cached_name = dw_at_name->GetValue();
 	}
 	
-	bool declaration_flag = false;
-	if(GetDeclarationFlag(declaration_flag) && declaration_flag)
-	{
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
-		if(dw_die_specification) return cached_name = dw_die_specification->GetName();
-	}
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+	if(dw_die_specification) return cached_name = dw_die_specification->GetName();
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
@@ -2673,6 +2735,16 @@ bool DWARF_DIE<MEMORY_ADDR>::GetExternalFlag(bool& external_flag) const
 		return true;
 	}
 	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+	if(dw_die_specification)
+	{
+		if(dw_die_specification->GetExternalFlag(external_flag))
+		{
+			cached_external_flag = external_flag;
+			return true;
+		}
+	}
+	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
 	if(dw_at_abstract_origin)
@@ -2812,12 +2884,16 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSpecification() const
 	{
 		const DWARF_DIE<MEMORY_ADDR> *dw_at_specification = dw_at_specification_ref->GetValue();
 		
-		if(debug)
+		bool declaration_flag = false;
+		if(dw_at_specification->GetDeclarationFlag(declaration_flag) && declaration_flag)
 		{
-			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", specification of DIE #" << id << " is DIE #" << dw_at_specification->GetId() << std::endl;
+			if(debug)
+			{
+				debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", specification of DIE #" << id << " is DIE #" << dw_at_specification->GetId() << std::endl;
+			}
+			
+			return cached_specification = dw_at_specification;
 		}
-		
-		return cached_specification = dw_at_specification;
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
@@ -2866,6 +2942,16 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetTypeDIE() const
 		return cached_dw_type_die = dw_type_ref->GetValue();
 	}
 	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+	if(dw_die_specification)
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_die_specification->GetTypeDIE();
+		if(dw_die_type)
+		{
+			return cached_dw_type_die = dw_die_type;
+		}
+	}
+	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
 	return cached_dw_type_die = dw_at_abstract_origin ? dw_at_abstract_origin->GetTypeDIE() : 0;
@@ -2884,6 +2970,134 @@ bool DWARF_DIE<MEMORY_ADDR>::GetInlineCode(uint8_t& inline_code) const
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
 	return dw_at_abstract_origin ? dw_at_abstract_origin->GetInlineCode(inline_code) : 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetDeclFile(unsigned int& decl_file) const
+{
+	const DWARF_UnsignedConstant<MEMORY_ADDR> *dw_at_decl_file = 0;
+	if(GetAttributeValue(DW_AT_decl_file, dw_at_decl_file))
+	{
+		decl_file = dw_at_decl_file->to_uint();
+		return true;
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+	if(dw_die_specification)
+	{
+		if(dw_die_specification->GetDeclFile(decl_file))
+		{
+			return true;
+		}
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetDeclFile(decl_file) : 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetDeclFilename(std::string& decl_filename) const
+{
+	unsigned int decl_file = 0;
+	if(GetDeclFile(decl_file) && (decl_file > 0))
+	{
+		const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_cu->GetStmtList();
+		if(dw_stmt_prog)
+		{
+			const DWARF_Filename *dw_filename = dw_stmt_prog->GetFilename(decl_file - 1);
+			if(dw_filename)
+			{
+				unsigned int dw_dir_index = dw_filename->GetDirectoryIndex();
+				if(dw_dir_index)
+				{
+					const char *include_dirname = dw_stmt_prog->GetIncludeDirectory(dw_dir_index - 1);
+					if(include_dirname)
+					{
+						decl_filename = include_dirname;
+						decl_filename += '/';
+						decl_filename += dw_filename->GetFilename();
+						return true;
+					}
+				}
+				else
+				{
+					decl_filename = dw_filename->GetFilename();
+				}
+			}
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetDeclLine(unsigned int& decl_line) const
+{
+	const DWARF_UnsignedConstant<MEMORY_ADDR> *dw_at_decl_line = 0;
+	if(GetAttributeValue(DW_AT_decl_line, dw_at_decl_line))
+	{
+		decl_line = dw_at_decl_line->to_uint();
+		return true;
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+	if(dw_die_specification)
+	{
+		if(dw_die_specification->GetDeclLine(decl_line))
+		{
+			return true;
+		}
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetDeclLine(decl_line) : false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetDeclColumn(unsigned int& decl_column) const
+{
+	const DWARF_UnsignedConstant<MEMORY_ADDR> *dw_at_decl_column = 0;
+	if(GetAttributeValue(DW_AT_decl_column, dw_at_decl_column))
+	{
+		decl_column = dw_at_decl_column->to_uint();
+		return true;
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+	if(dw_die_specification)
+	{
+		if(dw_die_specification->GetDeclColumn(decl_column))
+		{
+			return true;
+		}
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetDeclColumn(decl_column) : false;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::DeclLocation *DWARF_DIE<MEMORY_ADDR>::GetDeclLocation() const
+{
+	if(cached_decl_location.Valid()) return cached_decl_location;
+	
+	std::string decl_filename;
+	bool has_decl_filename = GetDeclFilename(decl_filename);
+	if(has_decl_filename)
+	{
+		unsigned int decl_line = 0;
+		unsigned int decl_column = 0;
+		GetDeclLine(decl_line);
+		GetDeclColumn(decl_column);
+		
+		unisim::util::debug::DeclLocation *decl_location = new unisim::util::debug::DeclLocation(decl_filename, decl_line, decl_column);
+		decl_location->Catch();
+		return cached_decl_location = decl_location;
+	}
+	
+	return cached_decl_location = 0;
 }
 
 template <class MEMORY_ADDR>
@@ -2917,31 +3131,31 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 			switch(dw_at_encoding)
 			{
 				case DW_ATE_boolean:
-					base_type = new unisim::util::debug::BooleanType(GetName(), bit_size);
+					base_type = new unisim::util::debug::BooleanType(GetName(), bit_size, GetDeclLocation());
 					break;
 					
 				case DW_ATE_float:
-					base_type = new unisim::util::debug::FloatingPointType(GetName(), bit_size);
+					base_type = new unisim::util::debug::FloatingPointType(GetName(), bit_size, GetDeclLocation());
 					break;
 					
 				case DW_ATE_signed:
-					base_type = new unisim::util::debug::IntegerType(GetName(), bit_size, true);
+					base_type = new unisim::util::debug::IntegerType(GetName(), bit_size, true, GetDeclLocation());
 					break;
 					
 				case DW_ATE_signed_char:
-					base_type =  new unisim::util::debug::CharType(GetName(), bit_size, true);
+					base_type =  new unisim::util::debug::CharType(GetName(), bit_size, true, GetDeclLocation());
 					break;
 					
 				case DW_ATE_unsigned:
-					base_type =  new unisim::util::debug::IntegerType(GetName(), bit_size, false);
+					base_type =  new unisim::util::debug::IntegerType(GetName(), bit_size, false, GetDeclLocation());
 					break;
 					
 				case DW_ATE_unsigned_char:
-					base_type =  new unisim::util::debug::CharType(GetName(), bit_size, false);
+					base_type =  new unisim::util::debug::CharType(GetName(), bit_size, false, GetDeclLocation());
 					break;
 					
 				default:
-					base_type = new unisim::util::debug::BaseType(GetName(), bit_size);
+					base_type = new unisim::util::debug::BaseType(GetName(), bit_size, GetDeclLocation());
 					break;
 			}
 			
@@ -2970,16 +3184,16 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 				switch(dw_tag)
 				{
 					case DW_TAG_structure_type:
-						comp_type = new unisim::util::debug::StructureType(GetName(), incomplete);
+						comp_type = new unisim::util::debug::StructureType(GetName(), incomplete, GetDeclLocation());
 						break;
 					case DW_TAG_union_type:
-						comp_type = new unisim::util::debug::UnionType(GetName(), incomplete);
+						comp_type = new unisim::util::debug::UnionType(GetName(), incomplete, GetDeclLocation());
 						break;
 					case DW_TAG_class_type:
-						comp_type = new unisim::util::debug::ClassType(GetName(), incomplete);
+						comp_type = new unisim::util::debug::ClassType(GetName(), incomplete, GetDeclLocation());
 						break;
 					case DW_TAG_interface_type:
-						comp_type = new unisim::util::debug::InterfaceType(GetName(), incomplete);
+						comp_type = new unisim::util::debug::InterfaceType(GetName(), incomplete, GetDeclLocation());
 						break;
 				}
 				
@@ -2997,25 +3211,22 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 								{
 									const DWARF_DIE<MEMORY_ADDR> *dw_die_member = dw_child;
 									const char *member_name = dw_die_member->GetName();
-// 									if(member_name)
-// 									{
-										const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type = dw_die_member->GetTypeDIE();
-										if(dw_die_member_type)
+									const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type = dw_die_member->GetTypeDIE();
+									if(dw_die_member_type)
+									{
+										uint64_t bit_size = 0;
+										if(!dw_die_member_type->GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_size, bit_size))
 										{
-											uint64_t bit_size = 0;
-											if(!dw_die_member_type->GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_size, bit_size))
-											{
-												const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type_at_abstract_origin = dw_die_member_type->GetAbstractOrigin();
-												
-												while(dw_die_member_type_at_abstract_origin && !dw_die_member_type_at_abstract_origin->GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_size, bit_size))
-												{
-													dw_die_member_type_at_abstract_origin = dw_die_member_type_at_abstract_origin->GetAbstractOrigin();
-												}
-											}
+											const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type_at_abstract_origin = dw_die_member_type->GetAbstractOrigin();
 											
-											comp_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->GetType(prc_num) : new unisim::util::debug::Type(), bit_size));
+											while(dw_die_member_type_at_abstract_origin && !dw_die_member_type_at_abstract_origin->GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_size, bit_size))
+											{
+												dw_die_member_type_at_abstract_origin = dw_die_member_type_at_abstract_origin->GetAbstractOrigin();
+											}
 										}
-// 									}
+										
+										comp_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->GetType(prc_num) : new unisim::util::debug::Type(), bit_size));
+									}
 								}
 								break;
 						}
@@ -3103,7 +3314,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 											
 											if(!cached)
 											{
-												array_type = new unisim::util::debug::ArrayType(array_type, i, lower_bound, upper_bound);
+												array_type = new unisim::util::debug::ArrayType(array_type, i, lower_bound, upper_bound, GetDeclLocation());
 												array_type->Catch();
 												type_cache.push_back(array_type);
 											}
@@ -3126,7 +3337,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 											
 											if(!cached)
 											{
-												array_type = new unisim::util::debug::ArrayType(type_of_element, i, lower_bound, upper_bound);
+												array_type = new unisim::util::debug::ArrayType(type_of_element, i, lower_bound, upper_bound, GetDeclLocation());
 												array_type->Catch();
 												type_cache.push_back(array_type);
 											}
@@ -3189,7 +3400,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 					if(cached_type && (cached_type->GetTypeOfDereferencedObject() == dereferenced_object_type)) return cached_type;
 				}
 				
-				unisim::util::debug::PointerType const *pointer_type = new unisim::util::debug::PointerType(dereferenced_object_type);
+				unisim::util::debug::PointerType const *pointer_type = new unisim::util::debug::PointerType(dereferenced_object_type, GetDeclLocation());
 				pointer_type->Catch();
 				type_cache.push_back(pointer_type);
 				return pointer_type;
@@ -3225,7 +3436,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 					if(cached_type && (cached_type->GetType() == type)) return cached_type;
 				}
 				
-				unisim::util::debug::Typedef const *typedef_type = new unisim::util::debug::Typedef(type, typedef_name);
+				unisim::util::debug::Typedef const *typedef_type = new unisim::util::debug::Typedef(type, typedef_name, GetDeclLocation());
 				type_cache.push_back(typedef_type);
 				typedef_type->Catch();
 				return typedef_type;
@@ -3241,7 +3452,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 				
 				const DWARF_DIE<MEMORY_ADDR> *dw_die_return_type = GetTypeDIE();
 				
-				unisim::util::debug::FunctionType *func_type = new unisim::util::debug::FunctionType(dw_die_return_type ? dw_die_return_type->GetType(prc_num) : new unisim::util::debug::UnspecifiedType());
+				unisim::util::debug::FunctionType *func_type = new unisim::util::debug::FunctionType(dw_die_return_type ? dw_die_return_type->GetType(prc_num) : new unisim::util::debug::UnspecifiedType(), GetDeclLocation());
 				
 				const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 				const std::vector<DWARF_DIE<MEMORY_ADDR> *>& dw_children = dw_at_abstract_origin ? dw_at_abstract_origin->GetChildren() : children;
@@ -3300,7 +3511,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 					if(cached_type && (cached_type->GetType() == type)) return cached_type;
 				}
 				
-				unisim::util::debug::ConstType const *const_type = new unisim::util::debug::ConstType(type);
+				unisim::util::debug::ConstType const *const_type = new unisim::util::debug::ConstType(type, GetDeclLocation());
 				const_type->Catch();
 				type_cache.push_back(const_type);
 				return const_type;
@@ -3315,7 +3526,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 				}
 				
 				const char *enum_name = GetName();
-				unisim::util::debug::EnumType *enum_type = new unisim::util::debug::EnumType(enum_name);
+				unisim::util::debug::EnumType *enum_type = new unisim::util::debug::EnumType(enum_name, GetDeclLocation());
 				
 				unsigned int num_children = children.size();
 				unsigned int i;
@@ -3359,7 +3570,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 				if(cached_type) return cached_type;
 			}
 			
-			unisim::util::debug::UnspecifiedType const *unspecified_type = new unisim::util::debug::UnspecifiedType();
+			unisim::util::debug::UnspecifiedType const *unspecified_type = new unisim::util::debug::UnspecifiedType(GetDeclLocation());
 			unspecified_type->Catch();
 			type_cache.push_back(unspecified_type);
 			return unspecified_type;
@@ -3400,7 +3611,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 					if(cached_type && (cached_type->GetType() == type)) return cached_type;
 				}
 				
-				unisim::util::debug::VolatileType const *volatile_type = new unisim::util::debug::VolatileType(type);
+				unisim::util::debug::VolatileType const *volatile_type = new unisim::util::debug::VolatileType(type, GetDeclLocation());
 				volatile_type->Catch();
 				type_cache.push_back(volatile_type);
 				return volatile_type;
@@ -3417,7 +3628,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::GetType(unsigned int pr
 		if(cached_type) return cached_type;
 	}
 	
-	unisim::util::debug::Type const *type = new unisim::util::debug::Type();
+	unisim::util::debug::Type const *type = new unisim::util::debug::Type(GetDeclLocation());
 	type->Catch();
 	type_cache.push_back(type);
 	return type;
@@ -3444,6 +3655,11 @@ const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetS
 {
 	if(cached_subprogram.Valid()) return cached_subprogram;
 	
+	if(GetTag() != DW_TAG_subprogram)
+	{
+		return cached_subprogram = 0;
+	}
+	
 	bool external_flag = false;
 	bool declaration_flag = false;
 	uint8_t inline_code = 0;
@@ -3455,7 +3671,8 @@ const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetS
 		(GetExternalFlag(external_flag) && external_flag),
 		(GetDeclarationFlag(declaration_flag) && declaration_flag),
 		inline_code,
-		dw_die_return_type ? dw_die_return_type->GetType(prc_num) : new unisim::util::debug::UnspecifiedType()
+		dw_die_return_type ? dw_die_return_type->GetType(prc_num) : new unisim::util::debug::UnspecifiedType(),
+		GetDeclLocation()
 	);
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
@@ -3485,6 +3702,11 @@ const unisim::util::debug::Variable *DWARF_DIE<MEMORY_ADDR>::GetVariable(unsigne
 {
 	if(cached_variable.Valid()) return cached_variable;
 	
+	if(GetTag() != DW_TAG_variable)
+	{
+		return cached_variable = 0;
+	}
+	
 	bool external_flag = false;
 	bool declaration_flag = false;
 	const DWARF_DIE<MEMORY_ADDR> *dw_variable_type = GetTypeDIE();
@@ -3493,7 +3715,8 @@ const unisim::util::debug::Variable *DWARF_DIE<MEMORY_ADDR>::GetVariable(unsigne
 		GetName(),
 		(GetExternalFlag(external_flag) && external_flag),
 		(GetDeclarationFlag(declaration_flag) && declaration_flag),
-		dw_variable_type ? dw_variable_type->GetType(prc_num) : new unisim::util::debug::UnspecifiedType()
+		dw_variable_type ? dw_variable_type->GetType(prc_num) : new unisim::util::debug::UnspecifiedType(),
+		GetDeclLocation()
 	);
 	
 	dw_variable->Catch();

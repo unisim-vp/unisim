@@ -91,11 +91,13 @@ public:
 	const char *GetProducer() const;
 	uint8_t GetDefaultOrdering() const;
 	bool GetDefaultLowerBound(int64_t& lower_bound) const;
+	const DWARF_StatementProgram<MEMORY_ADDR> *GetStmtList() const;
 
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, bool local_only) const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindVariable(const char *name) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

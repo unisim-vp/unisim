@@ -41,26 +41,32 @@ namespace debug {
 
 Variable::Variable()
 	: ref_count(0)
+	, cdecl(0)
 {
 }
 
 Variable::~Variable()
 {
+	if(cdecl) delete cdecl;
 }
 
-std::string Variable::BuildCDecl() const
+const std::string& Variable::BuildCDecl() const
 {
-	std::stringstream sstr;
-	char const *variable_name = GetName();
-	Type const *variable_type = GetType();
-	std::string s(variable_type->BuildCDecl(&variable_name, true));
-	sstr << s;
-	if(variable_name)
+	if(!cdecl)
 	{
-		if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
-		sstr << variable_name;
+		std::stringstream sstr;
+		char const *variable_name = GetName();
+		Type const *variable_type = GetType();
+		std::string s(variable_type->BuildCDecl(&variable_name, true));
+		sstr << s;
+		if(variable_name)
+		{
+			if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+			sstr << variable_name;
+		}
+		cdecl = new std::string(sstr.str());
 	}
-	return sstr.str();
+	return *cdecl;
 }
 
 void Variable::Catch() const

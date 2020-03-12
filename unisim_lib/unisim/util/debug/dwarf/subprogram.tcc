@@ -43,7 +43,7 @@ namespace debug {
 namespace dwarf {
 
 template <class ADDRESS>
-DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(char const *_name, bool _external_flag, bool _declaration_flag, uint8_t _inline_code, const Type *_return_type)
+DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(char const *_name, bool _external_flag, bool _declaration_flag, uint8_t _inline_code, const unisim::util::debug::Type *_return_type, const unisim::util::debug::DeclLocation *_decl_location)
 	: unisim::util::debug::SubProgram<ADDRESS>()
 	, name(_name ? _name : "")
 	, external_flag(_external_flag)
@@ -51,14 +51,17 @@ DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(char const *_name, bool _external_fl
 	, inline_code(_inline_code)
 	, return_type(_return_type)
 	, formal_params()
+	, decl_location(_decl_location)
 {
 	if(return_type) return_type->Catch();
+	if(decl_location) decl_location->Catch();
 }
 
 template <class ADDRESS>
 DWARF_SubProgram<ADDRESS>::~DWARF_SubProgram()
 {
 	if(return_type) return_type->Release();
+	if(decl_location) decl_location->Release();
 	
 	unsigned int arity = formal_params.size();
 	unsigned int idx;
@@ -122,6 +125,12 @@ const FormalParameter *DWARF_SubProgram<ADDRESS>::GetFormalParameter(unsigned in
 {
 	if(idx >= formal_params.size()) return 0;
 	return formal_params[idx];
+}
+
+template <class ADDRESS>
+const unisim::util::debug::DeclLocation *DWARF_SubProgram<ADDRESS>::GetDeclLocation() const
+{
+	return decl_location;
 }
 
 } // end of namespace dwarf

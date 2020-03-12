@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_TYPE_HH__
 #define __UNISIM_UTIL_DEBUG_TYPE_HH__
 
+#include <unisim/util/debug/decl_location.hh>
 #include <inttypes.h>
 #include <string>
 #include <vector>
@@ -108,13 +109,16 @@ class Type
 {
 public:
 	Type();
+	Type(const DeclLocation *decl_location);
 	Type(TYPE_CLASS type_class);
+	Type(TYPE_CLASS type_class, const DeclLocation *decl_location);
 	virtual ~Type();
 	
 	TYPE_CLASS GetClass() const;
 	bool IsComposite() const;
 	bool IsBase() const;
 	bool IsNamed() const;
+	const DeclLocation *GetDeclLocation() const;
 	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
 	void Catch() const;
@@ -124,6 +128,7 @@ public:
 	template <typename VISITOR> bool Visit(VISITOR& visitor) const;
 private:
 	TYPE_CLASS type_class;
+	const DeclLocation *decl_location;
 	mutable unsigned int ref_count;
 	
 	friend std::ostream& operator << (std::ostream& os, const Type& type);
@@ -133,6 +138,7 @@ class NamedType : public Type
 {
 public:
 	NamedType(TYPE_CLASS type_class, const char *name);
+	NamedType(TYPE_CLASS type_class, const char *name, const DeclLocation *decl_location);
 	const std::string& GetName() const;
 	bool HasName() const;
 private:
@@ -144,7 +150,9 @@ class BaseType : public NamedType
 {
 public:
 	BaseType(const char *name, unsigned int bit_size);
+	BaseType(const char *name, unsigned int bit_size, const DeclLocation *decl_location);
 	BaseType(TYPE_CLASS type_class, const char *name, unsigned int bit_size);
+	BaseType(TYPE_CLASS type_class, const char *name, unsigned int bit_size, const DeclLocation *decl_location);
 	virtual ~BaseType();
 	unsigned int GetBitSize() const;
 private:
@@ -155,6 +163,7 @@ class IntegerType : public BaseType
 {
 public:
 	IntegerType(const char *name, unsigned int bit_size, bool is_signed);
+	IntegerType(const char *name, unsigned int bit_size, bool is_signed, const DeclLocation *decl_location);
 	virtual ~IntegerType();
 	bool IsSigned() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
@@ -166,6 +175,7 @@ class CharType : public BaseType
 {
 public:
 	CharType(const char *name, unsigned int bit_size, bool is_signed);
+	CharType(const char *name, unsigned int bit_size, bool is_signed, const DeclLocation *decl_location);
 	virtual ~CharType();
 	bool IsSigned() const;
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
@@ -177,6 +187,7 @@ class FloatingPointType : public BaseType
 {
 public:
 	FloatingPointType(const char *name, unsigned int bit_size);
+	FloatingPointType(const char *name, unsigned int bit_size, const DeclLocation *decl_location);
 	virtual ~FloatingPointType();
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
 private:
@@ -186,6 +197,7 @@ class BooleanType : public BaseType
 {
 public:
 	BooleanType(const char *name, unsigned int bit_size);
+	BooleanType(const char *name, unsigned int bit_size, const DeclLocation *decl_location);
 	virtual ~BooleanType();
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
 private:
@@ -214,6 +226,7 @@ class CompositeType : public NamedType
 {
 public:
 	CompositeType(TYPE_CLASS type_class, const char *name, bool incomplete);
+	CompositeType(TYPE_CLASS type_class, const char *name, bool incomplete, const DeclLocation *decl_location);
 	virtual ~CompositeType();
 	
 	void Add(const Member *member);
@@ -232,30 +245,35 @@ class StructureType : public CompositeType
 {
 public:
 	StructureType(const char *name, bool incomplete) : CompositeType(T_STRUCT, name, incomplete) {}
+	StructureType(const char *name, bool incomplete, const DeclLocation *decl_location) : CompositeType(T_STRUCT, name, incomplete, decl_location) {}
 };
 
 class UnionType : public CompositeType
 {
 public:
 	UnionType(const char *name, bool incomplete) : CompositeType(T_UNION, name, incomplete) {}
+	UnionType(const char *name, bool incomplete, const DeclLocation *decl_location) : CompositeType(T_UNION, name, incomplete, decl_location) {}
 };
 
 class ClassType : public CompositeType
 {
 public:
 	ClassType(const char *name, bool incomplete) : CompositeType(T_CLASS, name, incomplete) {}
+	ClassType(const char *name, bool incomplete, const DeclLocation *decl_location) : CompositeType(T_CLASS, name, incomplete, decl_location) {}
 };
 
 class InterfaceType : public CompositeType
 {
 public:
 	InterfaceType(const char *name, bool incomplete) : CompositeType(T_INTERFACE, name, incomplete) {}
+	InterfaceType(const char *name, bool incomplete, const DeclLocation *decl_location) : CompositeType(T_INTERFACE, name, incomplete, decl_location) {}
 };
 
 class ArrayType : public Type
 {
 public:
 	ArrayType(const Type *type_of_element, unsigned int order, int64_t lower_bound, int64_t upper_bound);
+	ArrayType(const Type *type_of_element, unsigned int order, int64_t lower_bound, int64_t upper_bound, const DeclLocation *decl_location);
 	virtual ~ArrayType();
 	const Type *GetTypeOfElement() const;
 	unsigned int GetOrder() const;
@@ -276,6 +294,7 @@ class PointerType : public Type
 {
 public:
 	PointerType(const Type *type_of_dereferenced_object);
+	PointerType(const Type *type_of_dereferenced_object, const DeclLocation *decl_location);
 	virtual ~PointerType();
 	const Type *GetTypeOfDereferencedObject() const;
 	bool IsNullTerminatedStringPointer() const;
@@ -290,6 +309,7 @@ class Typedef : public NamedType
 {
 public:
 	Typedef(const Type *type, const char *name);
+	Typedef(const Type *type, const char *name, const DeclLocation *decl_location);
 	virtual ~Typedef();
 	const Type *GetType() const;
 	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
@@ -316,6 +336,7 @@ class FunctionType : public Type
 {
 public:
 	FunctionType(const Type *return_type);
+	FunctionType(const Type *return_type, const DeclLocation *decl_location);
 	virtual ~FunctionType();
 	
 	void Add(const FormalParameter *formal_param);
@@ -331,6 +352,7 @@ class ConstType : public Type
 {
 public:
 	ConstType(const Type *type);
+	ConstType(const Type *type, const DeclLocation *decl_location);
 	virtual ~ConstType();
 	const Type *GetType() const;
 	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
@@ -359,6 +381,7 @@ class EnumType : public NamedType
 {
 public:
 	EnumType(const char *name);
+	EnumType(const char *name, const DeclLocation *decl_location);
 	virtual ~EnumType();
 	void Add(const Enumerator *enumerator);
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
@@ -371,6 +394,7 @@ class UnspecifiedType : public Type
 {
 public:
 	UnspecifiedType();
+	UnspecifiedType(const DeclLocation *decl_location);
 	virtual ~UnspecifiedType();
 	virtual std::string BuildCDecl(char const **identifier = 0, bool collapsed = false) const;
 private:
@@ -380,6 +404,7 @@ class VolatileType : public Type
 {
 public:
 	VolatileType(const Type *type);
+	VolatileType(const Type *type, const DeclLocation *decl_location);
 	virtual ~VolatileType();
 	const Type *GetType() const;
 	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;

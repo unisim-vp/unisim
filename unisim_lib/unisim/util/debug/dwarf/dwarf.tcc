@@ -108,6 +108,8 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::blob::Blob<MEMORY_
 	, dw_reg_num_mapping()
 	, regs_if()
 	, mem_if()
+	, subprogram_die_cache()
+	, variable_die_cache()
 {
 	switch(_blob->GetFileFormat())
 	{
@@ -2924,9 +2926,20 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramDIE(cons
 	}
 	else
 	{
+		typename Cache::const_iterator it = subprogram_die_cache.find(subprogram_name);
+		if(it != subprogram_die_cache.end())
+		{
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = (*it).second;
+			return dw_die_subprogram;
+		}
+		
 		const DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = FindDIEByPubName(subprogram_name);
 		
-		if(dw_die_subprogram && dw_die_subprogram->HasRanges()) return dw_die_subprogram;
+		if(dw_die_subprogram && dw_die_subprogram->HasRanges())
+		{
+			subprogram_die_cache[subprogram_name] = dw_die_subprogram;
+			return dw_die_subprogram;
+		}
 		
 		typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
 		
@@ -2936,8 +2949,53 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramDIE(cons
 
 			const DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = dw_cu->FindSubProgram(subprogram_name);
 			
-			if(dw_die_subprogram) return dw_die_subprogram;
+			if(dw_die_subprogram)
+			{
+				subprogram_die_cache[subprogram_name] = dw_die_subprogram;
+				return dw_die_subprogram;
+			}
 		}
+		
+		subprogram_die_cache[subprogram_name] = 0;
+	}
+
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindVariableDIE(const char *variable_name, const char *compilation_unit_name) const
+{
+	if(compilation_unit_name)
+	{
+		const DWARF_CompilationUnit<MEMORY_ADDR> *dw_found_cu = FindCompilationUnitByName(compilation_unit_name);
+		
+		return dw_found_cu ? dw_found_cu->FindVariable(variable_name) : 0;
+	}
+	else
+	{
+		typename Cache::const_iterator it = variable_die_cache.find(variable_name);
+		if(it != variable_die_cache.end())
+		{
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_variable = (*it).second;
+			return dw_die_variable;
+		}
+		
+		typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+		
+		for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
+		{
+			DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_variable = dw_cu->FindVariable(variable_name);
+			
+			if(dw_die_variable)
+			{
+				variable_die_cache[variable_name] = dw_die_variable;
+				return dw_die_variable;
+			}
+		}
+		
+		variable_die_cache[variable_name] = 0;
 	}
 
 	return 0;

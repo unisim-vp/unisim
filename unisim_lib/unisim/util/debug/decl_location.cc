@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,52 +32,51 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
-
-#include <unisim/util/debug/subprogram.hh>
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <iosfwd>
+#include <unisim/util/debug/decl_location.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
-namespace dwarf {
 
-template <class ADDRESS>
-class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
+DeclLocation::DeclLocation(const std::string& _decl_filename, unsigned int _decl_line, unsigned _decl_column)
+	: decl_filename(_decl_filename)
+	, decl_line(_decl_line)
+	, decl_column(_decl_column)
+	, ref_count(0)
 {
-public:
-	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const unisim::util::debug::Type *return_type, const unisim::util::debug::DeclLocation *decl_location);
-	virtual ~DWARF_SubProgram();
-	
-	void AddFormalParameter(const FormalParameter *formal_param);
-	
-	virtual const char *GetName() const;
-	virtual bool IsExternal() const;
-	virtual bool IsDeclaration() const;
-	virtual bool IsInline() const;
-	virtual bool IsInlined() const;
-	virtual const Type *GetReturnType() const;
-	virtual unsigned int GetArity() const;
-	virtual const unisim::util::debug::FormalParameter *GetFormalParameter(unsigned int idx) const;
-	virtual const unisim::util::debug::DeclLocation *GetDeclLocation() const;
-	
-private:
-	std::string name;
-	bool external_flag;
-	bool declaration_flag;
-	uint8_t inline_code;
-	const Type *return_type;
-	std::vector<const unisim::util::debug::FormalParameter *> formal_params;
-	const unisim::util::debug::DeclLocation *decl_location;
-};
+}
 
-} // end of namespace dwarf
+const std::string& DeclLocation::GetDeclFilename() const
+{
+	return decl_filename;
+}
+
+unsigned int DeclLocation::GetDeclLine() const
+{
+	return decl_line;
+}
+
+unsigned int DeclLocation::GetDeclColumn() const
+{
+	return decl_column;
+}
+
+void DeclLocation::Catch() const
+{
+	++ref_count;
+}
+
+void DeclLocation::Release() const
+{
+	if(ref_count)
+	{
+		if(--ref_count == 0)
+		{
+			delete this;
+		}
+	}
+}
+
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
-
-#endif // __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__

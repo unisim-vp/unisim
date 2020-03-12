@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_VARIABLE_HH__
 
 #include <unisim/util/debug/type.hh>
+#include <unisim/util/debug/decl_location.hh>
 #include <string>
 
 namespace unisim {
@@ -51,11 +52,13 @@ public:
 	virtual bool IsExternal() const = 0;
 	virtual bool IsDeclaration() const = 0;
 	virtual const Type *GetType() const = 0;
-	std::string BuildCDecl() const;
+	virtual const DeclLocation *GetDeclLocation() const = 0;
+	const std::string& BuildCDecl() const;
 	void Catch() const;
 	void Release() const;
 private:
 	mutable unsigned int ref_count;
+	mutable std::string *cdecl;
 };
 
 } // end of namespace debug

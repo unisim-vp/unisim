@@ -151,6 +151,8 @@ public:
 	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(unsigned int prc_num, const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name, MEMORY_ADDR pc) const;
 	
+	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *variable_name, const char *compilation_unit_name) const;
+	
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
@@ -238,6 +240,10 @@ private:
 	std::vector<DWARF_RegisterNumberMapping *> dw_reg_num_mapping;
 	std::vector<unisim::service::interfaces::Registers *> regs_if;
 	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;
+	
+	typedef std::map<std::string, const DWARF_DIE<MEMORY_ADDR> *> Cache;
+	mutable Cache subprogram_die_cache;
+	mutable Cache variable_die_cache;
 	
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;

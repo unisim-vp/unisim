@@ -3,6 +3,7 @@ unisim/util/debug/breakpoint_registry.hh
 unisim/util/debug/commit_insn_event.hh
 unisim/util/debug/data_object.hh
 unisim/util/debug/data_object_initializer.hh
+unisim/util/debug/decl_location.hh
 unisim/util/debug/event.hh
 unisim/util/debug/fetch_insn_event.hh
 unisim/util/debug/memory_access_type.hh

@@ -39,19 +39,22 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-DWARF_Variable::DWARF_Variable(char const *_name, bool _external_flag, bool _declaration_flag, unisim::util::debug::Type const *_type)
+DWARF_Variable::DWARF_Variable(char const *_name, bool _external_flag, bool _declaration_flag, unisim::util::debug::Type const *_type, unisim::util::debug::DeclLocation const *_decl_loc)
 	: unisim::util::debug::Variable()
 	, name(_name ? _name : "")
 	, external_flag(_external_flag)
 	, declaration_flag(_declaration_flag)
 	, type(_type)
+	, decl_loc(_decl_loc)
 {
 	if(type) type->Catch();
+	if(decl_loc) decl_loc->Catch();
 }
 
 DWARF_Variable::~DWARF_Variable()
 {
 	if(type) type->Release();
+	if(decl_loc) decl_loc->Release();
 }
 
 const char *DWARF_Variable::GetName() const
@@ -72,6 +75,11 @@ bool DWARF_Variable::IsDeclaration() const
 const unisim::util::debug::Type *DWARF_Variable::GetType() const
 {
 	return type;
+}
+
+const unisim::util::debug::DeclLocation *DWARF_Variable::GetDeclLocation() const
+{
+	return decl_loc;
 }
 
 } // end of namespace dwarf

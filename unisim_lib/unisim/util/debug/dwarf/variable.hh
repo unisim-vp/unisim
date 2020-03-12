@@ -46,17 +46,19 @@ namespace dwarf {
 class DWARF_Variable : public unisim::util::debug::Variable
 {
 public:
-	DWARF_Variable(char const *name, bool external_flag, bool declaration_flag, unisim::util::debug::Type const *type);
+	DWARF_Variable(char const *name, bool external_flag, bool declaration_flag, unisim::util::debug::Type const *type, unisim::util::debug::DeclLocation const *decl_loc);
 	virtual ~DWARF_Variable();
 	virtual const char *GetName() const;
 	virtual bool IsExternal() const;
 	virtual bool IsDeclaration() const;
 	virtual const unisim::util::debug::Type *GetType() const;
+	virtual const unisim::util::debug::DeclLocation *GetDeclLocation() const;
 private:
 	std::string name;
 	bool external_flag;
 	bool declaration_flag;
 	unisim::util::debug::Type const *type;
+	unisim::util::debug::DeclLocation const *decl_loc;
 };
 
 } // end of namespace dwarf

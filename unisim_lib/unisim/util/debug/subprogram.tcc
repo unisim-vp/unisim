@@ -46,43 +46,49 @@ namespace debug {
 template <class ADDRESS>
 SubProgram<ADDRESS>::SubProgram()
 	: ref_count(0)
+	, cdecl(0)
 {
 }
 
 template <class ADDRESS>
 SubProgram<ADDRESS>::~SubProgram()
 {
+	if(cdecl) delete cdecl;
 }
 
 template <class ADDRESS>
-std::string SubProgram<ADDRESS>::BuildCDecl() const
+const std::string& SubProgram<ADDRESS>::BuildCDecl() const
 {
-	std::stringstream sstr;
-	Type const *return_type = GetReturnType();
-	std::string s(return_type->BuildCDecl(0, true));
-	sstr << s;
-	if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
-	sstr << GetName() << "(";
-	unsigned int arity = GetArity();
-	for(unsigned int i = 0; i < arity; ++i)
+	if(!cdecl)
 	{
-		if(i != 0) sstr << ", ";
-		FormalParameter const *formal_param = GetFormalParameter(i);
-		
-		Type const *formal_param_type = formal_param->GetType();
-		std::string formal_param_name = formal_param->GetName();
-		char const *formal_param_name_cstr = formal_param_name.c_str();
-		std::string s(formal_param_type->BuildCDecl(&formal_param_name_cstr, true));
+		std::stringstream sstr;
+		Type const *return_type = GetReturnType();
+		std::string s(return_type->BuildCDecl(0, true));
 		sstr << s;
-		if(formal_param_name_cstr)
+		if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+		sstr << GetName() << "(";
+		unsigned int arity = GetArity();
+		for(unsigned int i = 0; i < arity; ++i)
 		{
-			if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
-			sstr << formal_param_name_cstr;
+			if(i != 0) sstr << ", ";
+			FormalParameter const *formal_param = GetFormalParameter(i);
+			
+			Type const *formal_param_type = formal_param->GetType();
+			std::string formal_param_name = formal_param->GetName();
+			char const *formal_param_name_cstr = formal_param_name.c_str();
+			std::string s(formal_param_type->BuildCDecl(&formal_param_name_cstr, true));
+			sstr << s;
+			if(formal_param_name_cstr)
+			{
+				if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+				sstr << formal_param_name_cstr;
+			}
 		}
+		sstr << ")";
+		cdecl = new std::string(sstr.str());
 	}
-	sstr << ")";
 	
-	return sstr.str();
+	return *cdecl;
 }
 
 template <class ADDRESS>

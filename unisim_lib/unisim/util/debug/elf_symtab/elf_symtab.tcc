@@ -163,7 +163,7 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ELF_SymtabHandler<MEMOR
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>
-unisim::util::debug::SymbolTable<MEMORY_ADDR> const *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::GetSymbolTable()
+unisim::util::debug::SymbolTable<MEMORY_ADDR> const *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::GetSymbolTable() const
 {
 	return symbol_table;
 }

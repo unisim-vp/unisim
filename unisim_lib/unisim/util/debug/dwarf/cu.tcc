@@ -457,6 +457,14 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindSubProgram
 }
 
 template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindVariable(const char *name) const
+{
+	if(!dw_die) return 0;
+	
+	return dw_die->FindVariable(name);
+}
+
+template <class MEMORY_ADDR>
 const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetName() const
 {
 	const DWARF_String<MEMORY_ADDR> *dw_at_name = 0;
@@ -551,6 +559,17 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultLowerBound(int64_t& lower_bou
 			return true;
 	}
 	return false;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::GetStmtList() const
+{
+	const DWARF_LinePtr<MEMORY_ADDR> *dw_at_stmt_list = 0;
+	if(GetAttributeValue(DW_AT_stmt_list, dw_at_stmt_list))
+	{
+		return dw_at_stmt_list->GetValue();
+	}
+	return 0;
 }
 
 template <class MEMORY_ADDR>

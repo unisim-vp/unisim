@@ -1,5 +1,6 @@
 unisim/util/debug/breakpoint_registry_32.cc
 unisim/util/debug/breakpoint_registry_64.cc
+unisim/util/debug/decl_location.cc
 unisim/util/debug/profile_32.cc
 unisim/util/debug/profile_64.cc
 unisim/util/debug/simple_field_registry.cc

@@ -40,6 +40,7 @@
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <unisim/util/debug/variable.hh>
+#include <unisim/util/debug/decl_location.hh>
 #include <list>
 #include <vector>
 #include <set>
@@ -696,7 +697,8 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
-	
+	const DWARF_DIE<MEMORY_ADDR> *FindVariable(const char *name) const;
+
 	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
 	
 	const char *GetName() const;
@@ -736,6 +738,11 @@ public:
 	bool GetConstValue(uint64_t& const_value) const;
 	const DWARF_DIE<MEMORY_ADDR> *GetTypeDIE() const;
 	bool GetInlineCode(uint8_t& inline_code) const;
+	bool GetDeclFile(unsigned int& decl_file) const;
+	bool GetDeclFilename(std::string& decl_filename) const;
+	bool GetDeclLine(unsigned int& decl_line) const;
+	bool GetDeclColumn(unsigned int& decl_column) const;
+	const unisim::util::debug::DeclLocation *GetDeclLocation() const;
 	
 	const unisim::util::debug::Type *GetType(unsigned int prc_num, bool following_pointer = false, unsigned int array_dim = 0) const;
 	const unisim::util::debug::Type *GetTypeOf(unsigned int prc_num) const;
@@ -803,6 +810,7 @@ private:
 	CachedValue<MEMORY_ADDR> cached_high_pc;
 	CachedValue<MEMORY_ADDR> cached_high_pc_offset;
 	CachedValue<const DWARF_RangeListEntry<MEMORY_ADDR> *> cached_ranges;
+	CachedValue<const unisim::util::debug::DeclLocation *> cached_decl_location;
 	typedef std::vector<unisim::util::debug::Type const *> TypeCache; 
 	mutable TypeCache type_cache;
 	CachedValue<const unisim::util::debug::SubProgram<MEMORY_ADDR> *> cached_subprogram;

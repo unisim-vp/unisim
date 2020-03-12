@@ -115,6 +115,8 @@ public:
 	const Symbol *FindSymbolByName(const char *name, typename Symbol::Type type) const;
 	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr, typename Symbol::Type type) const;
 	
+	unisim::util::debug::SymbolTable<MEMORY_ADDR> const *GetSymbolTable() const;
+	
 	const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
