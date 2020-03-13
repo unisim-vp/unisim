@@ -105,7 +105,7 @@ DWARF_Version DWARF_CompilationUnit<MEMORY_ADDR>::GetDWARFVersion() const
 template <class MEMORY_ADDR>
 uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetOffsetSize() const
 {
-	return ((dw_ver == DW_VER3) || (dw_ver == DW_VER4)) ? ((dw_fmt == FMT_DWARF64) ? 8 : 4) : address_size;
+	return ((dw_ver == DW_VER3) || (dw_ver == DW_VER4)) ? ((dw_fmt == FMT_DWARF64) ? 8 : 4) : 4;
 }
 
 template <class MEMORY_ADDR>

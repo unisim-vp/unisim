@@ -195,7 +195,7 @@ DWARF_AddressRanges<MEMORY_ADDR>::DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR>
 	, version(0)
 	, debug_info_offset(0)
 	, address_size(0)
-	, segment_size(0)
+	, segment_selector_size(0)
 	, dw_addr_range_descriptors()
 {
 }
@@ -232,9 +232,9 @@ uint8_t DWARF_AddressRanges<MEMORY_ADDR>::GetAddressSize() const
 }
 
 template <class MEMORY_ADDR>
-uint8_t DWARF_AddressRanges<MEMORY_ADDR>::GetSegmentSize() const
+uint8_t DWARF_AddressRanges<MEMORY_ADDR>::GetSegmentSelectorSize() const
 {
-	return segment_size;
+	return segment_selector_size;
 }
 
 template <class MEMORY_ADDR>
@@ -360,12 +360,12 @@ int64_t DWARF_AddressRanges<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t 
 	max_size -= sizeof(address_size);
 	size += sizeof(address_size);
 	
-	if(max_size < sizeof(segment_size)) return -1;
-	memcpy(&segment_size, rawdata, sizeof(segment_size));
-	segment_size = Target2Host(file_endianness, segment_size);
-	rawdata += sizeof(segment_size);
-	max_size -= sizeof(segment_size);
-	size += sizeof(segment_size);
+	if(max_size < sizeof(segment_selector_size)) return -1;
+	memcpy(&segment_selector_size, rawdata, sizeof(segment_selector_size));
+	segment_selector_size = Target2Host(file_endianness, segment_selector_size);
+	rawdata += sizeof(segment_selector_size);
+	max_size -= sizeof(segment_selector_size);
+	size += sizeof(segment_selector_size);
 	
 	uint64_t tuple_size = 2 * address_size;
 	uint64_t header_padding = tuple_size - (size % tuple_size); // quite inefficient
@@ -404,7 +404,7 @@ int64_t DWARF_AddressRanges<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t 
 template <class MEMORY_ADDR>
 std::ostream& DWARF_AddressRanges<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_RANGES unit_length=\"" << unit_length << "\" version=\"" << version << "\" debug_info_offset=\"" << debug_info_offset << "\" address_size=\"" << (uint32_t) address_size << "\" segment_size=\"" << (uint32_t) segment_size << "\" idref=\"cu-" << dw_cu->GetId() << "\">" << std::endl;
+	os << "<DW_RANGES unit_length=\"" << unit_length << "\" version=\"" << version << "\" debug_info_offset=\"" << debug_info_offset << "\" address_size=\"" << (uint32_t) address_size << "\" segment_selector_size=\"" << (uint32_t) segment_selector_size << "\" idref=\"cu-" << dw_cu->GetId() << "\">" << std::endl;
 	unsigned int num_addr_range_descriptors = dw_addr_range_descriptors.size();
 	
 	unsigned int i;
@@ -422,7 +422,7 @@ std::ostream& DWARF_AddressRanges<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 {
 	os << "<tr>" << std::endl;
 	os << "<td>" << version << "</td><td><a href=\"../" << dw_cu->GetHREF() << "\">cu-" << dw_cu->GetId() << "</a></td>";
-	os << "<td>" <<  (uint32_t) address_size << "</td><td>" << (uint32_t) segment_size << "</td>" << std::endl;
+	os << "<td>" <<  (uint32_t) address_size << "</td><td>" << (uint32_t) segment_selector_size << "</td>" << std::endl;
 	os << "<td><table><tr><th>Address</th><th>Length</th></tr>";
 	unsigned int num_addr_range_descriptors = dw_addr_range_descriptors.size();
 	
@@ -445,7 +445,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_AddressRanges<MEMORY_AD
 	os << " - Version: " << dw_aranges.version << std::endl;
 	os << " - Offset in .debug_info: " << dw_aranges.debug_info_offset << std::endl;
 	os << " - Address size: " << (uint32_t) dw_aranges.address_size << std::endl;
-	os << " - Segment size: " << (uint32_t) dw_aranges.segment_size << std::endl;
+	os << " - Segment selector size: " << (uint32_t) dw_aranges.segment_selector_size << std::endl;
 	os << " - Address range descriptors: " << std::endl;
 
 	unsigned int num_addr_range_descriptors = dw_aranges.dw_addr_range_descriptors.size();

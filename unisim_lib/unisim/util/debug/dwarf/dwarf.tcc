@@ -1442,7 +1442,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 		debug_aranges << "<th>Version</th>" << std::endl;
 		debug_aranges << "<th>Compilation unit</th>" << std::endl;
 		debug_aranges << "<th>Address size</th>" << std::endl;
-		debug_aranges << "<th>Segment size</th>" << std::endl;
+		debug_aranges << "<th>Segment selector size</th>" << std::endl;
 		debug_aranges << "<th>Address descriptors</th>" << std::endl;
 		debug_aranges << "</tr>" << std::endl;
 		unsigned int count = 0;
@@ -1905,6 +1905,8 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 			{
 				debug_frame_cies << "<th>EH Data (Optional)</th>" << std::endl;
 			}
+			debug_frame_cies << "<th>Address Size</th>" << std::endl;
+			debug_frame_cies << "<th>Segment selector Size</th>" << std::endl;
 			debug_frame_cies << "<th>Code alignment factor</th>" << std::endl;
 			debug_frame_cies << "<th>Data alignment factor</th>" << std::endl;
 			debug_frame_cies << "<th>Return address register</th>" << std::endl;
@@ -2264,6 +2266,12 @@ template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry)
 {
 	dw_loc_list.insert(std::pair<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> *>(dw_loc_list_entry->GetOffset(), dw_loc_list_entry));
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_CIE<MEMORY_ADDR> *dw_cie)
+{
+	dw_cies[dw_cie->GetFrameSectionType()].insert(std::pair<uint64_t, DWARF_CIE<MEMORY_ADDR> *>(dw_cie->GetOffset(), dw_cie));
 }
 
 template <class MEMORY_ADDR>
@@ -2756,11 +2764,67 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEn
 }
 
 template <class MEMORY_ADDR>
-const DWARF_CIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst) const
+const DWARF_CIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCIE(uint64_t cie_offset, DWARF_FrameSectionType dw_fst)
 {
-	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter = dw_cies[fst].find(debug_frame_offset);
+	switch(dw_fst)
+	{
+		case FST_DEBUG_FRAME:
+			if(!debug_frame_section || (cie_offset >= debug_frame_section->GetSize())) return 0;
+			break;
+		case FST_EH_FRAME:
+			if(!eh_frame_section || (cie_offset >= eh_frame_section->GetSize())) return 0;
+			break;
+	}
 	
-	return dw_cie_iter != dw_cies[fst].end() ? (*dw_cie_iter).second : 0;
+	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter = dw_cies[dw_fst].find(cie_offset);
+	
+	if(dw_cie_iter != dw_cies[dw_fst].end())
+	{
+		return (*dw_cie_iter).second;
+	}
+	
+	DWARF_CIE<MEMORY_ADDR> *dw_cie = new DWARF_CIE<MEMORY_ADDR>(this, dw_fst);
+	int64_t sz;
+
+	switch(dw_fst)
+	{
+		case FST_DEBUG_FRAME:
+			if((sz = dw_cie->Load((const uint8_t *) debug_frame_section->GetData() + cie_offset, debug_frame_section->GetSize() - cie_offset, cie_offset)) < 0)
+			{
+				delete dw_cie;
+				
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+				{
+					GetDebugWarningStream() << "In File \"" << GetFilename() << "\", ";
+				}
+				GetDebugWarningStream() << "invalid DWARF v2/v3 debug frame at offset 0x" << std::hex << cie_offset << std::dec << std::endl;
+				return 0;
+			}
+			break;
+		case FST_EH_FRAME:
+			if((sz = dw_cie->Load((const uint8_t *) eh_frame_section->GetData() + cie_offset, eh_frame_section->GetSize() - cie_offset, cie_offset)) < 0)
+			{
+				delete dw_cie;
+				
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+				{
+					GetDebugWarningStream() << "In File \"" << GetFilename() << "\", ";
+				}
+				GetDebugWarningStream() << "invalid DWARF v2/v3 eh frame at offset 0x" << std::hex << cie_offset << std::dec << std::endl;
+				return 0;
+			}
+			
+			if(dw_cie->IsTerminator())
+			{
+				delete dw_cie;
+				return 0;
+			}
+			break;
+	}
+	
+	Register(dw_cie);
+	//std::cerr << *dw_cie << std::endl;
+	return dw_cie;
 }
 
 template <class MEMORY_ADDR>

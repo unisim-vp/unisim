@@ -123,6 +123,7 @@ public:
 	void Register(DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry);
 	void Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry);
 	void Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry);
+	void Register(DWARF_CIE<MEMORY_ADDR> *dw_cie);
 	
 	void UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die);
 
@@ -132,7 +133,7 @@ public:
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnit(uint64_t debug_info_offset) const;
 	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
-	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst) const;
+	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst);
 	
 	const DWARF_Pub<MEMORY_ADDR> *FindPubName(const char *name) const;
 	const DWARF_Pub<MEMORY_ADDR> *FindPubType(const char *name) const;

@@ -62,10 +62,11 @@
 
 enum Verbose
 {
-	VERBOSE_ERROR   = 0, // errors only
-	VERBOSE_WARNING = 1, // errors and warnings only
-	VERBOSE_INFO    = 2, // errors, warnings, and general informations only
-	VERBOSE_DEBUG   = 3  // everything
+	VERBOSE_ERROR              = 0, // errors only
+	VERBOSE_WARNING            = 1, // errors and warnings only
+	VERBOSE_INFO               = 2, // errors, warnings, and general informations only
+	VERBOSE_DEBUG_EXCAVATOR    = 3, // debug excavator
+	VERBOSE_DEBUG_DWARF_PARSER = 4  // debug DWARF parser
 };
 
 ///////////////////////////// DWARF_Excavator<> ///////////////////////////////
@@ -524,7 +525,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			{
 				if(types.find(type) == types.end())
 				{
-					if(verbose >= VERBOSE_DEBUG)
+					if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 					{
 						std::cout << "Discovering Type " << type->BuildCDecl() << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ")" << std::endl;
 					}
@@ -632,7 +633,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			{
 				if(pushed.find(type) == pushed.end())
 				{
-					if(verbose >= VERBOSE_DEBUG)
+					if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 					{
 						std::cout << "Pushing Type " << type->BuildCDecl() << std::endl;
 					}
@@ -651,7 +652,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			
 			void SortTypes()
 			{
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Sorting types" << std::endl;
 				}
@@ -664,7 +665,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			
 			bool Generate(const std::string& output_filename, bool gen_main)
 			{
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Opening output File \"" << output_filename << "\"" << std::endl;
 				}
@@ -920,7 +921,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 		{
 			if(subprogram->HasSymbol())
 			{
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Subprogram \"" << subprogram->GetName() << "\" is at 0x" << std::hex << subprogram->GetAddress() << std::dec << std::endl;
 				}
@@ -932,7 +933,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 		{
 			if(variable->HasSymbol())
 			{
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Variable \"" << variable->GetName() << "\" is at 0x" << std::hex << variable->GetAddress() << std::dec << std::endl;
 				}
@@ -1017,7 +1018,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					}
 					if(subprogram_name && !IsSuppressedFunction(subprogram_name))
 					{
-						if(verbose >= VERBOSE_DEBUG)
+						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
 							std::cout << "Discovering Subprogram " << subprogram_name << std::endl;
 						}
@@ -1025,7 +1026,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						
 						if(subprogram->IsDeclaration())
 						{
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Subprogram " << subprogram_name << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ") is a declaration: looking for definition" << std::endl;
 							}
@@ -1033,7 +1034,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							if(dw_die_subprogram_def)
 							{
 								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram_def->GetSubProgram(0);
-								if(verbose >= VERBOSE_DEBUG)
+								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
 									std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram_def->GetId() << " (" << dw_die->GetHREF() << "): looking for dependencies" << std::endl;
 								}
@@ -1051,7 +1052,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						}
 						else
 						{
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Subprogram " << subprogram->BuildCDecl() << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ") is a definition: looking for dependencies" << std::endl;
 							}
@@ -1074,13 +1075,13 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						if(!IsAutoVariable(dw_die))
 						{
 							unisim::util::debug::Variable const *variable = dw_die->GetVariable(0);
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Discovering Variable " << variable->BuildCDecl() << std::endl;
 							}
 							if(variable->IsDeclaration())
 							{
-								if(verbose >= VERBOSE_DEBUG)
+								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
 									std::cout << "Variable " << variable_name << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ") is a declaration: looking for dependencies" << std::endl;
 								}
@@ -1088,7 +1089,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							}
 							else
 							{
-								if(verbose >= VERBOSE_DEBUG)
+								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
 									std::cout << "Variable " << variable_name << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ") is a definition: looking for dependencies" << std::endl;
 								}
@@ -1366,7 +1367,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			for(typename CompilationUnits::const_iterator comp_unit1_it = compilation_units.begin(); comp_unit1_it != compilation_units.end(); ++comp_unit1_it)
 			{
 				CompilationUnit const *comp_unit1 = *comp_unit1_it;
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Looking for Subprogram dependencies of Compilation unit #" << comp_unit1->GetId() << " (" << comp_unit1->GetName() << ")" << std::endl;
 				}
@@ -1388,7 +1389,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						if(unresolved_subprogram_declarations.find(subprogram) == unresolved_subprogram_declarations.end())
 						{
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Subprogram " << subprogram.BuildCDecl() << " may need stubbing" << std::endl;
 							}
@@ -1398,7 +1399,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							{
 								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram(0);
 								
-								if(verbose >= VERBOSE_DEBUG)
+								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
 									std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
 								}
@@ -1426,7 +1427,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			for(typename CompilationUnits::const_iterator comp_unit_it = compilation_units.begin(); comp_unit_it != compilation_units.end(); ++comp_unit_it)
 			{
 				CompilationUnit const *comp_unit = *comp_unit_it;
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Looking for external subprogram dependencies of Testbench regarding Compilation unit \"" << comp_unit->GetName() << "\"" << std::endl;
 				}
@@ -1437,7 +1438,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					
 					if(subprogram.IsExternal())
 					{
-						if(verbose >= VERBOSE_DEBUG)
+						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
 							std::cout << "Testbench may use " << subprogram.BuildCDecl();
 							if(comp_unit_name)
@@ -1451,7 +1452,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						if(dw_die_subprogram)
 						{
 							unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram(0);
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
 							}
@@ -1472,7 +1473,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			for(typename CompilationUnits::const_iterator comp_unit1_it = compilation_units.begin(); comp_unit1_it != compilation_units.end(); ++comp_unit1_it)
 			{
 				CompilationUnit const *comp_unit1 = *comp_unit1_it;
-				if(verbose >= VERBOSE_DEBUG)
+				if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 				{
 					std::cout << "Looking for external variable dependencies of Compilation unit #" << comp_unit1->GetId() << " (" << comp_unit1->GetName() << ")" << std::endl;
 				}
@@ -1494,7 +1495,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						if(unresolved_variable_declarations.find(variable) == unresolved_variable_declarations.end())
 						{
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Variable " << variable.BuildCDecl() << " may need stubbing" << std::endl;
 							}
@@ -1505,7 +1506,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							{
 								unisim::util::debug::Variable const *variable_def = dw_die_variable_def->GetVariable(0);
 								
-								if(verbose >= VERBOSE_DEBUG)
+								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
 									std::cout << "Found definition of " << variable_def->BuildCDecl() << " in DIE #" << dw_die_variable_def->GetId() << " (" << dw_die_variable_def->GetHREF() << "): looking for dependencies" << std::endl;
 								}
@@ -1542,7 +1543,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						for(typename SubProgramDefinitionsByAddr::const_iterator it = range.first; it != range.second; ++it)
 						{
 							SubProgram const *subprogram_def = (*it).second;
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "SubProgram " << unresolved_subprogram->BuildCDecl() << " may be an alias of " << subprogram_def->BuildCDecl() << std::endl;
 							}
@@ -1553,7 +1554,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					}
 					else
 					{
-						if(verbose >= VERBOSE_DEBUG)
+						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
 							std::cout << "Subprogram definition of " << unresolved_subprogram->BuildCDecl() << " is missing" << std::endl;
 						}
@@ -1593,7 +1594,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						for(typename VariableDefinitionsByAddr::const_iterator it = range.first; it != range.second; ++it)
 						{
 							Variable const *variable_def = (*it).second;
-							if(verbose >= VERBOSE_DEBUG)
+							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Variable " << unresolved_variable->BuildCDecl() << " may be an alias of " << variable_def->BuildCDecl() << std::endl;
 							}
@@ -1604,7 +1605,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					}
 					else
 					{
-						if(verbose >= VERBOSE_DEBUG)
+						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
 							std::cout << "Variable definition of " << unresolved_variable->BuildCDecl() << " is missing" << std::endl;
 						}
@@ -1803,13 +1804,14 @@ bool JSON_ConfigReader::ParseRootMember(std::istream& stream)
 				case VERBOSE_ERROR:
 				case VERBOSE_WARNING:
 				case VERBOSE_INFO:
-				case VERBOSE_DEBUG:
+				case VERBOSE_DEBUG_EXCAVATOR:
+				case VERBOSE_DEBUG_DWARF_PARSER:
 					verbose = Verbose(uint_value);
 					break;
 				default:
 				{
 					std::stringstream msg_sstr;
-					msg_sstr << "expecting " << +VERBOSE_ERROR << ", " << +VERBOSE_WARNING << ", " << +VERBOSE_INFO << ", or " << +VERBOSE_DEBUG << " for Member \"verbose\"";
+					msg_sstr << "expecting " << +VERBOSE_ERROR << ", " << +VERBOSE_WARNING << ", " << +VERBOSE_INFO << ", " << +VERBOSE_DEBUG_EXCAVATOR << ", or " << +VERBOSE_DEBUG_DWARF_PARSER << " for Member \"verbose\"";
 					Lexer::ParseError(stream, *this, msg_sstr.str());
 					return false;
 				}
@@ -2020,7 +2022,7 @@ void Help(std::ostream& stream)
 	stream << "\"suppress-types\" is the list of types to suppress while analysis, e.g. types to be considered as compiler builtins." << std::endl;
 	stream << "\"suppress-functions\" is the list of functions to suppress while analysis, e.g. functions to be considered as compiler builtins." << std::endl;
 	stream << "\"output-dir\" is the output directory of the analysis (*mandatory option*); the result of the analysis is a reversed engineered C source codes." << std::endl;
-	stream << "\"verbose\" is the level of verbosity during analysis (" << +VERBOSE_ERROR << ":errors, " << +VERBOSE_WARNING << ":warnings, " << +VERBOSE_INFO << ":info, " << +VERBOSE_DEBUG<< ":debug)." << std::endl;
+	stream << "\"verbose\" is the level of verbosity during analysis (" << +VERBOSE_ERROR << ":errors, " << +VERBOSE_WARNING << ":warnings, " << +VERBOSE_INFO << ":info, " << +VERBOSE_DEBUG_EXCAVATOR << ":debug Excavator, " << +VERBOSE_DEBUG_DWARF_PARSER << ":debug DWARF parser)." << std::endl;
 	stream << "\"dwarf-html-output-dir\" is the directory where to dump DWARF debugging information as HTML; if not specified or empty, it means no dump." << std::endl;
 }
 
@@ -2124,10 +2126,15 @@ int main(int argc, char *argv[])
 			if(magic[4] == 1)
 			{
 				// Binary file is an ELF32 file
+				if(json_config_reader.GetVerbose() >= VERBOSE_INFO)
+				{
+					std::cout << "File \"" << binary_filename << "\" looks like an ELF32 binary file" << std::endl;
+				}
 				unisim::util::loader::elf_loader::Elf32Loader<uint32_t> elf32_loader;
 				elf32_loader.SetFileName(binary_filename.c_str());
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, json_config_reader.GetVerbose() >= VERBOSE_INFO);
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, true);
+				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, json_config_reader.GetVerbose() >= VERBOSE_DEBUG_DWARF_PARSER);
 				elf32_loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, json_config_reader.GetDWARF_HTML_OutputDir().c_str());
 				
 				// Load binary file
@@ -2156,10 +2163,15 @@ int main(int argc, char *argv[])
 			else if(magic[4] == 2)
 			{
 				// Binary file is an ELF64 file
+				if(json_config_reader.GetVerbose() >= VERBOSE_INFO)
+				{
+					std::cout << "File \"" << binary_filename << "\" looks like an ELF64 binary file" << std::endl;
+				}
 				unisim::util::loader::elf_loader::Elf64Loader<uint64_t> elf64_loader;
 				elf64_loader.SetFileName(binary_filename.c_str());
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, json_config_reader.GetVerbose() >= VERBOSE_INFO);
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, true);
+				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, json_config_reader.GetVerbose() >= VERBOSE_DEBUG_DWARF_PARSER);
 				elf64_loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, json_config_reader.GetDWARF_HTML_OutputDir().c_str());
 				
 				// Load binary file

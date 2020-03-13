@@ -1478,7 +1478,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								program += sz;
 								program_length -= sz;
 								
-								if(os) *os << "DW_CFA_def_cfa_register(" << reg_num.to_string(false) << ") /* cfa = r" << reg_num.to_string(false) << "+ old offset */";
+								if(os) *os << "DW_CFA_def_cfa_register(" << reg_num.to_string(false) << ") /* cfa = r" << reg_num.to_string(false) << " + old offset */";
 								
 								if(cfi)
 								{

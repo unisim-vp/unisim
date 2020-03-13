@@ -57,6 +57,7 @@ public:
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
+	uint64_t GetOffset() const;
 	DWARF_Version GetDWARFVersion() const;
 	std::string GetHREF() const;
 	const char *GetAugmentation() const;
@@ -67,6 +68,9 @@ public:
 	bool IsTerminator() const;
 	bool GetAugmentationData(char c, uint64_t& value) const;
 	MEMORY_ADDR DecodePointer(MEMORY_ADDR pc, MEMORY_ADDR encoded_ptr) const;
+	DWARF_FrameSectionType GetFrameSectionType() const;
+	unsigned int GetAddressSize() const;
+	unsigned int GetSegmentSelectorSize() const;
 	
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
@@ -88,6 +92,10 @@ private:
 	const char *augmentation; // UTF-8 string
 	
 	uint64_t eh_data;         // GNU extension: EH Data (in .eh_frame with augmentation string containing "eh")
+	
+	uint8_t address_size;     // size of target address in this CIE and any FDEs that use it
+	
+	uint8_t segment_selector_size; // size of segment selector in this CIE and any FDEs that use it
 	
 	DWARF_LEB128 code_alignment_factor; // unsigned
 	
