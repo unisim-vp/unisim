@@ -1674,7 +1674,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 
 JSON_ConfigReader::JSON_ConfigReader(std::ostream& _err)
 	: err(_err)
-	, verbose(VERBOSE_ERROR)
+	, verbose(VERBOSE_INFO)
 	, binary()
 	, output_dir()
 	, sources()
@@ -2022,7 +2022,7 @@ void Help(std::ostream& stream)
 	stream << "\"suppress-types\" is the list of types to suppress while analysis, e.g. types to be considered as compiler builtins." << std::endl;
 	stream << "\"suppress-functions\" is the list of functions to suppress while analysis, e.g. functions to be considered as compiler builtins." << std::endl;
 	stream << "\"output-dir\" is the output directory of the analysis (*mandatory option*); the result of the analysis is a reversed engineered C source codes." << std::endl;
-	stream << "\"verbose\" is the level of verbosity during analysis (" << +VERBOSE_ERROR << ":errors, " << +VERBOSE_WARNING << ":warnings, " << +VERBOSE_INFO << ":info, " << +VERBOSE_DEBUG_EXCAVATOR << ":debug Excavator, " << +VERBOSE_DEBUG_DWARF_PARSER << ":debug DWARF parser)." << std::endl;
+	stream << "\"verbose\" is the level of verbosity (level 2 is the default) during analysis (" << +VERBOSE_ERROR << ":errors, " << +VERBOSE_WARNING << ":warnings, " << +VERBOSE_INFO << ":info, " << +VERBOSE_DEBUG_EXCAVATOR << ":debug tool, " << +VERBOSE_DEBUG_DWARF_PARSER << ":debug DWARF parser)." << std::endl;
 	stream << "\"dwarf-html-output-dir\" is the directory where to dump DWARF debugging information as HTML; if not specified or empty, it means no dump." << std::endl;
 }
 
