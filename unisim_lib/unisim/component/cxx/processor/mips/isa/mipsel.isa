@@ -1,0 +1,509 @@
+/**********************************************
+
+             Mipsel EMULATOR ISA
+
+**********************************************/
+
+namespace mipsel
+set addressclass {uint32_t};
+set codetype scalar;
+set endianness little;
+
+
+decl {
+#include <iosfwd>
+#include <cstdint>
+}; // end of decl
+
+action {void} disasm({std::ostream&} {sink}) const {
+  sink << "Unknown Mipsel instruction";
+}
+
+impl {
+#include <mipsel/disasm.hh>
+#include <iostream>
+} // end of impl
+
+include "special.isa"
+include "floating-point.isa"
+
+op bg(bits[32]);
+
+bg.disasm = { sink << "0x" << std::hex << bits; }
+
+op sync(0x0000000f[32]);
+
+sync.disasm = { sink << "sync"; };
+
+op sync_p(0x0000040f[32]);
+
+sync_p.disasm = { sink << "sync.p"; };
+
+op j(1[5]:al[1]:shl<2> target[26]);
+
+j.disasm = { sink << "j" << (al ? "al" : "") << '\t' << PrintHex(target); };
+
+op andi(12[6]:ra[5]:rb[5]:imm[16]);
+andi.disasm = { sink << "andi\t" << PrintR("$",rb) << "," << PrintR("$",ra) << "," << PrintHex(imm); };
+
+op sll(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x00[6]);
+sll.disasm = { sink << "sll\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm); };
+
+op srl(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x02[6]);
+srl.disasm = { sink << "srl\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm); };
+
+op sra(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x03[6]);
+sra.disasm = { sink << "sra\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm); };
+
+op sllv(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x04[6]);
+sllv.disasm = { sink << "sllv\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintR("$",ra); };
+
+op srlv(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x06[6]);
+srlv.disasm = { sink << "srlv\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintR("$",ra); };
+
+op srav(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x07[6]);
+srav.disasm = { sink << "srav\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintR("$",ra); };
+
+op jr(0[6]:ra[5]:0[5]:0[5]:0[5]:0x08[6]);
+jr.disasm = { sink << "jr\t" << PrintR("$",ra); };
+
+op jalr(0[6]:ra[5]:0[5]:rc[5]:0[5]:0x09[6]);
+jalr.disasm = \
+{
+  sink << "jalr\t";
+  if (rc != 31) sink << PrintR("$",rc) << ",";
+  sink << PrintR("$",ra);
+};
+
+op syscall(0[6]:imm[20]:0x0c[6]);
+syscall.disasm = { sink << "syscall"; if (imm) sink << '\t' << PrintHex(imm); };
+
+op break(0[6] : imm1[10] : imm2[10] : 0xd[6]);
+break.disasm =
+{
+  sink << "break";
+  if (imm1 or imm2)
+    sink << '\t' << PrintHex(imm1);
+  if (imm2)
+    sink <<  ',' << PrintHex(imm2);
+};
+
+op mfhi(0[6]:0[5]:0[5]:rc[5]:0[5]:0x10[6]);
+mfhi.disasm = { sink << "mfhi\t" << PrintR("$",rc); };
+
+op mthi(0[6]:ra[5]:0[5]:0[5]:0[5]:0x11[6]);
+mthi.disasm = { sink << "mthi\t" << PrintR("$",ra); };
+
+op mflo(0[6]:0[5]:0[5]:rc[5]:0[5]:0x12[6]);
+mflo.disasm = { sink << "mflo\t" << PrintR("$",rc); };
+
+op mtlo(0[6]:ra[5]:0[5]:0[5]:0[5]:0x13[6]);
+mtlo.disasm = { sink << "mtlo\t" << PrintR("$",ra); };
+
+op dsllv(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x14[6]);
+dsllv.disasm = { sink << "dsllv\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintR("$",ra); };
+
+op dsrlv(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x16[6]);
+dsrlv.disasm = { sink << "dsrlv\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintR("$",ra); };
+
+op dsrav(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x17[6]);
+dsrav.disasm = { sink << "dsrav\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintR("$",ra); };
+
+op mult(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x18[6]);
+mult.disasm = { sink << "mult\t" << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op multu(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x19[6]);
+multu.disasm = { sink << "multu\t" << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+
+op div(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x1a[6]);
+div.disasm = { sink << "div\t" << PrintR("$",0) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+
+op divu(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x1b[6]);
+divu.disasm = { sink << "divu\t" << PrintR("$",0) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+
+op dmult(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x1c[6]);
+dmult.disasm = { sink << "dmult\t" << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+
+op dmultu(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x1d[6]);
+dmultu.disasm = { sink << "dmultu\t" << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+
+op ddiv(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x1e[6]);
+ddiv.disasm = { sink << "ddiv\t" << PrintR("$",0) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+
+op ddivu(0[6]:ra[5]:rb[5]:0[5]:0[5]:0x1f[6]);
+ddivu.disasm = { sink << "ddivu\t" << PrintR("$",0) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op add(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x20[6]);
+add.disasm = { sink << "add\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op addu(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x21[6]);
+addu.disasm = { sink << "addu\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op neg(0[6]:0[5]:rb[5]:rc[5]:0[5]:0x22[6]);
+neg.disasm = { sink << "neg\t" << PrintR("$",rc) << "," << PrintR("$",rb); };
+
+op negu(0[6]:0[5]:rb[5]:rc[5]:0[5]:0x23[6]);
+negu.disasm = { sink << "negu\t" << PrintR("$",rc) << "," << PrintR("$",rb); };
+
+op sub(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x22[6]);
+sub.disasm = { sink << "sub\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op subu(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x23[6]);
+subu.disasm = { sink << "subu\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op and(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x24[6]);
+and.disasm = { sink << "and\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op or(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x25[6]);
+or.disasm = { sink << "or\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op xor(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x26[6]);
+xor.disasm = { sink << "xor\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op nor(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x27[6]);
+nor.disasm = { sink << "nor\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op slt(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x2a[6]);
+slt.disasm = { sink << "slt\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op sltu(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x2b[6]);
+sltu.disasm = { sink << "sltu\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op dadd(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x2c[6]);
+dadd.disasm = { sink << "dadd\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op daddu(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x2d[6]);
+daddu.disasm = { sink << "daddu\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op dneg(0[6]:0[5]:rb[5]:rc[5]:0[5]:0x2e[6]);
+dneg.disasm = { sink << "dneg\t" << PrintR("$",rc) << "," << PrintR("$",rb); };
+
+op dnegu(0[6]:0[5]:rb[5]:rc[5]:0[5]:0x2f[6]);
+dnegu.disasm = { sink << "dnegu\t" << PrintR("$",rc) << "," << PrintR("$",rb); };
+
+op dsub(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x2e[6]);
+dsub.disasm = { sink << "dsub\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op dsubu(0[6]:ra[5]:rb[5]:rc[5]:0[5]:0x2f[6]);
+dsubu.disasm = { sink << "dsubu\t" << PrintR("$",rc) << "," << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+op tge(0[6]:ra[5]:rb[5]:imm[10]:0x30[6]);
+tge.disasm = { sink << "tge\t" << PrintR("$",ra) << "," << PrintR("$",rb); if (imm) sink << ',' << PrintHex(imm);  };
+
+op tgeu(0[6]:ra[5]:rb[5]:imm[10]:0x31[6]);
+tgeu.disasm = { sink << "tgeu\t" << PrintR("$",ra) << "," << PrintR("$",rb); if (imm) sink << ',' << PrintHex(imm); };
+
+op tlt(0[6]:ra[5]:rb[5]:imm[10]:0x32[6]);
+tlt.disasm = { sink << "tlt\t" << PrintR("$",ra) << "," << PrintR("$",rb); if (imm) sink << ',' << PrintHex(imm); };
+
+op tltu(0[6]:ra[5]:rb[5]:imm[10]:0x33[6]);
+tltu.disasm = { sink << "tltu\t" << PrintR("$",ra) << "," << PrintR("$",rb); if (imm) sink << ',' << PrintHex(imm); };
+
+op teq(0[6]:ra[5]:rb[5]:imm[10]:0x34[6]);
+teq.disasm = { sink << "teq\t" << PrintR("$",ra) << "," << PrintR("$",rb); if (imm) sink << ',' << PrintHex(imm); };
+
+op tne(0[6]:ra[5]:rb[5]:imm[10]:0x36[6]);
+tne.disasm = { sink << "tne\t" << PrintR("$",ra) << "," << PrintR("$",rb); if (imm) sink << ',' << PrintHex(imm); };
+
+op dsll(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x38[6]);
+dsll.disasm = { sink << "dsll\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm);; };
+
+op dsrl(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x3a[6]);
+dsrl.disasm = { sink << "dsrl\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm);; };
+
+op dsra(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x3b[6]);
+dsra.disasm = { sink << "dsra\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm);; };
+
+op dsll32(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x3c[6]);
+dsll32.disasm = { sink << "dsll32\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm);; };
+
+op dsrl32(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x3e[6]);
+dsrl32.disasm = { sink << "dsrl32\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm);; };
+
+op dsra32(0[6]:0[5]:rb[5]:rc[5]:imm[5]:0x3f[6]);
+dsra32.disasm = { sink << "dsra32\t" << PrintR("$",rc) << "," << PrintR("$",rb) << "," << PrintHex(imm);; };
+
+op bltz(1[6]:ra[5]:al[1]:0[2]:l[1]:n[1]:shl<2> sext offset[16]);
+bltz.disasm = { sink << 'b' << (n ? "ge" : "lt") << 'z' << (al ? "al" : "") << (l ? "l" : "") << '\t' << PrintR("$",ra) << ',' << PrintHex(GetAddr() + offset + 4); };
+
+op blez(0[1]:l[1]:3[3]:n[1]:ra[5]:0[5]:shl<2> sext offset[16]);
+blez.disasm = { sink << 'b' << (n ? "gt" : "le") << "z" << (l ? "l" : "") << "\t" << PrintR("$",ra) << ',' << PrintHex(GetAddr() + offset + 4); };
+
+op beqz(0[1]:l[1]:2[3]:n[1]:ra[5]:0[5]:shl<2> sext offset[16]);
+beqz.disasm = { sink << "b" << (n ? "ne" : "eq") << "z" << (l ? "l" : "") << "\t" << PrintR("$",ra) << ',' << PrintHex(GetAddr() + offset + 4); };
+
+op beq(0[1]:l[1]:2[3]:n[1]:ra[5]:rb[5]:shl<2> sext offset[16]);
+beq.disasm = { sink << "b" << (n ? "ne" : "eq") << (l ? "l" : "") << "\t" << PrintR("$",ra) << ',' << PrintR("$",rb) << ',' << PrintHex(GetAddr() + offset + 4); };
+
+op tgei(1[6]:ra[5]:8[5]:sext imm[16]);
+tgei.disasm = { sink << "tgei\t" << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op tgeiu(1[6]:ra[5]:9[5]:sext imm[16]);
+tgeiu.disasm = { sink << "tgeiu\t" << PrintR("$",ra) << ',' << PrintI(imm); };
+
+op tlti(1[6]:ra[5]:10[5]:sext imm[16]);
+tlti.disasm = { sink << "tlti\t" << PrintR("$",ra) << ',' << PrintI(imm); };
+
+op tltiu(1[6]:ra[5]:11[5]:sext imm[16]);
+tltiu.disasm = { sink << "tltiu\t" << PrintR("$",ra) << ',' << PrintI(imm); };
+
+op teqi(1[6]:ra[5]:12[5]:sext imm[16]);
+teqi.disasm = { sink << "teqi\t" << PrintR("$",ra) << ',' << PrintI(imm); };
+
+op tnei(1[6]:ra[5]:14[5]:sext imm[16]);
+tnei.disasm = { sink << "tnei\t" << PrintR("$",ra) << ',' << PrintI(imm); };
+
+op addi(8[6]:ra[5]:rb[5]:sext imm[16]);
+addi.disasm = { sink << "addi\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op addiu(9[6]:ra[5]:rb[5]:sext imm[16]);
+addiu.disasm = { sink << "addiu\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op slti(10[6]:ra[5]:rb[5]:sext imm[16]);
+slti.disasm = { sink << "slti\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op sltiu(11[6]:ra[5]:rb[5]:sext imm[16]);
+sltiu.disasm = { sink << "sltiu\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op dli(13[6]:0[5]:rb[5]:imm[16]);
+dli.disasm = { sink << "dli\t" << PrintR("$",rb) << ',' << PrintHex(imm);  };
+dli.specialize(ori);
+
+op ori(13[6]:ra[5]:rb[5]:0[1]:imm[15]);
+ori.disasm = { sink << "ori\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintHex(imm);  };
+
+op xori(14[6]:ra[5]:rb[5]:0[1]:imm[15]);
+xori.disasm = { sink << "xori\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintHex(imm);  };
+
+op lui(15[6]:0[5]:rb[5]:0[1]:imm[15]);
+lui.disasm = { sink << "lui\t" << PrintR("$",rb) << ',' << PrintHex(imm);  };
+
+/*** C0 ***/
+op c0(16[6]:1[1]:imm[25]);
+c0.disasm = { sink << "c" << unsigned(0) << "\t" << PrintHex(imm); };
+
+op mfc0(16[6]:0[5]:rb[5]:rc[5]:0[11]);
+mfc0.disasm = { sink << "mfc" << unsigned(0) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op dmfc0(16[6]:1[5]:rb[5]:rc[5]:0[11]);
+dmfc0.disasm = { sink << "dmfc" << unsigned(0) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op cfc0(16[6]:2[5]:rb[5]:rc[5]:0[11]);
+cfc0.disasm = { sink << "cfc" << unsigned(0) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op mtc0(16[6]:4[5]:rb[5]:rc[5]:0[11]);
+mtc0.disasm = { sink << "mtc" << unsigned(0) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op dmtc0(16[6]:5[5]:rb[5]:rc[5]:0[11]);
+dmtc0.disasm = { sink << "dmtc" << unsigned(0) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op ctc0(16[6]:6[5]:rb[5]:rc[5]:0[11]);
+ctc0.disasm = { sink << "ctc" << unsigned(0) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op bc0f(16[6]:8[5]:0[3]:l[1]:0[1]:0[2]:shl<2> offset[14]);
+bc0f.disasm = { sink << "bc" << unsigned(0) << "f" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+op bc0t(16[6]:8[5]:0[3]:l[1]:1[1]:0[2]:shl<2> offset[14]);
+bc0t.disasm = { sink << "bc" << unsigned(0) << "t" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+/*** C1 ***/
+op c1(17[6]:1[1]:imm[25]);
+c1.disasm = { sink << "c" << unsigned(1) << "\t" << PrintHex(imm); };
+
+op mfc1(17[6]:0[5]:rb[5]:rc[5]:0[11]);
+mfc1.disasm = { sink << "mfc" << unsigned(1) << "\t" << PrintR("$",rb) << ',' << PrintR("$f",rc);  };
+
+op dmfc1(17[6]:1[5]:rb[5]:rc[5]:0[11]);
+dmfc1.disasm = { sink << "dmfc" << unsigned(1) << "\t" << PrintR("$",rb) << ',' << PrintR("$f",rc);  };
+
+op cfc1(17[6]:2[5]:rb[5]:rc[5]:0[11]);
+cfc1.disasm = { sink << "cfc" << unsigned(1) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op mtc1(17[6]:4[5]:rb[5]:rc[5]:0[11]);
+mtc1.disasm = { sink << "mtc" << unsigned(1) << "\t" << PrintR("$",rb) << ',' << PrintR("$f",rc);  };
+
+op dmtc1(17[6]:5[5]:rb[5]:rc[5]:0[11]);
+dmtc1.disasm = { sink << "dmtc" << unsigned(1) << "\t" << PrintR("$",rb) << ',' << PrintR("$f",rc);  };
+
+op ctc1(17[6]:6[5]:rb[5]:rc[5]:0[11]);
+ctc1.disasm = { sink << "ctc" << unsigned(1) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op bc1f(17[6]:8[5]:0[3]:l[1]:0[1]:0[2]:shl<2> offset[14]);
+bc1f.disasm = { sink << "bc" << unsigned(1) << "f" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+op bc1t(17[6]:8[5]:0[3]:l[1]:1[1]:0[2]:shl<2> offset[14]);
+bc1t.disasm = { sink << "bc" << unsigned(1) << "t" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+/*** C2 ***/
+op c2(18[6]:1[1]:imm[25]);
+c2.disasm = { sink << "c" << unsigned(2) << "\t" << PrintHex(imm); };
+
+op mfc2(18[6]:0[5]:rb[5]:rc[5]:0[11]);
+mfc2.disasm = { sink << "mfc" << unsigned(2) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op dmfc2(18[6]:1[5]:rb[5]:rc[5]:0[11]);
+dmfc2.disasm = { sink << "dmfc" << unsigned(2) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op cfc2(18[6]:2[5]:rb[5]:rc[5]:0[11]);
+cfc2.disasm = { sink << "cfc" << unsigned(2) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op mtc2(18[6]:4[5]:rb[5]:rc[5]:0[11]);
+mtc2.disasm = { sink << "mtc" << unsigned(2) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op dmtc2(18[6]:5[5]:rb[5]:rc[5]:0[11]);
+dmtc2.disasm = { sink << "dmtc" << unsigned(2) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op ctc2(18[6]:6[5]:rb[5]:rc[5]:0[11]);
+ctc2.disasm = { sink << "ctc" << unsigned(2) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op bc2f(18[6]:8[5]:0[3]:l[1]:0[1]:0[2]:shl<2> offset[14]);
+bc2f.disasm = { sink << "bc" << unsigned(2) << "f" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+op bc2t(18[6]:8[5]:0[3]:l[1]:1[1]:0[2]:shl<2> offset[14]);
+bc2t.disasm = { sink << "bc" << unsigned(2) << "t" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+/*** C3 ***/
+op c3(19[6]:1[1]:imm[25]);
+c3.disasm = { sink << "c" << unsigned(3) << "\t" << PrintHex(imm); };
+
+op mfc3(19[6]:0[5]:rb[5]:rc[5]:0[11]);
+mfc3.disasm = { sink << "mfc" << unsigned(3) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op dmfc3(19[6]:1[5]:rb[5]:rc[5]:0[11]);
+dmfc3.disasm = { sink << "dmfc" << unsigned(3) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op cfc3(19[6]:2[5]:rb[5]:rc[5]:0[11]);
+cfc3.disasm = { sink << "cfc" << unsigned(3) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op mtc3(19[6]:4[5]:rb[5]:rc[5]:0[11]);
+mtc3.disasm = { sink << "mtc" << unsigned(3) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op dmtc3(19[6]:5[5]:rb[5]:rc[5]:0[11]);
+dmtc3.disasm = { sink << "dmtc" << unsigned(3) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op ctc3(19[6]:6[5]:rb[5]:rc[5]:0[11]);
+ctc3.disasm = { sink << "ctc" << unsigned(3) << "\t" << PrintR("$",rb) << ',' << PrintR("$",rc);  };
+
+op bc3f(19[6]:8[5]:0[3]:l[1]:0[1]:0[2]:shl<2> offset[14]);
+bc3f.disasm = { sink << "bc" << unsigned(3) << "f" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+op bc3t(19[6]:8[5]:0[3]:l[1]:1[1]:0[2]:shl<2> offset[14]);
+bc3t.disasm = { sink << "bc" << unsigned(3) << "t" << (l ? "l" : "") << "\t" << PrintHex(GetAddr() + offset + 4); };
+
+op daddi(24[6]:ra[5]:rb[5]:sext imm[16]);
+daddi.disasm = { sink << "daddi\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op daddiu(25[6]:ra[5]:rb[5]:sext imm[16]);
+daddiu.disasm = { sink << "daddiu\t" << PrintR("$",rb) << ',' << PrintR("$",ra) << ',' << PrintI(imm);  };
+
+op ldl(26[6]:ra[5]:rb[5]:sext offset[16]);
+ldl.disasm = { sink << "ldl\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op ldr(27[6]:ra[5]:rb[5]:sext offset[16]);
+ldr.disasm = { sink << "ldr\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op jalx(29[6]:shl<2> target[26]);
+jalx.disasm = { sink << "jalx\t" << PrintHex(target+1); };
+
+op lb(32[6]:ra[5]:rb[5]:sext offset[16]);
+lb.disasm = { sink << "lb\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lh(33[6]:ra[5]:rb[5]:sext offset[16]);
+lh.disasm = { sink << "lh\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lwl(34[6]:ra[5]:rb[5]:sext offset[16]);
+lwl.disasm = { sink << "lwl\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lw(35[6]:ra[5]:rb[5]:sext offset[16]);
+lw.disasm = { sink << "lw\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lbu(36[6]:ra[5]:rb[5]:sext offset[16]);
+lbu.disasm = { sink << "lbu\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lhu(37[6]:ra[5]:rb[5]:sext offset[16]);
+lhu.disasm = { sink << "lhu\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lwr(38[6]:ra[5]:rb[5]:sext offset[16]);
+lwr.disasm = { sink << "lwr\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lwu(39[6]:ra[5]:rb[5]:sext offset[16]);
+lwu.disasm = { sink << "lwu\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sb(40[6]:ra[5]:rb[5]:sext offset[16]);
+sb.disasm = { sink << "sb\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sh(41[6]:ra[5]:rb[5]:sext offset[16]);
+sh.disasm = { sink << "sh\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op swl(42[6]:ra[5]:rb[5]:sext offset[16]);
+swl.disasm = { sink << "swl\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sw(43[6]:ra[5]:rb[5]:sext offset[16]);
+sw.disasm = { sink << "sw\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sdl(44[6]:ra[5]:rb[5]:sext offset[16]);
+sdl.disasm = { sink << "sdl\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sdr(45[6]:ra[5]:rb[5]:sext offset[16]);
+sdr.disasm = { sink << "sdr\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op swr(46[6]:ra[5]:rb[5]:sext offset[16]);
+swr.disasm = { sink << "swr\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op cache(47[6]:ra[5]:rb[5]:sext offset[16]);
+cache.disasm = { sink << "cache\t" << PrintHex(rb) << ',' << PrintI(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op ll(48[6]:ra[5]:rb[5]:sext offset[16]);
+ll.disasm = { sink << "ll\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lwc1(49[6]:ra[5]:rb[5]:sext offset[16]);
+lwc1.disasm = { sink << "lwc1\t" << PrintR("$f",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lwc2(50[6]:ra[5]:rb[5]:sext offset[16]);
+lwc2.disasm = { sink << "lwc2\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lwc3(51[6]:ra[5]:rb[5]:sext offset[16]);
+lwc3.disasm = { sink << "lwc3\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op lld(52[6]:ra[5]:rb[5]:sext offset[16]);
+lld.disasm = { sink << "lld\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op ldc1(53[6]:ra[5]:rb[5]:sext offset[16]);
+ldc1.disasm = { sink << "ldc1\t" << PrintR("$f",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op ldc2(54[6]:ra[5]:rb[5]:sext offset[16]);
+ldc2.disasm = { sink << "ldc2\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op ldc3(55[6]:ra[5]:rb[5]:sext offset[16]);
+ldc3.disasm = { sink << "ld\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sc(56[6]:ra[5]:rb[5]:sext offset[16]);
+sc.disasm = { sink << "sc\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op swc1(57[6]:ra[5]:rb[5]:sext offset[16]);
+swc1.disasm = { sink << "swc1\t" << PrintR("$f",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op swc2(58[6]:ra[5]:rb[5]:sext offset[16]);
+swc2.disasm = { sink << "swc2\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op swc3(59[6]:ra[5]:rb[5]:sext offset[16]);
+swc3.disasm = { sink << "swc3\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op scd(60[6]:ra[5]:rb[5]:sext offset[16]);
+scd.disasm = { sink << "scd\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sdc1(61[6]:ra[5]:rb[5]:sext offset[16]);
+sdc1.disasm = { sink << "sdc1\t" << PrintR("$f",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sdc2(62[6]:ra[5]:rb[5]:sext offset[16]);
+sdc2.disasm = { sink << "sdc2\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op sdc3(63[6]:ra[5]:rb[5]:sext offset[16]);
+sdc3.disasm = { sink << "sd\t" << PrintR("$",rb) << ',' << int(offset) << '(' << PrintR("$",ra) << ')'; };
+

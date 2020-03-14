@@ -1,0 +1,19 @@
+/**** C0 ***/
+
+op tlbr(16[6]:1[1]:0x01[25]);
+tlbr.disasm = { sink << "tlbr"; };
+
+op tlbwi(16[6]:1[1]:0x02[25]);
+tlbwi.disasm = { sink << "tlbwi"; };
+
+op tlbwr(16[6]:1[1]:0x06[25]);
+tlbwr.disasm = { sink << "tlbwr"; };
+
+op tlbp(16[6]:1[1]:0x08[25]);
+tlbp.disasm = { sink << "tlbp"; };
+
+op eret(16[6]:1[1]:0x18[25]);
+eret.disasm = { sink << "eret"; };
+
+op wait(16[6]:1[1]:0x20[25]);
+wait.disasm = { sink << "wait"; };
