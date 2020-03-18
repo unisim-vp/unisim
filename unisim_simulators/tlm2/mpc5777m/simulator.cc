@@ -615,6 +615,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	//=========================================================================
 	// - Main_Core_0
 	instrumenter->RegisterPort(main_core_0->m_clk);
+	instrumenter->RegisterPort(main_core_0->m_i_ahb_clk);
+	instrumenter->RegisterPort(main_core_0->m_d_ahb_clk);
 	instrumenter->RegisterPort(main_core_0->m_por);
 	instrumenter->RegisterPort(main_core_0->p_reset_b);
 	instrumenter->RegisterPort(main_core_0->p_nmi_b);
@@ -629,6 +631,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	
 	// - Main_Core_1
 	instrumenter->RegisterPort(main_core_1->m_clk);
+	instrumenter->RegisterPort(main_core_1->m_i_ahb_clk);
+	instrumenter->RegisterPort(main_core_1->m_d_ahb_clk);
 	instrumenter->RegisterPort(main_core_1->m_por);
 	instrumenter->RegisterPort(main_core_1->p_reset_b);
 	instrumenter->RegisterPort(main_core_1->p_nmi_b);
@@ -643,6 +647,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 
 	// - Peripheral_Core_2
 	instrumenter->RegisterPort(peripheral_core_2->m_clk);
+	instrumenter->RegisterPort(peripheral_core_2->m_i_ahb_clk);
+	instrumenter->RegisterPort(peripheral_core_2->m_d_ahb_clk);
 	instrumenter->RegisterPort(peripheral_core_2->m_por);
 	instrumenter->RegisterPort(peripheral_core_2->p_reset_b);
 	instrumenter->RegisterPort(peripheral_core_2->p_nmi_b);
@@ -2226,6 +2232,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	
 	// RTL ports
 	instrumenter->Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
+	instrumenter->Bind("HARDWARE.Main_Core_0.m_i_ahb_clk"     , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.Main_Core_0.m_d_ahb_clk"     , "HARDWARE.FXBAR_CLK");
 	instrumenter->Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
 	instrumenter->Bind("HARDWARE.Main_Core_0.p_reset_b"       , "HARDWARE.p_reset_b_0");
 	instrumenter->Bind("HARDWARE.Main_Core_0.p_nmi_b"         , "HARDWARE.p_nmi_b");
@@ -2239,6 +2247,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	instrumenter->Bind("HARDWARE.Main_Core_0.p_iack"          , "HARDWARE.p_iack_0");
 
 	instrumenter->Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.COMP_CLK");
+	instrumenter->Bind("HARDWARE.Main_Core_1.m_i_ahb_clk"     , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.Main_Core_1.m_d_ahb_clk"     , "HARDWARE.FXBAR_CLK");
 	instrumenter->Bind("HARDWARE.Main_Core_1.m_por"           , "HARDWARE.m_por");
 	instrumenter->Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_1");
 	instrumenter->Bind("HARDWARE.Main_Core_1.p_nmi_b"         , "HARDWARE.p_nmi_b");
@@ -2252,6 +2262,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	instrumenter->Bind("HARDWARE.Main_Core_1.p_iack"          , "HARDWARE.p_iack_1");
 
 	instrumenter->Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.IOP_CLK");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.m_i_ahb_clk"     , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.m_d_ahb_clk"     , "HARDWARE.SXBAR_CLK");
 	instrumenter->Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
 	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b_2");
 	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_nmi_b"         , "HARDWARE.p_nmi_b");
@@ -2276,12 +2288,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	
 	instrumenter->Bind("HARDWARE.PBRIDGE_A.m_clk"                       , "HARDWARE.PBRIDGEA_CLK");
 	instrumenter->Bind("HARDWARE.PBRIDGE_A.reset_b"                     , "HARDWARE.reset_b");
-	instrumenter->Bind("HARDWARE.PBRIDGE_A.input_if_clock"              , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_A.input_if_clock"              , "HARDWARE.SXBAR_CLK");
 	instrumenter->Bind("HARDWARE.PBRIDGE_A.output_if_clock"             , "HARDWARE.PBRIDGEA_CLK");
 	
 	instrumenter->Bind("HARDWARE.PBRIDGE_B.m_clk"                       , "HARDWARE.PBRIDGEB_CLK");
 	instrumenter->Bind("HARDWARE.PBRIDGE_B.reset_b"                     , "HARDWARE.reset_b");
-	instrumenter->Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.SXBAR_CLK");
 	instrumenter->Bind("HARDWARE.PBRIDGE_B.output_if_clock"             , "HARDWARE.PBRIDGEB_CLK");
 	
 	instrumenter->Bind("HARDWARE.EBI.m_clk"                             , "HARDWARE.PBRIDGEA_CLK");

@@ -581,7 +581,7 @@ void INTC<CONFIG>::ProcessEvent(Event *event)
 
 	payload->set_dmi_allowed(false);
 	
-	sc_core::sc_time completion_time(sc_core::SC_ZERO_TIME);
+	sc_core::sc_time completion_time(cycle_time);
 	sc_core::sc_event *completion_event = event->GetCompletionEvent();
 	
 	if(completion_event)

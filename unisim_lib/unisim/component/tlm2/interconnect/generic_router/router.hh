@@ -210,8 +210,8 @@ protected:
 	 * Ready times for each incomming queue                            START *
 	 *************************************************************************/
 
-	std::vector<sc_core::sc_time> m_targ_req_ready;
-	std::vector<sc_core::sc_time> m_init_rsp_ready;
+	sc_core::sc_time m_targ_req_ready[INPUT_SOCKETS];
+	sc_core::sc_time m_init_rsp_ready[OUTPUT_SOCKETS];
 
 	/*************************************************************************
 	 * Ready times for each incomming queue                              END *
@@ -221,8 +221,8 @@ protected:
 	 * Dispatch handlers                                               START *
 	 *************************************************************************/
 
-	std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *> m_req_dispatcher;
-	std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *> m_rsp_dispatcher;
+	RouterDispatcher<Router<CONFIG>, CONFIG> *m_req_dispatcher[OUTPUT_SOCKETS];
+	RouterDispatcher<Router<CONFIG>, CONFIG> *m_rsp_dispatcher[INPUT_SOCKETS];
 	void SendReq(unsigned int id, transaction_type &trans);
 	void SendRsp(unsigned int id, transaction_type &trans);
 
@@ -377,9 +377,9 @@ protected:
 		MappingTableEntry *next;
 	};
 
-	std::vector<MappingTableEntry> mapping;
+	MappingTableEntry mapping[NUM_MAPPINGS];
 	mutable MappingTableEntry *mru_mapping;
-	std::vector<unisim::kernel::variable::Parameter<MAPPING> *> param_mapping;
+	unisim::kernel::variable::Parameter<MAPPING> *param_mapping[NUM_MAPPINGS];
 #if HAVE_TVS
 	bool enable_bandwidth_tracing;
 	unisim::kernel::variable::Parameter<bool> param_enable_bandwidth_tracing;
@@ -448,7 +448,7 @@ protected:
 	/*************************************************************************
 	 * Statistics                                                      START *
 	 *************************************************************************/
-
+	
 	/*************************************************************************
 	 * Statistics                                                        END *
 	 *************************************************************************/

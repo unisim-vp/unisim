@@ -162,6 +162,8 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	, init_socket()
 	, targ_socket()
 	, memory_export("memory-export", this)
+	, m_targ_req_ready()
+	, m_init_rsp_ready()
 	, m_req_dispatcher()
 	, m_rsp_dispatcher()
 	, cycle_time(sc_core::SC_ZERO_TIME)
@@ -170,9 +172,9 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	, param_input_socket_name()
 	, output_socket_name()
 	, param_output_socket_name()
-	, mapping(NUM_MAPPINGS)
+	, mapping()
 	, mru_mapping(0)
-	, param_mapping(NUM_MAPPINGS)
+	, param_mapping()
 #if HAVE_TVS
 	, enable_bandwidth_tracing(false)
 	, param_enable_bandwidth_tracing("enable-bandwidth-tracing", this, enable_bandwidth_tracing, "Enable/Disable bandwidth tracing")
@@ -277,7 +279,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		param_output_socket_name[i] = new unisim::kernel::variable::Parameter<std::string>(name_sstr.str().c_str(), this, output_socket_name[i], desc_sstr.str().c_str());
 		param_output_socket_name[i]->SetMutable(false);
 	}
-
+	
 	/* create target sockets */
 	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
@@ -292,23 +294,6 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		(*targ_socket[i]).register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
 		(*targ_socket[i]).register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
 	}
-//	/* create target sockets and register socket callbacks */
-//	for (unsigned int i = 0; i < MAX_INPUT_SOCKETS; i++)
-//	{
-//		std::stringstream buf;
-//		buf << "targ_socket[" << i << "]";
-//		targ_socket[i] = new tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES>(buf.str().c_str());
-//		targ_socket[i]->register_nb_transport_fw(	this, &Router<CONFIG>::T_nb_transport_fw_cb, i);
-//		targ_socket[i]->register_b_transport(		this, &Router<CONFIG>::T_b_transport_cb, i);
-//		targ_socket[i]->register_transport_dbg(		this, &Router<CONFIG>::T_transport_dbg_cb, i);
-//		targ_socket[i]->register_get_direct_mem_ptr(this, &Router<CONFIG>::T_get_direct_mem_ptr_cb, i);
-//	}
-
-	// TODO: remove ==>	/* register target multi socket callbacks */
- 	// TODO: remove ==>	targ_socket.register_nb_transport_fw(    this, &Router<CONFIG>::T_nb_transport_fw_cb);
- 	// TODO: remove ==>	targ_socket.register_b_transport(        this, &Router<CONFIG>::T_b_transport_cb);
- 	// TODO: remove ==>	targ_socket.register_transport_dbg(      this, &Router<CONFIG>::T_transport_dbg_cb);
- 	// TODO: remove ==>	targ_socket.register_get_direct_mem_ptr( this, &Router<CONFIG>::T_get_direct_mem_ptr_cb);
 
 	/* create initiator sockets */
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
@@ -331,21 +316,6 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		memory_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(str.str().c_str(), this);
 		memory_export.SetupDependsOn(*memory_import[i]);
 	}
-//	/* create initiator sockets and register socket callbacks */
-//	for (unsigned int i = 0; i < MAX_OUTPUT_SOCKETS; i++)
-//	{
-//		std::stringstream buf;
-//		buf << "init_socket[" << i << "]";
-//		init_socket[i] = new tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES>(buf.str().c_str());
-//		init_socket[i]->register_nb_transport_bw(			this, &Router<CONFIG>::I_nb_transport_bw_cb, i);
-//		init_socket[i]->register_invalidate_direct_mem_ptr(	this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb, i);
-//	}
-
-	// TODO: remove ==>	/* register initiator socket callbacks */
-	// TODO: remove ==>	init_socket.register_nb_transport_bw(           this, &Router<CONFIG>::I_nb_transport_bw_cb);
-	// TODO: remove ==>	init_socket.register_invalidate_direct_mem_ptr( this, &Router<CONFIG>::I_invalidate_direct_mem_ptr_cb);
-
-//	SC_THREAD(Dispatch);
 	
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++) 
 	{
@@ -353,7 +323,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		std::stringstream sstr;
 		sstr << "router_request_dispatcher[" << i << "]";
 		dispatcher = new RouterDispatcher<Router<CONFIG>, CONFIG>(sstr.str().c_str(), i, this, &Router<CONFIG>::SendReq);
-		m_req_dispatcher.push_back(dispatcher);
+		m_req_dispatcher[i] = dispatcher;
 	}
 
 	for (unsigned int i = 0; i < INPUT_SOCKETS; i++) 
@@ -362,7 +332,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		std::stringstream sstr;
 		sstr << "router_response_dispatcher[" << i << "]";
 		dispatcher = new RouterDispatcher<Router<CONFIG>, CONFIG>(sstr.str().c_str(), i, this, &Router<CONFIG>::SendRsp);
-		m_rsp_dispatcher.push_back(dispatcher);
+		m_rsp_dispatcher[i] = dispatcher;
 	}
 
 #if HAVE_TVS
@@ -409,18 +379,14 @@ Router<CONFIG>::~Router()
 	}
 #endif
 
-	typename std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *>::iterator m_req_dispatcher_iter;
-
-	for (m_req_dispatcher_iter = m_req_dispatcher.begin(); m_req_dispatcher_iter != m_req_dispatcher.end(); m_req_dispatcher_iter++)
+	for(unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		delete *m_req_dispatcher_iter;
+		delete m_req_dispatcher[i];
 	}
 
-	typename std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *>::iterator m_rsp_dispatcher_iter;
-
-	for (m_rsp_dispatcher_iter = m_rsp_dispatcher.begin(); m_rsp_dispatcher_iter != m_rsp_dispatcher.end(); m_rsp_dispatcher_iter++)
+	for(unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
-		delete *m_rsp_dispatcher_iter;
+		delete m_rsp_dispatcher[i];
 	}
 
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
@@ -468,13 +434,6 @@ bool Router<CONFIG>::BeginSetup()
 {
 	SetVerboseAll();
 
-// 	if (cycle_time == sc_core::SC_ZERO_TIME) 
-// 	{
-// 		logger << DebugError << "PARAMETER ERROR: the " << param_cycle_time.GetName() << " parameter must be bigger than 0" << std::endl
-// 			<< LOCATION << EndDebug;
-// 		return false;
-// 	}
-	
 	bool has_mapping = false;
 	MappingTableEntry *next = 0;
 	for (int i = NUM_MAPPINGS - 1; i >= 0; i--)
@@ -512,9 +471,9 @@ bool Router<CONFIG>::BeginSetup()
 
 	/* initialize ready queues */
 	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
-		m_targ_req_ready.push_back(sc_core::SC_ZERO_TIME);
+		m_targ_req_ready[i] = sc_core::SC_ZERO_TIME;
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
-		m_init_rsp_ready.push_back(sc_core::SC_ZERO_TIME);
+		m_init_rsp_ready[i] = sc_core::SC_ZERO_TIME;
 	
 	/* display the configuration of the router */
 	if (VerboseSetup()) 
@@ -582,12 +541,12 @@ void Router<CONFIG>::OutputInterfaceClockPropertyChangedProcess()
  *************************************************************************/
 
 template<class CONFIG>
-tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time)
+tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int init_id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time)
 {
 	switch (phase) {
 		case tlm::BEGIN_REQ:
 		case tlm::END_RESP:
-			logger << DebugError << "Received nb_transport_bw on init_socket[" << id << "], with unexpected phase" << std::endl
+			logger << DebugError << "Received nb_transport_bw on init_socket[" << init_id << "], with unexpected phase" << std::endl
 				<< LOCAL_TIME(time) << std::endl
 				<< PHASE(phase) << std::endl;
 			TRANS(logger, trans);
@@ -597,12 +556,13 @@ tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int id, transaction_type
 		case tlm::BEGIN_RESP:
 			/* a response has been received through the init_socket */
 			{
-				m_req_dispatcher[id]->Completed(&trans, time);
+				m_req_dispatcher[init_id]->Completed(&trans, time);
 				if(trans.has_mm()) trans.acquire();
 				const sc_core::sc_time& input_if_cycle_time = input_lat_lut.GetBaseLatency();
 				const sc_core::sc_time& output_if_cycle_time = output_lat_lut.GetBaseLatency();
 				unsigned int data_length = trans.get_data_length();
 				const sc_core::sc_time& init_xfer_duration = InitTransferDuration(data_length);
+				sc_core::sc_time& init_rsp_ready = m_init_rsp_ready[init_id];
 				/* check when the response can be queued into the response queue through the handled port (recovering the router extension)
 				 * we must send an end response message */
 				unsigned int targ_id;
@@ -618,7 +578,7 @@ tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int id, transaction_type
 				}
 				if (unlikely(VerboseTLM()))
 				{
-					logger << DebugInfo << "Received response through init_socket[" << id << "], queueing it to be sent through targ_socket[" << targ_id << "]"  << std::endl
+					logger << DebugInfo << "Received response through init_socket[" << init_id << "], queueing it to be sent through targ_socket[" << targ_id << "]"  << std::endl
 						<< LOCAL_TIME(time) << std::endl;
 					ETRANS(logger, trans);
 					logger << EndDebug;
@@ -626,54 +586,35 @@ tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int id, transaction_type
 				/* check when the request can be accepted by the router */
 				sc_core::sc_time cur_time(sc_core::sc_time_stamp());
 				cur_time += time;
+				
+				/* we have to make sure that the incomming transactions is synchronized with the output interface cycle_time */
+				unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+				
 				cur_time -= init_xfer_duration; // go back at the time data transfer started
-				if (cur_time <= m_init_rsp_ready[id])
+				if (cur_time < init_rsp_ready)
 				{
 					/* the init port is not ready to receive the response, get the time when it will be ready */
-					cur_time = m_init_rsp_ready[id];
-				}
-				else
-				{
-					/* the inti port is ready for the time the response is received, however we have to make sure
-					 *   that the incomming transactions is synchronized with the router cycle_time */
-					unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+					cur_time = init_rsp_ready;
 				}
 				cur_time += init_xfer_duration; // advance to the time data transfer ended
-				m_init_rsp_ready[id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
+				init_rsp_ready = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 				
 #if HAVE_TVS
 				if(unlikely(enable_bandwidth_tracing))
 				{
 					if(trans.is_write())
 					{
-						TraceInitPortWrite(id, data_length, cur_time, init_xfer_duration);
+						TraceInitPortWrite(init_id, data_length, cur_time, init_xfer_duration);
 					}
 					else if(trans.is_read())
 					{
-						TraceInitPortRead(id, data_length, cur_time, init_xfer_duration);
+						TraceInitPortRead(init_id, data_length, cur_time, init_xfer_duration);
 					}
 				}
 #endif
 
-				if(unlikely(cycle_time != sc_core::SC_ZERO_TIME))
-				{
-					if(unlikely(cycle_time != output_if_cycle_time))
-					{
-						unisim::kernel::tlm2::AlignToClock(cur_time, cycle_time);
-					}
-					cur_time += cycle_time; // account for latency of router
-					if(unlikely(cycle_time != input_if_cycle_time))
-					{
-						unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-					}
-				}
-				else
-				{
-					if(unlikely(input_if_cycle_time != output_if_cycle_time))
-					{
-						unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-					}
-				}
+				cur_time += cycle_time; // account for latency of router
+				unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
 
 				/* push the response into the response dispatcher */
 				time = cur_time;
@@ -687,7 +628,7 @@ tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int id, transaction_type
 			break;
 		case tlm::END_REQ:
 			/* just signal that the socket can be used again */
-			m_req_dispatcher[id]->Completed(&trans, time);
+			m_req_dispatcher[init_id]->Completed(&trans, time);
 			return tlm::TLM_COMPLETED;
 			break;
 	}
@@ -733,41 +674,6 @@ void Router<CONFIG>::I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 start_
 	}
 }
 
-#if 0
-template<class CONFIG>
-void Router<CONFIG>::I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 _start_range, sc_dt::uint64 _end_range)
-{
-	for(MappingTableEntry *mte = mru_mapping; mte != 0; mte = mte->next)
-	{
-		if(mte->output_port == (unsigned int) id)
-		{
-			// do reverse translation on DMI invalidation range
-			start_range -= mte->translation;
-			start_range += mte->range_start;
-			end_range -= mte->translation;
-			end_range += mte->range_start;
-
-			sc_dt::uint64 mapping_start_addr = mte->range_start;
-			sc_dt::uint64 mapping_end_addr = mte->range_end;
-			
-			if((mapping_end_addr >= start_range) && (mapping_start_addr <= end_range))
-			{
-				// collision
-				if(mapping_start_addr < start_range) mapping_start_addr = start_range; // cut lower region
-				if(mapping_end_addr > end_range) mapping_end_addr = end_range; // cut upper region
-			
-				// invalidate direct memory pointers on all input sockets
-				unsigned int i;
-				for(i = 0; i < INPUT_SOCKETS; i++)
-				{
-					(*targ_socket[i])->invalidate_direct_mem_ptr(mapping_start_addr, mapping_end_addr);
-				}
-			}
-		}
-	}
-}
-#endif
-
 /*************************************************************************
  * Multi passtrough initiator socket callbacks                       END *
  *************************************************************************/
@@ -777,11 +683,11 @@ void Router<CONFIG>::I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 _start
  *************************************************************************/
 
 template<class CONFIG>
-tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time)
+tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int targ_id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time)
 {
 	if (unlikely(trans.get_command() == tlm::TLM_IGNORE_COMMAND))
 	{
-		logger << DebugWarning << "Received nb_transport_fw on port " << id << ", with ignore command, which the router doesn't know how to handle" << std::endl
+		logger << DebugWarning << "Received nb_transport_fw on port " << targ_id << ", with ignore command, which the router doesn't know how to handle" << std::endl
 			<< LOCAL_TIME(time) << std::endl
 			<< PHASE(phase) << std::endl;
 		TRANS(logger, trans);
@@ -791,7 +697,7 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 	switch (phase) {
 	case tlm::END_REQ:
 	case tlm::BEGIN_RESP:
-		logger << DebugError << "Received nb_transport_fw on port " << id << ", with unexpected phase" << std::endl
+		logger << DebugError << "Received nb_transport_fw on port " << targ_id << ", with unexpected phase" << std::endl
 			<< LOCAL_TIME(time) << std::endl
 			<< PHASE(phase) << std::endl;
 		TRANS(logger, trans);
@@ -803,35 +709,35 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 			if(trans.has_mm()) trans.acquire();
 			if (unlikely(VerboseTLM()))
 			{
-				logger << DebugInfo << "Received nb_transport_fw on port " << id << ", queueing it for future dispatching" << std::endl
+				logger << DebugInfo << "Received nb_transport_fw on port " << targ_id << ", queueing it for future dispatching" << std::endl
 					<< LOCAL_TIME(time) << std::endl;
 				TRANS(logger, trans);
 				logger << EndDebug;
 			}
+			sc_core::sc_time& targ_req_ready = m_targ_req_ready[targ_id];
 			const sc_core::sc_time& input_if_cycle_time = input_lat_lut.GetBaseLatency();
-			const sc_core::sc_time& output_if_cycle_time = output_lat_lut.GetBaseLatency();
 			unsigned int data_length = trans.get_data_length();
 			const sc_core::sc_time& targ_xfer_duration = TargetTransferDuration(data_length);
 			
 			/* check when the request can be accepted by the router */
 			sc_core::sc_time cur_time(sc_core::sc_time_stamp());
 			cur_time += time;
-			if (cur_time <= m_targ_req_ready[id]) {
+			/* we have to make sure that the incomming transactions is synchronized with the router cycle_time */
+			unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
+			if (cur_time < targ_req_ready) {
 				/* the target port is not ready, get the time when it will be ready */
-				cur_time = m_targ_req_ready[id];
+				cur_time = targ_req_ready;
 			} else {
-				/* the target port is ready for the time the request is received, however we have to make sure
-				 *   that the incomming transactions is synchronized with the router cycle_time */
-				unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-				m_targ_req_ready[id] = cur_time;
+				/* the target port is ready for the time the request is received */
+				targ_req_ready = cur_time;
 			}
-			m_targ_req_ready[id] += input_if_cycle_time;
+			targ_req_ready += input_if_cycle_time;
 			
 			/* get the init port through which the transaction should be forwarded */
 			MAPPING const *applied_mapping = 0;
 			if (unlikely(!ApplyMap(trans, applied_mapping)))
 			{
-				time = m_targ_req_ready[id];
+				time = targ_req_ready;
 				time -= sc_core::sc_time_stamp();
 				logger << DebugWarning << "When handling received transaction could not apply any mapping" << std::endl
 					<< LOCAL_TIME(time) << std::endl
@@ -847,34 +753,19 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 			{
 				if(trans.is_write())
 				{
-					TraceTargetPortWrite(id, data_length, cur_time, targ_xfer_duration);
+					TraceTargetPortWrite(targ_id, data_length, cur_time, targ_xfer_duration);
 				}
 			}
 #endif
-			if(unlikely(cycle_time != sc_core::SC_ZERO_TIME))
-			{
-				if(unlikely(cycle_time != input_if_cycle_time))
-				{
-					unisim::kernel::tlm2::AlignToClock(cur_time, cycle_time);
-				}
-				cur_time += cycle_time; // account for latency of router
-				if(unlikely(cycle_time != output_if_cycle_time))
-				{
-					unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
-				}
-			}
-			else
-			{
-				if(unlikely(input_if_cycle_time != output_if_cycle_time))
-				{
-					unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
-				}
-			}
+			cur_time += cycle_time; // account for latency of router
+			unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
+			
+			unsigned int init_id = applied_mapping->output_port;
 			
 			if(trans.is_write())
 			{
-				m_targ_req_ready[id] += targ_xfer_duration; // take care of bandwidth limit of target port by limiting next transaction acceptance
-				m_targ_req_ready[id] -= input_if_cycle_time; // accounting for request over input interface is already included in transfer duration for a write
+				targ_req_ready += targ_xfer_duration; // take care of bandwidth limit of target port by limiting next transaction acceptance
+				targ_req_ready -= input_if_cycle_time; // accounting for request over input interface is already included in transfer duration for a write
 			}
 
 			/* perform the address translation */
@@ -885,11 +776,11 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 
 			/* checking command */
 			/* insert the input port id into the transaction */
-			SetRouterExtension(trans, id);
+			SetRouterExtension(trans, targ_id);
 			/* push the transaction to the corresponding init port queue */
 			time = cur_time;
 			time -= sc_core::sc_time_stamp();
-			m_req_dispatcher[applied_mapping->output_port]->Push(trans, time);
+			m_req_dispatcher[init_id]->Push(trans, time);
 			if(trans.has_mm()) trans.release();
 			/* change the phase and return */
 			phase = tlm::END_REQ;
@@ -898,7 +789,7 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 		break;
 	case tlm::END_RESP:
 		/* just signal that the socket can be used again */
-		m_rsp_dispatcher[id]->Completed(&trans, time);
+		m_rsp_dispatcher[targ_id]->Completed(&trans, time);
 		/* the transaction is now finished for us, release it */
 		if(trans.has_mm()) trans.release();
 		return tlm::TLM_COMPLETED;
@@ -1101,17 +992,18 @@ void Router<CONFIG>::TraceCommit()
 #endif
 
 template<class CONFIG>
-void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
+void Router<CONFIG>::T_b_transport_cb(int targ_id, transaction_type &trans, sc_core::sc_time &time)
 {
 	/* the first thing that must be done is the translation from the mapping table */
 	if (unlikely(VerboseTLM())) 
 	{
-		logger << DebugInfo << "Received b_transport on port " << id << ", forwarding it" << std::endl
+		logger << DebugInfo << "Received b_transport on port " << targ_id << ", forwarding it" << std::endl
 			<< LOCAL_TIME(time) << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
 
+	sc_core::sc_time& targ_req_ready = m_targ_req_ready[targ_id];
 	const sc_core::sc_time& input_if_cycle_time = input_lat_lut.GetBaseLatency();
 	const sc_core::sc_time& output_if_cycle_time = output_lat_lut.GetBaseLatency();
 	unsigned int data_length = trans.get_data_length();
@@ -1121,28 +1013,29 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	/* check when the request can be accepted by the router */
 	sc_core::sc_time cur_time(sc_core::sc_time_stamp());
 	cur_time += time;
+	
+	/* we have to make sure that the incomming transactions is synchronized with the router cycle_time */
+	unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
 
-	if (cur_time <= m_targ_req_ready[id])
+	if (cur_time < targ_req_ready)
 	{
 		/* the target port is not ready, get the time when it will be ready */
-		cur_time = m_targ_req_ready[id];
+		cur_time = targ_req_ready;
 	}
 	else
 	{
-		/* the target port is ready for the time the request is received, however we have to make sure
-			*   that the incomming transactions is synchronized with the router cycle_time */
-		unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-		m_targ_req_ready[id] = cur_time;
+		/* the target port is ready for the time the request is received */
+		targ_req_ready = cur_time;
 	}
-	m_targ_req_ready[id] += input_if_cycle_time; // take care of bandwidth limit of target port by limiting next transaction acceptance: here accounting for request over input interface
+	targ_req_ready += input_if_cycle_time; // take care of bandwidth limit of target port by limiting next transaction acceptance: here accounting for request over input interface
 	
 	/* check the address of the transaction to perform the port routing */
 	MAPPING const *applied_mapping = 0;
 	if (unlikely(!ApplyMap(trans, applied_mapping))) 
 	{
-		time = m_targ_req_ready[id];
+		time = targ_req_ready;
 		time -= sc_core::sc_time_stamp();
-		logger << DebugWarning << "Received transaction on port " << id << " has an unmapped address"  << std::endl
+		logger << DebugWarning << "Received transaction on port " << targ_id << " has an unmapped address"  << std::endl
 			<< LOCATION << std::endl
 			<< TIME(cur_time) << std::endl;
 		TRANS(logger, trans);
@@ -1155,37 +1048,21 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	{
 		if(trans.is_write())
 		{
-			TraceTargetPortWrite(id, data_length, cur_time, targ_xfer_duration);
+			TraceTargetPortWrite(targ_id, data_length, cur_time, targ_xfer_duration);
 		}
 	}
 #endif
 
-	if(unlikely(cycle_time != sc_core::SC_ZERO_TIME))
-	{
-		if(unlikely(cycle_time != input_if_cycle_time))
-		{
-			unisim::kernel::tlm2::AlignToClock(cur_time, cycle_time);
-		}
-		cur_time += cycle_time; // account for latency of router
-		if(unlikely(cycle_time != output_if_cycle_time))
-		{
-			unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
-		}
-	}
-	else
-	{
-		if(unlikely(input_if_cycle_time != output_if_cycle_time))
-		{
-			unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
-		}
-	}
+	cur_time += cycle_time; // account for latency of router
+	unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
 	
 	unsigned int init_id = applied_mapping->output_port;
+	sc_core::sc_time& init_rsp_ready = m_init_rsp_ready[init_id];
 	
 	if(trans.is_write())
 	{
-		m_targ_req_ready[id] += targ_xfer_duration; // take care of bandwidth limit of target port by limiting next transaction acceptance
-		m_targ_req_ready[id] -= input_if_cycle_time; // accounting for request over input interface is already included in transfer duration for a write
+		targ_req_ready += targ_xfer_duration; // take care of bandwidth limit of target port by limiting next transaction acceptance
+		targ_req_ready -= input_if_cycle_time; // accounting for request over input interface is already included in transfer duration for a write
 	}
 	
 	/* perform the address translation */
@@ -1204,42 +1081,38 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	/* forward the transaction to the selected output port */
 	if(unlikely(VerboseTLM()))
 	{
-		logger << DebugInfo << "Forwarding transaction received on port " << id << " to port " << applied_mapping->output_port << std::endl
+		logger << DebugInfo << "Forwarding transaction received on port " << targ_id << " to port " << init_id << std::endl
 			<< TIME(cur_time) << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
 	
 	sc_core::sc_time next(cur_time);
-	next += init_xfer_duration;
+	next += trans.is_write() ? std::max(targ_xfer_duration, init_xfer_duration) : init_xfer_duration;;
 	time = cur_time;
 	time -= sc_core::sc_time_stamp();
 	(*init_socket[applied_mapping->output_port])->b_transport(trans, time);
 	cur_time = sc_core::sc_time_stamp();
 	cur_time += time;
+	/* we have to make sure that the incomming transactions is synchronized with the output interface cycle_time */
+	unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
 	if(unlikely(cur_time < next)) cur_time = next; // make sure transfer is not too fast for our interface
 	if (unlikely(VerboseTLM())) 
 	{
-		logger << DebugInfo << "Forwarding transaction reply to port " << id << std::endl
+		logger << DebugInfo << "Forwarding transaction reply to port " << targ_id << std::endl
 			<< TIME(cur_time) << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
 	
 	cur_time -= init_xfer_duration; // go back at the time data transfer started
-	if (cur_time <= m_init_rsp_ready[init_id])
+	if (cur_time < init_rsp_ready)
 	{
 		/* the init port is not ready to receive the response, get the time when it will be ready */
-		cur_time = m_init_rsp_ready[init_id];
-	}
-	else
-	{
-		/* the init port is ready for the time the response is received, however we have to make sure
-		 *   that the incomming transactions is synchronized with the router cycle_time */
-		unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+		cur_time = init_rsp_ready;
 	}
 	cur_time += init_xfer_duration; // advance to the time data transfer ended
-	m_init_rsp_ready[init_id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
+	init_rsp_ready = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 	
 #if HAVE_TVS
 	if(unlikely(enable_bandwidth_tracing))
@@ -1255,32 +1128,15 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	}
 #endif
 
-	if(unlikely(cycle_time != sc_core::SC_ZERO_TIME))
-	{
-		if(unlikely(cycle_time != output_if_cycle_time))
-		{
-			unisim::kernel::tlm2::AlignToClock(cur_time, cycle_time);
-		}
-		cur_time += cycle_time; // account for latency of router
-		if(unlikely(cycle_time != input_if_cycle_time))
-		{
-			unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-		}
-	}
-	else
-	{
-		if(unlikely(input_if_cycle_time != output_if_cycle_time))
-		{
-			unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-		}
-	}
+	cur_time += cycle_time; // account for latency of router
+	unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
 
 #if HAVE_TVS
 	if(unlikely(enable_bandwidth_tracing))
 	{
 		if(trans.is_read())
 		{
-			TraceTargetPortRead(id, data_length, cur_time, targ_xfer_duration);
+			TraceTargetPortRead(targ_id, data_length, cur_time, targ_xfer_duration);
 		}
 	}
 #endif
@@ -1290,11 +1146,11 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 }
 
 template<class CONFIG>
-unsigned int Router<CONFIG>::T_transport_dbg_cb(int id, transaction_type &trans) 
+unsigned int Router<CONFIG>::T_transport_dbg_cb(int targ_id, transaction_type &trans) 
 {
 	if (unlikely(VerboseTLMDebug()))
 	{
-		logger << DebugInfo << "Received transport_dbg on port " << id << " forwarding it" << std::endl;
+		logger << DebugInfo << "Received transport_dbg on port " << targ_id << " forwarding it" << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
@@ -1337,20 +1193,21 @@ unsigned int Router<CONFIG>::T_transport_dbg_cb(int id, transaction_type &trans)
 		trans.set_data_length(buffer_size);
 		uint64_t translated_addr = buffer_addr - applied_mapping->range_start + applied_mapping->translation;
 		trans.set_address(translated_addr);
+		unsigned int init_id = applied_mapping->output_port;
 		if (unlikely(VerboseTLMDebug()))
 		{
-			logger << DebugInfo << "Sending transport_dbg on port " << applied_mapping->output_port << std::endl;
+			logger << DebugInfo << "Sending transport_dbg on port " << init_id << std::endl;
 			TRANS(logger, trans);
 			logger << EndDebug;
 		}
-		counter += (*init_socket[applied_mapping->output_port])->transport_dbg(trans);
+		counter += (*init_socket[init_id])->transport_dbg(trans);
 		if (trans.is_read())
-			m_req_dispatcher[applied_mapping->output_port]->ReadTransportDbg(id, trans);
+			m_req_dispatcher[init_id]->ReadTransportDbg(targ_id, trans);
 		else
-			m_req_dispatcher[applied_mapping->output_port]->WriteTransportDbg(id, trans);
+			m_req_dispatcher[init_id]->WriteTransportDbg(targ_id, trans);
 		// if the request is a write then be sure to modify the response queue
 		if (trans.is_write())
-			m_rsp_dispatcher[id]->WriteTransportDbg(id, trans);
+			m_rsp_dispatcher[targ_id]->WriteTransportDbg(targ_id, trans);
 	}
 	if (unlikely(VerboseTLMDebug()))
 	{
@@ -1373,7 +1230,7 @@ unsigned int Router<CONFIG>::T_transport_dbg_cb(int id, transaction_type &trans)
 }
 
 template<class CONFIG>
-unsigned int Router<CONFIG>::ReadTransportDbg(unsigned int id, transaction_type &trans)
+unsigned int Router<CONFIG>::ReadTransportDbg(unsigned int targ_id, transaction_type &trans)
 {
 	unsigned int counter = 0;
 	unsigned char *trans_buffer = trans.get_data_ptr();
@@ -1410,8 +1267,9 @@ unsigned int Router<CONFIG>::ReadTransportDbg(unsigned int id, transaction_type 
 		trans.set_data_length(buffer_size);
 		uint64_t translated_addr = buffer_addr - applied_mapping->range_start + applied_mapping->translation;
 		trans.set_address(translated_addr);
-		counter += (*init_socket[applied_mapping->output_port])->transport_dbg(trans);
-		m_req_dispatcher[applied_mapping->output_port]->ReadTransportDbg(id, trans);	
+		unsigned int init_id = applied_mapping->output_port;
+		counter += (*init_socket[init_id])->transport_dbg(trans);
+		m_req_dispatcher[init_id]->ReadTransportDbg(targ_id, trans);
 	}
 	logger << DebugInfo << "ReadTransportDbg of address 0x" << std::hex << trans_addr << std::dec
 			<< " with size " << trans_size << ", " << counter << " bytes successfully read" << std::endl;
@@ -1419,7 +1277,7 @@ unsigned int Router<CONFIG>::ReadTransportDbg(unsigned int id, transaction_type 
 }
 
 template<class CONFIG>
-unsigned int Router<CONFIG>::WriteTransportDbg(unsigned int id, transaction_type &trans)
+unsigned int Router<CONFIG>::WriteTransportDbg(unsigned int targ_id, transaction_type &trans)
 {
 	unsigned int counter = 0;
 	unsigned char *trans_buffer = trans.get_data_ptr();
@@ -1456,8 +1314,9 @@ unsigned int Router<CONFIG>::WriteTransportDbg(unsigned int id, transaction_type
 		trans.set_data_length(buffer_size);
 		uint64_t translated_addr = buffer_addr - applied_mapping->range_start + applied_mapping->translation;
 		trans.set_address(translated_addr);
-		counter += (*init_socket[applied_mapping->output_port])->transport_dbg(trans);
-		m_req_dispatcher[applied_mapping->output_port]->WriteTransportDbg(id, trans);	
+		unsigned int init_id = applied_mapping->output_port;
+		counter += (*init_socket[init_id])->transport_dbg(trans);
+		m_req_dispatcher[init_id]->WriteTransportDbg(targ_id, trans);
 	}
 	return counter;
 }
@@ -1500,14 +1359,15 @@ bool Router<CONFIG>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uin
 				buffer_size = 1 + applied_mapping->range_end - addr;
 		}
 		uint64_t translated_addr = buffer_addr - applied_mapping->range_start + applied_mapping->translation;
+		unsigned int init_id = applied_mapping->output_port;
 		if (unlikely(VerboseMemoryInterface()))
 		{
-			logger << DebugInfo << "Sending ReadMemory on port " << applied_mapping->output_port << " with addr 0x" << std::hex << buffer_addr << std::dec
+			logger << DebugInfo << "Sending ReadMemory on port " << init_id << " with addr 0x" << std::hex << buffer_addr << std::dec
 				<< "(translated to 0x" << std::hex << translated_addr << std::dec << ")"
 				<< " and size " << buffer_size << "(" << size << ")" << EndDebugInfo;
 		}
-		if (unlikely(!(*memory_import[applied_mapping->output_port]))) return false;
-		if (unlikely(!(*memory_import[applied_mapping->output_port])->ReadMemory(translated_addr, ((uint8_t *)buffer) + buffer_index, buffer_size)))
+		if (unlikely(!(*memory_import[init_id]))) return false;
+		if (unlikely(!(*memory_import[init_id])->ReadMemory(translated_addr, ((uint8_t *)buffer) + buffer_index, buffer_size)))
 			return false;
 	}
 	return true;
@@ -1551,9 +1411,10 @@ bool Router<CONFIG>::WriteMemory(typename CONFIG::ADDRESS addr, const void *buff
 				buffer_size = 1 + applied_mapping->range_end - addr;
 		}
 		uint64_t translated_addr = buffer_addr - applied_mapping->range_start + applied_mapping->translation;
+		unsigned int init_id = applied_mapping->output_port;
 		if (unlikely(VerboseMemoryInterface()))
 		{
-			logger << DebugInfo << "Sending WriteMemory on port " << applied_mapping->output_port << " with addr 0x" << std::hex << addr << std::dec
+			logger << DebugInfo << "Sending WriteMemory on port " << init_id << " with addr 0x" << std::hex << addr << std::dec
 				<< " (translated to 0x" << std::hex << translated_addr << std::dec << ")"
 				<< " and size " << buffer_size << "(" << size << ")" << std::endl
 				<< "  with data = " << std::hex;
@@ -1563,20 +1424,20 @@ bool Router<CONFIG>::WriteMemory(typename CONFIG::ADDRESS addr, const void *buff
 			}
 			logger << std::dec << EndDebugInfo;
 		}
-		if (unlikely(!(*memory_import[applied_mapping->output_port]))) return false;
-		if (unlikely(!(*memory_import[applied_mapping->output_port])->WriteMemory(translated_addr, ((uint8_t *)buffer) + buffer_index, buffer_size)))
+		if (unlikely(!(*memory_import[init_id]))) return false;
+		if (unlikely(!(*memory_import[init_id])->WriteMemory(translated_addr, ((uint8_t *)buffer) + buffer_index, buffer_size)))
 			return false;
 	}
 	return true;
 }
 
 template<class CONFIG>
-bool Router<CONFIG>::T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi)
+bool Router<CONFIG>::T_get_direct_mem_ptr_cb(int targ_id, transaction_type &trans, tlm::tlm_dmi &dmi)
 {
 	/* the first thing that must be done is the translation from the mapping table */
 	if (unlikely(VerboseTLM())) 
 	{
-		logger << DebugInfo << "Received get_direct_mem_ptr on port " << id << ", forwarding it" << std::endl;
+		logger << DebugInfo << "Received get_direct_mem_ptr on port " << targ_id << ", forwarding it" << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
@@ -1586,7 +1447,7 @@ bool Router<CONFIG>::T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tl
 	bool found = ApplyMap(trans, applied_mapping, &mem_rgn);
 	if (unlikely(!found)) 
 	{
-		logger << DebugError << "Received get_direct_mem_ptr transaction on port " << id << " has an unmapped address"  << std::endl
+		logger << DebugError << "Received get_direct_mem_ptr transaction on port " << targ_id << " has an unmapped address"  << std::endl
 			<< LOCATION << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
@@ -1608,15 +1469,16 @@ bool Router<CONFIG>::T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tl
 			<< EndDebug;
 	}
 	trans.set_address(translated_addr);
+	unsigned int init_id = applied_mapping->output_port;
 	/* forward the transaction to the selected output port */
 	if(unlikely(VerboseTLM()))
 	{
-		logger << DebugInfo << "Forwarding get_direct_mem_ptr received on port " << id << " to port " << applied_mapping->output_port << std::endl;
+		logger << DebugInfo << "Forwarding get_direct_mem_ptr received on port " << targ_id << " to port " << init_id << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
 	
-	bool dmi_status = (*init_socket[applied_mapping->output_port])->get_direct_mem_ptr(trans, dmi);
+	bool dmi_status = (*init_socket[init_id])->get_direct_mem_ptr(trans, dmi);
 	
 	sc_dt::uint64 dmi_start_address = dmi.get_start_address();
 	sc_dt::uint64 dmi_end_address = dmi.get_end_address();
@@ -1691,80 +1553,7 @@ bool Router<CONFIG>::T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tl
 	}
 
 	unisim::kernel::tlm2::DMIGrant dmi_grant = dmi_status ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
-	dmi_region_cache[id].Insert(dmi_grant, dmi);
-#if 0
-	sc_dt::uint64 dmi_start_address = dmi.get_start_address();
-	sc_dt::uint64 dmi_end_address = dmi.get_end_address();
-	
-	// do reverse translation on DMI
-	dmi_start_address -= applied_mapping->translation;
-	dmi_start_address += applied_mapping->range_start;
-	dmi_end_address -= applied_mapping->translation;
-	dmi_end_address += applied_mapping->range_start;
-
-	// restrict address range of DMI
-	sc_dt::uint64 start_range = std::max(mem_rgn.start_addr, applied_mapping->range_start);
-	sc_dt::uint64 end_range = std::min(mem_rgn.end_addr, applied_mapping->range_end);
-
-	if(dmi_end_address >= dmi_start_address) // prevent us from crazy targets behavior
-	{
-		if(dmi_start_address < start_range)
-		{
-			// cut lower region
-			dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
-			dmi.set_start_address(start_range);
-		}
-		else
-		{
-			dmi.set_start_address(dmi_start_address);
-		}
-			
-		if(dmi_end_address > end_range)
-		{
-			// cut upper region
-			dmi.set_end_address(end_range);
-		}
-		else
-		{
-			dmi.set_end_address(dmi_end_address);
-		}
-		
-		tlm::tlm_dmi::dmi_access_e dmi_access = dmi.get_granted_access();
-		switch(dmi_access)
-		{
-			case tlm::tlm_dmi::DMI_ACCESS_NONE:
-				break;
-			case tlm::tlm_dmi::DMI_ACCESS_READ:
-				if((mem_rgn.mem_access & MEM_ACCESS_READ) == 0) dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_NONE);
-				break;
-			case tlm::tlm_dmi::DMI_ACCESS_WRITE:
-				if((mem_rgn.mem_access & MEM_ACCESS_WRITE) == 0) dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_NONE);
-				break;
-			case tlm::tlm_dmi::DMI_ACCESS_READ_WRITE:
-				if(mem_rgn.mem_access != MEM_ACCESS_READ_WRITE)
-				{
-					if((mem_rgn.mem_access & MEM_ACCESS_READ) != 0) dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ);
-					else if((mem_rgn.mem_access & MEM_ACCESS_WRITE) != 0) dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_WRITE);
-				}
-				break;
-		}
-	}
-	else
-	{
-		// deny all crazy target address space
-		dmi.set_start_address(start_range);
-		dmi.set_end_address(end_range);
-		dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_NONE);
-		dmi_status = false;
-	}
-
-	// add router latency per byte
-	if(dmi_status)
-	{
-		dmi.set_read_latency(dmi.get_read_latency() + (2 * cycle_time / ((CONFIG::BURST_LENGTH * CONFIG::INPUT_BUSWIDTH) / 8)));
-		dmi.set_write_latency(dmi.get_write_latency() + (2 * cycle_time / ((CONFIG::BURST_LENGTH * CONFIG::INPUT_BUSWIDTH) / 8)));
-	}
-#endif
+	dmi_region_cache[targ_id].Insert(dmi_grant, dmi);
 	return dmi_status;
 }
 
@@ -1777,7 +1566,7 @@ bool Router<CONFIG>::T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tl
  *************************************************************************/
 
 template<class CONFIG>
-void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
+void Router<CONFIG>::SendReq(unsigned int init_id, transaction_type &trans)
 {
 	/* a request is ready to be sent through the init_port
 	 *   prepare phase and time */
@@ -1786,19 +1575,19 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 	
 	if (unlikely(VerboseTLM()))
 	{
-		logger << DebugInfo << "Sending transaction request through init_socket[" << id << "]" << std::endl
+		logger << DebugInfo << "Sending transaction request through init_socket[" << init_id << "]" << std::endl
 			<< LOCAL_TIME(time) << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
 	}
 	
-	switch((*init_socket[id])->nb_transport_fw(trans, phase, time))
+	switch((*init_socket[init_id])->nb_transport_fw(trans, phase, time))
 	{
 		case tlm::TLM_ACCEPTED:
 			/* the request has been accepted */
 			if (unlikely(VerboseTLM()))
 			{
-				logger << DebugInfo << "Transaction request sent from init_req_fifo[" << id << "] accepted (TLM_ACCEPTED), waiting for the corresponding END_REQ" << std::endl
+				logger << DebugInfo << "Transaction request sent from init_req_fifo[" << init_id << "] accepted (TLM_ACCEPTED), waiting for the corresponding END_REQ" << std::endl
 					<< LOCAL_TIME(time) << std::endl;
 				TRANS(logger, trans);
 				logger << EndDebug;
@@ -1812,7 +1601,7 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 					/* phase has not changed, consider it as a TLM_ACCEPTED */
 					if (unlikely(VerboseTLM()))
 					{
-						logger << DebugInfo << "Transaction request sent from init_req_fifo[" << id << "] accepted (TLM_UPDATED, BEGIN_REQ), waiting for the corresponding END_REQ" << std::endl
+						logger << DebugInfo << "Transaction request sent from init_req_fifo[" << init_id << "] accepted (TLM_UPDATED, BEGIN_REQ), waiting for the corresponding END_REQ" << std::endl
 							<< LOCAL_TIME(time) << std::endl;
 						TRANS(logger, trans);
 						logger << EndDebug;
@@ -1822,12 +1611,12 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 				case tlm::END_REQ:
 					if (unlikely(VerboseTLM()))
 					{
-						logger << DebugInfo << "Transaction sent from init_req_fifo[" << id << "] accepted (TLM_UPDATED with phase END_REQ), removing the transaction from the request queue" << std::endl
+						logger << DebugInfo << "Transaction sent from init_req_fifo[" << init_id << "] accepted (TLM_UPDATED with phase END_REQ), removing the transaction from the request queue" << std::endl
 							<< LOCAL_TIME(time) << std::endl;
 						TRANS(logger, trans);
 						logger << EndDebug;
 					}
-					m_req_dispatcher[id]->Completed(&trans, time);
+					m_req_dispatcher[init_id]->Completed(&trans, time);
 					break;	
 				case tlm::BEGIN_RESP:
 					/* the request has been accepted, and the response has been produced
@@ -1838,10 +1627,11 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 						const sc_core::sc_time& output_if_cycle_time = output_lat_lut.GetBaseLatency();
 						unsigned int data_length = trans.get_data_length();
 						const sc_core::sc_time& init_xfer_duration = InitTransferDuration(data_length);
+						sc_core::sc_time& init_rsp_ready = m_init_rsp_ready[init_id];
 						
 						unsigned int targ_id;
 						/* notify to the request dispatcher that the transaction request has been completed */
-						m_req_dispatcher[id]->Completed(&trans, time);
+						m_req_dispatcher[init_id]->Completed(&trans, time);
 						if(unlikely(!GetRouterExtension(trans, targ_id)))
 						{
 							logger << DebugError << "Could not find the router extension from transaction response" << std::endl
@@ -1853,7 +1643,7 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 							return; // should never occur
 						}
 						if (unlikely(VerboseTLM())) {
-							logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << std::endl
+							logger << DebugInfo << "Transaction request sent through the init_port[" << init_id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << std::endl
 								<< LOCAL_TIME(time) << std::endl;
 							ETRANS(logger, trans);
 							logger << EndDebug;
@@ -1861,49 +1651,34 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 						/* check when the request can be accepted by the router */
 						sc_core::sc_time cur_time(sc_core::sc_time_stamp());
 						cur_time += time;
+						
+						/* we have to make sure that the incomming transactions is synchronized with the output interface cycle_time */
+						unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+						
 						cur_time -= init_xfer_duration; // go back at the time data transfer started
-						if (cur_time <= m_init_rsp_ready[id])
+						if (cur_time < init_rsp_ready)
 						{
 							/* the init port is not ready to receive the response, get the time when it will be ready */
-							cur_time = m_init_rsp_ready[id];
-						}
-						else
-						{
-							/* the init port is ready for the time the response is received, however we have to make sure
-							 *   that the incomming transactions is synchronized with the router cycle_time */
-							unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+							cur_time = init_rsp_ready;
 						}
 						cur_time += init_xfer_duration; // advance to the time data transfer ended
-						m_init_rsp_ready[id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
+						init_rsp_ready = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 						
 #if HAVE_TVS
 						if(unlikely(enable_bandwidth_tracing))
 						{
 							if(trans.is_read())
 							{
-								TraceInitPortRead(id, data_length, cur_time, init_xfer_duration);
+								TraceInitPortRead(init_id, data_length, cur_time, init_xfer_duration);
 							}
 							else if(trans.is_write())
 							{
-								TraceInitPortWrite(id, data_length, cur_time, init_xfer_duration);
+								TraceInitPortWrite(init_id, data_length, cur_time, init_xfer_duration);
 							}
 						}
 #endif
-						if(unlikely(cycle_time != sc_core::SC_ZERO_TIME))
-						{
-							cur_time += cycle_time; // account for latency of router
-							if(unlikely(cycle_time != input_if_cycle_time))
-							{
-								unisim::kernel::tlm2::AlignToClock(cur_time, cycle_time);
-							}
-						}
-						else
-						{
-							if(unlikely(input_if_cycle_time != output_if_cycle_time))
-							{
-								unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-							}
-						}
+						cur_time += cycle_time; // account for latency of router
+						unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
 						
 						/* push the response into the response dispatcher */
 						time = cur_time;
@@ -1912,8 +1687,8 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 
 						/* immediately send an END_RESP through the init_port */
 						phase = tlm::END_RESP;
-						if(unlikely((*init_socket[id])->nb_transport_fw(trans, phase, time) != tlm::TLM_COMPLETED)) {
-							logger << DebugError << "When sending END_RESP did not receive TLM_COMPLETED from init_socket[" << id << "]" << std::endl
+						if(unlikely((*init_socket[init_id])->nb_transport_fw(trans, phase, time) != tlm::TLM_COMPLETED)) {
+							logger << DebugError << "When sending END_RESP did not receive TLM_COMPLETED from init_socket[" << init_id << "]" << std::endl
 								<< LOCATION << std::endl
 								<< LOCAL_TIME(time) << std::endl;
 							ETRANS(logger, trans);
@@ -1924,7 +1699,7 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 					break;
 				case tlm::END_RESP:
 					/* unexpected phase changes */
-					logger << DebugError << "Unexpected phase change when sending request transaction through init_socket[" << id << "]" << std::endl
+					logger << DebugError << "Unexpected phase change when sending request transaction through init_socket[" << init_id << "]" << std::endl
 						<< LOCATION << std::endl
 						<< LOCAL_TIME(time) << std::endl
 						<< PHASE(phase) << std::endl;
@@ -1943,9 +1718,10 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 				const sc_core::sc_time& output_if_cycle_time = output_lat_lut.GetBaseLatency();
 				unsigned int data_length = trans.get_data_length();
 				const sc_core::sc_time& init_xfer_duration = InitTransferDuration(data_length);
+				sc_core::sc_time& init_rsp_ready = m_init_rsp_ready[init_id];
 				
 				/* notify to the request dispatcher that the transaction request has been completed */
-				m_req_dispatcher[id]->Completed(&trans, time);
+				m_req_dispatcher[init_id]->Completed(&trans, time);
 				unsigned int targ_id;
 				if(unlikely(!GetRouterExtension(trans, targ_id)))
 				{
@@ -1959,7 +1735,7 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 				}
 				if (unlikely(VerboseTLM()))
 				{
-					logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << std::endl
+					logger << DebugInfo << "Transaction request sent through the init_port[" << init_id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << std::endl
 						<< LOCAL_TIME(time) << std::endl;
 					ETRANS(logger, trans);
 					logger << EndDebug;
@@ -1967,51 +1743,35 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 				/* check when the request can be accepted by the router */
 				sc_core::sc_time cur_time(sc_core::sc_time_stamp());
 				cur_time += time;
+				
+				/* we have to make sure that the incomming transactions is synchronized with the output interface cycle_time */
+				unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+
 				cur_time -= init_xfer_duration; // go back at the time data transfer started
-				if (cur_time <= m_init_rsp_ready[id]) {
+				if (cur_time < init_rsp_ready)
+				{
 					/* the init port is not ready to receive the response, get the time when it will be ready */
-					cur_time = m_init_rsp_ready[id];
-				} else {
-					/* the init port is ready for the time the response is received, however we have to make sure
-						*   that the incomming transactions is synchronized with the router cycle_time */
-					unisim::kernel::tlm2::AlignToClock(cur_time, output_if_cycle_time);
+					cur_time = init_rsp_ready;
 				}
 				cur_time += init_xfer_duration; // advance to the time data transfer ended
-				m_init_rsp_ready[id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
+				init_rsp_ready = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 				
 #if HAVE_TVS
 				if(unlikely(enable_bandwidth_tracing))
 				{
 					if(trans.is_read())
 					{
-						TraceInitPortRead(id, data_length, cur_time, init_xfer_duration);
+						TraceInitPortRead(init_id, data_length, cur_time, init_xfer_duration);
 					}
 					else if(trans.is_write())
 					{
-						TraceInitPortWrite(id, data_length, cur_time, init_xfer_duration);
+						TraceInitPortWrite(init_id, data_length, cur_time, init_xfer_duration);
 					}
 				}
 #endif
 
-				if(unlikely(cycle_time != sc_core::SC_ZERO_TIME))
-				{
-					if(unlikely(cycle_time != output_if_cycle_time))
-					{
-						unisim::kernel::tlm2::AlignToClock(cur_time, cycle_time);
-					}
-					cur_time += cycle_time; // account for latency of router
-					if(unlikely(cycle_time != input_if_cycle_time))
-					{
-						unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-					}
-				}
-				else
-				{
-					if(unlikely(input_if_cycle_time != output_if_cycle_time))
-					{
-						unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
-					}
-				}
+				cur_time += cycle_time; // account for latency of router
+				unisim::kernel::tlm2::AlignToClock(cur_time, input_if_cycle_time);
 
 				/* push the response into the response dispatcher */
 				time = cur_time;
@@ -2023,16 +1783,16 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 }
 
 template<class CONFIG>
-void Router<CONFIG>::SendRsp(unsigned int id, transaction_type &trans)
+void Router<CONFIG>::SendRsp(unsigned int targ_id, transaction_type &trans)
 {
-	/* a response is ready to be sent through the targ_port[id]
+	/* a response is ready to be sent through the targ_port[targ_id]
 	 *   prepare phase and time */
 	phase_type phase = tlm::BEGIN_RESP;
 	sc_core::sc_time time(sc_core::SC_ZERO_TIME);
 	
 	if (unlikely(VerboseTLM()))
 	{
-		logger << DebugInfo << "Sending transaction response through targ_socket[" << id << "]" << std::endl
+		logger << DebugInfo << "Sending transaction response through targ_socket[" << targ_id << "]" << std::endl
 			<< LOCAL_TIME(time) << std::endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
@@ -2046,16 +1806,16 @@ void Router<CONFIG>::SendRsp(unsigned int id, transaction_type &trans)
 			sc_core::sc_time cur_time(sc_core::sc_time_stamp());
 			unsigned int data_length = trans.get_data_length();
 			const sc_core::sc_time& targ_xfer_duration = TargetTransferDuration(data_length);
-			TraceTargetPortRead(id, data_length, cur_time, targ_xfer_duration);
+			TraceTargetPortRead(targ_id, data_length, cur_time, targ_xfer_duration);
 		}
 	}
 #endif
-	switch((*targ_socket[id])->nb_transport_bw(trans, phase, time)) {
+	switch((*targ_socket[targ_id])->nb_transport_bw(trans, phase, time)) {
 		case tlm::TLM_ACCEPTED:
 			/* the response has been accepted */
 			if (unlikely(VerboseTLM()))
 			{
-				logger << DebugInfo << "Transaction response sent through targ_socket[" << id << "] accepted (TLM_ACCEPTED), waiting for the corresponding END_RESP" << std::endl
+				logger << DebugInfo << "Transaction response sent through targ_socket[" << targ_id << "] accepted (TLM_ACCEPTED), waiting for the corresponding END_RESP" << std::endl
 					<< LOCAL_TIME(time) << std::endl;
 				ETRANS(logger, trans);
 				logger << EndDebug;
@@ -2063,7 +1823,7 @@ void Router<CONFIG>::SendRsp(unsigned int id, transaction_type &trans)
 			/* nothing else to do, just wait for the corresponding END_REQ */
 			break;
 		case tlm::TLM_UPDATED:
-			logger << DebugError << "Unexpected TLM_UPDATED received when sending transaction response through targ_socket[" << id << "]" << std::endl
+			logger << DebugError << "Unexpected TLM_UPDATED received when sending transaction response through targ_socket[" << targ_id << "]" << std::endl
 				<< LOCATION << std::endl
 				<< LOCAL_TIME(time) << std::endl
 				<< PHASE(phase) << std::endl;
@@ -2073,13 +1833,13 @@ void Router<CONFIG>::SendRsp(unsigned int id, transaction_type &trans)
 		case tlm::TLM_COMPLETED:
 			if (unlikely(VerboseTLM()))
 			{
-				logger << DebugInfo << "Transaction response sent through targ_socket[" << id << "] completed (TLM_COMPLETED), removing it from the router" << std::endl
+				logger << DebugInfo << "Transaction response sent through targ_socket[" << targ_id << "] completed (TLM_COMPLETED), removing it from the router" << std::endl
 					<< LOCAL_TIME(time) << std::endl;
 				ETRANS(logger, trans);
 				logger << EndDebug;
 			}
 			/* the response has been completed, we can remove it from the response queue */
-			m_rsp_dispatcher[id]->Completed(&trans, time);
+			m_rsp_dispatcher[targ_id]->Completed(&trans, time);
 			/* release the transaction */
 			break;
 	}
