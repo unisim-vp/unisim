@@ -56,7 +56,26 @@ namespace concrete {
     return 0;
   }
 
-  bool
+  char const*
+  Processor::get_asm()
+  {
+    uint32_t insn_addr = this->cia, insn_idx = insn_addr/2,
+      insn_tag = insn_idx / Processor::OPPAGESIZE,
+      insn_offset = insn_idx % Processor::OPPAGESIZE;
+    
+    if (Operation* op = insn_cache[insn_tag].ops[insn_offset])
+      {
+        std::ostringstream buf;
+        op->disasm(this, buf);
+        std::cerr << std::endl;
+        asmbuf = buf.str();
+      }
+    else
+      asmbuf = "?";
+    return asmbuf.c_str();
+  }
+
+  void
   Processor::run( uint64_t begin, uint64_t until, uint64_t count )
   {
     this->Branch(begin);
@@ -118,14 +137,12 @@ namespace concrete {
           {
             /* Process exceptions */
             std::cerr << "Pending exceptions.\n";
-            abort();
+            abort("ProcessorException()");
           }
         
         this->bblock = (op->branch.target != op->branch.BNone);
       }
-    while (not terminated and this->nia != until and --count != 0);
-    
-    return true;
+    while (this->nia != until and --count != 0);
   }
   
 } // end of namespace concrete

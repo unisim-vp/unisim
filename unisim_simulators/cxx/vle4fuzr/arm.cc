@@ -193,11 +193,9 @@ struct ArmBranch
   static uint32_t const UNDEFINED_MODE = 0b11011;
   static uint32_t const SYSTEM_MODE = 0b11111;
 
-  struct Abort {};
-  
-  template <typename T> void UndefinedInstruction( T ) { throw Abort(); }
-  void UnpredictableInsnBehaviour() { throw Abort(); }
-  void FPTrap( unsigned exc ) { throw Abort(); }
+  template <typename T> void UndefinedInstruction( T ) { /*Illegal branch, ignoring*/ }
+  void UnpredictableInsnBehaviour() { /*Illegal branch, ignoring*/ }
+  void FPTrap( unsigned exc ) { /*Illegal branch, ignoring*/ }
 
   void SetBankedRegister( int, int, U32 const& ) {}
   U32  GetBankedRegister( int, int ) { return U32(); }
@@ -342,7 +340,42 @@ ArmProcessor::Step( Decoder& decoder )
   this->bblock = (op->branch.target != op->branch.BNone);
 }
 
-bool
+template <typename Decoder>
+void
+ArmProcessor::Disasm( Decoder& decoder )
+{
+  typedef typename AMO<Decoder>::Operation Operation;
+  typedef typename AMO<Decoder>::OpPage OpPage;
+
+  // Fetch
+  uint32_t insn_addr = this->current_insn_addr, insn_idx = insn_addr/(AMO<Decoder>::thumb ? 2 : 4),
+    insn_tag = insn_idx / ArmProcessor::OPPAGESIZE,
+    insn_offset = insn_idx % ArmProcessor::OPPAGESIZE;
+  OpPage& page = AMO<Decoder>::GetOpPage(*this, insn_tag);
+  
+  if (Operation* op = page.ops[insn_offset])
+    {
+      std::ostringstream buf;
+      op->disasm(*this, buf);
+      std::cerr << std::endl;
+      asmbuf = buf.str();
+    }
+  else
+    asmbuf = "?";
+}
+
+char const*
+ArmProcessor::get_asm()
+{
+  if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
+    Disasm(thumb_decoder);
+  else
+    Disasm(arm32_decoder);
+  
+  return asmbuf.c_str();
+}
+
+void
 ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
 {
   this->Branch(begin, B_DBG);
@@ -351,17 +384,11 @@ ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
     {
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
       if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
-        {
-          Step(thumb_decoder);
-        }
+        Step(thumb_decoder);
       else
-        {
-          Step(arm32_decoder);
-        }
+        Step(arm32_decoder);
     }
-  while (not terminated and next_insn_addr != until and --count != 0);
-    
-  return true;
+  while (next_insn_addr != until and --count != 0);
 }
 
 uint32_t
@@ -377,8 +404,7 @@ ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa:
 {
   insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
   std::cerr << std::endl;
-  // throw UndefInstrException();
-  throw 0;
+  abort("ProcessorException('undefined instruction')");
 }
 
 void
@@ -386,15 +412,14 @@ ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa:
 {
   insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
   std::cerr << std::endl;
-  // throw UndefInstrException();
-  throw 0;
+  abort("ProcessorException('undefined instruction')");
 }
 
 void
 ArmProcessor::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not unisim::component::cxx::processor::arm::sctlr::A.Get( this->SCTLR )))
@@ -417,11 +442,11 @@ void
 ArmProcessor::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment))
-    DataAbort( addr, mat_write, unisim::component::cxx::processor::arm::DAbort_Alignment );
+    MemoryException(1/*Write*/, addr, "misalignment");
 
   unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
   PhysicalWriteMemory( addr, size, endianness, value );
@@ -431,7 +456,7 @@ uint32_t
 ArmProcessor::PerformUReadAccess( uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not unisim::component::cxx::processor::arm::sctlr::A.Get( this->SCTLR )))
@@ -454,11 +479,11 @@ uint32_t
 ArmProcessor::PerformReadAccess( uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment))
-    DataAbort(addr, mat_read, unisim::component::cxx::processor::arm::DAbort_Alignment);
+    MemoryException(0/*Read*/, addr, "misalignment");
 
   uint64_t value = 0;
   unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
@@ -468,30 +493,29 @@ ArmProcessor::PerformReadAccess( uint32_t addr, uint32_t size )
 }
 
 void
-ArmProcessor::DataAbort(uint32_t address, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type)
-{
-  std::cerr << "aborted access:"
-            << "\n  - address: 0x" << std::hex << address
-            << "\n  - type: ";
-  switch (mat)
-    {
-    case mat_exec:  std::cerr << "fetch"; break;
-    case mat_read:  std::cerr << "read"; break;
-    case mat_write: std::cerr << "write"; break;
-    default:        std::cerr << "???"; break;
-    }
-  std::cerr << "\n  - fault: ";
-  switch (type)
-    {
-    case unisim::component::cxx::processor::arm::DAbort_SyncExternal: std::cerr << "external";
-    case unisim::component::cxx::processor::arm::DAbort_Alignment:    std::cerr << "misalignment";
-    default:                                                          std::cerr << "???";
-    }
-  terminated = true;
-}
-
-void
 ArmProcessor::CallSupervisor( uint32_t imm )
 {
   syscall_hooks( this->current_insn_addr, imm );
+}
+
+void
+ArmProcessor::UnpredictableInsnBehaviour()
+{
+  abort("Unpredictable()");
+}
+
+void
+ArmProcessor::FPTrap( unsigned fpx )
+{
+  std::ostringstream buf;
+  buf << "ProcessorException('floating-point'," << std::dec << fpx << ")";
+  abort(buf.str());
+}
+
+void
+ArmProcessor::BKPT( int bkpt )
+{
+  std::ostringstream buf;
+  buf << "ProcessorException('breakpoint'," << std::dec << bkpt << ")";
+  abort(buf.str());
 }

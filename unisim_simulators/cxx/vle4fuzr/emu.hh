@@ -14,6 +14,7 @@
 #include <iosfwd>
 #include <set>
 #include <vector>
+#include <string>
 #include <cassert>
 #include <cstdint>
 
@@ -22,6 +23,8 @@ struct Processor
   Processor();
   
   virtual ~Processor();
+
+  virtual void run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
 
   struct Page
   {
@@ -138,6 +141,8 @@ struct Processor
   Pages pages;
   Page  failpage;
 
+  void MemoryException(unsigned mtype, uint64_t address, std::string _msg);
+
   void error_mem_overlap( Page const& a, Page const& b );
 
   bool mem_map(uint64_t addr, uint64_t size, unsigned perms, Page::hook_t rhook, Page::hook_t whook, Page::hook_t xhook)
@@ -159,6 +164,8 @@ struct Processor
     return true;
   }
 
+  void error_at( char const* issue, uint64_t addr );
+  
   bool mem_unmap(uint64_t addr)
   {
     auto page = pages.lower_bound(addr);
@@ -168,8 +175,6 @@ struct Processor
     return true;
   }
 
-  void error_at( char const* issue, uint64_t addr );
-  
   bool page_info(Page::info_t sink, uint64_t addr)
   {
     auto page = pages.lower_bound(addr);
@@ -186,8 +191,7 @@ struct Processor
     return true;
   }
   
-  bool mem_chprot(uint64_t addr, unsigned perms);
-
+  bool  mem_chprot(uint64_t addr, unsigned perms);
   bool  mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook);
   bool  mem_exc_chhook(unsigned access_type, Page::hook_t hook);
   
@@ -195,7 +199,7 @@ struct Processor
   mem_write(uint64_t addr, uint8_t const* bytes, uint64_t size)
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end()) return false;
+    if (pi == pages.end()) return error_at("no", addr), false;
     for (;;)
       {
         if (not pi->has_data())
@@ -208,18 +212,18 @@ struct Processor
         if (pi == pages.begin()) break;
         --pi;
       }
-    return false;
+    return error_at("no", addr), false;
   }
 
   bool
   mem_read(uint64_t addr, uint8_t* bytes, uint64_t size)
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end()) return false;
+    if (pi == pages.end()) return error_at("no", addr), false;
     for (;;)
       {
         if (not pi->has_data())
-          return error_at("cannot read void", addr), false;
+          return error_at("cannot read hooked", addr), false;
         uintptr_t count = pi->read(addr, bytes, size);
         if (count >= size)       return true;
         addr += count;
@@ -228,7 +232,7 @@ struct Processor
         if (pi == pages.begin()) break;
         --pi;
       }
-    return false;
+    return error_at("no", addr), false;
   }
 
   Page const& AccessPage( uint64_t addr )
@@ -243,21 +247,21 @@ struct Processor
   {
     Page const& page = AccessPage(addr);
     if (not page.phys_write(this, addr, size, endianness, value))
-      { error_at("cannot write", addr); return abort(); }
+      { error_at("cannot write", addr); MemoryException(1,addr,"protection fault"); }
   }
 
   void PhysicalReadMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     Page const& page = AccessPage(addr);
     if (not page.phys_read(this, addr, size, endianness, value))
-      { error_at("cannot read", addr); return abort(); }
+      { error_at("cannot read", addr); MemoryException(0,addr,"protection fault"); }
   }
   
   void PhysicalFetchMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     Page const& page = AccessPage(addr);
     if (not page.phys_fetch(this, addr, size, endianness, value))
-      { error_at("cannot fetch", addr); return abort(); }
+      { error_at("cannot fetch", addr); MemoryException(2,addr,"protection fault"); }
   }
   
   struct RegView
@@ -269,23 +273,31 @@ struct Processor
 
   virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
   
+  bool NoSuchRegister() { error = "NoSuchRegister()"; return false; }
+  
   bool
   reg_write(char const* id, uintptr_t size, int regid, uint64_t value)
   {
-    RegView const* rv = get_reg(id, size);
-    if (not rv) return false;
-    rv->write(*this, regid, value);
+    if (RegView const* rv = get_reg(id, size))
+      rv->write(*this, regid, value);
+    else
+      return NoSuchRegister();
     return true;
   }
   
   bool
   reg_read(char const* id, uintptr_t size, int regid, uint64_t* value)
   {
-    RegView const* rv = get_reg(id, size);
-    if (not rv) return false;
-    rv->read(*this, regid, value);
+    if (RegView const* rv = get_reg(id, size))
+      rv->read(*this, regid, value);
+    else
+      return NoSuchRegister();
     return true;
   }
+  
+  struct Abort {};
+  
+  void abort(std::string _error) { error=_error; throw Abort(); }
   
   struct Hook
   {
@@ -335,23 +347,25 @@ struct Processor
     unsigned types;
     uint64_t begin, end;
     void* callback;
-    void* user_data;
     int insn;
   };
 
-  bool add( Hook* hook );
+  bool add_hook( int types, void* callback, uint64_t begin, uint64_t end );
   void insn_hooks(uint64_t addr, unsigned len);
   void syscall_hooks(uint64_t addr, unsigned num);
   
+  void set_disasm(bool _disasm) { disasm = _disasm; }
+
+
+  std::string asmbuf;
+  virtual char const* get_asm() = 0;
+  
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
+  std::string error;
   bool disasm;
   bool bblock;
-  bool terminated;
-
-  void abort() { terminated = true; }
-  void set_disasm(bool _disasm) { disasm = _disasm; }
-  virtual bool run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
+  //bool terminated;
 };
 
 struct BranchInfo

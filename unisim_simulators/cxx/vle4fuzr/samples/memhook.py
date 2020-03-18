@@ -53,7 +53,6 @@ def catch_mem(message,ctx,access,address,size,endianness,valref):
     op = op[access]
     sys.stdout.write( '%s @%08x => %02x (%s)\n' % (op, address, valref.contents.value, message) )
 
-
 ########################
 sys.stdout.write( '\n### 1. Simple execution ###\n' )
 ########################
@@ -70,24 +69,47 @@ unipy.EMU_mem_update(ctx,dst,whook=hook)
 unipy.EMU_start(ctx, entrypoint, exitpoint)
 
 ########################
-sys.stdout.write( '\n### 3. Monitor reads and forbid writes ###\n' )
+sys.stdout.write( '\n### 3. Monitor and modify writes ###\n' )
 ########################
 
-hook = lambda *args: catch_mem("from step #3", *args)
+def store_plus_one(ctx,access,address,size,endianness,valref):
+    assert size == 1 and endianness == 0 and access == 1
+    valref.contents.value = valref.contents.value + 1
+unipy.EMU_mem_update(ctx,dst,whook=store_plus_one)
+unipy.EMU_start(ctx, entrypoint, exitpoint)
+sys.stdout.write( 'received: %r\n' % unipy.EMU_mem_read(ctx,dst,size) )
+
+########################
+sys.stdout.write( '\n### 4. Monitor reads and forbid writes ###\n' )
+########################
+
+hook = lambda *args: catch_mem("from step #4", *args)
 unipy.EMU_mem_update(ctx,src,rhook=hook)
 # Warning: the write hook installed in #2 must be removed.  If is not
 # removed, it will be used as an exception handler after permission
 # error.
 unipy.EMU_mem_update(ctx,dst,whook=None,perms=0)
-unipy.EMU_start(ctx, entrypoint, exitpoint)
+# Note: executing the code will result in runtime exception so we "try-except" the emulation
+try:
+    unipy.EMU_start(ctx, entrypoint, exitpoint)
+except unipy.EmuError as e:
+    # Little Exemple of how to quicly parse exception
+    class MemoryException:
+        def parse(self, *args):
+            self.args = args
+    xp = MemoryException()
+    eval(e.errcode, {'MemoryException':xp.parse})
+    rwx, addr, msg = xp.args
+    sys.stdout.write( '! MemoryException: %s, %#x, %r' % ("rwx"[rwx], addr, msg) )
+            
 
 ########################
-sys.stdout.write( '\n### 4. Remove the destination page and setup a global write exception hook ###\n' )
+sys.stdout.write( '\n### 5. Remove the destination page and setup a global write exception hook ###\n' )
 ########################
 
-# Note: not removing the read monitor from #3
+# Note: not removing the read monitor from #4
 unipy.EMU_mem_erase(ctx,dst)
-unipy.EMU_mem_exceptions(ctx,whook=lambda *args: catch_mem("from step #4", *args))
+unipy.EMU_mem_exceptions(ctx,whook=lambda *args: catch_mem("from step #5", *args))
 unipy.EMU_start(ctx, entrypoint, exitpoint)
 
 unipy.EMU_close(ctx)

@@ -56,7 +56,8 @@ extern "C"
   int emu_set_disasm(void* uc, int disasm)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.set_disasm(disasm), 0;
+    proc.set_disasm(disasm);
+    return 0;
   }
 
   int emu_mem_map(void* uc, uint64_t addr, uint64_t size, unsigned perms, void* _rhook, void* _whook, void* _xhook)
@@ -119,16 +120,8 @@ extern "C"
 
   int emu_hook_add(void* uc, int types, void* callback, uint64_t begin, uint64_t end)
   {
-    Processor::Hook* hook = new Processor::Hook(types, callback, begin, end);
-    
-    if (not ((Processor*)uc)->add(hook))
-      {
-        std::cerr << "Hook typing error: " << std::hex << types << std::endl;
-        delete hook;
-        return 8 /*EMU_ERR_HOOK*/;
-      }
-
-    return 0;
+    Processor& proc = *(Processor*)uc;
+    return proc.add_hook(types, callback, begin, end) ? 0 : -1;
   }
   
   int emu_page_info(void* uc, Processor::Page::info_t page_info, uint64_t addr)
@@ -146,16 +139,32 @@ extern "C"
   int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t count)
   {
     Processor& proc = *(Processor*)uc;
-    proc.terminated = false;
     proc.bblock = true;
-    return proc.run(begin, until, count) ? 0 : -1;
+    
+    try { proc.run(begin, until, count); }
+    
+    catch (Processor::Abort) { return -1; }
+      
+    return 0;
   }
 
   int emu_stop(void* uc)
   {
     Processor& proc = *(Processor*)uc;
-    proc.terminated = true;
+    proc.abort("UserStop()");
     return 0;
   }
 
+  char const* emu_get_asm(void* uc)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.get_asm();
+  }
+  
+  char const* emu_get_error(void* uc)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.error.c_str();
+  }
+  
 }

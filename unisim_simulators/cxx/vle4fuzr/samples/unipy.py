@@ -20,7 +20,7 @@ def bind( shared_object ):
     if _so is None:
         raise ImportError("ERROR: fail to load the dynamic library.")
 
-    # All functions return an error status as int, we just specify their argument types
+    # Specification of lib functions interfaces
     _so.emu_open_arm       .argtypes = (ctypes.POINTER(emu_engine),ctypes.c_uint)
     _so.emu_open_vle       .argtypes = (ctypes.POINTER(emu_engine),)
     _so.emu_start          .argtypes = (emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64)
@@ -39,19 +39,25 @@ def bind( shared_object ):
     _so.emu_hook_add       .argtypes = (emu_engine, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64)
     _so.emu_page_info      .argtypes = (emu_engine, ctypes.c_void_p, ctypes.c_uint64)
     _so.emu_pages_info     .argtypes = (emu_engine, ctypes.c_void_p)
+    _so.emu_get_error      .argtypes = (emu_engine,)
+    _so.emu_get_error      .restype = ctypes.c_char_p
+    _so.emu_get_asm        .argtypes = (emu_engine,)
+    _so.emu_get_asm        .restype = ctypes.c_char_p
 
 EMU_ERR_OK = 0
 
 class EmuError(Exception):
-    def __init__(self, errno):
-        self.errno = errno
+    def __init__(self, errcode):
+        self.errcode = errcode
 
     def __str__(self):
-        return 'EmuError(%r)' % self.errno
+        return 'EmuError(%r)' % self.errcode
 
-def _EmuCheck(status):
-    if status != EMU_ERR_OK:
-        raise EmuError(status)
+def _EmuCheck(ctx, status):
+    if status == EMU_ERR_OK:
+        return
+    err = _so.emu_get_error(ctx)
+    raise EmuError( str(err) )
 
 _EMU_HOOK_POOL = {}
 
@@ -79,7 +85,7 @@ def _get_managed_c_hook( signature, function ):
 def EMU_close(ctx):
     # Close the emulator @ctx and release associated resources.
     status = _so.emu_close(ctx)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_reg_read(ctx, reg_id):
     # Read from the @reg_id register (See architecture specific
@@ -87,14 +93,14 @@ def EMU_reg_read(ctx, reg_id):
     reg = ctypes.c_uint64(0)
     rstr, rnum = reg_id
     status = _so.emu_reg_read(ctx, rstr.encode('ascii'), len(rstr), rnum, ctypes.byref(reg))
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
     return reg.value
 
 def EMU_reg_write(ctx, reg_id , value):
     # Write @value from the @reg_id register
     rstr, rnum = reg_id
     status = _so.emu_reg_write(ctx, rstr.encode('ascii'), len(rstr), rnum, value)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 # Hook type for memory hooks: hook( ctx, access_type, address, size, endianness, valref )
 # The hook is called with:
@@ -126,7 +132,7 @@ def EMU_mem_init(ctx, address, size, **opts):
     perms = opts.get('perms',7)
     hooks = (_get_managed_c_hook(MEM_HOOK_CBTYPE, opts.get(atp + 'hook', None)) for atp in 'rwx')
     status = _so.emu_mem_map(ctx, address, size, perms, *hooks)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_mem_update(ctx, address, **opts):
     # Update attributes @opts of page at @address.  New attributes are
@@ -137,14 +143,14 @@ def EMU_mem_update(ctx, address, **opts):
     perms = opts.get('perms')
     if perms is not None:
         status = _so.emu_mem_chprot(ctx, address, perms)
-        _EmuCheck(status)
+        _EmuCheck(ctx, status)
 
     for access_type in range(3):
         hook = 'rwx'[access_type] + 'hook'
         if hook not in opts:
             continue
         status = _so.emu_mem_chhook(ctx, address, access_type, _get_managed_c_hook(MEM_HOOK_CBTYPE, opts[hook]))
-        _EmuCheck(status)
+        _EmuCheck(ctx, status)
 
 def EMU_mem_exceptions(ctx, **opts):
     # Update global memory exception hooks.  New hooks are given using
@@ -156,13 +162,13 @@ def EMU_mem_exceptions(ctx, **opts):
         if hook not in opts:
             continue
         status = _so.emu_mem_exc_chhook(ctx, access_type, _get_managed_c_hook(MEM_HOOK_CBTYPE, opts[hook]))
-        _EmuCheck(status)
+        _EmuCheck(ctx, status)
     
     
 def EMU_mem_erase(ctx, address):
     # Erase the page containing the byte at @address
     status = _so.emu_mem_unmap(ctx, address)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_mem_write(ctx, address, data, size=None):
     # Write @size bytes of @data to memory starting at @address. If
@@ -172,30 +178,30 @@ def EMU_mem_write(ctx, address, data, size=None):
     if size is None:
         size = len(data)
     status = _so.emu_mem_write(ctx, address, data, size)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_mem_read(ctx, address, size):
     # Read @size bytes of data from memory at @address
     data = ctypes.create_string_buffer(size)
     status = _so.emu_mem_read(ctx, address, data, size)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
     return bytearray(data)
 
 def EMU_start(ctx, begin, until, count=0):
     # Emulate from @begin, and stop when reaching address @until or after @count instructions
     status = _so.emu_start(ctx, begin, until, count)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_stop(ctx):
     # Stop emulation ASAP (callable from inside hook).
     status = _so.emu_stop(ctx)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_set_disasm(ctx, disasm):
     # Activate (or deactivate) instruction disassembly according to
     # @disasm
     status = _so.emu_set_disasm(ctx, disasm)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 # Hook type for code hooks: hook( ctx, addr, info ):
 # The hook is called with:
@@ -230,17 +236,17 @@ _EMU_HOOK_BLOCK = 8
 def EMU_hook_code(ctx, callback, begin=1, end=0, **cbargs):
     # Add a hook @callback before each instruction execution (if conditions are met).
     status = _so.emu_hook_add(ctx, _EMU_HOOK_CODE, _get_code_hook(callback, cbargs), begin, end)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_hook_BB(ctx, callback, begin=1, end=0, **cbargs):
     # Add a hook @callback before each basic-block execution (if conditions are met).
     status = _so.emu_hook_add(ctx, _EMU_HOOK_BLOCK, _get_code_hook(callback, cbargs), begin, end)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 def EMU_hook_excpt(ctx, callback, begin=1, end=0, **cbargs):
     # Add a hook @callback before each interrupting instruction (if conditions are met).
     status = _so.emu_hook_add(ctx, _EMU_HOOK_INTR, _get_code_hook(callback, cbargs), begin, end)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 # Hook type for page info hooks: hook( first, last, perms, hooks ):
 # The hook is called with:
@@ -266,7 +272,7 @@ def EMU_pages_info(ctx, callback):
     # signature.
     cb = ctypes.cast(EMU_PAGE_INFO_CBTYPE(callback), EMU_PAGE_INFO_CBTYPE)
     status = _so.emu_pages_info(ctx, cb)
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
 
 ######################
 # ARM specific stuff #
@@ -277,7 +283,7 @@ def EMU_open_arm(is_thumb=False):
     # in thumb2 mode when @is_thumb is True.
     ctx = emu_engine()
     status = _so.emu_open_arm(ctypes.byref(ctx), int(is_thumb))
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
     return ctx
 
 EMU_ARM_REG_APSR = ('apsr',0)
@@ -295,10 +301,11 @@ def EMU_open_vle():
     # Create a vle emulator
     ctx = emu_engine()
     status = _so.emu_open_vle(ctypes.byref(ctx))
-    _EmuCheck(status)
+    _EmuCheck(ctx, status)
     return ctx
 
 def EMU_VLE_REG_R(idx):
     return ('gpr',idx)
 
 EMU_VLE_REG_LR = ('lr',0)
+

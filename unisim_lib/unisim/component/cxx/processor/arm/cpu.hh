@@ -348,7 +348,7 @@ struct CPU
 
 public:
   bool     Test( bool cond ) { return cond; }
-  void     UnpredictableInsnBehaviour();
+  virtual void UnpredictableInsnBehaviour();
   void     CallSupervisor( uint32_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   virtual void WaitForInterrupt() {}; // Implementation-defined

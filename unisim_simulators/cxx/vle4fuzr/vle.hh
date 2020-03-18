@@ -259,7 +259,9 @@ namespace concrete {
     bool CheckSPV() { return true; }
     bool Wait() { throw TODO(); return false; }
     
-    virtual bool run( uint64_t begin, uint64_t until, uint64_t count ) override;
+    virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;
+    virtual char const* get_asm() override;
+    
   };
   
   using unisim::util::arithmetic::BitScanReverse;

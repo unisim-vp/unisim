@@ -44,17 +44,17 @@ struct ArmProcessor
   , public unisim::component::cxx::processor::arm::CPU<ARMv7cfg>
 {
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
-  typedef typename CP15CPU::CP15Reg CP15Reg;
+  //  typedef typename CP15CPU::CP15Reg CP15Reg;
   typedef BranchInfo InsnBranch;
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();
 
-  virtual void Sync() override { throw 0; }
-
+  virtual void Sync() override { struct No {}; throw No(); }
+  
   static unisim::component::cxx::processor::arm::isa::arm32::Decoder<ArmProcessor> arm32_decoder;
   static unisim::component::cxx::processor::arm::isa::thumb::Decoder<ArmProcessor> thumb_decoder;
-
+  
   static ArmProcessor& Self( Processor& proc ) { return dynamic_cast<ArmProcessor&>( proc ); }
 
   Processor::RegView const* get_reg(char const* id, uintptr_t size) override;
@@ -93,15 +93,27 @@ struct ArmProcessor
 
   uint32_t ReadInsn( uint32_t address );
   
-  bool     run( uint64_t begin, uint64_t until, uint64_t count ) override;
+  virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;
+  virtual char const* get_asm() override;
 
   template <class Decoder> void Step(Decoder&);
+  template <class Decoder> void Disasm(Decoder&);
 
   void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
   void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
-  void     DataAbort(uint32_t addr, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type);
+  void     UnpredictableInsnBehaviour();
   void     CallSupervisor( uint32_t imm );
-  void     BKPT( int ) { throw 0; }
+  virtual void FPTrap( unsigned fpx ) override;
+  void     BKPT( int );
+
+  
+  // TODO:
+  // SetCPSR => CPSRSetByInstriction
+  // CP15 functions have access to CPU (already do privilege checks enough)
+  // uint32_t    CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  // void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value );
+  // Huge issues with Mode system (gives access to system behavior) { checked by nature ? }
+  
 };
 
 
