@@ -8,7 +8,7 @@ namespace mipsel
 set addressclass {uint32_t};
 set codetype scalar;
 set endianness little;
-
+template <{typename} {ARCH}>
 
 decl {
 #include <iosfwd>
@@ -17,6 +17,11 @@ decl {
 
 action {void} disasm({std::ostream&} {sink}) const {
   sink << "Unknown Mipsel instruction";
+}
+
+action {void} execute({ARCH&} {core}) const {
+  struct Unimplemented {};
+  throw Unimplented();
 }
 
 impl {
