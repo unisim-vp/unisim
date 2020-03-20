@@ -29,8 +29,8 @@ impl {
 #include <iostream>
 } // end of impl
 
-include "special.isa"
-include "floating-point.isa"
+include "unisim/component/cxx/processor/mips/isa/special.isa"
+include "unisim/component/cxx/processor/mips/isa/floating-point.isa"
 
 op bg(bits[32]);
 
