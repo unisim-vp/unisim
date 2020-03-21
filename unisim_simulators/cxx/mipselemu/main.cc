@@ -44,6 +44,7 @@ struct Arch
   , public unisim::service::interfaces::Registers
 
 {
+  typedef unisim::component::cxx::processor::mips::isa::Operation<Arch> Operation;
   
   Arch()
     : unisim::service::interfaces::MemoryInjection<uint32_t>()
@@ -70,7 +71,7 @@ struct Arch
       for (uintptr_t idx = 0; idx < size; ++idx) base[idx] = 0;
     }
   };
-  typedef typename component::cxx::memory::sparse::Memory<uint32_t,12,12,ClearMemSet> Memory;
+  typedef typename unisim::component::cxx::memory::sparse::Memory<uint32_t,12,12,ClearMemSet> Memory;
   Memory                      m_mem;
   
   // unisim::service::interfaces::Memory<uint32_t>
@@ -98,7 +99,23 @@ struct Arch
       { throw std::logic_error( "No linux OS emulation connected" ); }
     linux_os->ExecuteSystemCall( id );
   }
-  
+
+  Operation*
+  StepInstruction()
+  {
+    /* fetch instruction word from memory */
+    // isa::arm64::CodeType insn;
+    // ReadInsn(insn_addr, insn);
+
+    // /* Decode current PC */
+    // isa::arm64::Operation<CPU>* op;
+    // op = decoder.Decode(insn_addr, insn);
+
+    // this->next_insn_addr += 4;
+    return 0;
+  }
+
+  bool m_disasm;
 };
 
 int
@@ -138,11 +155,12 @@ main( int argc, char *argv[] )
   
   while (not linux32.exited)
     {
-      Arch::Operation* op = cpu.fetch();
+      cpu.StepInstruction();
+      //      Arch::Operation* op = cpu.fetch();
       // op->disasm( std::cerr );
       // std::cerr << std::endl;
-      asm volatile ("operation_execute:");
-      op->execute( cpu );
+      //      asm volatile ("operation_execute:");
+      //      op->execute( cpu );
       //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       
       // if ((cpu.m_instcount % 0x1000000) == 0)

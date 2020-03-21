@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011-2020,
+ *  Copyright (c) 2019-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_OS_LINUX_I386_HH__
-#define __UNISIM_UTIL_OS_LINUX_I386_HH__
+#ifndef __UNISIM_UTIL_OS_LINUX_MIPS_HH__
+#define __UNISIM_UTIL_OS_LINUX_MIPS_HH__
 
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/os/linux_os/errno.hh>
@@ -59,25 +59,25 @@ namespace os {
 namespace linux_os {
 
   // Register names
-  static char const* const kI386_eax = "%eax";
-  static char const* const kI386_ecx = "%ecx";
-  static char const* const kI386_edx = "%edx";
-  static char const* const kI386_ebx = "%ebx";
-  static char const* const kI386_esp = "%esp";
-  static char const* const kI386_ebp = "%ebp";
-  static char const* const kI386_esi = "%esi";
-  static char const* const kI386_edi = "%edi";
-  static char const* const kI386_eip = "%eip";
+  static char const* const kMIPS_eax = "%eax";
+  static char const* const kMIPS_ecx = "%ecx";
+  static char const* const kMIPS_edx = "%edx";
+  static char const* const kMIPS_ebx = "%ebx";
+  static char const* const kMIPS_esp = "%esp";
+  static char const* const kMIPS_ebp = "%ebp";
+  static char const* const kMIPS_esi = "%esi";
+  static char const* const kMIPS_edi = "%edi";
+  static char const* const kMIPS_eip = "%eip";
 
-  static char const* const kI386_es = "%es";
-  static char const* const kI386_cs = "%cs";
-  static char const* const kI386_ss = "%ss";
-  static char const* const kI386_ds = "%ds";
-  static char const* const kI386_fs = "%fs";
-  static char const* const kI386_gs = "%gs";
+  static char const* const kMIPS_es = "%es";
+  static char const* const kMIPS_cs = "%cs";
+  static char const* const kMIPS_ss = "%ss";
+  static char const* const kMIPS_ds = "%ds";
+  static char const* const kMIPS_fs = "%fs";
+  static char const* const kMIPS_gs = "%gs";
 
   template <class LINUX>
-  struct I386TS : public LINUX::TargetSystem
+  struct MIPSTS : public LINUX::TargetSystem
   {
     // Name imports
     typedef typename LINUX::SysCall SysCall;
@@ -87,14 +87,14 @@ namespace linux_os {
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
-    // I386 linux structs
-    struct i386_timespec
+    // MIPS linux structs
+    struct mips_timespec
     {
       int32_t tv_sec;     /* Seconds.     (__time_t) */
       int32_t tv_nsec;    /* Nanoseconds. (long int) */
     };
 
-    struct i386_stat64
+    struct mips_stat64
     {
       uint64_t st_dev;            // 00-08 0b0000xxx
       uint32_t __pad1;            // 08-0c 0b00010xx
@@ -118,7 +118,7 @@ namespace linux_os {
       uint64_t st_ino;            // 58-60 0b1011xxx
     };
 
-    struct i386_tms
+    struct mips_tms
     {
       int32_t tms_utime;          /* User CPU time.                    (clock_t) */
       int32_t tms_stime;          /* System CPU time.                  (clock_t) */
@@ -126,7 +126,7 @@ namespace linux_os {
       int32_t tms_cstime;         /* System CPU time of dead children. (clock_t) */
     };
 
-    struct i386_utsname
+    struct mips_utsname
     {
       char sysname[65];
       char nodename[65];
@@ -136,19 +136,19 @@ namespace linux_os {
       char domainname[65];
     };
 
-    struct i386_timeval
+    struct mips_timeval
     {
       int32_t tv_sec;         /* seconds      (__kernel_time_t) */
       int32_t tv_usec;        /* microseconds (__kernel_suseconds_t) */
     };
 
-    struct i386_timezone
+    struct mips_timezone
     {
       int32_t tz_minuteswest; /* minutes west of Greenwich (int) */
       int32_t tz_dsttime;     /* type of dst correction    (int) */
     };
     
-    I386TS( LINUX& _lin ) : LINUX::TargetSystem( "i386", _lin ) {}
+    MIPSTS( LINUX& _lin ) : LINUX::TargetSystem( "mips", _lin ) {}
     
     bool GetAT_HWCAP( address_type& hwcap ) const { return false; }
         
@@ -173,7 +173,7 @@ namespace linux_os {
             return false;
       }
       // Set EIP to the program entry point
-      if (not lin.SetTargetRegister(kI386_eip, lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister(kMIPS_eip, lin.GetEntryPoint()))
         return false;
       // Set ESP to the base of the created stack
       unisim::util::blob::Section<address_type> const * esp_section =
@@ -183,7 +183,7 @@ namespace linux_os {
           lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
-      if (not lin.SetTargetRegister(kI386_esp, esp_section->GetAddr()))
+      if (not lin.SetTargetRegister(kMIPS_esp, esp_section->GetAddr()))
         return false;
           
       // Pseudo GDT initialization  (flat memory + early TLS)
@@ -198,12 +198,12 @@ namespace linux_os {
         }
       lin.SetTargetRegister("@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
           
-      this->WriteSegmentSelector(kI386_cs,(1<<3) | (0<<2) | 3); // code
-      this->WriteSegmentSelector(kI386_ss,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_ds,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_es,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_fs,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_gs,(3<<3) | (0<<2) | 3); // tls
+      this->WriteSegmentSelector(kMIPS_cs,(1<<3) | (0<<2) | 3); // code
+      this->WriteSegmentSelector(kMIPS_ss,(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector(kMIPS_ds,(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector(kMIPS_es,(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector(kMIPS_fs,(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector(kMIPS_gs,(3<<3) | (0<<2) | 3); // tls
           
       return true;
     }
@@ -213,7 +213,7 @@ namespace linux_os {
       lin.SetTargetRegister("@gdt[3].base", base ); // pseudo allocation of a tls descriptor
     }
 
-    static int Fstat64(int fd, struct i386_stat64* target_stat, unisim::util::endian::endian_type endianness)
+    static int Fstat64(int fd, struct mips_stat64* target_stat, unisim::util::endian::endian_type endianness)
     {
       int ret;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -228,7 +228,7 @@ namespace linux_os {
 #endif
       if(ret < 0) return ret;
 
-      memset(target_stat, 0, sizeof(struct i386_stat64));
+      memset(target_stat, 0, sizeof(struct mips_stat64));
 	
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
       // 64-bit host
@@ -318,20 +318,20 @@ namespace linux_os {
       return ret;
     }
 
-    static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { lin.SetTargetRegister(kI386_eax, (parameter_type) ret); }
-    void SetSystemCallStatus(int64_t ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
+    static void SetMIPSSystemCallStatus(LINUX& lin, int ret, bool error) { lin.SetTargetRegister(kMIPS_eax, (parameter_type) ret); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetMIPSSystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: lin.GetTargetRegister(kI386_ebx, val); break;
-      case 1: lin.GetTargetRegister(kI386_ecx, val); break;
-      case 2: lin.GetTargetRegister(kI386_edx, val); break;
-      case 3: lin.GetTargetRegister(kI386_esi, val); break;
-      case 4: lin.GetTargetRegister(kI386_edi, val); break;
-      case 5: lin.GetTargetRegister(kI386_ebp, val); break;
+      case 0: lin.GetTargetRegister(kMIPS_ebx, val); break;
+      case 1: lin.GetTargetRegister(kMIPS_ecx, val); break;
+      case 2: lin.GetTargetRegister(kMIPS_edx, val); break;
+      case 3: lin.GetTargetRegister(kMIPS_esi, val); break;
+      case 4: lin.GetTargetRegister(kMIPS_edi, val); break;
+      case 5: lin.GetTargetRegister(kMIPS_ebp, val); break;
       default: throw std::logic_error("internal error");
       }
           
@@ -351,7 +351,7 @@ namespace linux_os {
     SysCall* GetSystemCall( int& id ) const
     {
       // TODO: fill syscall map
-      // see either arch/i386/include/asm/unistd.h or arch/i386/include/uapi/asm/unistd.h in LINUX source
+      // see either arch/mips/include/asm/unistd.h or arch/mips/include/uapi/asm/unistd.h in LINUX source
       switch (id) {
       case 0: return this->GetSysCall("restart_syscall");
       case 1: return this->GetSysCall("exit");
@@ -396,7 +396,7 @@ namespace linux_os {
       case 40: return this->GetSysCall("rmdir");
       case 41: return this->GetSysCall("dup");
       case 42: return this->GetSysCall("pipe");
-        // // 43: times (see i386 specific)
+        // // 43: times (see mips specific)
       case 44: return this->GetSysCall("prof");
       case 45: return this->GetSysCall("brk");
       case 46: return this->GetSysCall("setgid");
@@ -431,7 +431,7 @@ namespace linux_os {
       case 75: return this->GetSysCall("setrlimit");
       case 76: return this->GetSysCall("getrlimit");
       case 77: return this->GetSysCall("getrusage");
-        // 78: gettimeofday (see i386 specific)
+        // 78: gettimeofday (see mips specific)
       case 79: return this->GetSysCall("settimeofday");
       case 80: return this->GetSysCall("getgroups");
       case 81: return this->GetSysCall("setgroups");
@@ -461,7 +461,7 @@ namespace linux_os {
       case 105: return this->GetSysCall("getitimer");
       case 106: return this->GetSysCall("stat");
       case 107: return this->GetSysCall("lstat");
-        // 108 fstat (see i386 specific)
+        // 108 fstat (see mips specific)
       case 109: return this->GetSysCall("olduname");
       case 110: return this->GetSysCall("iopl");
       case 111: return this->GetSysCall("vhangup");
@@ -475,7 +475,7 @@ namespace linux_os {
       case 119: return this->GetSysCall("sigreturn");
       case 120: return this->GetSysCall("clone");
       case 121: return this->GetSysCall("setdomainname");
-        // 122: uname (see i386 specific)
+        // 122: uname (see mips specific)
       case 123: return this->GetSysCall("modify_ldt");
       case 124: return this->GetSysCall("adjtimex");
       case 125: return this->GetSysCall("mprotect");
@@ -548,9 +548,9 @@ namespace linux_os {
       case 192: return this->GetSysCall("mmap2");
       case 193: return this->GetSysCall("truncate64");
       case 194: return this->GetSysCall("ftruncate64");
-        // 195 stat64 (see i386 specific)
+        // 195 stat64 (see mips specific)
       case 196: return this->GetSysCall("lstat64");
-        // 197 fstat64 (see i386 specific)
+        // 197 fstat64 (see mips specific)
       case 198: return this->GetSysCall("lchown32");
       case 199: return this->GetSysCall("getuid32");
       case 200: return this->GetSysCall("getgid32");
@@ -594,7 +594,7 @@ namespace linux_os {
       case 240: return this->GetSysCall("futex");
       case 241: return this->GetSysCall("sched_setaffinity");
       case 242: return this->GetSysCall("sched_getaffinity");
-        // 243: set_thread_area (see i386 specific)
+        // 243: set_thread_area (see mips specific)
       case 244: return this->GetSysCall("get_thread_area");
       case 245: return this->GetSysCall("io_setup");
       case 246: return this->GetSysCall("io_destroy");
@@ -703,7 +703,7 @@ namespace linux_os {
       case 351: return this->GetSysCall("sched_setattr");
       case 352: return this->GetSysCall("sched_getattr");
 
-      case 122: /* i386 specific uname syscall */
+      case 122: /* mips specific uname syscall */
         {
           static struct : public SysCall {
             char const* GetName() const { return "uname"; }
@@ -719,7 +719,7 @@ namespace linux_os {
               address_type buf_addr = GetSystemCallParam(lin, 0);
               ret = 0;
   
-              struct i386_utsname value;
+              struct mips_utsname value;
               memset(&value, 0, sizeof(value));
               UTSName const& utsname = lin.GetUTSName();
               strncpy(&value.sysname[0],    utsname.sysname.c_str(), sizeof(value.sysname) - 1);
@@ -730,7 +730,7 @@ namespace linux_os {
               strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
               lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value) );
   
-              SetI386SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetMIPSSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -763,7 +763,7 @@ namespace linux_os {
                 }
               else
                 {
-                  struct i386_stat64 target_stat;
+                  struct mips_stat64 target_stat;
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
 			
@@ -777,13 +777,13 @@ namespace linux_os {
                     << std::endl;
                 }
 	
-              SetI386SystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetMIPSSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
         } break;
 
-      case 243: /* i386 specific set_thread_area syscall */
+      case 243: /* mips specific set_thread_area syscall */
         {
           static struct : public SysCall {
             char const* GetName() const { return "set_thread_area"; }
@@ -815,7 +815,7 @@ namespace linux_os {
               entry_number = unisim::util::endian::Host2Target( lin.GetEndianness(), entry_number );
               lin.WriteMemory( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
 
-              SetI386SystemCallStatus( lin, 0, false );
+              SetMIPSSystemCallStatus( lin, 0, false );
             }
           } sc;
           return &sc;
@@ -869,4 +869,4 @@ namespace linux_os {
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_OS_LINUX_I386_HH__
+#endif // __UNISIM_UTIL_OS_LINUX_MIPS_HH__

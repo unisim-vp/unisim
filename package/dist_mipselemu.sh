@@ -7,7 +7,10 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
+import unisim/component/cxx/memory/sparse || exit
 import unisim/component/cxx/processor/mips/isa || exit
+import unisim/service/os/linux_os || exit
+import unisim/util/debug || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
 
@@ -47,10 +50,11 @@ UNISIM_ISA_PREFIX="unisim/component/cxx/processor/mips/isa/mipsel"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
+linuxsystem.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
-${UNISIM_SIMULATOR_TOP_ISA} \
+linuxsystem.hh \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\
