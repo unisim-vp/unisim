@@ -40,7 +40,6 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/os/linux_os/linux.hh>
-#include <unisim/util/os/linux_os/i386.hh>
 #include <inttypes.h>
 
 struct LinuxOS

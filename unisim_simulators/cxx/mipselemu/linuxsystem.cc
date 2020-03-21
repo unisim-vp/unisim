@@ -33,6 +33,7 @@
  */
 
 #include <linuxsystem.hh>
+#include <unisim/util/os/linux_os/mips.hh>
 #include <unisim/util/os/linux_os/linux.tcc>
 #include <unisim/util/os/linux_os/calls.tcc>
 
@@ -67,8 +68,8 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   
   // Set the system type of the target simulator (should be the same than the
   // binary)
-  auto i386_target = new unisim::util::os::linux_os::I386TS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_impl );
-  linux_impl.SetTargetSystem(i386_target);
+  auto target = new unisim::util::os::linux_os::MIPSTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_impl );
+  linux_impl.SetTargetSystem(target);
     
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetStackBase( 0x40000000UL );
