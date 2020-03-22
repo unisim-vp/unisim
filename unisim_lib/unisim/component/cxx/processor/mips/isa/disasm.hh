@@ -39,10 +39,24 @@
 #include <iomanip>
 #include <inttypes.h>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace mips {
+namespace isa {
+
 struct Ostreamable
 {
   virtual void operator() ( std::ostream& sink ) const = 0;
   virtual ~Ostreamable() {};
+  friend std::ostream& operator << (std::ostream& sink, Ostreamable const& os);
+};
+ 
+struct PrintGPR : public Ostreamable
+{
+  PrintGPR( unsigned _idx ) : idx(_idx) {} unsigned idx;
+  void operator () (std::ostream& sink) const;
 };
 
 struct PrintR : public Ostreamable
@@ -63,20 +77,25 @@ struct PrintI : public Ostreamable
   void operator () ( std::ostream& sink ) const { sink << std::dec << num; }
 };
 
-struct DisasmC : public Ostreamable
+struct PrintCond : public Ostreamable
 {
-  DisasmC( unsigned _rid ) : rid(_rid) {} unsigned rid;
-  void operator () ( std::ostream& sink ) const { sink << "C" << rid; }
-};
-
-struct DisasmCond : public Ostreamable
-{
-  DisasmCond( unsigned _rid ) : rid(_rid) {} unsigned rid;
+  PrintCond( unsigned _rid ) : rid(_rid) {} unsigned rid;
   void operator () ( std::ostream& sink ) const
   {
-    char const* condnames[] = {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv"};
+    char const* condnames[] = {"f",    "un",   "eq",   "ueq",  "olt",  "ult",  "ole",  "ule",  "sf",
+                               "ngle", "seq",  "ngl",  "lt",   "nge",  "le",   "ngt"};
     sink << condnames[rid];
   }
 };
 
+
+
+} /* end of namespace isa */
+} /* end of namespace mips */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_MIPS_ISA_DISASM_HH__
+

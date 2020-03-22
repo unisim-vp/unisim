@@ -1,0 +1,47 @@
+op movf (0[6]:rs[5]:cc[3]:0[2]:rd[5]:0[5]:1[6]);
+
+movf.disasm = { sink << "movf\t" << PrintR("$",rd) << ',' << PrintR("$",rs) << ',' << PrintR("$fcc",cc); };
+
+op movt (0[6]:rs[5]:cc[3]:1[2]:rd[5]:0[5]:1[6]);
+
+movt.disasm = { sink << "movt\t" << PrintR("$",rd) << ',' << PrintR("$",rs) << ',' << PrintR("$fcc",cc); };
+
+op movz (0[6]:rs[5]:rt[5]:rd[5]:0[5]:0xa[6]);
+
+movz.disasm = { sink << "movz\t" << PrintR("$",rd) << ',' << PrintR("$",rs) << ',' << PrintR("$",rt); };
+
+op movn (0[6]:rs[5]:rt[5]:rd[5]:0[5]:0xb[6]);
+
+movn.disasm = { sink << "movn\t" << PrintR("$",rd) << ',' << PrintR("$",rs) << ',' << PrintR("$",rt); };
+
+op lsa (0[6]:rs[5]:rt[5]:rd[5]:0[3]:i[2]:5[6]);
+
+lsa.disasm = { sink << "lsa\t" << PrintR("$",rd) << ',' << PrintR("$",rs) << ',' << PrintR("$",rt) << ',' << PrintHex(i+1); };
+
+op rorv (0[6]:rs[5]:rt[5]:rd[5]:0[5]:0x46[6]);
+
+rorv.disasm = { sink << "rorv\t" << PrintR("$",rd) << ',' << PrintR("$",rt) << ',' << PrintR("$",rs); };
+
+op mflhxu(0[6]:0[5]:0[5]:rc[5]:0[5]:0x52[6]);
+mflhxu.disasm = { sink << "mflhxu\t" << PrintR("$",rc); };
+
+op mtlhx(0[6]:ra[5]:0[5]:0[5]:0[5]:0x53[6]);
+mtlhx.disasm = { sink << "mtlhx\t" << PrintR("$",ra); };
+
+op jr_hb(0[6]:ra[5]:0[5]:0[5]:0x10[5]:0x08[6]);
+jr_hb.disasm = { sink << "jr.hb\t" << PrintR("$",ra); };
+
+op jalr_hb(0[6]:ra[5]:0[5]:rc[5]:0x10[5]:0x09[6]);
+jalr_hb.disasm = \
+{
+  sink << "jalr.hb\t";
+  if (rc != 31) sink << PrintR("$",rc) << ",";
+  sink << PrintR("$",ra);
+};
+
+op multp(0[6]:ra[5]:rb[5]:0[5]:0x11[5]:0x19[6]);
+multp.disasm = { sink << "multp\t" << PrintR("$",ra) << "," << PrintR("$",rb); };
+
+// op aclr(17[6]:19[5]:16[5]:sext offset[16]);
+// aclr.disasm = { sink << "aclr\t" << PrintR("$",0) << ',' << int(offset) << '(' << PrintR("$",3) << ')'; };
+

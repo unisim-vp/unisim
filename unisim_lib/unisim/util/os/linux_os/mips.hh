@@ -58,24 +58,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  // Register names
-  static char const* const kMIPS_eax = "%eax";
-  static char const* const kMIPS_ecx = "%ecx";
-  static char const* const kMIPS_edx = "%edx";
-  static char const* const kMIPS_ebx = "%ebx";
-  static char const* const kMIPS_esp = "%esp";
-  static char const* const kMIPS_ebp = "%ebp";
-  static char const* const kMIPS_esi = "%esi";
-  static char const* const kMIPS_edi = "%edi";
-  static char const* const kMIPS_eip = "%eip";
-
-  static char const* const kMIPS_es = "%es";
-  static char const* const kMIPS_cs = "%cs";
-  static char const* const kMIPS_ss = "%ss";
-  static char const* const kMIPS_ds = "%ds";
-  static char const* const kMIPS_fs = "%fs";
-  static char const* const kMIPS_gs = "%gs";
-
   template <class LINUX>
   struct MIPSTS : public LINUX::TargetSystem
   {
@@ -86,7 +68,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
-    
+
     // MIPS linux structs
     struct mips_timespec
     {
@@ -147,67 +129,49 @@ namespace linux_os {
       int32_t tz_minuteswest; /* minutes west of Greenwich (int) */
       int32_t tz_dsttime;     /* type of dst correction    (int) */
     };
-    
+
     MIPSTS( LINUX& _lin ) : LINUX::TargetSystem( "mips", _lin ) {}
-    
+
     bool GetAT_HWCAP( address_type& hwcap ) const { return false; }
-        
-    void WriteSegmentSelector( char const* segname, uint16_t value ) const
-    {
-      if (unisim::service::interfaces::Register* reg = this->RegsIF().GetRegister(segname))
-        reg->SetValue(&value);
-      else
-        throw std::logic_error("internal_error");
-    }
-        
+
     bool SetupTarget() const
     {
       // Reset all target registers
-      {
-        char const* clear_registers[] = {
-          "%eax", "%ecx", "%edx", "%ebx", "%ebp", "%esi", "%edi",
-          "%st", "%st(1)", "%st(2)", "%st(3)", "%st(4)", "%st(5)", "%st(6)", "%st(7)"
-        };
-        for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
-          if (not lin.ClearTargetRegister(clear_registers[idx]))
+
+      // General purpose registers
+      for (unsigned reg = 1; reg < 32; ++reg)
+        {
+          char regname[4];
+          snprintf( regname, sizeof regname, "$%d", reg );
+          if (not lin.ClearTargetRegister(regname))
             return false;
-      }
+        }
+
       // Set EIP to the program entry point
-      if (not lin.SetTargetRegister(kMIPS_eip, lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister("$pc", lin.GetEntryPoint()))
         return false;
       // Set ESP to the base of the created stack
-      unisim::util::blob::Section<address_type> const * esp_section =
+      unisim::util::blob::Section<address_type> const * sp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
-      if (esp_section == NULL)
+      if (sp_section == NULL)
         {
           lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
-      if (not lin.SetTargetRegister(kMIPS_esp, esp_section->GetAddr()))
+      if (not lin.SetTargetRegister("$sp", sp_section->GetAddr()))
         return false;
-          
-      // Pseudo GDT initialization  (flat memory + early TLS)
-      lin.SetTargetRegister("@gdt[1].base", 0 ); // For code segment
-      lin.SetTargetRegister("@gdt[2].base", 0 ); // For data segments
-      unisim::util::blob::Section<address_type> const* etls_section =
-        lin.GetBlob()->FindSection(".unisim.linux_os.etls.middle_pointer");
-      if (not etls_section)
-        {
-          lin.DebugErrorStream() << "Could not find the early TLS section." << std::endl;
-          return false;
-        }
-      lin.SetTargetRegister("@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
-          
-      this->WriteSegmentSelector(kMIPS_cs,(1<<3) | (0<<2) | 3); // code
-      this->WriteSegmentSelector(kMIPS_ss,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kMIPS_ds,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kMIPS_es,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kMIPS_fs,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kMIPS_gs,(3<<3) | (0<<2) | 3); // tls
-          
+
+      // parameter_type par1 = 0;
+      // parameter_type par2 = 0;
+      // if (not this->MemIF().ReadMemory(stack_pointer +  8, (uint8_t *)&par1, sizeof(par1)) or
+      //     not this->MemIF().ReadMemory(stack_pointer + 16, (uint8_t *)&par2, sizeof(par2)) or
+      //     not lin.SetTargetRegister("%rdi", Target2Host(lin.GetEndianness(), par1)) or
+      //     not lin.SetTargetRegister("%rsi", Target2Host(lin.GetEndianness(), par2)))
+      //   return false;
+
       return true;
     }
-        
+
     static void set_tls_base( LINUX& lin, address_type base )
     {
       lin.SetTargetRegister("@gdt[3].base", base ); // pseudo allocation of a tls descriptor
@@ -229,7 +193,7 @@ namespace linux_os {
       if(ret < 0) return ret;
 
       memset(target_stat, 0, sizeof(struct mips_stat64));
-	
+
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
       // 64-bit host
       target_stat->st_dev = Host2Target(endianness, (uint64_t) host_stat.st_dev);
@@ -317,37 +281,47 @@ namespace linux_os {
 #endif
       return ret;
     }
-
-    static void SetMIPSSystemCallStatus(LINUX& lin, int ret, bool error) { lin.SetTargetRegister(kMIPS_eax, (parameter_type) ret); }
+    /*                  instruction  syscall #  retval  error
+     *      mips        syscall      v0         v0      a3       [1]
+     *
+     *                  arg1  arg2  arg3  arg4  arg5  arg6  arg7
+     *      mips/n32,64 a0    a1    a2    a3    a4    a5    -
+     *      mips/o32    a0    a1    a2    a3    -     -     -
+     */
+    static void SetMIPSSystemCallStatus(LINUX& lin, int ret, bool error)
+    {
+      lin.SetTargetRegister("$a3", (parameter_type) error);
+      lin.SetTargetRegister("$v0", (parameter_type) ret);
+    }
     void SetSystemCallStatus(int64_t ret, bool error) const { SetMIPSSystemCallStatus( lin, ret, error ); }
-    
+
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
       parameter_type val = 0;
-          
+
       switch (id) {
-      case 0: lin.GetTargetRegister(kMIPS_ebx, val); break;
-      case 1: lin.GetTargetRegister(kMIPS_ecx, val); break;
-      case 2: lin.GetTargetRegister(kMIPS_edx, val); break;
-      case 3: lin.GetTargetRegister(kMIPS_esi, val); break;
-      case 4: lin.GetTargetRegister(kMIPS_edi, val); break;
-      case 5: lin.GetTargetRegister(kMIPS_ebp, val); break;
+      case 0: lin.GetTargetRegister("$a0", val); break;
+      case 1: lin.GetTargetRegister("$a1", val); break;
+      case 2: lin.GetTargetRegister("$a2", val); break;
+      case 3: lin.GetTargetRegister("$a3", val); break;
+      case 4: lin.GetTargetRegister("$t0", val); break;
+      case 5: lin.GetTargetRegister("$t1", val); break;
       default: throw std::logic_error("internal error");
       }
-          
+
       return val;
     }
     parameter_type GetSystemCallParam(int id) const
     {
       try { return GetSystemCallParam( lin, id ); }
-      
+
       catch (int x) {
         lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
-      
+
       return 0;
     }
-      
+
     SysCall* GetSystemCall( int& id ) const
     {
       // TODO: fill syscall map
@@ -718,7 +692,7 @@ namespace linux_os {
               int32_t target_errno = 0;
               address_type buf_addr = GetSystemCallParam(lin, 0);
               ret = 0;
-  
+
               struct mips_utsname value;
               memset(&value, 0, sizeof(value));
               UTSName const& utsname = lin.GetUTSName();
@@ -729,13 +703,13 @@ namespace linux_os {
               strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine));
               strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
               lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value) );
-  
+
               SetMIPSSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
         } break;
-            
+
       case 197: /* ARM specific fstat64 syscall */
         {
           static struct : public SysCall {
@@ -750,12 +724,12 @@ namespace linux_os {
             {
               int ret;
               int32_t target_errno = 0;
-              
+
               int32_t target_fd = GetSystemCallParam(lin, 0);
               address_type buf_address = GetSystemCallParam(lin, 1);
-	
+
               int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+
               if(host_fd == -1)
                 {
                   target_errno = LINUX_EBADF;
@@ -766,17 +740,17 @@ namespace linux_os {
                   struct mips_stat64 target_stat;
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-			
+
                   lin.WriteMemory( buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
-	
+
               if(unlikely(lin.GetVerbose()))
                 {
                   lin.DebugInfoStream()
                     << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
                     << std::endl;
                 }
-	
+
               SetMIPSSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
@@ -795,7 +769,7 @@ namespace linux_os {
             void Execute( LINUX& lin, int syscall_id ) const
             {
               uint32_t user_desc_ptr = GetSystemCallParam(lin, 0);
-                  
+
               parameter_type entry_number, base_addr, limit, attributes;
               lin.ReadMemory( user_desc_ptr + 0x0, entry_number, true );
               lin.ReadMemory( user_desc_ptr + 0x4, base_addr, true );
@@ -805,12 +779,12 @@ namespace linux_os {
               base_addr    = unisim::util::endian::Target2Host( lin.GetEndianness(), base_addr );
               limit        = unisim::util::endian::Target2Host( lin.GetEndianness(), limit );
               attributes   = unisim::util::endian::Target2Host( lin.GetEndianness(), attributes );
-                  
+
               if (entry_number != parameter_type(-1))
                 throw std::logic_error("internal error in i686 segment descriptors");
-                  
+
               set_tls_base( lin, base_addr );
-                  
+
               entry_number = 3;
               entry_number = unisim::util::endian::Host2Target( lin.GetEndianness(), entry_number );
               lin.WriteMemory( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
@@ -822,36 +796,36 @@ namespace linux_os {
         } break;
 
       }
-          
+
       return 0;
     }
-    
+
     bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const
     {
       typedef unisim::util::blob::Section<address_type> Section;
       typedef unisim::util::blob::Segment<address_type> Segment;
-          
+
       // The following code is clearly a hack since linux doesn't
       // allocate any TLS. Allocating the TLS is the libc's
       // responsability. Nevertheless, because syscalls emulation
       // is incomplete, errno (located in TLS) may be used before
       // any libc attempt to initialize it.  Thus, we need to
       // introduce a pseudo TLS are for these early accesses to
-      // errno. 
+      // errno.
       if (not blob) return false;
-          
+
       // TODO: Check that the existing segments/sections are not
       //   in conflict with the early TLS area. Once libc have
       //   initialized TLS this area becomes useless. We
       //   additionnaly need to ensure that early mallocs won't
-      //   come in the way. 
+      //   come in the way.
       //
       // In practice a [0xf0000000-0xf0000fff] zero-filled area seems safe...
       address_type const etls_addr = 0xf0000000UL;
       address_type const etls_size = 0x00001000UL;
       uint8_t* etls_seg_data = (uint8_t*)calloc(1,etls_size);
       // uint8_t* etls_sec_data = (uint8_t*)calloc(1,etls_size);
-          
+
       Segment* etls_segment =
         new Segment(Segment::TY_LOADABLE, Segment::SA_RW, etls_size, etls_addr, etls_size, etls_size, etls_seg_data);
       // Section* etls_section =

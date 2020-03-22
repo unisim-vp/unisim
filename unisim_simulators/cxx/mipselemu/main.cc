@@ -33,7 +33,8 @@
  */
 
 #include <unisim/component/cxx/memory/sparse/memory.hh>
-#include <unisim/component/cxx/processor/mips/isa/mipsel.hh>
+#include <unisim/component/cxx/processor/mips/isa/mipsel.tcc>
+#include <unisim/component/cxx/processor/mips/isa/disasm.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <linuxsystem.hh>
 #include <iostream>
@@ -44,7 +45,18 @@ struct Arch
   , public unisim::service::interfaces::Registers
 
 {
+  typedef unisim::component::cxx::processor::mips::isa::CodeType CodeType;
   typedef unisim::component::cxx::processor::mips::isa::Operation<Arch> Operation;
+  typedef unisim::component::cxx::processor::mips::isa::Decoder<Arch> Decoder;
+
+  typedef uint8_t  U8;
+  typedef uint16_t U16;
+  typedef uint32_t U32;
+  typedef uint64_t U64;
+  typedef int8_t  S8;
+  typedef int16_t S16;
+  typedef int32_t S32;
+  typedef int64_t S64;
   
   Arch()
     : unisim::service::interfaces::MemoryInjection<uint32_t>()
@@ -52,19 +64,57 @@ struct Arch
     , unisim::service::interfaces::Registers()
     , linux_os(0)
   {
+    for (int idx = 1; idx < 32; ++idx)
+      {
+        unisim::service::interfaces::Register* reg = 0;
+        {
+          std::ostringstream buf;
+          buf << unisim::component::cxx::processor::mips::isa::PrintGPR(idx);
+          regmap[buf.str()] = reg = new unisim::util::debug::SimpleRegister<uint32_t>(buf.str(), &gprs[idx]);
+        }
+        {
+          std::ostringstream buf;
+          buf << unisim::component::cxx::processor::mips::isa::PrintR("$",idx);
+          regmap[buf.str()] = reg;
+        }
+    }
+    
+    struct ProgramCounter : public unisim::service::interfaces::Register
+    {
+      ProgramCounter( Arch& _core ) : core(_core) {}
+      virtual const char *GetName() const override { return "pc"; }
+      virtual void GetValue( void* buffer ) const override { *((uint32_t*)buffer) = core.insn_addrs[0]; }
+      virtual void SetValue( void const* buffer ) override
+      {
+        uint32_t address = *((uint32_t*)buffer);
+        core.insn_addrs[1] = address;
+        core.insn_addrs[2] = address + 4;
+      }
+      virtual int  GetSize() const override { return 4; }
+      virtual void Clear() { /* Clear is meaningless for PC */ }
+      Arch&        core;
+    };
+    regmap["$pc"] = new ProgramCounter( *this );
+
   }
   
   ~Arch()
   {
+    for (auto reg : regmap)
+      if (reg.first.compare(reg.second->GetName()))
+        reg.second = 0;
+    for (auto reg : regmap)
+      delete reg.second;
   }
   
   void SetLinuxOS( unisim::service::interfaces::LinuxOS* _linux_os )
   {
     linux_os = _linux_os;
   }
-  
+
+  Decoder decoder;
   unisim::service::interfaces::LinuxOS* linux_os;
-  std::map<std::string,unisim::service::interfaces::Register*> regmap;
+  std::map<std::string, unisim::service::interfaces::Register*> regmap;
   
   struct ClearMemSet {
     void operator() ( uint8_t* base, uintptr_t size ) const {
@@ -72,12 +122,20 @@ struct Arch
     }
   };
   typedef typename unisim::component::cxx::memory::sparse::Memory<uint32_t,12,12,ClearMemSet> Memory;
-  Memory                      m_mem;
+  Memory                      mem;
+
+  void    SetGPR(unsigned idx, U32 value) { if (idx) gprs[idx] = value; }
+  U32     GetGPR(unsigned idx) { return gprs[idx]; }
+  U32     GetPC() { return insn_addrs[0]; }
+  void    Branch(U32 target) { insn_addrs[2] = target; }
+  
+  uint32_t                    gprs[32];
+  uint32_t                    insn_addrs[3];
   
   // unisim::service::interfaces::Memory<uint32_t>
   void ResetMemory() {}
-  bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // unisim::service::interfaces::Registers
   unisim::service::interfaces::Register* GetRegister(char const* name)
   {
@@ -89,8 +147,8 @@ struct Arch
     // General purpose registers
   }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // Implementation of ExecuteSystemCall
   
   virtual void ExecuteSystemCall( unsigned id )
@@ -100,19 +158,58 @@ struct Arch
     linux_os->ExecuteSystemCall( id );
   }
 
+  template <typename U>
+  U
+  MemRead( U32 addr )
+  {
+    uint8_t buffer[sizeof (U)];
+    mem.read( &buffer[0], addr, sizeof buffer );
+    U res = 0;
+    for (int idx = sizeof buffer; --idx >= 0;)
+      res = (res << 8) | buffer[idx];
+    return res;
+  }
+
+  template <typename U>
+  void
+  MemWrite( U32 addr, U value )
+  {
+    uint8_t buffer[sizeof (U)];
+    for (unsigned idx = 0; idx < sizeof buffer; ++idx)
+      { buffer[idx] = value; value >>= 8; }
+    mem.write( addr, &buffer[0], sizeof buffer );
+  }
+
+  CodeType ReadInsn(uint32_t addr)
+  {
+    uint8_t buffer[4];
+    mem.read( (uint8_t*)&buffer[0], addr, 4 );
+    return (buffer[0] << 0) | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+  }
+
   Operation*
   StepInstruction()
   {
-    /* fetch instruction word from memory */
-    // isa::arm64::CodeType insn;
-    // ReadInsn(insn_addr, insn);
+    /* Start new instruction */
+    uint32_t insn_addr = insn_addrs[0] = insn_addrs[1];
+    insn_addrs[1] = insn_addrs[2];
+    insn_addrs[2] += 4;
+    
+    /* Fetch instruction word from memory */
+    CodeType insn = ReadInsn(insn_addr);
 
-    // /* Decode current PC */
-    // isa::arm64::Operation<CPU>* op;
-    // op = decoder.Decode(insn_addr, insn);
+    /* Decode instruction */
+    Operation* op = decoder.Decode(insn_addr, insn);
 
-    // this->next_insn_addr += 4;
-    return 0;
+    /* Disassemble instruction */
+    op->disasm(std::cerr << "0x" << std::hex << insn_addr << ": ");
+    std::cerr << '\n';
+
+    /* Execute instruction*/
+    asm volatile ("operation_execute:");
+    op->execute( *this );
+    
+    return op;
   }
 
   bool m_disasm;
@@ -140,13 +237,13 @@ main( int argc, char *argv[] )
   std::vector<std::string> envs;
   envs.push_back( "LANG=C" );
   
-  Arch cpu;
-  LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
-  cpu.SetLinuxOS( &linux32 );
+  Arch core;
+  LinuxOS linux32( std::cerr, &core, &core, &core );
+  core.SetLinuxOS( &linux32 );
   
   linux32.Setup( simargs, envs );
   
-  cpu.m_disasm = false;
+  core.m_disasm = false;
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
@@ -155,16 +252,16 @@ main( int argc, char *argv[] )
   
   while (not linux32.exited)
     {
-      cpu.StepInstruction();
-      //      Arch::Operation* op = cpu.fetch();
+      core.StepInstruction();
+      //      Arch::Operation* op = core.fetch();
       // op->disasm( std::cerr );
       // std::cerr << std::endl;
       //      asm volatile ("operation_execute:");
-      //      op->execute( cpu );
-      //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      //      op->execute( core );
+      //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= core.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       
-      // if ((cpu.m_instcount % 0x1000000) == 0)
-      //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
+      // if ((core.m_instcount % 0x1000000) == 0)
+      //   { std::cerr << "Executed instructions: " << std::dec << core.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
     }
   
   std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
