@@ -42,6 +42,18 @@ jalr_hb.disasm = \
 op multp(0[6]:ra[5]:rb[5]:0[5]:0x11[5]:0x19[6]);
 multp.disasm = { sink << "multp\t" << PrintR("$",ra) << "," << PrintR("$",rb); };
 
-// op aclr(17[6]:19[5]:16[5]:sext offset[16]);
-// aclr.disasm = { sink << "aclr\t" << PrintR("$",0) << ',' << int(offset) << '(' << PrintR("$",3) << ')'; };
+op aclr(1[6]:ra[5]:7[5]:0[1]:imm[3]:sext offset[12]);
+aclr.disasm = { sink << "aclr\t" << PrintHex(imm) << ',' << PrintI(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op aset(1[6]:ra[5]:7[5]:1[1]:imm[3]:sext offset[12]);
+aset.disasm = { sink << "aset\t" << PrintHex(imm) << ',' << PrintI(offset) << '(' << PrintR("$",ra) << ')'; };
+
+op bposge32(1[6]:0[5]:28[5]:shl<2> sext offset[16]);
+bposge32.disasm = { sink << "bposge32\t" << PrintHex(this->GetAddr() + offset + 4); };
+
+op rdhwr(31[6]:0[5]:rt[5]:rd[5]:0[5]:0b111011[6]);
+rdhwr.disasm = { sink << "rdhwr\t" << PrintGPR(rt) << ',' << PrintR("$",rd); };
+
+rdhwr.execute = { core.SetGPR(rt, core.GetHWR(rd)); };
+
 

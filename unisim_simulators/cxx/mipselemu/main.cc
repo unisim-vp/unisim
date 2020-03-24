@@ -78,6 +78,7 @@ struct Arch
           regmap[buf.str()] = reg;
         }
     }
+    regmap["hwr_ulr"] = new unisim::util::debug::SimpleRegister<uint32_t>("hwr_ulr", &ulr);
     
     struct ProgramCounter : public unisim::service::interfaces::Register
     {
@@ -94,7 +95,7 @@ struct Arch
       virtual void Clear() { /* Clear is meaningless for PC */ }
       Arch&        core;
     };
-    regmap["$pc"] = new ProgramCounter( *this );
+    regmap["pc"] = new ProgramCounter( *this );
 
   }
   
@@ -124,12 +125,46 @@ struct Arch
   typedef typename unisim::component::cxx::memory::sparse::Memory<uint32_t,12,12,ClearMemSet> Memory;
   Memory                      mem;
 
-  void    SetGPR(unsigned idx, U32 value) { if (idx) gprs[idx] = value; }
-  U32     GetGPR(unsigned idx) { return gprs[idx]; }
-  U32     GetPC() { return insn_addrs[0]; }
-  void    Branch(U32 target) { insn_addrs[2] = target; }
+  void     SetGPR(unsigned idx, U32 value) { if (idx) gprs[idx] = value; }
+  U32      GetGPR(unsigned idx) { return gprs[idx]; }
+  void     SetDivU(uint32_t rs, uint32_t rt) { lo = rs / rt; hi = rs % rt; }
+  void     SetHI(unsigned ra, U32 value) { if (ra) throw "nope"; hi = value; }
+  void     SetLO(unsigned ra, U32 value) { if (ra) throw "nope"; lo = value; }
+  U32      GetHI(unsigned ra) { if (ra) throw "nope"; return hi; }
+  U32      GetLO(unsigned ra) { if (ra) throw "nope"; return lo; }
   
   uint32_t                    gprs[32];
+  uint32_t                    hi,lo;
+
+  struct HWR
+  {
+    virtual ~HWR() {}
+    virtual uint32_t Get(Arch&) const = 0;
+    virtual void Set(Arch&, uint32_t) const = 0;
+  };
+  HWR* FindHWR(unsigned idx)
+  {
+    switch (idx) {
+      case 29: {
+        static struct : public HWR {
+          virtual uint32_t Get(Arch& core) const override { return core.ulr; }
+          virtual void Set(Arch& core, uint32_t val) const override { core.ulr = val; }
+        } _;
+        return &_;
+      }
+    }
+    std::cerr << "unknown HWR: " << idx << std::endl;
+    return 0;
+  }
+
+  uint32_t ulr;
+
+  uint32_t GetHWR(unsigned idx) { if (HWR* hwr = FindHWR(idx)) return hwr->Get(*this); return 0; throw "nope"; };
+  void SetHWR(unsigned idx, uint32_t val) { if (HWR* hwr = FindHWR(idx)) return hwr->Set(*this, val); throw "nope"; };
+  
+  U32     GetPC() { return insn_addrs[0]; }
+  void    Branch(U32 target) { insn_addrs[2] = target; }
+  void    CancelDelaySlot() { insn_addrs[1] = insn_addrs[2]; insn_addrs[2] += 4; }
   uint32_t                    insn_addrs[3];
   
   // unisim::service::interfaces::Memory<uint32_t>
@@ -185,6 +220,13 @@ struct Arch
     uint8_t buffer[4];
     mem.read( (uint8_t*)&buffer[0], addr, 4 );
     return (buffer[0] << 0) | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+  }
+
+  void SysCall(unsigned id)
+  {
+    if (not linux_os)
+      { throw std::logic_error( "No linux OS emulation connected" ); }
+    linux_os->ExecuteSystemCall( id );
   }
 
   Operation*

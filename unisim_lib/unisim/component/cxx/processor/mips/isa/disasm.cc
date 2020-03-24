@@ -53,17 +53,17 @@ PrintGPR::operator () (std::ostream& sink) const
 {
   sink << std::dec;
   if      (idx == 0)  sink << "zero";
-  else if (idx == 1)  sink << "$at";
-  else if (idx < 4)   sink << "$v" << (idx-2);
-  else if (idx < 8)   sink << "$a" << (idx-4);
-  else if (idx < 16)  sink << "$t" << (idx-8);
-  else if (idx < 24)  sink << "$s" << (idx-16);
-  else if (idx < 26)  sink << "$t" << (idx-24+8);
-  else if (idx < 28)  sink << "$k" << (idx-26);
-  else if (idx == 28) sink << "$gp";
-  else if (idx == 29) sink << "$sp";
-  else if (idx == 30) sink << "$fp";
-  else if (idx == 31) sink << "$ra";
+  else if (idx == 1)  sink << "at";
+  else if (idx < 4)   sink << "v" << (idx-2);
+  else if (idx < 8)   sink << "a" << (idx-4);
+  else if (idx < 16)  sink << "t" << (idx-8);
+  else if (idx < 24)  sink << "s" << (idx-16);
+  else if (idx < 26)  sink << "t" << (idx-24+8);
+  else if (idx < 28)  sink << "k" << (idx-26);
+  else if (idx == 28) sink << "gp";
+  else if (idx == 29) sink << "sp";
+  else if (idx == 30) sink << "fp";
+  else if (idx == 31) sink << "ra";
 }
 
 } /* end of namespace isa */
