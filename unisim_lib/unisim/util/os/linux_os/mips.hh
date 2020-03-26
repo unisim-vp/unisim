@@ -184,11 +184,6 @@ namespace linux_os {
       return true;
     }
 
-    static void set_tls_base( LINUX& lin, address_type base )
-    {
-      lin.SetTargetRegister("@gdt[3].base", base ); // pseudo allocation of a tls descriptor
-    }
-
     static int Fstat64(int fd, struct mips_stat64* target_stat, unisim::util::endian::endian_type endianness)
     {
       int ret;
@@ -468,7 +463,7 @@ namespace linux_os {
         case 4000 + 119: return this->GetSysCall("sigreturn");
         case 4000 + 120: return this->GetSysCall("clone");
         case 4000 + 121: return this->GetSysCall("setdomainname");
-        case 4000 + 122: return this->GetSysCall("uname");
+          // case 4000 + 122: return this->GetSysCall("uname"); see mips specific
         case 4000 + 123: return this->GetSysCall("modify_ldt");
         case 4000 + 124: return this->GetSysCall("adjtimex");
         case 4000 + 125: return this->GetSysCall("mprotect");
@@ -629,7 +624,7 @@ namespace linux_os {
         case 4000 + 280: return this->GetSysCall("add_key");
         case 4000 + 281: return this->GetSysCall("request_key");
         case 4000 + 282: return this->GetSysCall("keyctl");
-        case 4000 + 283: return this->GetSysCall("set_thread_area");
+          // case 4000 + 283: return this->GetSysCall("set_thread_area"); see mips specific
         case 4000 + 284: return this->GetSysCall("inotify_init");
         case 4000 + 285: return this->GetSysCall("inotify_add_watch");
         case 4000 + 286: return this->GetSysCall("inotify_rm_watch");
@@ -705,6 +700,57 @@ namespace linux_os {
         case 4000 + 356: return this->GetSysCall("execveat");
         case 4000 + 357: return this->GetSysCall("userfaultfd");
         case 4000 + 358: return this->GetSysCall("membarrier");
+          // mips specific
+        case 4000 + 122: // mips specific uname syscall
+          {
+            static struct : public SysCall {
+              char const* GetName() const { return "uname"; }
+              void Describe( LINUX& lin, std::ostream& sink ) const
+              {
+                address_type buf_addr = GetSystemCallParam(lin, 0);
+                sink << "(struct utsname *buf=" << std::hex << buf_addr << std::dec << ")";
+              }
+              void Execute( LINUX& lin, int syscall_id ) const
+              {
+                int ret;
+                int32_t target_errno = 0;
+                address_type buf_addr = GetSystemCallParam(lin, 0);
+                ret = 0;
+  
+                struct mips_utsname value;
+                memset(&value, 0, sizeof(value));
+                UTSName const& utsname = lin.GetUTSName();
+                strncpy(&value.sysname[0],    utsname.sysname.c_str(), sizeof(value.sysname) - 1);
+                strncpy(&value.nodename[0],   utsname.nodename.c_str(), sizeof(value.nodename) - 1);
+                strncpy(&value.release[0],    utsname.release.c_str(), sizeof(value.release) - 1);
+                strncpy(&value.version[0],    utsname.version.c_str(), sizeof(value.version) - 1);
+                strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine));
+                strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
+                lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value) );
+  
+                SetMIPSSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              }
+            } sc;
+            return &sc;
+          }
+        case 4000 + 283: // mips specific set_thread_area syscall
+          {
+            static struct : public SysCall {
+              char const* GetName() const { return "set_thread_area"; }
+               // SYSCALL_DEFINE1(set_thread_area, unsigned long, addr)
+              void Describe( LINUX& lin, std::ostream& sink ) const
+              {
+                sink << "(unsigned long addr=" << std::hex << GetSystemCallParam(lin, 0) << std::dec << ")";
+              }
+              void Execute( LINUX& lin, int syscall_id ) const
+              {
+                if (not lin.SetTargetRegister("hwr_ulr", GetSystemCallParam(lin, 0)))
+                  { struct No {}; throw No(); }
+                SetMIPSSystemCallStatus( lin, 0, false );
+              }
+            } sc;
+            return &sc;
+          }
         }
 
       return 0;

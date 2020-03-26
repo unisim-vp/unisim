@@ -54,6 +54,7 @@ wait.disasm = { sink << "wait"; };
 
 {false}:                                        \
 op sync_p(0x0000040f[32]);
+sync_p.disasm = { sink << "sync.p"; };
 
 op pause(0[6]:0[5]:0[5]:0[5]:5[5]:0x00[6]);
 pause.disasm = { sink << "pause"; };

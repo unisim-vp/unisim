@@ -49,6 +49,7 @@ struct Arch
   typedef unisim::component::cxx::processor::mips::isa::Operation<Arch> Operation;
   typedef unisim::component::cxx::processor::mips::isa::Decoder<Arch> Decoder;
 
+  typedef bool  BOOL;
   typedef uint8_t  U8;
   typedef uint16_t U16;
   typedef uint32_t U32;
@@ -62,7 +63,9 @@ struct Arch
     : unisim::service::interfaces::MemoryInjection<uint32_t>()
     , unisim::service::interfaces::Memory<uint32_t>()
     , unisim::service::interfaces::Registers()
-    , linux_os(0)
+    , decoder(), linux_os(0), regmap()
+    , mem(), gprs(), hi(), lo(), ulr(), insn_addrs()
+    , m_disasm(false)
   {
     for (int idx = 1; idx < 32; ++idx)
       {
@@ -101,10 +104,10 @@ struct Arch
   
   ~Arch()
   {
-    for (auto reg : regmap)
+    for (auto& reg : regmap)
       if (reg.first.compare(reg.second->GetName()))
         reg.second = 0;
-    for (auto reg : regmap)
+    for (auto& reg : regmap)
       delete reg.second;
   }
   
@@ -135,6 +138,7 @@ struct Arch
   
   uint32_t                    gprs[32];
   uint32_t                    hi,lo;
+  uint32_t                    ulr; /* User Local Register */
 
   struct HWR
   {
@@ -145,19 +149,18 @@ struct Arch
   HWR* FindHWR(unsigned idx)
   {
     switch (idx) {
-      case 29: {
-        static struct : public HWR {
-          virtual uint32_t Get(Arch& core) const override { return core.ulr; }
-          virtual void Set(Arch& core, uint32_t val) const override { core.ulr = val; }
-        } _;
-        return &_;
-      }
+    case 29: { /* User Local Register */
+      static struct : public HWR {
+        virtual uint32_t Get(Arch& core) const override { return core.ulr; }
+        virtual void Set(Arch& core, uint32_t val) const override { core.ulr = val; }
+      } _;
+      return &_;
+    }
     }
     std::cerr << "unknown HWR: " << idx << std::endl;
     return 0;
   }
 
-  uint32_t ulr;
 
   uint32_t GetHWR(unsigned idx) { if (HWR* hwr = FindHWR(idx)) return hwr->Get(*this); return 0; throw "nope"; };
   void SetHWR(unsigned idx, uint32_t val) { if (HWR* hwr = FindHWR(idx)) return hwr->Set(*this, val); throw "nope"; };
@@ -184,14 +187,8 @@ struct Arch
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
-  // Implementation of ExecuteSystemCall
   
-  virtual void ExecuteSystemCall( unsigned id )
-  {
-    if (not linux_os)
-      { throw std::logic_error( "No linux OS emulation connected" ); }
-    linux_os->ExecuteSystemCall( id );
-  }
+  bool IsBigEndian() { return false; }
 
   template <typename U>
   U
@@ -214,6 +211,9 @@ struct Arch
       { buffer[idx] = value; value >>= 8; }
     mem.write( addr, &buffer[0], sizeof buffer );
   }
+
+  void AtomicBegin(uint32_t addr) { }
+  bool AtomicUpdate(uint32_t addr) { return true; }
 
   CodeType ReadInsn(uint32_t addr)
   {
@@ -244,8 +244,11 @@ struct Arch
     Operation* op = decoder.Decode(insn_addr, insn);
 
     /* Disassemble instruction */
-    op->disasm(std::cerr << "0x" << std::hex << insn_addr << ": ");
-    std::cerr << '\n';
+    if (m_disasm)
+      {
+        op->disasm(std::cerr << "0x" << std::hex << insn_addr << ": ");
+        std::cerr << '\n';
+      }
 
     /* Execute instruction*/
     asm volatile ("operation_execute:");
@@ -257,8 +260,43 @@ struct Arch
   bool m_disasm;
 };
 
+#include <fstream>
+struct Checker
+{
+  Checker() : decoder() {}
+  struct No {};
+  void check(uint32_t insn)
+  {
+    auto op = decoder.NCDecode(0, insn);
+    if (not op) throw No();
+    if (op->GetName()[0] == '?')
+      { std::cerr << "No decode for " << std::hex << insn << std::endl; throw No(); }
+    
+    std::ostringstream buf;
+    op->disasm(buf);
+  }
+
+  unisim::component::cxx::processor::mips::isa::Decoder<Arch> decoder;
+};
+
+
 int
-main( int argc, char *argv[] )
+main(int argc, char *argv[])
+{
+  Checker checker;
+  uint32_t insn;
+  
+  for (std::ifstream source("check.txt");source.good();)
+    {
+      source >> std::hex >> insn;
+      source.ignore(0x1000, '\n');
+      checker.check(insn);
+    }
+  
+  return 0;
+}
+
+int trash(int argc, char *argv[])
 {
   uintptr_t simargs_idx = 1;
   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);

@@ -76,9 +76,9 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   linux_impl.SetMemoryPageSize( 0x1000UL );
   linux_impl.SetUname("Linux" /* sysname */,
                       "localhost" /* nodename */,
-                      "3.14.43-unisim" /* release */,
+                      "5.5.9-unisim" /* release */,
                       "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
-                      "i386" /* machine */,
+                      "mips" /* machine */,
                       "localhost" /* domainname */);
   // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
   // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
@@ -95,5 +95,6 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
 void
 LinuxOS::ExecuteSystemCall( int id )
 {
+  linux_impl.LogSystemCall(id);
   linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
 }
