@@ -36,6 +36,23 @@
         
 _start:
 
+;#****************************** Turn off SWTs ********************************
+#if defined(DISABLE_SWT2)
+;#SWT2
+		e_lis	r4, 0xFC05
+		e_or2i	r4, 0x8000
+
+		e_li	r3, 0xC520
+		e_stw	r3, 0x10(r4)
+
+		e_li	r3, 0xD928
+		e_stw	r3, 0x10(r4)
+
+		e_lis	r3, 0xFF00
+		e_or2i	r3, 0x010A
+		e_stw	r3, 0(r4)
+#endif
+
 ;#********************************* Enable BTB ********************************
 ;# Flush & Enable BTB - Set BBFI bit in BUCSR
 		e_li	r3, 0x201
@@ -188,6 +205,5 @@ bss_Init_end:
  
 ;# perform hardware and system init prior to main
 		e_bl   sys_init
-;# Jump to Main
-		e_bl   main
+		e_bl   sys_main
 		e_bl   exit

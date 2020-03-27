@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ -z "${S32DS}" ]; then
+	echo "Please set environment variable S32DS (e.g. ${HOME}/S32DS_Power_v2017.R1/S32DS)"
+	exit -1
+fi
+
 ARCH="$1"
 shift
 SUBSYS="$1"
@@ -61,3 +66,5 @@ case "${COMMAND}" in
 		"${STRIP}" "$@"
 		;;
 esac
+
+exit $?

@@ -431,7 +431,6 @@ int con_read(struct con_t *con, void *ptr, int len, int nonblock)
 				if(nonblock)
 				{
 					int l = p - (char *) ptr;
-					if(l > 0) con_write(con, ptr, l);
 					return l;
 				}
 				
@@ -447,6 +446,11 @@ int con_read(struct con_t *con, void *ptr, int len, int nonblock)
 			*p = ch;
 			con_write(con, p, 1);
 			p++;
+			if(!nonblock && (ch == '\n')) // blocking read is unblocked when receiving a line-feed
+			{
+				int l = p - (char *) ptr;
+				return l;
+			}
 		}
 		while(p < end);
 		

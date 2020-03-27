@@ -36,6 +36,7 @@
 #include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
+#include <unisim/component/tlm2/memory/ram/memory.tcc>
 #include <sstream>
 #include <stdexcept>
 #include <map>

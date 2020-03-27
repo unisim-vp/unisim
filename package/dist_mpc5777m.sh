@@ -245,6 +245,25 @@ config.t32 \
 baf.bin \
 "
 
+UNISIM_SIMULATOR_SCRIPTS_FILES="\
+soft/libsys/bin/common/gcc-wrapper \
+soft/libsys/bin/Z4_2/bin/powerpc-eabivle-ranlib \
+soft/libsys/bin/Z4_2/bin/powerpc-eabivle-gcc \
+soft/libsys/bin/Z4_2/bin/powerpc-eabivle-ld \
+soft/libsys/bin/Z4_2/bin/powerpc-eabivle-strip \
+soft/libsys/bin/Z4_2/bin/powerpc-eabivle-ar \
+soft/libsys/bin/Z7_0/bin/powerpc-eabivle-ranlib \
+soft/libsys/bin/Z7_0/bin/powerpc-eabivle-gcc \
+soft/libsys/bin/Z7_0/bin/powerpc-eabivle-ld \
+soft/libsys/bin/Z7_0/bin/powerpc-eabivle-strip \
+soft/libsys/bin/Z7_0/bin/powerpc-eabivle-ar \
+soft/libsys/bin/Z7_1/bin/powerpc-eabivle-ranlib \
+soft/libsys/bin/Z7_1/bin/powerpc-eabivle-gcc \
+soft/libsys/bin/Z7_1/bin/powerpc-eabivle-ld \
+soft/libsys/bin/Z7_1/bin/powerpc-eabivle-strip \
+soft/libsys/bin/Z7_1/bin/powerpc-eabivle-ar \
+"
+
 UNISIM_SIMULATOR_TESTBENCH_FILES="\
 main.cc \
 "
@@ -331,7 +350,7 @@ AC_CONFIG_FILES([trace32-core0.cmm])
 AC_CONFIG_FILES([trace32-core1.cmm])
 AC_CONFIG_FILES([trace32-core2.cmm])
 AC_CONFIG_FILES([trace32-multi.cmm])
-AC_CONFIG_FILES([sim_gtkwave.sh], [chmod +x sim_gtkwave.sh])
+AC_CONFIG_FILES([sim_gtkwave.sh])
 AC_OUTPUT
 EOF
 )
@@ -359,7 +378,8 @@ noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
-nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES} trace32-core0.cmm trace32-core1.cmm trace32-core2.cmm trace32-multi.cmm sim_gtkwave.sh
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES} trace32-core0.cmm trace32-core1.cmm trace32-core2.cmm trace32-multi.cmm
+nobase_dist_share_SCRIPTS = ${UNISIM_SIMULATOR_SCRIPTS_FILES} sim_gtkwave.sh
 
 BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh\

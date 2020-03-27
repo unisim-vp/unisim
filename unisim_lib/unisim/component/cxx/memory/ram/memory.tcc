@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
 
 #include <inttypes.h>
+#include "unisim/component/cxx/memory/ram/memory.hh"
 #include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/hash_table/hash_table.hh"

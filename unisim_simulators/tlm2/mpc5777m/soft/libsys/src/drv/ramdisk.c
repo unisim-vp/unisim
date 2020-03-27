@@ -40,13 +40,14 @@
 extern char __RAMDISK;
 extern char __RAMDISK_END;
 
+#define RAMDISK_BLOCK_COUNT ((&__RAMDISK_END - &__RAMDISK + 1) / RAMDISK_BLOCK_SIZE)
+
 static int ramdisk_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
 {
-	char *data = (char *) buffer;
-	char *ptr = &__RAMDISK + (block * RAMDISK_BLOCK_SIZE) + off;
-	
-	if((ptr + size) <= &__RAMDISK_END)
+	if((block < RAMDISK_BLOCK_COUNT) && (off < RAMDISK_BLOCK_SIZE) && (size <= RAMDISK_BLOCK_SIZE) && ((off + size) <= RAMDISK_BLOCK_SIZE))
 	{
+		char *ptr = &__RAMDISK + (block * RAMDISK_BLOCK_SIZE) + off;
+		char *data = (char *) buffer;
 		memcpy(data, ptr, size);
 		return 0;
 	}
@@ -56,11 +57,11 @@ static int ramdisk_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t
 
 static int ramdisk_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size)
 {
-	const char *data = (const char *) buffer;
-	char *ptr = &__RAMDISK + (block * RAMDISK_BLOCK_SIZE) + off;
-	
-	if((ptr + size) <= &__RAMDISK_END)
+	if((block < RAMDISK_BLOCK_COUNT) && (off < RAMDISK_BLOCK_SIZE) && (size <= RAMDISK_BLOCK_SIZE) && ((off + size) <= RAMDISK_BLOCK_SIZE))
 	{
+		char *ptr = &__RAMDISK + (block * RAMDISK_BLOCK_SIZE) + off;
+		
+		const char *data = (const char *) buffer;
 		memcpy(ptr, data, size);
 		return 0;
 	}
@@ -70,10 +71,10 @@ static int ramdisk_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t
 
 static int ramdisk_erase(const struct lfs_config *c, lfs_block_t block)
 {
-	char *ptr = &__RAMDISK + (block * RAMDISK_BLOCK_SIZE);
-	
-	if((ptr + RAMDISK_BLOCK_SIZE) <= &__RAMDISK_END)
+	if(block < RAMDISK_BLOCK_COUNT)
 	{
+		char *ptr = &__RAMDISK + (block * RAMDISK_BLOCK_SIZE);
+		
 		memset(ptr, 0, RAMDISK_BLOCK_SIZE);
 		return 0;
 	}
@@ -97,6 +98,6 @@ void ramdisk_init(struct lfs_config *ramdisk_lfs_cfg)
 	ramdisk_lfs_cfg->read_size = 1;
 	ramdisk_lfs_cfg->prog_size = 1;
 	ramdisk_lfs_cfg->block_size = RAMDISK_BLOCK_SIZE;
-	ramdisk_lfs_cfg->block_count = (&__RAMDISK_END - &__RAMDISK) / RAMDISK_BLOCK_SIZE;
-	ramdisk_lfs_cfg->lookahead = 32;
+	ramdisk_lfs_cfg->block_count = (&__RAMDISK_END - &__RAMDISK + 1) / RAMDISK_BLOCK_SIZE;
+	ramdisk_lfs_cfg->lookahead = 32; // this is the minimum value: (value % 32 == 0) && (value > 0)
 }

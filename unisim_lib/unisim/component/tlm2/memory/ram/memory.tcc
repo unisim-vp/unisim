@@ -35,6 +35,9 @@
 #ifndef __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_TCC__
 #define __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_TCC__
 
+#include <unisim/component/tlm2/memory/ram/memory.hh>
+#include <unisim/component/cxx/memory/ram/memory.tcc>
+
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
 namespace unisim {
