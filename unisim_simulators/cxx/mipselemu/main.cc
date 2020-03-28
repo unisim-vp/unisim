@@ -59,6 +59,8 @@ struct Arch
   typedef int32_t S32;
   typedef int64_t S64;
   
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
+  
   Arch()
     : unisim::service::interfaces::MemoryInjection<uint32_t>()
     , unisim::service::interfaces::Memory<uint32_t>()
@@ -92,7 +94,7 @@ struct Arch
       {
         uint32_t address = *((uint32_t*)buffer);
         core.insn_addrs[1] = address;
-        core.insn_addrs[2] = address + 4;
+        core.Branch(address+4, core.B_DBG);
       }
       virtual int  GetSize() const override { return 4; }
       virtual void Clear() { /* Clear is meaningless for PC */ }
@@ -130,7 +132,7 @@ struct Arch
 
   void     SetGPR(unsigned idx, U32 value) { if (idx) gprs[idx] = value; }
   U32      GetGPR(unsigned idx) { return gprs[idx]; }
-  void     SetDivU(uint32_t rs, uint32_t rt) { lo = rs / rt; hi = rs % rt; }
+  void     SetDivU(U32 rs, U32 rt) { lo = rs / rt; hi = rs % rt; }
   void     SetHI(unsigned ra, U32 value) { if (ra) throw "nope"; hi = value; }
   void     SetLO(unsigned ra, U32 value) { if (ra) throw "nope"; lo = value; }
   U32      GetHI(unsigned ra) { if (ra) throw "nope"; return hi; }
@@ -165,8 +167,9 @@ struct Arch
   uint32_t GetHWR(unsigned idx) { if (HWR* hwr = FindHWR(idx)) return hwr->Get(*this); return 0; throw "nope"; };
   void SetHWR(unsigned idx, uint32_t val) { if (HWR* hwr = FindHWR(idx)) return hwr->Set(*this, val); throw "nope"; };
   
+  bool    Test( bool cond ) { return cond; }
   U32     GetPC() { return insn_addrs[0]; }
-  void    Branch(U32 target) { insn_addrs[2] = target; }
+  void    Branch(U32 target,   branch_type_t) { insn_addrs[2] = target; }
   void    CancelDelaySlot() { insn_addrs[1] = insn_addrs[2]; insn_addrs[2] += 4; }
   uint32_t                    insn_addrs[3];
   
@@ -260,43 +263,7 @@ struct Arch
   bool m_disasm;
 };
 
-#include <fstream>
-struct Checker
-{
-  Checker() : decoder() {}
-  struct No {};
-  void check(uint32_t insn)
-  {
-    auto op = decoder.NCDecode(0, insn);
-    if (not op) throw No();
-    if (op->GetName()[0] == '?')
-      { std::cerr << "No decode for " << std::hex << insn << std::endl; throw No(); }
-    
-    std::ostringstream buf;
-    op->disasm(buf);
-  }
-
-  unisim::component::cxx::processor::mips::isa::Decoder<Arch> decoder;
-};
-
-
-int
-main(int argc, char *argv[])
-{
-  Checker checker;
-  uint32_t insn;
-  
-  for (std::ifstream source("check.txt");source.good();)
-    {
-      source >> std::hex >> insn;
-      source.ignore(0x1000, '\n');
-      checker.check(insn);
-    }
-  
-  return 0;
-}
-
-int trash(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   uintptr_t simargs_idx = 1;
   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);

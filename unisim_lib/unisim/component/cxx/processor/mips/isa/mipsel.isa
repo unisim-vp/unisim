@@ -88,7 +88,7 @@ j.execute = \
   typedef typename ARCH::U32 U32;
   
   U32 base = core.GetPC() & U32(-1<<28);
-  core.Branch(base | U32(target));
+  core.Branch(base | U32(target), core.B_JMP);
 };
 
 op jal(3[6]:shl<2> target[26]);
@@ -101,7 +101,7 @@ jal.execute = \
   
   core.SetGPR(31, core.GetPC() + U32(8));
   U32 base = core.GetPC() & U32(-1<<28);
-  core.Branch(base | U32(target));
+  core.Branch(base | U32(target),core.B_CALL);
 };
 
 op nop(0[32]);
@@ -152,13 +152,13 @@ srav.execute = \
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  core.SetGPR(rd, S32(core.GetGPR(rt)) >> U8(core.GetGPR(rs) & U32(0xff)) );
+  core.SetGPR(rd, U32(S32(core.GetGPR(rt)) >> U8(core.GetGPR(rs) & U32(0xff))) );
 };
 
 op jr(0[6]:rs[5]:0[5]:0[5]:0[5]:0x08[6]);
 jr.disasm = { sink << "jr\t" << PrintGPR(rs); };
 
-jr.execute = { core.Branch(core.GetGPR(rs)); };
+jr.execute = { core.Branch(core.GetGPR(rs), core.B_JMP); };
 
 op jalr(0[6]:rs[5]:0[5]:rd[5]:0[5]:0x09[6]);
 
@@ -172,7 +172,7 @@ jalr.disasm =                                   \
 jalr.execute = \
 {
   core.SetGPR(rd, core.GetPC() + typename ARCH::U32(8));
-  core.Branch(core.GetGPR(rs));
+  core.Branch(core.GetGPR(rs), core.B_CALL);
 };
 
 op syscall(0[6]:imm[20]:0x0c[6]);
@@ -301,8 +301,8 @@ bltz.execute = \
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   if (al) core.SetGPR(31, core.GetPC() + U32(8));
-  if (S32(core.GetGPR(rs)) < 0)
-    core.Branch(core.GetPC() + U32(offset + 4));
+  if (core.Test(S32(core.GetGPR(rs)) < S32(0)))
+    core.Branch(core.GetPC() + U32(offset + 4), al ? core.B_CALL : core.B_JMP);
   else if (l) /* Likely */
     core.CancelDelaySlot();
 };
@@ -315,8 +315,8 @@ bgez.execute = \
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   if (al) core.SetGPR(31, core.GetPC() + U32(8));
-  if (S32(core.GetGPR(rs)) >= 0)
-    core.Branch(core.GetPC() + U32(offset + 4));
+  if (core.Test(S32(core.GetGPR(rs)) >= S32(0)))
+    core.Branch(core.GetPC() + U32(offset + 4), al ? core.B_CALL : core.B_JMP);
   else if (l) /* Likely */
     core.CancelDelaySlot();
 };
@@ -329,8 +329,8 @@ blez.execute = \
 {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  if (S32(core.GetGPR(rs)) <= 0)
-    core.Branch(core.GetPC() + U32(offset + 4));
+  if (core.Test(S32(core.GetGPR(rs)) <= S32(0)))
+    core.Branch(core.GetPC() + U32(offset + 4), core.B_JMP);
   else if (l) /* Likely */
     core.CancelDelaySlot();
 };
@@ -342,8 +342,8 @@ bgtz.execute = \
 {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  if (S32(core.GetGPR(rs)) > 0)
-    core.Branch(core.GetPC() + U32(offset + 4));
+  if (core.Test(S32(core.GetGPR(rs)) > S32(0)))
+    core.Branch(core.GetPC() + U32(offset + 4), core.B_JMP);
   else if (l) /* Likely */
     core.CancelDelaySlot();
 };
@@ -359,8 +359,8 @@ beq.disasm = \
 beq.execute = \
 {
   typedef typename ARCH::U32 U32;
-  if (core.GetGPR(rs) == core.GetGPR(rt))
-    core.Branch(core.GetPC() + U32(offset + 4));
+  if (core.Test(core.GetGPR(rs) == core.GetGPR(rt)))
+    core.Branch(core.GetPC() + U32(offset + 4), core.B_JMP);
   else if (l) /* Likely */
     core.CancelDelaySlot();
 };
@@ -376,8 +376,8 @@ bne.disasm = \
 bne.execute = \
 {
   typedef typename ARCH::U32 U32;
-  if (core.GetGPR(rs) != core.GetGPR(rt))
-    core.Branch(core.GetPC() + U32(offset + 4));
+  if (core.Test(core.GetGPR(rs) != core.GetGPR(rt)))
+    core.Branch(core.GetPC() + U32(offset + 4),core.B_JMP);
   else if (l) /* Likely */
     core.CancelDelaySlot();
 };
@@ -589,10 +589,10 @@ sc.execute = \
   U32 addr = core.GetGPR(rs) + U32(offset);
   
   BOOL cond = core.AtomicUpdate(addr);
-  if (cond)
+  if (core.Test(cond))
     core.template MemWrite(addr, U32(core.GetGPR(rt)));
   
-  core.SetGPR(rt,cond);
+  core.SetGPR(rt,U32(cond));
 };
 
 /*** C0 ***/
@@ -721,7 +721,7 @@ lwl.execute = \
     { aligned = addr & U32(-4); shift = addr % U32(4); }
   else
     { aligned = (addr + U32(3)) & U32(-4); shift = -addr % U32(4); }
-  shift *= 8;
+  shift <<= 3;
   U32 value = core.template MemRead<U32>(aligned) << shift, mask = U32(-1) << shift;
   core.SetGPR(rt, value | (core.GetGPR(rt) & ~mask));
 };
@@ -737,7 +737,7 @@ lwr.execute = \
     { aligned = (addr + U32(3)) & U32(-4); shift = -addr % U32(4); }
   else
     { aligned = addr & U32(-4); shift = addr % U32(4); }
-  shift *= 8;
+  shift <<= 3;
   U32 value = core.template MemRead<U32>(aligned) >> shift, mask = U32(-1) >> shift;
   core.SetGPR(rt, value | (core.GetGPR(rt) & ~mask));
 };
@@ -754,7 +754,7 @@ swl.execute = \
     { aligned = addr & U32(-4); shift = addr % U32(4); }
   else
     { aligned = (addr + U32(3)) & U32(-4); shift = -addr % U32(4); }
-  shift *= 8;
+  shift <<= 3;
   U32 value = core.GetGPR(rt) >> shift, mask = U32(-1) >> shift;
   core.MemWrite(aligned, value | (core.template MemRead<U32>(aligned) & ~mask));
 };
@@ -771,7 +771,7 @@ swr.execute = \
     { aligned = (addr + U32(3)) & U32(-4); shift = -addr % U32(4); }
   else
     { aligned = addr & U32(-4); shift = addr % U32(4); }
-  shift *= 8;
+  shift <<= 3;
   U32 value = core.GetGPR(rt) << shift, mask = U32(-1) << shift;
   core.MemWrite(aligned, value | (core.template MemRead<U32>(aligned) & ~mask));
 };

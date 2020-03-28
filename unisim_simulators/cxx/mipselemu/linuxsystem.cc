@@ -95,6 +95,6 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
 void
 LinuxOS::ExecuteSystemCall( int id )
 {
-  linux_impl.LogSystemCall(id);
+  // linux_impl.LogSystemCall(id);
   linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
 }
