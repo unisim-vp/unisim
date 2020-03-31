@@ -93,15 +93,9 @@ unipy.EMU_mem_update(ctx,dst,whook=None,perms=0)
 try:
     unipy.EMU_start(ctx, entrypoint, exitpoint)
 except unipy.EmuError as e:
-    # Little Exemple of how to quicly parse exception
-    class MemoryException:
-        def parse(self, *args):
-            self.args = args
-    xp = MemoryException()
-    eval(e.errcode, {'MemoryException':xp.parse})
-    rwx, addr, msg = xp.args
-    sys.stdout.write( '! MemoryException: %s, %#x, %r' % ("rwx"[rwx], addr, msg) )
-            
+    # Small example of how to quickly retrieve exception parameters
+    rwx, addr, msg = eval(e.errcode,{'MemoryException':lambda *args: args})
+    sys.stdout.write( '! Catched a MemoryException with %s, %#x, %r' % ("rwx"[rwx], addr, msg) )
 
 ########################
 sys.stdout.write( '\n### 5. Remove the destination page and setup a global write exception hook ###\n' )

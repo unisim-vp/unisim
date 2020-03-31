@@ -387,6 +387,9 @@ struct OpPage
   enum { size = SZ };
   OP* ops[SZ];
   OpPage() : ops() {}
+  OP** begin() { return &ops[0]; }
+  OP** end() { return &ops[SZ]; }
+  ~OpPage() { for (OP* o : *this) delete o;  }
 };
 
 template <unsigned N>

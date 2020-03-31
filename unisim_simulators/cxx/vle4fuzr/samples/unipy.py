@@ -57,7 +57,7 @@ def _EmuCheck(ctx, status):
     if status == EMU_ERR_OK:
         return
     err = _so.emu_get_error(ctx)
-    raise EmuError( str(err) )
+    raise EmuError( err.decode('ascii') )
 
 _EMU_HOOK_POOL = {}
 
