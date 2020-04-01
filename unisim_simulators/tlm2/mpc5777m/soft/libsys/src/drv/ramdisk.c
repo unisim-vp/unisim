@@ -40,7 +40,7 @@
 extern char __RAMDISK;
 extern char __RAMDISK_END;
 
-#define RAMDISK_BLOCK_COUNT ((&__RAMDISK_END - &__RAMDISK + 1) / RAMDISK_BLOCK_SIZE)
+#define RAMDISK_BLOCK_COUNT ((&__RAMDISK_END - &__RAMDISK) / RAMDISK_BLOCK_SIZE)
 
 static int ramdisk_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
 {

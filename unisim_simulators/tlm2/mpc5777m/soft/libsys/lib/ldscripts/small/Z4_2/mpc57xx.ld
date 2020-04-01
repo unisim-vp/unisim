@@ -4,12 +4,12 @@ __STACK_SIZE           = 49148;
 
 /* Define memory size and base address for code in flash */
 FLASH_SIZE      = 2560K;
-FLASH_BASE_ADDR = 0x1280000;
+FLASH_BASE_ADDR = 0x1500000;
 
 /* Define memory size and base address for data in system SRAM */
 SRAM_SIZE      =  128K;    
-SRAM_BASE_ADDR = 0x40020000;
-  
+SRAM_BASE_ADDR = 0x40040000;
+
 /* Define memory size and base address for shared data in system SRAM */
 SHARE_SIZE     = 17K;
 SHARE_BASE_ADDR = 0x40060000;
@@ -17,21 +17,24 @@ SHARE_BASE_ADDR = 0x40060000;
 /* Define Core Local Instruction SRAM Allocation */  
 LOCAL_IMEM_SIZE = 16K;
 /* Define Core Local Instruction SRAM Base Address */
-LOCAL_IMEM_BASE_ADDR = 0x51000000;
+LOCAL_IMEM_BASE_ADDR = 0x52000000;
 
 /* Define Core Local Data SRAM Allocation */
 LOCAL_DMEM_SIZE = 64K;
 /* Define Core Local Data SRAM Base Address */
-LOCAL_DMEM_BASE_ADDR = 0x51800000;
+LOCAL_DMEM_BASE_ADDR = 0x52800000;
 
 /* Define Command line Base Address */
-CMDLINE_BASE_ADDR = 0x40064800;
+CMDLINE_BASE_ADDR = 0x40064c00;
 /* Define Command line Size */
 CMDLINE_SIZE = 1024;
 
-/* Define RAM disk Base Address */
-RAMDISK_BASE_ADDR = 0x24000000;
+/* Define EBI MEM Base Address */
+EBI_MEM_BASE_ADDR = 0x28000000;
+/* Define EBI MEM size */
+EBI_MEM_SIZE = 64M;
+
 /* Define RAM disk size */
 RAMDISK_SIZE = 64M;
 
-INCLUDE ldscripts/common/mpc57xx.ld
+INCLUDE ldscripts/small/common/mpc57xx.ld

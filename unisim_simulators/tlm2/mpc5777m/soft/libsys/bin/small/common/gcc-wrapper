@@ -11,7 +11,7 @@ shift
 COMMAND="$1"
 shift
 
-INSTALL_PREFIX=$(cd $(dirname $0)/../..; pwd)
+INSTALL_PREFIX=$(cd $(dirname $0)/../../..; pwd)
 CROSS_TOOLS=$(cd "${S32DS}/../Cross_Tools/powerpc-eabivle-4_9"; pwd)
 CROSS_COMPILE="${CROSS_TOOLS}/bin/powerpc-eabivle-"
 #CC=${INSTALL_PREFIX}/bin/common/tester
@@ -22,7 +22,7 @@ RANLIB="${CROSS_COMPILE}ranlib"
 STRIP="${CROSS_COMPILE}strip"
 
 LINKER_ARGS=()
-LINKER_ARGS+=("-T${INSTALL_PREFIX}/lib/ldscripts/${SUBSYS}/mpc57xx.ld")
+LINKER_ARGS+=("-T${INSTALL_PREFIX}/lib/ldscripts/small/${SUBSYS}/mpc57xx.ld")
 LINKER_ARGS+=('-Xlinker')
 LINKER_ARGS+=('--gc-sections')
 LINKER_ARGS+=("-L${INSTALL_PREFIX}/lib")

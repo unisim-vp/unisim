@@ -1,4 +1,4 @@
-CC=$(PWD)/../../libsys/bin/Z7_1/bin/powerpc-eabivle-gcc
+CC=$(PWD)/../../libsys/bin/small/Z7_1/bin/powerpc-eabivle-gcc
 LDFLAGS=-static
 CFLAGS=-Og -g -Wall -fdebug-prefix-map=$(shell readlink -f $$PWD/../../app)=app -fdebug-prefix-map=$(shell readlink -f $$PWD/../../libsys)=libsys
 RM=rm -f

@@ -87,8 +87,8 @@ extern char __LOCAL_IMEM;
 extern char __LOCAL_IMEM_END;
 extern char __LOCAL_DMEM;
 extern char __LOCAL_DMEM_END;
-extern char __RAMDISK;
-extern char __RAMDISK_END;
+extern char __EBI_MEM;
+extern char __EBI_MEM_END;
 extern char __SHARE;
 extern char __SHARE_END;
 extern char __CMDLINE;
@@ -179,16 +179,16 @@ void sys_init()
 	icache_invalidate();
 	icache_enable();
 
-	mpu_entry_t m_text_mpu_entry;
-	memset(&m_text_mpu_entry, 0, sizeof(m_text_mpu_entry));
-	m_text_mpu_entry.mas0.b.esel = 0;
-	m_text_mpu_entry.mas0.b.shd = 1;
-	mpu_read_entry(&m_text_mpu_entry);
-	m_text_mpu_entry.mas0.b.valid = 1;
-	m_text_mpu_entry.mas0.b.sx_sr = 1;
-	m_text_mpu_entry.mas3.b.lower_bound = (uint32_t) &__FLASH;
-	m_text_mpu_entry.mas2.b.upper_bound = (uint32_t) &__FLASH_END;
-	mpu_write_entry(&m_text_mpu_entry);
+	mpu_entry_t m_flash_mpu_entry;
+	memset(&m_flash_mpu_entry, 0, sizeof(m_flash_mpu_entry));
+	m_flash_mpu_entry.mas0.b.esel = 0;
+	m_flash_mpu_entry.mas0.b.shd = 1;
+	mpu_read_entry(&m_flash_mpu_entry);
+	m_flash_mpu_entry.mas0.b.valid = 1;
+	m_flash_mpu_entry.mas0.b.sx_sr = 1;
+	m_flash_mpu_entry.mas3.b.lower_bound = (uint32_t) &__FLASH;
+	m_flash_mpu_entry.mas2.b.upper_bound = (uint32_t) &__FLASH_END - 1;
+	mpu_write_entry(&m_flash_mpu_entry);
 
 	mpu_entry_t local_imem_mpu_entry;
 	memset(&local_imem_mpu_entry, 0, sizeof(local_imem_mpu_entry));
@@ -199,7 +199,7 @@ void sys_init()
 	local_imem_mpu_entry.mas0.b.valid = 1;
 	local_imem_mpu_entry.mas0.b.sx_sr = 1;
 	local_imem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__LOCAL_IMEM;
-	local_imem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_IMEM_END;
+	local_imem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_IMEM_END - 1;
 	mpu_write_entry(&local_imem_mpu_entry);
 
 	mpu_entry_t sram_mpu_entry;
@@ -212,7 +212,7 @@ void sys_init()
 	sram_mpu_entry.mas0.b.sx_sr = 0;
 	sram_mpu_entry.mas0.b.sw = 1;
 	sram_mpu_entry.mas3.b.lower_bound = (uint32_t) &__SRAM;
-	sram_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SRAM_END;
+	sram_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SRAM_END - 1;
 	mpu_write_entry(&sram_mpu_entry);
 
 	mpu_entry_t share_mpu_entry;
@@ -226,7 +226,7 @@ void sys_init()
 	share_mpu_entry.mas0.b.sw = 1;
 	share_mpu_entry.mas0.b.i = 1;
 	share_mpu_entry.mas3.b.lower_bound = (uint32_t) &__SHARE;
-	share_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SHARE_END;
+	share_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SHARE_END - 1;
 	mpu_write_entry(&share_mpu_entry);
 
 	mpu_entry_t local_dmem_mpu_entry;
@@ -239,21 +239,21 @@ void sys_init()
 	local_dmem_mpu_entry.mas0.b.sx_sr = 0;
 	local_dmem_mpu_entry.mas0.b.sw = 1;
 	local_dmem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__LOCAL_DMEM;
-	local_dmem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_DMEM_END;
+	local_dmem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_DMEM_END - 1;
 	mpu_write_entry(&local_dmem_mpu_entry);
 	
-	mpu_entry_t m_ramdisk_mpu_entry;
-	memset(&m_ramdisk_mpu_entry, 0, sizeof(m_ramdisk_mpu_entry));
-	m_ramdisk_mpu_entry.mas0.b.esel = 3;
-	m_ramdisk_mpu_entry.mas0.b.inst = 0;
-	m_ramdisk_mpu_entry.mas0.b.shd = 0;
-	mpu_read_entry(&m_ramdisk_mpu_entry);
-	m_ramdisk_mpu_entry.mas0.b.valid = 1;
-	m_ramdisk_mpu_entry.mas0.b.sx_sr = 0;
-	m_ramdisk_mpu_entry.mas0.b.sw = 1;
-	m_ramdisk_mpu_entry.mas3.b.lower_bound = (uint32_t) &__RAMDISK;
-	m_ramdisk_mpu_entry.mas2.b.upper_bound = (uint32_t) &__RAMDISK_END;
-	mpu_write_entry(&m_ramdisk_mpu_entry);
+	mpu_entry_t m_ebi_mem_mpu_entry;
+	memset(&m_ebi_mem_mpu_entry, 0, sizeof(m_ebi_mem_mpu_entry));
+	m_ebi_mem_mpu_entry.mas0.b.esel = 3;
+	m_ebi_mem_mpu_entry.mas0.b.inst = 0;
+	m_ebi_mem_mpu_entry.mas0.b.shd = 0;
+	mpu_read_entry(&m_ebi_mem_mpu_entry);
+	m_ebi_mem_mpu_entry.mas0.b.valid = 1;
+	m_ebi_mem_mpu_entry.mas0.b.sx_sr = 0;
+	m_ebi_mem_mpu_entry.mas0.b.sw = 1;
+	m_ebi_mem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__EBI_MEM;
+	m_ebi_mem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__EBI_MEM_END - 1;
+	mpu_write_entry(&m_ebi_mem_mpu_entry);
 
 	mpu_entry_t peripheral_mpu_entry;
 	memset(&peripheral_mpu_entry, 0, sizeof(peripheral_mpu_entry));
@@ -569,6 +569,13 @@ void sys_init()
 			break;
 	}
 	
+	unsigned int ebi_mem_ebi_bank = core_id;
+	
+	ebi_set_bank_port_size(ebi_mem_ebi_bank, EBI_PORT_SIZE_32);         // EBI: word addressing
+	ebi_set_bank_base_address(ebi_mem_ebi_bank, (uint32_t) &__EBI_MEM); // EBI: base address
+	ebi_set_bank_address_mask(ebi_mem_ebi_bank, ~(uint32_t) (&__EBI_MEM_END - &__EBI_MEM - 1));            // EBI: 64MB segments
+	ebi_set_bank_valid_flag(ebi_mem_ebi_bank, 1);                       // EBI: enable bank
+	
 	unsigned int fd;
 		
 	for(fd = 0; fd < MAX_FILE_DESCRIPTORS; fd++)
@@ -593,31 +600,7 @@ void sys_init()
 	int fd_stderr = open("/dev/tty", O_WRONLY, 0);
 	assert(fd_stderr == STDERR_FILENO);
 	
-	unsigned int ramdisk_ebi_bank = core_id;
-	
-	ebi_set_bank_port_size(ramdisk_ebi_bank, EBI_PORT_SIZE_32);         // EBI: word addressing
-	ebi_set_bank_base_address(ramdisk_ebi_bank, (uint32_t) &__RAMDISK); // EBI: base address
-	ebi_set_bank_address_mask(ramdisk_ebi_bank, 0xfc000000);            // EBI: 64MB segments
-	ebi_set_bank_valid_flag(ramdisk_ebi_bank, 1);                       // EBI: enable bank
-
 	ramdisk_init(&ramdisk_lfs_cfg);
-	
-#if 0
-	/* check if there's a littlefs file system in ramdisk */
-	char magic[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	if(ramdisk_lfs_cfg.read(&ramdisk_lfs_cfg, 0, 40, magic, 8) == 0)
-	{
-		if(memcmp(magic, "littlefs", 8) == 0)
-		{
-			root_fs = (lfs_t *) malloc(sizeof(lfs_t));
-			assert(root_fs != 0);
-			/* mount littlefs root file system in ramdisk */
-			int err = lfs_mount(root_fs, &ramdisk_lfs_cfg);
-			
-			assert(err == LFS_ERR_OK);
-		}
-	}
-#endif
 	
 	/* check if there's a littlefs file system in ramdisk */
 	char magic[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };

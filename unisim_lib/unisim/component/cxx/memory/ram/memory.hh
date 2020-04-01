@@ -120,8 +120,12 @@ private:
 	
 	std::string input_filename;
 	unisim::kernel::variable::Parameter<std::string> param_input_filename;
+	uint64_t input_size;
+	unisim::kernel::variable::Parameter<uint64_t> param_input_size;
 	std::string output_filename;
 	unisim::kernel::variable::Parameter<std::string> param_output_filename;
+	uint64_t output_size;
+	unisim::kernel::variable::Parameter<uint64_t> param_output_size;
 
 	std::ofstream *output_file;
 

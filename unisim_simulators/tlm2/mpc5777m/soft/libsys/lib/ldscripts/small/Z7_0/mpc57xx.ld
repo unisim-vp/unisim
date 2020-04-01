@@ -29,9 +29,12 @@ CMDLINE_BASE_ADDR = 0x40064400;
 /* Define Command line Size */
 CMDLINE_SIZE = 1024;
 
-/* Define RAM disk Base Address */
-RAMDISK_BASE_ADDR = 0x20000000;
+/* Define EBI MEM Base Address */
+EBI_MEM_BASE_ADDR = 0x20000000;
+/* Define EBI MEM size */
+EBI_MEM_SIZE = 64M;
+
 /* Define RAM disk size */
 RAMDISK_SIZE = 64M;
 
-INCLUDE ldscripts/common/mpc57xx.ld
+INCLUDE ldscripts/small/common/mpc57xx.ld
