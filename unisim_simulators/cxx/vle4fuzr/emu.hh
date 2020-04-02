@@ -25,6 +25,7 @@ struct Processor
   virtual ~Processor();
 
   virtual void run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
+  virtual unsigned endian_mask(unsigned size) const = 0;
 
   struct Page
   {
@@ -271,14 +272,14 @@ struct Processor
     virtual void read( Processor& proc, int id, uint64_t* bytes ) const = 0;
   };
 
-  virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
+  virtual RegView const* get_reg(char const* id, uintptr_t size, int regid) = 0;
   
   bool NoSuchRegister() { error = "NoSuchRegister()"; return false; }
   
   bool
   reg_write(char const* id, uintptr_t size, int regid, uint64_t value)
   {
-    if (RegView const* rv = get_reg(id, size))
+    if (RegView const* rv = get_reg(id, size, regid))
       rv->write(*this, regid, value);
     else
       return NoSuchRegister();
@@ -288,7 +289,7 @@ struct Processor
   bool
   reg_read(char const* id, uintptr_t size, int regid, uint64_t* value)
   {
-    if (RegView const* rv = get_reg(id, size))
+    if (RegView const* rv = get_reg(id, size, regid))
       rv->read(*this, regid, value);
     else
       return NoSuchRegister();
@@ -296,6 +297,7 @@ struct Processor
   }
   
   struct Abort {};
+  struct InsnAbort {};
   
   void abort(std::string _error) { error=_error; throw Abort(); }
   

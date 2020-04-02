@@ -27,7 +27,7 @@ ArmProcessor::~ArmProcessor()
 }
 
 Processor::RegView const*
-ArmProcessor::get_reg(char const* id, uintptr_t size)
+ArmProcessor::get_reg(char const* id, uintptr_t size, int regid)
 {
   if (regname("apsr",id,size))
     {
@@ -44,12 +44,24 @@ ArmProcessor::get_reg(char const* id, uintptr_t size)
 
   if (regname("gpr",id,size))
     {
-      static struct : public RegView
-      {
-        void write( Processor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(id, value); }
-        void read( Processor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetGPR(id); }
-      } _;
-      return &_;
+      if ((unsigned)regid < 15)
+        {
+          static struct : public RegView
+          {
+            void write( Processor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(id, value); }
+            void read( Processor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetGPR(id); }
+          } _;
+          return &_;
+        }
+      else if (regid == 15)
+        {
+          static struct : public RegView
+          {
+            void write( Processor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(15, value); throw InsnAbort(); }
+            void read( Processor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetCIA(); }
+          } _;
+          return &_;
+        }
     }
 
   std::cerr << "Register '" << std::string(id,size) << "' not found.\n";
@@ -286,8 +298,10 @@ ArmProcessor::Step( Decoder& decoder )
   typedef typename AMO<Decoder>::Operation Operation;
   typedef typename AMO<Decoder>::OpPage OpPage;
 
-  // Fetch
+  // Instruction boundary next_insn_addr becomes current_insn_addr
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
+  
+  // Fetch 
   CodeType insn = ReadInsn(insn_addr);
 
   // Decode
@@ -331,12 +345,12 @@ ArmProcessor::Step( Decoder& decoder )
   // Execute
   this->gpr[15] = insn_addr + (AMO<Decoder>::thumb ? 4 : 8);
   this->next_insn_addr = insn_addr + insn_length;
-    
+
   op->execute( *this );
 
   if (AMO<Decoder>::thumb)
     this->ITAdvance();
-
+  
   this->bblock = (op->branch.target != op->branch.BNone);
 }
 
@@ -379,14 +393,21 @@ void
 ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
 {
   this->Branch(begin, B_DBG);
+  this->bblock = true;
 
   do
     {
-      /* Instruction boundary next_insn_addr becomes current_insn_addr */
+  try
+    {
       if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
         Step(thumb_decoder);
       else
         Step(arm32_decoder);
+    }
+  catch (InsnAbort const& x)
+    {
+      this->bblock = true;
+    }
     }
   while (next_insn_addr != until and --count != 0);
 }

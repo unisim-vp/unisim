@@ -166,5 +166,38 @@ extern "C"
     Processor& proc = *(Processor*)uc;
     return proc.error.c_str();
   }
+
+  int emu_mem_store(void* uc, uint64_t addr, unsigned size, uint64_t value)
+  {
+    Processor& proc = *(Processor*)uc;
+    
+    try { proc.PhysicalWriteMemory( addr, size, proc.endian_mask(size), value ); }
+    
+    catch (Processor::Abort) { return -1; }
+      
+    return 0;
+  }
+
+  int emu_mem_load(void* uc, uint64_t addr, unsigned size, uint64_t* value)
+  {
+    Processor& proc = *(Processor*)uc;
+    
+    try { proc.PhysicalReadMemory( addr, size, proc.endian_mask(size), value ); }
+    
+    catch (Processor::Abort) { return -1; }
+      
+    return 0;
+  }
+  
+  int emu_mem_fetch(void* uc, uint64_t addr, unsigned size, uint64_t* value)
+  {
+    Processor& proc = *(Processor*)uc;
+    
+    try { proc.PhysicalFetchMemory( addr, size, proc.endian_mask(size), value ); }
+    
+    catch (Processor::Abort) { return -1; }
+      
+    return 0;
+  }
   
 }

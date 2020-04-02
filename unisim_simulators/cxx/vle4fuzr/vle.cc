@@ -28,7 +28,7 @@ namespace concrete {
   {}
 
   Processor::RegView const*
-  Processor::get_reg(char const* id, uintptr_t size)
+  Processor::get_reg(char const* id, uintptr_t size, int regid)
   {
     if (regname("gpr",id,size))
       {
@@ -48,9 +48,17 @@ namespace concrete {
           void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetLR(); }
         } _;
         return &_;
-      } 
+      }
 
-
+    if (regname("pc",id,size))
+      {
+        static struct : public RegView
+        {
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).Branch(value); throw InsnAbort(); }
+          void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetCIA(); }
+        } _;
+        return &_;
+      }
 
     std::cerr << "Register '" << std::string(id,size) << "' not found.\n";
     return 0;
@@ -82,65 +90,72 @@ namespace concrete {
 
     do
       {
-        /* go to the next instruction */
-        this->cia = this->nia;
-        
-        uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
-        CodeType insn;
-        insn = this->Fetch(insn_addr);
-
-        uint32_t insn_idx = insn_addr/2,
-          insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
-        
-        InsnPage& page = insn_cache[insn_tag];
-        Operation* op = page.ops[insn_offset];
-        if (op and op->GetEncoding() == insn)
-          { insn_length = op->GetLength() / 8; }
-        else
+        try
           {
-            delete op;
-            static Decoder decoder;
-            op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
-            insn_length = op->GetLength() / 8;
+            // Go to the next instruction
+            uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
+        
+            // Fetch
+            CodeType insn = this->Fetch(insn_addr);
+
+            // Decode
+            uint32_t insn_idx = insn_addr/2,
+              insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
+        
+            InsnPage& page = insn_cache[insn_tag];
+            Operation* op = page.ops[insn_offset];
+            if (op and op->GetEncoding() == insn)
+              { insn_length = op->GetLength() / 8; }
+            else
+              {
+                delete op;
+                static Decoder decoder;
+                op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
+                insn_length = op->GetLength() / 8;
             
-            {
-              static branch::Decoder bdecoder;
-              auto bop = bdecoder.NCDecode( insn_addr, insn );
-          
-              branch::ActionNode root;
-              for (bool end = false; not end;)
                 {
-                  branch::Processor bp( root, insn_addr, insn_length );
-                  bop->execute( &bp );
-                  op->branch.update( bp.has_branch, bp.nia );
-                  end = bp.path->close();
-                }
+                  static branch::Decoder bdecoder;
+                  auto bop = bdecoder.NCDecode( insn_addr, insn );
+          
+                  branch::ActionNode root;
+                  for (bool end = false; not end;)
+                    {
+                      branch::Processor bp( root, insn_addr, insn_length );
+                      bop->execute( &bp );
+                      op->branch.update( bp.has_branch, bp.nia );
+                      end = bp.path->close();
+                    }
     
-              delete bop;
-            }
+                  delete bop;
+                }
             
-          }
+              }
         
-        // Monitor
-        if (unlikely(this->disasm))
-          {
-            op->disasm(this, std::cerr << std::hex << insn_addr << ": " );
-            std::cerr << std::endl;
-          }
+            // Monitor
+            if (unlikely(this->disasm))
+              {
+                op->disasm(this, std::cerr << std::hex << insn_addr << ": " );
+                std::cerr << std::endl;
+              }
 
-        insn_hooks(insn_addr, insn_length);
+            insn_hooks(insn_addr, insn_length);
         
-        this->nia = this->cia + insn_length;
+            this->nia = this->cia + insn_length;
         
-        /* execute the instruction */
-        if (not op->execute(this))
-          {
-            /* Process exceptions */
-            std::cerr << "Pending exceptions.\n";
-            abort("ProcessorException()");
+            /* execute the instruction */
+            if (not op->execute(this))
+              {
+                /* Process exceptions */
+                std::cerr << "Pending exceptions.\n";
+                abort("ProcessorException()");
+              }
+        
+            this->bblock = (op->branch.target != op->branch.BNone);
           }
-        
-        this->bblock = (op->branch.target != op->branch.BNone);
+        catch (InsnAbort const& x)
+          {
+            this->bblock = true;
+          }
       }
     while (this->nia != until and --count != 0);
   }

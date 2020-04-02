@@ -57,7 +57,7 @@ struct ArmProcessor
   
   static ArmProcessor& Self( Processor& proc ) { return dynamic_cast<ArmProcessor&>( proc ); }
 
-  Processor::RegView const* get_reg(char const* id, uintptr_t size) override;
+  Processor::RegView const* get_reg(char const* id, uintptr_t size, int regid) override;
 
   enum { OPPAGESIZE = 4096 };
   typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor> AOperation;
@@ -94,6 +94,8 @@ struct ArmProcessor
   uint32_t ReadInsn( uint32_t address );
   
   virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;
+  virtual unsigned endian_mask(unsigned size) const override
+  { return (size-1)*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN); }
   virtual char const* get_asm() override;
 
   template <class Decoder> void Step(Decoder&);

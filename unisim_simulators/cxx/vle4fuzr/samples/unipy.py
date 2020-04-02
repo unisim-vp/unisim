@@ -32,6 +32,9 @@ def bind( shared_object ):
     _so.emu_mem_unmap      .argtypes = (emu_engine, ctypes.c_uint64)
     _so.emu_mem_write      .argtypes = (emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
     _so.emu_mem_read       .argtypes = (emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
+    _so.emu_mem_store      .argtypes = (emu_engine, ctypes.c_uint64, ctypes.c_uint, ctypes.c_uint64)
+    _so.emu_mem_load       .argtypes = (emu_engine, ctypes.c_uint64, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint64))
+    _so.emu_mem_fetch      .argtypes = (emu_engine, ctypes.c_uint64, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint64))
     _so.emu_mem_chprot     .argtypes = (emu_engine, ctypes.c_uint64, ctypes.c_uint)
     _so.emu_mem_chhook     .argtypes = (emu_engine, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p)
     _so.emu_mem_exc_chhook .argtypes = (emu_engine, ctypes.c_uint, ctypes.c_void_p)
@@ -97,7 +100,7 @@ def EMU_reg_read(ctx, reg_id):
     return reg.value
 
 def EMU_reg_write(ctx, reg_id , value):
-    # Write @value from the @reg_id register
+    # Write @value to the @reg_id register
     rstr, rnum = reg_id
     status = _so.emu_reg_write(ctx, rstr.encode('ascii'), len(rstr), rnum, value)
     _EmuCheck(ctx, status)
@@ -186,6 +189,25 @@ def EMU_mem_read(ctx, address, size):
     status = _so.emu_mem_read(ctx, address, data, size)
     _EmuCheck(ctx, status)
     return bytearray(data)
+
+def EMU_mem_store(ctx, address, size, value):
+    # Write the @size bytes @value to memory at @address (through processor)
+    status = _so.emu_mem_store(ctx, address, size, value)
+    _EmuCheck(ctx, status)
+
+def EMU_mem_load(ctx, address, size):
+    # Read @size bytes from memory at @address (through processor) and return value
+    value = ctypes.c_uint64(0)
+    status = _so.emu_mem_load(ctx, address, size, ctypes.byref(value))
+    _EmuCheck(ctx, status)
+    return value.value
+
+def EMU_mem_fetch(ctx, address, size):
+    # Read @size bytes from memory at @address (through processor) and return value
+    value = ctypes.c_uint64(0)
+    status = _so.emu_mem_fetch(ctx, address, size, ctypes.byref(value))
+    _EmuCheck(ctx, status)
+    return value.value
 
 def EMU_start(ctx, begin, until, count=0):
     # Emulate from @begin, and stop when reaching address @until or after @count instructions

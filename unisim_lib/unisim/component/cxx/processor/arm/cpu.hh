@@ -256,7 +256,7 @@ struct CPU
    * @return the endian being used
    */
   unisim::util::endian::endian_type
-  GetEndianness()
+  GetEndianness() const
   {
     return (this->cpsr.Get( E ) == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
   }

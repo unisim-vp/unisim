@@ -166,7 +166,7 @@ namespace concrete {
 
     static Processor& Self( EmuProcessor& proc ) { return dynamic_cast<Processor&>( proc ); }
   
-    EmuProcessor::RegView const* get_reg(char const* id, uintptr_t size) override;
+    EmuProcessor::RegView const* get_reg(char const* id, uintptr_t size, int regid) override;
     
     enum { OPPAGESIZE = 4096 };
     typedef vle::concrete::Operation Operation;
@@ -178,10 +178,12 @@ namespace concrete {
     
     U32          reg_values[32];
     U32          cia, nia;
+    
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
     U32 GetCIA() { return cia; };
-    bool Branch(U32 addr) { nia = addr; return false; }
+    U32 GetNIA() { return nia; }
+    void Branch(U32 addr) { nia = addr; }
 
     U32 Fetch(U32 address)
     {
@@ -260,6 +262,7 @@ namespace concrete {
     bool Wait() { throw TODO(); return false; }
     
     virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;
+    virtual unsigned endian_mask(unsigned size) const override { return size-1; }
     virtual char const* get_asm() override;
     
   };
@@ -394,7 +397,7 @@ namespace branch
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
     U32 GetCIA() { return cia; };
-    bool Branch(U32 addr) { nia = addr; has_branch = true; return false; }
+    void Branch(U32 addr) { nia = addr; has_branch = true; }
     
     bool Int8Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
     bool Int16Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
