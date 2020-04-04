@@ -127,6 +127,7 @@ libieee1666/utilities/report.h \
 libieee1666/utilities/report_handler.h \
 libieee1666/utilities/version.h \
 libieee1666/utilities/vector.h \
+libieee1666/tlm1/fwd.h \
 libieee1666/tlm1/interface/analysis_ifs.h \
 libieee1666/tlm1/interface/fifo_ifs.h \
 libieee1666/tlm1/interface/message_passing_ifs.h \

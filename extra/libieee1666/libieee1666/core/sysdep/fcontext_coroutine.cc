@@ -43,10 +43,17 @@ const std::size_t DEFAULT_FCONTEXT_STACK_SIZE = 128 * 1024; // 128 KB
 
 /////////////////////////// sc_fcontext_coroutine //////////////////////////
 
+#if BOOST_VERSION < 105600 // boost version < 1.56.0
 static boost::context::fcontext_t fcm;
+#endif
 
 sc_fcontext_coroutine::sc_fcontext_coroutine()
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+	: from(0)
+	, fc()
+#else // boost version < 1.61.0
 	: fc()
+#endif
 #if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
 #endif
@@ -60,7 +67,12 @@ sc_fcontext_coroutine::sc_fcontext_coroutine()
 }
 
 sc_fcontext_coroutine::sc_fcontext_coroutine(std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+	: from(0)
+	, fc()
+#else // boost version < 1.61.0
 	: fc()
+#endif
 #if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
 #endif
@@ -70,7 +82,11 @@ sc_fcontext_coroutine::sc_fcontext_coroutine(std::size_t stack_size, void (*_fn)
 {
 	if(!stack_size) stack_size = DEFAULT_FCONTEXT_STACK_SIZE;
 	stack = sc_kernel::get_kernel()->get_stack_system()->create_stack(stack_size);
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+	fc = boost::context::detail::make_fcontext(stack->get_top_of_the_stack(), stack_size, &sc_fcontext_coroutine::entry_point);
+#else
 	fc = boost::context::make_fcontext(stack->get_top_of_the_stack(), stack_size, &sc_fcontext_coroutine::entry_point);
+#endif
 }
 
 sc_fcontext_coroutine::~sc_fcontext_coroutine()
@@ -81,11 +97,20 @@ sc_fcontext_coroutine::~sc_fcontext_coroutine()
 	}
 }
 
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+void sc_fcontext_coroutine::entry_point(boost::context::detail::transfer_t transfer)
+{
+	sc_fcontext_coroutine *self = reinterpret_cast<sc_fcontext_coroutine *>(transfer.data);
+	self->from->fc = transfer.fctx;
+	(*self->fn)(self->arg);
+}
+#else // boost version < 1.61.0
 void sc_fcontext_coroutine::entry_point(intptr_t _self)
 {
 	sc_fcontext_coroutine *self = reinterpret_cast<sc_fcontext_coroutine *>(_self);
 	(*self->fn)(self->arg);
 }
+#endif
 
 void sc_fcontext_coroutine::yield(sc_coroutine *next_coroutine)
 {
@@ -93,14 +118,28 @@ void sc_fcontext_coroutine::yield(sc_coroutine *next_coroutine)
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_fcontext_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
-	boost::context::jump_fcontext(
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-		&fc,
-#else
-		fc,
-#endif
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+	static_cast<sc_fcontext_coroutine *>(next_coroutine)->from = this;
+	boost::context::detail::transfer_t transfer = boost::context::detail::jump_fcontext(
 		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
-		reinterpret_cast<intptr_t>(next_coroutine), true);
+		reinterpret_cast<void *>(next_coroutine)
+	);
+	from->fc = transfer.fctx;
+#elif BOOST_VERSION >= 105600 // boost version >= 1.56.0
+	boost::context::jump_fcontext(
+		&fc,
+		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
+		reinterpret_cast<intptr_t>(next_coroutine),
+		true
+	);
+#else // boost version < 1.56.0
+	boost::context::jump_fcontext(
+		fc,
+		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
+		reinterpret_cast<intptr_t>(next_coroutine),
+		true
+	);
+#endif
 }
 
 void sc_fcontext_coroutine::abort(sc_coroutine *next_coroutine)
@@ -109,14 +148,28 @@ void sc_fcontext_coroutine::abort(sc_coroutine *next_coroutine)
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_fcontext_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
-	boost::context::jump_fcontext(
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-		&fc,
-#else
-		fc,
-#endif
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+	static_cast<sc_fcontext_coroutine *>(next_coroutine)->from = this;
+	boost::context::detail::jump_fcontext(
 		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
-		reinterpret_cast<intptr_t>(next_coroutine), true);
+		reinterpret_cast<void *>(next_coroutine)
+	);
+#elif BOOST_VERSION >= 105600 // boost version >= 1.56.0
+	boost::context::jump_fcontext(
+		&fc,
+		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
+		reinterpret_cast<intptr_t>(next_coroutine),
+		true
+	);
+#else // boost version < 1.56.0
+	boost::context::jump_fcontext(
+		fc,
+		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
+		reinterpret_cast<intptr_t>(next_coroutine),
+		true
+	);
+#endif
+	throw std::runtime_error("aborted sc_fcontext_coroutine returning from jump_fcontext");
 }
 
 ///////////////////////// sc_fcontext_coroutine_system /////////////////////

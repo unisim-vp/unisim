@@ -260,6 +260,9 @@ sc_kernel::sc_kernel()
 
 sc_kernel::~sc_kernel()
 {
+	runnable_thread_processes.clear();
+	runnable_method_processes.clear();
+	
 	std::vector<sc_process_handle>::size_type num_process_handles = process_handle_table.size();
 	std::vector<sc_process_handle>::size_type process_handle_num;
 	
