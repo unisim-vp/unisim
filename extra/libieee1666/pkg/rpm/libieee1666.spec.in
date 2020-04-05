@@ -10,6 +10,7 @@ Release:   %{release}
 Source:    %{name}-%{version}.tar.gz
 Group:     Development/Libraries
 URL:       http://unisim-vp.org
+BuildRequires: boost-devel,valgrind-devel
 
 %description
 libieee1666 is a free implementation of IEEE Standard 1666-2011, the IEEE standard that defines SystemC language.
