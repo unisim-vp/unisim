@@ -45,6 +45,7 @@
 #include <stack>
 #include <vector>
 #include <map>
+#include <cassert>
 
 // to remove asap
 #include <iostream>

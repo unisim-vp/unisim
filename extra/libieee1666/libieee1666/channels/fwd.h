@@ -40,7 +40,8 @@ namespace sc_core {
 enum sc_writer_policy
 {
 	SC_ONE_WRITER,
-	SC_MANY_WRITERS
+	SC_MANY_WRITERS,
+	SC_UNCHECKED_WRITERS // not in IEEE1666-2011 but in SystemC >= 2.3.0
 };
 
 template <class T, sc_writer_policy WRITER_POLICY> class sc_buffer;

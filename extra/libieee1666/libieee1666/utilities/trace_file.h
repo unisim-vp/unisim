@@ -106,6 +106,11 @@ void sc_trace( sc_trace_file* , const sc_signal_in_if<short>& , const std::strin
 void sc_trace( sc_trace_file* , const sc_signal_in_if<int>& , const std::string& , int width );
 void sc_trace( sc_trace_file* , const sc_signal_in_if<long>& , const std::string& , int width );
 
+template <class T>
+void sc_trace( sc_trace_file* , const sc_signal_in_if<T>& , const std::string& )
+{
+}
+
 } // end of namespace sc_core
 
 #endif

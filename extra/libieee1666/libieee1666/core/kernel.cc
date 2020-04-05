@@ -260,6 +260,7 @@ sc_kernel::sc_kernel()
 
 sc_kernel::~sc_kernel()
 {
+	// deshedule all processes
 	runnable_thread_processes.clear();
 	runnable_method_processes.clear();
 	
@@ -1071,6 +1072,8 @@ void sc_kernel::unregister_method_process(sc_method_process *method_process)
 
 void sc_kernel::terminate_thread_process(sc_thread_process *thread_process)
 {
+	// deschedule thread process
+	kernel->untrigger(thread_process);
 	terminated_thread_processes.push_back(thread_process);
 }
 
@@ -1235,6 +1238,9 @@ void sc_kernel::kill_thread_process(sc_thread_process *target_thread_process)
 	}
 	else
 	{
+		// before yielding to target thread being reset, deschedule the target thread process
+		untrigger(target_thread_process);
+		
 		// kill requested by another method process or kernel
 		main_coroutine->yield(target_thread_process->coroutine);  // switch to thread being killed and let thread die (throw)
 	}
@@ -1372,6 +1378,10 @@ void sc_kernel::untrigger(sc_thread_process *thread_process)
 		{
 			runnable_thread_processes[runnable_thread_process_num] = runnable_thread_processes[runnable_thread_processes.size() - 1];
 			runnable_thread_processes.pop_back();
+			if(__LIBIEEE1666_UNLIKELY__(debug))
+			{
+				std::cerr << current_time_stamp << ":" << thread_process->name() << " is no longer runnable" << std::endl;
+			}
 			break;
 		}
 	}
@@ -1387,6 +1397,10 @@ void sc_kernel::untrigger(sc_method_process *method_process)
 		{
 			runnable_method_processes[runnable_method_process_num] = runnable_method_processes[runnable_method_processes.size() - 1];
 			runnable_method_processes.pop_back();
+			if(__LIBIEEE1666_UNLIKELY__(debug))
+			{
+				std::cerr << current_time_stamp << ":" << method_process->name() << " is no longer runnable" << std::endl;
+			}
 			break;
 		}
 	}

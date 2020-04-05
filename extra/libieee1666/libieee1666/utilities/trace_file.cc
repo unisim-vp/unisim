@@ -242,11 +242,6 @@ void sc_trace( sc_trace_file* , const unsigned long long* , const std::string& ,
 {
 }
 
-template <class T>
-void sc_trace( sc_trace_file* , const sc_signal_in_if<T>& , const std::string& )
-{
-}
-
 void sc_trace( sc_trace_file* , const sc_signal_in_if<char>& , const std::string& , int width )
 {
 }
