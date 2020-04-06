@@ -276,6 +276,8 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetBreakpoint(
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
 
+	if(HasBreakpoint(brkp)) return true; // that breakpoint is already set
+
 	if(!SetBreakpointIntoMap(addr, prc_num, front_end_num)) return false;
 
 	breakpoints[prc_num][front_end_num].insert(std::pair<ADDRESS, Breakpoint<ADDRESS> *>(addr, brkp));
@@ -298,18 +300,28 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveBreakpoi
 	typename std::pair<typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator> range = breakpoints[prc_num][front_end_num].equal_range(addr);
 	
 	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it;
+	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator found_breakpoint_it;
+	unsigned int count = 0;
 	
 	for(breakpoint_it = range.first; breakpoint_it != range.second; breakpoint_it++)
 	{
+		count++;
 		Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
 		
 		if(breakpoint == brkp)
 		{
-			return RemoveBreakpoint(addr, prc_num, front_end_num);
+			found_breakpoint_it = breakpoint_it;
 		}
 	}
 	
-	return false;
+	if(!count) return false; // not found !
+	
+	// invalidate
+	brkp->Release();
+	breakpoints[prc_num][front_end_num].erase(found_breakpoint_it);
+
+	// if that breakpoint was the only one set at that address, we update the breakpoint map
+	return (count > 1) || RemoveBreakpointFromMap(addr, prc_num, front_end_num);
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>

@@ -88,9 +88,9 @@ public:
 		
 		return ovl_lo <= ovl_hi;
 	}
-	inline bool Equals(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size)
+	inline bool Equals(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, bool _overlook)
 	{
-		return (mat == _mat) && (mt == _mt) && (addr = _addr) && (size = _size);
+		return (mat == _mat) && (mt == _mt) && (addr = _addr) && (size = _size) && (overlook == _overlook);
 	}
 	
 	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Watchpoint<ADDRESS>& wp);

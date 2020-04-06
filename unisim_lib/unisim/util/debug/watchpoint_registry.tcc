@@ -299,7 +299,7 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetWatchpoint(
 	{
 		Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
 		
-		if(watchpoint->Equals(mat, mt, addr, size))
+		if(watchpoint->Equals(mat, mt, addr, size, overlook))
 		{
 			found = true;
 			break;
@@ -333,13 +333,10 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveWatchpoi
 	
 	if(size > 0)
 	{
-		ADDRESS _addr = addr;
-		unsigned int _size = size;
-		
 		do
 		{
 			// invalidate watchpoints events that match the address, memory type, and memory access type
-			typename std::pair<typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator> range = watchpoints[prc_num][front_end_num].equal_range(_addr);
+			typename std::pair<typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator> range = watchpoints[prc_num][front_end_num].equal_range(addr);
 
 			typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator watchpoint_it = range.first;
 			
@@ -350,33 +347,18 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveWatchpoi
 				
 				Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
 				
-				if((watchpoint->GetMemoryType() == mt) && (watchpoint->GetMemoryAccessType() == mat) && watchpoint->HasOverlap(_addr))
+				if((watchpoint->GetMemoryType() == mt) && (watchpoint->GetMemoryAccessType() == mat) && watchpoint->HasOverlap(addr))
 				{
-					// invalidate
-					watchpoint->Release();
-					watchpoints[prc_num][front_end_num].erase(watchpoint_it);
+					if(!RemoveWatchpoint(watchpoint)) return false;
 				}
 				
 				watchpoint_it = next_watchpoint_it;
 			}
 			
-			_size--;
-			_addr++;
+			size--;
+			addr++;
 		}
-		while(_size > 0);
-		
-		do
-		{
-			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_WATCHPOINTS_PER_PAGE - 1));
-			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
-
-			WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *page = GetPage(mt, addr, prc_num);
-			if(!page) return false;
-
-			watchpoint_count[prc_num] -= page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz, front_end_num);
-			size -= sz;
-			addr += sz;
-		} while(size > 0);
+		while(size > 0);
 	}
 
 	return true;
@@ -401,8 +383,24 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetWatchpoint(
 	{
 		do
 		{
-			watchpoints[prc_num][front_end_num].insert(std::pair<ADDRESS, Watchpoint<ADDRESS> *>(addr, wp));
-			wp->Catch();
+			bool found = false;
+			std::pair<typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator, typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator> range = watchpoints[prc_num][front_end_num].equal_range(addr);
+
+			typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator watchpoint_it;
+			for(watchpoint_it = range.first; watchpoint_it != range.second; watchpoint_it++)
+			{
+				Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
+				if(watchpoint == wp)
+				{
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+			{
+				watchpoints[prc_num][front_end_num].insert(std::pair<ADDRESS, Watchpoint<ADDRESS> *>(addr, wp));
+				wp->Catch();
+			}
 			size--;
 			addr++;
 		}
@@ -425,30 +423,52 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveWatchpoi
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
 	
-	typename std::pair<typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator> range = watchpoints[prc_num][front_end_num].equal_range(addr);
-
-	if(range.first != range.second)
+	if(!HasWatchpoint(wp)) return false; // that watchpoint is not set
+	
+	if(size > 0)
 	{
-		// at least one watchpoint event is registered for this address, processor and front-end
-		typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator watchpoint_it = range.first;
-		
-		while(watchpoint_it != range.second)
+		do
 		{
-			typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator next_watchpoint_it = watchpoint_it;
-			next_watchpoint_it++;
+			typename std::pair<typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::iterator> range = watchpoints[prc_num][front_end_num].equal_range(addr);
 			
-			Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
+			typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator watchpoint_it;
+			typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator found_watchpoint_it;
+			unsigned int count = 0;
 			
-			if(watchpoint == wp)
+			for(watchpoint_it = range.first; watchpoint_it != range.second; watchpoint_it++)
 			{
-				return RemoveWatchpoint(mat, mt, addr, size, prc_num, front_end_num);
+				Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
+				if((watchpoint->GetMemoryType() == mt) && (watchpoint->GetMemoryAccessType() == mat) && watchpoint->HasOverlap(addr))
+				{
+					count++;
+				}
+				
+				if(watchpoint == wp)
+				{
+					found_watchpoint_it = watchpoint_it;
+				}
 			}
 			
-			watchpoint_it = next_watchpoint_it;
+			if(count)
+			{
+				// invalidate
+				wp->Release();
+				watchpoints[prc_num][front_end_num].erase(found_watchpoint_it);
+				
+				// if that watchpoint was the only one set at that address, we update the watchpoint map
+				if(count == 1)
+				{
+					if(!RemoveWatchpointFromMap(mat, mt, addr, /* size= */ 1, prc_num, front_end_num)) return false;
+				}
+			}
+			
+			size--;
+			addr++;
 		}
+		while(size > 0);
 	}
 	
-	return false;
+	return true;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
