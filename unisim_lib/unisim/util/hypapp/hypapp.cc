@@ -175,7 +175,7 @@ InputStreamBuffer::int_type InputStreamBuffer::underflow()
 
 std::streamsize InputStreamBuffer::xsgetn(char* s, std::streamsize n)
 {
-	std::streamsize m = ((pos + n) > length) ? (length - pos) : n;
+	std::streamsize m = ((pos + std::streamoff(n)) > (std::ios::beg + std::streamoff(length))) ? (std::ios::beg + std::streamoff(length) - pos) : n;
 	if(m > 0)
 	{
 		memcpy(s, buffer + pos, m);

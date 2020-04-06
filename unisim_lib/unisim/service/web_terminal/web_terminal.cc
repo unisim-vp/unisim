@@ -499,7 +499,7 @@ ScreenBufferLine& ScreenBuffer::GetLine(unsigned int line_index)
 bool ScreenBuffer::IsAtCursorLinePos(const_iterator it) const
 {
 	unsigned int cursor_line_index = height - display_height + cursor_lineno - 1;
-	return (it - Begin()) == cursor_line_index;
+	return (unsigned int)(it - Begin()) == cursor_line_index;
 }
 
 ScreenBufferLine& ScreenBuffer::operator [] (unsigned int lineno)

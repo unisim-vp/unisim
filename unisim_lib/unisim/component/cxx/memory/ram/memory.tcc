@@ -551,7 +551,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::LoadFromInputFile()
 							memory_usage += PAGE_SIZE;
 						}
 						
-						std::streamsize n = (rem_file_length > PAGE_SIZE) ? PAGE_SIZE : rem_file_length;
+						std::streamsize n = (rem_file_length > std::streamsize(PAGE_SIZE)) ? std::streamsize(PAGE_SIZE) : rem_file_length;
 						
 						input_file.read((char *) page->storage, n);
 					
