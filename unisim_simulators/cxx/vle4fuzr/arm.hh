@@ -108,7 +108,6 @@ struct ArmProcessor
   virtual void FPTrap( unsigned fpx ) override;
   void     BKPT( int );
 
-  
   // TODO:
   // SetCPSR => CPSRSetByInstriction
   // CP15 functions have access to CPU (already do privilege checks enough)

@@ -57,7 +57,7 @@ ArmProcessor::get_reg(char const* id, uintptr_t size, int regid)
         {
           static struct : public RegView
           {
-            void write( Processor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(15, value); throw InsnAbort(); }
+            void write( Processor& proc, int id, uint64_t value ) const { Self(proc).DebugBranch(value); }
             void read( Processor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetCIA(); }
           } _;
           return &_;
@@ -350,8 +350,15 @@ ArmProcessor::Step( Decoder& decoder )
 
   if (AMO<Decoder>::thumb)
     this->ITAdvance();
-  
-  this->bblock = (op->branch.target != op->branch.BNone);
+
+  if (debug_branch != uint64_t(-1))
+    {
+      this->bblock = true;
+      BranchExchange(debug_branch, B_DBG);
+      DebugBranch(-1);
+    }
+  else
+    this->bblock = (op->branch.target != op->branch.BNone);
 }
 
 template <typename Decoder>
@@ -397,17 +404,10 @@ ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
 
   do
     {
-  try
-    {
       if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
         Step(thumb_decoder);
       else
         Step(arm32_decoder);
-    }
-  catch (InsnAbort const& x)
-    {
-      this->bblock = true;
-    }
     }
   while (next_insn_addr != until and --count != 0);
 }

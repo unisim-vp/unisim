@@ -54,7 +54,7 @@ namespace concrete {
       {
         static struct : public RegView
         {
-          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).Branch(value); throw InsnAbort(); }
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).DebugBranch(value); }
           void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetCIA(); }
         } _;
         return &_;
@@ -90,72 +90,72 @@ namespace concrete {
 
     do
       {
-        try
+        // Go to the next instruction
+        uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
+        
+        // Fetch
+        CodeType insn = this->Fetch(insn_addr);
+
+        // Decode
+        uint32_t insn_idx = insn_addr/2,
+          insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
+        
+        InsnPage& page = insn_cache[insn_tag];
+        Operation* op = page.ops[insn_offset];
+        if (op and op->GetEncoding() == insn)
+          { insn_length = op->GetLength() / 8; }
+        else
           {
-            // Go to the next instruction
-            uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
-        
-            // Fetch
-            CodeType insn = this->Fetch(insn_addr);
-
-            // Decode
-            uint32_t insn_idx = insn_addr/2,
-              insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
-        
-            InsnPage& page = insn_cache[insn_tag];
-            Operation* op = page.ops[insn_offset];
-            if (op and op->GetEncoding() == insn)
-              { insn_length = op->GetLength() / 8; }
-            else
-              {
-                delete op;
-                static Decoder decoder;
-                op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
-                insn_length = op->GetLength() / 8;
+            delete op;
+            static Decoder decoder;
+            op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
+            insn_length = op->GetLength() / 8;
             
-                {
-                  static branch::Decoder bdecoder;
-                  auto bop = bdecoder.NCDecode( insn_addr, insn );
+            {
+              static branch::Decoder bdecoder;
+              auto bop = bdecoder.NCDecode( insn_addr, insn );
           
-                  branch::ActionNode root;
-                  for (bool end = false; not end;)
-                    {
-                      branch::Processor bp( root, insn_addr, insn_length );
-                      bop->execute( &bp );
-                      op->branch.update( bp.has_branch, bp.nia );
-                      end = bp.path->close();
-                    }
-    
-                  delete bop;
+              branch::ActionNode root;
+              for (bool end = false; not end;)
+                {
+                  branch::Processor bp( root, insn_addr, insn_length );
+                  bop->execute( &bp );
+                  op->branch.update( bp.has_branch, bp.nia );
+                  end = bp.path->close();
                 }
+    
+              delete bop;
+            }
             
-              }
-        
-            // Monitor
-            if (unlikely(this->disasm))
-              {
-                op->disasm(this, std::cerr << std::hex << insn_addr << ": " );
-                std::cerr << std::endl;
-              }
-
-            insn_hooks(insn_addr, insn_length);
-        
-            this->nia = this->cia + insn_length;
-        
-            /* execute the instruction */
-            if (not op->execute(this))
-              {
-                /* Process exceptions */
-                std::cerr << "Pending exceptions.\n";
-                abort("ProcessorException()");
-              }
-        
-            this->bblock = (op->branch.target != op->branch.BNone);
           }
-        catch (InsnAbort const& x)
+        
+        // Monitor
+        if (unlikely(this->disasm))
+          {
+            op->disasm(this, std::cerr << std::hex << insn_addr << ": " );
+            std::cerr << std::endl;
+          }
+
+        insn_hooks(insn_addr, insn_length);
+        
+        this->nia = this->cia + insn_length;
+        
+        /* execute the instruction */
+        if (not op->execute(this))
+          {
+            /* Process exceptions */
+            std::cerr << "Pending exceptions.\n";
+            abort("ProcessorException()");
+          }
+
+        if (debug_branch != uint64_t(-1))
           {
             this->bblock = true;
+            Branch(debug_branch);
+            DebugBranch(-1);
           }
+        else
+          this->bblock = (op->branch.target != op->branch.BNone);
       }
     while (this->nia != until and --count != 0);
   }

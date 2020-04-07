@@ -297,7 +297,6 @@ struct Processor
   }
   
   struct Abort {};
-  struct InsnAbort {};
   
   void abort(std::string _error) { error=_error; throw Abort(); }
   
@@ -356,10 +355,12 @@ struct Processor
   void insn_hooks(uint64_t addr, unsigned len);
   void syscall_hooks(uint64_t addr, unsigned num);
   
+  void DebugBranch( uint64_t target ) { debug_branch = target; }
+  uint64_t debug_branch;
+  
   void set_disasm(bool _disasm) { disasm = _disasm; }
-
-
   std::string asmbuf;
+  
   virtual char const* get_asm() = 0;
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
