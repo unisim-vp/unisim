@@ -142,7 +142,7 @@ struct JccJ : public Operation<ARCH>
   {
     typedef typename ARCH::addr_t addr_t;
     typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
-    if (arch.Cond( eval_cond( arch, cond ) ))
+    if (arch.Test( eval_cond( arch, cond ) ))
       arch.setnip( addr_t( ip_t( arch.getnip() + addr_t( offset ) ) ) ); 
   }
 };
@@ -202,11 +202,11 @@ struct Loop : public Operation<ARCH>
         arch.regwrite( COUNT(), 1, count );
       }
     // Stop if count is zero
-    if (arch.Cond( count == count_t(0) )) return;
+    if (arch.Test( count == count_t(0) )) return;
     // or ZF is set (loopne)
-    if ((MOD == 0) and arch.Cond(arch.flagread( ARCH::FLAG::ZF ) == bit_t( 1 ))) return;
+    if ((MOD == 0) and arch.Test(arch.flagread( ARCH::FLAG::ZF ) == bit_t( 1 ))) return;
     // or ZF is cleared (loope)
-    if ((MOD == 1) and arch.Cond(arch.flagread( ARCH::FLAG::ZF ) == bit_t( 0 ))) return;
+    if ((MOD == 1) and arch.Test(arch.flagread( ARCH::FLAG::ZF ) == bit_t( 0 ))) return;
     // else jump short
     arch.setnip( addr_t( ip_t( arch.getnip() + addr_t( offset ) ) ) );
   }

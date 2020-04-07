@@ -607,7 +607,7 @@ namespace ut
     }
 
     void Arch::syscall() { throw std::runtime_error("syscall"); }
-    void Arch::interrupt( uint8_t _exc ) { throw std::runtime_error("interrupt"); }
+    void Arch::interrupt( int op, int code ) { throw std::runtime_error("interrupt"); }
     void Arch::stop() { throw std::runtime_error("halt"); }
     void Arch::xgetbv() { throw std::runtime_error("xgetbv"); } 
     void Arch::cpuid() { throw std::runtime_error("cpuid"); }

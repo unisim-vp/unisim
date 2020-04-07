@@ -623,7 +623,7 @@ struct CmpXchg : public Operation<ARCH>
     auto mem_operand = arch.rmread( OP(), rm );
     typename ARCH::bit_t equal = (arch.regread( OP(), 0 ) == mem_operand);
     arch.flagwrite( ARCH::FLAG::ZF, equal );
-    if (arch.Cond( equal )) arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
+    if (arch.Test( equal )) arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
     else                 arch.regwrite( OP(), 0, mem_operand );
   }
 };
@@ -784,7 +784,7 @@ struct Cmovcc : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::u valtype;
-    valtype res = (arch.Cond( eval_cond( arch, cc ) )) ? arch.rmread( OP(), rm ) : arch.regread( OP(), gn );
+    valtype res = (arch.Test( eval_cond( arch, cc ) )) ? arch.rmread( OP(), rm ) : arch.regread( OP(), gn );
     arch.regwrite( OP(), gn, res );
   }
 };

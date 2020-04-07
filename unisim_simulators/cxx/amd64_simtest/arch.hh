@@ -1149,23 +1149,23 @@ namespace ut
     //   fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
     // }
 
-    void    unimplemented()             { throw ut::Untestable("unimplemented"); }
-    void    interrupt( uint8_t _exc )   { throw ut::Untestable("system"); }
-    void    syscall()                   { throw ut::Untestable("system"); }
-    void    cpuid()                     { throw ut::Untestable("hardware"); }
-    void    xgetbv()                    { throw ut::Untestable("hardware"); }
-    void    stop()                      { throw ut::Untestable("hardware"); }
-    void    _DE()                       { throw ut::Untestable("system"); }
+    void    unimplemented()               { throw ut::Untestable("unimplemented"); }
+    void    interrupt( int op, int code ) { throw ut::Untestable("system"); }
+    void    syscall()                     { throw ut::Untestable("system"); }
+    void    cpuid()                       { throw ut::Untestable("hardware"); }
+    void    xgetbv()                      { throw ut::Untestable("hardware"); }
+    void    stop()                        { throw ut::Untestable("hardware"); }
+    void    _DE()                         { throw ut::Untestable("system"); }
     
-    // bool Cond( bit_t b ) { return false; }
+    // bool Test( bit_t b ) { return false; }
       
     template <typename T>
-    bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )
+    bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
     {
       // if (not cond.expr.good()) throw std::logic_error( "Not a valid condition" );
-      return Cond(bit_t(cond).expr);
+      return Test(bit_t(cond).expr);
     }
-    bool Cond(Expr cond);
+    bool Test(Expr cond);
     
     void
     step( Operation const& op )
@@ -1265,7 +1265,7 @@ namespace ut
   template <class ARCH, typename INT>
   void eval_div64( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
-    if (arch.Cond(divisor == INT(0))) arch._DE();
+    if (arch.Test(divisor == INT(0))) arch._DE();
     
     INT nlo = make_weirdop<INT>("div.lo",hi,lo,divisor);
     INT nhi = make_weirdop<INT>("div.hi",hi,lo,divisor);

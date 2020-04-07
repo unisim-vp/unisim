@@ -165,7 +165,7 @@ namespace binsec {
     RegWrite( Expr const& _value ) : value(_value) {}
       
     virtual void GetRegName( std::ostream& ) const = 0;
-      
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 1; }

@@ -105,7 +105,6 @@ struct Processor
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
@@ -121,7 +120,6 @@ struct Processor
     Goto( Expr const& value ) : Br( value ) {}
     virtual Goto* Mutate() const override { return new Goto( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     virtual void annotate(std::ostream& sink) const override { return; }
   };
 

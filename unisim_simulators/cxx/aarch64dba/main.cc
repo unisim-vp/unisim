@@ -102,7 +102,6 @@ struct Processor
       Expr nvalue( ASExprNode::Simplify( value ) );
       return nvalue != value ? new RegWrite<RID>( id, nvalue ) : this;
     }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     
     RID id;
   };
@@ -116,7 +115,6 @@ struct Processor
     Goto( Expr const& value ) : unisim::util::symbolic::binsec::Branch( value ) {}
     virtual Goto* Mutate() const override { return new Goto( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     virtual void annotate(std::ostream& sink) const override { return; }
   };
 

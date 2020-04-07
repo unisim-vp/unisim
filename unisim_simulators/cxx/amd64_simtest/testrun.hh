@@ -549,7 +549,7 @@ namespace ut {
       //void                        addeip( u64_t offset ) { rip += offset; }
 
       void                        syscall();
-      void                        interrupt( uint8_t _exc );
+      void                        interrupt( int op, int code );
   
       uint64_t u64regs[16]; ///< extended reg
       
@@ -770,7 +770,7 @@ namespace ut {
       void stop();
       struct Unimplemented {};
       void noexec( Operation const& op );
-      bool Cond( bool b ) const { return b; }
+      bool Test( bool b ) const { return b; }
 
     //   // struct GDBChecker
     //   // {

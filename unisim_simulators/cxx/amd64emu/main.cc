@@ -900,7 +900,7 @@ public:
   bool do_disasm;
   uint64_t instruction_count;
 
-  bool Cond( bool b ) const { return b; }
+  bool Test( bool b ) const { return b; }
 
   // struct GDBChecker
   // {

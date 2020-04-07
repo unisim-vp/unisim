@@ -403,9 +403,9 @@ namespace ut
     
     return complete;
   }
-
+  
   bool
-  Arch::Cond(unisim::util::symbolic::Expr cond)
+  Arch::Test(unisim::util::symbolic::Expr cond)
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
       return cnode->Get( bool() );

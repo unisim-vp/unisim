@@ -172,7 +172,6 @@ struct Processor
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
@@ -188,7 +187,6 @@ struct Processor
     Goto( Expr const& value ) : Br( value ) {}
     virtual Goto* Mutate() const override { return new Goto( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     virtual void annotate(std::ostream& sink) const override { return; }
   };
 
@@ -627,7 +625,6 @@ public:
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     NeonWrite( unsigned _reg, Expr const& value ) : Super(value), reg(_reg) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
@@ -645,7 +642,6 @@ public:
 
     NeonPartialWrite( unsigned _reg, unsigned _beg, unsigned _end, Expr const& _value ) : Super(_value), reg(_reg), beg(_beg), end(_end) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg << '_' << beg << '_' << end; }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
     {

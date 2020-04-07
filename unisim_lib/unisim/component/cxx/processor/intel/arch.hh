@@ -710,7 +710,7 @@ namespace intel {
     
     void unimplemented() { throw std::runtime_error("unimplemented"); }
     
-    bool Cond( bool b ) const { return b; }
+    bool Test( bool b ) const { return b; }
     
     // Debug methods
   protected:

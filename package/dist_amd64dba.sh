@@ -49,9 +49,12 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="\
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
+arch.cc \
+decode.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+arch.hh \
 "
 
 
