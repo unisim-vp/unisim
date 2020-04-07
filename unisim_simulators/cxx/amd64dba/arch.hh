@@ -220,8 +220,10 @@ struct Processor
 
   struct RIRegID : public unisim::util::identifier::Identifier<RIRegID>
   {
-    typedef uint32_t register_type;
-    enum Code { rax = 0, rcx = 1, rdx = 2, rbx = 3, rsp = 4, rbp = 5, rsi = 6, rdi = 7, end } code;
+    typedef uint64_t register_type;
+    enum Code { rax = 0, rcx = 1, rdx = 2, rbx = 3, rsp = 4, rbp = 5, rsi = 6, rdi = 7,
+                r8, r9, r10, r11, r12, r13, r14, r15,
+                end } code;
 
     char const* c_str() const
     {
@@ -235,7 +237,15 @@ struct Processor
         case rbp: return "rbp";
         case rsi: return "rsi";
         case rdi: return "rdi";
-          
+        case r8:  return "r8";
+        case r9: return "r9";
+        case r10: return "r10";
+        case r11: return "r11";
+        case r12: return "r12";
+        case r13: return "r13";
+        case r14: return "r14";
+        case r15: return "r15";
+        
         case end: break;
         }
       return "NA";

@@ -216,6 +216,11 @@ bool
 Processor::close( Processor const& ref, uint32_t linear_nia )
 {
   bool complete = path->close();
+  
+  if (next_insn_mode == ipcall)
+    path->add_sink( new Call( next_insn_addr.expr, return_address ) );
+  else
+    path->add_sink( new Goto( next_insn_addr.expr ) );
     
   for (RIRegID reg; reg.next();)
     {
