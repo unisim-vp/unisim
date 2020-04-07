@@ -56,7 +56,7 @@ bool sc_process_owner::is_automatic() const
 }
 
 sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, sc_curr_proc_kind _process_kind, const sc_spawn_options *spawn_options)
-	: sc_object(_name)
+	: sc_object(sc_gen_unique_name(_name))
 	, process_owner(_process_owner)
 	, process_owner_method_ptr(_process_owner_method_ptr)
 	, process_kind(_process_kind)

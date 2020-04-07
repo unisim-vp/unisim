@@ -52,6 +52,7 @@ protected:
 	friend class sc_kernel;
 	
 	sc_event_finder(const sc_port_base& _port);
+	virtual ~sc_event_finder();
 
 	const sc_port_base& get_port() const;
 	const sc_port_base& port() const;
@@ -66,6 +67,7 @@ class sc_event_finder_t : public sc_event_finder
 public:
 	sc_event_finder_t(const sc_port_base& _port, const sc_event& (IF::*_event_method)() const);
 	// Other members
+	virtual ~sc_event_finder_t();
 	virtual const sc_event& find_event(sc_interface *_if = 0) const;
 private:
 	const sc_event& (IF::*event_method)() const;
@@ -77,6 +79,11 @@ template <class IF>
 sc_event_finder_t<IF>::sc_event_finder_t(const sc_port_base& _port, const sc_event& (IF::*_event_method) () const)
 	: sc_event_finder(_port)
 	, event_method(_event_method)
+{
+}
+
+template <class IF>
+sc_event_finder_t<IF>::~sc_event_finder_t()
 {
 }
 
