@@ -264,31 +264,25 @@ sc_kernel::~sc_kernel()
 	runnable_thread_processes.clear();
 	runnable_method_processes.clear();
 	
-	std::vector<sc_process_handle>::size_type num_process_handles = process_handle_table.size();
-	std::vector<sc_process_handle>::size_type process_handle_num;
-	
-	for(process_handle_num = 0; process_handle_num < num_process_handles; process_handle_num++)
+	for(process_handle_table_t::iterator it = process_handle_table.begin(); it != process_handle_table.end(); ++it)
 	{
-		sc_process_handle process_handle = process_handle_table[process_handle_num];
+		sc_process_handle process_handle = *it;
 			
 		process_handle.kill();
 	}
 	
 	process_handle_table.clear();
 	
-	std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
-	std::vector<sc_kernel_event *>::size_type delta_event_num;
-	
-	for(delta_event_num = 0; delta_event_num < num_delta_events; delta_event_num++)
+	for(delta_events_t::iterator it = delta_events.begin(); it != delta_events.end(); ++it)
 	{
-		sc_kernel_event *kernel_event = delta_events[delta_event_num];
+		sc_kernel_event *kernel_event = *it;
 		
 		kernel_events_allocator.free(kernel_event);
 	}
 
 	delta_events.clear();
 	
-	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
+	schedule_t::iterator it = schedule.begin();
 
 	if(it != schedule.end())
 	{
@@ -300,12 +294,9 @@ sc_kernel::~sc_kernel()
 		while(++it != schedule.end());
 	}
 
-	unsigned int i;
-	
-	unsigned int num_top_level_events = top_level_events.size();
-	for(i = 0; i < num_top_level_events; i++)
+	for(top_level_events_t::iterator it = top_level_events.begin(); it != top_level_events.end(); ++it)
 	{
-		sc_event *top_level_event = top_level_events[i];
+		sc_event *top_level_event = *it;
 		unregister_event(top_level_event);
 		top_level_event->kernel = 0;
 	}
@@ -326,17 +317,17 @@ sc_kernel *sc_kernel::get_kernel()
 
 void sc_kernel::push_module_name(sc_module_name *module_name)
 {
-	module_name_stack.push(module_name);
+	module_name_stack.push_back(module_name);
 }
 
 void sc_kernel::pop_module_name()
 {
-	module_name_stack.pop();
+	module_name_stack.pop_back();
 }
 
 sc_module_name *sc_kernel::get_top_of_module_name_stack() const
 {
-	sc_module_name *module_name = module_name_stack.empty() ? 0 : module_name_stack.top();
+	sc_module_name *module_name = module_name_stack.empty() ? 0 : module_name_stack.back();
 	
 	if(!module_name) throw std::runtime_error("module name stack is empty");
 	
@@ -345,17 +336,17 @@ sc_module_name *sc_kernel::get_top_of_module_name_stack() const
 
 void sc_kernel::begin_module(sc_module *module)
 {
-	module_stack.push(module);
+	module_stack.push_back(module);
 }
 
 void sc_kernel::end_module()
 {
-	module_stack.pop();
+	module_stack.pop_back();
 }
 
 sc_module *sc_kernel::get_current_module() const
 {
-	return module_stack.empty() ? 0 : module_stack.top();
+	return module_stack.empty() ? 0 : module_stack.back();
 }
 
 sc_object *sc_kernel::get_current_object() const
@@ -366,7 +357,7 @@ sc_object *sc_kernel::get_current_object() const
 	}
 	else
 	{
-		return module_stack.empty() ? 0 : module_stack.top();
+		return module_stack.empty() ? 0 : module_stack.back();
 	}
 }
 
@@ -447,67 +438,45 @@ sc_coroutine_system *sc_kernel::get_coroutine_system()
 
 void sc_kernel::report_before_end_of_elaboration()
 {
-	std::vector<sc_module *> module_table_before_end_of_elaboration = module_table;
-	std::vector<sc_port_base *> port_table_before_end_of_elaboration = port_table;
-	std::vector<sc_export_base *> export_table_before_end_of_elaboration = export_table;
-	std::vector<sc_prim_channel *> prim_channel_table_before_end_of_elaboration = prim_channel_table;
+	module_table_t module_table_before_end_of_elaboration = module_table;
+	port_table_t port_table_before_end_of_elaboration = port_table;
+	export_table_t export_table_before_end_of_elaboration = export_table;
+	prim_channel_table_t prim_channel_table_before_end_of_elaboration = prim_channel_table;
 
-	unsigned int i;
-	unsigned int num_modules = module_table_before_end_of_elaboration.size();
-	for(i = 0; i < num_modules; i++) module_table_before_end_of_elaboration[i]->before_end_of_elaboration();
-	unsigned int num_ports = port_table_before_end_of_elaboration.size();
-	for(i = 0; i < num_ports; i++) port_table_before_end_of_elaboration[i]->before_end_of_elaboration();
-	unsigned int num_exports = port_table_before_end_of_elaboration.size();
-	for(i = 0; i < num_exports; i++) port_table_before_end_of_elaboration[i]->before_end_of_elaboration();
-	unsigned int num_prim_channels = prim_channel_table_before_end_of_elaboration.size();
-	for(i = 0; i < num_prim_channels; i++) prim_channel_table_before_end_of_elaboration[i]->before_end_of_elaboration();
+	for(module_table_t::iterator it = module_table_before_end_of_elaboration.begin(); it != module_table_before_end_of_elaboration.end(); ++it) (*it)->before_end_of_elaboration();
+	for(port_table_t::iterator it = port_table_before_end_of_elaboration.begin(); it != port_table_before_end_of_elaboration.end(); ++it) (*it)->before_end_of_elaboration();
+	for(export_table_t::iterator it = export_table_before_end_of_elaboration.begin(); it != export_table_before_end_of_elaboration.end(); ++it) (*it)->before_end_of_elaboration();
+	for(prim_channel_table_t::iterator it = prim_channel_table_before_end_of_elaboration.begin(); it != prim_channel_table_before_end_of_elaboration.end(); ++it) (*it)->before_end_of_elaboration();
 }
 
 void sc_kernel::report_end_of_elaboration()
 {
-	unsigned int i;
-	unsigned int num_modules = module_table.size();
-	for(i = 0; i < num_modules; i++) module_table[i]->end_of_elaboration();
-	unsigned int num_ports = port_table.size();
-	for(i = 0; i < num_ports; i++) port_table[i]->end_of_elaboration();
-	unsigned int num_exports = port_table.size();
-	for(i = 0; i < num_exports; i++) port_table[i]->end_of_elaboration();
-	unsigned int num_prim_channels = prim_channel_table.size();
-	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->end_of_elaboration();
+	for(module_table_t::iterator it = module_table.begin(); it != module_table.end(); ++it) (*it)->end_of_elaboration();
+	for(port_table_t::iterator it = port_table.begin(); it != port_table.end(); ++it) (*it)->end_of_elaboration();
+	for(export_table_t::iterator it = export_table.begin(); it != export_table.end(); ++it) (*it)->end_of_elaboration();
+	for(prim_channel_table_t::iterator it = prim_channel_table.begin(); it != prim_channel_table.end(); ++it) (*it)->end_of_elaboration();
 }
 
 void sc_kernel::report_start_of_simulation()
 {
-	unsigned int i;
-	unsigned int num_modules = module_table.size();
-	for(i = 0; i < num_modules; i++) module_table[i]->start_of_simulation();
-	unsigned int num_ports = port_table.size();
-	for(i = 0; i < num_ports; i++) port_table[i]->start_of_simulation();
-	unsigned int num_exports = port_table.size();
-	for(i = 0; i < num_exports; i++) port_table[i]->start_of_simulation();
-	unsigned int num_prim_channels = prim_channel_table.size();
-	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->start_of_simulation();
+	for(module_table_t::iterator it = module_table.begin(); it != module_table.end(); ++it) (*it)->start_of_simulation();
+	for(port_table_t::iterator it = port_table.begin(); it != port_table.end(); ++it) (*it)->start_of_simulation();
+	for(export_table_t::iterator it = export_table.begin(); it != export_table.end(); ++it) (*it)->start_of_simulation();
+	for(prim_channel_table_t::iterator it = prim_channel_table.begin(); it != prim_channel_table.end(); ++it) (*it)->start_of_simulation();
 	start_of_simulation_invoked = true;
 }
 
 void sc_kernel::report_end_of_simulation()
 {
-	unsigned int i;
-	unsigned int num_modules = module_table.size();
-	for(i = 0; i < num_modules; i++) module_table[i]->end_of_simulation();
-	unsigned int num_ports = port_table.size();
-	for(i = 0; i < num_ports; i++) port_table[i]->end_of_simulation();
-	unsigned int num_exports = port_table.size();
-	for(i = 0; i < num_exports; i++) port_table[i]->end_of_simulation();
-	unsigned int num_prim_channels = prim_channel_table.size();
-	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->end_of_simulation();
+	for(module_table_t::iterator it = module_table.begin(); it != module_table.end(); ++it) (*it)->end_of_simulation();
+	for(port_table_t::iterator it = port_table.begin(); it != port_table.end(); ++it) (*it)->end_of_simulation();
+	for(export_table_t::iterator it = export_table.begin(); it != export_table.end(); ++it) (*it)->end_of_simulation();
+	for(prim_channel_table_t::iterator it = prim_channel_table.begin(); it != prim_channel_table.end(); ++it) (*it)->end_of_simulation();
 	end_of_simulation_invoked = true;
 }
 
 void sc_kernel::initialize()
 {
-	unsigned int i;
-	
 	if(__LIBIEEE1666_UNLIKELY__(debug))
 	{
 		std::cerr << current_time_stamp << ":before end of elaboration" << std::endl;
@@ -515,31 +484,21 @@ void sc_kernel::initialize()
 	status = SC_BEFORE_END_OF_ELABORATION;
 	report_before_end_of_elaboration();
 	
-	unsigned int num_modules = module_table.size();
-	for(i = 0; i < num_modules; i++)
+	for(port_table_t::iterator it = port_table.begin(); it != port_table.end(); ++it)
 	{
-		sc_module *module =	module_table[i];
-		
-		module->before_end_of_elaboration();
-	}
-	
-	unsigned int num_ports = port_table.size();
-	for(i = 0; i < num_ports; i++)
-	{
-		port_table[i]->finalize_elaboration();
+		sc_port_base *port = *it;
+		port->finalize_elaboration();
 	}
 
-	unsigned int num_thread_processes = thread_process_table.size();
-	for(i = 0; i < num_thread_processes; i++)
+	for(thread_process_table_t::iterator it = thread_process_table.begin(); it != thread_process_table.end(); ++it)
 	{
-		sc_thread_process *thread_process = thread_process_table[i];
+		sc_thread_process *thread_process = *it;
 		thread_process->finalize_elaboration();
 	}
 
-	unsigned int num_method_processes = method_process_table.size();
-	for(i = 0; i < num_method_processes; i++)
+	for(method_process_table_t::iterator it = method_process_table.begin(); it != method_process_table.end(); ++it)
 	{
-		sc_method_process *method_process = method_process_table[i];
+		sc_method_process *method_process = *it;
 		method_process->finalize_elaboration();
 	}
 
@@ -550,13 +509,6 @@ void sc_kernel::initialize()
 	status = SC_END_OF_ELABORATION;
 	report_end_of_elaboration();
 	
-	for(i = 0; i < num_modules; i++)
-	{
-		sc_module *module =	module_table[i];
-		
-		module->end_of_elaboration();
-	}
-
 	// time resolution can no longer change
 	time_resolution_fixed = true;
 
@@ -571,10 +523,9 @@ void sc_kernel::initialize()
 	do_update_phase();
 	
 	// make all method processes runnable except those that are 'dont_initialize'
-	num_method_processes = method_process_table.size();
-	for(i = 0; i < num_method_processes; i++)
+	for(method_process_table_t::iterator it = method_process_table.begin(); it != method_process_table.end(); ++it)
 	{
-		sc_method_process *method_process = method_process_table[i];
+		sc_method_process *method_process = *it;
 		
 		if(!method_process->dont_initialize())
 		{
@@ -583,10 +534,9 @@ void sc_kernel::initialize()
 	}
 
 	// make all thread processes runnable except those that are 'dont_initialize'
-	num_thread_processes = thread_process_table.size();
-	for(i = 0; i < num_thread_processes; i++)
+	for(thread_process_table_t::iterator it = thread_process_table.begin(); it != thread_process_table.end(); ++it)
 	{
-		sc_thread_process *thread_process = thread_process_table[i];
+		sc_thread_process *thread_process = *it;
 
 		if(!thread_process->dont_initialize())
 		{
@@ -673,13 +623,11 @@ void sc_kernel::do_update_phase()
 		std::cerr << current_time_stamp << ":update phase" << std::endl;
 	}
 	
-	std::vector<sc_prim_channel *>::size_type num_updatable_prim_channels = updatable_prim_channels.size();
-	if(num_updatable_prim_channels)
+	if(updatable_prim_channels.size())
 	{
-		std::vector<sc_prim_channel *>::size_type i;
-		for(i = 0; i < num_updatable_prim_channels; i++)
+		for(updatable_prim_channels_t::iterator it = updatable_prim_channels.begin(); it != updatable_prim_channels.end(); ++it)
 		{
-			sc_prim_channel *prim_channel = updatable_prim_channels[i];
+			sc_prim_channel *prim_channel = *it;
 			prim_channel->update_requested = false;
 			
 			if(__LIBIEEE1666_UNLIKELY__(debug))
@@ -701,13 +649,11 @@ void sc_kernel::do_delta_notification_phase()
 		std::cerr << current_time_stamp << ":delta notifitication phase" << std::endl;
 	}
 	
-	std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
-	if(num_delta_events)
+	if(delta_events.size())
 	{
-		std::vector<sc_kernel_event *>::size_type i;
-		for(i = 0; i < num_delta_events; i++)
+		for(delta_events_t::iterator it = delta_events.begin(); it != delta_events.end(); ++it)
 		{
-			sc_kernel_event *kernel_event = delta_events[i];
+			sc_kernel_event *kernel_event = *it;
 			
 			sc_event *e = kernel_event->get_event();
 			
@@ -756,7 +702,7 @@ bool sc_kernel::do_timed_notification_phase()
 	{
 		std::cerr << current_time_stamp << ":timed notification phase" << std::endl;
 	}
-	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
+	schedule_t::iterator it = schedule.begin();
 
 	if(it == schedule.end()) return false;
 	
@@ -850,7 +796,7 @@ void sc_kernel::register_object(sc_object *object)
 		throw std::runtime_error("object or an object with same name is already registered");
 	}
 	
-	object_registry.insert(std::pair<std::string, sc_object *>(object->name(), object));
+	object_registry.insert(object_registry_t::value_type(object->name(), object));
 
 	if(!object->get_parent_object())
 	{
@@ -866,7 +812,7 @@ void sc_kernel::register_event(sc_event *event)
 		throw std::runtime_error("event or an event with same name is already registered");
 	}
 
-	event_registry.insert(std::pair<std::string, sc_event *>(event_name, event));
+	event_registry.insert(event_registry_t::value_type(event_name, event));
 
 	if(!event->get_parent_object())
 	{
@@ -915,7 +861,7 @@ void sc_kernel::register_method_process(sc_method_process *method_process)
 
 void sc_kernel::unregister_object(sc_object *object)
 {
-	std::map<std::string, sc_object *>::iterator it = object_registry.find(object->name());
+	object_registry_t::iterator it = object_registry.find(object->name());
 	
 	if(it != object_registry.end())
 	{
@@ -928,13 +874,11 @@ void sc_kernel::unregister_object(sc_object *object)
 	
 	if(!object->get_parent_object())
 	{
-		unsigned int num_top_level_objects = top_level_objects.size();
-		unsigned int i;
-		for(i = 0; i < num_top_level_objects; i++)
+		for(top_level_objects_t::iterator it = top_level_objects.begin(); it != top_level_objects.end(); ++it)
 		{
-			if(top_level_objects[i] == object)
+			if((*it) == object)
 			{
-				top_level_objects[i] = top_level_objects[num_top_level_objects - 1];
+				*it = top_level_objects.back();
 				top_level_objects.pop_back();
 				break;
 			}
@@ -947,7 +891,7 @@ void sc_kernel::unregister_object(sc_object *object)
 void sc_kernel::unregister_event(sc_event *event)
 {
 	std::string event_name(event->name());
-	std::map<std::string, sc_event *>::iterator it = event_registry.find(event_name);
+	event_registry_t::iterator it = event_registry.find(event_name);
 	
 	if(it != event_registry.end())
 	{
@@ -960,13 +904,11 @@ void sc_kernel::unregister_event(sc_event *event)
 	
 	if(!event->get_parent_object())
 	{
-		unsigned int num_top_level_events = top_level_events.size();
-		unsigned int i;
-		for(i = 0; i < num_top_level_events; i++)
+		for(top_level_events_t::iterator it = top_level_events.begin(); it != top_level_events.end(); ++it)
 		{
-			if(top_level_events[i] == event)
+			if((*it) == event)
 			{
-				top_level_events[i] = top_level_events[num_top_level_events - 1];
+				*it = top_level_events.back();
 				top_level_events.pop_back();
 				break;
 			}
@@ -976,14 +918,11 @@ void sc_kernel::unregister_event(sc_event *event)
 
 void sc_kernel::unregister_module(sc_module *module)
 {
-	unsigned int num_modules = module_table.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_modules; i++)
+	for(module_table_t::iterator it = module_table.begin(); it != module_table.end(); ++it)
 	{
-		if(module_table[i] == module)
+		if((*it) == module)
 		{
-			module_table[i] = module_table[num_modules - 1];
+			*it = module_table.back();
 			module_table.pop_back();
 			break;
 		}
@@ -992,14 +931,11 @@ void sc_kernel::unregister_module(sc_module *module)
 
 void sc_kernel::unregister_port(sc_port_base *port)
 {
-	unsigned int num_ports = port_table.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_ports; i++)
+	for(port_table_t::iterator it = port_table.begin(); it != port_table.end(); ++it)
 	{
-		if(port_table[i] == port)
+		if((*it) == port)
 		{
-			port_table[i] = port_table[num_ports - 1];
+			*it = port_table.back();
 			port_table.pop_back();
 			break;
 		}
@@ -1008,14 +944,11 @@ void sc_kernel::unregister_port(sc_port_base *port)
 
 void sc_kernel::unregister_export(sc_export_base *exp)
 {
-	unsigned int num_exports = export_table.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_exports; i++)
+	for(export_table_t::iterator it = export_table.begin(); it != export_table.end(); ++it)
 	{
-		if(export_table[i] == exp)
+		if((*it) == exp)
 		{
-			export_table[i] = export_table[num_exports - 1];
+			*it = export_table.back();
 			export_table.pop_back();
 			break;
 		}
@@ -1024,14 +957,11 @@ void sc_kernel::unregister_export(sc_export_base *exp)
 
 void sc_kernel::unregister_prim_channel(sc_prim_channel *prim_channel)
 {
-	unsigned int num_prim_channels = prim_channel_table.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_prim_channels; i++)
+	for(prim_channel_table_t::iterator it = prim_channel_table.begin(); it != prim_channel_table.end(); ++it)
 	{
-		if(prim_channel_table[i] == prim_channel)
+		if((*it) == prim_channel)
 		{
-			prim_channel_table[i] = prim_channel_table[num_prim_channels - 1];
+			*it = prim_channel_table.back();
 			prim_channel_table.pop_back();
 			break;
 		}
@@ -1040,14 +970,11 @@ void sc_kernel::unregister_prim_channel(sc_prim_channel *prim_channel)
 
 void sc_kernel::unregister_thread_process(sc_thread_process *thread_process)
 {
-	unsigned int num_thread_processes = thread_process_table.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_thread_processes; i++)
+	for(thread_process_table_t::iterator it = thread_process_table.begin(); it != thread_process_table.end(); ++it)
 	{
-		if(thread_process_table[i] == thread_process)
+		if((*it) == thread_process)
 		{
-			thread_process_table[i] = thread_process_table[num_thread_processes - 1];
+			*it = thread_process_table.back();
 			thread_process_table.pop_back();
 			break;
 		}
@@ -1056,14 +983,11 @@ void sc_kernel::unregister_thread_process(sc_thread_process *thread_process)
 
 void sc_kernel::unregister_method_process(sc_method_process *method_process)
 {
-	unsigned int num_method_processes = method_process_table.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_method_processes; i++)
+	for(method_process_table_t::iterator it = method_process_table.begin(); it != method_process_table.end(); ++it)
 	{
-		if(method_process_table[i] == method_process)
+		if((*it) == method_process)
 		{
-			method_process_table[i] = method_process_table[num_method_processes - 1];
+			*it = method_process_table.back();
 			method_process_table.pop_back();
 			break;
 		}
@@ -1084,9 +1008,7 @@ void sc_kernel::terminate_method_process(sc_method_process *method_process)
 
 void sc_kernel::disconnect_thread_process(sc_thread_process *thread_process)
 {
-	std::map<std::string, sc_event *>::iterator event_it;
-	
-	for(event_it = event_registry.begin(); event_it != event_registry.end(); event_it++)
+	for(event_registry_t::iterator event_it = event_registry.begin(); event_it != event_registry.end(); ++event_it)
 	{
 		sc_event *event = (*event_it).second;
 		
@@ -1099,9 +1021,7 @@ void sc_kernel::disconnect_thread_process(sc_thread_process *thread_process)
 
 void sc_kernel::disconnect_method_process(sc_method_process *method_process)
 {
-	std::map<std::string, sc_event *>::iterator event_it;
-	
-	for(event_it = event_registry.begin(); event_it != event_registry.end(); event_it++)
+	for(event_registry_t::iterator event_it = event_registry.begin(); event_it != event_registry.end(); ++event_it)
 	{
 		sc_event *event = (*event_it).second;
 		
@@ -1114,23 +1034,19 @@ void sc_kernel::disconnect_method_process(sc_method_process *method_process)
 
 void sc_kernel::release_terminated_thread_processes()
 {
-	std::vector<sc_thread_process *>::size_type num_terminated_thread_processes = terminated_thread_processes.size();
-	std::vector<sc_thread_process *>::size_type terminated_thread_process_num;
-	for(terminated_thread_process_num = 0; terminated_thread_process_num < num_terminated_thread_processes; terminated_thread_process_num++)
+	for(terminated_thread_processes_t::iterator it = terminated_thread_processes.begin(); it != terminated_thread_processes.end(); ++it)
 	{
-		sc_thread_process *thread_process = terminated_thread_processes[terminated_thread_process_num];
+		sc_thread_process *thread_process = *it;
 
 		disconnect_thread_process(thread_process);
 		
 		sc_process_handle process_handle(thread_process);
 
-		std::vector<sc_thread_process *>::size_type num_process_handles = process_handle_table.size();
-		std::vector<sc_thread_process *>::size_type process_handle_num;
-		for(process_handle_num = 0; process_handle_num < num_process_handles; process_handle_num++)
+		for(process_handle_table_t::iterator handle_it = process_handle_table.begin(); handle_it != process_handle_table.end(); ++handle_it)
 		{
-			if(process_handle == process_handle_table[process_handle_num])
+			if(process_handle == (*handle_it))
 			{
-				process_handle_table[process_handle_num] = process_handle_table[num_process_handles - 1];
+				*handle_it = process_handle_table.back();
 				process_handle_table.pop_back();
 				break;
 			}
@@ -1142,23 +1058,19 @@ void sc_kernel::release_terminated_thread_processes()
 
 void sc_kernel::release_terminated_method_processes()
 {
-	std::vector<sc_method_process *>::size_type num_terminated_method_processes = terminated_method_processes.size();
-	std::vector<sc_method_process *>::size_type terminated_method_process_num;
-	for(terminated_method_process_num = 0; terminated_method_process_num < num_terminated_method_processes; terminated_method_process_num++)
+	for(terminated_method_processes_t::iterator it = terminated_method_processes.begin(); it != terminated_method_processes.end(); ++it)
 	{
-		sc_method_process *method_process = terminated_method_processes[terminated_method_process_num];
+		sc_method_process *method_process = *it;
 
 		disconnect_method_process(method_process);
 		
 		sc_process_handle process_handle(method_process);
 
-		std::vector<sc_method_process *>::size_type num_process_handles = process_handle_table.size();
-		std::vector<sc_method_process *>::size_type process_handle_num;
-		for(process_handle_num = 0; process_handle_num < num_process_handles; process_handle_num++)
+		for(process_handle_table_t::iterator it_handle = process_handle_table.begin(); it_handle != process_handle_table.end(); ++it_handle)
 		{
-			if(process_handle == process_handle_table[process_handle_num])
+			if(process_handle == (*it_handle))
 			{
-				process_handle_table[process_handle_num] = process_handle_table[num_process_handles - 1];
+				*it_handle = process_handle_table.back();
 				process_handle_table.pop_back();
 				break;
 			}
@@ -1370,13 +1282,11 @@ const sc_time& sc_kernel::get_max_time() const
 
 void sc_kernel::untrigger(sc_thread_process *thread_process)
 {
-	std::vector<sc_thread_process *>::size_type num_runnable_thread_processes = runnable_thread_processes.size();
-	std::vector<sc_thread_process *>::size_type runnable_thread_process_num;
-	for(runnable_thread_process_num = 0; runnable_thread_process_num < num_runnable_thread_processes; runnable_thread_process_num++)
+	for(runnable_thread_processes_t::iterator it = runnable_thread_processes.begin(); it != runnable_thread_processes.end(); ++it)
 	{
-		if(runnable_thread_processes[runnable_thread_process_num] == thread_process)
+		if((*it) == thread_process)
 		{
-			runnable_thread_processes[runnable_thread_process_num] = runnable_thread_processes[runnable_thread_processes.size() - 1];
+			*it = runnable_thread_processes.back();
 			runnable_thread_processes.pop_back();
 			if(__LIBIEEE1666_UNLIKELY__(debug))
 			{
@@ -1389,13 +1299,11 @@ void sc_kernel::untrigger(sc_thread_process *thread_process)
 
 void sc_kernel::untrigger(sc_method_process *method_process)
 {
-	std::vector<sc_method_process *>::size_type num_runnable_method_processes = runnable_method_processes.size();
-	std::vector<sc_method_process *>::size_type runnable_method_process_num;
-	for(runnable_method_process_num = 0; runnable_method_process_num < num_runnable_method_processes; runnable_method_process_num++)
+	for(runnable_method_processes_t::iterator it = runnable_method_processes.begin(); it != runnable_method_processes.end(); ++it)
 	{
-		if(runnable_method_processes[runnable_method_process_num] == method_process)
+		if((*it) == method_process)
 		{
-			runnable_method_processes[runnable_method_process_num] = runnable_method_processes[runnable_method_processes.size() - 1];
+			*it = runnable_method_processes.back();
 			runnable_method_processes.pop_back();
 			if(__LIBIEEE1666_UNLIKELY__(debug))
 			{
@@ -1479,7 +1387,7 @@ sc_dt::uint64 sc_kernel::get_delta_count() const
 
 bool sc_kernel::pending_activity_at_current_time() const
 {
-	std::multimap<sc_time, sc_timed_kernel_event *>::const_iterator it = schedule.begin();
+	schedule_t::const_iterator it = schedule.begin();
 
 	if(it != schedule.end())
 	{
@@ -1492,7 +1400,7 @@ bool sc_kernel::pending_activity_at_current_time() const
 
 bool sc_kernel::pending_activity_at_future_time() const
 {
-	std::multimap<sc_time, sc_timed_kernel_event *>::const_iterator it = schedule.begin();
+	schedule_t::const_iterator it = schedule.begin();
 
 	if(it != schedule.end())
 	{
@@ -1510,7 +1418,7 @@ bool sc_kernel::pending_activity() const
 
 sc_time sc_kernel::time_to_pending_activity() const
 {
-	std::multimap<sc_time, sc_timed_kernel_event *>::const_iterator it = schedule.begin();
+	schedule_t::const_iterator it = schedule.begin();
 
 	if(it != schedule.end())
 	{
@@ -1533,25 +1441,14 @@ const std::vector<sc_event*>& sc_kernel::get_top_level_events() const
 
 sc_object *sc_kernel::find_object(const char* name) const
 {
-	std::map<std::string, sc_object *>::const_iterator it = object_registry.find(name);
+	object_registry_t::const_iterator it = object_registry.find(name);
 	
 	return (it != object_registry.end()) ? (*it).second : 0;
-// 	unsigned int n_top_level_objects = top_level_objects.size();
-// 	unsigned int i;
-// 	for(i = 0; i < n_top_level_objects; i++)
-// 	{
-// 		sc_object *object = top_level_objects[i];
-// 		if(strcmp(object->name(), name) == 0) return object;
-// 		
-// 		sc_object *found_child_object = object->find_child_object(name);
-// 		if(found_child_object) return found_child_object;
-// 	}
-// 	return 0;
 }
 
 sc_event *sc_kernel::find_event(const char *name) const
 {
-	std::map<std::string, sc_event *>::const_iterator it = event_registry.find(name);
+	event_registry_t::const_iterator it = event_registry.find(name);
 	
 	return (it != event_registry.end()) ? (*it).second : 0;
 }
@@ -1575,7 +1472,7 @@ const char* sc_kernel::gen_unique_name( const char* seed ) const
 	
 	std::string s;
 	
-	std::map<std::string, unsigned int>::iterator it = unique_name_map.find(seed);
+	unique_name_map_t::iterator it = unique_name_map.find(seed);
 	
 	unsigned int id;
 	
@@ -1586,7 +1483,7 @@ const char* sc_kernel::gen_unique_name( const char* seed ) const
 	else
 	{
 		id = 0;
-		unique_name_map.insert(std::pair<std::string, unsigned int>(seed, id));
+		unique_name_map.insert(unique_name_map_t::value_type(seed, id));
 	}
 	
 	std::stringstream sstr;
@@ -1597,17 +1494,14 @@ const char* sc_kernel::gen_unique_name( const char* seed ) const
 
 void sc_kernel::dump_hierarchy(std::ostream& os) const
 {
-	unsigned int i;
-	unsigned int num_top_level_events = top_level_events.size();
-	for(i = 0; i < num_top_level_events; i++)
+	for(top_level_events_t::const_iterator it = top_level_events.begin(); it != top_level_events.end(); ++it)
 	{
-		sc_event *top_level_event = top_level_events[i];
+		sc_event *top_level_event = *it;
 		os << "- event " << top_level_event->name() << std::endl;
 	}
-	unsigned int num_top_level_objects = top_level_objects.size();
-	for(i = 0; i < num_top_level_objects; i++)
+	for(top_level_objects_t::const_iterator it = top_level_objects.begin(); it != top_level_objects.end(); ++it)
 	{
-		sc_object *object = top_level_objects[i];
+		sc_object *object = *it;
 		object->dump_hierarchy(os);
 	}
 }

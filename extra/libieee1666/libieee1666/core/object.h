@@ -78,8 +78,10 @@ private:
 	friend class sc_event;
 	
 	std::string object_name;
-	std::vector<sc_object *> child_objects;
-	std::vector<sc_event *> child_events;
+	typedef std::vector<sc_object *> child_objects_t;
+	child_objects_t child_objects;
+	typedef std::vector<sc_event *> child_events_t;
+	child_events_t child_events;
 	sc_attr_cltn attributes;
 	sc_object *parent_object;
 	
