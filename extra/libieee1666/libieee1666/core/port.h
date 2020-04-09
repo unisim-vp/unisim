@@ -107,8 +107,10 @@ private:
 	int max_bindings;
 	sc_port_policy port_policy;
 	bool terminal_inner_port;                                   // true if not bound to an outer ports (may change during elaboration)
-	mutable std::list<sc_port_binding *> port_bindings;         // port binding as of elaboration time
-	mutable std::vector<sc_process_static_sensitivity *> processes_static_sensitivity; // process sensitivity as of elaboration time
+	typedef std::list<sc_port_binding *> port_bindings_t;
+	mutable port_bindings_t port_bindings;         // port binding as of elaboration time
+	typedef std::vector<sc_process_static_sensitivity *> processes_static_sensitivity_t;
+	mutable processes_static_sensitivity_t processes_static_sensitivity; // process sensitivity as of elaboration time
 	bool elaboration_finalized;
 	
 	void add_process_statically_sensitive_to_port(sc_process *process) const;

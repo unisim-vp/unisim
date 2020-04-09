@@ -123,13 +123,11 @@ void sc_process::suspend(sc_descendant_inclusion_info include_descendants)
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
+		const std::vector<sc_object *>& child_objects = get_child_objects();
 
-		for(i = 0; i < num_child_objects; i++)
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -148,13 +146,11 @@ void sc_process::resume(sc_descendant_inclusion_info include_descendants)
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
+		const std::vector<sc_object *>& child_objects = get_child_objects();
 
-		for(i = 0; i < num_child_objects; i++)
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -173,13 +169,11 @@ void sc_process::disable(sc_descendant_inclusion_info include_descendants)
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
-
-		for(i = 0; i < num_child_objects; i++)
+		const std::vector<sc_object *>& child_objects = get_child_objects();
+		
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -198,13 +192,11 @@ void sc_process::enable(sc_descendant_inclusion_info include_descendants)
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
+		const std::vector<sc_object *>& child_objects = get_child_objects();
 
-		for(i = 0; i < num_child_objects; i++)
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -223,13 +215,11 @@ void sc_process::kill(sc_descendant_inclusion_info include_descendants)
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
+		const std::vector<sc_object *>& child_objects = get_child_objects();
 
-		for(i = 0; i < num_child_objects; i++)
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -248,13 +238,11 @@ void sc_process::reset(sc_descendant_inclusion_info include_descendants)
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
+		const std::vector<sc_object *>& child_objects = get_child_objects();
 
-		for(i = 0; i < num_child_objects; i++)
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -273,13 +261,11 @@ void sc_process::throw_it(const sc_user_exception& user_defined_exception, sc_de
 {
 	if(include_descendants == SC_INCLUDE_DESCENDANTS)
 	{
-		const std::vector<sc_object *> child_objects = get_child_objects();
-		unsigned int num_child_objects = child_objects.size();
-		unsigned int i;
+		const std::vector<sc_object *>& child_objects = get_child_objects();
 
-		for(i = 0; i < num_child_objects; i++)
+		for(std::vector<sc_object *>::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 		{
-			sc_object *child_object = child_objects[i];
+			sc_object *child_object = *it;
 			
 			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
 			
@@ -373,52 +359,47 @@ void sc_process::make_statically_sensitive(const sc_event_finder& event_finder)
 
 void sc_process::make_statically_sensitive(const sc_spawn_options *spawn_options)
 {
-	unsigned int i;
-	
 	const std::vector<const sc_event *>& sensitive_events = spawn_options->get_sensitive_events();
-	unsigned int num_sensitive_events = sensitive_events.size();
-	for(i = 0; i <num_sensitive_events; i++)
+	for(std::vector<const sc_event *>::const_iterator it = sensitive_events.begin(); it != sensitive_events.end(); ++it)
 	{
-		make_statically_sensitive(*sensitive_events[i]);
+		const sc_event& event = **it;
+		make_statically_sensitive(event);
 	}
 
 	const std::vector<const sc_port_base *>& sensitive_ports = spawn_options->get_sensitive_ports();
-	unsigned int num_sensitive_ports = sensitive_ports.size();
-	for(i = 0; i <num_sensitive_ports; i++)
+	for(std::vector<const sc_port_base *>::const_iterator it = sensitive_ports.begin(); it != sensitive_ports.end(); ++it)
 	{
-		make_statically_sensitive(*sensitive_ports[i]);
+		const sc_port_base& port = **it;
+		make_statically_sensitive(port);
 	}
 
 	const std::vector<const sc_export_base *>& sensitive_exports = spawn_options->get_sensitive_exports();
-	unsigned int num_sensitive_exports = sensitive_exports.size();
-	for(i = 0; i <num_sensitive_exports; i++)
+	for(std::vector<const sc_export_base *>::const_iterator it = sensitive_exports.begin(); it != sensitive_exports.end(); ++it)
 	{
-		make_statically_sensitive(*sensitive_exports[i]);
+		const sc_export_base& exp = **it;
+		make_statically_sensitive(exp);
 	}
 
 	const std::vector<const sc_interface *>& sensitive_interfaces = spawn_options->get_sensitive_interfaces();
-	unsigned int num_sensitive_interfaces = sensitive_interfaces.size();
-	for(i = 0; i <num_sensitive_interfaces; i++)
+	for(std::vector<const sc_interface *>::const_iterator it = sensitive_interfaces.begin(); it != sensitive_interfaces.end(); ++it)
 	{
-		make_statically_sensitive(*sensitive_interfaces[i]);
+		const sc_interface& itf = **it;
+		make_statically_sensitive(itf);
 	}
 
 	const std::vector<const sc_event_finder *>& sensitive_event_finders = spawn_options->get_sensitive_event_finders();
-	unsigned int num_sensitive_event_finders = sensitive_event_finders.size();
-	for(i = 0; i <num_sensitive_event_finders; i++)
+	for(std::vector<const sc_event_finder *>::const_iterator it = sensitive_event_finders.begin(); it != sensitive_event_finders.end(); ++it)
 	{
-		make_statically_sensitive(*sensitive_event_finders[i]);
+		const sc_event_finder& event_finder = **it;
+		make_statically_sensitive(event_finder);
 	}
 }
 
 void sc_process::finalize_elaboration()
 {
-	unsigned int num_process_reset_bind_infos = process_reset_bind_infos.size();
-	unsigned int i;
-	
-	for(i = 0; i < num_process_reset_bind_infos; i++)
+	for(process_reset_bind_infos_t::iterator it = process_reset_bind_infos.begin(); it != process_reset_bind_infos.end(); ++it)
 	{
-		const sc_process_reset_bind_info& process_reset_bind_info = process_reset_bind_infos[i];
+		const sc_process_reset_bind_info& process_reset_bind_info = *it;
 		
 		sc_signal_in_if<bool> *signal_in_if = 0;
 		

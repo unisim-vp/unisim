@@ -38,12 +38,9 @@
 #include "core/fwd.h"
 #include "core/time.h"
 #include "core/allocator.h"
-#include <stack>
 #include <vector>
 #include <iosfwd>
 #include <map>
-#include <deque>
-#include <set>
 #include "core/kernel_event.h"
 #include "core/thread_process.h"
 #include "core/method_process.h"
@@ -227,24 +224,38 @@ private:
 	friend int sc_elab_and_sim(int _argc, char* _argv[]);
 	
 	// elaboration
-	std::stack<sc_module_name *> module_name_stack;
-	std::stack<sc_module *> module_stack;
+	typedef std::vector<sc_module_name *> module_name_stack_t;
+	module_name_stack_t module_name_stack;
+	typedef std::vector<sc_module *> module_stack_t;
+	module_stack_t module_stack;
 
 	// unique name map: name_#
-	mutable std::map<std::string, unsigned int> unique_name_map;
+	typedef std::map<std::string, unsigned int> unique_name_map_t;
+	mutable unique_name_map_t unique_name_map;
 
 	// all simulation objects
-	std::vector<sc_object *> top_level_objects;
-	std::vector<sc_event *> top_level_events;
-	std::map<std::string, sc_object *> object_registry;
-	std::map<std::string, sc_event *> event_registry;
-	std::vector<sc_module *> module_table;
-	std::vector<sc_port_base *> port_table;
-	std::vector<sc_export_base *> export_table;
-	std::vector<sc_prim_channel *> prim_channel_table;
-	std::vector<sc_thread_process *> thread_process_table;
-	std::vector<sc_method_process *> method_process_table;
-	std::vector<sc_process_handle> process_handle_table;
+	typedef std::vector<sc_object *> top_level_objects_t;
+	top_level_objects_t top_level_objects;
+	typedef std::vector<sc_event *> top_level_events_t;
+	top_level_events_t top_level_events;
+	typedef std::map<std::string, sc_object *> object_registry_t;
+	object_registry_t object_registry;
+	typedef std::map<std::string, sc_event *> event_registry_t;
+	event_registry_t event_registry;
+	typedef std::vector<sc_module *> module_table_t;
+	module_table_t module_table;
+	typedef std::vector<sc_port_base *> port_table_t;
+	port_table_t port_table;
+	typedef std::vector<sc_export_base *> export_table_t;
+	export_table_t export_table;
+	typedef std::vector<sc_prim_channel *> prim_channel_table_t;
+	prim_channel_table_t prim_channel_table;
+	typedef std::vector<sc_thread_process *> thread_process_table_t;
+	thread_process_table_t thread_process_table;
+	typedef std::vector<sc_method_process *> method_process_table_t;
+	method_process_table_t method_process_table;
+	typedef std::vector<sc_process_handle> process_handle_table_t;
+	process_handle_table_t process_handle_table;
 
 	// coroutine & stack
 	sc_coroutine_system *coroutine_system;
@@ -267,13 +278,21 @@ private:
 	sc_time current_time_stamp;                                        // current time stamp
 	sc_allocator<sc_kernel_event> kernel_events_allocator;             // kernel events (delta event) allocator
 	sc_allocator<sc_timed_kernel_event> timed_kernel_events_allocator; // timed kernel events (timed event) allocator	
-	std::vector<sc_thread_process *> runnable_thread_processes;         // SC_THREAD/SC_CTHREAD processes to wake-up
-	std::vector<sc_method_process *> runnable_method_processes;         // SC_METHOD processes to wake-up
-	std::vector<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
-	std::vector<sc_kernel_event *> delta_events;                        // notified delta events set 
-	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
-	std::vector<sc_thread_process *> terminated_thread_processes;
-	std::vector<sc_method_process *> terminated_method_processes;
+	typedef std::vector<sc_thread_process *> runnable_thread_processes_t;
+	runnable_thread_processes_t runnable_thread_processes;             // SC_THREAD/SC_CTHREAD processes to wake-up
+	typedef std::vector<sc_method_process *> runnable_method_processes_t;
+	runnable_method_processes_t runnable_method_processes;             // SC_METHOD processes to wake-up
+	typedef std::vector<sc_prim_channel *> updatable_prim_channels_t;
+	updatable_prim_channels_t updatable_prim_channels;                 // primitive channels to update
+	typedef std::vector<sc_kernel_event *> delta_events_t;
+	delta_events_t delta_events;                                       // notified delta events set
+
+	typedef std::multimap<sc_time, sc_timed_kernel_event *> schedule_t;
+	schedule_t schedule;                                               // notified timed events set
+	typedef std::vector<sc_thread_process *> terminated_thread_processes_t;
+	terminated_thread_processes_t terminated_thread_processes;
+	typedef std::vector<sc_method_process *> terminated_method_processes_t;
+	terminated_method_processes_t terminated_method_processes;
 	bool user_requested_stop;
 	bool user_requested_pause;
 	sc_stop_mode stop_mode;
