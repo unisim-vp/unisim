@@ -284,31 +284,31 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveWatchpoi
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook, unsigned int prc_num, unsigned int front_end_num)
+Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook, unsigned int prc_num, unsigned int front_end_num)
 {
-	if(prc_num >= NUM_PROCESSORS) return false;
-	if(front_end_num >= MAX_FRONT_ENDS) return false;
+	if(prc_num >= NUM_PROCESSORS) return 0;
+	if(front_end_num >= MAX_FRONT_ENDS) return 0;
 	
-	if(!SetWatchpointIntoMap(mat, mt, addr, size, prc_num, front_end_num)) return false;
-	
-	bool found = false;
+	if(!SetWatchpointIntoMap(mat, mt, addr, size, prc_num, front_end_num)) return 0;
+
+	Watchpoint<ADDRESS> *watchpoint = 0;
 	std::pair<typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator, typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator> range = watchpoints[prc_num][front_end_num].equal_range(addr);
 
 	typename std::multimap<ADDRESS, Watchpoint<ADDRESS> *>::const_iterator watchpoint_it;
 	for(watchpoint_it = range.first; watchpoint_it != range.second; watchpoint_it++)
 	{
-		Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
+		Watchpoint<ADDRESS> *wp = (*watchpoint_it).second;
 		
-		if(watchpoint->Equals(mat, mt, addr, size, overlook))
+		if(wp->Equals(mat, mt, addr, size, overlook))
 		{
-			found = true;
+			watchpoint = wp;
 			break;
 		}
 	}
 	
-	if(!found)
+	if(!watchpoint)
 	{
-		Watchpoint<ADDRESS> *watchpoint = new Watchpoint<ADDRESS>(mat, mt, addr, size, overlook);
+		watchpoint = new Watchpoint<ADDRESS>(mat, mt, addr, size, overlook);
 		watchpoint->SetProcessorNumber(prc_num);
 		watchpoint->SetFrontEndNumber(front_end_num);
 		
@@ -322,7 +322,7 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetWatchpoint(
 		while(size > 0);
 	}
 	
-	return true;
+	return watchpoint;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
@@ -376,6 +376,8 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetWatchpoint(
 
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
+	
+	if(HasWatchpoint(wp)) return true; // that watchpoint is already set
 	
 	if(!SetWatchpointIntoMap(mat, mt, addr, size, prc_num, front_end_num)) return false;
 	
@@ -569,7 +571,7 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::FindWatchpoint
 					found = true;
 					Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
 					
-					if((watchpoint->GetMemoryAccessType() == mat) && (watchpoint->GetMemoryType() == mt) && !watchpoint_set.count(watchpoint))
+					if(!watchpoint_set.count(watchpoint) && (watchpoint->GetMemoryAccessType() == mat) && (watchpoint->GetMemoryType() == mt))
 					{
 						watchpoint_set.insert(watchpoint);
 						visitor.Visit(watchpoint);
@@ -586,7 +588,7 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::FindWatchpoint
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateWatchpoints(unsigned int prc_num, unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const
+void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::ScanWatchpoints(unsigned int prc_num, unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
 	std::set<Watchpoint<ADDRESS> *> watchpoint_set;
 	
@@ -596,37 +598,33 @@ void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateWatch
 	{
 		Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
 		
-		watchpoint_set.insert(watchpoint);
-	}
-	
-	typename std::set<Watchpoint<ADDRESS> *>::const_iterator watchpoint_set_it;
-	for(watchpoint_set_it = watchpoint_set.begin(); watchpoint_set_it != watchpoint_set.end(); watchpoint_set_it++)
-	{
-		Watchpoint<ADDRESS> *watchpoint = *watchpoint_set_it;
-		
-		lst.push_back(watchpoint);
+		if(!watchpoint_set.count(watchpoint))
+		{
+			watchpoint_set.insert(watchpoint);
+			scanner.Append(watchpoint);
+		}
 	}
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateWatchpoints(unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const
+void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::ScanWatchpoints(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
 	unsigned int prc_num;
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		EnumerateWatchpoints(prc_num, front_end_num, lst);
+		ScanWatchpoints(prc_num, front_end_num, scanner);
 	}
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateWatchpoints(std::list<Event<ADDRESS> *>& lst) const
+void WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::ScanWatchpoints(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
 	unsigned int front_end_num;
 	
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 	{
-		EnumerateWatchpoints(front_end_num, lst);
+		ScanWatchpoints(front_end_num, scanner);
 	}
 }
 

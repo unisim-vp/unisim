@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_DECL_LOCATION_HH__
 #define __UNISIM_UTIL_DEBUG_DECL_LOCATION_HH__
 
+#include <unisim/util/debug/source_code_location.hh>
 #include <string>
 
 namespace unisim {
@@ -45,15 +46,15 @@ class DeclLocation
 {
 public:
 	DeclLocation(const std::string& decl_filename, unsigned int decl_line, unsigned decl_column);
+	DeclLocation(const unisim::util::debug::SourceCodeLocation& source_code_location);
+	const unisim::util::debug::SourceCodeLocation& GetSourceCodeLocation() const;
 	const std::string& GetDeclFilename() const;
 	unsigned int GetDeclLine() const;
 	unsigned int GetDeclColumn() const;
 	void Catch() const;
 	void Release() const;
 private:
-	std::string decl_filename;
-	unsigned int decl_line;
-	unsigned int decl_column;
+	unisim::util::debug::SourceCodeLocation source_code_location;
 	mutable unsigned int ref_count;
 };
 

@@ -173,7 +173,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -182,7 +182,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(filename, lineno, colno);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(source_code_location);
 				if(stmt) return stmt;
 			}
 		}
@@ -192,7 +192,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret = 0;
 	unsigned int i;
@@ -202,7 +202,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, filename, lineno, colno);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, source_code_location);
 				if(!ret) ret = stmt;
 			}
 		}

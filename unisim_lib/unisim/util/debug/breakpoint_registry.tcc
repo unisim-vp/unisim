@@ -213,25 +213,27 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveBreakpoi
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num)
+Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num)
 {
-	if(prc_num >= NUM_PROCESSORS) return false;
-	if(front_end_num >= MAX_FRONT_ENDS) return false;
+	if(prc_num >= NUM_PROCESSORS) return 0;
+	if(front_end_num >= MAX_FRONT_ENDS) return 0;
 	
-	if(!SetBreakpointIntoMap(addr, prc_num, front_end_num)) return false;
+	if(!SetBreakpointIntoMap(addr, prc_num, front_end_num)) return 0;
 	
 	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it = breakpoints[prc_num][front_end_num].find(addr);
 	
-	if(breakpoint_it == breakpoints[prc_num][front_end_num].end())
+	Breakpoint<ADDRESS> *breakpoint = (breakpoint_it != breakpoints[prc_num][front_end_num].end()) ? (*breakpoint_it).second : 0;
+	
+	if(!breakpoint)
 	{
-		Breakpoint<ADDRESS> *breakpoint = new Breakpoint<ADDRESS>(addr);
+		breakpoint = new Breakpoint<ADDRESS>(addr);
 		breakpoint->SetProcessorNumber(prc_num);
 		breakpoint->SetFrontEndNumber(front_end_num);
 		breakpoint->Catch();
 		breakpoints[prc_num][front_end_num].insert(std::pair<ADDRESS, Breakpoint<ADDRESS> *>(addr, breakpoint));
 	}
 	
-	return true;
+	return breakpoint;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
@@ -381,7 +383,7 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoints
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateBreakpoints(unsigned int prc_num, unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const
+void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::ScanBreakpoints(unsigned int prc_num, unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
 	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
 	
@@ -389,29 +391,29 @@ void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateBreak
 	{
 		Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
 		
-		lst.push_back(breakpoint);
+		scanner.Append(breakpoint);
 	}
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateBreakpoints(unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const
+void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::ScanBreakpoints(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
 	unsigned int prc_num;
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		EnumerateBreakpoints(prc_num, front_end_num, lst);
+		ScanBreakpoints(prc_num, front_end_num, scanner);
 	}
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateBreakpoints(std::list<Event<ADDRESS> *>& lst) const
+void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::ScanBreakpoints(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
 	unsigned int front_end_num;
 	
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 	{
-		EnumerateBreakpoints(front_end_num, lst);
+		ScanBreakpoints(front_end_num, scanner);
 	}
 }
 

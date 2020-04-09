@@ -38,27 +38,35 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-DeclLocation::DeclLocation(const std::string& _decl_filename, unsigned int _decl_line, unsigned _decl_column)
-	: decl_filename(_decl_filename)
-	, decl_line(_decl_line)
-	, decl_column(_decl_column)
+DeclLocation::DeclLocation(const std::string& decl_filename, unsigned int decl_line, unsigned decl_column)
+	: source_code_location(decl_filename, decl_line, decl_column)
 	, ref_count(0)
 {
 }
 
+DeclLocation::DeclLocation(const unisim::util::debug::SourceCodeLocation& _source_code_location)
+	: source_code_location(_source_code_location)
+{
+}
+
+const unisim::util::debug::SourceCodeLocation& DeclLocation::GetSourceCodeLocation() const
+{
+	return source_code_location;
+}
+
 const std::string& DeclLocation::GetDeclFilename() const
 {
-	return decl_filename;
+	return source_code_location.GetSourceCodeFilename();
 }
 
 unsigned int DeclLocation::GetDeclLine() const
 {
-	return decl_line;
+	return source_code_location.GetLineNo();
 }
 
 unsigned int DeclLocation::GetDeclColumn() const
 {
-	return decl_column;
+	return source_code_location.GetColNo();
 }
 
 void DeclLocation::Catch() const

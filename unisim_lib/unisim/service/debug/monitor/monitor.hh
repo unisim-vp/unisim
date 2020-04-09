@@ -50,6 +50,7 @@
 
 #include <unisim/util/debug/breakpoint.hh>
 #include <unisim/util/debug/watchpoint.hh>
+#include <unisim/util/debug/source_code_breakpoint.hh>
 
 namespace unisim {
 namespace service {
@@ -81,20 +82,6 @@ protected:
 };
 
 template <typename ADDRESS>
-class HardwareBreakpoint
-	: public unisim::util::debug::Breakpoint<ADDRESS>
-{
-public:
-	HardwareBreakpoint(ADDRESS addr, int handle, void (*callback)(int));
-	virtual ~HardwareBreakpoint();
-	
-	void Report() const;
-private:
-	int handle;
-	void (*callback)(int);
-};
-
-template <typename ADDRESS>
 class HardwareWatchpoint
 	: public unisim::util::debug::Watchpoint<ADDRESS>
 {
@@ -108,18 +95,15 @@ private:
 };
 
 template <typename ADDRESS>
-class SourceCodeBreakpoint
+class SourceCodeBreakpoint : public unisim::util::debug::SourceCodeBreakpoint<ADDRESS>
 {
 public:
-	SourceCodeBreakpoint(const char *source_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if, typename unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, int handle, void (*callback)(int));
-	virtual ~SourceCodeBreakpoint();
-	bool Exists() const;
+	SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, int handle, void (*callback)(int));
+	void Report() const;
 	int GetHandle() const;
-	void Invalidate();
 private:
 	int handle;
-	typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if;
-	std::vector<HardwareBreakpoint<ADDRESS> *> hw_breakpoints;
+	void (*callback)(int);
 };
 
 template <typename ADDRESS>

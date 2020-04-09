@@ -2420,14 +2420,17 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
+	const std::string& filename = source_code_location.GetSourceCodeFilename();
+	unsigned int lineno = source_code_location.GetLineNo();
+	unsigned int colno = source_code_location.GetColNo();
 	const unisim::util::debug::Statement<MEMORY_ADDR> *ret = 0;
-	bool requested_filename_is_absolute = IsAbsolutePath(filename);
+	bool requested_filename_is_absolute = IsAbsolutePath(filename.c_str());
 	std::vector<std::string> hierarchical_requested_filename;
 	
 	std::string s;
-	const char *p = filename;
+	const char *p = filename.c_str();
 	do
 	{
 		if(*p == 0 || *p == '/' || *p == '\\')
@@ -2516,15 +2519,15 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
-	return FindStatements(0, filename, lineno, colno);
+	return FindStatements(0, source_code_location);
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
-	return FindStatements(&stmts, filename, lineno, colno);
+	return FindStatements(&stmts, source_code_location);
 }
 
 template <class MEMORY_ADDR>

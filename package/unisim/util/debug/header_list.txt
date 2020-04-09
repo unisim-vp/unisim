@@ -12,6 +12,8 @@ unisim/util/debug/simple_field_registry.hh
 unisim/util/debug/simple_register.hh
 unisim/util/debug/simple_register_registry.hh
 unisim/util/debug/simple_symbol_table.hh
+unisim/util/debug/source_code_breakpoint.hh
+unisim/util/debug/source_code_location.hh
 unisim/util/debug/stmt.hh
 unisim/util/debug/subprogram.hh
 unisim/util/debug/symbol.hh

@@ -55,6 +55,7 @@
 #include <unisim/util/debug/watchpoint.hh>
 #include <unisim/util/debug/fetch_insn_event.hh>
 #include <unisim/util/debug/trap_event.hh>
+#include <unisim/util/debug/source_code_breakpoint.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
 #include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <unisim/util/ieee754/ieee754.hh>
@@ -227,7 +228,6 @@ private:
 	bool IsFinishCommand(const char *cmd) const;
 	bool IsWatchCommand(const char *cmd) const;
 	bool IsDeleteCommand(const char *cmd) const;
-	bool IsDeleteWatchCommand(const char *cmd) const;
 	bool IsDumpCommand(const char *cmd) const;
 	bool IsRegistersCommand(const char *cmd) const;
 	bool IsEditCommand(const char *cmd) const;
@@ -266,11 +266,11 @@ private:
 	void Disasm(ADDRESS addr, int count, ADDRESS& next_addr);
 	bool HasBreakpoint(ADDRESS addr);
 	void SetBreakpoint(ADDRESS addr);
+	void SetBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location);
 	void SetReadWatchpoint(ADDRESS addr, uint32_t size);
 	void SetWriteWatchpoint(ADDRESS addr, uint32_t size);
-	void DeleteBreakpoint(ADDRESS addr);
-	void DeleteReadWatchpoint(ADDRESS addr, uint32_t size);
-	void DeleteWriteWatchpoint(ADDRESS addr, uint32_t size);
+	void DeleteBreakpointAt(ADDRESS addr);
+	void DeleteBreakpointWatchpoint(unsigned int id);
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);

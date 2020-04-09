@@ -94,11 +94,15 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 	, logger(*this)
 	, setup_debug_info_done(false)
 	, mutex()
+	, curr_front_end_num_mutex()
+	, curr_front_end_num(-1)
 	, breakpoint_registry()
 	, watchpoint_registry()
 	, fetch_insn_event_set()
 	, commit_insn_event_set()
 	, trap_event_set()
+	, source_code_breakpoint_registry()
+	, next_id()
 	, schedule_mutex()
 	, schedule(0)
 	, elf32_loaders()
@@ -113,6 +117,7 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 	
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_init(&schedule_mutex, NULL);
+	pthread_mutex_init(&curr_front_end_num_mutex, NULL);
 	
 	unsigned int prc_num;
 	unsigned int front_end_num;
@@ -296,6 +301,21 @@ Debugger<CONFIG>::~Debugger()
 			while(trap_event_set[prc_num].size());
 		}
 	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		if(source_code_breakpoint_registry[front_end_num].size())
+		{
+			do
+			{
+				typename std::set<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>::iterator it = source_code_breakpoint_registry[front_end_num].begin();
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = *it;
+				source_code_breakpoint_registry[front_end_num].erase(it);
+				source_code_breakpoint->Release();
+			}
+			while(source_code_breakpoint_registry[front_end_num].size());
+		}
+	}
 
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
@@ -336,6 +356,7 @@ Debugger<CONFIG>::~Debugger()
 		delete front_end_gate[front_end_num];
 	}
 	
+	pthread_mutex_destroy(&curr_front_end_num_mutex);
 	pthread_mutex_destroy(&schedule_mutex);
 	pthread_mutex_destroy(&mutex);
 }
@@ -776,6 +797,11 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
 				
 				if(!breakpoint_registry.SetBreakpoint(brkp)) return false;
+				
+				if(brkp->GetId() < 0)
+				{
+					brkp->SetId(AllocateId(front_end_num));
+				}
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
@@ -783,6 +809,11 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
 				
 				if(!watchpoint_registry.SetWatchpoint(wp)) return false;
+				
+				if(wp->GetId() < 0)
+				{
+					wp->SetId(AllocateId(front_end_num));
+				}
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN:
@@ -791,7 +822,7 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 
 				if(fetch_insn_event_set[prc_num].find(fetch_insn_event) != fetch_insn_event_set[prc_num].end())
 				{
-					return false;
+					return true; // already set
 				}
 				
 				fetch_insn_event_set[prc_num].insert(fetch_insn_event);
@@ -804,7 +835,7 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 
 				if(commit_insn_event_set[prc_num].find(commit_insn_event) != commit_insn_event_set[prc_num].end())
 				{
-					return false;
+					return true; // already set
 				}
 
 				commit_insn_event_set[prc_num].insert(commit_insn_event);
@@ -817,11 +848,57 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 
 				if(trap_event_set[prc_num].find(trap_event) != trap_event_set[prc_num].end())
 				{
-					return false;
+					return true; // already set
 				}
 				
 				trap_event_set[prc_num].insert(trap_event);
 				trap_event->Catch();
+			}
+			break;
+			
+		case unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT:
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				
+				std::pair<typename SourceCodeBreakpointRegistry::iterator, bool> r = source_code_breakpoint_registry[front_end_num].insert(src_code_brkp);
+				
+				if(!r.second) return true; // source code breakpoint already set
+				
+				std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
+				
+				FindStatements(front_end_num, stmts, src_code_brkp->GetSourceCodeLocation());
+				
+				if(stmts.size())
+				{
+					for(typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::iterator it = stmts.begin(); it != stmts.end(); ++it)
+					{
+						const unisim::util::debug::Statement<ADDRESS> *stmt = *it;
+						
+						ADDRESS brkp_addr = stmt->GetAddress();
+						
+						unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(brkp_addr, src_code_brkp);
+						brkp->SetProcessorNumber(prc_num);
+						brkp->SetFrontEndNumber(front_end_num);
+						
+						if(!breakpoint_registry.SetBreakpoint(brkp))
+						{
+							source_code_breakpoint_registry[front_end_num].erase(r.first);
+							delete brkp;
+							return false;
+						}
+						
+						src_code_brkp->Attach(brkp);
+					}
+				}
+				else
+				{
+					// no statements
+					source_code_breakpoint_registry[front_end_num].erase(r.first);
+					return false;
+				}
+				
+				src_code_brkp->SetId(AllocateId(front_end_num));
+				src_code_brkp->Catch();
 			}
 			break;
 
@@ -914,6 +991,27 @@ bool Debugger<CONFIG>::Unlisten(unsigned int front_end_num, unisim::util::debug:
 				trap_event->Release();
 			}
 			break;
+			
+		case unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT:
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				
+				typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].find(src_code_brkp);
+				if(it == source_code_breakpoint_registry[front_end_num].end())
+				{
+					return false;
+				}
+				
+				BreakpointRemover brkp_remover(*this);
+				src_code_brkp->Scan(brkp_remover);
+				
+				source_code_breakpoint_registry[front_end_num].erase(it);
+				src_code_brkp->Release();
+				
+				if(!brkp_remover.status) return false;
+			}
+			break;
+			
 		default:
 			// ignore
 			return false;
@@ -967,6 +1065,13 @@ bool Debugger<CONFIG>::IsEventListened(unsigned int front_end_num, unisim::util:
 				typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::const_iterator it = trap_event_set[prc_num].find(trap_event);
 				return it != trap_event_set[prc_num].end();
 			}
+		case unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT:
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				
+				typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].find(src_code_brkp);
+				return it != source_code_breakpoint_registry[front_end_num].end();
+			}
 		case unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN:
 			return false;
 			
@@ -975,90 +1080,170 @@ bool Debugger<CONFIG>::IsEventListened(unsigned int front_end_num, unisim::util:
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::EnumerateListenedEvents(unsigned int front_end_num, std::list<unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type) const
+void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
-	lst.clear();
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		breakpoint_registry.EnumerateBreakpoints(front_end_num, lst);
-	}
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
-	{
-		watchpoint_registry.EnumerateWatchpoints(front_end_num, lst);
-	}
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN))
-	{
-		unsigned int prc_num;
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+		typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::const_iterator it;
+		for(it = fetch_insn_event_set[prc_num].begin(); it != fetch_insn_event_set[prc_num].end(); it++)
 		{
-			typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::const_iterator it;
-			for(it = fetch_insn_event_set[prc_num].begin(); it != fetch_insn_event_set[prc_num].end(); it++)
+			unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = *it;
+			if((unsigned int) fetch_insn_event->GetFrontEndNumber() == front_end_num)
 			{
-				unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = *it;
-				if((unsigned int) fetch_insn_event->GetFrontEndNumber() == front_end_num)
-				{
-					lst.push_back(fetch_insn_event);
-				}
+				scanner.Append(fetch_insn_event);
 			}
 		}
 	}
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
+
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		unsigned int prc_num;
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+		typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::const_iterator it;
+		for(it = commit_insn_event_set[prc_num].begin(); it != commit_insn_event_set[prc_num].end(); it++)
 		{
-			typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::const_iterator it;
-			for(it = commit_insn_event_set[prc_num].begin(); it != commit_insn_event_set[prc_num].end(); it++)
+			unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = *it;
+			if((unsigned int) commit_insn_event->GetFrontEndNumber() == front_end_num)
 			{
-				unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = *it;
-				if((unsigned int) commit_insn_event->GetFrontEndNumber() == front_end_num)
-				{
-					lst.push_back(commit_insn_event);
-				}
+				scanner.Append(commit_insn_event);
 			}
 		}
 	}
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_TRAP))
+
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		unsigned int prc_num;
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+		typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::const_iterator it;
+		for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
 		{
-			typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::const_iterator it;
-			for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
+			unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+			if((unsigned int) trap_event->GetFrontEndNumber() == front_end_num)
 			{
-				unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
-				if((unsigned int) trap_event->GetFrontEndNumber() == front_end_num)
-				{
-					lst.push_back(trap_event);
-				}
+				scanner.Append(trap_event);
 			}
 		}
 	}
+
+	struct Filter : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	{
+		Filter()
+			: reorder_buffer()
+		{
+		}
+		
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		{
+			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT)
+			{
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+				if(!brkp->GetReference())
+				{
+					unsigned int id = brkp->GetId();
+					if(id >= reorder_buffer.size())
+					{
+						reorder_buffer.resize(id + 1);
+					}
+					reorder_buffer[id] = event;
+				}
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT)
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				unsigned int id = src_code_brkp->GetId();
+				if(id >= reorder_buffer.size())
+				{
+					reorder_buffer.resize(id + 1);
+				}
+				reorder_buffer[id] = event;
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT)
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+				unsigned int id = wp->GetId();
+				if(id >= reorder_buffer.size())
+				{
+					reorder_buffer.resize(id + 1);
+				}
+				reorder_buffer[id] = event;
+			}
+		}
+		
+		void Scan(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner)
+		{
+			for(typename std::vector<unisim::util::debug::Event<ADDRESS> *>::iterator it = reorder_buffer.begin(); it != reorder_buffer.end(); ++it)
+			{
+				unisim::util::debug::Event<ADDRESS> *event = *it;
+				if(event)
+				{
+					scanner.Append(event);
+				}
+			}
+		}
+		
+	private:
+		std::vector<unisim::util::debug::Event<ADDRESS> *> reorder_buffer;
+	};
+	
+	Filter filter;
+	
+	breakpoint_registry.ScanBreakpoints(front_end_num, filter);
+	
+	watchpoint_registry.ScanWatchpoints(front_end_num, filter);
+	
+	for(unsigned int front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		if(source_code_breakpoint_registry[front_end_num].size())
+		{
+			typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].begin();
+			
+			do
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = *it;
+				typename SourceCodeBreakpointRegistry::const_iterator next_it = ++it;
+				
+				filter.Append(src_code_brkp);
+				
+				it = next_it;
+			}
+			while(it != source_code_breakpoint_registry[front_end_num].end());
+		}
+	}
+	
+	filter.Scan(scanner);
 }
 
 template <typename CONFIG>
 void Debugger<CONFIG>::ClearEvents(unsigned int front_end_num)
 {
-	std::list<unisim::util::debug::Event<ADDRESS> *> lst;
-	
-	EnumerateListenedEvents(front_end_num, lst, unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN);
-	
-	typename std::list<unisim::util::debug::Event<ADDRESS> *>::iterator it;
-	
-	for(it = lst.begin(); it != lst.end(); it++)
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
 	{
-		unisim::util::debug::Event<ADDRESS> *event = *it;
-		Unlisten(front_end_num, event);
-	}
+		DebugEventScanner(Debugger<CONFIG>& _dbg, unsigned int _front_end_num)
+			: dbg(_dbg)
+			, front_end_num(_front_end_num)
+		{
+		}
+		
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		{
+			dbg.Unlisten(front_end_num, event);
+		}
+	private:
+		Debugger<CONFIG>& dbg;
+		unsigned int front_end_num;
+	};
+	
+	DebugEventScanner event_scanner(*this, front_end_num);
+	ScanListenedEvents(front_end_num, event_scanner);
 }
 
 template <typename CONFIG>
 bool Debugger<CONFIG>::SetBreakpoint(unsigned int front_end_num, ADDRESS addr)
 {
 	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
-	bool status = breakpoint_registry.SetBreakpoint(addr, prc_num, front_end_num);
+	unisim::util::debug::Breakpoint<ADDRESS> *brkp = breakpoint_registry.SetBreakpoint(addr, prc_num, front_end_num);
+	if(brkp && (brkp->GetId() < 0))
+	{
+		brkp->SetId(AllocateId(front_end_num));
+	}
 	UpdateReportingRequirements(prc_num);
-	return status;
+	return brkp != 0;
 }
 
 template <typename CONFIG>
@@ -1081,9 +1266,13 @@ template <typename CONFIG>
 bool Debugger<CONFIG>::SetWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook)
 {
 	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
-	bool status = watchpoint_registry.SetWatchpoint(mat, mt, addr, size, overlook, prc_num, front_end_num);
+	unisim::util::debug::Watchpoint<ADDRESS> *wp = watchpoint_registry.SetWatchpoint(mat, mt, addr, size, overlook, prc_num, front_end_num);
+	if(wp && (wp->GetId() < 0))
+	{
+		wp->SetId(AllocateId(front_end_num));
+	}
 	UpdateReportingRequirements(prc_num);
-	return status;
+	return wp != 0;
 }
 
 template <typename CONFIG>
@@ -1559,7 +1748,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
 	unsigned int i;
 	
@@ -1569,7 +1758,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(source_code_location);
 			if(stmt) return stmt;
 		}
 	}
@@ -1580,7 +1769,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(source_code_location);
 			if(stmt) return stmt;
 		}
 	}
@@ -1588,7 +1777,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
 	const typename unisim::util::debug::Statement<ADDRESS> *ret = 0;
 	unsigned int i;
@@ -1599,7 +1788,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, source_code_location);
 			
 			if(!ret) ret = stmt;
 		}
@@ -1611,7 +1800,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, source_code_location);
 			
 			if(!ret) ret = stmt;
 		}
@@ -2101,15 +2290,48 @@ const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::Lock()
+bool Debugger<CONFIG>::Lock(int front_end_num)
 {
-	pthread_mutex_lock(&mutex);
+	bool locked = false;
+	if(front_end_num >= 0)
+	{
+		pthread_mutex_lock(&curr_front_end_num_mutex);
+		if(curr_front_end_num != front_end_num)
+		{
+			curr_front_end_num = front_end_num;
+			pthread_mutex_lock(&mutex);
+			locked = true;
+		}
+		pthread_mutex_unlock(&curr_front_end_num_mutex);
+	}
+	else
+	{
+		pthread_mutex_lock(&mutex);
+		locked = true;
+	}
+	return locked;
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::Unlock()
+void Debugger<CONFIG>::Unlock(int front_end_num)
 {
-	pthread_mutex_unlock(&mutex);
+	if(front_end_num >= 0)
+	{
+		pthread_mutex_lock(&curr_front_end_num_mutex);
+		curr_front_end_num = -1;
+		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&curr_front_end_num_mutex);
+	}
+	else
+	{
+		pthread_mutex_unlock(&mutex);
+	}
+}
+
+template <typename CONFIG>
+int Debugger<CONFIG>::AllocateId(unsigned int front_end_num)
+{
+	return next_id[front_end_num]++;
 }
 
 template <typename CONFIG>
