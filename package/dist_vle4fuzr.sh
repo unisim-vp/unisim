@@ -100,6 +100,7 @@ INSTALL \
 "
 
 UNISIM_SIMULATOR_SAMPLE_FILES=" \
+samples/arm_chpc.py \
 samples/gcd_arm.py \
 samples/gcd.c \
 samples/gcd_vle.py \
