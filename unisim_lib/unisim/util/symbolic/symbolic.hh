@@ -66,6 +66,7 @@ namespace symbolic {
     {
       switch (bits) {
       default: throw VOID;
+      case 1:  return BOOL;
       case 8:  return is_signed ? S8 :  U8;
       case 16: return is_signed ? S16 : U16;
       case 32: return is_signed ? S32 : U32;

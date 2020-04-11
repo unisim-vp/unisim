@@ -238,18 +238,18 @@ struct Processor
       
     typedef unisim::util::symbolic::Expr       Expr;
     StatusRegister()
-      : iset(Arm)                               // Default is ARM instruction set
-      , bigendian(false)                        // Default is Little Endian
-      , mode(SUPERVISOR_MODE)                   // Default is SUPERVISOR_MODE
-      , outitb(false)                           // Force status as if outside ITBlock
+      : iset(Arm)                  // Default is ARM instruction set
+      , itstate(-1)                // initial itstate
+      , bigendian(false)           // Default is Little Endian
+      , mode(SUPERVISOR_MODE)      // Default is SUPERVISOR_MODE
     {}
 
     bool IsThumb() const { return iset == Thumb; }
-      
+
     InstructionSet iset;
-    bool bigendian;
-    uint8_t mode;
-    bool outitb;
+    int            itstate;
+    bool           bigendian;
+    uint8_t        mode;
   };
   
   struct PSR : public StatusRegister
@@ -286,9 +286,10 @@ struct Processor
       , z(newRegRead(RegID("z"), ScalarType::BOOL))
       , c(newRegRead(RegID("c"), ScalarType::BOOL))
       , v(newRegRead(RegID("v"), ScalarType::BOOL))
-      , itstate(ref.outitb ? U8(0).expr : newRegRead(RegID("itstate"), ScalarType::U8))
+      , itstate(ref.itstate >> 8 ? newRegRead(RegID("itstate"), ScalarType::U8) : U8(ref.itstate).expr )
       , bg(newRegRead(RegID("cpsr"), ScalarType::U32))
-    {}
+    {
+    }
     
     bool   GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
     bool   GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
@@ -324,7 +325,7 @@ struct Processor
     void   Set( VRF const& _, BOOL const& value ) { v = value.expr; }
     void   Set( ERF const& _, U32 const& value ) { if (proc.Test(value != U32(bigendian))) proc.UnpredictableInsnBehaviour(); }
     void   Set( NZCVRF const& _, U32 const& value );
-      
+
     void   SetITState( uint8_t init_val ) { itstate = U8(init_val); }
     BOOL   InITBlock() const { return (itstate & U8(0b1111)) != U8(0); }
       
@@ -343,7 +344,7 @@ struct Processor
     // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
     Processor& proc;
-    Expr n, z, c, v; /* TODO: should handle q */
+    Expr n, z, c, v, nthumb; /* TODO: should handle q */
     U8 itstate;
     U32 bg;
   };
@@ -405,8 +406,22 @@ public:
       path->add_sink( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
       path->add_sink( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) );
+
+    if (cpsr.nthumb.good())
+      {
+        Expr nt( cpsr.nthumb );
+        if (unisim::util::symbolic::ConstNodeBase const* ntc = nt.ConstSimplify())
+          {
+            if (ntc->Get( bool() ) ^ cpsr.GetT())
+              path->add_sink( newRegWrite( RegID("t"), nt ) );
+          }
+        else
+          path->add_sink( newRegWrite( RegID("t"), nt ) );
+      }
+      
     if (spsr.expr != ref.spsr.expr)
       path->add_sink( newRegWrite( RegID("spsr"), spsr.expr ) );
+
     for (SRegID reg; reg.next();)
       if (sregs[reg.idx()].expr != ref.sregs[reg.idx()].expr)
         path->add_sink( newRegWrite( reg, sregs[reg.idx()].expr ) );
@@ -824,8 +839,24 @@ public:
   //   =                      Control Transfer methods                     =
   //   =====================================================================
 
-  void BranchExchange( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
-  void Branch( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
+  void BranchExchange( U32 const& target, branch_type_t branch_type )
+  {
+    cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 1, 1, false );
+    Branch( target, branch_type );
+  }
+	
+  void Branch( U32 const& target, branch_type_t branch_type )
+  {
+    SetNIA( target & U32(this->cpsr.GetT() ? -2 : -4), branch_type );
+  }
+  // void BranchExchange( U32 const& target, branch_type_t branch_type )
+  // {
+  //   SetNIA( target, branch_type );
+  // }
+  // void Branch( U32 const& target, branch_type_t branch_type )
+  // {
+  //   SetNIA( target, branch_type );
+  // }
     
   void WaitForInterrupt() { throw Unimplemented(); }
   void SWI( uint32_t imm ) { throw Unimplemented(); }
@@ -873,21 +904,21 @@ public:
   static uint32_t const SYSTEM_MODE = 0b11111;
 
   /* values of the different condition codes */
-  static uint32_t const COND_EQ = 0x00;
-  static uint32_t const COND_NE = 0x01;
-  static uint32_t const COND_CS_HS = 0x02;
-  static uint32_t const COND_CC_LO = 0x03;
-  static uint32_t const COND_MI = 0x04;
-  static uint32_t const COND_PL = 0x05;
-  static uint32_t const COND_VS = 0x06;
-  static uint32_t const COND_VC = 0x07;
-  static uint32_t const COND_HI = 0x08;
-  static uint32_t const COND_LS = 0x09;
-  static uint32_t const COND_GE = 0x0a;
-  static uint32_t const COND_LT = 0x0b;
-  static uint32_t const COND_GT = 0x0c;
-  static uint32_t const COND_LE = 0x0d;
-  static uint32_t const COND_AL = 0x0e;
+  // static uint32_t const COND_EQ = 0x00;
+  // static uint32_t const COND_NE = 0x01;
+  // static uint32_t const COND_CS_HS = 0x02;
+  // static uint32_t const COND_CC_LO = 0x03;
+  // static uint32_t const COND_MI = 0x04;
+  // static uint32_t const COND_PL = 0x05;
+  // static uint32_t const COND_VS = 0x06;
+  // static uint32_t const COND_VC = 0x07;
+  // static uint32_t const COND_HI = 0x08;
+  // static uint32_t const COND_LS = 0x09;
+  // static uint32_t const COND_GE = 0x0a;
+  // static uint32_t const COND_LT = 0x0b;
+  // static uint32_t const COND_GT = 0x0c;
+  // static uint32_t const COND_LE = 0x0d;
+  // static uint32_t const COND_AL = 0x0e;
     
   /* mask for valid bits in processor control and status registers */
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
@@ -974,7 +1005,7 @@ public:
       {
         NA = 0,
         r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr,
-        n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
+        n, z, c, v, t, itstate, // q, ge0, ge1, ge2, ge3,
         cpsr, spsr,
         fpscr, fpexc,
         r8_fiq,
@@ -1027,6 +1058,7 @@ public:
         case          z: return "z";
         case          c: return "c";
         case          v: return "v";
+        case          t: return "t";
         case    itstate: return "itstate";
         case       cpsr: return "cpsr";
         case       spsr: return "spsr";
@@ -1353,6 +1385,15 @@ char const* usage()
     "usage: <program> arm|thumb <address> <encoding>\n";
 }
 
+template <unsigned N>
+char const* after(std::string const& s, char const (&ref)[N])
+{
+  uintptr_t const size = N-1;
+  if (s.compare(0,size,&ref[0]))
+    return 0;
+  return &s[size];
+}
+
 int
 main( int argc, char** argv )
 {
@@ -1394,7 +1435,24 @@ main( int argc, char** argv )
       else if (flag == "hypervisor") { status.mode = Processor::HYPERVISOR_MODE; }
       else if (flag == "undefined")  { status.mode = Processor::UNDEFINED_MODE; }
       else if (flag == "system")     { status.mode = Processor::SYSTEM_MODE; }
-      else if (flag == "outitb")     { status.outitb = true; }
+      else if (flag == "outitb")     { status.itstate = 0; }
+      else if (char const* it = after(flag, "it"))
+        {
+          unsigned bits = 0;
+          if (char const* itstate = after(flag, "itstate="))
+            {
+              while (unsigned bit = *itstate++)
+                {
+                  if ((bit -= '0') < 2)
+                    bits = (bits << 1) | bit;
+                }
+            }
+          else
+            {
+              bits = int(unisim::component::cxx::processor::arm::Condition(it).code) << 4 | 0b1000;
+            }
+          status.itstate = bits;
+        }
       else
         {
           std::cerr << "Unknown execution state flag: " << flag << std::endl;

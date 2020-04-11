@@ -17,6 +17,7 @@ unisim/util/arithmetic
 unisim/util/backtrace
 unisim/util/debug
 unisim/util/endian
+unisim/util/identifier
 unisim/util/inlining
 unisim/util/likely
 unisim/util/simfloat
