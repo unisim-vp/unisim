@@ -182,9 +182,9 @@ public:
 	DW_CFA_Specification GetCFA_Specification() const;
 	DW_CFA_RegRuleOffsetSpecification GetCFA_RegRuleOffsetSpecification() const;
 	
-	DWARF_RegisterNumberMapping *GetRegisterNumberMapping(unsigned int prc_num = 0) const;
-	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num = 0) const;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num = 0) const;
+	DWARF_RegisterNumberMapping *GetRegisterNumberMapping(unsigned int prc_num) const;
+	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num) const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num) const;
 
 	std::ostream& GetDebugInfoStream() const;
 	std::ostream& GetDebugWarningStream() const;

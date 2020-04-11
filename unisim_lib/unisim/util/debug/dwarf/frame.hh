@@ -47,21 +47,58 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_RegSet<MEMORY_ADDR>& dw_reg_set);
+class DWARF_RegisterBase : public unisim::service::interfaces::Register
+{
+public:
+	virtual void Copy(const unisim::service::interfaces::Register *reg) = 0;
+	virtual bool Load(unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, MEMORY_ADDR addr, unsigned int read_size) = 0;
+};
+
+template <class MEMORY_ADDR, class VALUE_TYPE>
+class DWARF_Register : public DWARF_RegisterBase<MEMORY_ADDR>
+{
+public:
+	DWARF_Register(const unisim::service::interfaces::Register *reg, unisim::util::endian::endian_type endianness);
+	DWARF_Register(unisim::service::interfaces::Register *reg, unisim::util::endian::endian_type endianness);
+	virtual ~DWARF_Register();
+	virtual const char *GetName() const;
+	virtual const char *GetDescription() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+	virtual void Copy(const unisim::service::interfaces::Register *from);
+	virtual bool Load(unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, MEMORY_ADDR addr, unsigned int read_size);
+private:
+	const unisim::service::interfaces::Register *const_reg;
+	unisim::service::interfaces::Register *reg;
+	unisim::util::endian::endian_type endianness;
+	VALUE_TYPE value;
+};
 
 template <class MEMORY_ADDR>
 class DWARF_RegSet
 {
 public:
-	DWARF_RegSet();
+	DWARF_RegSet(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num);
+	~DWARF_RegSet();
+	bool LoadArchRegs();
+	void Copy(const DWARF_RegSet& o);
+	DWARF_RegisterBase<MEMORY_ADDR> *DefRegister(unsigned int reg_num, const unisim::service::interfaces::Register *reg);
 	void UndefRegister(unsigned int reg_num);
-	bool ReadRegister(unsigned int reg_num, MEMORY_ADDR& reg_value) const;
-	void WriteRegister(unsigned int reg_num, MEMORY_ADDR value);
+	template <typename T> bool ReadRegister(unsigned int reg_num, T& reg_value) const;
+	template <typename T> bool WriteRegister(unsigned int reg_num, T value);
+	DWARF_RegisterBase<MEMORY_ADDR> *GetRegister(unsigned int reg_num) const;
+	bool LoadRegister(unsigned int reg_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, MEMORY_ADDR addr, unsigned int read_size);
+	void Print(std::ostream& os) const;
 private:
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RegSet<MEMORY_ADDR>& dw_reg_set);
-	
-	std::map<unsigned int, MEMORY_ADDR> reg_set;
+	DWARF_RegisterNumberMapping *reg_num_mapping;
+	unisim::util::endian::endian_type endianness;
+	typedef std::map<unsigned int, DWARF_RegisterBase<MEMORY_ADDR> *> RegSet;
+	RegSet reg_set;
 };
+
+template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_RegSet<MEMORY_ADDR>& dw_reg_set);
 
 template <class MEMORY_ADDR>
 class DWARF_Frame
@@ -75,10 +112,8 @@ public:
 	bool ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame);
 	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame, unsigned int dw_ret_addr_reg_num);
 	MEMORY_ADDR ReadCFA() const;
-// 	void UndefRegister(unsigned int reg_num);
-	bool ReadRegister(unsigned int reg_num, MEMORY_ADDR& reg_value) const;
-// 	void WriteRegister(unsigned int reg_num, const MEMORY_ADDR value);
-	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size) const;
+	const unisim::service::interfaces::Register *GetRegister(unsigned int reg_num) const; 
+	template <typename T> bool ReadRegister(unsigned int reg_num, T& reg_value) const;
 	bool GetPC(MEMORY_ADDR& pc_value) const;
 	const DWARF_RegSet<MEMORY_ADDR>& GetRegSet() const;
 	unsigned int GetProcessorNumber() const;
@@ -95,8 +130,6 @@ private:
 	bool pc_is_defined;
 	MEMORY_ADDR pc;
 	MEMORY_ADDR cfa;
-	std::set<unsigned int> reg_num_set;
-	//std::map<unsigned int, MEMORY_ADDR> reg_set;
 	DWARF_RegSet<MEMORY_ADDR> dw_reg_set;
 };
 

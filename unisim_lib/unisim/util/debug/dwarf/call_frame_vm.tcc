@@ -879,7 +879,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 						int64_t n = (uint64_t) factored_offset * (int64_t) dw_cie->GetDataAlignmentFactor();
 
-						if(os) *os << "DW_CFA_offset(" << (uint32_t) reg_num << "," << factored_offset.to_string(false) << ") /* r" << (uint32_t) reg_num << " = [ cfa" << (n >= 0 ? "+" : "") << n << "] */";
+						if(os) *os << "DW_CFA_offset(" << (uint32_t) reg_num << "," << factored_offset.to_string(false) << ") /* r" << (uint32_t) reg_num << " = [cfa" << (n >= 0 ? "+" : "") << n << "] */";
 
 						if(cfi)
 						{
@@ -1532,7 +1532,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								program += sz;
 								program_length -= sz;
 								
-								if(os) *os << "DW_CFA_def_cfa_offset(" << offset.to_string(false) << ") /* cfa = old register + " << offset.to_string(false) << "*/";
+								if(os) *os << "DW_CFA_def_cfa_offset(" << offset.to_string(false) << ") /* cfa = old register + " << offset.to_string(false) << " */";
 								
 								if(cfi)
 								{
