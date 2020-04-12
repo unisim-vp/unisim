@@ -760,12 +760,23 @@ void sc_kernel::simulate(const sc_time& duration)
 	
 	if(user_requested_stop)
 	{
-		status = SC_STOPPED;
+		end_simulation();
 	}
 	else
 	{
 		status = SC_PAUSED;
 	}
+}
+
+void sc_kernel::end_simulation()
+{
+	status = SC_STOPPED;
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":end of simulation" << std::endl;
+	}
+	status = SC_END_OF_SIMULATION;
+	report_end_of_simulation();
 }
 
 void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
@@ -1341,15 +1352,9 @@ sc_stop_mode sc_kernel::get_stop_mode() const
 void sc_kernel::stop()
 {
 	user_requested_stop = true;
-	
 	if(status == SC_PAUSED)
 	{
-		if(__LIBIEEE1666_UNLIKELY__(debug))
-		{
-			std::cerr << current_time_stamp << ":end of simulation" << std::endl;
-		}
-		status = SC_END_OF_SIMULATION;
-		report_end_of_simulation();
+		end_simulation();
 	}
 }
 
@@ -1387,46 +1392,44 @@ sc_dt::uint64 sc_kernel::get_delta_count() const
 
 bool sc_kernel::pending_activity_at_current_time() const
 {
-	schedule_t::const_iterator it = schedule.begin();
-
-	if(it != schedule.end())
-	{
-		const sc_time& time_of_pending_activity = (*it).first;
-		return time_of_pending_activity == current_time_stamp;
-	}
-	
-	return false;
+	return is_running() &&
+	       (runnable_method_processes.size() ||
+	        runnable_thread_processes.size() ||
+	        delta_events.size() ||
+	        updatable_prim_channels.size());
 }
 
 bool sc_kernel::pending_activity_at_future_time() const
 {
-	schedule_t::const_iterator it = schedule.begin();
-
-	if(it != schedule.end())
-	{
-		const sc_time& time_of_pending_activity = (*it).first;
-		return time_of_pending_activity > current_time_stamp;
-	}
-	
-	return false;
+	return is_running() && schedule.size();
 }
 
 bool sc_kernel::pending_activity() const
 {
-	return schedule.size() != 0;
+	return is_running() &&
+	       (runnable_method_processes.size() ||
+	        runnable_thread_processes.size() ||
+	        delta_events.size() ||
+	        updatable_prim_channels.size() ||
+	        schedule.size());
 }
 
 sc_time sc_kernel::time_to_pending_activity() const
 {
-	schedule_t::const_iterator it = schedule.begin();
-
-	if(it != schedule.end())
+	if(is_running())
 	{
-		const sc_time& time_of_pending_activity = (*it).first;
-		return time_of_pending_activity - current_time_stamp;
+		schedule_t::const_iterator it = schedule.begin();
+
+		if(it != schedule.end())
+		{
+			const sc_time& time_of_pending_activity = (*it).first;
+			return time_of_pending_activity - current_time_stamp;
+		}
+		
+		return max_time - current_time_stamp;
 	}
 	
-	return max_time - current_time_stamp;
+	return SC_ZERO_TIME;
 }
 
 const std::vector<sc_object*>& sc_kernel::get_top_level_objects() const

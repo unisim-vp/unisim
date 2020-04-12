@@ -111,6 +111,7 @@ public:
 	void do_delta_steps(bool once);
 	bool do_timed_notification_phase();
 	void simulate(const sc_time& duration);
+	void end_simulation();
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
 	void register_object(sc_object *object);
