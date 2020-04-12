@@ -108,8 +108,8 @@ sc_fifo<T>::sc_fifo(int _size)
 	, write_idx(0)
 	, read_idx(0)
 	, buffer(0)
-	, fifo_data_written_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_semaphore_value_incremented_event").c_str())
-	, fifo_data_read_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_semaphore_value_incremented_event").c_str())
+	, fifo_data_written_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_fifo_value_incremented_event").c_str())
+	, fifo_data_read_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_fifo_value_incremented_event").c_str())
 	, registered_in_port(0)
 	, registered_out_port(0)
 {
@@ -128,8 +128,8 @@ sc_fifo<T>::sc_fifo(const char *_name, int _size)
 	, write_idx(0)
 	, read_idx(0)
 	, buffer(0)
-	, fifo_data_written_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + _name + "_semaphore_value_incremented_event").c_str())
-	, fifo_data_read_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + _name + "_semaphore_value_incremented_event").c_str())
+	, fifo_data_written_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + _name + "_fifo_value_incremented_event").c_str())
+	, fifo_data_read_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + _name + "_fifo_value_incremented_event").c_str())
 	, registered_in_port(0)
 	, registered_out_port(0)
 {
@@ -205,6 +205,8 @@ bool sc_fifo<T>::nb_read(T& v)
 	available_count--;
 
 	request_update();
+	
+	return true;
 }
 
 template <class T>
@@ -243,6 +245,8 @@ bool sc_fifo<T>::nb_write(const T& v)
 	free_count--;
 	
 	request_update();
+	
+	return true;
 }
 
 template <class T>
@@ -286,7 +290,7 @@ void sc_fifo<T>::print(std::ostream& os) const
 		do
 		{
 			os << buffer[i++];
-			if(i >= size) i = 0;
+			if(i >= capacity) i = 0;
 			if(--count) os << " ";
 		}
 		while(count);
