@@ -52,9 +52,6 @@ namespace arm {
     return sink;
   }
 
-  static char const* const  conds_dis[] =
-    {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "<und>"};
-  
   /* Condition opcode bytes disassembling method */
   void DisasmCondition::operator() ( std::ostream& sink ) const
   {
@@ -66,7 +63,7 @@ namespace arm {
     if  ((m_cond == 14) and (m_explicit_always == implicit_always))
       return;
     
-    sink << conds_dis[m_cond];
+    sink << Condition(Condition::Code(m_cond)).c_str();
   }
 
   /* Immediate disassembly */
