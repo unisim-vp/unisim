@@ -37,7 +37,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/integer.hpp>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/typed_registers.hh>
 #include <unisim/service/interfaces/scheduler.hh>
@@ -49,11 +49,11 @@ using boost::shared_ptr;
 using unisim::service::interfaces::TypedRegisters;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Scheduler;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::component::cxx::processor::tesla::GPRID;
 using unisim::component::cxx::processor::tesla::SMAddress;
 using unisim::component::cxx::processor::tesla::ConfigurationRegisterID;

@@ -52,7 +52,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -88,7 +88,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::kernel::service::Statistic;
+using unisim::kernel::variable::Statistic;
 
 using unisim::util::debug::Statement;
 
@@ -97,18 +97,21 @@ using unisim::service::pim::PIMThread;
 template <class ADDRESS>
 PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
-	, Service<DebugControl<ADDRESS> >(_name, _parent)
+	, Service<DebugYielding>(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<Registers>(_name, _parent)
+	, unisim::kernel::Client<Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<Registers>(_name, _parent)
 	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+
+	, unisim::kernel::Client<Monitor_if<ADDRESS> > (_name, _parent)
+
 	, VariableBaseListener()
 
-	, debug_control_export("debug-control-export", this)
+	, debug_yielding_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
@@ -120,6 +123,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
 
+	, monitor_import("monitor-import", this)
+
 	, socketServer(NULL)
 	, gdbThread(NULL)
 	, monitorThread(NULL)
@@ -128,10 +133,10 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, tcp_port(12345)
 	, architecture_description_filename()
 	, pc_reg(0)
+	, pc_reg_index(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
 	, trap(false)
-	, synched(false)
 
 	, watchpoint_hit(NULL)
 
@@ -152,12 +157,23 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 //	, last_time_ratio(1e+9)
 
+	, local_time(0)
+
 {
 
 	memory_access_reporting_export.SetupDependsOn(memory_access_reporting_control_import);
 
 	counter = period;
 
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		throw std::runtime_error("WSAStartup failed: Windows sockets not available");
+	}
+#endif
 }
 
 template <class ADDRESS>
@@ -170,6 +186,10 @@ PIMServer<ADDRESS>::~PIMServer()
 
 	if (socketServer) { delete socketServer; socketServer = NULL;}
 
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
 }
 
 template <class ADDRESS>
@@ -193,12 +213,10 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 
 	if(memory_access_reporting_control_import)
 	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_FETCH_INSN, false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_COMMIT_INSN, false);
 	}
-
 
 	return (true);
 }
@@ -233,7 +251,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 	bool has_program_counter = false;
 	string program_counter_name;
 
-	VariableBase* architecture_name = Simulator::simulator->FindParameter("program-name");
+	VariableBase* architecture_name = Simulator::Instance()->FindParameter("program-name");
 	has_architecture_name = (architecture_name != NULL);
 	if(!has_architecture_name)
 	{
@@ -241,7 +259,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		return (false);
 	}
 
-	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
+	VariableBase* architecture_endian = Simulator::Instance()->FindParameter("endian");
 	if (architecture_endian != NULL) {
 		string endianstr = *architecture_endian;
 		if(endianstr == "little")
@@ -261,10 +279,10 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		logger << DebugWarning << "assuming target architecture endian is 'big endian'" << std::endl << EndDebugWarning;
 	}
 
-	VariableBase* param_program_counter_name = Simulator::simulator->FindParameter("program-counter-name");
+	VariableBase* param_program_counter_name = Simulator::Instance()->FindParameter("program-counter-name");
 
 	if (param_program_counter_name != NULL) {
-		pc_reg = (VariableBase *) Simulator::simulator->FindRegister(((string) *param_program_counter_name).c_str());
+		pc_reg = (VariableBase *) Simulator::Instance()->FindRegister(((string) *param_program_counter_name).c_str());
 		if (pc_reg != NULL) {
 			has_program_counter = true;
 		} else {
@@ -276,7 +294,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetRegisters(lst);
+	Simulator::Instance()->GetRegisters(lst);
 
 	uint32_t index = 0;
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
@@ -316,14 +334,14 @@ void PIMServer<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (&event);
+			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (event);
 			break;
 		default:
 			// ignore event
@@ -331,20 +349,18 @@ void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>&
 	}
 
 	trap = true;
-	synched = true;
 }
 
 template <class ADDRESS>
 void PIMServer<ADDRESS>::ReportTrap()
 {
 	trap = true;
-	synched = false;
 }
 
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj)
+ReportTrap(const unisim::kernel::Object &obj)
 {
 	ReportTrap();
 }
@@ -352,7 +368,7 @@ ReportTrap(const unisim::kernel::service::Object &obj)
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
+ReportTrap(const unisim::kernel::Object &obj,
 		   const std::string &str)
 {
 	ReportTrap();
@@ -361,14 +377,14 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
+ReportTrap(const unisim::kernel::Object &obj,
 		   const char *c_str)
 {
 	ReportTrap();
 }
 
 template <class ADDRESS>
-typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+void PIMServer<ADDRESS>::DebugYield()
 {
 	ADDRESS addr;
 	ADDRESS size;
@@ -379,7 +395,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	{
 		if(--counter > 0)
 		{
-			return (DebugControl<ADDRESS>::DBG_STEP);
+			return;
 		}
 
 		counter = period;
@@ -387,7 +403,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		if(gdbThread->isData())
 		{
 			DBGData* request = gdbThread->receiveData();
-			if(request->getCommand() == DBGData::DBG_SUSPEND)
+			if(request->getCommand() == DBGData::DBG_SUSPEND_ACTION)
 			{
 				running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
 				ReportTracePointTrap();
@@ -395,14 +411,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		}
 		else
 		{
-			return (DebugControl<ADDRESS>::DBG_STEP);
+			return;
 		}
-	}
-
-	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
-	{
-		synched = true;
-		return (DebugControl<ADDRESS>::DBG_SYNC);
 	}
 
 	if(trap || running_mode == GDBSERVER_MODE_STEP)
@@ -418,7 +428,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		if (request == NULL)
 		{
 			Object::Stop(0);
-			return (DebugControl<ADDRESS>::DBG_KILL);
+			return;
 		}
 
 		switch (request->getCommand())
@@ -544,11 +554,10 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				std::string addr_str = request->getAttribute(DBGData::ADDRESS_ATTR);
 				if (addr_str.empty()) {
 					running_mode = GDBSERVER_MODE_STEP;
-					synched = false;
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 
 				addr = convertTo<ADDRESS>(addr_str);
@@ -563,22 +572,21 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					}
 				}
 				running_mode = GDBSERVER_MODE_STEP;
-				synched = false;
 
 				if (request) { delete request; request = NULL; }
 
-				return (DebugControl<ADDRESS>::DBG_STEP);
+				return;
 			}
 				break;
 
-			case DBGData::DBG_CONTINUE: {
+			case DBGData::DBG_CONTINUE_ACTION: {
 				std::string addr_str = request->getAttribute(DBGData::ADDRESS_ATTR);
 				if (addr_str.empty()) {
 					running_mode = GDBSERVER_MODE_CONTINUE;
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 
 				addr = convertTo<ADDRESS>(addr_str);
@@ -596,7 +604,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 				if (request) { delete request; request = NULL; }
 
-				return (DebugControl<ADDRESS>::DBG_STEP);
+				return;
 			}
 				break;
 
@@ -617,7 +625,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 			case DBGData::DBG_RESET_COMMAND: {
 				if (request) { delete request; request = NULL; }
 
-				return (DebugControl<ADDRESS>::DBG_RESET);
+				return;
 			}
 				break;
 
@@ -675,13 +683,13 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 			}
 				break;
 
-			case DBGData::UNKNOWN: {
-
-				DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
-
-				gdbThread->sendData(response);
-			}
-				break;
+//			case DBGData::UNKNOWN: {
+//
+//				DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+//
+//				gdbThread->sendData(response);
+//			}
+//				break;
 			default:
 
 				if(request->getCommand() == DBGData::QUERY_SYMBOL_READ) {
@@ -837,26 +845,15 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 				else if(request->getCommand() == DBGData::DBG_VERBOSE_RESUME_STEP)
 				{
 					running_mode = GDBSERVER_MODE_STEP;
-					synched = false;
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
-				}
-				else if (request->getCommand()  == DBGData::DBG_UNKNOWN) {
-					if(verbose)
-					{
-						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
-					}
-
-					DBGData *response =  new DBGData(DBGData::DBG_UNKNOWN);
-					gdbThread->sendData(response);
-
+					return;
 				}
 				else if (!HandleQRcmd(request)) {
 					if(verbose)
@@ -864,6 +861,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 						logger << DebugWarning << "Received an unknown command" << EndDebugWarning;
 					}
 
+					DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+					gdbThread->sendData(response);
 				}
 
 				break;
@@ -875,7 +874,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	} // end of while(!killed)
 
 	Object::Stop(0);
-	return (DebugControl<ADDRESS>::DBG_KILL);
 }
 
 template <class ADDRESS>
@@ -995,7 +993,7 @@ bool PIMServer<ADDRESS>::ReportProgramExit()
 	DBGData* response = new DBGData(DBGData::DBG_PROCESS_EXIT);
 	gdbThread->sendData(response);
 
-//#if defined(WIN32) || defined(WIN64)
+//#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 //			Sleep(1);
 //#else
 //			usleep(1000);
@@ -1009,8 +1007,8 @@ bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	DBGData* response = new DBGData(DBGData::DBG_REPORT_STOP);
 
-	char signum_str[2];
-	sprintf(signum_str, "%02x", signum);
+	char signum_str[3];
+	snprintf(signum_str, 3, "%02x", signum);
 	response->addAttribute(DBGData::VALUE_ATTR, signum_str);
 
 	gdbThread->sendData(response);
@@ -1025,6 +1023,55 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 
 	if (watchpoint_hit != NULL) {
 
+// *******************************
+
+//	if (monitor_import) {
+//		string name;
+//
+//		list<const Symbol<ADDRESS> *> symbol_registries;
+//
+//		if (symbol_table_lookup_import) {
+//			symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+//
+//		}
+//
+//		typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+//
+//		string value;
+//
+//		for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+//		{
+//
+//			if ((*symbol_iter)->GetAddress() == watchpoint_hit->GetAddress()) {
+//
+//				name = (*symbol_iter)->GetName();
+//				value = "";
+//
+//				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+//				{
+//					if(verbose)
+//					{
+//						logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
+//					}
+//				}
+//
+////				double d = convertTo<double>(value);
+//
+//				unsigned long d = 0;
+//				hexString2Number(value, &d, (*symbol_iter)->GetSize(), (endian == GDB_BIG_ENDIAN)? "big":"little");
+//
+////				std::cout << "res = " << d << "   at " << local_time << std::endl;
+//
+//				monitor_import->refresh_value(name.c_str(), (double) d, local_time++);
+//
+//				break;
+//			}
+//
+//		}
+//	} // end if(monitor)
+
+// *******************************
+
 		if (watchpoint_hit->GetMemoryAccessType() == unisim::util::debug::MAT_READ) {
 			response = new DBGData(DBGData::DBG_READ_WATCHPOINT);
 		} else {
@@ -1036,7 +1083,9 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		response->addAttribute(DBGData::ADDRESS_ATTR, sstr.str());
 
 		sstr.str(std::string());
+
 		watchpoint_hit = NULL;
+
 	} else {
 		response = new DBGData(DBGData::DBG_REPORT_EXTENDED_STOP);
 	}
@@ -1063,12 +1112,12 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
+				if(!debug_event_trigger_import->SetBreakpoint(addr + i)) return (false);
 			}
 			return (true);
 
 		case 2:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (true);
 			}
@@ -1078,7 +1127,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 
 		case 3:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (true);
 			}
@@ -1089,18 +1138,18 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 
 
 		case 4:
-			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+			if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (false);
 			}
 
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (true);
 			}
 			else
 			{
-				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
+				debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 				return (false);
 			}
 
@@ -1124,36 +1173,21 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
+				if(!debug_event_trigger_import->RemoveBreakpoint(addr + i)) return (false);
 			}
 			return (true);
 
 		case 2:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return (true);
-			}
-			else
-			{
-				return (false);
-			}
+			return debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 
 		case 3:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return (true);
-			}
-			else
-			{
-				return (false);
-			}
+			return debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 
 		case 4:
 			{
-				bool status = true;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				return (status);
+				return
+				  debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size) and
+				  debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 			}
 
 	}
@@ -1170,7 +1204,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetSignals(lst);
+	Simulator::Instance()->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -1336,7 +1370,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			string name = request->getAttribute(DBGData::NAME_ATTR);
 			string value = request->getAttribute(DBGData::VALUE_ATTR);
 
-			VariableBase* parameter = Simulator::simulator->FindParameter(name.c_str());
+			VariableBase* parameter = Simulator::Instance()->FindParameter(name.c_str());
 			if (parameter) {
 				if (value.empty()) // read parameter request
 				{
@@ -1466,10 +1500,9 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			if (addr_str.empty() || size_str.empty()) {
 				response = new DBGData(DBGData::DBG_ERROR_MALFORMED_REQUEST);
 			} else {
-				if (disasm_import) {
-
-					response = new DBGData(DBGData::QUERY_DISASM);
-
+				response = new DBGData(DBGData::QUERY_DISASM);
+				
+				if(disasm_import) {
 					ADDRESS next_address = current_address;
 					ADDRESS disassembled_size = 0;
 					std::stringstream strstm;
@@ -1495,9 +1528,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 						current_address = next_address;
 
 						strstm.str(std::string());
-
 					}
-
 				}
 			}
 
@@ -1547,7 +1578,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 			std::list<VariableBase *> lst;
 
-			Simulator::simulator->GetRegisters(lst);
+			Simulator::Instance()->GetRegisters(lst);
 
 			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -1577,9 +1608,9 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				const Statement<ADDRESS> *stmt = 0;
 				ADDRESS addr = *pc_reg;
-				long mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
+				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
 
-				number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &mcuAddress, 8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				sstr << hex << ":";
 
@@ -1635,7 +1666,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
 
-				number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &physicalAddress, 8, hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				response->addAttribute(DBGData::ADDRESS_ATTR, hex_addr_str);
 			}
@@ -1659,7 +1690,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				uint64_t physicalAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
 
-				number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &physicalAddress, 8, hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				response->addAttribute(DBGData::ADDRESS_ATTR, hex_addr_str);
 			}

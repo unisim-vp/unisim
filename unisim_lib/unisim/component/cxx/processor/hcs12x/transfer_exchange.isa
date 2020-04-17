@@ -62,6 +62,8 @@ t_ab_ba.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 // ****************  Common Section to HCS12X ( HLS = 0 ) *************
@@ -176,7 +178,8 @@ exg_hcs12.execute = {
 			cpu->eblb->setter<uint16_t>(rrSrc, 0xFF00 | r2Val);
 		}
 	}
-	
+
+	return getCycles();
 }
 
 // ***************************  TRANSFER Instructions
@@ -290,6 +293,8 @@ tfr_hcs12.execute = {
 	if ((oldCCRLow & 0x40) == 0x00) {
 		cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() & 0xBF);
 	}
+
+	return getCycles();
 }
 
 // ****************  Specific Section to HCS12X ( HLS = 1 ) *************
@@ -538,6 +543,8 @@ exg_hcs12x.execute = {
 	if ((oldCCRLow & 0x40) == 0x00) {
 		cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() & 0xBF);
 	}
+
+	return getCycles();
 }
 
 // *************************** HCS12X - TRANSFER Instructions
@@ -768,6 +775,8 @@ tfr_hcs12x.execute = {
 		 	cpu->eblb->setter<uint8_t>(EBLB::EBLBRegs::B, (uint8_t) (cpu->eblb->getter<uint8_t>(rrSrc) & 0x00FF));
 		 }
 	} 
+
+	return getCycles();
 }
 
 

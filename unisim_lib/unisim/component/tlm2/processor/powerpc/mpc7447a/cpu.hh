@@ -36,15 +36,18 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
-#include <systemc.h>
-#include <unisim/kernel/service/service.hh>
+#include <systemc>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <inttypes.h>
 #include <unisim/component/tlm2/interrupt/types.hh>
 #include <stack>
 #include <vector>
+
+using namespace sc_core;
 
 namespace unisim {
 namespace component {
@@ -54,18 +57,18 @@ namespace powerpc {
 namespace mpc7447a {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 
 template <class CONFIG>
 class CPU
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG>
 	, public tlm::tlm_bw_transport_if<>
 {
@@ -83,7 +86,7 @@ public:
 	irq_slave_socket mcp_slave_sock;                // MCP signal
 	irq_slave_socket smi_slave_sock;                // SMI signal
 	
-	CPU(const sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual bool EndSetup();
@@ -104,7 +107,7 @@ public:
 	void Run();
 	
 protected:
-	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
+	sc_time GetBurstLatency(uint32_t size, sc_time const& latency) const;
 	virtual bool BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
 	virtual bool BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
 	virtual bool BusZeroBlock(typename CONFIG::physical_address_t physical_addr);
@@ -138,8 +141,8 @@ private:
 	Statistic<double> stat_one;
 	Statistic<sc_time> stat_run_time;
 	Statistic<sc_time> stat_idle_time;
-	Formula<double> formula_idle_rate;
-	Formula<double> formula_load_rate;
+	StatisticFormula<double> stat_idle_rate;
+	StatisticFormula<double> stat_load_rate;
 	
 	class Event
 	{

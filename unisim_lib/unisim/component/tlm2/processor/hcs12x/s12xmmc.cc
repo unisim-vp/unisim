@@ -49,7 +49,7 @@ S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 	, MMC(name, _mpu, parent)
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 	, init_socket("init-socket")
@@ -73,6 +73,10 @@ S12XMMC::~S12XMMC() {
 
 	mmc_trans->release();
 
+	for (unsigned int i=0; i <memoryMap.size(); i++) {
+		if (memoryMap[i]) { delete memoryMap[i]; memoryMap[i] = NULL; }
+	}
+
 }
 
 
@@ -80,7 +84,7 @@ bool S12XMMC::accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_comm
 
 	bool find = false;
 
-	for (uint16_t i=0; i <memoryMap.size(); i++) {
+	for (unsigned int i=0; i <memoryMap.size(); i++) {
 		if ((addr >= memoryMap[i]->start_address) && (addr <= memoryMap[i]->end_address)) {
 			find = true;
 
@@ -133,11 +137,11 @@ void S12XMMC::xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 
 	bool find = false;
 	if (inherited::version.compare("V3") == 0) {
-		for (int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
+		for (unsigned int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
 			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
 		}
 	} else if (inherited::version.compare("V4") == 0) {
-		for (int i=0; (i<=inherited::PPAGE) && !find; i++) {
+		for (unsigned int i=0; (i<=inherited::PPAGE) && !find; i++) {
 			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
 		}
 	}
@@ -195,7 +199,7 @@ void S12XMMC::cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 
 	bool find = false;
 	if (inherited::version.compare("V3") == 0) {
-		for (int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
+		for (unsigned int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
 			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
 		}
 	} else if (inherited::version.compare("V4") == 0) {
@@ -263,6 +267,8 @@ bool S12XMMC::BeginSetup() {
 		std::stringstream ss;
 		ss << std::dec << oneMemoryMapEntrySegments[0] << " " << std::hex << oneMemoryMapEntrySegments[1] << " " << std::hex << oneMemoryMapEntrySegments[2] << std::dec;
 		ss >> std::dec >> oneMemoryMapEntry->module_index >> std::hex >> oneMemoryMapEntry->start_address >> std::hex >> oneMemoryMapEntry->end_address;
+
+		ss.str(std::string());
 
 		memoryMap.push_back(oneMemoryMapEntry);
 		oneMemoryMapEntrySegments.clear();

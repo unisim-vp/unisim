@@ -45,13 +45,6 @@ namespace unisim {
 namespace util {
 namespace parser {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
 template <class ABSTRACT_VALUE>
 Token<ABSTRACT_VALUE>::Token(const unisim::util::lexer::Location& _loc)
 	: text("")
@@ -128,10 +121,10 @@ AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *parser, 
 {
 	if(parser->IsDebugging())
 	{
-		unisim::kernel::logger::Logger& logger = parser->GetLogger();
-		logger << DebugInfo << *this << "->Token::led(";
-		if(left) logger << *left; else logger << "null";
-		logger << ") returns null" << EndDebugInfo;
+		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
+		debug_info_stream << *this << "->Token::led(";
+		if(left) debug_info_stream << *left; else debug_info_stream << "null";
+		debug_info_stream << ") returns null" << std::endl;
 	}
 	parser->ErrorUnexpectedToken(this);
 	delete left;
@@ -143,8 +136,8 @@ AST<ABSTRACT_VALUE> *Token<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser)
 {
 	if(parser->IsDebugging())
 	{
-		unisim::kernel::logger::Logger& logger = parser->GetLogger();
-		logger << DebugInfo << *this << "->Token::nud() returns null" << EndDebugInfo;
+		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
+		debug_info_stream << *this << "->Token::nud() returns null" << std::endl;
 	}
 	parser->ErrorUnexpectedToken(this);
 	return 0;
@@ -409,10 +402,12 @@ unsigned int AST<ABSTRACT_VALUE>::GetArity() const
 }
 
 template <class ABSTRACT_VALUE>
-Parser<ABSTRACT_VALUE>::Parser(std::istream *_stream, unisim::kernel::logger::Logger& _logger, bool _debug)
-	: unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >(_stream, _logger, _debug)
+Parser<ABSTRACT_VALUE>::Parser(std::istream *_stream, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, bool _debug)
+	: unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >(_stream, _debug_info_stream, _debug_warning_stream, _debug_error_stream, _debug)
 	, parser_error(false)
-	, logger(_logger)
+	, debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, debug(_debug)
 	, token(0)
 {
@@ -433,7 +428,7 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 		ErrorExpectedExpression();
 		if(debug)
 		{
-			logger << DebugInfo << "Parser::ParseExpression returns null" << EndDebugInfo;
+			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
@@ -442,7 +437,7 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 		ErrorUnexpectedToken(token);
 		if(debug)
 		{
-			logger << DebugInfo << "Parser::ParseExpression returns null" << EndDebugInfo;
+			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
@@ -454,7 +449,7 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 		delete t;
 		if(debug)
 		{
-			logger << DebugInfo << "Parser::ParseExpression returns null" << EndDebugInfo;
+			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
@@ -465,7 +460,7 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 		delete left;
 		if(debug)
 		{
-			logger << DebugInfo << "Parser::ParseExpression returns null" << EndDebugInfo;
+			debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
 		}
 		return 0;
 	}
@@ -479,7 +474,7 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 			delete t;
 			if(debug)
 			{
-				logger << DebugInfo << "Parser::ParseExpression returns null" << EndDebugInfo;
+				debug_info_stream << "Parser::ParseExpression returns null" << std::endl;
 			}
 			return 0;
 		}
@@ -494,9 +489,9 @@ AST<ABSTRACT_VALUE> *Parser<ABSTRACT_VALUE>::ParseExpression(unsigned int rbp)
 	
 	if(debug)
 	{
-		logger << DebugInfo << "Parser::ParseExpression() returns ";
-		if(left) logger << DebugInfo << *left; else logger << DebugInfo << "null";
-		logger << DebugInfo << EndDebugInfo;
+		debug_info_stream << "Parser::ParseExpression() returns ";
+		if(left) debug_info_stream << *left; else debug_info_stream << "null";
+		debug_info_stream << std::endl;
 	}
 	return left;
 }
@@ -532,9 +527,9 @@ void Parser<ABSTRACT_VALUE>::ErrorExpectedToken(unsigned int expected_token_id, 
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(token->GetLocation());
-	logger << DebugError << token->GetLocation() << ", expected '" << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetTokenText(expected_token_id) << "'";
-	if(token) logger << " before '" << token->GetText() << "'";
-	logger << EndDebugError;
+	debug_error_stream << token->GetLocation() << ", expected '" << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetTokenText(expected_token_id) << "'";
+	if(token) debug_error_stream << " before '" << token->GetText() << "'";
+	debug_error_stream << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
@@ -543,7 +538,7 @@ void Parser<ABSTRACT_VALUE>::ErrorUnexpectedToken(const Token<ABSTRACT_VALUE> *t
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(token->GetLocation());
-	logger << DebugError << token->GetLocation() << ", unexpected '" << token->GetText() << "'" << EndDebugError;
+	debug_error_stream << token->GetLocation() << ", unexpected '" << token->GetText() << "'" << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
@@ -552,20 +547,32 @@ void Parser<ABSTRACT_VALUE>::ErrorExpectedExpression()
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation());
-	logger << DebugError << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation() << ", expected expression" << EndDebugError;
+	debug_error_stream << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation() << ", expected expression" << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
 void Parser<ABSTRACT_VALUE>::InternalError()
 {
 	parser_error = true;
-	logger << DebugError << "Internal parser error!" << EndDebugError;
+	debug_error_stream << "Internal parser error!" << std::endl;
 }
 
 template <class ABSTRACT_VALUE>
-unisim::kernel::logger::Logger& Parser<ABSTRACT_VALUE>::GetLogger()
+std::ostream& Parser<ABSTRACT_VALUE>::GetDebugInfoStream()
 {
-	return logger;
+	return debug_info_stream;
+}
+
+template <class ABSTRACT_VALUE>
+std::ostream& Parser<ABSTRACT_VALUE>::GetDebugWarningStream()
+{
+	return debug_warning_stream;
+}
+
+template <class ABSTRACT_VALUE>
+std::ostream& Parser<ABSTRACT_VALUE>::GetDebugErrorStream()
+{
+	return debug_error_stream;
 }
 
 template <class ABSTRACT_VALUE>
@@ -586,8 +593,8 @@ AST<ABSTRACT_VALUE> *Literal<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> *parser
 	AST<ABSTRACT_VALUE> *ast = parser->Check(this) ? new AST<ABSTRACT_VALUE>(this) : 0;
 	if(parser->IsDebugging())
 	{
-		unisim::kernel::logger::Logger& logger = parser->GetLogger();
-		logger << DebugInfo << *this << "->Literal::nud() returns " << *ast << EndDebugInfo;
+		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
+		debug_info_stream << *this << "->Literal::nud() returns " << *ast << std::endl;
 	}
 	return ast;
 }
@@ -644,12 +651,12 @@ AST<ABSTRACT_VALUE> *InfixOperator<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> *
 	
 	if(parser->IsDebugging())
 	{
-		unisim::kernel::logger::Logger& logger = parser->GetLogger();
-		logger << DebugInfo << *this << "->InfixOperator::led(";
-		if(left) logger << *left; else logger << "null";
-		logger << ") returns ";
-		if(ast) logger << *ast; else logger << "null";
-		logger << EndDebugInfo;
+		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
+		debug_info_stream << *this << "->InfixOperator::led(";
+		if(left) debug_info_stream << *left; else debug_info_stream << "null";
+		debug_info_stream << ") returns ";
+		if(ast) debug_info_stream << *ast; else debug_info_stream << "null";
+		debug_info_stream << std::endl;
 	}
 	
 	if(!ast && left) delete left;
@@ -714,10 +721,10 @@ AST<ABSTRACT_VALUE> *PrefixOperator<ABSTRACT_VALUE>::nud(Parser<ABSTRACT_VALUE> 
 	
 	if(parser->IsDebugging())
 	{
-		unisim::kernel::logger::Logger& logger = parser->GetLogger();
-		logger << DebugInfo << *this << "->PrefixOperator::nud() returns ";
-		if(ast) logger << *ast; else logger << "null";
-		logger << EndDebugInfo;
+		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
+		debug_info_stream << *this << "->PrefixOperator::nud() returns ";
+		if(ast) debug_info_stream << *ast; else debug_info_stream << "null";
+		debug_info_stream << std::endl;
 	}
 	
 	if(closing_id && ast) delete this; // delete token as it is not stored in the ast
@@ -759,10 +766,10 @@ AST<ABSTRACT_VALUE> *SuffixOperator<ABSTRACT_VALUE>::led(Parser<ABSTRACT_VALUE> 
 	
 	if(parser->IsDebugging())
 	{
-		unisim::kernel::logger::Logger& logger = parser->GetLogger();
-		logger << DebugInfo << *this << "->SuffixOperator::led(";
-		if(left) logger << *left; else logger << "null";
-		logger << ") returns " << *ast << EndDebugInfo;
+		std::ostream& debug_info_stream = parser->GetDebugInfoStream();
+		debug_info_stream << *this << "->SuffixOperator::led(";
+		if(left) debug_info_stream << *left; else debug_info_stream << "null";
+		debug_info_stream << ") returns " << *ast << std::endl;
 	}
 	return ast;
 }

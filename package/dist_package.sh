@@ -706,7 +706,7 @@ for PKG in "$@"; do
 				share/unisim-armemu-${PKG_VERSION}/test/src/CMakeLists.txt \
 				share/unisim-armemu-${PKG_VERSION}/test/src/main.c \
 				share/unisim-armemu-${PKG_VERSION}/test/src/toolchain-armv5l.cmake \
-				share/unisim-armemu-${PKG_VERSION}/gdb_server/gdb_armv5l.xml \
+				share/unisim-armemu-${PKG_VERSION}/gdb_server/gdb_arm_with_fpa.xml \
 				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml \
 				share/applications/unisim-armemu-${PKG_VERSION}.desktop \
 				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim.icns \

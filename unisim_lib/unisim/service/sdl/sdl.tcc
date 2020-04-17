@@ -99,9 +99,13 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, mouse_state_updated(false)
 	, param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup")
 	, param_verbose_run("verbose-run", this, verbose_run, "enable/disable verbosity while simulation")
+	, alive(false)
+	, typematic_delay_us(0)
+	, typematic_interval_us(0)
 #if defined(HAVE_SDL)
 	, surface(0)
 	, screen(0)
+	, refresh_thread(0)
 	, event_handling_thread(0)
 	, sdl_mutex(0)
 	, logger_mutex(0)
@@ -112,16 +116,15 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, full_screen(false)
 	, host_key(SDLK_RCTRL)
 	, mode_set(false)
-	, alive(false)
 	, video_subsystem_initialized_cond(0)
 	, video_subsystem_initialized_mutex(0)
 	, refresh(false)
 	, force_refresh(false)
-	, typematic_delay_us(0)
-	, typematic_interval_us(0)
 	, video_mode()
 	, bmp_out_file_number(0)
 	, learn_keymap_filename("learned_keymap.xml")
+	, sdlk_string_map()
+	, keymap()
 	, bmp_out_filename()
 	, keymap_filename()
 	, host_key_name("rctrl")
@@ -135,8 +138,9 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, param_work_around_sdl_mouse_motion_coordinates_bug("work-around-sdl-mouse-motion-coordinates-bug", this, work_around_sdl_mouse_motion_coordinates_bug, "enable/disable work around SDL mouse motion coordinates bug")
 #endif
 {
-	param_refresh_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-
+#if defined(HAVE_SDL)
+	param_refresh_period.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+#endif
 	video_export.SetupDependsOn(memory_import);
 	keyboard_export.SetupDependsOn(memory_import);
 	mouse_export.SetupDependsOn(memory_import);
@@ -437,7 +441,7 @@ bool SDL<ADDRESS>::SetupSDL()
 	unisim::util::xml::Node *xml_node = 0;
 	if(!keymap_filename.empty())
 	{
-		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
+		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 		xml_node = parser->Parse(GetSimulator()->SearchSharedDataFile(keymap_filename.c_str()));
 		delete parser;
 	}
@@ -565,10 +569,10 @@ bool SDL<ADDRESS>::SetupSDL()
 		alive = false;
 		return false;
 	}
-#else
-	logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
-#endif
 	
+#else
+       logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
+#endif
 	return true;
 }
 
@@ -629,7 +633,9 @@ void SDL<ADDRESS>::SetTypematicDelay(unsigned int delay_us, unsigned int interva
 {
 	if(delay_us) typematic_delay_us = delay_us;
 	if(interval_us) typematic_interval_us = interval_us;
+#if defined(HAVE_SDL)
 	SDL_EnableKeyRepeat(typematic_delay_us, typematic_interval_us);
+#endif
 }
 
 template <class ADDRESS>
@@ -864,21 +870,29 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 		}
 
 		map<SDLKey, uint8_t>::iterator keymap_iter = keymap.find(kbd_ev.keysym.sym);
-		uint8_t key_num = (keymap_iter != keymap.end()) ? (*keymap_iter).second : 0;
-
-		if(unlikely(verbose_run))
+		if(keymap_iter != keymap.end())
 		{
-			SDL_mutexP(logger_mutex);
-			logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
-			SDL_mutexV(logger_mutex);
-		}
+			uint8_t key_num = (*keymap_iter).second;
+			if(unlikely(verbose_run))
+			{
+				SDL_mutexP(logger_mutex);
+				logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+				SDL_mutexV(logger_mutex);
+			}
 
-		if(key_num)
-		{
 			KeyAction key_action;
 			key_action.key_num = key_num;
 			key_action.action = (kbd_ev.type == SDL_KEYUP) ? unisim::service::interfaces::Keyboard::KeyAction::KEY_UP : unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN;
 			PushKeyAction(key_action);
+		}
+		else
+		{
+			if(unlikely(verbose_run))
+			{
+				SDL_mutexP(logger_mutex);
+				logger << DebugInfo << "Unmapped Key (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+				SDL_mutexV(logger_mutex);
+			}
 		}
 	}
 }
@@ -1023,7 +1037,7 @@ void SDL<ADDRESS>::EventLoop()
 					if(alive)
 					{
 						SDL_mutexV(sdl_mutex);
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 						raise(SIGINT);
 #else
 						kill(getpid(), SIGINT);

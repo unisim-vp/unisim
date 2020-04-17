@@ -47,7 +47,8 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <iosfwd>
@@ -57,17 +58,17 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::SymbolTable;
 using unisim::service::interfaces::SymbolTableLookup;
@@ -108,7 +109,7 @@ public:
 	virtual bool Load();
 	
 	// unisim::service::interfaces::Blob
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	// unisim::service::interfaces::SymbolTableLookup
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -119,41 +120,42 @@ public:
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup
-	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
+	virtual void GetStatements(std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 
 	// unisim::service::interfaces::BackTrace
 	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 private:
 	unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> *elf_loader;
-	string filename;
+	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool initialize_extra_segment_bytes;
 	bool dump_headers;
-	string dwarf_to_html_output_directory;
-	string dwarf_to_xml_output_filename;
-	string dwarf_register_number_mapping_filename;
+	std::string dwarf_to_html_output_directory;
+	std::string dwarf_to_xml_output_filename;
+	std::string dwarf_register_number_mapping_filename;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
 	bool debug_dwarf;
 	
-	Parameter<string> param_filename;
+	Parameter<std::string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_initialize_extra_segment_bytes;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
-	Parameter<string> param_dwarf_to_html_output_directory;
-	Parameter<string> param_dwarf_to_xml_output_filename;
-	Parameter<string> param_dwarf_register_number_mapping_filename;
+	Parameter<std::string> param_dwarf_to_html_output_directory;
+	Parameter<std::string> param_dwarf_to_xml_output_filename;
+	Parameter<std::string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
 	Parameter<bool> param_debug_dwarf;
 };

@@ -35,6 +35,7 @@
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
+#include <sstream>
 
 namespace unisim {
 namespace component {
@@ -62,7 +63,7 @@ int CCR_t::GetSize() const
 	return (2);
 }
 
-unisim::util::debug::Register *CCR_t::GetLowRegister()
+unisim::service::interfaces::Register *CCR_t::GetLowRegister()
 {
 	return (new unisim::util::debug::SimpleRegister<uint8_t>("CCRL",
 #if BYTE_ORDER == BIG_ENDIAN
@@ -73,7 +74,7 @@ unisim::util::debug::Register *CCR_t::GetLowRegister()
         ));
 }
 
-unisim::util::debug::Register *CCR_t::GetHighRegister()
+unisim::service::interfaces::Register *CCR_t::GetHighRegister()
 {
 	return (new unisim::util::debug::SimpleRegister<uint8_t>("CCRH",
 #if BYTE_ORDER == BIG_ENDIAN
@@ -86,8 +87,8 @@ unisim::util::debug::Register *CCR_t::GetHighRegister()
 
 // ****************************************
 
-TimeBaseRegisterView::TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint16_t& _storage, TimeBaseRegisterView::Type _type, const char *description)
-	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+TimeBaseRegisterView::TimeBaseRegisterView(const char *name, unisim::kernel::Object *owner, uint16_t& _storage, TimeBaseRegisterView::Type _type, const char *description)
+	: unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
 	, storage(_storage)
 	, type(_type)
 {
@@ -145,7 +146,7 @@ TimeBaseRegisterView::operator std::string () const
 	return (sstr.str());
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (bool value)
 {
 	if(IsMutable())
 	{
@@ -156,7 +157,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool va
 	return (*this);
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long long value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (long long value)
 {
 	if(IsMutable())
 	{
@@ -167,7 +168,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long lo
 	return (*this);
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
 {
 	if(IsMutable())
 	{
@@ -178,7 +179,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigne
 	return (*this);
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (double value)
 {
 	if(IsMutable())
 	{
@@ -189,7 +190,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double 
 	return (*this);
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (const char * value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (const char * value)
 {
 	if(IsMutable())
 	{

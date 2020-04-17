@@ -37,7 +37,7 @@
 #define __UNISIM_SERVICE_TEE_BLOB_TEE_HH__
 
 #include <inttypes.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/blob.hh"
 
@@ -46,12 +46,12 @@ namespace service {
 namespace tee {
 namespace blob {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::Blob;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
@@ -69,13 +69,13 @@ public:
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
 	
-	const unisim::util::debug::blob::Blob<ADDRESS> *GetBlob() const;
+	const unisim::util::blob::Blob<ADDRESS> *GetBlob() const;
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
 	bool SetupBlob();
 	
-	unisim::util::debug::blob::Blob<ADDRESS> *blob;
+	unisim::util::blob::Blob<ADDRESS> *blob;
 };
 
 } // end of namespace blob

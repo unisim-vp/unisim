@@ -1,0 +1,17 @@
+INSTALLATION
+------------
+
+Requirements:
+  - GNU bash
+  - GNU flex
+  - GNU bison
+  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
+  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
+
+Building instructions:
+  $ cd <my-build-dir>
+  $ <path_to>/configure <options>
+  $ make
+  
+Installing (optional):
+  $ make install

@@ -42,13 +42,6 @@ namespace unisim {
 namespace util {
 namespace dictionary {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
 template <class TYPE>
 DictionaryEntry<TYPE>::DictionaryEntry(char _c, DictionaryEntry<TYPE> *_left, DictionaryEntry<TYPE> *_right, bool _match, unsigned int _id, const TYPE& _value)
 	: c(_c)
@@ -97,10 +90,12 @@ std::ostream& operator << (std::ostream& os, const DictionaryEntry<TYPE>& entry)
 }
 
 template <class TYPE>
-Dictionary<TYPE>::Dictionary(unisim::kernel::logger::Logger& _logger, bool _debug)
+Dictionary<TYPE>::Dictionary(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, bool _debug)
 	: root(0)
 	, num_entries(0)
-	, logger(_logger)
+	, debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, debug(_debug)
 {
 }
@@ -181,7 +176,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream *strea
 		if(stream->get(c).eof() || stream->fail()) return 0;
 		if(debug)
 		{
-			logger << DebugInfo << "get '" << c << "'" << EndDebugInfo;
+			debug_info_stream << "get '" << c << "'" << std::endl;
 		}
 		
 		char next_c = 0;
@@ -189,7 +184,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream *strea
 		
 		if(debug)
 		{
-			if(stream->good()) logger << DebugInfo << "get '" << next_c << "'" << EndDebugInfo;
+			if(stream->good()) debug_info_stream << "get '" << next_c << "'" << std::endl;
 		}
 		
 		DictionaryEntry<TYPE> *last_match = 0;
@@ -221,7 +216,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream *strea
 						
 						if(debug)
 						{
-							if(stream->good()) logger << DebugInfo << "get '" << next_c << "'" << EndDebugInfo;
+							if(stream->good()) debug_info_stream << "get '" << next_c << "'" << std::endl;
 						}
 						continue;
 					}
@@ -236,7 +231,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream *strea
 		{
 			if(debug)
 			{
-				logger << DebugInfo << "putback '" << next_c << "'" << EndDebugInfo;
+				debug_info_stream << "putback '" << next_c << "'" << std::endl;
 			}
 			stream->putback(next_c);
 			if(stream->fail()) return 0;
@@ -259,7 +254,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream *strea
 				{
 					if(debug)
 					{
-						logger << DebugInfo << "putback '" << text[n - 1] << "'" << std::endl;
+						debug_info_stream << "putback '" << text[n - 1] << "'" << std::endl;
 					}
 					stream->putback(text[n - 1]);
 					n--;
@@ -272,7 +267,7 @@ DictionaryEntry<TYPE> *Dictionary<TYPE>::FindDictionaryEntry(std::istream *strea
 			stream->clear();
 			if(debug)
 			{
-				logger << DebugInfo << "putback '" << c << "'" << EndDebugInfo;
+				debug_info_stream << "putback '" << c << "'" << std::endl;
 			}
 			stream->putback(c);
 		}
@@ -303,7 +298,7 @@ void Dictionary<TYPE>::Add(const char *text, const TYPE& value)
 		{
 			if(debug)
 			{
-				logger << DebugInfo << "making entry " << entry->id << " matching \"" << text << "\"" << EndDebugInfo;
+				debug_info_stream << "making entry " << entry->id << " matching \"" << text << "\"" << std::endl;
 			}
 			entry->match = true;
 			entry->value = value;
@@ -316,7 +311,7 @@ void Dictionary<TYPE>::Add(const char *text, const TYPE& value)
 			entry->left = new_left_entry;
 			if(debug)
 			{
-				logger << DebugInfo << "created new entry " << new_right_entry->id << " matching \"" << text << "\"" << EndDebugInfo;
+				debug_info_stream << "created new entry " << new_right_entry->id << " matching \"" << text << "\"" << std::endl;
 			}
 		}
 	}
@@ -325,7 +320,7 @@ void Dictionary<TYPE>::Add(const char *text, const TYPE& value)
 		DictionaryEntry<TYPE> *new_entry = Create(text, value);
 		if(debug)
 		{
-			logger << DebugInfo << "created new entry " << new_entry->id << " matching \"" << text << "\"" << EndDebugInfo;
+			debug_info_stream << "created new entry " << new_entry->id << " matching \"" << text << "\"" << std::endl;
 		}
 		new_entry->left = root ? root->left : 0;
 		if(root)
@@ -337,7 +332,7 @@ void Dictionary<TYPE>::Add(const char *text, const TYPE& value)
 		{
 			if(debug)
 			{
-				logger << DebugInfo << "new entry " << new_entry->id << " is root" << EndDebugInfo;
+				debug_info_stream << "new entry " << new_entry->id << " is root" << std::endl;
 			}
 			root = new_entry;
 		}

@@ -1,7 +1,7 @@
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
  
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using namespace unisim::kernel::logger;
  
 class MyObject : public Object {

@@ -53,14 +53,16 @@
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
 namespace component {
@@ -78,19 +80,19 @@ using unisim::component::cxx::processor::hcs12x::TOWNER;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::XINT_Payload;
@@ -135,6 +137,7 @@ public:
 	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
 	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
 
+	static const unsigned int MEMORY_MAP_SIZE = 16;
 
 	/*
 	 * 0xFFFE				: pin reset, power-on reset, low-voltage reset, illegal address reset
@@ -166,14 +169,15 @@ public:
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
 
-	void run(); // Priority Decoder and Interrupt selection
-
 	virtual void Reset();
+	
+	void run(); // Priority Decoder and Interrupt selection
 
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -208,7 +212,8 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//==============================================================
 	//=              XINT Registers Access Routines                =
@@ -247,7 +252,7 @@ private:
 		bool getState() { return (state); }
 		void setPayload(XINT_Payload* _payload) { payload = _payload; }
 		XINT_Payload getPayload() { return (*payload); }
-		void releasePayload() { if (payload) {payload->release(); payload = NULL; } }
+		void releasePayload() { if (payload) {payload->reset(); payload->release(); payload = NULL; } }
 
 	private:
 		bool state;
@@ -273,9 +278,9 @@ private:
 	Parameter<address_t>   param_baseAddress;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	bool selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer);
 

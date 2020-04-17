@@ -38,4 +38,4 @@
 #include "unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<SimConfig::UART_LITE_CONFIG>;
+template class unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<Config::UART_LITE_CONFIG>;

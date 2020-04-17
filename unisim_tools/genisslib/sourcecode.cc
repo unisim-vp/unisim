@@ -17,9 +17,8 @@
 
 #include <sourcecode.hh>
 #include <ostream>
-using namespace std;
 
-SourceCode_t const* SourceCode_t::s_last_srccode = 0;
+SourceCode const* SourceCode::s_last_srccode = 0;
 
 /** Create a C source code object
     @param _content a C string containing the C source code
@@ -27,8 +26,8 @@ SourceCode_t const* SourceCode_t::s_last_srccode = 0;
     @param lineno a line number where was found the C source code
     @return a C source code object
 */
-SourceCode_t::SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc )
-  : m_content( _content ), m_fileloc( _fileloc )
+SourceCode::SourceCode( ConstStr _content, FileLoc const& _fileloc )
+  : content( _content ), fileloc( _fileloc )
 {
   s_last_srccode = this;
 }
@@ -38,8 +37,8 @@ SourceCode_t::SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc )
     @param _sink a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, SourceCode_t const& _sc ) {
-  _sink << '{' << _sc.m_content << '}';
+operator<<( std::ostream& _sink, SourceCode const& _sc ) {
+  _sink << '{' << _sc.content << '}';
   return _sink;
 }
 
@@ -48,16 +47,19 @@ operator<<( std::ostream& _sink, SourceCode_t const& _sc ) {
     @param c_symbol a C symbol
     @returns a parameter object
 */
-CodePair_t::CodePair_t( SourceCode_t* _ctype, SourceCode_t* _csymbol )
-  : m_ctype( _ctype ), m_csymbol( _csymbol )
+CodePair::CodePair( SourceCode* _ctype, SourceCode* _csymbol )
+  : ctype( _ctype ), csymbol( _csymbol )
 {}
 
-CodePair_t::~CodePair_t() {}
+CodePair::~CodePair() {}
 
 /** Dump a parameter object into a stream
     @param _sink a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, CodePair_t const& _cp ) {
-  return (_sink << (*_cp.m_ctype) << ' ' << (*_cp.m_csymbol));
+operator << ( std::ostream& sink, CodePair const& _cp )
+{
+  sink << (*_cp.ctype) << ' ' << (*_cp.csymbol);
+  
+  return sink;
 }

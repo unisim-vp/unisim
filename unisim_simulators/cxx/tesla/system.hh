@@ -43,13 +43,13 @@
 #include <unisim/component/cxx/processor/tesla/cpu.hh>
 #include <unisim/component/cxx/processor/tesla/config.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh>
 
 using unisim::component::cxx::processor::tesla::CPU;
 using unisim::component::cxx::processor::tesla::BaseConfig;
 //using unisim::component::cxx::memory::ram::Memory;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::component::cxx::scheduler::cuda_scheduler::CUDAScheduler;
 
 

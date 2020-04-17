@@ -65,10 +65,12 @@ using unisim::component::cxx::processor::hcs12x::XB::XbModes;
  
 }
 
-action {void} execute({CPU *} {cpu}) {
+action {uint8_t} execute({CPU *} {cpu}) {
 	std::cerr << "Unknown instruction" << std::endl;
 
 	cpu->Stop(-1);
+	
+	return getCycles();
 }
 
 action {string} disasm({ostream&} {sink}) {

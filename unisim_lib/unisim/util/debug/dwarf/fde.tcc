@@ -35,8 +35,6 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
 
-#include <unisim/kernel/debug/debug.hh>
-
 namespace unisim {
 namespace util {
 namespace debug {
@@ -165,7 +163,9 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		cie_pointer = cie_pointer32;
 	}
 
-	uint8_t address_size = (dw_fmt == FMT_DWARF64) ? 8 : 4;
+	const DWARF_CIE<MEMORY_ADDR> *_dw_cie = dw_handler->FindCIE(cie_pointer, dw_fst);
+	if(!_dw_cie) return -1;
+	uint8_t address_size = _dw_cie->GetAddressSize();
 	uint64_t initial_location_pc = _section_addr + _offset + size;
 
 	switch(address_size)
@@ -368,6 +368,7 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	if(cfi)
 	{
 		sstr_cfi << *cfi;
+		delete cfi;
 	}
 	else
 	{

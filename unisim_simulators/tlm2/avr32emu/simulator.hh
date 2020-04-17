@@ -49,61 +49,42 @@
 #include <config.hh>
 
 // Class definition of kernel, services and interfaces
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/tlm2/simulator.hh>
 
-// Host machine standard headers
-#include <iostream>
-#include <stdexcept>
-#include <stdlib.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#else
-#include <signal.h>
-#endif
-
-using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::multiformat_loader::MultiFormatLoader;
-using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
-using unisim::service::debug::debugger::Debugger;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::profiling::addr_profiler::Profiler;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
 
 //=========================================================================
 //===                        Top level class                            ===
 //=========================================================================
 
 template <class CONFIG>
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::tlm2::Simulator
 {
 public:
-	Simulator(int argc, char **argv);
+	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
+	virtual bool EndSetup();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
-	int GetExitStatus() const;
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 protected:
 private:
 	//=========================================================================
@@ -124,6 +105,24 @@ private:
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> IRQ_STUB;
 	
 	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef unisim::service::debug::debugger::Debugger<typename CONFIG::DEBUGGER_CONFIG> DEBUGGER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
+	typedef unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> AVR32_T2H_SYSCALLS;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
+	
+	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - AVR32UC processor
@@ -141,36 +140,45 @@ private:
 	//===                            Services                               ===
 	//=========================================================================
 	//  - Multiformat loader
-	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
+	LOADER *loader;
 	//  - AVR32 Target to Host syscalls
-	AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> *avr32_t2h_syscalls;
+	AVR32_T2H_SYSCALLS *avr32_t2h_syscalls;
 	//  - Debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	DEBUGGER *debugger;
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	GDB_SERVER *gdb_server;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
-	//  - profiler
-	Profiler<CPU_ADDRESS_TYPE> *profiler;
+	INLINE_DEBUGGER *inline_debugger;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - Tee Memory Access Reporting
-	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
+	//  - Instrumenter
+	INSTRUMENTER *instrumenter;
+	//  - Profiler
+	PROFILER *profiler;
+	//  - HTTP server
+	HTTP_SERVER *http_server;
+	//  - Logger Console Printer
+	LOGGER_CONSOLE_PRINTER *logger_console_printer;
+	//  - Logger Text File Writer
+	LOGGER_TEXT_FILE_WRITER *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	LOGGER_HTTP_WRITER *logger_http_writer;
+	//  - Logger XML File Writer
+	LOGGER_XML_FILE_WRITER *logger_xml_file_writer;
+	//  - Logger TCP Network Stream Writer
+	LOGGER_NETSTREAM_WRITER *logger_netstream_writer;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
+	bool enable_profiler;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 
-	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
-#ifdef WIN32
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
+	virtual void SigInt();
 };
 
 #endif // __AVR32EMU_SIMULATOR_HH__

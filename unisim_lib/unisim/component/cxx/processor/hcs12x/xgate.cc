@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/s12xgate.hh>
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace component {
@@ -42,29 +43,23 @@ namespace processor {
 namespace s12xgate {
 
 
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
-
 using unisim::util::debug::SimpleRegister;
 
-XGATE::XGATE(const char *name, Object *parent):
-	Object(name, parent)
-	, unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+XGATE::XGATE(const char *name, Object *parent)
+	: Object(name, parent)
+	, unisim::kernel::Client<DebugYielding>(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<MemoryAccessReportingControl>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<SymbolTableLookup<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
 
 	, registers_export("registers_export", this)
 	, memory_export("memory_export", this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
-	, debug_control_import("debug_control_import", this)
+	, debug_yielding_import("debug_yielding_import", this)
 	, memory_access_reporting_import("memory_access_reporting_import", this)
 	, memory_import("memory_import", this)
 	, trap_reporting_import("trap_reporting_import", this)
@@ -90,13 +85,15 @@ XGATE::XGATE(const char *name, Object *parent):
 	, verbose_exception(false)
 	, param_verbose_exception("verbose-exception", this, verbose_exception)
 
-	, requires_memory_access_reporting(true)
-	, param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting)
-	, requires_finished_instruction_reporting(true)
-	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
+	, requires_memory_access_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 
-	, trace_enable(false)
-	, param_trace_enable("trace-enabled", this, trace_enable)
+	, enable_trace(false)
+	, param_enable_trace("enable-trace", this, enable_trace)
+
+	, enable_file_trace(false)
+	, param_enable_file_trace("enable-file-trace", this, enable_file_trace)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled, "")
@@ -146,17 +143,17 @@ XGATE::XGATE(const char *name, Object *parent):
 
 
 {
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_periodic_trap.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_periodic_trap.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_cycles_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_cycles_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_load_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_store_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
-	for (uint8_t i=0; i<XGATE_SIZE; i++) {
-		param_software_channel_id.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
+	for (unsigned int i=0; i<XGATE_SIZE; i++) {
+		param_software_channel_id.SetFormat(unisim::kernel::VariableBase::FMT_HEX);
 		param_software_channel_id.SetMutable(true);
 	}
 
@@ -175,19 +172,12 @@ XGATE::XGATE(const char *name, Object *parent):
 	xgif_register[6] = 0x0000;
 	xgif_register[7] = 0x0000;
 
+	lastPC = 0;
 }
 
 XGATE::~XGATE()
 {
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -196,6 +186,7 @@ XGATE::~XGATE()
 
 	if (logger) { delete logger; logger = NULL;}
 
+	if (trace.is_open()) { trace.close(); }
 
 }
 
@@ -203,17 +194,17 @@ XGATE::~XGATE()
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
-inline INLINE
+inline ALWAYS_INLINE
 bool XGATE::VerboseSetup() {
 	return (debug_enabled && verbose_setup);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 bool XGATE::VerboseStep() {
 	return (debug_enabled && verbose_step);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegs() {
 
 	*logger << "\t- XGMCTL" << " = 0x" << std::hex << xgmctl_register << std::dec; //2-bytes
@@ -244,7 +235,7 @@ void XGATE::VerboseDumpRegs() {
 
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegsStart() {
 	if(debug_enabled && verbose_dump_regs_start) {
 		*logger << DebugInfo
@@ -254,7 +245,7 @@ void XGATE::VerboseDumpRegsStart() {
 	}
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegsEnd() {
 	if(debug_enabled && verbose_dump_regs_end) {
 		*logger << DebugInfo
@@ -267,50 +258,50 @@ void XGATE::VerboseDumpRegsEnd() {
 bool XGATE::BeginSetup() {
 	std::stringstream sstr_xgmctl_register_name;
 	sstr_xgmctl_register_name << GetName() << ".XGMCTL";
-	registers_registry[sstr_xgmctl_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgmctl_register_name.str().c_str(), &xgmctl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgmctl_register_name.str().c_str(), &xgmctl_register));
 
-	unisim::kernel::service::Register<uint16_t> *xgmctl_var = new unisim::kernel::service::Register<uint16_t>("XGMCTL", this, xgmctl_register, "XGATE Control Register (XGMCTL)");
+	unisim::kernel::variable::Register<uint16_t> *xgmctl_var = new unisim::kernel::variable::Register<uint16_t>("XGMCTL", this, xgmctl_register, "XGATE Control Register (XGMCTL)");
 	extended_registers_registry.push_back(xgmctl_var);
 	xgmctl_var->setCallBack(this, XGMCTL, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgchid_register_name;
 	sstr_xgchid_register_name << GetName() << ".XGCHID";
-	registers_registry[sstr_xgchid_register_name.str()] = new SimpleRegister<uint8_t>(sstr_xgchid_register_name.str().c_str(), currentRegisterBank->getXGCHIDPtr());
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgchid_register_name.str().c_str(), currentRegisterBank->getXGCHIDPtr()));
 
-	unisim::kernel::service::Register<uint8_t> *xgchid_var = new unisim::kernel::service::Register<uint8_t>("XGCHID", this, *(currentRegisterBank->getXGCHIDPtr()), "XGATE Channel ID Register (XGCHID)");
+	unisim::kernel::variable::Register<uint8_t> *xgchid_var = new unisim::kernel::variable::Register<uint8_t>("XGCHID", this, *(currentRegisterBank->getXGCHIDPtr()), "XGATE Channel ID Register (XGCHID)");
 	extended_registers_registry.push_back(xgchid_var);
 	xgchid_var->setCallBack(this, XGCHID, &CallBackObject::write, &CallBackObject::read);
 
 	if (version.compare("V2") != 0) {
 		std::stringstream sstr_xgchpl_register_name;
 		sstr_xgchpl_register_name << GetName() << ".XGCHPL";
-		registers_registry[sstr_xgchpl_register_name.str()] = new SimpleRegister<uint8_t>(sstr_xgchpl_register_name.str().c_str(), currentRegisterBank->getXGCHPLPtr());
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgchpl_register_name.str().c_str(), currentRegisterBank->getXGCHPLPtr()));
 
-		unisim::kernel::service::Register<uint8_t> *xgchpl_var = new unisim::kernel::service::Register<uint8_t>("XGCHPL", this, *(currentRegisterBank->getXGCHPLPtr()), "XGATE Channel Priority Level Register (XGCHPL)");
+		unisim::kernel::variable::Register<uint8_t> *xgchpl_var = new unisim::kernel::variable::Register<uint8_t>("XGCHPL", this, *(currentRegisterBank->getXGCHPLPtr()), "XGATE Channel Priority Level Register (XGCHPL)");
 		extended_registers_registry.push_back(xgchpl_var);
 		xgchpl_var->setCallBack(this, XGCHPL, &CallBackObject::write, &CallBackObject::read);
 
 		std::stringstream sstr_xgispsel_register_name;
 		sstr_xgispsel_register_name << GetName() << ".XGISPSEL";
-		registers_registry[sstr_xgispsel_register_name.str()] = new SimpleRegister<uint8_t>(sstr_xgispsel_register_name.str().c_str(), &xgispsel_register);
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgispsel_register_name.str().c_str(), &xgispsel_register));
 
-		unisim::kernel::service::Register<uint8_t> *xgispsel_var = new unisim::kernel::service::Register<uint8_t>("XGISPSEL", this, xgispsel_register, "XGATE Initial Stack Pointer Select Register (XGISPSEL)");
+		unisim::kernel::variable::Register<uint8_t> *xgispsel_var = new unisim::kernel::variable::Register<uint8_t>("XGISPSEL", this, xgispsel_register, "XGATE Initial Stack Pointer Select Register (XGISPSEL)");
 		extended_registers_registry.push_back(xgispsel_var);
 		xgispsel_var->setCallBack(this, XGISPSEL, &CallBackObject::write, NULL);
 
 		std::stringstream sstr_xgisp74_register_name;
 		sstr_xgisp74_register_name << GetName() << ".XGISP74";
-		registers_registry[sstr_xgisp74_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgisp74_register_name.str().c_str(), &xgvbrPtr_register[1]);
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgisp74_register_name.str().c_str(), &xgvbrPtr_register[1]));
 
-		unisim::kernel::service::Register<uint16_t> *xgisp74_var = new unisim::kernel::service::Register<uint16_t>("XGISP74", this, xgvbrPtr_register[1], "XGATE Initial Stack Pointer for Interrupt Priorities 7 to 4 (XGISP74)");
+		unisim::kernel::variable::Register<uint16_t> *xgisp74_var = new unisim::kernel::variable::Register<uint16_t>("XGISP74", this, xgvbrPtr_register[1], "XGATE Initial Stack Pointer for Interrupt Priorities 7 to 4 (XGISP74)");
 		extended_registers_registry.push_back(xgisp74_var);
 		xgisp74_var->setCallBack(this, XGVBR, &CallBackObject::write, NULL);
 
 		std::stringstream sstr_xgisp31_register_name;
 		sstr_xgisp31_register_name << GetName() << ".XGISP31";
-		registers_registry[sstr_xgisp31_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgisp31_register_name.str().c_str(), &xgvbrPtr_register[2]);
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgisp31_register_name.str().c_str(), &xgvbrPtr_register[2]));
 
-		unisim::kernel::service::Register<uint16_t> *xgisp31_var = new unisim::kernel::service::Register<uint16_t>("XGISP31", this, xgvbrPtr_register[2], "XGATE Initial Stack Pointer for Interrupt Priorities 3 to 1 (XGISP31)");
+		unisim::kernel::variable::Register<uint16_t> *xgisp31_var = new unisim::kernel::variable::Register<uint16_t>("XGISP31", this, xgvbrPtr_register[2], "XGATE Initial Stack Pointer for Interrupt Priorities 3 to 1 (XGISP31)");
 		extended_registers_registry.push_back(xgisp31_var);
 		xgisp31_var->setCallBack(this, XGVBR, &CallBackObject::write, NULL);
 
@@ -318,163 +309,167 @@ bool XGATE::BeginSetup() {
 
 	std::stringstream sstr_xgvbr_register_name;
 	sstr_xgvbr_register_name << GetName() << ".XGVBR";
-	registers_registry[sstr_xgvbr_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgvbr_register_name.str().c_str(), &xgvbrPtr_register[0]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgvbr_register_name.str().c_str(), &xgvbrPtr_register[0]));
 
-	unisim::kernel::service::Register<uint16_t> *xgvbr_var = new unisim::kernel::service::Register<uint16_t>("XGVBR", this, xgvbrPtr_register[0], "XGATE Vector Base Address Register (XGVBR)");
+	unisim::kernel::variable::Register<uint16_t> *xgvbr_var = new unisim::kernel::variable::Register<uint16_t>("XGVBR", this, xgvbrPtr_register[0], "XGATE Vector Base Address Register (XGVBR)");
 	extended_registers_registry.push_back(xgvbr_var);
 	xgvbr_var->setCallBack(this, XGVBR, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_7f_70_register_name;
 	sstr_xgif_7f_70_register_name << GetName() << ".XGIF_7F_70";
-	registers_registry[sstr_xgif_7f_70_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_7f_70_register_name.str().c_str(), &xgif_register[0]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_7f_70_register_name.str().c_str(), &xgif_register[0]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_7f_70_var = new unisim::kernel::service::Register<uint16_t>("XGIF_7F_70", this, xgif_register[0], "XGATE Channel (7F-70) Interrupt Flag Register (XGIF_7F_70)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_7f_70_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_7F_70", this, xgif_register[0], "XGATE Channel (7F-70) Interrupt Flag Register (XGIF_7F_70)");
 	extended_registers_registry.push_back(xgif_7f_70_var);
 	xgif_7f_70_var->setCallBack(this, XGIF_7F_70, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_6f_60_register_name;
 	sstr_xgif_6f_60_register_name << GetName() << ".XGIF_6F_60";
-	registers_registry[sstr_xgif_6f_60_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_6f_60_register_name.str().c_str(), &xgif_register[1]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_6f_60_register_name.str().c_str(), &xgif_register[1]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_6f_60_var = new unisim::kernel::service::Register<uint16_t>("XGIF_6F_60", this, xgif_register[1], "XGATE Channel (6F-60) Interrupt Flag Register (XGIF_6F_60)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_6f_60_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_6F_60", this, xgif_register[1], "XGATE Channel (6F-60) Interrupt Flag Register (XGIF_6F_60)");
 	extended_registers_registry.push_back(xgif_6f_60_var);
 	xgif_6f_60_var->setCallBack(this, XGIF_6F_60, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_5f_50_register_name;
 	sstr_xgif_5f_50_register_name << GetName() << ".XGIF_5F_50";
-	registers_registry[sstr_xgif_5f_50_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_5f_50_register_name.str().c_str(), &xgif_register[2]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_5f_50_register_name.str().c_str(), &xgif_register[2]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_5f_50_var = new unisim::kernel::service::Register<uint16_t>("XGIF_5F_50", this, xgif_register[2], "XGATE Channel (5F-60) Interrupt Flag Register (XGIF_5F_50)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_5f_50_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_5F_50", this, xgif_register[2], "XGATE Channel (5F-60) Interrupt Flag Register (XGIF_5F_50)");
 	extended_registers_registry.push_back(xgif_5f_50_var);
 	xgif_5f_50_var->setCallBack(this, XGIF_5F_50, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_4f_40_register_name;
 	sstr_xgif_4f_40_register_name << GetName() << ".XGIF_4F_40";
-	registers_registry[sstr_xgif_4f_40_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_4f_40_register_name.str().c_str(), &xgif_register[3]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_4f_40_register_name.str().c_str(), &xgif_register[3]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_4F_40_var = new unisim::kernel::service::Register<uint16_t>("XGIF_4F_40", this, xgif_register[3], "XGATE Channel (4F_40) Register (XGIF_4F_40)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_4F_40_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_4F_40", this, xgif_register[3], "XGATE Channel (4F_40) Register (XGIF_4F_40)");
 	extended_registers_registry.push_back(xgif_4F_40_var);
 	xgif_4F_40_var->setCallBack(this, XGIF_4F_40, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_3f_30_register_name;
 	sstr_xgif_3f_30_register_name << GetName() << ".XGIF_3F_30";
-	registers_registry[sstr_xgif_3f_30_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_3f_30_register_name.str().c_str(), &xgif_register[4]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_3f_30_register_name.str().c_str(), &xgif_register[4]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_3f_30_var = new unisim::kernel::service::Register<uint16_t>("XGIF_3F_30", this, xgif_register[4], "XGATE channel (3F-30) Register (XGIF_3F_30)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_3f_30_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_3F_30", this, xgif_register[4], "XGATE channel (3F-30) Register (XGIF_3F_30)");
 	extended_registers_registry.push_back(xgif_3f_30_var);
 	xgif_3f_30_var->setCallBack(this, XGIF_3F_30, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_2f_20_register_name;
 	sstr_xgif_2f_20_register_name << GetName() << ".XGIF_2F_20";
-	registers_registry[sstr_xgif_2f_20_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_2f_20_register_name.str().c_str(), &xgif_register[5]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_2f_20_register_name.str().c_str(), &xgif_register[5]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_2f_20_var = new unisim::kernel::service::Register<uint16_t>("XGIF_2F_20", this, xgif_register[5], "XGATE Channel (2F-20) Register (XGIF_2F_20)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_2f_20_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_2F_20", this, xgif_register[5], "XGATE Channel (2F-20) Register (XGIF_2F_20)");
 	extended_registers_registry.push_back(xgif_2f_20_var);
 	xgif_2f_20_var->setCallBack(this, XGIF_2F_20, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_1f_10_register_name;
 	sstr_xgif_1f_10_register_name << GetName() << ".XGIF_1F_10";
-	registers_registry[sstr_xgif_1f_10_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_1f_10_register_name.str().c_str(), &xgif_register[6]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_1f_10_register_name.str().c_str(), &xgif_register[6]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_1f_10_var = new unisim::kernel::service::Register<uint16_t>("XGIF_1F_10", this, xgif_register[6], "XGATE Channel (1F-10) Register (XGIF_1F_10)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_1f_10_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_1F_10", this, xgif_register[6], "XGATE Channel (1F-10) Register (XGIF_1F_10)");
 	extended_registers_registry.push_back(xgif_1f_10_var);
 	xgif_1f_10_var->setCallBack(this, XGIF_1F_10, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_0f_00_register_name;
 	sstr_xgif_0f_00_register_name << GetName() << ".XGIF_0F_00";
-	registers_registry[sstr_xgif_0f_00_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgif_0f_00_register_name.str().c_str(), &xgif_register[7]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgif_0f_00_register_name.str().c_str(), &xgif_register[7]));
 
-	unisim::kernel::service::Register<uint16_t> *xgif_0f_00_var = new unisim::kernel::service::Register<uint16_t>("XGIF_0F_00", this, xgif_register[7], "XGATE Channel (0F-00) Register (XGIF_0F_00)");
+	unisim::kernel::variable::Register<uint16_t> *xgif_0f_00_var = new unisim::kernel::variable::Register<uint16_t>("XGIF_0F_00", this, xgif_register[7], "XGATE Channel (0F-00) Register (XGIF_0F_00)");
 	extended_registers_registry.push_back(xgif_0f_00_var);
 	xgif_0f_00_var->setCallBack(this, XGIF_0F_00, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgswt_register_name;
 	sstr_xgswt_register_name << GetName() << ".XGSWT";
-	registers_registry[sstr_xgswt_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgswt_register_name.str().c_str(), &xgswt_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgswt_register_name.str().c_str(), &xgswt_register));
 
-	unisim::kernel::service::Register<uint16_t> *xgswt_var = new unisim::kernel::service::Register<uint16_t>("XGSWT", this, xgswt_register, "XGATE Software Trigger Register (XGSWT)");
+	unisim::kernel::variable::Register<uint16_t> *xgswt_var = new unisim::kernel::variable::Register<uint16_t>("XGSWT", this, xgswt_register, "XGATE Software Trigger Register (XGSWT)");
 	extended_registers_registry.push_back(xgswt_var);
 	xgswt_var->setCallBack(this, XGSWT, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgsemm_register_name;
 	sstr_xgsemm_register_name << GetName() << ".XGSEMM";
-	registers_registry[sstr_xgsemm_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgsemm_register_name.str().c_str(), &xgsem_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgsemm_register_name.str().c_str(), &xgsem_register));
 
-	unisim::kernel::service::Register<uint16_t> *xgsemm_var = new unisim::kernel::service::Register<uint16_t>("XGSEMM", this, xgsem_register, "XGATE Semaphore Register (XGSEMM)");
+	unisim::kernel::variable::Register<uint16_t> *xgsemm_var = new unisim::kernel::variable::Register<uint16_t>("XGSEMM", this, xgsem_register, "XGATE Semaphore Register (XGSEMM)");
 	extended_registers_registry.push_back(xgsemm_var);
 	xgsemm_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgccr_register_name;
 	sstr_xgccr_register_name << GetName() << ".XGCCR";
-	registers_registry[sstr_xgccr_register_name.str()] = new SimpleRegister<uint8_t>(sstr_xgccr_register_name.str().c_str(), currentRegisterBank->getXGCCRPtr());
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(sstr_xgccr_register_name.str().c_str(), currentRegisterBank->getXGCCRPtr()));
 
-	unisim::kernel::service::Register<uint8_t> *xgccr_var = new unisim::kernel::service::Register<uint8_t>("XGCCR", this, *(currentRegisterBank->getXGCCRPtr()), "XGATE Condition Code Register (XGCCR)");
+	unisim::kernel::variable::Register<uint8_t> *xgccr_var = new unisim::kernel::variable::Register<uint8_t>("XGCCR", this, *(currentRegisterBank->getXGCCRPtr()), "XGATE Condition Code Register (XGCCR)");
 	extended_registers_registry.push_back(xgccr_var);
 	xgccr_var->setCallBack(this, XGCCR, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgpc_register_name;
 	sstr_xgpc_register_name << GetName() << ".XGPC";
-	registers_registry[sstr_xgpc_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgpc_register_name.str().c_str(), currentRegisterBank->getXGPCPtr());
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgpc_register_name.str().c_str(), currentRegisterBank->getXGPCPtr()));
 
-	unisim::kernel::service::Register<uint16_t> *xgpc_var = new unisim::kernel::service::Register<uint16_t>("XGPC", this, *(currentRegisterBank->getXGPCPtr()), "XGATE Program Counter Register (XGPC)");
+	unisim::kernel::variable::Register<uint16_t> *xgpc_var = new unisim::kernel::variable::Register<uint16_t>("XGPC", this, *(currentRegisterBank->getXGPCPtr()), "XGATE Program Counter Register (XGPC)");
 	extended_registers_registry.push_back(xgpc_var);
 	xgpc_var->setCallBack(this, XGPC, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr1_register_name;
 	sstr_xgr1_register_name << GetName() << ".XGR1";
-	registers_registry[sstr_xgr1_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgr1_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(1));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr1_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(1)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr1_var = new unisim::kernel::service::Register<uint16_t>("XGR1", this, *(currentRegisterBank->getXGRxPtr(1)), "XGATE Register 1 (XGR1)");
+	unisim::kernel::variable::Register<uint16_t> *xgr1_var = new unisim::kernel::variable::Register<uint16_t>("XGR1", this, *(currentRegisterBank->getXGRxPtr(1)), "XGATE Register 1 (XGR1)");
 	extended_registers_registry.push_back(xgr1_var);
 	xgr1_var->setCallBack(this, XGR1, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr2_register_name;
 	sstr_xgr2_register_name << GetName() << ".XGR2";
-	registers_registry[sstr_xgr2_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgr2_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(2));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr2_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(2)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr2_var = new unisim::kernel::service::Register<uint16_t>("XGR2", this, *(currentRegisterBank->getXGRxPtr(2)), "XGATE Register 2 (XGR2)");
+	unisim::kernel::variable::Register<uint16_t> *xgr2_var = new unisim::kernel::variable::Register<uint16_t>("XGR2", this, *(currentRegisterBank->getXGRxPtr(2)), "XGATE Register 2 (XGR2)");
 	extended_registers_registry.push_back(xgr2_var);
 	xgr2_var->setCallBack(this, XGR2, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr3_register_name;
 	sstr_xgr3_register_name << GetName() << ".XGR3";
-	registers_registry[sstr_xgr3_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgr3_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(3));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr3_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(3)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr3_var = new unisim::kernel::service::Register<uint16_t>("XGR3", this, *(currentRegisterBank->getXGRxPtr(3)), "XGATE Register 3 (XGR3)");
+	unisim::kernel::variable::Register<uint16_t> *xgr3_var = new unisim::kernel::variable::Register<uint16_t>("XGR3", this, *(currentRegisterBank->getXGRxPtr(3)), "XGATE Register 3 (XGR3)");
 	extended_registers_registry.push_back(xgr3_var);
 	xgr3_var->setCallBack(this, XGR3, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr4_register_name;
 	sstr_xgr4_register_name << GetName() << ".XGR4";
-	registers_registry[sstr_xgr4_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgr4_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(4));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr4_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(4)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr4_var = new unisim::kernel::service::Register<uint16_t>("XGR4", this, *(currentRegisterBank->getXGRxPtr(4)), "XGATE Register 4 (XGR4)");
+	unisim::kernel::variable::Register<uint16_t> *xgr4_var = new unisim::kernel::variable::Register<uint16_t>("XGR4", this, *(currentRegisterBank->getXGRxPtr(4)), "XGATE Register 4 (XGR4)");
 	extended_registers_registry.push_back(xgr4_var);
 	xgr4_var->setCallBack(this, XGR4, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr5_register_name;
 	sstr_xgr5_register_name << GetName() << ".XGR5";
-	registers_registry[sstr_xgr5_register_name.str()] = new SimpleRegister<uint16_t>(sstr_xgr5_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(5));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr5_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(5)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr5_var = new unisim::kernel::service::Register<uint16_t>("XGR5", this, *(currentRegisterBank->getXGRxPtr(5)), "XGATE Register 5 (XGR5)");
+	unisim::kernel::variable::Register<uint16_t> *xgr5_var = new unisim::kernel::variable::Register<uint16_t>("XGR5", this, *(currentRegisterBank->getXGRxPtr(5)), "XGATE Register 5 (XGR5)");
 	extended_registers_registry.push_back(xgr5_var);
 	xgr5_var->setCallBack(this, XGR5, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr6_register_name;
 	sstr_xgr6_register_name << GetName() << ".XGR6";
-	registers_registry[sstr_xgr6_register_name.str().c_str()] = new SimpleRegister<uint16_t>(sstr_xgr6_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(6));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr6_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(6)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr6_var = new unisim::kernel::service::Register<uint16_t>("XGR6", this, *(currentRegisterBank->getXGRxPtr(6)), "XGATE Register 6 (XGR6)");
+	unisim::kernel::variable::Register<uint16_t> *xgr6_var = new unisim::kernel::variable::Register<uint16_t>("XGR6", this, *(currentRegisterBank->getXGRxPtr(6)), "XGATE Register 6 (XGR6)");
 	extended_registers_registry.push_back(xgr6_var);
 	xgr6_var->setCallBack(this, XGR6, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr7_register_name;
 	sstr_xgr7_register_name << GetName() << ".XGR7";
-	registers_registry[sstr_xgr7_register_name.str().c_str()] = new SimpleRegister<uint16_t>(sstr_xgr7_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(7));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(sstr_xgr7_register_name.str().c_str(), currentRegisterBank->getXGRxPtr(7)));
 
-	unisim::kernel::service::Register<uint16_t> *xgr7_var = new unisim::kernel::service::Register<uint16_t>("XGR7", this, *(currentRegisterBank->getXGRxPtr(7)), "XGATE Register 7 (XGR7)");
+	unisim::kernel::variable::Register<uint16_t> *xgr7_var = new unisim::kernel::variable::Register<uint16_t>("XGR7", this, *(currentRegisterBank->getXGRxPtr(7)), "XGATE Register 7 (XGR7)");
 	extended_registers_registry.push_back(xgr7_var);
 	xgr7_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
+
+	if (enable_file_trace) {
+		trace.open("xgate_trace.txt");
+	}
 
 	Reset();
 
@@ -483,9 +478,10 @@ bool XGATE::BeginSetup() {
 
 bool XGATE::Setup(ServiceExportBase *srv_export) {
 
-	if (!memory_access_reporting_import) {
+	if (not memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	return (true);
@@ -526,6 +522,12 @@ void XGATE::Reset() {
 
 }
 
+void XGATE::ResetMemory() {
+
+	Reset();
+
+}
+
 void XGATE::Stop(int ret)
 {
 	exit(ret);
@@ -538,111 +540,54 @@ void XGATE::Sync()
 
 Decoder decoder;
 
-uint8_t XGATE::step()
+unsigned int XGATE::step()
 {
-
-	uint8_t 	buffer[MAX_INS_SIZE];
-
-	Operation 	*op;
-	uint8_t	opCycles = 0;
-
 	try
 	{
+		address_t curPC = getXGPC();
 
-		VerboseDumpRegsStart();
+		if (verbose_step)
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << curPC << std::dec << std::endl << EndDebugInfo;
 
-		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getXGPC() << std::dec << std::endl << EndDebugInfo;
+		if (requires_fetch_instruction_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportFetchInstruction(MMC::getInstance()->getXGATEPagedAddress(curPC));
 
-		if(debug_control_import) {
+		if (debug_enabled)
+			VerboseDumpRegsStart();
 
-			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
+		if (debug_yielding_import)
+			debug_yielding_import->DebugYield();
 
-			do {
-				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getXGPC() << std::dec << ")"
-						<< std::endl << EndDebugInfo;
-
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getInstance()->getXGATEPagedAddress(getXGPC()));
-
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					break;
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					Sync();
-					continue;
-				}
-
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					Stop(0);
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-				}
-			} while(1);
-		}
-
-		if(requires_memory_access_reporting) {
-			if(memory_access_reporting_import) {
-				if(debug_enabled && verbose_step)
-					*logger << DebugInfo
-						<< "Reporting memory access for fetch at address 0x"
-						<< std::hex << getXGPC() << std::dec
-						<< std::endl << EndDebugInfo;
-
-				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, getXGPC(), MAX_INS_SIZE);
-			}
-		}
+		if (requires_memory_access_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, curPC, MAX_INS_SIZE);
 
 
-		if(debug_enabled && verbose_step)
+		if (debug_enabled && verbose_step)
 		{
 			*logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << getXGPC() << std::dec
+				<< std::hex << curPC << std::dec
 				<< std::endl << EndDebugInfo;
 		}
 
-		fetchInstruction(getXGPC(), buffer, MAX_INS_SIZE);
-		CodeType 	insn( buffer, MAX_INS_SIZE*8);
+		CodeType 	insn;
+		fetchInstruction(curPC, &insn.str[0], CodeType::capacity);
 
 		/* Decode current PC */
-		if(debug_enabled && verbose_step)
+		if (debug_enabled && verbose_step)
 		{
 			stringstream ctstr;
 			ctstr << insn;
 			*logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< std::hex << getXGPC() << std::dec
+				<< std::hex << curPC << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
 				<< std::endl << EndDebugInfo;
 		}
 
-//		op = this->Decode(getRegPC(), insn);
-		op = decoder.Decode(MMC::getInstance()->getXGATEPagedAddress(getXGPC()), insn);
-
-		lastPC = getXGPC();
-        unsigned int insn_length = op->GetLength();
-        if (insn_length % 8) throw "InternalError";
+		Operation* op = decoder.Decode(MMC::getInstance()->getXGATEPagedAddress(curPC), insn);
+		unsigned int insn_length = op->GetLength();
+		if (insn_length % 8) throw "InternalError";
 
 		/* Execute instruction */
 
@@ -656,47 +601,40 @@ uint8_t XGATE::step()
 			*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
 				<< " : Executing instruction "
 				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << getXGPC() << std::dec
+				<< " at PC = 0x" << std::hex << curPC << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
 				<< "  " << EndDebugInfo	<< std::endl;
 		}
 
-		setXGPC(getXGPC() + (insn_length/8));
+		lastPC = curPC;
+		setXGPC(curPC + (insn_length/8));
 
-		if (trace_enable) {
+		if (enable_trace) {
 			stringstream disasm_str;
 			stringstream ctstr;
 
-			op->disasm(disasm_str);
-
 			ctstr << op->GetEncoding();
 
-			*logger << DebugInfo << "Cycles = " << cycles_counter
-				<< " : Time = " << (Object::GetSimulator()->GetSimTime())
-				<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-				<< getFunctionFriendlyName(lastPC) << " : "
-				<< disasm_str.str()
-				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-				<< EndDebugInfo	<< std::endl;
+			disasm_str << "Cycles = " << std::dec << cycles_counter
+				<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
+				<< " : PC = 0x" << std::hex << curPC << std::dec << " : "
+				<< getFunctionFriendlyName(curPC) << " : ";
+
+			op->disasm(disasm_str);
+
+			disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+				<< std::endl;
+
+			if (enable_file_trace) {
+				trace << disasm_str.str();
+			} else {
+				std::cout << disasm_str.str();
+			}
 		}
 
 		op->execute(this);
 
-		if (trace_enable && debug_enabled) {
-			std::cout << "CCR" << " = " << std::hex << currentRegisterBank->getCCR()->toString() << std::dec; // 1-bytes
-			std::cout << "\t- XGR0" << " = 0x" << std::hex << currentRegisterBank->getXGRx(0) << std::dec; // 2-bytes
-			std::cout << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes
-			std::cout << "\t- XGR2" << " = 0x" << std::hex << currentRegisterBank->getXGRx(2) << std::dec; // 2-bytes
-			std::cout << "\t- XGR3" << " = 0x" << std::hex << currentRegisterBank->getXGRx(3) << std::dec; // 2-bytes
-			std::cout << "\t- XGR4" << " = 0x" << std::hex << currentRegisterBank->getXGRx(4) << std::dec; // 2-bytes
-			std::cout << "\t- XGR5" << " = 0x" << std::hex << currentRegisterBank->getXGRx(5) << std::dec; // 2-bytes
-			std::cout << "\t- XGR6" << " = 0x" << std::hex << currentRegisterBank->getXGRx(6) << std::dec; // 2-bytes
-			std::cout << "\t- XGR7" << " = 0x" << std::hex << currentRegisterBank->getXGRx(7) << std::dec; // 2-bytes
-			std::cout << std::endl;
-
-		}
-
-		opCycles = op->getCycles();
+		unsigned opCycles = op->getCycles();
 
 		cycles_counter += opCycles;
 
@@ -708,28 +646,27 @@ uint8_t XGATE::step()
 			trap_reporting_import->ReportTrap();
 		}
 
-		if(requires_finished_instruction_reporting) {
-			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getXGATEPagedAddress(lastPC), MMC::getInstance()->getXGATEPagedAddress(getXGPC()));
+		if (requires_commit_instruction_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportCommitInstruction(MMC::getInstance()->getXGATEPagedAddress(curPC), (insn_length/8));
 
-			}
-		}
-
+		if (instruction_counter >= max_inst)
+			Stop(0);
+		
+		return opCycles;
 	}
-	catch(Exception& e)
+
+	catch (Exception& e)
 	{
 		if(debug_enabled && verbose_step)
 			*logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
 		Stop(1);
 	}
 
-	if (instruction_counter >= max_inst) Stop(0);
-
-	return (opCycles);
+	return 0;
 
 }
 
-void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
+void XGATE::fetchInstruction(address_t addr, uint8_t* ins, unsigned int nByte)
 {
 
 	MMC_DATA mmc_data;
@@ -771,7 +708,7 @@ void XGATE::riseErrorCondition() {
 	state = STOP;
 }
 
-bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
+bool XGATE::lockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 	if (semphore[index].lock(owner)) {
 		if (owner == TOWNER::CPU12X) {
 			xgsem_register = xgsem_register | (1 << index);
@@ -785,7 +722,7 @@ bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
 	return (false);
 }
 
-bool XGATE::unlockSemaphore(TOWNER::OWNER owner, uint8_t index) {
+bool XGATE::unlockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 	if (semphore[index].unlock(owner)) {
 		xgsem_register = xgsem_register & ~(1 << index);
 		return (true);
@@ -798,20 +735,19 @@ bool XGATE::unlockSemaphore(TOWNER::OWNER owner, uint8_t index) {
 //=             memory access reporting control interface methods     =
 //=====================================================================
 
-void XGATE::RequiresMemoryAccessReporting(bool report)
+void XGATE::RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report )
 {
-	requires_memory_access_reporting = report;
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
-
-void XGATE::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
-}
-
 
 bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -978,7 +914,7 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -1167,10 +1103,12 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 
 Register *XGATE::GetRegister(const char *name)
 {
-	if(registers_registry.find(std::string(name)) != registers_registry.end())
-		return (registers_registry[std::string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
+
+void XGATE::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_length)
@@ -1202,7 +1140,7 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-				uint8_t index = (offset - XGIF_7F_70)/2;
+				unsigned int index = (offset - XGIF_7F_70)/2;
 				if (index < 2) {
 					*((uint16_t *) buffer) = Host2BigEndian(xgif_register[index] & 0x01FF);
 				}
@@ -1231,7 +1169,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			// control bits can only be set or cleared if a "1" is written to its mask bit in the same register access.
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						xgmctl_register = xgmctl_register | j;
@@ -1305,7 +1243,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						xgswt_register = xgswt_register | j;
@@ -1327,7 +1265,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						lockSemaphore(TOWNER::CPU12X, i);

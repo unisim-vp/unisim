@@ -77,6 +77,12 @@ void MCI<CONFIG>::Reset()
 }
 
 template <class CONFIG>
+void MCI<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool MCI<CONFIG>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
 {
 	return memory_import->ReadMemory(addr, buffer, size);

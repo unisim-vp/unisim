@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<library xmlns="http://www.unisim.org" name="sys_time_h">
-	<configures>
-		<configure>
-			AC_CHECK_HEADERS([sys/time.h],,\
-			AC_MSG_ERROR([The 'sys/time.h' header is missing.]))
-		</configure>
-	</configures>
-</library>

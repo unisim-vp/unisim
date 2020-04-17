@@ -52,17 +52,18 @@
 #include <iostream>
 #include <cmath>
 #include <map>
+#include <queue>
 
 #include <systemc>
 
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 //#include "tlm_utils/multi_passthrough_target_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/kernel/logger/logger.hh>
@@ -72,7 +73,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -80,6 +81,8 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
 namespace component {
@@ -93,24 +96,24 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Signal;
-using unisim::kernel::service::Variable;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::Signal;
+using unisim::kernel::variable::Variable;
 
 using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -122,7 +125,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -148,6 +151,8 @@ class S12SCI :
 public:
 
 	enum SCIMSG {SCIDATA, SCIIDLE, SCIBREAK};
+
+	static const unsigned int MEMORY_MAP_SIZE = 8;
 
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
@@ -194,6 +199,8 @@ public:
 	S12SCI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SCI();
 
+	virtual void Reset();
+	
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
 
@@ -219,13 +226,12 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
-
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -239,7 +245,8 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -254,7 +261,6 @@ private:
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
-	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 	XINT_Payload *xint_payload;
 
 	double	bus_cycle_time_int;
@@ -262,6 +268,7 @@ private:
 	sc_time		bus_cycle_time;
 
 	sc_time		sci_baud_rate;
+	sc_time		telnet_process_input_period;
 
 	sc_event tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
@@ -282,15 +289,17 @@ private:
 	Parameter<bool>	param_rx_debug_enabled;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	bool scisr1_read;
 	bool idle_to_send;
 
 	bool txd;
 	Signal<bool> txd_output_pin;
+	bool txd_pin_enable;
+	Parameter<bool> param_txd_pin_enable;
 
 	bool rxd;
 	Signal<bool> rxd_input_pin;
@@ -481,7 +490,7 @@ private:
 	std::queue<uint8_t> telnet_tx_fifo;
 	sc_event telnet_rx_event, telnet_tx_event;
 
-	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
 	    buffer_queue.push(data);
 	    event.notify();
 	}
@@ -508,7 +517,7 @@ private:
 	    return (buffer_queue.size());
 	}
 
-	inline void TelnetSendString(const char *msg) {
+	inline void TelnetSendString(const unsigned char *msg) {
 
 		while (*msg != 0)
 			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
@@ -516,33 +525,34 @@ private:
 		TelnetProcessOutput(true);
 	}
 
-	inline void TelnetProcessInput()
-	{
-		if(char_io_import)
-		{
-			char c;
-			uint8_t v;
+//	inline void TelnetProcessInput()
+//	{
+//		if(char_io_import)
+//		{
+//			char c;
+//			uint8_t v;
+//
+//			if(!char_io_import->GetChar(c)) return;
+//
+//			v = (uint8_t) c;
+//			if(rx_debug_enabled)
+//			{
+//				logger << DebugInfo << "Receiving ";
+//				if(v >= 32)
+//					logger << "character '" << c << "'";
+//				else
+//					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+//				logger << " from telnet client" << EndDebugInfo;
+//			}
+//
+//			add(telnet_rx_fifo, v, telnet_rx_event);
+//
+//		} else {
+//			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+//		}
+//	}
 
-			if(!char_io_import->GetChar(c)) return;
-
-			v = (uint8_t) c;
-			if(rx_debug_enabled)
-			{
-				logger << DebugInfo << "Receiving ";
-				if(v >= 32)
-					logger << "character '" << c << "'";
-				else
-					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
-				logger << " from telnet client" << EndDebugInfo;
-			}
-
-			add(telnet_rx_fifo, v, telnet_rx_event);
-
-		} else {
-			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
-		}
-	}
-
+	void TelnetProcessInput();
 	inline void TelnetProcessOutput(bool flush_telnet_output)
 	{
 		if(char_io_import)
@@ -579,7 +589,6 @@ private:
 			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
-
 
 
 }; /* end class S12SCI */

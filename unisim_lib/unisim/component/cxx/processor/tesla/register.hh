@@ -41,7 +41,7 @@
 #include <unisim/component/cxx/processor/tesla/forward.hh>
 #include <unisim/component/cxx/processor/tesla/enums.hh>
 #include <unisim/component/cxx/processor/tesla/strided_register.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 
 namespace unisim {
 namespace component {

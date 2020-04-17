@@ -50,6 +50,8 @@ clc.disasm = {
 
 clc.execute = {
 	cpu->ccr->clrC();
+	
+	return getCycles();
 }
 
 // CLI: clear bit I
@@ -67,6 +69,8 @@ cli.disasm = {
 
 cli.execute = {
 	cpu->ccr->clrI();
+	
+	return getCycles();
 }
 
 // CLV: clear bit V
@@ -84,6 +88,8 @@ clv.disasm = {
 
 clv.execute = {
 	cpu->ccr->clrV();
+
+	return getCycles();
 }
 
 // clear Memory
@@ -107,6 +113,8 @@ clr_ext.execute = {
 	cpu->ccr->setZ();
 	cpu->ccr->clrV();
 	cpu->ccr->clrC();
+
+	return getCycles();
 }
 
 op clr_idx(0x69[8]:> <:*xb[XB])
@@ -143,6 +151,8 @@ clr_idx.execute = {
 	cpu->ccr->setZ();
 	cpu->ccr->clrV();
 	cpu->ccr->clrC();
+
+	return getCycles();
 }
 
 op clrw_ext(0x18[8]:0x79[8]:> <:opr16a[16])
@@ -165,6 +175,8 @@ clrw_ext.execute = {
 	cpu->ccr->setZ();
 	cpu->ccr->clrV();
 	cpu->ccr->clrC();
+
+	return getCycles();
 }
 
 op clrw_idx(0x18[8]:0x69[8]:> <:*xb[XB])
@@ -201,6 +213,8 @@ clrw_idx.execute = {
 	cpu->ccr->setZ();
 	cpu->ccr->clrV();
 	cpu->ccr->clrC();
+
+	return getCycles();
 }
 
 op clr_ab(0b1[1]:b[1]:0x07[6])
@@ -233,6 +247,8 @@ clr_ab.execute = {
 	cpu->ccr->setZ();
 	cpu->ccr->clrV();
 	cpu->ccr->clrC();
+
+	return getCycles();
 }
 
 op clr_xy(0x18[8]:0b1[1]:b[1]:0x07[6])
@@ -265,6 +281,8 @@ clr_xy.execute = {
 	cpu->ccr->setZ();
 	cpu->ccr->clrV();
 	cpu->ccr->clrC();
+
+	return getCycles();
 }
 
 // COM: One's complement memory Location
@@ -289,6 +307,8 @@ com_ext.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 op com_idx(0x61[8]:> <:*xb[XB])
@@ -327,6 +347,8 @@ com_idx.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 op com_ab(0b010[3]:b[1]:0x1[4])
@@ -368,6 +390,8 @@ com_ab.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 op comw_ext(0x18[8]:0x71[8]:> <:opr16a[16])
@@ -391,6 +415,8 @@ comw_ext.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 op comw_idx(0x18[8]:0x61[8]:> <:*xb[XB])
@@ -428,6 +454,8 @@ comw_idx.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 op com_xy(0x18[8]:0b010[3]:b[1]:0x1[4])
@@ -469,6 +497,8 @@ com_xy.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 // NEG: Two's Complement Negate
@@ -494,6 +524,8 @@ neg_ext.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+
+	return getCycles();
 }
 
 op neg_idx(0x60[8]:> <:*xb[XB])
@@ -533,7 +565,8 @@ neg_idx.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
-	
+
+	return getCycles();
 }
 
 op neg_ab(0b010[3]:b[1]:0x0[4])
@@ -575,6 +608,8 @@ neg_ab.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+
+	return getCycles();
 }
 
 op negw_ext(0x18[8]:0x70[8]:> <:opr16a[16])
@@ -602,6 +637,8 @@ negw_ext.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+
+	return getCycles();
 }
 
 op negw_idx(0x18[8]:0x60[8]:> <:*xb[XB])
@@ -643,7 +680,8 @@ negw_idx.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
-	
+
+	return getCycles();
 }
 
 op neg_xy(0x18[8]:0b010[3]:b[1]:0x0[4])
@@ -686,6 +724,8 @@ neg_xy.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+
+	return getCycles();
 }
 
 
@@ -716,6 +756,8 @@ bclr_dir.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 op bclr_ext(0x1D[8]:> <:opr16a[16]:> <:mm[8])
@@ -742,6 +784,8 @@ bclr_ext.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 op bclr_idx(0x0D[8]:> <:*xb[XB]:> <:mm[8])
@@ -783,6 +827,8 @@ bclr_idx.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 // BITA or BITB: bit test A/B (Logical 'AND' A/B with Memory
@@ -816,6 +862,8 @@ bit_ab_imm.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 op bit_ab_dir(0b1[1]:b[1]:0x15[6]:opr8a[8])
@@ -849,6 +897,8 @@ bit_ab_dir.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 op bit_ab_ext(0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
@@ -882,6 +932,8 @@ bit_ab_ext.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 op bit_ab_idx(0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
@@ -928,6 +980,8 @@ bit_ab_idx.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 // BITX or BITY: bit test X/Y (Logical 'AND' X/Y with Memory
@@ -962,6 +1016,8 @@ bit_xy_imm.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 op bit_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x15[6]:opr8a[8])
@@ -995,6 +1051,8 @@ bit_xy_dir.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 op bit_xy_ext(0x18[8]:0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
@@ -1028,6 +1086,8 @@ bit_xy_ext.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 op bit_xy_idx(0x18[8]:0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
@@ -1075,6 +1135,8 @@ bit_xy_idx.execute = {
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	return getCycles();
 }
 
 // BSET: Set bits in memory
@@ -1101,6 +1163,8 @@ bset_dir.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 op bset_ext(0x1C[8]:> <:opr16a[16]:> <:mm[8])
@@ -1126,6 +1190,8 @@ bset_ext.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 op bset_idx(0x0C[8]:> <:*xb[XB]:> <:mm[8])
@@ -1166,6 +1232,8 @@ bset_idx.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 /* ********** Shift and Rotate instructions ********************** */
@@ -1197,6 +1265,8 @@ lsl_ext.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsl_idx(0x68[8]:> <:*xb[XB])
@@ -1238,6 +1308,8 @@ lsl_idx.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 	
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsla(0x48[8])
@@ -1264,6 +1336,8 @@ lsla.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lslb(0x58[8])
@@ -1290,6 +1364,8 @@ lslb.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsld(0x59[8])
@@ -1316,6 +1392,8 @@ lsld.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 
@@ -1346,6 +1424,8 @@ lslw_ext.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lslw_idx(0x18[8]:0x68[8]:> <:*xb[XB])
@@ -1387,6 +1467,8 @@ lslw_idx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lslx(0x18[8]:0x48[8])
@@ -1413,6 +1495,8 @@ lslx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsly(0x18[8]:0x58[8])
@@ -1439,6 +1523,8 @@ lsly.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // ROL: Rotate Memory/Accumulator Left through carry
@@ -1469,6 +1555,8 @@ rol_ext.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rol_idx(0x65[8]:> <:*xb[XB])
@@ -1512,6 +1600,8 @@ rol_idx.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rola(0x45[8])
@@ -1540,6 +1630,8 @@ rola.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rolb(0x55[8])
@@ -1568,6 +1660,8 @@ rolb.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 
@@ -1599,6 +1693,8 @@ rolw_ext.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rolw_idx(0x18[8]:0x65[8]:> <:*xb[XB])
@@ -1642,6 +1738,8 @@ rolw_idx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rolx(0x18[8]:0x45[8])
@@ -1670,6 +1768,8 @@ rolx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op roly(0x18[8]:0x55[8])
@@ -1698,6 +1798,8 @@ roly.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // LSR: Logical Shift Right
@@ -1726,6 +1828,8 @@ lsr_ext.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsr_idx(0x64[8]:> <:*xb[XB])
@@ -1767,6 +1871,8 @@ lsr_idx.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsra(0x44[8])
@@ -1793,6 +1899,8 @@ lsra.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsrb(0x54[8])
@@ -1819,6 +1927,8 @@ lsrb.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsrd(0x49[8])
@@ -1845,6 +1955,8 @@ lsrd.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // LSRW: Logical Shift Right word
@@ -1873,6 +1985,8 @@ lsrw_ext.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsrw_idx(0x18[8]:0x64[8]:> <:*xb[XB])
@@ -1914,6 +2028,8 @@ lsrw_idx.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsrx(0x18[8]:0x44[8])
@@ -1940,6 +2056,8 @@ lsrx.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op lsry(0x18[8]:0x54[8])
@@ -1966,6 +2084,8 @@ lsry.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // ROR: Rotate Memory/Accumulator Right through Carry
@@ -1996,6 +2116,8 @@ ror_ext.execute = {
 	cpu->ccr->clrN(); 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op ror_idx(0x66[8]:> <:*xb[XB])
@@ -2039,6 +2161,8 @@ ror_idx.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rora(0x46[8])
@@ -2067,6 +2191,8 @@ rora.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rorb(0x56[8])
@@ -2095,6 +2221,8 @@ rorb.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 
@@ -2126,6 +2254,8 @@ rorw_ext.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rorw_idx(0x18[8]:0x66[8]:> <:*xb[XB])
@@ -2169,6 +2299,8 @@ rorw_idx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rorx(0x18[8]:0x46[8])
@@ -2197,6 +2329,8 @@ rorx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op rory(0x18[8]:0x56[8])
@@ -2225,6 +2359,8 @@ rory.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // ASR: Arithmetic Shift Right
@@ -2257,6 +2393,8 @@ asr_ext.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op asr_idx(0x67[8]:> <:*xb[XB])
@@ -2302,6 +2440,8 @@ asr_idx.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op asra(0x47[8])
@@ -2332,6 +2472,8 @@ asra.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op asrb(0x57[8])
@@ -2362,6 +2504,8 @@ asrb.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // ASRW: Arithmetic Shift Right word
@@ -2394,6 +2538,8 @@ asrw_ext.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op asrw_idx(0x18[8]:0x67[8]:> <:*xb[XB])
@@ -2439,6 +2585,8 @@ asrw_idx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op asrx(0x18[8]:0x47[8])
@@ -2469,6 +2617,8 @@ asrx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 op asry(0x18[8]:0x57[8])
@@ -2499,6 +2649,8 @@ asry.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 	if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	return getCycles();
 }
 
 // BTAS: Bit(s) Test and Set in Memory
@@ -2533,6 +2685,8 @@ V: 0; cleared
 	cpu->ccr->clrV();
 	
 	cpu->memWrite8(opr8a, opr8aVal | msk8, ADDRESS::DIRECT, false);
+
+	return getCycles();
 }
 
 op btas_ext(0x18[8]:> <:0x36[8]:opr16a[16]:msk8[8])
@@ -2558,6 +2712,8 @@ btas_ext.execute = {
 	cpu->ccr->clrV();
 	
 	cpu->memWrite8(addr, opr16aVal | msk8);
+
+	return getCycles();
 }
 
 op btas_idx(0x18[8]:0x37[8]:> <:*xb[XB]:> <:msk8[8])
@@ -2597,5 +2753,7 @@ btas_idx.execute = {
 	cpu->ccr->clrV();
 	
 	cpu->memWrite8(addr, xbVal | msk8);
+
+	return getCycles();
 }
 

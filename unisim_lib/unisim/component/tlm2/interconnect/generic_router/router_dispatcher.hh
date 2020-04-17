@@ -35,11 +35,11 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_ROUTER_DISPATCHER_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_ROUTER_DISPATCHER_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/peq_with_cb_and_phase.h>
 #include <map>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 
 namespace unisim {
@@ -50,13 +50,13 @@ namespace generic_router {
 
 template<typename OWNER, class CONFIG>
 class RouterDispatcher :
-	public sc_module {
+	public sc_core::sc_module {
 private:
 	static const bool threaded_model = false;
 	
-	typedef unisim::kernel::service::Object Object;
+	typedef unisim::kernel::Object Object;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
-	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
+//	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
 	static const bool VERBOSE = CONFIG::VERBOSE;
 	typedef typename TYPES::tlm_payload_type transaction_type;
@@ -67,7 +67,7 @@ private:
 
 public:
 	SC_HAS_PROCESS(RouterDispatcher);
-	RouterDispatcher(const sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb);
+	RouterDispatcher(const sc_core::sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb);
 	~RouterDispatcher();
 
 	void SetCycleTime(const sc_core::sc_time &cycle_time);

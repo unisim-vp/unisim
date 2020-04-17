@@ -45,9 +45,6 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-AsynchronousException::AsynchronousException()
-{
-}
 
 const char * AsynchronousException::what () const throw ()
 {

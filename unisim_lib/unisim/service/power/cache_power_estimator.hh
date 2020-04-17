@@ -38,7 +38,8 @@
 #include <map>
 #include <inttypes.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/cache_power_estimator.hh"
 #include "unisim/service/interfaces/power_mode.hh"
@@ -54,16 +55,16 @@ namespace power {
 
 class Cacti4_2; // forward declaration
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::StatisticFormula;
 using std::map;
 
 class CachePowerEstimator :
@@ -136,7 +137,7 @@ private:
 	Statistic<CacheDynamicEnergy> stat_dynamic_energy;
 	Statistic<CacheDynamicPower> stat_dynamic_power;
 	Statistic<CacheLeakagePower> stat_leakage_power;
-	Formula<double> formula_total_power;
+	StatisticFormula<double> stat_total_power;
 
 	int Ndwl;
 	int Ndbl;

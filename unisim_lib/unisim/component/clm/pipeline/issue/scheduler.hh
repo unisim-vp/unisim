@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_ISSUE_SCHEDULER_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_ISSUE_SCHEDULER_HH__
 
-//#include <systemc.h>
+//#include <systemc>
 //#include <utility.h>
 //#include <types.h>
 //#include <common.h>

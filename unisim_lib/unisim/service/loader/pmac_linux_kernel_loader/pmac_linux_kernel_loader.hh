@@ -45,7 +45,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/blob.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace service {
@@ -54,10 +54,10 @@ namespace pmac_linux_kernel_loader {
 	
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::loader::pmac_bootx::PMACBootX;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;

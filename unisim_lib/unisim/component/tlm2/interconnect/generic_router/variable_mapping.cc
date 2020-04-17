@@ -32,17 +32,19 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/tlm2/interconnect/generic_router/router.hh"
+#include <unisim/kernel/variable/variable.hh>
+#include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
-using unisim::kernel::service::Variable;
+using unisim::kernel::variable::Variable;
 
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::interconnect::generic_router::Mapping &_storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage) {
-	Simulator::simulator->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -52,7 +54,7 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator long long () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator unsigned long long () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator double () const { return 0; }
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator string () const { 
+template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator std::string () const { 
 	std::stringstream buf;
 	buf << "range_start=\"0x" << std::hex << storage->range_start << std::dec
 		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
@@ -68,9 +70,9 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator = (const char *value) { 
 	if(IsMutable())
 	{
-		uint64_t range_start;
-		uint64_t range_end;
-		unsigned int output_port;
+		uint64_t range_start = 0;
+		uint64_t range_end = 0;
+		unsigned int output_port = 0;
 		uint64_t translation = 0;
 
 		std::stringstream buf(value);
@@ -78,51 +80,80 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 		std::string str_rest;
 		size_t pos;
 		pos = str.find('"');
-		str_rest = str.substr(pos + 1);
-		str = str_rest;
-		pos = str.find('"');
-		str_rest = str.substr(pos + 1);
-		str = str.substr(0, pos);
-		stringstream range_start_str;
-		range_start_str << str;
-		range_start_str >> std::hex >> range_start >> std::dec;
-		str = str_rest;
-		pos = str.find('"');
-		str = str.substr(pos + 1);
-		pos = str.find('"');
-		str_rest = str.substr(pos + 1);
-		str = str.substr(0, pos);
-		stringstream range_end_str;
-		range_end_str << str;
-		range_end_str >> std::hex >> range_end >> std::dec;
-		str = str_rest;
-		pos = str.find('"');
-		str = str.substr(pos + 1);
-		pos = str.find('"');
-		str_rest = str.substr(pos + 1);
-		str = str.substr(0, pos);
-		stringstream output_port_str;
-		output_port_str << str;
-		output_port_str >> output_port;
-		str = str_rest;
-		pos = str.find('"');
-		if (pos != string::npos)
+		if(pos == std::string::npos) pos = str.find('\'');
+		if(pos != std::string::npos)
 		{
-			// translation available
-			stringstream translation_str;
-			str = str.substr(pos + 1);
+			str_rest = str.substr(pos + 1);
+			str = str_rest;
 			pos = str.find('"');
-			str = str.substr(0, pos);
-			stringstream translation_st;
-			translation_str << str;
-			translation_str >> std::hex >> translation >> std::dec;
+			if(pos == std::string::npos) pos = str.find('\'');
+			if(pos != std::string::npos)
+			{
+				str_rest = str.substr(pos + 1);
+				str = str.substr(0, pos);
+				std::stringstream range_start_str;
+				range_start_str << str;
+				range_start_str >> std::hex >> range_start >> std::dec;
+				str = str_rest;
+				pos = str.find('"');
+				if(pos == std::string::npos) pos = str.find('\'');
+				if(pos != std::string::npos)
+				{
+					str = str.substr(pos + 1);
+					pos = str.find('"');
+					if(pos == std::string::npos) pos = str.find('\'');
+					if(pos != std::string::npos)
+					{
+						str_rest = str.substr(pos + 1);
+						str = str.substr(0, pos);
+						std::stringstream range_end_str;
+						range_end_str << str;
+						range_end_str >> std::hex >> range_end >> std::dec;
+						str = str_rest;
+						pos = str.find('"');
+						if(pos == std::string::npos) pos = str.find('\'');
+						if(pos != std::string::npos)
+						{
+							str = str.substr(pos + 1);
+							pos = str.find('"');
+							if(pos == std::string::npos) pos = str.find('\'');
+							if(pos != std::string::npos)
+							{
+								str_rest = str.substr(pos + 1);
+								str = str.substr(0, pos);
+								std::stringstream output_port_str;
+								output_port_str << str;
+								output_port_str >> output_port;
+								str = str_rest;
+								pos = str.find('"');
+								if(pos == std::string::npos) pos = str.find('\'');
+								if (pos != std::string::npos)
+								{
+									// translation available
+									std::stringstream translation_str;
+									str = str.substr(pos + 1);
+									pos = str.find('"');
+									if(pos == std::string::npos) pos = str.find('\'');
+									if(pos != std::string::npos)
+									{
+										str = str.substr(0, pos);
+										std::stringstream translation_st;
+										translation_str << str;
+										translation_str >> std::hex >> translation >> std::dec;
+									}
+								}
+								else
+								{
+									translation = range_start;
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		else
-		{
-			translation = range_start;
-		}
-		unisim::component::tlm2::interconnect::generic_router::Mapping tmp;
 		
+		unisim::component::tlm2::interconnect::generic_router::Mapping tmp;
 		tmp.used = true;
 		tmp.range_start = range_start;
 		tmp.range_end = range_end;
@@ -138,10 +169,15 @@ template <> const char *Variable<unisim::component::tlm2::interconnect::generic_
 	return "unisim::component::tlm2::interconnect::generic_router::Mapping";
 }
 
+template <> VariableBase::DataType Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::GetDataType() const
+{
+	return DT_USER;
+}
+
 template class Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>;
 
-} // end of namespace unisim
+} // end of namespace variable
 } // end of namespace kernel
-} // namespace service
+} // end of namespace unisim
 
 

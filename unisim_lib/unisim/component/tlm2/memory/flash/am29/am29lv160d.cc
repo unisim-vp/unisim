@@ -32,9 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "unisim/component/tlm2/memory/flash/am29/am29lv.hh"
+#include "unisim/component/tlm2/memory/flash/am29/am29.hh"
 #include "unisim/component/cxx/memory/flash/am29/am29lv160d_config.hh"
-#include "unisim/component/tlm2/memory/flash/am29/am29lv.tcc"
+#include "unisim/component/tlm2/memory/flash/am29/am29.tcc"
 
 namespace unisim {
 namespace component {

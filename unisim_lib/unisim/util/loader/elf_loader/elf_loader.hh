@@ -35,11 +35,10 @@
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/loader/elf_loader/elf32.h>
 #include <unisim/util/loader/elf_loader/elf64.h>
 #include <unisim/util/debug/dwarf/dwarf.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/elf_symtab/elf_symtab.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -53,12 +52,11 @@ namespace util {
 namespace loader {
 namespace elf_loader {
 
-using namespace std;
+// using namespace std;
 using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
-using unisim::util::debug::Symbol;
 using unisim::util::debug::elf_symtab::ELF_SymtabHandler;
-using unisim::util::debug::blob::Blob;
+using unisim::util::blob::Blob;
 
 typedef enum
 {
@@ -74,18 +72,29 @@ typedef enum
 	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME,
 	OPT_DEBUG_DWARF
 } Option;
-	
+
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl
 {
 public:
+	typedef Elf_Ehdr Elf_Ehdr_type;
+	typedef Elf_Phdr Elf_Phdr_type;
+	typedef Elf_Shdr Elf_Shdr_type;
+	typedef Elf_Sym Elf_Sym_type;
 	
-	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	ElfLoaderImpl(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
 	void ParseSymbols();
 	
+	void SetDebugInfoStream(std::ostream& debug_info_stream);
+	void SetDebugWarningStream(std::ostream& debug_warning_stream);
+	void SetDebugErrorStream(std::ostream& debug_error_stream);
+	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
+	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	void SetFileName(char const* filename);
+
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
@@ -94,82 +103,102 @@ public:
 	void GetOption(Option opt, std::string& s) const;
 	void GetOption(Option opt, bool& flag) const;
 	
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
-
-	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *GetDWARFHandler() const;
 	
-	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
+	typedef typename unisim::util::debug::Symbol<MEMORY_ADDR> Symbol;
+
+	void GetSymbols(typename std::list<const Symbol*>& lst, typename Symbol::Type type) const;
+	const Symbol *FindSymbol(const char *name, MEMORY_ADDR addr, typename Symbol::Type type) const;
+	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr) const;
+	const Symbol *FindSymbolByName(const char *name) const;
+	const Symbol *FindSymbolByName(const char *name, typename Symbol::Type type) const;
+	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr, typename Symbol::Type type) const;
+	
+	unisim::util::debug::SymbolTable<MEMORY_ADDR> const *GetSymbolTable() const;
+	
+	const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 
-	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
-	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num, MEMORY_ADDR pc) const;
+	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(unsigned int prc_num, const char *data_object_name, const char *filename  = 0, const char *compilation_unit_name = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name, MEMORY_ADDR pc) const;
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	
 private:
-	unisim::kernel::logger::Logger& logger;
-	string filename;
+	std::ostream *debug_info_stream;
+	std::ostream *debug_warning_stream;
+	std::ostream *debug_error_stream;
+	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *const_blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *const_blob;
 	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	unisim::service::interfaces::Registers *regs_if;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	string dwarf_to_html_output_directory;
-	string dwarf_to_xml_output_filename;
-	string dwarf_register_number_mapping_filename;
+	std::vector<unisim::service::interfaces::Registers *> regs_if;
+	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;
+	std::string dwarf_to_html_output_directory;
+	std::string dwarf_to_xml_output_filename;
+	std::string dwarf_register_number_mapping_filename;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
 	bool debug_dwarf;
-	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
-	
-	void SwapElfHeader(Elf_Ehdr *hdr);
-	void SwapProgramHeader(Elf_Phdr *phdr);
-	void SwapSectionHeader(Elf_Shdr *shdr);
-	void AdjustElfHeader(Elf_Ehdr *hdr);
-	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
-	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	Elf_Ehdr *ReadElfHeader(istream& is);
-	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is);
-	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is);
-	const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
-	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, istream& is);
-	void DumpElfHeader(const Elf_Ehdr *hdr, ostream& os);
-	void DumpProgramHeader(const Elf_Phdr *phdr, ostream& os);
-	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, ostream& os);
-	void DumpSymbol(const Elf_Sym *sym, const char *string_table, ostream& os);
-	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, ostream& os);
-	MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
-	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is);
-	MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
-	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is);
-	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
-	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
-	void DumpRawData(const void *content, MEMORY_ADDR size);
-	const char *GetArchitecture(const Elf_Ehdr *hdr) const;
-	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
+	std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
+private:
+	void DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os);
+	void DumpProgramHeader(const Elf_Phdr *phdr, std::ostream& os);
+	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, std::ostream& os);
+	void DumpSymbol(const Elf_Sym *sym, const char *string_table, std::ostream& os);
+	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, std::ostream& os);
+	static void SwapProgramHeader(Elf_Phdr *phdr);
+	static void SwapSectionHeader(Elf_Shdr *shdr);
+public:	
+	static bool NeedEndianSwap(const Elf_Ehdr *hdr);
+	static void SwapElfHeader(Elf_Ehdr *hdr);
+	static Elf_Ehdr *ReadElfHeader(std::istream& is);
+	static Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	static Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	static const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
+	static char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is);
+	static MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
+	static bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, std::istream& is);
+	static MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
+  	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
+	static bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, std::istream& is);
+	static MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
+	static const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
+	static void DumpRawData(const void *content, MEMORY_ADDR size);
+	static const char *GetArchitecture(const Elf_Ehdr *hdr);
+	static uint8_t GetAddressSize(const Elf_Ehdr *hdr);
+private:
+	std::ostream& GetDebugInfoStream() const;
+	std::ostream& GetDebugWarningStream() const;
+	std::ostream& GetDebugErrorStream() const;
+	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num = 0) const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num = 0) const;
 };
+
+// base template traits for standard ElfLoaderImpl declination
+template <class ADDRESS_TYPE, class PARAMETER_TYPE> struct StdElf {};
 
 } // end of namespace elf_loader
 } // end of namespace loader

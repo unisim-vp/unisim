@@ -35,6 +35,10 @@
 #ifndef __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_TCC__
 #define __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_TCC__
 
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/util/debug/breakpoint_registry.tcc>
+#include <unisim/util/debug/watchpoint_registry.tcc>
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <stdexcept>
 #include <fstream>
 
@@ -43,79 +47,198 @@ namespace service {
 namespace debug {
 namespace debugger {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-	
-template <class ADDRESS>
-Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
-	: Object(name, parent)
-	, Service<DebugEventTrigger<ADDRESS> >(name, parent)
-	, Service<DebugControl<ADDRESS> >(name, parent)
-	, Service<MemoryAccessReporting<ADDRESS> >(name, parent)
-	, Service<TrapReporting>(name, parent)
-	, Service<Disassembly<ADDRESS> >(name, parent)
-	, Service<Memory<ADDRESS> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Service<SymbolTableLookup<ADDRESS> >(name, parent)
-	, Service<StatementLookup<ADDRESS> >(name, parent)
-	, Service<BackTrace<ADDRESS> >(name, parent)
-	, Service<DebugInfoLoading>(name, parent)
-	, Service<DataObjectLookup<ADDRESS> >(name, parent)
-	, Client<DebugEventListener<ADDRESS> >(name, parent)
-	, Client<DebugControl<ADDRESS> >(name, parent)
-	, Client<MemoryAccessReportingControl>(name, parent)
-	, Client<TrapReporting>(name, parent)
-	, Client<Disassembly<ADDRESS> >(name, parent)
-	, Client<Memory<ADDRESS> >(name, parent)
-	, Client<Registers>(name, parent)
-	, Client<Loader>(name, parent)
-	, Client<unisim::service::interfaces::Blob<ADDRESS> >(name, parent)
-	, debug_event_trigger_export("debug-event-trigger-export", this)
-	, debug_control_export("debug-control-export", this)
-	, memory_access_reporting_export("memory-access-reporting-export", this)
-	, trap_reporting_export("trap-reporting-export", this)
-	, disasm_export("disasm-export", this)
-	, memory_export("memory-export", this)
-	, registers_export("registers-export", this)
-	, symbol_table_lookup_export("symbol-table-lookup-export", this)
-	, stmt_lookup_export("stmt-lookup-export", this)
-	, backtrace_export("backtrace-export", this)
-	, debug_info_loading_export("debug-info-loading-export", this)
-	, data_object_lookup_export("data-object-lookup-export", this)
-	, debug_event_listener_import("debug-event-listener", this)
-	, debug_control_import("debug-control-import", this)
-	, disasm_import("disasm-import", this)
-	, memory_import("memory-import", this)
-	, memory_access_reporting_control_import("memory-access-reporting-control-import", this)
-	, trap_reporting_import("trap-reporting-import", this)
-	, registers_import("registers-import", this)
-	, loader_import("loader-import", this)
+template <typename CONFIG>
+Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "Debugger back-end")
+	, unisim::kernel::Client<unisim::service::interfaces::Blob<ADDRESS> >(name, parent)
+	, debug_yielding_export()
+	, memory_access_reporting_export()
+	, trap_reporting_export()
+	, debug_yielding_request_export()
+	, debug_selecting_export()
+	, debug_event_trigger_export()
+	, disasm_export()
+	, memory_export()
+	, registers_export()
+	, symbol_table_lookup_export()
+	, stmt_lookup_export()
+	, backtrace_export()
+	, debug_info_loading_export()
+	, data_object_lookup_export()
+	, subprogram_lookup_export()
 	, blob_import("blob-import", this)
+	, memory_access_reporting_control_import()
+	, disasm_import()
+	, memory_import()
+	, registers_import()
+	, debug_event_listener_import()
+	, debug_yielding_import()
+	, prc_gate()
+	, front_end_gate()
+	, sel_prc_gate()
+	, requires_fetch_instruction_reporting()
+	, requires_commit_instruction_reporting()
+	, requires_memory_access_reporting()
 	, verbose(false)
 	, dwarf_to_html_output_directory()
 	, dwarf_register_number_mapping_filename()
 	, parse_dwarf(false)
 	, debug_dwarf(false)
+	, sel_cpu()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory, "DWARF v2/v3 to HTML output directory")
 	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
 	, param_parse_dwarf("parse-dwarf", this, parse_dwarf, "Enable/Disable parsing of DWARF debugging informations")
 	, param_debug_dwarf("debug-dwarf", this, debug_dwarf, "Enable/Disable debugging of DWARF")
+	, param_sel_cpu("sel-cpu", this, sel_cpu, MAX_FRONT_ENDS, "CPU being debugged by front-end")
 	, logger(*this)
 	, setup_debug_info_done(false)
+	, mutex()
+	, curr_front_end_num_mutex()
+	, curr_front_end_num(-1)
+	, breakpoint_registry()
+	, watchpoint_registry()
+	, fetch_insn_event_set()
+	, commit_insn_event_set()
+	, trap_event_set()
+	, source_code_breakpoint_registry()
+	, next_id()
+	, schedule_mutex()
+	, schedule(0)
+	, elf32_loaders()
+	, elf64_loaders()
+	, coff_loaders()
+	, enable_elf32_loaders()
+	, enable_elf64_loaders()
+	, enable_coff_loaders()
 {
-	backtrace_export.SetupDependsOn(registers_import);
-	backtrace_export.SetupDependsOn(memory_import);
-	data_object_lookup_export.SetupDependsOn(registers_import);
-	data_object_lookup_export.SetupDependsOn(memory_import);
+	param_verbose.AddListener(this);
+	param_debug_dwarf.AddListener(this);
+	
+	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&schedule_mutex, NULL);
+	pthread_mutex_init(&curr_front_end_num_mutex, NULL);
+	
+	unsigned int prc_num;
+	unsigned int front_end_num;
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		param_sel_cpu[front_end_num].SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	}
+	
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		std::stringstream debug_yielding_export_name_sstr;
+		debug_yielding_export_name_sstr << "debug-yielding-export[" << prc_num << "]";
+		debug_yielding_export[prc_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>(debug_yielding_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream memory_access_reporting_export_name_sstr;
+		memory_access_reporting_export_name_sstr << "memory-access-reporting-export[" << prc_num << "]";
+		memory_access_reporting_export[prc_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >(memory_access_reporting_export_name_sstr.str().c_str(), this);
+
+		std::stringstream trap_reporting_export_name_sstr;
+		trap_reporting_export_name_sstr << "trap-reporting-export[" << prc_num << "]";
+		trap_reporting_export[prc_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::TrapReporting>(trap_reporting_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream memory_access_reporting_control_import_name_sstr;
+		memory_access_reporting_control_import_name_sstr << "memory-access-reporting-control-import[" << prc_num << "]";
+		memory_access_reporting_control_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl>(memory_access_reporting_control_import_name_sstr.str().c_str(), this);
+
+		std::stringstream disasm_import_name_sstr;
+		disasm_import_name_sstr << "disasm-import[" << prc_num << "]";
+		disasm_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >(disasm_import_name_sstr.str().c_str(), this);
+
+		std::stringstream memory_import_name_sstr;
+		memory_import_name_sstr << "memory-import[" << prc_num << "]";
+		memory_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >(memory_import_name_sstr.str().c_str(), this);
+
+		std::stringstream registers_import_name_sstr;
+		registers_import_name_sstr << "registers-import[" << prc_num << "]";
+		registers_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
+	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		std::stringstream debug_yielding_request_export_name_sstr;
+		debug_yielding_request_export_name_sstr << "debug-yielding-request-export[" << front_end_num << "]";
+		debug_yielding_request_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYieldingRequest>(debug_yielding_request_export_name_sstr.str().c_str(), this);
+
+		std::stringstream debug_selecting_export_name_sstr;
+		debug_selecting_export_name_sstr << "debug-selecting-export[" << front_end_num << "]";
+		debug_selecting_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugSelecting>(debug_selecting_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream debug_event_trigger_export_name_sstr;
+		debug_event_trigger_export_name_sstr << "debug-event-trigger-export[" << front_end_num << "]";
+		debug_event_trigger_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(debug_event_trigger_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream disasm_export_name_sstr;
+		disasm_export_name_sstr << "disasm-export[" << front_end_num << "]";
+		disasm_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> >(disasm_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream memory_export_name_sstr;
+		memory_export_name_sstr << "memory-export[" << front_end_num << "]";
+		memory_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> >(memory_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream registers_export_name_sstr;
+		registers_export_name_sstr << "registers-export[" << front_end_num << "]";
+		registers_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Registers>(registers_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream symbol_table_lookup_export_name_sstr;
+		symbol_table_lookup_export_name_sstr << "symbol-table-lookup-export[" << front_end_num << "]";
+		symbol_table_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(symbol_table_lookup_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream stmt_lookup_export_name_sstr;
+		stmt_lookup_export_name_sstr << "stmt-lookup-export[" << front_end_num << "]";
+		stmt_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> >(stmt_lookup_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream backtrace_export_name_sstr;
+		backtrace_export_name_sstr << "backtrace-export[" << front_end_num << "]";
+		backtrace_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> >(backtrace_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream debug_info_loading_export_name_sstr;
+		debug_info_loading_export_name_sstr << "debug-info-loading-export[" << front_end_num << "]";
+		debug_info_loading_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugInfoLoading>(debug_info_loading_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream data_object_lookup_export_name_sstr;
+		data_object_lookup_export_name_sstr << "data-object-lookup-export[" << front_end_num << "]";
+		data_object_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(data_object_lookup_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream subprogram_lookup_export_name_sstr;
+		subprogram_lookup_export_name_sstr << "subprogram-lookup-export[" << front_end_num << "]";
+		subprogram_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(subprogram_lookup_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream debug_event_listener_import_name_sstr;
+		debug_event_listener_import_name_sstr << "debug-event-listener-import[" << front_end_num << "]";
+		debug_event_listener_import[front_end_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> >(debug_event_listener_import_name_sstr.str().c_str(), this);
+		
+		std::stringstream debug_yielding_import_name_sstr;
+		debug_yielding_import_name_sstr << "debug-yielding-import[" << front_end_num << "]";
+		debug_yielding_import[front_end_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding>(debug_yielding_import_name_sstr.str().c_str(), this);
+	}
+	
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		std::stringstream prc_gate_name_sstr;
+		prc_gate_name_sstr << "processor" << prc_num << "-gate";
+		prc_gate[prc_num] = new ProcessorGate(prc_gate_name_sstr.str().c_str(), prc_num, this);
+	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		std::stringstream front_end_gate_name_sstr;
+		front_end_gate_name_sstr << "front-end" << front_end_num << "-gate";
+		front_end_gate[front_end_num] = new FrontEndGate(front_end_gate_name_sstr.str().c_str(), front_end_num, this); // Note: Processor gates shall be created before front-end gates
+	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		DebugSelect(front_end_num, sel_cpu[front_end_num]);
+	}
 }
 
-template <class ADDRESS>
-Debugger<ADDRESS>::~Debugger()
+template <typename CONFIG>
+Debugger<CONFIG>::~Debugger()
 {
 	unsigned int i;
 	
@@ -136,11 +259,119 @@ Debugger<ADDRESS>::~Debugger()
 	{
 		delete coff_loaders[i];
 	}
+
+	unsigned int prc_num;
+	unsigned int front_end_num;
+
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		if(fetch_insn_event_set[prc_num].size())
+		{
+			do
+			{
+				typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::iterator it = fetch_insn_event_set[prc_num].begin();
+				unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = *it;
+				fetch_insn_event_set[prc_num].erase(it);
+				fetch_insn_event->Release();
+			}
+			while(fetch_insn_event_set[prc_num].size());
+		}
+
+		if(commit_insn_event_set[prc_num].size())
+		{
+			do
+			{
+				typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::iterator it = commit_insn_event_set[prc_num].begin();
+				unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = *it;
+				commit_insn_event_set[prc_num].erase(it);
+				commit_insn_event->Release();
+			}
+			while(commit_insn_event_set[prc_num].size());
+		}
+
+		if(trap_event_set[prc_num].size())
+		{
+			do
+			{
+				typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::iterator it = trap_event_set[prc_num].begin();
+				unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+				trap_event_set[prc_num].erase(it);
+				trap_event->Release();
+			}
+			while(trap_event_set[prc_num].size());
+		}
+	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		if(source_code_breakpoint_registry[front_end_num].size())
+		{
+			do
+			{
+				typename std::set<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>::iterator it = source_code_breakpoint_registry[front_end_num].begin();
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = *it;
+				source_code_breakpoint_registry[front_end_num].erase(it);
+				source_code_breakpoint->Release();
+			}
+			while(source_code_breakpoint_registry[front_end_num].size());
+		}
+	}
+
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		delete debug_yielding_export[prc_num];
+		delete memory_access_reporting_export[prc_num];
+		delete trap_reporting_export[prc_num];
+		delete memory_access_reporting_control_import[prc_num];
+		delete disasm_import[prc_num];
+		delete memory_import[prc_num];
+		delete registers_import[prc_num];
+	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		delete debug_yielding_request_export[front_end_num];
+		delete debug_selecting_export[front_end_num];
+		delete debug_event_trigger_export[front_end_num];
+		delete disasm_export[front_end_num];
+		delete memory_export[front_end_num];
+		delete registers_export[front_end_num];
+		delete symbol_table_lookup_export[front_end_num];
+		delete stmt_lookup_export[front_end_num];
+		delete backtrace_export[front_end_num];
+		delete debug_info_loading_export[front_end_num];
+		delete data_object_lookup_export[front_end_num];
+		delete subprogram_lookup_export[front_end_num];
+		delete debug_event_listener_import[front_end_num];
+		delete debug_yielding_import[front_end_num];
+	}
+	
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		delete prc_gate[prc_num];
+	}
+	
+	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		delete front_end_gate[front_end_num];
+	}
+	
+	pthread_mutex_destroy(&curr_front_end_num_mutex);
+	pthread_mutex_destroy(&schedule_mutex);
+	pthread_mutex_destroy(&mutex);
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::BeginSetup()
+template <typename CONFIG>
+bool Debugger<CONFIG>::BeginSetup()
 {
+	unsigned int prc_num;
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		requires_fetch_instruction_reporting[prc_num] = false;
+		requires_commit_instruction_reporting[prc_num] = false;
+		requires_memory_access_reporting[prc_num] = false;
+	}
+	
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
@@ -148,167 +379,699 @@ bool Debugger<ADDRESS>::BeginSetup()
 	{
 		delete elf32_loaders[i];
 	}
+	elf32_loaders.clear();
 
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
 		delete elf64_loaders[i];
 	}
+	elf64_loaders.clear();
 
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
 		delete coff_loaders[i];
 	}
+	coff_loaders.clear();
 	
 	setup_debug_info_done = false;
 	
 	return true;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::Setup(unisim::kernel::service::ServiceExportBase *srv_export)
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *blob)
 {
-	if(srv_export == &debug_event_trigger_export) return true;
-	if(srv_export == &debug_control_export) return true;
-	if(srv_export == &memory_access_reporting_export) return true;
-	if(srv_export == &trap_reporting_export) return true;
-	if(srv_export == &disasm_export) return true;
-	if(srv_export == &memory_export) return true;
-	if(srv_export == &registers_export) return true;
-	if(srv_export == &debug_info_loading_export) return true;
-	if(srv_export == &symbol_table_lookup_export) return SetupDebugInfo();
-	if(srv_export == &stmt_lookup_export) return SetupDebugInfo();
-	if(srv_export == &backtrace_export) return SetupDebugInfo();
-	if(srv_export == &data_object_lookup_export) return SetupDebugInfo();
+	typename unisim::util::blob::FileFormat ffmt = blob->GetFileFormat();
+	
+	switch(ffmt)
+	{
+		case unisim::util::blob::FFMT_UNKNOWN:
+			break;
+		case unisim::util::blob::FFMT_ELF32:
+			{
+				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(blob);
+				
+				elf32_loader->SetDebugInfoStream(logger.DebugInfoStream());
+				elf32_loader->SetDebugWarningStream(logger.DebugWarningStream());
+				elf32_loader->SetDebugErrorStream(logger.DebugErrorStream());
+				unsigned int prc_num;
+				for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+				{
+					elf32_loader->SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
+					elf32_loader->SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
+				}
+				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
+				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
-	logger << DebugError << "Internal Error" << EndDebugError;
+				elf32_loader->ParseSymbols();
+				elf32_loaders.push_back(elf32_loader);
+				unsigned int front_end_num;
+				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+				{
+					enable_elf32_loaders[front_end_num].push_back(true);
+				}
+			}
+			break;
+		case unisim::util::blob::FFMT_ELF64:
+			{
+				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(blob);
+				
+				elf64_loader->SetDebugInfoStream(logger.DebugInfoStream());
+				elf64_loader->SetDebugWarningStream(logger.DebugWarningStream());
+				elf64_loader->SetDebugErrorStream(logger.DebugErrorStream());
+				unsigned int prc_num;
+				for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+				{
+					elf64_loader->SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
+					elf64_loader->SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
+				}
+				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
+				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+
+				elf64_loader->ParseSymbols();
+				elf64_loaders.push_back(elf64_loader);
+				unsigned int front_end_num;
+				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+				{
+					enable_elf64_loaders[front_end_num].push_back(true);
+				}
+			}
+			break;
+		case unisim::util::blob::FFMT_COFF:
+			{
+				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), blob);
+				
+				coff_loader->ParseSymbols();
+				coff_loaders.push_back(coff_loader);
+				unsigned int front_end_num;
+				for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+				{
+					enable_coff_loaders[front_end_num].push_back(true);
+				}
+			}
+			break;
+	}
+	
+	const typename std::vector<const unisim::util::blob::Blob<ADDRESS> *>& sibling_blobs = blob->GetBlobs();
+	
+	typename std::vector<const unisim::util::blob::Blob<ADDRESS> *>::const_iterator it;
+	for(it = sibling_blobs.begin(); it != sibling_blobs.end(); it++)
+	{
+		const unisim::util::blob::Blob<ADDRESS> *sibling_blob = *it;
+		SetupDebugInfo(sibling_blob);
+	}
+	return true;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetupDebugInfo()
+{
+	if(setup_debug_info_done) return true;
+	if(!blob_import)
+	{
+		logger << DebugError << "Blob import is not connected" << EndDebugError;
+		return false;
+	}
+	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
+	if(!blob) return true; // no blob
+	bool status = SetupDebugInfo(blob);
+	if(status) setup_debug_info_done = true;
+	return setup_debug_info_done;
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::UpdateReportingRequirements(unsigned int prc_num)
+{
+	requires_fetch_instruction_reporting[prc_num] = breakpoint_registry.HasBreakpoints(prc_num) || !fetch_insn_event_set[prc_num].empty();
+	requires_commit_instruction_reporting[prc_num] = !commit_insn_event_set[prc_num].empty();
+	requires_memory_access_reporting[prc_num] = watchpoint_registry.HasWatchpoints(prc_num);
+
+	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, requires_memory_access_reporting[prc_num]);
+	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_FETCH_INSN, requires_fetch_instruction_reporting[prc_num]);
+	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_COMMIT_INSN, requires_commit_instruction_reporting[prc_num]);
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::ScheduleFrontEnd(unsigned int front_end_num)
+{
+	pthread_mutex_lock(&schedule_mutex);
+	schedule |= 1 << front_end_num;
+	pthread_mutex_unlock(&schedule_mutex);
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::NextScheduledFrontEnd(unsigned int& front_end_num)
+{
+	pthread_mutex_lock(&schedule_mutex);
+	if(unisim::util::arithmetic::BitScanForward(front_end_num, schedule))
+	{
+		schedule &= ~(1 << front_end_num);
+		pthread_mutex_unlock(&schedule_mutex);
+		return true;
+	}
+	pthread_mutex_unlock(&schedule_mutex);
 	return false;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::EndSetup()
+template <typename CONFIG>
+bool Debugger<CONFIG>::IsScheduleEmpty() const
 {
-	return true;
+	return schedule == 0;
 }
 
-template <class ADDRESS>
-typename unisim::service::interfaces::DebugControl<ADDRESS>::DebugCommand Debugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
-{
-	return debug_control_import ? debug_control_import->FetchDebugCommand(cia) : unisim::service::interfaces::DebugControl<ADDRESS>::DBG_STEP;
-}
+// Exports to CPUs
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::Listen(const typename unisim::util::debug::Event<ADDRESS>& event)
+// unisim::service::interfaces::DebugYielding (tagged)
+template <typename CONFIG>
+void Debugger<CONFIG>::DebugYield(unsigned int prc_num)
 {
-	switch(event.GetType())
+	if(likely(IsScheduleEmpty())) return;
+
+	unsigned int front_end_num = 0;
+	
+	while(NextScheduledFrontEnd(front_end_num))
 	{
-		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
-			{
-				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) &event;
-				
-				if(!breakpoint_registry.SetBreakpoint(*brkp)) return false;
-				
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-							breakpoint_registry.HasBreakpoints());
-			}
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			{
-				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) &event;
-				
-				if(!watchpoint_registry.SetWatchpoint(*wp)) return false;
-				
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-			}
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN:
-			break;
-			
+		front_end_gate[front_end_num]->DebugYield();
 	}
-	return true;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::Unlisten(const typename unisim::util::debug::Event<ADDRESS>& event)
+// unisim::service::interfaces::MemoryAccessReporting<ADDRESS> (tagged)
+template <typename CONFIG>
+bool Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	switch(event.GetType())
+	bool overlook = true;
+	
+#if 0
+	if(unlikely(!requires_memory_access_reporting[prc_num]))
 	{
-		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
-			{
-				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) &event;
-				
-				if(!breakpoint_registry.RemoveBreakpoint(*brkp)) return false;
-				
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-							breakpoint_registry.HasBreakpoints());
-			}
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			{
-				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) &event;
-				
-				if(!watchpoint_registry.RemoveWatchpoint(*wp)) return false;
-				
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-			}
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN:
-			break;
-			
+		logger << DebugWarning << "Processor #" << prc_num << " reports memory access even if it has been asked not to" << EndDebugWarning;
+		return overlook;
 	}
-	return true;
-}
-
-template <class ADDRESS>
-void Debugger<ADDRESS>::EnumerateListenedEvents(std::list<const unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type) const
-{
-	lst.clear();
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
+#endif
+	
+	if(unlikely(watchpoint_registry.HasWatchpoints(mat, mt, addr, size, prc_num)))
 	{
-		const std::list<unisim::util::debug::Breakpoint<ADDRESS> >& breakpoints = breakpoint_registry.GetBreakpoints();
-		typename std::list<unisim::util::debug::Breakpoint<ADDRESS> >::const_iterator brkp_it;
-		for(brkp_it = breakpoints.begin(); brkp_it != breakpoints.end(); brkp_it++)
+		unsigned int front_end_num;
+		
+		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 		{
-			lst.push_back(&(*brkp_it));
+			Dispatcher<unisim::util::debug::Watchpoint<ADDRESS> > watchpoint_dispatcher(*this, front_end_num, overlook);
+			
+			// Note: this function may alter local variable "overlook"
+			if(watchpoint_registry.template FindWatchpoints<Dispatcher<unisim::util::debug::Watchpoint<ADDRESS> > >(mat, mt, addr, size, prc_num, front_end_num, watchpoint_dispatcher))
+			{
+				ScheduleFrontEnd(front_end_num);
+			}
 		}
 	}
-	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
+	
+	return overlook;
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS addr, unsigned int length)
+{
+#if 0
+	if(unlikely(!requires_commit_instruction_reporting[prc_num]))
 	{
-		const std::list<unisim::util::debug::Watchpoint<ADDRESS> >& watchpoints = watchpoint_registry.GetWatchpoints();
-		typename std::list<unisim::util::debug::Watchpoint<ADDRESS> >::const_iterator wt_it;
-		for(wt_it = watchpoints.begin(); wt_it != watchpoints.end(); wt_it++)
+		logger << DebugWarning << "Processor #" << prc_num << " reports instruction commit even if it has been asked not to" << EndDebugWarning;
+	}
+#endif
+
+	if(unlikely(!commit_insn_event_set[prc_num].empty()))
+	{
+		typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::iterator it;
+		
+		for(it = commit_insn_event_set[prc_num].begin(); it != commit_insn_event_set[prc_num].end(); it++)
 		{
-			lst.push_back(&(*wt_it));
+			unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = *it;
+			unsigned int front_end_num = commit_insn_event->GetFrontEndNumber();
+			commit_insn_event->SetAddress(addr);
+			commit_insn_event->SetLength(length);
+			front_end_gate[front_end_num]->OnDebugEvent(commit_insn_event);
+			ScheduleFrontEnd(front_end_num);
 		}
 	}
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::IsEventListened(const unisim::util::debug::Event<ADDRESS>& event) const
+template <typename CONFIG>
+void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next_addr)
 {
-	switch(event.GetType())
+#if 0
+	if(unlikely(!requires_fetch_instruction_reporting[prc_num]))
+	{
+		logger << DebugWarning << "Processor #" << prc_num << " reports instruction fetch even if it has been asked not to" << EndDebugWarning;
+	}
+#endif
+	if(unlikely(breakpoint_registry.HasBreakpoints(next_addr, prc_num)))
+	{
+		unsigned int front_end_num;
+		
+		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+		{
+			Dispatcher<unisim::util::debug::Breakpoint<ADDRESS> > breakpoint_dispatcher(*this, front_end_num);
+			
+			if(breakpoint_registry.template FindBreakpoints<Dispatcher<unisim::util::debug::Breakpoint<ADDRESS> > >(next_addr, prc_num, front_end_num, breakpoint_dispatcher))
+			{
+				ScheduleFrontEnd(front_end_num);
+			}
+		}
+	}
+	
+	if(unlikely(!fetch_insn_event_set[prc_num].empty()))
+	{
+		typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::iterator it;
+		
+		for(it = fetch_insn_event_set[prc_num].begin(); it != fetch_insn_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = *it;
+			unsigned int front_end_num = fetch_insn_event->GetFrontEndNumber();
+			fetch_insn_event->SetAddress(next_addr);
+			front_end_gate[front_end_num]->OnDebugEvent(fetch_insn_event);
+			ScheduleFrontEnd(front_end_num);
+		}
+	}
+}
+
+
+// unisim::service::interfaces::TrapReporting (tagged)
+template <typename CONFIG>
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num)
+{
+	if(unlikely(!trap_event_set[prc_num].empty()))
+	{
+		typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::iterator it;
+		
+		for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+			unsigned int front_end_num = trap_event->GetFrontEndNumber();
+			trap_event->SetTrapObject(0);
+			trap_event->SetTrapMessage("");
+			front_end_gate[front_end_num]->OnDebugEvent(trap_event);
+			ScheduleFrontEnd(front_end_num);
+		}
+	}
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj)
+{
+	if(unlikely(!trap_event_set[prc_num].empty()))
+	{
+		typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::iterator it;
+		
+		for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+			unsigned int front_end_num = trap_event->GetFrontEndNumber();
+			trap_event->SetTrapObject(&obj);
+			trap_event->SetTrapMessage("");
+			front_end_gate[front_end_num]->OnDebugEvent(trap_event);
+			ScheduleFrontEnd(front_end_num);
+		}
+	}
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj, const std::string &str)
+{
+	if(unlikely(!trap_event_set[prc_num].empty()))
+	{
+		typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::iterator it;
+		
+		for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+			unsigned int front_end_num = trap_event->GetFrontEndNumber();
+			trap_event->SetTrapObject(&obj);
+			trap_event->SetTrapMessage(str);
+			front_end_gate[front_end_num]->OnDebugEvent(trap_event);
+			ScheduleFrontEnd(front_end_num);
+		}
+	}
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj, const char *c_str)
+{
+	if(unlikely(!trap_event_set[prc_num].empty()))
+	{
+		typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::iterator it;
+		
+		for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+			unsigned int front_end_num = trap_event->GetFrontEndNumber();
+			trap_event->SetTrapObject(&obj);
+			trap_event->SetTrapMessage(c_str);
+			front_end_gate[front_end_num]->OnDebugEvent(trap_event);
+			ScheduleFrontEnd(front_end_num);
+		}
+	}
+}
+
+// Export to Front-ends
+
+// unisim::service::interfaces::DebugSelecting (tagged)
+template <typename CONFIG>
+bool Debugger<CONFIG>::DebugSelect(unsigned int front_end_num, unsigned int prc_num)
+{
+	if(prc_num >= NUM_PROCESSORS) return false;
+	
+	sel_prc_gate[front_end_num] = prc_gate[prc_num];
+	
+	return true;
+}
+
+template <typename CONFIG>
+unsigned int Debugger<CONFIG>::DebugGetSelected(unsigned int front_end_num) const
+{
+	if(front_end_num >= MAX_FRONT_ENDS) return 0;
+	
+	return sel_prc_gate[front_end_num]->GetProcessorNumber();
+}
+
+// unisim::service::interfaces::DebugYieldingRequest (tagged)
+template <typename CONFIG>
+void Debugger<CONFIG>::DebugYieldRequest(unsigned int front_end_num)
+{
+	if(front_end_num >= MAX_FRONT_ENDS) return;
+
+	ScheduleFrontEnd(front_end_num);
+}
+
+// unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
+template <typename CONFIG>
+bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event)
+{
+//	std::cerr << "Listen(" << front_end_num << ", " << event << ")" << std::endl;
+	int event_prc_num = event->GetProcessorNumber();
+	
+	unsigned int prc_num = (event_prc_num < 0) ? sel_prc_gate[front_end_num]->GetProcessorNumber() : event_prc_num;
+	
+	if(prc_num >= NUM_PROCESSORS) return false;
+	
+	event->SetProcessorNumber(prc_num);
+	
+	int event_front_end_num = event->GetFrontEndNumber();
+	if(event_front_end_num < 0)
+	{
+		event->SetFrontEndNumber(front_end_num);
+	}
+	else if((unsigned int) event_front_end_num != front_end_num)
+	{
+		return false;
+	}
+	
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			{
-				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
 				
-				return breakpoint_registry.HasBreakpoint(*brkp);
+				if(!breakpoint_registry.SetBreakpoint(brkp)) return false;
+				
+				if(brkp->GetId() < 0)
+				{
+					brkp->SetId(AllocateId(front_end_num));
+				}
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
 			{
-				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
 				
-				return watchpoint_registry.HasWatchpoint(*wp);
+				if(!watchpoint_registry.SetWatchpoint(wp)) return false;
+				
+				if(wp->GetId() < 0)
+				{
+					wp->SetId(AllocateId(front_end_num));
+				}
 			}
 			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN:
+			{
+				unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
+
+				if(fetch_insn_event_set[prc_num].find(fetch_insn_event) != fetch_insn_event_set[prc_num].end())
+				{
+					return true; // already set
+				}
+				
+				fetch_insn_event_set[prc_num].insert(fetch_insn_event);
+				fetch_insn_event->Catch();
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN:
+			{
+				unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = static_cast<unisim::util::debug::CommitInsnEvent<ADDRESS> *>(event);
+
+				if(commit_insn_event_set[prc_num].find(commit_insn_event) != commit_insn_event_set[prc_num].end())
+				{
+					return true; // already set
+				}
+
+				commit_insn_event_set[prc_num].insert(commit_insn_event);
+				commit_insn_event->Catch();
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_TRAP:
+			{
+				unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+
+				if(trap_event_set[prc_num].find(trap_event) != trap_event_set[prc_num].end())
+				{
+					return true; // already set
+				}
+				
+				trap_event_set[prc_num].insert(trap_event);
+				trap_event->Catch();
+			}
+			break;
+			
+		case unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT:
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				
+				std::pair<typename SourceCodeBreakpointRegistry::iterator, bool> r = source_code_breakpoint_registry[front_end_num].insert(src_code_brkp);
+				
+				if(!r.second) return true; // source code breakpoint already set
+				
+				std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
+				
+				FindStatements(front_end_num, stmts, src_code_brkp->GetSourceCodeLocation());
+				
+				if(stmts.size())
+				{
+					for(typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::iterator it = stmts.begin(); it != stmts.end(); ++it)
+					{
+						const unisim::util::debug::Statement<ADDRESS> *stmt = *it;
+						
+						ADDRESS brkp_addr = stmt->GetAddress();
+						
+						unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(brkp_addr, src_code_brkp);
+						brkp->SetProcessorNumber(prc_num);
+						brkp->SetFrontEndNumber(front_end_num);
+						
+						if(!breakpoint_registry.SetBreakpoint(brkp))
+						{
+							source_code_breakpoint_registry[front_end_num].erase(r.first);
+							delete brkp;
+							return false;
+						}
+						
+						src_code_brkp->Attach(brkp);
+					}
+				}
+				else
+				{
+					// no statements
+					source_code_breakpoint_registry[front_end_num].erase(r.first);
+					return false;
+				}
+				
+				src_code_brkp->SetId(AllocateId(front_end_num));
+				src_code_brkp->Catch();
+			}
+			break;
+
+		case unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN:
+			return false;
+			
+	}
+	
+	UpdateReportingRequirements(prc_num);
+	
+	return true;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::Unlisten(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event)
+{
+	int event_prc_num = event->GetProcessorNumber();
+	
+	unsigned int prc_num = (event_prc_num < 0) ? sel_prc_gate[front_end_num]->GetProcessorNumber() : event_prc_num;
+
+	if(prc_num >= NUM_PROCESSORS) return false;
+	
+	event->SetProcessorNumber(prc_num);
+	
+	int event_front_end_num = event->GetFrontEndNumber();
+	if(event_front_end_num < 0)
+	{
+		event->SetFrontEndNumber(front_end_num);
+	}
+	else if((unsigned int) event_front_end_num != front_end_num)
+	{
+		return false;
+	}
+
+	switch(event->GetType())
+	{
+		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
+			{
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+				
+				if(!breakpoint_registry.RemoveBreakpoint(brkp)) return false;
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+				
+				if(!watchpoint_registry.RemoveWatchpoint(wp)) return false;
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN:
+			{
+				unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
+
+				typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::const_iterator it = fetch_insn_event_set[prc_num].find(fetch_insn_event);
+				if(it == fetch_insn_event_set[prc_num].end())
+				{
+					return false;
+				}
+				
+				fetch_insn_event_set[prc_num].erase(fetch_insn_event);
+				fetch_insn_event->Release();
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN:
+			{
+				unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = static_cast<unisim::util::debug::CommitInsnEvent<ADDRESS> *>(event);
+
+				typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::const_iterator it = commit_insn_event_set[prc_num].find(commit_insn_event);
+				if(it == commit_insn_event_set[prc_num].end())
+				{
+					return false;
+				}
+				
+				commit_insn_event_set[prc_num].erase(commit_insn_event);
+				commit_insn_event->Release();
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_TRAP:
+			{
+				unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+
+				typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::const_iterator it = trap_event_set[prc_num].find(trap_event);
+				if(it == trap_event_set[prc_num].end())
+				{
+					return false;
+				}
+				
+				trap_event_set[prc_num].erase(trap_event);
+				trap_event->Release();
+			}
+			break;
+			
+		case unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT:
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				
+				typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].find(src_code_brkp);
+				if(it == source_code_breakpoint_registry[front_end_num].end())
+				{
+					return false;
+				}
+				
+				BreakpointRemover brkp_remover(*this);
+				src_code_brkp->Scan(brkp_remover);
+				
+				source_code_breakpoint_registry[front_end_num].erase(it);
+				src_code_brkp->Release();
+				
+				if(!brkp_remover.status) return false;
+			}
+			break;
+			
+		default:
+			// ignore
+			return false;
+			
+	}
+	
+	UpdateReportingRequirements(prc_num);
+	
+	return true;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::IsEventListened(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event) const
+{
+	unsigned int prc_num = event->GetProcessorNumber();
+	
+	switch(event->GetType())
+	{
+		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
+			{
+				typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+				
+				return breakpoint_registry.HasBreakpoint(brkp);
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
+			{
+				typename unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+				
+				return watchpoint_registry.HasWatchpoint(wp);
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN:
+			{
+				unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
+
+				typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::const_iterator it = fetch_insn_event_set[prc_num].find(fetch_insn_event);
+				return it != fetch_insn_event_set[prc_num].end();
+			}
+		case unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN:
+			{
+				unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = static_cast<unisim::util::debug::CommitInsnEvent<ADDRESS> *>(event);
+
+				typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::const_iterator it = commit_insn_event_set[prc_num].find(commit_insn_event);
+				return it != commit_insn_event_set[prc_num].end();
+			}
+		case unisim::util::debug::Event<ADDRESS>::EV_TRAP:
+			{
+				unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+
+				typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::const_iterator it = trap_event_set[prc_num].find(trap_event);
+				return it != trap_event_set[prc_num].end();
+			}
+		case unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT:
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				
+				typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].find(src_code_brkp);
+				return it != source_code_breakpoint_registry[front_end_num].end();
+			}
 		case unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN:
 			return false;
 			
@@ -316,239 +1079,268 @@ bool Debugger<ADDRESS>::IsEventListened(const unisim::util::debug::Event<ADDRESS
 	return false;
 }
 
-template <class ADDRESS>
-std::string Debugger<ADDRESS>::Disasm(ADDRESS addr, ADDRESS& next_addr)
+template <typename CONFIG>
+void Debugger<CONFIG>::ScanListenedEvents(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const
 {
-	return disasm_import ? disasm_import->Disasm(addr, next_addr) : std::string();
-}
-
-template <class ADDRESS>
-void Debugger<ADDRESS>::Reset()
-{
-}
-
-template <class ADDRESS>
-bool Debugger<ADDRESS>::ReadMemory(ADDRESS addr, void *buffer, uint32_t size)
-{
-	return memory_import ? memory_import->ReadMemory(addr, buffer, size) : false;
-}
-
-template <class ADDRESS>
-bool Debugger<ADDRESS>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
-{
-	return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false;
-}
-
-template <class ADDRESS>
-unisim::util::debug::Register *Debugger<ADDRESS>::GetRegister(const char *name)
-{
-	return registers_import ? registers_import->GetRegister(name) : 0;
-}
-
-template <class ADDRESS>
-void Debugger<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
-{
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		const typename unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
-		
-		if(!watchpoint) throw std::runtime_error("Internal error");
-		
-		if(debug_event_listener_import) debug_event_listener_import->OnDebugEvent(*watchpoint);
+		typename std::set<unisim::util::debug::FetchInsnEvent<ADDRESS> *>::const_iterator it;
+		for(it = fetch_insn_event_set[prc_num].begin(); it != fetch_insn_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = *it;
+			if((unsigned int) fetch_insn_event->GetFrontEndNumber() == front_end_num)
+			{
+				scanner.Append(fetch_insn_event);
+			}
+		}
 	}
-}
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
-{
-	if(breakpoint_registry.HasBreakpoint(next_addr))
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		const typename unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = breakpoint_registry.FindBreakpoint(next_addr);
-		
-		if(!breakpoint) throw std::runtime_error("Internal error");
-		
-		if(debug_event_listener_import) debug_event_listener_import->OnDebugEvent(*breakpoint);
+		typename std::set<unisim::util::debug::CommitInsnEvent<ADDRESS> *>::const_iterator it;
+		for(it = commit_insn_event_set[prc_num].begin(); it != commit_insn_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = *it;
+			if((unsigned int) commit_insn_event->GetFrontEndNumber() == front_end_num)
+			{
+				scanner.Append(commit_insn_event);
+			}
+		}
 	}
+
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		typename std::set<unisim::util::debug::TrapEvent<ADDRESS> *>::const_iterator it;
+		for(it = trap_event_set[prc_num].begin(); it != trap_event_set[prc_num].end(); it++)
+		{
+			unisim::util::debug::TrapEvent<ADDRESS> *trap_event = *it;
+			if((unsigned int) trap_event->GetFrontEndNumber() == front_end_num)
+			{
+				scanner.Append(trap_event);
+			}
+		}
+	}
+
+	struct Filter : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	{
+		Filter()
+			: reorder_buffer()
+		{
+		}
+		
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		{
+			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT)
+			{
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+				if(!brkp->GetReference())
+				{
+					unsigned int id = brkp->GetId();
+					if(id >= reorder_buffer.size())
+					{
+						reorder_buffer.resize(id + 1);
+					}
+					reorder_buffer[id] = event;
+				}
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT)
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				unsigned int id = src_code_brkp->GetId();
+				if(id >= reorder_buffer.size())
+				{
+					reorder_buffer.resize(id + 1);
+				}
+				reorder_buffer[id] = event;
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT)
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+				unsigned int id = wp->GetId();
+				if(id >= reorder_buffer.size())
+				{
+					reorder_buffer.resize(id + 1);
+				}
+				reorder_buffer[id] = event;
+			}
+		}
+		
+		void Scan(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner)
+		{
+			for(typename std::vector<unisim::util::debug::Event<ADDRESS> *>::iterator it = reorder_buffer.begin(); it != reorder_buffer.end(); ++it)
+			{
+				unisim::util::debug::Event<ADDRESS> *event = *it;
+				if(event)
+				{
+					scanner.Append(event);
+				}
+			}
+		}
+		
+	private:
+		std::vector<unisim::util::debug::Event<ADDRESS> *> reorder_buffer;
+	};
+	
+	Filter filter;
+	
+	breakpoint_registry.ScanBreakpoints(front_end_num, filter);
+	
+	watchpoint_registry.ScanWatchpoints(front_end_num, filter);
+	
+	for(unsigned int front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+	{
+		if(source_code_breakpoint_registry[front_end_num].size())
+		{
+			typename SourceCodeBreakpointRegistry::const_iterator it = source_code_breakpoint_registry[front_end_num].begin();
+			
+			do
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = *it;
+				typename SourceCodeBreakpointRegistry::const_iterator next_it = ++it;
+				
+				filter.Append(src_code_brkp);
+				
+				it = next_it;
+			}
+			while(it != source_code_breakpoint_registry[front_end_num].end());
+		}
+	}
+	
+	filter.Scan(scanner);
 }
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::ReportTrap()
+template <typename CONFIG>
+void Debugger<CONFIG>::ClearEvents(unsigned int front_end_num)
 {
-	if(trap_reporting_import) trap_reporting_import->ReportTrap();
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
+	{
+		DebugEventScanner(Debugger<CONFIG>& _dbg, unsigned int _front_end_num)
+			: dbg(_dbg)
+			, front_end_num(_front_end_num)
+		{
+		}
+		
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
+		{
+			dbg.Unlisten(front_end_num, event);
+		}
+	private:
+		Debugger<CONFIG>& dbg;
+		unsigned int front_end_num;
+	};
+	
+	DebugEventScanner event_scanner(*this, front_end_num);
+	ScanListenedEvents(front_end_num, event_scanner);
 }
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::ReportTrap(const unisim::kernel::service::Object &obj)
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetBreakpoint(unsigned int front_end_num, ADDRESS addr)
 {
-	if(trap_reporting_import) trap_reporting_import->ReportTrap(obj);
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	unisim::util::debug::Breakpoint<ADDRESS> *brkp = breakpoint_registry.SetBreakpoint(addr, prc_num, front_end_num);
+	if(brkp && (brkp->GetId() < 0))
+	{
+		brkp->SetId(AllocateId(front_end_num));
+	}
+	UpdateReportingRequirements(prc_num);
+	return brkp != 0;
 }
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::ReportTrap(const unisim::kernel::service::Object &obj,
-						const std::string &str)
+template <typename CONFIG>
+bool Debugger<CONFIG>::RemoveBreakpoint(unsigned int front_end_num, ADDRESS addr)
 {
-	if(trap_reporting_import) trap_reporting_import->ReportTrap(obj, str);
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	bool status = breakpoint_registry.RemoveBreakpoint(addr, prc_num, front_end_num);
+	UpdateReportingRequirements(prc_num);
+	return status;
 }
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::ReportTrap(const unisim::kernel::service::Object &obj,
-						const char *c_str)
+template <typename CONFIG>
+bool Debugger<CONFIG>::HasBreakpoints(unsigned int front_end_num, ADDRESS addr)
 {
-	if(trap_reporting_import) trap_reporting_import->ReportTrap(obj, c_str);
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	return breakpoint_registry.HasBreakpoints(addr, prc_num, front_end_num);
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook)
 {
-	bool found = false;
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	unisim::util::debug::Watchpoint<ADDRESS> *wp = watchpoint_registry.SetWatchpoint(mat, mt, addr, size, overlook, prc_num, front_end_num);
+	if(wp && (wp->GetId() < 0))
+	{
+		wp->SetId(AllocateId(front_end_num));
+	}
+	UpdateReportingRequirements(prc_num);
+	return wp != 0;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::RemoveWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	bool status = watchpoint_registry.RemoveWatchpoint(mat, mt, addr, size, prc_num, front_end_num);
+	UpdateReportingRequirements(prc_num);
+	return status;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::HasWatchpoints(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	return watchpoint_registry.HasWatchpoints(mat, mt, addr, size, prc_num, front_end_num);
+}
+
+// unisim::service::interfaces::Disassembly<ADDRESS> (tagged)
+template <typename CONFIG>
+std::string Debugger<CONFIG>::Disasm(unsigned int front_end_num, ADDRESS addr, ADDRESS& next_addr)
+{
+	return sel_prc_gate[front_end_num]->Disasm(addr, next_addr);
+}
+
+// unisim::service::interfaces::Memory<ADDRESS> (tagged)
+template <typename CONFIG>
+void Debugger<CONFIG>::ResetMemory(unsigned int front_end_num)
+{
+	sel_prc_gate[front_end_num]->ResetMemory();
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::ReadMemory(unsigned int front_end_num, ADDRESS addr, void *buffer, uint32_t size)
+{
+	return sel_prc_gate[front_end_num]->ReadMemory(addr, buffer, size);
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::WriteMemory(unsigned int front_end_num, ADDRESS addr, const void *buffer, uint32_t size)
+{
+	return sel_prc_gate[front_end_num]->WriteMemory(addr, buffer, size);
+}
+
+
+// unisim::service::interfaces::Registers (tagged)
+template <typename CONFIG>
+unisim::service::interfaces::Register *Debugger<CONFIG>::GetRegister(unsigned int front_end_num, const char *name)
+{
+	return sel_prc_gate[front_end_num]->GetRegister(name);
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::ScanRegisters(unsigned int front_end_num, unisim::service::interfaces::RegisterScanner& scanner)
+{
+	return sel_prc_gate[front_end_num]->ScanRegisters(scanner);
+}
+
+// unisim::service::interfaces::SymbolTableLookup<ADDRESS> (tagged)
+template <typename CONFIG>
+void Debugger<CONFIG>::GetSymbols(unsigned int front_end_num, typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+{
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				enable_elf32_loaders[i] = enable;
-				found = true;
-			}
-		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; i++)
-	{
-		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				enable_elf64_loaders[i] = enable;
-				found = true;
-			}
-		}
-	}
-
-	unsigned int num_coff_loaders = coff_loaders.size();
-	for(i = 0; i < num_coff_loaders; i++)
-	{
-		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				enable_coff_loaders[i] = enable;
-				found = true;
-			}
-		}
-	}
-	
-	return found;
-}
-
-template <class ADDRESS>
-void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
-{
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; i++)
-	{
-		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			lst.push_back(std::string(blob->GetFilename()));
-		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; i++)
-	{
-		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			lst.push_back(std::string(blob->GetFilename()));
-		}
-	}
-
-	unsigned int num_coff_loaders = coff_loaders.size();
-	for(i = 0; i < num_coff_loaders; i++)
-	{
-		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			lst.push_back(std::string(blob->GetFilename()));
-		}
-	}
-}
-
-template <class ADDRESS>
-bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
-{
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; i++)
-	{
-		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				return enable_elf32_loaders[i];
-			}
-		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; i++)
-	{
-		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				return enable_elf64_loaders[i];
-			}
-		}
-	}
-
-	unsigned int num_coff_loaders = coff_loaders.size();
-	for(i = 0; i < num_coff_loaders; i++)
-	{
-		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
-		{
-			if(strcmp(blob->GetFilename(), filename) == 0)
-			{
-				return enable_coff_loaders[i];
-			}
-		}
-	}
-	
-	return false;
-}
-
-template <class ADDRESS>
-void Debugger<ADDRESS>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
-{
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; i++)
-	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			elf32_loader->GetSymbols(lst, type);
@@ -558,7 +1350,7 @@ void Debugger<ADDRESS>::GetSymbols(typename std::list<const unisim::util::debug:
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			elf64_loader->GetSymbols(lst, type);
@@ -568,7 +1360,7 @@ void Debugger<ADDRESS>::GetSymbols(typename std::list<const unisim::util::debug:
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			coff_loader->GetSymbols(lst, type);
@@ -576,15 +1368,15 @@ void Debugger<ADDRESS>::GetSymbols(typename std::list<const unisim::util::debug:
 	}
 }
 
-template <class ADDRESS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+template <typename CONFIG>
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbol(unsigned int front_end_num, const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbol(name, addr, type);
@@ -595,7 +1387,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbol(name, addr, type);
@@ -606,7 +1398,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbol(name, addr, type);
@@ -616,15 +1408,15 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	return 0;
 }
 
-template <class ADDRESS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymbolByAddr(ADDRESS addr) const
+template <typename CONFIG>
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByAddr(addr);
@@ -635,7 +1427,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByAddr(addr);
@@ -646,7 +1438,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByAddr(addr);
@@ -656,15 +1448,15 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	return 0;
 }
 
-template <class ADDRESS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymbolByName(const char *name) const
+template <typename CONFIG>
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByName(unsigned int front_end_num, const char *name) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByName(name);
@@ -675,7 +1467,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByName(name);
@@ -686,7 +1478,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByName(name);
@@ -696,15 +1488,15 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	return 0;
 }
 
-template <class ADDRESS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+template <typename CONFIG>
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByName(unsigned int front_end_num, const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByName(name, type);
@@ -715,7 +1507,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByName(name, type);
@@ -726,7 +1518,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByName(name, type);
@@ -736,15 +1528,15 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	return 0;
 }
 
-template <class ADDRESS>
-const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+template <typename CONFIG>
+const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByAddr(addr, type);
@@ -755,7 +1547,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByAddr(addr, type);
@@ -766,7 +1558,7 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByAddr(addr, type);
@@ -776,19 +1568,21 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Debugger<ADDRESS>::FindSymb
 	return 0;
 }
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::GetStatements(std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const
+
+// unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
+template <typename CONFIG>
+void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const
 {
-	typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator iter;
+	typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator iter;
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf32_stmts = elf32_loader->GetStatements();
+			const typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf32_stmts = elf32_loader->GetStatements();
 			for(iter = elf32_stmts.begin(); iter != elf32_stmts.end(); iter++)
 			{
 				stmts.insert(std::pair<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>((*iter).first, (*iter).second));
@@ -799,10 +1593,10 @@ void Debugger<ADDRESS>::GetStatements(std::map<ADDRESS, const unisim::util::debu
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf64_stmts = elf64_loader->GetStatements();
+			const typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf64_stmts = elf64_loader->GetStatements();
 			for(iter = elf64_stmts.begin(); iter != elf64_stmts.end(); iter++)
 			{
 				stmts.insert(std::pair<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>((*iter).first, (*iter).second));
@@ -811,8 +1605,8 @@ void Debugger<ADDRESS>::GetStatements(std::map<ADDRESS, const unisim::util::debu
 	}
 }
 
-template <class ADDRESS>
-const typename unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+template <typename CONFIG>
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -820,7 +1614,7 @@ const typename unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindS
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(addr, opt);
@@ -851,7 +1645,7 @@ const typename unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindS
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(addr, opt);
@@ -882,18 +1676,89 @@ const typename unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindS
 	return ret_stmt;
 }
 
-template <class ADDRESS>
-const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+template <typename CONFIG>
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+{
+	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, addr, opt);
+			if(stmt)
+			{
+				switch(opt)
+				{
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						if(stmt->GetAddress() <= addr)
+						{
+							if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						if(stmt->GetAddress() > addr)
+						{
+							if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+						return stmt;
+						break;
+				}
+			}
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, addr, opt);
+			if(stmt)
+			{
+				switch(opt)
+				{
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						if(stmt->GetAddress() <= addr)
+						{
+							if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						if(stmt->GetAddress() > addr)
+						{
+							if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+						return stmt;
+						break;
+				}
+			}
+		}
+	}
+	
+	return ret_stmt;
+}
+
+template <typename CONFIG>
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(source_code_location);
 			if(stmt) return stmt;
 		}
 	}
@@ -901,18 +1766,18 @@ const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatement(
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(source_code_location);
 			if(stmt) return stmt;
 		}
 	}
 	return 0;
 }
 
-template <class ADDRESS>
-const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+template <typename CONFIG>
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
 {
 	const typename unisim::util::debug::Statement<ADDRESS> *ret = 0;
 	unsigned int i;
@@ -920,10 +1785,10 @@ const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatements
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, source_code_location);
 			
 			if(!ret) ret = stmt;
 		}
@@ -932,10 +1797,10 @@ const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatements
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, filename, lineno, colno);
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, source_code_location);
 			
 			if(!ret) ret = stmt;
 		}
@@ -944,18 +1809,21 @@ const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatements
 	return ret;
 }
 
-template <class ADDRESS>
-std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
+// unisim::service::interfaces::BackTrace<ADDRESS> (tagged)
+template <typename CONFIG>
+std::vector<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetBackTrace(unsigned int front_end_num, ADDRESS pc) const
 {
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			std::vector<ADDRESS> *backtrace = elf32_loader->GetBackTrace(pc);
+			std::vector<ADDRESS> *backtrace = elf32_loader->GetBackTrace(prc_num, pc);
 			if(backtrace) return backtrace;
 		}
 	}
@@ -963,10 +1831,10 @@ std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			std::vector<ADDRESS> *backtrace = elf64_loader->GetBackTrace(pc);
+			std::vector<ADDRESS> *backtrace = elf64_loader->GetBackTrace(prc_num, pc);
 			if(backtrace) return backtrace;
 		}
 	}
@@ -974,36 +1842,40 @@ std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
 	return 0;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
+template <typename CONFIG>
+bool Debugger<CONFIG>::GetReturnAddress(unsigned int front_end_num, ADDRESS pc, ADDRESS& ret_addr) const
 {
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			if(elf32_loader->GetReturnAddress(pc, ret_addr)) return true;
+			if(elf32_loader->GetReturnAddress(prc_num, pc, ret_addr)) return true;
 		}
 	}
 
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			if(elf64_loader->GetReturnAddress(pc, ret_addr)) return true;
+			if(elf64_loader->GetReturnAddress(prc_num, pc, ret_addr)) return true;
 		}
 	}
 	
 	return false;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
+
+// unisim::service::interfaces::DebugInfoLoading (tagged)
+template <typename CONFIG>
+bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *filename)
 {
 	uint8_t magic[8];
 	
@@ -1044,7 +1916,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 		|| ((magic[0] == 0x00) && (magic[1] == 0x9d)))
 		{
 			// TI COFF file detected
-			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger);
+			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 			
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, filename);
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_VERBOSE, verbose);
@@ -1056,7 +1928,11 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 				return false;
 			}
 			coff_loaders.push_back(coff_loader);
-			enable_coff_loaders.push_back(true);
+			unsigned int i;
+			for(i = 0; i < MAX_FRONT_ENDS; i++)
+			{
+				enable_coff_loaders[front_end_num].push_back((front_end_num == i));
+			}
 			return true;
 		}
 	}
@@ -1070,12 +1946,21 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>();
 						
+						elf32_loader->SetDebugInfoStream(logger.DebugInfoStream());
+						elf32_loader->SetDebugWarningStream(logger.DebugWarningStream());
+						elf32_loader->SetDebugErrorStream(logger.DebugErrorStream());
+						unsigned int prc_num;
+						for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+						{
+							elf32_loader->SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
+							elf32_loader->SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
+						}
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 						
 						if(!elf32_loader->Load())
@@ -1085,18 +1970,31 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 							return false;
 						}
 						elf32_loaders.push_back(elf32_loader);
-						enable_elf32_loaders.push_back(true);
+						unsigned int i;
+						for(i = 0; i < MAX_FRONT_ENDS; i++)
+						{
+							enable_elf32_loaders[i].push_back(front_end_num == i);
+						}
 						return true;
 					}
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>();
 						
+						elf64_loader->SetDebugInfoStream(logger.DebugInfoStream());
+						elf64_loader->SetDebugWarningStream(logger.DebugWarningStream());
+						elf64_loader->SetDebugErrorStream(logger.DebugErrorStream());
+						unsigned int prc_num;
+						for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+						{
+							elf64_loader->SetRegistersInterface(prc_num, prc_gate[prc_num]->registers_import);
+							elf64_loader->SetMemoryInterface(prc_num, prc_gate[prc_num]->memory_import);
+						}
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 						if(!elf64_loader->Load())
@@ -1106,7 +2004,11 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 							return false;
 						}
 						elf64_loaders.push_back(elf64_loader);
-						enable_elf64_loaders.push_back(true);
+						unsigned int i;
+						for(i = 0; i < MAX_FRONT_ENDS; i++)
+						{
+							enable_elf64_loaders[i].push_back(front_end_num == i);
+						}
 						return true;
 					}
 					break;
@@ -1117,89 +2019,166 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 	return false;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADDRESS> *blob)
+template <typename CONFIG>
+bool Debugger<CONFIG>::EnableBinary(unsigned int front_end_num, const char *filename, bool enable)
 {
-	typename unisim::util::debug::blob::FileFormat ffmt = blob->GetFileFormat();
+	bool found = false;
+	unsigned int i;
 	
-	switch(ffmt)
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		case unisim::util::debug::blob::FFMT_UNKNOWN:
-			break;
-		case unisim::util::debug::blob::FFMT_ELF32:
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
-				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import, blob);
-				
-				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
-				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
-				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+				enable_elf32_loaders[front_end_num][i] = enable;
+				found = true;
+			}
+		}
+	}
 
-				elf32_loader->ParseSymbols();
-				elf32_loaders.push_back(elf32_loader);
-				enable_elf32_loaders.push_back(true);
-			}
-			break;
-		case unisim::util::debug::blob::FFMT_ELF64:
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
-				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import, blob);
-				
-				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
-				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
-				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+				enable_elf64_loaders[front_end_num][i] = enable;
+				found = true;
+			}
+		}
+	}
 
-				elf64_loader->ParseSymbols();
-				elf64_loaders.push_back(elf64_loader);
-				enable_elf64_loaders.push_back(true);
-			}
-			break;
-		case unisim::util::debug::blob::FFMT_COFF:
+	unsigned int num_coff_loaders = coff_loaders.size();
+	for(i = 0; i < num_coff_loaders; i++)
+	{
+		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
-				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger, blob);
-				
-				coff_loader->ParseSymbols();
-				coff_loaders.push_back(coff_loader);
-				enable_coff_loaders.push_back(true);
+				enable_coff_loaders[front_end_num][i] = enable;
+				found = true;
 			}
-			break;
+		}
 	}
 	
-	const typename std::vector<const unisim::util::debug::blob::Blob<ADDRESS> *>& sibling_blobs = blob->GetBlobs();
-	
-	typename std::vector<const unisim::util::debug::blob::Blob<ADDRESS> *>::const_iterator it;
-	for(it = sibling_blobs.begin(); it != sibling_blobs.end(); it++)
-	{
-		const unisim::util::debug::blob::Blob<ADDRESS> *sibling_blob = *it;
-		SetupDebugInfo(sibling_blob);
-	}
-	return true;
+	return found;
 }
 
-template <class ADDRESS>
-bool Debugger<ADDRESS>::SetupDebugInfo()
+template <typename CONFIG>
+void Debugger<CONFIG>::EnumerateBinaries(unsigned int front_end_num, std::list<std::string>& lst) const
 {
-	if(setup_debug_info_done) return true;
-	if(!blob_import) return false;
-	const unisim::util::debug::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-	if(!blob) return false;
-	bool status = SetupDebugInfo(blob);
-	if(status) setup_debug_info_done = true;
-	return setup_debug_info_done;
+	// Note: For now all front-ends see all binaries
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			lst.push_back(std::string(blob->GetFilename()));
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			lst.push_back(std::string(blob->GetFilename()));
+		}
+	}
+
+	unsigned int num_coff_loaders = coff_loaders.size();
+	for(i = 0; i < num_coff_loaders; i++)
+	{
+		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			lst.push_back(std::string(blob->GetFilename()));
+		}
+	}
 }
 
-template <class ADDRESS>
-unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(const char *data_object_name, ADDRESS pc) const
+template <typename CONFIG>
+bool Debugger<CONFIG>::IsBinaryEnabled(unsigned int front_end_num, const char *filename) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				return enable_elf32_loaders[front_end_num][i];
+			}
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				return enable_elf64_loaders[front_end_num][i];
+			}
+		}
+	}
+
+	unsigned int num_coff_loaders = coff_loaders.size();
+	for(i = 0; i < num_coff_loaders; i++)
+	{
+		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
+		{
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				return enable_coff_loaders[front_end_num][i];
+			}
+		}
+	}
+	
+	return false;
+}
+
+
+// unisim::service::interfaces::DataObjectLookup<ADDRESS> (tagged)
+template <typename CONFIG>
+unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetDataObject(unsigned int front_end_num, const char *data_object_name, const char *filename, const char *compilation_unit_name) const
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(data_object_name, pc);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(prc_num, data_object_name, filename, compilation_unit_name);
 			if(data_object) return data_object;
 		}
 	}
@@ -1207,10 +2186,10 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(data_object_name, pc);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(prc_num, data_object_name, filename, compilation_unit_name);
 			if(data_object) return data_object;
 		}
 	}
@@ -1218,15 +2197,47 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 	return 0;
 }
 
-template <class ADDRESS>
-void Debugger<ADDRESS>::EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
+template <typename CONFIG>
+unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindDataObject(unsigned int front_end_num, const char *data_object_name, ADDRESS pc) const
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(prc_num, data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(prc_num, data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+	
+	return 0;
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i])
+		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			elf32_loader->EnumerateDataObjectNames(name_set, pc, scope);
@@ -1236,10 +2247,124 @@ void Debugger<ADDRESS>::EnumerateDataObjectNames(std::set<std::string>& name_set
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i])
+		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			elf64_loader->EnumerateDataObjectNames(name_set, pc, scope);
+		}
+	}
+}
+
+
+// unisim::service::interfaces::SubProgramLookup<ADDRESS> (tagged)
+template <typename CONFIG>
+const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name);
+			if(subprogram) return subprogram;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name);
+			if(subprogram) return subprogram;
+		}
+	}
+	
+	return 0;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::Lock(int front_end_num)
+{
+	bool locked = false;
+	if(front_end_num >= 0)
+	{
+		pthread_mutex_lock(&curr_front_end_num_mutex);
+		if(curr_front_end_num != front_end_num)
+		{
+			curr_front_end_num = front_end_num;
+			pthread_mutex_lock(&mutex);
+			locked = true;
+		}
+		pthread_mutex_unlock(&curr_front_end_num_mutex);
+	}
+	else
+	{
+		pthread_mutex_lock(&mutex);
+		locked = true;
+	}
+	return locked;
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::Unlock(int front_end_num)
+{
+	if(front_end_num >= 0)
+	{
+		pthread_mutex_lock(&curr_front_end_num_mutex);
+		curr_front_end_num = -1;
+		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&curr_front_end_num_mutex);
+	}
+	else
+	{
+		pthread_mutex_unlock(&mutex);
+	}
+}
+
+template <typename CONFIG>
+int Debugger<CONFIG>::AllocateId(unsigned int front_end_num)
+{
+	return next_id[front_end_num]++;
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::VariableBaseNotify(const unisim::kernel::VariableBase *var)
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		if(var == &param_verbose)
+		{
+			elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+		}
+		else if(var == &param_debug_dwarf)
+		{
+			elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+		}
+		
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		if(var == &param_verbose)
+		{
+			elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+		}
+		else if(var == &param_debug_dwarf)
+		{
+			elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 		}
 	}
 }

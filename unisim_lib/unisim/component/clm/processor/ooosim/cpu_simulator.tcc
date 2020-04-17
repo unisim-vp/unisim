@@ -82,7 +82,7 @@ using unisim::component::clm::pipeline::commit::ReorderBuffer;
 
 using unisim::component::clm::utility::hexa;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 /*
 using full_system::utils::services::ServiceExport;
 using full_system::utils::services::ServiceImport;

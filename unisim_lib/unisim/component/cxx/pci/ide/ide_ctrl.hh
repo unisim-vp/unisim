@@ -44,7 +44,7 @@ retaining the original license:
 #ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_CTRL_HH__
 #define __UNISIM_COMPONENT_CXX_PCI_IDE_CTRL_HH__
 
-//#include <systemc.h>
+//#include <systemc>
 #include <vector>
 #include "unisim/component/cxx/pci/ide/pcidev.hh"
 //#include "dev/ide_ctrl_abstract.hh"

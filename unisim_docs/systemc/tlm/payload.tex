@@ -25,8 +25,8 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{\texttt{tlm\_generic\_payload} class definition (contd.)}
-	\lstinputlisting[linerange={31-51}]{tlm/tlm_generic_payload.hh}
+	\frametitle{\small \texttt{tlm\_generic\_payload} class definition (contd.)}
+	\lstinputlisting[linerange={31-53}]{tlm/tlm_generic_payload.hh}
 \end{frame}
 }
 
@@ -141,6 +141,7 @@ Table~\ref{table:tlm_generic_payload_default_values} shows which attributes can 
 \begin{frame}
 	\frametitle{The command attribute}
 	\begin{itemize}
+		\small
 		\item<1-> Only three commands are defined:
 		\lstinputlisting{tlm/tlm_command.hh}
 		\item<2-> Getter and setter:
@@ -220,7 +221,7 @@ It could be the case if the interconnect module needs to do some kind of address
 		\end{itemize}
 		\item<2-> Must be always different than 0 (\texttt{NULL}).
 		\item<2-> Should never be modified by interconnect modules.
-		\item<2-> The size of the buffer must be bigger than the number of bytes to read/write (the data lengt attrribute).
+		\item<2-> The size of the buffer must be bigger than the number of bytes to read/write (the data lengt attribute).
 	\end{itemize}
 \end{frame}
 
@@ -247,7 +248,7 @@ The size of the buffer should always be bigger than the number of bytes to read/
 			\item<1-> \texttt{unsigned int get\_data\_length()}
 			\item<1-> \texttt{void set\_data\_length(const unsigned int)}
 		\end{itemize}
-		\item<2-> If it is bigger than the template parameter BUSWIDTH, the transfer is considered as a bus transfer.
+		\item<2-> If it is bigger than the template parameter BUSWIDTH, the transfer is considered as a burst transfer.
 		\item<2-> Default error when error due to the data length attribute: \texttt{TLM\_BURST\_ERROR\_RESPONSE}.
 	\end{itemize}
 \end{frame}
@@ -272,12 +273,12 @@ If the target can not satisfy the request given the received data length, it sho
 \begin{frame}
 	\frametitle{The byte enable pointer and length attributes}
 	\begin{itemize}
-		\item<1-> Define the bytes taht should be read from or written to the data buffer.
+		\item<1-> Define the bytes that should be read from or written to the data buffer.
 		\item<1-> The byte enable length defines the size of the byte enable array.
 		\item<1-> Getter and setter:
 		\begin{itemize}
-			\item<1-> \texttt{bool* get\_byte\_enable\_ptr()}
-			\item<1-> \texttt{void set\_byte\_enable\_ptr(bool *)}
+			\item<1-> \texttt{unsigned char* get\_byte\_enable\_ptr()}
+			\item<1-> \texttt{void set\_byte\_enable\_ptr(unsigned char *)}
 			\item<1-> \texttt{unsigned int get\_byte\_enable\_length()}
 			\item<1-> \texttt{void set\_byte\_enable\_length(const unsigned int)}
 		\end{itemize}
@@ -437,5 +438,5 @@ The initiator should set this attribute to \texttt{TLM\_INCOMPLETE\_RESPONSE}, a
 
 \mode<article>{
 The extension mechanism is out of the scope of this tutorial.
-For a detailed explanation refer to the OSCI TLM 2.0 User Manual.
+For a detailed explanation refer to the Accellera TLM 2.0 User Manual.
 }

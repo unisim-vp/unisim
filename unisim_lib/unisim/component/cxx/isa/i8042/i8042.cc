@@ -33,6 +33,7 @@
  */
 
 #include <unisim/component/cxx/isa/i8042/i8042.hh>
+#include <cstring>
 
 namespace unisim {
 namespace component {
@@ -80,11 +81,11 @@ I8042::I8042(const char *name, Object *parent)
 	, param_speed_boost("speed-boost", this, speed_boost, "speed-boost factor")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
-	param_fsb_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_isa_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_typematic_rate.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_typematic_delay.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_speed_boost.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_fsb_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_isa_bus_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_typematic_rate.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_typematic_delay.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_speed_boost.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	// PS/2 set 2 keyboard ID
 	kbd_id[0] = 0xab;
@@ -967,6 +968,23 @@ void I8042::WriteKbd(uint8_t data)
 				if(verbose)
 				{
 					logger << DebugInfo << "Handling keyboard command KBD_CMD_ENABLE" << EndDebugInfo;
+				}
+				KbdEnqueue(KBD_RET_ACK);
+				kbd_scanning = true;
+				break;
+			case KBD_CMD_RESET_DISABLE:
+				if(verbose)
+				{
+					logger << DebugInfo << "Handling keyboard command KBD_CMD_RESET_DISABLE" << EndDebugInfo;
+				}
+				KbdResetQueue();
+				KbdEnqueue(KBD_RET_ACK);
+				kbd_scanning = false;
+				break;
+			case KBD_CMD_RESET_ENABLE:
+				if(verbose)
+				{
+					logger << DebugInfo << "Handling keyboard command KBD_CMD_RESET_ENABLE" << EndDebugInfo;
 				}
 				KbdResetQueue();
 				KbdEnqueue(KBD_RET_ACK);

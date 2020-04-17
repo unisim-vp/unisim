@@ -42,6 +42,7 @@
 #include <inttypes.h>
 
 #include <iostream>
+#include <fstream>
 #include <queue>
 
 #include <stdio.h>
@@ -55,7 +56,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -66,9 +67,9 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
@@ -78,7 +79,7 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
 using unisim::kernel::tlm2::PayloadFabric;
 
 #define ATD1_SIZE	16
-#define ATD0_SIZE	8
+#define ATD0_SIZE	16
 #define PWM_SIZE	8
 
 
@@ -89,26 +90,43 @@ class ATD_PWM_STUB :
 	public Object,
 	public sc_module,
 
-	virtual public tlm_fw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
-	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >,
-	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >
+	virtual public tlm_fw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >
+//	, virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >
+//	, virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >
 {
+public:
+	template <int ATD_SIZE>
+	class BW_IF : virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >
+	{
+	public:
+		BW_IF(sc_event& event): bw_event(&event) {}
+		~BW_IF() {}
+
+		virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
+		{
+			if(phase == BEGIN_RESP)
+			{
+				// payload.release();
+				bw_event->notify();
+
+				return (TLM_COMPLETED);
+			}
+			return (TLM_ACCEPTED);
+		}
+		virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+		{
+		}
+	private:
+		sc_event* bw_event;
+	};
+	BW_IF<ATD0_SIZE> *atd0_bw;
+	BW_IF<ATD1_SIZE> *atd1_bw;
+
 public:
 	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD1_SIZE> > atd1_master_sock;
 	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD0_SIZE> > atd0_master_sock;
 
 	tlm_target_socket<UNISIM2RTB_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > slave_sock;
-
-	tlm_quantumkeeper atd0_quantumkeeper;
-	tlm_quantumkeeper atd1_quantumkeeper;
-	tlm_quantumkeeper pwm_quantumkeeper;
-
-	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
-	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
-	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
-
-	double	bus_cycle_time;
-	sc_time		cycle_time;
 
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~ATD_PWM_STUB();
@@ -117,6 +135,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
+	virtual void Stop(int exit_status);
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -124,18 +143,24 @@ public:
 
 	virtual tlm_sync_enum nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport( PWM_Payload<PWM_SIZE>& payload, sc_core::sc_time& t);
+
 	// Master methods
-	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
-	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
-	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+//	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+//	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+
+//	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	// Implementation
-	void input(bool pwmValue[PWM_SIZE]);
+//	void input(bool pwmValue[PWM_SIZE]);
+	void input(bool (*pwmValue)[PWM_SIZE]);
 	void output_ATD1(double anValue[ATD1_SIZE]);
 	void output_ATD0(double anValue[ATD0_SIZE]);
 
-//	virtual void ProcessATD();
-//	virtual void ProcessPWM();
+	virtual void Inject_ATD0(double anValue[8]) {}
+	virtual void Inject_ATD1(double anValue[16]) {}
+	virtual void Get_PWM(bool (*pwmValue)[PWM_SIZE]) {}
+
+	bool isTerminated() { return terminated; }
 
 protected:
 	double	anx_stimulus_period;
@@ -144,16 +169,30 @@ protected:
 	double	pwm_fetch_period;
 	sc_time *pwm_fetch_period_sc;
 
+	sc_event atd0_bw_event, atd1_bw_event;
+
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-	bool	atd0_stub_enabled;
-	Parameter<bool>		param_atd0_stub_enabled;
-
-	bool	atd1_stub_enabled;
-	Parameter<bool>		param_atd1_stub_enabled;
+	tlm_quantumkeeper atd0_quantumkeeper;
+	tlm_quantumkeeper atd1_quantumkeeper;
 
 private:
+
+	tlm_quantumkeeper pwm_quantumkeeper;
+
+	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
+
+	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
+	ATD_Payload<ATD1_SIZE> *atd1_payload;
+
+	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
+	ATD_Payload<ATD0_SIZE> *atd0_payload;
+
+	double	bus_cycle_time;
+	sc_time		cycle_time;
+
+
 	Parameter<double>	param_anx_stimulus_period;
 	Parameter<double>	param_pwm_fetch_period;
 
@@ -161,6 +200,9 @@ private:
 	ofstream atd1_output_file;
 	ofstream pwm_output_file;
 
+	bool terminated;
+
 };
+
 
 #endif /* ATD_PWM_STUB_HH_ */

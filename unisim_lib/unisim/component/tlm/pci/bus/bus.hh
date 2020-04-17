@@ -39,7 +39,7 @@
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/tlm/message/pci.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory.hh>
 
@@ -55,14 +55,14 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::component::tlm::message::PCIRequest;
 using unisim::component::tlm::message::PCIResponse;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -79,7 +79,7 @@ template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE,
   		unsigned int NUM_TARGETS,
   		unsigned int NUM_MAPPINGS,
   		bool DEBUG = false> 
-class Bus:public sc_module,
+class Bus:public sc_core::sc_module,
   		public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>,
   						PCIResponse<MAX_DATA_SIZE> >,
   		public Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
@@ -124,7 +124,7 @@ private:
 	
 	list<DeviceRequest *> device_request_list;
 	list<DeviceRequest *> device_request_free_list;
-	sc_event device_dispatch_event;
+	sc_core::sc_event device_dispatch_event;
 
 	unsigned int num_mappings;	
 	DevReg *devmap[NUM_TARGETS][NUM_BARS];
@@ -158,23 +158,23 @@ private:
 	
 	// frequency variables
 	unsigned int frequency;
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 	Parameter<unsigned int> param_frequency;
 
 
 public:
 
-	sc_export<TlmSendIfType> *input_port[NUM_MASTERS];
-	sc_port<TlmSendIfType> *output_port[NUM_TARGETS];
+	sc_core::sc_export<TlmSendIfType> *input_port[NUM_MASTERS];
+	sc_core::sc_port<TlmSendIfType> *output_port[NUM_TARGETS];
 
 	ServiceExport<unisim::service::interfaces::Memory<ADDRESS_TYPE> > *memory_export[NUM_MASTERS];
 	ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> > *memory_import[NUM_TARGETS];
 
 	SC_HAS_PROCESS(Bus);
 
-	Bus(const sc_module_name &name, Object *parent = 0):
+	Bus(const sc_core::sc_module_name &name, Object *parent = 0):
 		Object(name, parent, "PCI bus"),
-		sc_module(name),
+		sc_core::sc_module(name),
 		Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		num_mappings(0),
@@ -191,16 +191,16 @@ public:
 		frequency(0),
 		param_frequency("frequency", this, frequency, "frequency in Mhz")
 {
-		param_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-		param_target_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-		param_num_mappings.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-		param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+		param_target_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+		param_num_mappings.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+		param_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;
 			s << "input_port[" << i << "]";
 			input_port[i] =
-				new sc_export<TlmSendIfType>(s.str().c_str());
+				new sc_core::sc_export<TlmSendIfType>(s.str().c_str());
 			(*input_port[i]) (*this);
 			r << "memory_export[" << i << "]";
 			memory_export[i] =
@@ -211,7 +211,7 @@ public:
 			stringstream s, r;
 			s << "output_port[" << i << "]";
 			output_port[i] =
-				new sc_port<TlmSendIfType>(s.str().c_str());
+				new sc_core::sc_port<TlmSendIfType>(s.str().c_str());
 			r << "memory_import[" << i << "]";
 			memory_import[i] =
 				new ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
@@ -359,7 +359,7 @@ public:
 					<< std::endl << EndDebugError;
 			return false;
 		}
-		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
+		cycle_time = sc_core::sc_time(1.0 / (double) frequency, sc_core::SC_US);
 		
 		return true;
     }
@@ -392,7 +392,7 @@ public:
 					uint32_t p = 0xFFFFFFFF;
 					memcpy(res->read_data, &p, 4);
 					message->SetResponse(res);
-					message->GetResponseEvent()->notify(SC_ZERO_TIME);
+					message->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
 					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "Answering 0xFFFFFFFF to addr: " 
@@ -406,7 +406,7 @@ public:
 					uint16_t p = 0xFFFF;
 					memcpy(res->read_data, &p, 2);
 					message->SetResponse(res);
-					message->GetResponseEvent()->notify(SC_ZERO_TIME);
+					message->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
 					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "Answering 0xFFFF to addr: " 
@@ -420,7 +420,7 @@ public:
 					uint8_t p = 0xFF;
 					memcpy(res->read_data, &p, 1);
 					message->SetResponse(res);
-					message->GetResponseEvent()->notify(SC_ZERO_TIME);
+					message->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
 					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "Answering 0xFF to addr: " 
@@ -459,10 +459,10 @@ public:
       		device_request->device = device;
 
 			if(device_request_list.empty()) {
-				sc_time delay;
-				sc_dt::uint64 ui_delay = sc_time_stamp().value();
+				sc_core::sc_time delay;
+				sc_dt::uint64 ui_delay = sc_core::sc_time_stamp().value();
 				ui_delay = ui_delay % cycle_time.value();
-				delay = sc_time(ui_delay, false);
+				delay = sc_core::sc_time(ui_delay, false);
 	   			device_dispatch_event.notify(delay);
 				//std::cerr << "Send: delay= " << delay << ")" << endl;
 			}
@@ -484,7 +484,7 @@ public:
   			device_request = device_request_list.front();
   			
   			PMsgType& message = device_request->message;
-			sc_event bus_event;
+			sc_core::sc_event bus_event;
 			unsigned int device = device_request->device;
 			if(unlikely(DEBUG && verbose))
 				logger << DebugInfo
@@ -511,7 +511,7 @@ public:
       				<< "message to device " << device
       				<< " succesfully sent" << std::endl
       				<< EndDebugInfo;
- 			sc_time delay;
+ 			sc_core::sc_time delay;
       		if(message->HasResponseEvent()) {
       			
       			if(unlikely(DEBUG && verbose))
@@ -541,9 +541,9 @@ public:
 	 				logger << DebugInfo
 	 					<< "notifying response received from device: " << device << std::endl
 	 					<< EndDebugInfo;
-				sc_dt::uint64 ui_delay = sc_time_stamp().value();
+				sc_dt::uint64 ui_delay = sc_core::sc_time_stamp().value();
 				ui_delay = ui_delay % cycle_time.value();
-				delay = sc_time(ui_delay, false);
+				delay = sc_core::sc_time(ui_delay, false);
 	 			message->GetResponseEvent()->notify(delay);
 	 			delay += cycle_time;
       		} else {
@@ -565,9 +565,13 @@ public:
 		for (unsigned int i = 0; i < NUM_TARGETS; i++) 
 			for (unsigned int j = 0; j < NUM_BARS; j++) 
 				devmap[i][j] = NULL;
+	}
+
+	virtual void ResetMemory() {
+		this->Reset();
 
 		for(unsigned int i = 0; i < NUM_TARGETS; i++)
-			if(*memory_import[i]) (*memory_import[i])->Reset();
+			if(*memory_import[i]) (*memory_import[i])->ResetMemory();
 	}
 
 	virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size)

@@ -35,8 +35,9 @@
 #ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 
-#include <systemc.h>
-#include <unisim/kernel/service/service.hh>
+#include <systemc>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
 #include <unisim/component/tlm/message/snooping_fsb.hh>
 #include <unisim/kernel/tlm/tlm.hh>
@@ -56,10 +57,10 @@ namespace mpc7447a {
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::tlm::message::SnoopingFSBRequest;
 using unisim::component::tlm::message::SnoopingFSBResponse;
@@ -138,8 +139,8 @@ private:
 	Statistic<sc_time> stat_run_time;
 	Statistic<sc_time> stat_idle_time;
 	Statistic<double> stat_one;
-	Formula<double> formula_idle_rate;
-	Formula<double> formula_load_rate;
+	Formula<double> stat_idle_rate;
+	Formula<double> stat_load_rate;
 
 	class IRQListener :
 		public sc_module,

@@ -71,10 +71,10 @@ using unisim::component::clm::interfaces::memreq_types;
 using unisim::component::clm::interfaces::Source;
 using unisim::component::clm::interfaces::Destination;
 
-  using unisim::kernel::service::Client;
-  //  using unisim::kernel::service::Service;
-  using unisim::kernel::service::ServiceImport;
-  //  using unisim::kernel::service::ServiceExport;
+  using unisim::kernel::Client;
+  //  using unisim::kernel::Service;
+  using unisim::kernel::ServiceImport;
+  //  using unisim::kernel::ServiceExport;
 
   using unisim::component::clm::processor::ooosim_mc::CPUSim;
 
@@ -92,8 +92,8 @@ using unisim::component::clm::interfaces::Destination;
   using unisim::component::cxx::processor::powerpc::INPUT_T;
   using unisim::component::cxx::processor::powerpc::OUTPUT_T;
 
-  using unisim::kernel::service::StatisticArray;
-  using unisim::kernel::service::Object;
+  using unisim::kernel::variable::StatisticArray;
+  using unisim::kernel::Object;
 
 /* An instruction queue entry */
 //template <class T, int nSources>

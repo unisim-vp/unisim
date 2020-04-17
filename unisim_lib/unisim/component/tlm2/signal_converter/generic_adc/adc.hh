@@ -37,13 +37,13 @@
 #ifndef __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__
 #define __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <inttypes.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/component/tlm2/interrupt/types.hh"

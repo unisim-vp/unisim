@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include "unisim/service/loader/raw_loader/raw_loader.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <unisim/util/likely/likely.hh>
 
@@ -50,10 +50,10 @@ namespace service {
 namespace loader {
 namespace raw_loader {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExportBase;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugError;
@@ -65,7 +65,7 @@ using unisim::service::interfaces::Memory;
 template <class MEMORY_ADDR>
 RawLoader<MEMORY_ADDR> ::
 RawLoader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "Raw loader")
 	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
@@ -76,7 +76,7 @@ RawLoader(const char *name, Object *parent)
 	, filename()
 	, base_addr(0)
 	, size(0)
-	, verbose(0)
+	, verbose(false)
 	, param_filename("filename", this, filename,
 			"Location of the raw file to load.")
 	, param_base_addr("base-addr", this, base_addr,
@@ -209,15 +209,15 @@ SetupBlob()
 			return false;
 		}
 		
-		blob = new unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+		blob = new unisim::util::blob::Blob<MEMORY_ADDR>();
 		blob->Catch();
 		
 		blob->SetFilename(location.c_str());
 
-		unisim::util::debug::blob::Section<MEMORY_ADDR> *section = 
-			new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-					unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
-					unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A,
+		unisim::util::blob::Section<MEMORY_ADDR> *section = 
+			new unisim::util::blob::Section<MEMORY_ADDR>(
+					unisim::util::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
+					unisim::util::blob::Section<MEMORY_ADDR>::SA_A,
 					"",
 					0,
 					0,
@@ -257,19 +257,19 @@ bool
 RawLoader<MEMORY_ADDR> ::
 Load()
 {
-	if(!blob) return false;
+	if(!blob) return true; // nothing to load
 	
 	bool success = true;
 
 	if(memory_import)
 	{
-		const typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
-		typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
+		const typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
+		typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
 		for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
 		{
-			const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
+			const unisim::util::blob::Section<MEMORY_ADDR> *section = *section_iter;
 			
-			if(section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A)
+			if(section->GetAttr() & unisim::util::blob::Section<MEMORY_ADDR>::SA_A)
 			{
 				if(unlikely(verbose))
 				{
@@ -288,7 +288,7 @@ Load()
 		if ( verbose )
 		{
 			logger << DebugInfo
-				<< "Not loading \"" << ((blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME) ? blob->GetFilename() : "")
+				<< "Not loading \"" << ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) ? blob->GetFilename() : "")
 				<< "\" because the memory is not connected to"
 				<< " the loader."
 				<< EndDebugInfo;
@@ -298,7 +298,7 @@ Load()
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *
+const typename unisim::util::blob::Blob<MEMORY_ADDR> *
 RawLoader<MEMORY_ADDR> ::
 GetBlob()
 const

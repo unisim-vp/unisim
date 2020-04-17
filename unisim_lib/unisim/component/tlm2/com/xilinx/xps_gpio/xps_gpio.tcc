@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_XPS_GPIO_TCC__
 #define __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_XPS_GPIO_TCC__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh>
 
 namespace unisim {
@@ -53,9 +53,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 	
 template <class CONFIG>
-XPS_GPIO<CONFIG>::XPS_GPIO(const sc_module_name& name, Object *parent)
+XPS_GPIO<CONFIG>::XPS_GPIO(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::com::xilinx::xps_gpio::XPS_GPIO<CONFIG>(name, parent)
 	, slave_sock("slave-sock")
 	, cycle_time()
@@ -240,9 +240,9 @@ bool XPS_GPIO<CONFIG>::ChannelAndBitToPin(unsigned int channel, unsigned int bit
 template <class CONFIG>
 bool XPS_GPIO<CONFIG>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
+	if(cycle_time == sc_core::SC_ZERO_TIME)
 	{
-		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << sc_core::SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
 	return inherited::BeginSetup();
@@ -277,7 +277,7 @@ unsigned int XPS_GPIO<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
-					<< sc_time_stamp().to_string()
+					<< sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -293,7 +293,7 @@ unsigned int XPS_GPIO<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
-					<< sc_time_stamp()
+					<< sc_core::sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -307,7 +307,7 @@ unsigned int XPS_GPIO<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
 			inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
-					<< sc_time_stamp() 
+					<< sc_core::sc_time_stamp() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -336,14 +336,14 @@ tlm::tlm_sync_enum XPS_GPIO<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 				if(cmd == tlm::TLM_IGNORE_COMMAND)
 				{
 					inherited::logger << DebugError << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
-							<< (sc_time_stamp() + t)
+							<< (sc_core::sc_time_stamp() + t)
 							<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 							<< EndDebugError;
 					Object::Stop(-1);
 					return tlm::TLM_COMPLETED;
 				}
 				
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				AlignToClock(notify_time_stamp);
 				Event *event = schedule.AllocEvent();
@@ -372,22 +372,22 @@ void XPS_GPIO<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::s
 	if(cmd == tlm::TLM_IGNORE_COMMAND)
 	{
 		inherited::logger << DebugError << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
-				<< (sc_time_stamp() + t)
+				<< (sc_core::sc_time_stamp() + t)
 				<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 				<< EndDebugError;
 		Object::Stop(-1);
 		return;
 	}
 
-	sc_event ev_completed;
-	sc_time notify_time_stamp(sc_time_stamp());
+	sc_core::sc_event ev_completed;
+	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 	AlignToClock(notify_time_stamp);
 	Event *event = schedule.AllocEvent();
 	event->InitializeCPUEvent(&payload, notify_time_stamp, &ev_completed);
 	schedule.Notify(event);
 	wait(ev_completed);
-	t = SC_ZERO_TIME;
+	t = sc_core::SC_ZERO_TIME;
 }
 
 template <class CONFIG>
@@ -401,7 +401,7 @@ void XPS_GPIO<CONFIG>::gpio_b_transport(unsigned int pin, GPIOPayload& payload, 
 {
 	bool gpio_pin_value = payload.GetValue();
 	// GPIO event
-	sc_time notify_time_stamp(sc_time_stamp());
+	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 
 	AlignToClock(notify_time_stamp);
@@ -419,7 +419,7 @@ tlm::tlm_sync_enum XPS_GPIO<CONFIG>::gpio_nb_transport_fw(unsigned int pin, GPIO
 			{
 				bool gpio_pin_value = payload.GetValue();
 				// GPIO event
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 
 				AlignToClock(notify_time_stamp);
@@ -506,7 +506,7 @@ void XPS_GPIO<CONFIG>::interrupt_invalidate_direct_mem_ptr(unsigned int dummy_id
 template <class CONFIG>
 void XPS_GPIO<CONFIG>::ProcessEvents()
 {
-	time_stamp = sc_time_stamp();
+	time_stamp = sc_core::sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
@@ -699,14 +699,14 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 	ready_time_stamp = time_stamp;
 	ready_time_stamp += cycle_time;
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(cycle_time);
 	}
 	else
 	{
-		sc_time t(cycle_time);
+		sc_core::sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		slave_sock->nb_transport_bw(*payload, phase, t);
 	}
@@ -722,10 +722,10 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 		uint32_t data = channel ? inherited::GetGPIO2_DATA() : inherited::GetGPIO_DATA();
 		uint32_t tri = channel ? inherited::GetGPIO2_TRI() : inherited::GetGPIO_TRI();
 		unsigned int i;
-		for(i = 0; i < (i ? CONFIG::C_GPIO2_WIDTH : CONFIG::C_GPIO_WIDTH); i++)
+		for(i = 0; i < (channel ? CONFIG::C_GPIO2_WIDTH : CONFIG::C_GPIO_WIDTH); i++)
 		{
-			uint32_t bit_mask = 0x80000000 >> i;
-			if(tri & bit_mask)
+			uint32_t bit_mask = 1 << ((channel ? CONFIG::C_GPIO2_WIDTH : CONFIG::C_GPIO_WIDTH) - 1 - i);
+			if(~tri & bit_mask) // tri=0->output, tri=1->input
 			{
 				if((data ^ gpio_output_data[channel]) & bit_mask)
 				{
@@ -739,7 +739,7 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 
 					gpio_payload->SetValue(pin_level);
 					
-					sc_time t(SC_ZERO_TIME);
+					sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
 					
 					switch(channel)
@@ -758,7 +758,7 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 				}
 			}
 		}
-		gpio_output_data[channel] = (gpio_output_data[channel] & ~tri) | (data & tri);
+		gpio_output_data[channel] = (gpio_output_data[channel] & tri) | (data & ~tri);
 	}
 	
 	if(CONFIG::C_INTERRUPT_IS_PRESENT)
@@ -775,7 +775,7 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 
 			interrupt_payload->SetValue(level);
 			
-			sc_time t(SC_ZERO_TIME);
+			sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 			tlm::tlm_phase phase = tlm::BEGIN_REQ;
 			(*interrupt_master_sock)->nb_transport_fw(*interrupt_payload, phase, t);
 			
@@ -787,15 +787,20 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 }
 
 template <class CONFIG>
-void XPS_GPIO<CONFIG>::AlignToClock(sc_time& t)
+void XPS_GPIO<CONFIG>::AlignToClock(sc_core::sc_time& t)
 {
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
-	if(!modulo) return; // already aligned
+// 	sc_dt::uint64 time_tu = t.value();
+// 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
+// 	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
+// 	if(!modulo) return; // already aligned
+// 
+// 	time_tu += cycle_time_tu - modulo;
+// 	t = sc_time(time_tu, false);
 
-	time_tu += cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
+	sc_core::sc_time modulo(t);
+	modulo %= cycle_time;
+	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
+	t += cycle_time - modulo;
 }
 
 } // end of namespace xps_gpio

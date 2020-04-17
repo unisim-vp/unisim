@@ -37,15 +37,16 @@
 
 #include <map>
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include <inttypes.h>
 #include <stdlib.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 #include "unisim/service/interfaces/trap_reporting.hh"
-#include "unisim/service/interfaces/debug_control.hh"
+#include "unisim/service/interfaces/debug_yielding.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
@@ -53,7 +54,7 @@
 #include "unisim/kernel/logger/logger.hh"
 
 #include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -61,6 +62,8 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
 namespace component {
@@ -74,16 +77,16 @@ using std::map;
 using std::ostream;
 using std::vector;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
@@ -94,16 +97,17 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::logger::EndDebug;
 
 using unisim::service::interfaces::TrapReporting;
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 
 using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::Symbol;
 using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;
@@ -211,7 +215,7 @@ inline void XGCCR_t::setCCR(uint8_t val) {
 
 class XGATE :
 	public CallBackObject,
-	public Client<DebugControl<physical_address_t> >,
+	public Client<DebugYielding>,
 	public Service<Registers>,
 	public Service<Memory<physical_address_t> >,
 	public Service<MemoryAccessReportingControl>,
@@ -222,7 +226,7 @@ class XGATE :
 
 {
 public:
-	static const uint8_t MAX_INS_SIZE = 2;
+	static const unsigned int MAX_INS_SIZE = 2;
 
 
 	//=========================================================
@@ -269,6 +273,8 @@ public:
 	static const unsigned int XGR7 = 0x2E; // 2-bytes
 	static const unsigned int RESERVED7 = 0x30; // 5*2-bytes internal registers not visible outside XGATE
 
+	static const unsigned int MEMORY_MAP_SIZE = 64;
+
 	//=====================================================================
 	//=                  public service imports/exports                   =
 	//=====================================================================
@@ -277,7 +283,7 @@ public:
 	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<TrapReporting > trap_reporting_import;
@@ -286,22 +292,24 @@ public:
 	XGATE(const char *name, Object *parent);
 	~XGATE();
 
-	uint8_t step();	// Return the number of cpu cycles consumed by the operation
+	virtual void Reset();
+	
+	unsigned int step();	// Return the number of cpu cycles consumed by the operation
 	virtual void Stop(int ret);
 	virtual void Sync();
 
 	virtual void enbale_xgate() = 0;
 	virtual void disable_xgate() = 0;
 
-	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag = false) = 0;
+	virtual void assertInterrupt(unsigned int offset, bool isXGATE_flag = false) = 0;
 
 	void assert_software_error_interrupt() {
 		assertInterrupt(interrupt_software_error, false);
 	}
 
-	void assertChannelInterrupt(uint8_t offset) {
-		uint8_t reg_index = offset / 8;
-		uint8_t flag_index = offset % 8;
+	void assertChannelInterrupt(unsigned int offset) {
+		unsigned int reg_index = offset / 8;
+		unsigned int flag_index = offset % 8;
 		xgif_register[reg_index] = xgif_register[reg_index] | (1 << flag_index);
 
 		assertInterrupt(offset, true);
@@ -353,8 +361,7 @@ public:
 	//=                  Memory Access Reportings methods                 =
 	//=====================================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report) ;
+	virtual void RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report );
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -365,7 +372,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
+	virtual void ResetMemory();
 
 
 	//=====================================================================
@@ -386,7 +393,7 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
 	virtual Register *GetRegister(const char *name);
-
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             Internal Registers access methods                     =
@@ -437,16 +444,16 @@ protected:
 	bool verbose_exception;
 	Parameter<bool> param_verbose_exception;
 
-	/** indicates if the memory accesses require to be reported */
-	bool requires_memory_access_reporting;
-	Parameter<bool> param_requires_memory_access_reporting;
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
+  
+	bool enable_trace;
+	Parameter<bool> param_enable_trace;
 
-	/** indicates if the finished instructions require to be reported */
-	bool requires_finished_instruction_reporting;
-	Parameter<bool> param_requires_finished_instruction_reporting;
-
-	bool trace_enable;
-	Parameter<bool> param_trace_enable;
+	std::ofstream trace;
+	bool enable_file_trace;
+	Parameter<bool> param_enable_file_trace;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
@@ -460,10 +467,10 @@ protected:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	static const uint8_t XGATE_SIZE = 8;
+	static const unsigned int XGATE_SIZE = 8;
 
-	uint8_t sofwtare_channel_id[XGATE_SIZE];
-	ParameterArray<uint8_t> param_software_channel_id;
+	unsigned int sofwtare_channel_id[XGATE_SIZE];
+	ParameterArray<unsigned int> param_software_channel_id;
 
 	bool xgate_enabled;
 	bool stop_current_thread;
@@ -517,9 +524,9 @@ protected:
 		inline void setXGPC(address_t val) { xgpc_register = val; }
 		inline address_t getXGPC() { return (xgpc_register); }
 		inline address_t* getXGPCPtr() { return (&xgpc_register); }
-		inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = ((index == 0)? 0:val); } // R0 is tied to the value 0x0000
-		inline uint16_t getXGRx(uint8_t index) { return (((index == 0)? 0: xgr_register[index])); }
-		inline uint16_t* getXGRxPtr(uint8_t index) { return (&xgr_register[index]); }
+		inline void setXGRx(unsigned int index, uint16_t val) { xgr_register[index] = ((index == 0)? 0:val); } // R0 is tied to the value 0x0000
+		inline uint16_t getXGRx(unsigned int index) { return (((index == 0)? 0: xgr_register[index])); }
+		inline uint16_t* getXGRxPtr(unsigned int index) { return (&xgr_register[index]); }
 		inline void setXGCCR(uint8_t val) { xgccr_register = val & 0x0F; }
 		inline uint8_t getXGCCR() { return (xgccr_register); }
 		inline uint8_t* getXGCCRPtr() { return (&xgccr_register); }
@@ -556,11 +563,11 @@ protected:
 private:
 
 	// Registers map
-	std::map<std::string, Register *> registers_registry;
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
-	uint8_t				interrupt_software_error;
-	Parameter<uint8_t>	param_interrupt_software_error;
+	unsigned int				interrupt_software_error;
+	Parameter<unsigned int>	param_interrupt_software_error;
 
 	uint64_t	max_inst;
 	Parameter<uint64_t>	   param_max_inst;
@@ -592,7 +599,7 @@ private:
 
 	TSemaphore semphore[8];
 
-	void fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte);
+	void fetchInstruction(address_t addr, uint8_t* ins, unsigned int nByte);
 
 public:
 
@@ -605,8 +612,8 @@ public:
 	//=                REGISTERS ACCESSORS                    =
 	//=========================================================
 
-	bool lockSemaphore(TOWNER::OWNER owner, uint8_t index);
-	bool unlockSemaphore(TOWNER::OWNER owner, uint8_t index);
+	bool lockSemaphore(TOWNER::OWNER owner, unsigned int index);
+	bool unlockSemaphore(TOWNER::OWNER owner, unsigned int index);
 
 	bool isINTRequestEnabled() { return ((xgmctl_register & 0x0080) != 0); }
 
@@ -626,7 +633,7 @@ public:
 	inline uint16_t getXGISP74() { return (xgvbrPtr_register[2]); }
 	inline void setXGISP74(uint16_t val) { xgvbrPtr_register[2] = val; }
 
-	inline TRegisterBank* getRegisterBank(uint8_t priority) {
+	inline TRegisterBank* getRegisterBank(unsigned int priority) {
 
 		if ((version.compare("V2") != 0) & (priority > 3)) {
 			return (&registerBank[1]);
@@ -635,7 +642,7 @@ public:
 		}
 	}
 
-	void preloadXGR7(uint8_t priority) {
+	void preloadXGR7(unsigned int priority) {
 
 		/**
 		 * XGATE V3 and higher
@@ -657,14 +664,14 @@ public:
 
 	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
 	inline uint16_t getXGSWT() { return (xgswt_register); }
-	inline void setXGRx(uint8_t index, uint16_t val) { currentRegisterBank->setXGRx(index, val); } // R0 is tied to the value 0x0000
-	inline uint16_t getXGRx(uint8_t index) { return (currentRegisterBank->getXGRx(index)); }
+	inline void setXGRx(unsigned int index, uint16_t val) { currentRegisterBank->setXGRx(index, val); } // R0 is tied to the value 0x0000
+	inline uint16_t getXGRx(unsigned int index) { return (currentRegisterBank->getXGRx(index)); }
 	inline void setXGCHID(uint8_t val) { currentRegisterBank->setXGCHID(val); }
 	inline uint8_t getXGCHID() { return (currentRegisterBank->getXGCHID()); }
 	inline void setXGCCR(uint8_t val) { currentRegisterBank->setXGCCR(val); }
 	inline uint8_t getXGCCR() { return (currentRegisterBank->getXGCCR()); }
 
-	inline static std::string getXGRxName(uint8_t index) {
+	inline static std::string getXGRxName(unsigned int index) {
 		stringstream name;
 
 		name << "R" << (unsigned int) index;

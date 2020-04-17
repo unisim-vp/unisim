@@ -35,14 +35,14 @@
 #ifndef UNISIM_SERVICE_INTERFACES_TYPED_INSTRUCTION_STATS_HH
 #define UNISIM_SERVICE_INTERFACES_TYPED_INSTRUCTION_STATS_HH
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template<class STATS>
-struct InstructionStats : public unisim::kernel::service::ServiceInterface
+struct InstructionStats : public ServiceInterface
 {
 	virtual STATS * GetStats() = 0;
 	virtual void SetStats(STATS *) = 0;

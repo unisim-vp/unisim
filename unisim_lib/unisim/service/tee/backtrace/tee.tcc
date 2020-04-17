@@ -61,6 +61,8 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "backtrace-import[" << i << "]";
 		string import_name = sstr.str();
 		backtrace_import[i] = new ServiceImport<BackTrace<ADDRESS> >(import_name.c_str(), this);
+		
+		backtrace_export.SetupDependsOn(*backtrace_import[i]);
 	}
 }
 

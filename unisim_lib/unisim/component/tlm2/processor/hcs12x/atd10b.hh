@@ -43,26 +43,28 @@
 #include <libxml/xpath.h>
 #include <libxml/parser.h>
 
-#include "systemc"
+#include <systemc>
 
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
 namespace component {
@@ -78,16 +80,16 @@ using namespace std;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::SignalArray;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::variable::SignalArray;
 
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -95,7 +97,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -146,6 +148,8 @@ public:
 	ATD10B(const sc_module_name& name, Object *parent=0);
 	~ATD10B();
 
+	virtual void Reset();
+
 	void Process();
 	void RunScanMode();
 	void RunTriggerMode();
@@ -175,12 +179,12 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -194,8 +198,9 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
-
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+	
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
@@ -228,7 +233,7 @@ private:
 
 	bool conversionStop;
 	bool abortSequence;
-	uint8_t resultIndex;
+	unsigned int resultIndex;
 	bool isATDStarted;
 
 	bool isTriggerModeRunning;
@@ -237,8 +242,8 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interruptOffset;
-	Parameter<uint8_t> param_interruptOffset;
+	unsigned int interruptOffset;
+	Parameter<unsigned int> param_interruptOffset;
 
 	// A/D reference potentials
 	double vrl, vrh;
@@ -262,11 +267,11 @@ private:
 	Parameter<bool>	param_hasExternalTrigger;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
-	void InputANx(double anValue[ATD_SIZE]);
+	void InputANx(double (*anValue)[ATD_SIZE]);
 	void abortConversion();
 	void abortAndStartNewConversion();
 	void sequenceComplete();

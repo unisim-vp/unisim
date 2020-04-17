@@ -36,9 +36,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/debug_control.hh"
+#include "unisim/service/interfaces/debug_yielding.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
 #include "unisim/service/interfaces/memory.hh"
@@ -53,6 +54,7 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/inlining/inlining.hh"
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <stdexcept>
 #include <iosfwd>
 #include <assert.h>
@@ -67,17 +69,18 @@ namespace cxx {
 namespace processor {
 namespace tms320c3x {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
-using unisim::service::interfaces::DebugControl;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::StatisticFormula;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
@@ -122,7 +125,7 @@ static const uint32_t ADDRESS_MASK = 0xffffff; // 24-bit mask
 
 template<class CONFIG, bool DEBUG = false>
 class CPU :
-	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<DebugYielding>,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 	public Client<TrapReporting>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
@@ -149,6 +152,8 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 	
+	virtual void Reset();
+	
 	//===============================================================
 	//= Client/Service setup methods                           STOP =
 	//===============================================================
@@ -163,7 +168,7 @@ public:
 	ServiceExport<MemoryInjection<typename CONFIG::address_t> > memory_injection_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 	
-	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<TrapReporting> trap_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
@@ -197,8 +202,7 @@ public:
 	//= Memory access reporting control interface methods     START =
 	//===============================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report);
+	virtual void RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report );
 	
     //===============================================================
 	//= Memory access reporting control interface methods      STOP =
@@ -208,7 +212,7 @@ public:
 	//= Memory interface methods                              START =
 	//===============================================================
 
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
@@ -228,7 +232,9 @@ public:
 	 * @param  name   The name of the requested register.
 	 * @return        A pointer to the RegisterInterface corresponding to name.
 	 */
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+
+	virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 
     //===============================================================
 	//= CPURegistersInterface interface methods                STOP =
@@ -463,11 +469,11 @@ public:
 
 private:
 	/** The registers interface for debugging purpose */
-	std::map<std::string, unisim::util::debug::Register *> registers_registry;
-	/** indicates if the memory accesses require to be reported */
-	bool requires_memory_access_reporting;
-	/** indicates if the finished instructions require to be reported */
-	bool requires_finished_instruction_reporting;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+	
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
   
 	//===============================================================
 	//= Instruction set decoder variables                     START =
@@ -605,7 +611,7 @@ private:
 	uint64_t insn_cache_misses;
 	Statistic<uint64_t> stat_insn_cache_accesses;
 	Statistic<uint64_t> stat_insn_cache_misses;
-	Formula<double> formula_insn_cache_miss_rate;
+	StatisticFormula<double> stat_insn_cache_miss_rate;
 
 	static const uint32_t INSN_CACHE_SIZE = CONFIG::INSN_CACHE_SIZE;
 	static const uint32_t INSN_CACHE_ASSOCIATIVITY = (CONFIG::INSN_CACHE_ASSOCIATIVITY > 2) ? 2 : CONFIG::INSN_CACHE_ASSOCIATIVITY;

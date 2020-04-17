@@ -64,8 +64,8 @@ using unisim::component::clm::processor::ooosim_mc::nXERRegisters;
  
 using unisim::component::clm::interfaces::InstructionPtr;
 
-  using unisim::kernel::service::StatisticArray;
-  using unisim::kernel::service::Object;
+  using unisim::kernel::variable::StatisticArray;
+  using unisim::kernel::Object;
 
 
 /* A mapping table */

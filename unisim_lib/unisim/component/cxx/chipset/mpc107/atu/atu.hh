@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_HH__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/atu/register.hh"
 
@@ -46,9 +47,9 @@ namespace chipset {
 namespace mpc107 {
 namespace atu {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::variable::Parameter;
 using unisim::component::cxx::chipset::mpc107::atu::Registers;
 
 template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG = false>

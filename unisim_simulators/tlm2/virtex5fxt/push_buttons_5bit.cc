@@ -36,4 +36,4 @@
 #include "unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_Switches<SimConfig::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH>;
+template class unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_Switches<Config::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH>;

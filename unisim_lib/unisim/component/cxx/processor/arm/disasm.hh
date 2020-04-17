@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2015-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 /**************************************************************/
@@ -163,7 +163,14 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_reglist;
   };
-
+  
+  struct DisasmCPR : public DisasmObject
+  {
+    DisasmCPR( uint32_t reg ) : m_reg( reg ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_reg;
+  };
+  
   /* Multiple Load Store Mode disassembling method */
   struct DisasmLSMMode : public DisasmObject
   {
@@ -179,6 +186,11 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_mask;
   };
+  
+  struct PSR;
+  
+  std::ostream& operator << ( std::ostream& sink, PSR const& dobj );
+  
   
   enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
   

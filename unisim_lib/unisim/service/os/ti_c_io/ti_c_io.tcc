@@ -49,7 +49,7 @@
 #include <time.h>
 #include <string.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/util/endian/endian.hh"
@@ -67,12 +67,12 @@ using std::dec;
 using std::endl;
 using std::flush;
 using std::map;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -203,7 +203,7 @@ bool TI_C_IO<MEMORY_ADDR>::LoadMemoryAndRegisters()
 			return !warning_as_error;
 		}
 		
-		const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
+		const typename unisim::util::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
 		if(!blob)
 		{
 			logger << DebugWarning << "Can't get program informations" << EndDebugWarning;
@@ -595,7 +595,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 	if(c_io_flags & C_IO_O_APPEND) flags |= O_APPEND;
 	if(c_io_flags & C_IO_O_CREAT) flags |= O_CREAT;
 	if(c_io_flags & C_IO_O_TRUNC) flags |= O_TRUNC;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	if(c_io_flags & C_IO_O_BINARY) flags |= O_BINARY;
 #endif
 

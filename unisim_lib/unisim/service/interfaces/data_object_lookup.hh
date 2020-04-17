@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__
 #define __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <set>
 #include <string>
@@ -45,7 +45,7 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class DataObjectLookup : public unisim::kernel::service::ServiceInterface
+class DataObjectLookup : public ServiceInterface
 {
 public:
 	typedef enum
@@ -55,8 +55,10 @@ public:
 		SCOPE_BOTH_GLOBAL_AND_LOCAL = 3
 	} Scope;
 	
-	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
+	//virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
 	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
+	virtual unisim::util::debug::DataObject<ADDRESS> *GetDataObject(const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const = 0;
+	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
 };
 
 } // end of namespace interfaces

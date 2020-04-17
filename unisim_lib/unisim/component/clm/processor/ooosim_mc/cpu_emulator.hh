@@ -45,7 +45,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 
@@ -66,10 +66,10 @@ using unisim::component::clm::memory::address_t;
   //new usings
   //  using unisim::component::cxx::processor::powerpc::MPC7447AConfig;
 
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
 
 
 using unisim::service::interfaces::Memory;
@@ -197,7 +197,7 @@ public:
   bool program_ended;
   uint64_t end_at_cycle;
 
-  CPUEmu(const char*cpu_name, unisim::kernel::service::Object *parent):
+  CPUEmu(const char*cpu_name, unisim::kernel::Object *parent):
     Object(cpu_name,parent)
     //    MI_Client(cpu_name, parent),
     //    MI_Service(cpu_name, parent),

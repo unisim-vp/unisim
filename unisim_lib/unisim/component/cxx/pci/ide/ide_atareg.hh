@@ -33,9 +33,9 @@
 #ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_DEV_ATA_ATAREG_HH__
 #define __UNISIM_COMPONENT_CXX_PCI_IDE_DEV_ATA_ATAREG_HH__
 
-#if defined(linux)
+#if defined(linux) || defined(__linux) || defined(__linux__)
 #include <endian.h>
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #define __LITTLE_ENDIAN 1234
 #define __BIG_ENDIAN    4321

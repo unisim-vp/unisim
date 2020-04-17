@@ -36,4 +36,4 @@
 #include "unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<SimConfig::GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH>;
+template class unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<Config::GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH>;

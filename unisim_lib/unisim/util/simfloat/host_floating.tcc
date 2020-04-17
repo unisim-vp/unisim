@@ -74,7 +74,7 @@ TFloatingBase<TypeTraits>::fillMantissa(Mantissa& mMantissa) const {
    unsigned int* puMask = (unsigned int*) auDouble;
    if (TypeTraits::isBigEndian())
       puMask += (UByteSizeImplantation/sizeof(unsigned int)-1);
-   for (register int uMantissaIndex = 0;
+   for (int uMantissaIndex = 0;
          uMantissaIndex < mMantissa.lastCellIndex(); ++uMantissaIndex) {
       mMantissa[uMantissaIndex] = *puMask;
       if (TypeTraits::isBigEndian())
@@ -95,7 +95,7 @@ TFloatingBase<TypeTraits>::setMantissa(const Mantissa& mMantissa) {
    unsigned int* puMask = (unsigned int*) auDouble;
    if (TypeTraits::isBigEndian())
       puMask += (UByteSizeImplantation/sizeof(unsigned int)-1);
-   for (register int uMantissaIndex = 0;
+   for (int uMantissaIndex = 0;
          uMantissaIndex < mMantissa.lastCellIndex(); ++uMantissaIndex) {
       *puMask = mMantissa[uMantissaIndex];
       if (TypeTraits::isBigEndian())

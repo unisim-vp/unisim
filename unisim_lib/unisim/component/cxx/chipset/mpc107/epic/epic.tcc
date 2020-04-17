@@ -133,6 +133,14 @@ ReadMemoryIACK() {
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG>
+void
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+ResetMemory() {
+	this->Reset();
+} 
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {

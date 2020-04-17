@@ -33,7 +33,7 @@
  */
  
 #include <unisim/service/time/sc_time/time.hh>
-#include <systemc.h>
+#include <systemc>
 
 namespace unisim {
 namespace service {
@@ -58,7 +58,7 @@ bool ScTime::BeginSetup()
 
 double ScTime::GetTime()
 {
-	return sc_time_stamp().to_seconds();
+	return sc_core::sc_time_stamp().to_seconds();
 }
 
 } // end of namespace sc_time

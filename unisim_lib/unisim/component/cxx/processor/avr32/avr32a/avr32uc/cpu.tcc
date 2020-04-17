@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CPU_TCC__
 
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 #include "unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.hh"
 
@@ -62,7 +62,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>()
 	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
-	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
+	, Client<DebugYielding>(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
 	, Client<TrapReporting>(name,  parent)
 	, Service<MemoryAccessReportingControl>(name,  parent)
@@ -80,15 +80,16 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, synchronizable_export("synchronizable-export",this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, loader_import("loader-import",  this)
-	, debug_control_import("debug-control-import",  this)
+	, debug_yielding_import("debug-control-import",  this)
 	, memory_access_reporting_import("memory-access-reporting-import",  this)
 	, symbol_table_lookup_import("symbol-table-lookup-import",  this)
 	, memory_import("memory-import", this)
 	, trap_reporting_import("trap-reporting-import",  this)
 	, avr32_t2h_syscalls_import("avr32-t2h-syscalls-import", this)
 	, logger(*this)
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
+	, requires_memory_access_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 	, verbose_all(false)
 	, verbose_setup(false)
 	, verbose_interrupt(false)
@@ -110,8 +111,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 {
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	disasm_export.SetupDependsOn(memory_import);
+	memory_export.SetupDependsOn(memory_import);
+  
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	enter_isr_table[CONFIG::EXC_UNDEFINED_BEHAVIOR] = &CPU<CONFIG>::EnterUndefinedBehaviorException;
 	enter_isr_table[CONFIG::EXC_RESET] = &CPU<CONFIG>::EnterResetException;
@@ -150,13 +154,13 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	{
 		std::stringstream sstr_register_name;
 		sstr_register_name << "r" << i;
-		registers_registry[sstr_register_name.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr_register_name.str().c_str(), &gpr[i]);
+		registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>(sstr_register_name.str().c_str(), &gpr[i]));
 	}
-	registers_registry["sp"] = new unisim::util::debug::SimpleRegister<uint32_t>("sp", &gpr[13]);
-	registers_registry["lr"] = new unisim::util::debug::SimpleRegister<uint32_t>("lr", &gpr[14]);
-//	registers_registry["pc"] = new unisim::util::debug::SimpleRegister<uint32_t>("pc", &gpr[15]);
-	registers_registry["pc"] = new PCRegisterInterface<CONFIG>("pc", &gpr[15], &npc);
-	registers_registry["sr"] = new unisim::util::debug::SimpleRegister<uint32_t>("sr", &sr);
+	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("sp", &gpr[13]));
+	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("lr", &gpr[14]));
+//	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("pc", &gpr[15]));
+	registers_registry.AddRegisterInterface(new PCRegisterInterface<CONFIG>("pc", &gpr[15], &npc));
+	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("sr", &sr));
 
 	Reset();
 	std::stringstream sstr_description;
@@ -168,12 +172,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		delete reg_iter->second;
-	}
 }
 
 template <class CONFIG>
@@ -181,7 +179,8 @@ bool CPU<CONFIG>::BeginSetup()
 {
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	Reset();
@@ -230,15 +229,15 @@ bool CPU<CONFIG>::EndSetup()
 //=====================================================================
 
 template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
-	requires_finished_instruction_reporting = report;
+void
+CPU<CONFIG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report)
+{
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
 
 //=====================================================================
@@ -657,41 +656,25 @@ bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-	uint32_t pc = gpr[REG_PC];
+  uint32_t pc = gpr[REG_PC], insn_size = 0;
 
-	if(unlikely(debug_control_import != 0))
+	/* report a finished instruction */
+	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
 	{
-		do
-		{
-			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-			dbg_cmd = debug_control_import->FetchDebugCommand(pc);
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
-			{
-				Synchronize();
-				continue;
-			}
+		memory_access_reporting_import->ReportFetchInstruction(pc);
+	}
 
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
-			{
-				if(loader_import)
-				{
-					loader_import->Load();
-				}
-			}
-		} while(1);
+	if (unlikely(debug_yielding_import != 0))
+	{
+		debug_yielding_import->DebugYield();
 	}
 
 	unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation = 0;
 
 	//std::cerr << "pc before Fetch = 0x" << std::hex << pc << std::dec << std::endl;
-	uint8_t buffer[4];
-	if(likely(Fetch(pc, buffer, sizeof(buffer))))
+	CodeType insn(CodeType::capacity * 8);
+	if (likely(Fetch(pc, &insn.str[0], CodeType::capacity)))
 	{
-		CodeType insn(buffer, sizeof(buffer) * 8);
-	  
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(pc, insn);
 
 		if(unlikely(IsVerboseStep()))
@@ -704,7 +687,8 @@ void CPU<CONFIG>::StepOneInstruction()
  	        /* update PC register value before execution */
 //	        gpr[15] = pc;
 		/* update NPC */
-	        npc += operation->GetLength() / 8;
+		insn_size = operation->GetLength() / 8;
+	        npc += insn_size;
 		//std::cerr << "npc before execute = 0x" << std::hex << npc << std::dec << std::endl;
 		/* execute the instruction */
 		if(likely(operation->execute(this)))
@@ -719,20 +703,17 @@ void CPU<CONFIG>::StepOneInstruction()
 	ProcessExceptions(operation);
 
 	/* report a finished instruction */
-	if(unlikely(requires_finished_instruction_reporting))
+	if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
 	{
-		if(unlikely(memory_access_reporting_import != 0))
-		{
-			memory_access_reporting_import->ReportFinishedInstruction(pc, npc);
-		}
+		memory_access_reporting_import->ReportCommitInstruction(pc, insn_size);
 	}
 
-	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
+	if (unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely((instruction_counter >= max_inst) || (npc == halt_on_addr))) Stop(0);
+	if (unlikely((instruction_counter >= max_inst) || (npc == halt_on_addr))) Stop(0);
 
 	gpr[REG_PC] = npc;
 }
@@ -788,15 +769,15 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
+unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
-	if(reg_iter != registers_registry.end())
-	{
-		return (*reg_iter).second;
-	}
+	return registers_registry.GetRegister(name);
+}
 
-	return 0;
+template <class CONFIG>
+void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 /*
@@ -865,6 +846,12 @@ void CPU<CONFIG>::Idle()
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	
@@ -882,20 +869,17 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 template <class CONFIG>
 string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr)
 {
-	uint8_t buffer[4];
-        if(ReadMemory(addr, buffer ,sizeof(buffer)))
+	CodeType insn(CodeType::capacity * 8);
+	if(ReadMemory(addr, &insn.str[0], CodeType::capacity))
 	{
-		CodeType insn= CodeType(buffer, sizeof(buffer) * 8);
-	        unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation=0;
+		unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation=0;
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
 
 		next_addr = addr + (operation->GetLength() / 8);
 		std::stringstream sstrdisasm;
-		sstrdisasm << operation->GetEncoding() << " ";
 
 		/* disasm the instruction */
 		operation->disasm(this,sstrdisasm);	
-	
 	
 		return sstrdisasm.str();
 	}
@@ -967,16 +951,16 @@ bool CPU<CONFIG>::Breakpoint()
 			unisim::service::interfaces::AVR32_T2H_Syscalls::Status status = avr32_t2h_syscalls_import->HandleEmulatorBreakpoint();
 			switch(status)
 			{
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR:
 					logger << DebugWarning << "Was not able to handle or recognize a system call because of a simulator error" << EndDebugWarning;
 					return false;
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::OK:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK:
 					return true;
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::EXIT:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_EXIT:
 					logger << DebugInfo << "Program exited normally" << EndDebugInfo;
 					Stop(0);
 					return true;
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::UNHANDLED:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_UNHANDLED:
 					// Attempt to execute a breakpoint instruction while system call translator not recognizing a system call results in executing the breakpoint as a nop
 					break;
 			}

@@ -73,7 +73,8 @@ and_ab_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ANDA/ANDB  DIR  (regAB & mem[regDirect:opr8a] => regAB)s
@@ -118,6 +119,8 @@ and_ab_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ANDA/ANDB EXT (regAB & mem[opr16a] => regAB)
@@ -162,6 +165,8 @@ and_ab_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ANDA/ANDB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB & mem[xb->addrE] => regAB)
@@ -221,6 +226,8 @@ and_ab_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ANDCC  IMM  (ccr & ii => ccr)
@@ -244,7 +251,8 @@ andcc_imm.execute = {
 	result = regVal & opr8i;
 	
 	cpu->ccr->setCCRLow(result);
-	
+
+	return getCycles();
 }
 
 // ANDX/ANDY IMM (regXY & opr16i => regXY)
@@ -288,6 +296,8 @@ and_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ANDX/ANDY DIR (regXY & mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
@@ -333,6 +343,8 @@ and_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ANDX/ANDY EXT (regXY & mem[opr16a]:mem[opr16a+1] => regXY)
@@ -378,6 +390,8 @@ and_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ANDX/ANDY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY & mem[xb->addrE]:mem[xb->addrE+1] => regXY)
@@ -436,6 +450,8 @@ and_xy_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORAA/ORAB IMM (regAB or opr8i => regAB)
@@ -479,7 +495,8 @@ ora_ab_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ORAA/ORAB  DIR  (regAB | mem[regDirect:opr8a] => regAB)s
@@ -524,6 +541,8 @@ ora_ab_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORAA/ORAB EXT (regAB | mem[opr16a] => regAB)
@@ -568,6 +587,8 @@ ora_ab_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORAA/ORAB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB | mem[xb->addrE] => regAB)
@@ -627,6 +648,8 @@ ora_ab_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORCC  IMM  (ccr & ii => ccr)
@@ -654,7 +677,8 @@ orcc_imm.execute = {
 	result = (regVal | opr8i) & xFlag;  
 	
 	cpu->ccr->setCCRLow(result);
-	
+
+	return getCycles();
 }
 
 // TODO: implement specialization ++++++++++++++
@@ -712,6 +736,8 @@ or_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORX/ORY DIR (regXY | mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
@@ -757,6 +783,8 @@ or_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORX/ORY EXT (regXY | mem[opr16a]:mem[opr16a+1] => regXY)
@@ -802,6 +830,8 @@ or_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ORX/ORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY | mem[xb->addrE]:mem[xb->addrE+1] => regXY)
@@ -860,6 +890,8 @@ or_xy_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORA/EORB IMM (regAB ^ opr8i => regAB)
@@ -903,6 +935,8 @@ eor_ab_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORA/EORB  DIR  (regAB ^ mem[regDirect:opr8a] => regAB)s
@@ -947,6 +981,8 @@ eor_ab_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORA/EORB EXT (regAB ^ mem[opr16a] => regAB)
@@ -991,6 +1027,8 @@ eor_ab_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORA/EORB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB ^ mem[xb->addrE] => regAB)
@@ -1050,6 +1088,8 @@ eor_ab_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORX/EORY IMM (regXY ^ opr16i => regXY)
@@ -1093,6 +1133,8 @@ eor_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORX/EORY DIR (regXY ^ mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
@@ -1138,6 +1180,8 @@ eor_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORX/EORY EXT (regXY ^ mem[opr16a]:mem[opr16a+1] => regXY)
@@ -1183,6 +1227,8 @@ eor_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // EORX/EORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY ^ mem[xb->addrE]:mem[xb->addrE+1] => regXY)
@@ -1241,4 +1287,6 @@ eor_xy_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }

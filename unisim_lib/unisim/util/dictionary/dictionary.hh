@@ -35,7 +35,6 @@
 #ifndef __UNISIM_UTIL_DICTIONARY_DICTIONARY_HH__
 #define __UNISIM_UTIL_DICTIONARY_DICTIONARY_HH__
 
-#include <unisim/kernel/logger/logger.hh>
 #include <iosfwd>
 #include <string>
 
@@ -78,7 +77,7 @@ template <class TYPE>
 class Dictionary
 {
 public:
-	Dictionary(unisim::kernel::logger::Logger& logger, bool debug = false);
+	Dictionary(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
 	~Dictionary();
 
 	// Add a valued string in the dictionary
@@ -91,7 +90,9 @@ private:
 	DictionaryEntry<TYPE> *root;
 
 	unsigned int num_entries;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	bool debug;
 	
 	DictionaryEntry<TYPE> *Create(const char *text, const TYPE& value);

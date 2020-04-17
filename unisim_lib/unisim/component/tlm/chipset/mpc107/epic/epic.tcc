@@ -59,9 +59,9 @@ template <class PHYSICAL_ADDR,
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG>
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
-EPIC(const sc_module_name &name, Object *parent) :
+EPIC(const sc_core::sc_module_name &name, Object *parent) :
 	Object(name, parent, "MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	unisim::component::cxx::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>("epic_impl", parent),
 	slave_port("slave_port"),
 	irq_master_port("irq_master_port"),
@@ -76,7 +76,7 @@ EPIC(const sc_module_name &name, Object *parent) :
 		stringstream irq_slave_port_handler_name;
 		
 		irq_slave_port_name << "irq_slave_port[" << i << "]";
-		irq_slave_port[i] = new sc_export<TlmSendIf<IntType> >(irq_slave_port_name.str().c_str());
+		irq_slave_port[i] = new sc_core::sc_export<TlmSendIf<IntType> >(irq_slave_port_name.str().c_str());
 		irq_slave_port_handler_name << "irq_slave_port_handler[" << i << "]";
 		irq_handler[i] = new RequestPortIdentifier<InterruptRequest>(irq_slave_port_handler_name.str().c_str(), i, *this);
 		(*irq_slave_port[i])(*irq_handler[i]);  
@@ -167,16 +167,10 @@ SetINT() {
 	message->req = irq;
 	
 	if(!irq_master_port->Send(message)) {
-		if(inherited::verbose)
-			inherited::logger << DebugError
-				<< LOCATION
-				<< "TODO: handle interrupt requests that could not be handled"
-				<< std::endl << EndDebugError; 
-		else
-			cerr << "TODO("
-				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
-				<< "handle interrupt requests that could not be handled"
-				<< endl;
+		inherited::logger << DebugError
+			<< LOCATION
+			<< "TODO: handle interrupt requests that could not be handled"
+			<< std::endl << EndDebugError; 
 		
 		Object::Stop(-1);
 	}
@@ -197,16 +191,10 @@ UnsetINT() {
 	message->req = irq;
 	
 	if(!irq_master_port->Send(message)) {
-		if(inherited::verbose)
-			inherited::logger << DebugError
-				<< LOCATION
-				<< "TODO: handle interrupt requests that could not be handled"
-				<< std::endl << EndDebugError; 
-		else
-			cerr << "TODO("
-				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
-				<< "handle interrupt requests that could not be handled"
-				<< endl;
+		inherited::logger << DebugError
+			<< LOCATION
+			<< "TODO: handle interrupt requests that could not be handled"
+			<< std::endl << EndDebugError; 
 		
 		Object::Stop(-1);
 	}
@@ -227,16 +215,10 @@ SetSoftReset() {
 	message->req = irq;
 	
 	if(!soft_reset_master_port->Send(message)) {
-		if(inherited::verbose)
-			inherited::logger << DebugError
-				<< LOCATION
-				<< "TODO: handle soft reset interrupt requests that could not be handled"
-				<< std::endl << EndDebugError; 
-		else
-			cerr << "TODO("
-				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
-				<< "handle soft reset interrupt requests that could not be handled"
-				<< endl;
+		inherited::logger << DebugError
+			<< LOCATION
+			<< "TODO: handle soft reset interrupt requests that could not be handled"
+			<< std::endl << EndDebugError; 
 		
 		Object::Stop(-1);
 	}
@@ -257,16 +239,10 @@ UnsetSoftReset() {
 	message->req = irq;
 	
 	if(!soft_reset_master_port->Send(message)) {
-		if(inherited::verbose)
-			inherited::logger << DebugError
-				<< LOCATION
-				<< "TODO: handle soft reset interrupt requests that could not be handled"
-				<< std::endl << EndDebugError; 
-		else
-			cerr << "TODO("
-				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
-				<< "handle soft reset interrupt requests that could not be handled"
-				<< endl;
+		inherited::logger << DebugError
+			<< LOCATION
+			<< "TODO: handle soft reset interrupt requests that could not be handled"
+			<< std::endl << EndDebugError; 
 		
 		Object::Stop(-1);
 	}
@@ -282,7 +258,7 @@ ActivateSDRAMClock() {
 	if(!sdram_clock_activated) {
 		/* TODO: fix this function to set the initial delay time to the difference
 		 *   between current time and the sdram(multiplied by eight) time */
-		sc_time sdram_time = sc_time((double)(sdram_slave_port * 8), SC_FS);
+		sc_core::sc_time sdram_time = sc_core::sc_time((double)(sdram_slave_port * 8), sc_core::SC_FS);
 		sdram_clock_event.notify(sdram_time);
 		sdram_clock_activated = true;
 	}
@@ -317,9 +293,9 @@ SDRAMClock() {
 			activated = sdram_clock_activated;
 			sdram_clock_activated_mutex.unlock();
 			if(activated) {
-				sc_time time = sc_time((double)(sdram_slave_port * 8), SC_FS);
+				sc_core::sc_time time = sc_core::sc_time((double)(sdram_slave_port * 8), sc_core::SC_FS);
 				uint64_t sdram_clock_cycles = 
-					(uint64_t)(sc_time_stamp() / time);
+					(uint64_t)(sc_core::sc_time_stamp() / time);
 				inherited::TimeSignal(sdram_clock_cycles * 8);
 				wait(time);
 			} else 

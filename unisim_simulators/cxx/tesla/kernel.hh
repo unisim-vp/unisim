@@ -42,13 +42,13 @@
 #include <vector>
 #include <list>
 #include <map>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/component/cxx/processor/tesla/interfaces.hh>
 #include <unisim/component/cxx/processor/tesla/stats.hh>
 #include <unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.hh>
 
-using unisim::kernel::service::Service;
+using unisim::kernel::Service;
 using unisim::component::cxx::processor::tesla::CPU;
 using unisim::component::cxx::processor::tesla::Stats;
 using unisim::component::cxx::scheduler::cuda_scheduler::CUDAGrid;

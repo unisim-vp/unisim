@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/tlm/processor/arm/arm.hh"
@@ -115,7 +115,7 @@ using unisim::service::os::linux_os::LinuxOS;
 using unisim::service::logger::LoggerServer;
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::ServiceManager;
 
 void help(char *prog_name) {
 	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
@@ -389,7 +389,7 @@ int main(int argc, char *argv[], char **envp) {
 	
 	if(inline_debugger)
 	{
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->debug_yielding_import >> inline_debugger->debug_yielding_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
@@ -404,7 +404,7 @@ int main(int argc, char *argv[], char **envp) {
 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 		
 		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->debug_yielding_import >> gdb_server->debug_yielding_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
@@ -491,7 +491,7 @@ int main(int argc, char *argv[], char **envp) {
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
 
-		if(!inline_debugger)
+		if(!inline_debugger || !inline_debugger->IsStarted())
 		{
 			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 		}
@@ -510,7 +510,7 @@ int main(int argc, char *argv[], char **envp) {
 			cerr << e.what() << endl;
 		}
 
-		if(!inline_debugger)
+		if(!inline_debugger || !inline_debugger->IsStarted())
 		{
 			signal(SIGINT, prev_sig_int_handler);
 		}

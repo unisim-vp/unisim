@@ -37,17 +37,19 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CPU_HH__
 
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/config.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -60,7 +62,7 @@
 #include <map>
 #include <iosfwd>
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 namespace unisim {
 namespace component {
@@ -70,29 +72,30 @@ namespace avr32 {
 namespace avr32a {
 namespace avr32uc {
 
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::AVR32_T2H_Syscalls;
 using namespace unisim::util::endian;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::service::interfaces::Loader;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::TrapReporting;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::ParameterArray;
-using unisim::kernel::service::Formula;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::ParameterArray;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -103,7 +106,7 @@ using unisim::kernel::logger::EndDebugError;
 using namespace std;
 
 template <class CONFIG>
-class PCRegisterInterface : public unisim::util::debug::Register
+class PCRegisterInterface : public unisim::service::interfaces::Register
 {
 public:
 	PCRegisterInterface(const char *name, typename CONFIG::address_t *r15_value, typename CONFIG::address_t *npc_value);
@@ -123,7 +126,7 @@ class CPU :
 	public unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>,
 	public Client<Loader>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
-	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<DebugYielding>,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 	public Client<TrapReporting>,
 	public Service<MemoryAccessReportingControl>,
@@ -148,7 +151,7 @@ public:
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
 	ServiceImport<Loader> loader_import;
-	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<typename CONFIG::physical_address_t> > memory_import;
@@ -380,13 +383,13 @@ public:
 	//=             memory access reporting control interface methods     =
 	//=====================================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report) ;
+	virtual void RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report);
 
 	//=====================================================================
 	//=               Programmer view memory access methods               =
 	//=====================================================================
 	
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
@@ -396,7 +399,8 @@ public:
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 	virtual string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr);
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);
 	string GetFunctionFriendlyName(typename CONFIG::address_t addr);
@@ -497,10 +501,10 @@ protected:
 	//=====================================================================
 
 	Logger logger;
-	/** indicates if the memory accesses require to be reported */
-	bool requires_memory_access_reporting;
-	/** indicates if the finished instructions require to be reported */
-	bool requires_finished_instruction_reporting;
+	
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
 	
 	inline bool IsVerboseSetup() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
 	inline bool IsVerboseInterrupt() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_INTERRUPT_ENABLE && (verbose_all || verbose_interrupt); }
@@ -533,7 +537,7 @@ private:
 	std::string halt_on;
 	uint64_t max_inst;                                         //!< maximum number of instructions to execute
 
-	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;       //!< Every CPU register interfaces
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 
 	inline uint64_t GetInstructionCounter() const ALWAYS_INLINE { return instruction_counter; }

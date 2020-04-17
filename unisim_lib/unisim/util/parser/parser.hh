@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_PARSER_PARSER_HH__
 
 #include <unisim/util/lexer/lexer.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <iosfwd>
 #include <string>
 
@@ -131,7 +130,7 @@ template <class ABSTRACT_VALUE>
 class Parser : public unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >
 {
 public:
-	Parser(std::istream *stream, unisim::kernel::logger::Logger& logger, bool debug = false);
+	Parser(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
 	virtual ~Parser();
 	
 	AST<ABSTRACT_VALUE> *ParseExpression(unsigned int rbp = 0);
@@ -142,7 +141,9 @@ public:
 	void ErrorExpectedToken(unsigned int expected_token_id, const Token<ABSTRACT_VALUE> *token = 0);
 	void ErrorExpectedExpression();
 	void InternalError();
-	unisim::kernel::logger::Logger& GetLogger();
+	std::ostream& GetDebugInfoStream();
+	std::ostream& GetDebugWarningStream();
+	std::ostream& GetDebugErrorStream();
 
 	virtual bool Check(Token<ABSTRACT_VALUE> *token, AST<ABSTRACT_VALUE> *left, AST<ABSTRACT_VALUE> *right) = 0;
 	virtual bool Check(Token<ABSTRACT_VALUE> *token, AST<ABSTRACT_VALUE> *child) = 0;
@@ -151,7 +152,9 @@ public:
 	bool IsDebugging() const;
 protected:
 	bool parser_error;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	bool debug;
 	Token<ABSTRACT_VALUE> *token;
 };
@@ -161,6 +164,7 @@ class Literal : public Token<ABSTRACT_VALUE>
 {
 public:
 	Literal(const char *text, unsigned int id, const unisim::util::lexer::Location& loc);
+	virtual ~Literal() {}
 	
 	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
 private:
@@ -184,6 +188,8 @@ public:
 	InfixOperator(char c, char end_of_subscript_c, const unisim::util::lexer::Location& loc, unsigned token_lbp);
 	InfixOperator(const char *text, unsigned int id, unsigned int end_of_subscript_id, const unisim::util::lexer::Location& loc, unsigned token_lbp);
 
+	virtual ~InfixOperator() {}
+
 	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
 private:
 	unsigned int bp;
@@ -203,6 +209,8 @@ public:
 	PrefixOperator(char c, char closing_c, const unisim::util::lexer::Location& loc);
 	PrefixOperator(const char *text, unsigned int id, unsigned int closing_id, const unisim::util::lexer::Location& loc);
 	
+	virtual ~PrefixOperator() {}
+
 	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
 private:
 	unsigned int bp;
@@ -225,6 +233,9 @@ class SuffixOperator : virtual public Token<ABSTRACT_VALUE>
 public:
 	SuffixOperator(char c, const unisim::util::lexer::Location& loc, unsigned int token_lbp);
 	SuffixOperator(const char *text, unsigned int id, const unisim::util::lexer::Location& loc, unsigned int token_lbp);
+
+	virtual ~SuffixOperator() {}
+
 	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
 private:
 };

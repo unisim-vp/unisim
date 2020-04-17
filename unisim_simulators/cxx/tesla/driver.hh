@@ -50,7 +50,7 @@
 using unisim::component::cxx::processor::tesla::CPU;
 using unisim::component::cxx::processor::tesla::BaseConfig;
 //using unisim::component::cxx::memory::ram::Memory;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::component::cxx::scheduler::cuda_scheduler::CUDAScheduler;
 using boost::shared_ptr;
 

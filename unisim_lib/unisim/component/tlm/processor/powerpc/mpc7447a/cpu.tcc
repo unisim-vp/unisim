@@ -73,8 +73,8 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, stat_run_time("run-time", this, run_time, "run time")
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
 	, stat_one("one", this, one, "one")
-	, formula_idle_rate("idle-rate", this, Formula<double>::OP_DIV, &stat_idle_time, &stat_run_time, "idle rate")
-	, formula_load_rate("load-rate", this, Formula<double>::OP_SUB, &stat_one, &formula_idle_rate, "load rate")
+	, stat_idle_rate("idle-rate", this, "/", &stat_idle_time, &stat_run_time, "idle rate")
+	, stat_load_rate("load-rate", this, "-", &stat_one, &stat_idle_rate, "load rate")
 	, external_interrupt_listener("external_interrupt_listener", CONFIG::EXC_EXTERNAL, this, &ev_interrupt)
 	, hard_reset_listener("hard_reset_listener", CONFIG::EXC_SYSTEM_RESET_HARD, this, &ev_interrupt)
 	, soft_reset_listener("soft_reset_listener", CONFIG::EXC_SYSTEM_RESET_SOFT, this, &ev_interrupt)
@@ -85,7 +85,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	stat_one.SetMutable(false);
 	stat_one.SetSerializable(false);
 	stat_one.SetVisible(false);
-	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_ipc.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	SC_HAS_PROCESS(CPU);
 	

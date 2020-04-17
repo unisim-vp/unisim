@@ -38,8 +38,7 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/blob.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/symbol_table.hh>
-#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/debug/simple_symbol_table.hh>
 
 #include <iosfwd>
 #include <inttypes.h>
@@ -61,7 +60,7 @@ template <class MEMORY_ADDR>
 class Coff_SymtabHandler
 {
 public:
-	Coff_SymtabHandler(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+	Coff_SymtabHandler(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *blob);
 	~Coff_SymtabHandler();
 
 	void Parse();
@@ -202,9 +201,11 @@ private:
 		} x;
 	} file_auxent;
 
-	unisim::kernel::logger::Logger& logger;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
+	unisim::util::debug::SimpleSymbolTable<MEMORY_ADDR> *symbol_table;
 
 	const char *GetStorageClassName(uint8_t sclass) const;
 	const char *GetStorageClassFriendlyName(uint8_t sclass) const;

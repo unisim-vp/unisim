@@ -32,44 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/util/debug/dwarf/abbrev.hh>
-#include <unisim/util/debug/dwarf/addr_range.hh>
-#include <unisim/util/debug/dwarf/attr.hh>
-#include <unisim/util/debug/dwarf/call_frame_prog.hh>
-#include <unisim/util/debug/dwarf/call_frame_vm.hh>
-#include <unisim/util/debug/dwarf/cie.hh>
-#include <unisim/util/debug/dwarf/cu.hh>
-#include <unisim/util/debug/dwarf/die.hh>
 #include <unisim/util/debug/dwarf/dwarf.hh>
-#include <unisim/util/debug/dwarf/expr_vm.hh>
-#include <unisim/util/debug/dwarf/fde.hh>
-#include <unisim/util/debug/dwarf/loc.hh>
-#include <unisim/util/debug/dwarf/macinfo.hh>
-#include <unisim/util/debug/dwarf/pub.hh>
-#include <unisim/util/debug/dwarf/range.hh>
-#include <unisim/util/debug/dwarf/stmt_prog.hh>
-#include <unisim/util/debug/dwarf/stmt_vm.hh>
-#include <unisim/util/debug/dwarf/frame.hh>
-#include <unisim/util/debug/dwarf/data_object.hh>
-
-#include <unisim/util/debug/dwarf/addr_range.tcc>
-#include <unisim/util/debug/dwarf/attr.tcc>
-#include <unisim/util/debug/dwarf/call_frame_prog.tcc>
-#include <unisim/util/debug/dwarf/call_frame_vm.tcc>
-#include <unisim/util/debug/dwarf/cie.tcc>
-#include <unisim/util/debug/dwarf/cu.tcc>
-#include <unisim/util/debug/dwarf/die.tcc>
 #include <unisim/util/debug/dwarf/dwarf.tcc>
-#include <unisim/util/debug/dwarf/expr_vm.tcc>
-#include <unisim/util/debug/dwarf/fde.tcc>
-#include <unisim/util/debug/dwarf/loc.tcc>
-#include <unisim/util/debug/dwarf/macinfo.tcc>
-#include <unisim/util/debug/dwarf/pub.tcc>
-#include <unisim/util/debug/dwarf/range.tcc>
-#include <unisim/util/debug/dwarf/stmt_prog.tcc>
-#include <unisim/util/debug/dwarf/stmt_vm.tcc>
-#include <unisim/util/debug/dwarf/frame.tcc>
-#include <unisim/util/debug/dwarf/data_object.tcc>
 
 namespace unisim {
 namespace util {
@@ -141,7 +105,7 @@ template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CIE<uin
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CompilationUnit<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_DIE<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_FDE<uint32_t>&);
-template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Frame<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_RegSet<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_LocListEntry<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_MacInfoListEntry<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Pub<uint32_t>&);

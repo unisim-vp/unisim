@@ -39,8 +39,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
-#include <unisim/util/debug/register.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/register.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace component {
@@ -50,7 +50,7 @@ namespace hcs12x {
 
 /* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
 
-class CCR_t : public unisim::util::debug::Register
+class CCR_t : public unisim::service::interfaces::Register
 {
 public:
 	static const uint16_t SETC	=0x0001;
@@ -136,8 +136,8 @@ public:
 	virtual void SetValue(const void *buffer);
 	virtual int GetSize() const;
 
-	unisim::util::debug::Register *GetLowRegister();
-	unisim::util::debug::Register *GetHighRegister();
+	unisim::service::interfaces::Register *GetLowRegister();
+	unisim::service::interfaces::Register *GetHighRegister();
 
 //	uint16_t *ccrReg; // u----ipl(3bits) SXHI NZVC
 
@@ -220,7 +220,7 @@ inline void CCR_t::setCCR(uint16_t val) {
 
 // **************************
 
-class TimeBaseRegisterView : public unisim::kernel::service::VariableBase
+class TimeBaseRegisterView : public unisim::kernel::VariableBase
 {
 public:
 	typedef enum
@@ -228,7 +228,7 @@ public:
 		TB_LOW,
 		TB_HIGH
 	} Type;
-	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint16_t& storage, Type type, const char *description);
+	TimeBaseRegisterView(const char *name, unisim::kernel::Object *owner, uint16_t& storage, Type type, const char *description);
 	virtual ~TimeBaseRegisterView();
 	virtual const char *GetDataTypeName() const;
 	virtual unsigned int GetBitSize() const;
@@ -237,11 +237,11 @@ public:
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator std::string () const;
-	virtual unisim::kernel::service::VariableBase& operator = (bool value);
-	virtual unisim::kernel::service::VariableBase& operator = (long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (double value);
-	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+	virtual unisim::kernel::VariableBase& operator = (bool value);
+	virtual unisim::kernel::VariableBase& operator = (long long value);
+	virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::VariableBase& operator = (double value);
+	virtual unisim::kernel::VariableBase& operator = (const char * value);
 private:
 	uint16_t& storage;
 	Type type;

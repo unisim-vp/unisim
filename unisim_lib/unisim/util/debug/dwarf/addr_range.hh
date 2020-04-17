@@ -76,7 +76,7 @@ public:
 	DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_AddressRanges();
 	endian_type GetFileEndianness() const;
-	uint8_t GetSegmentSize() const;
+	uint8_t GetSegmentSelectorSize() const;
 	uint8_t GetAddressSize() const;
 	DWARF_Version GetDWARFVersion() const;
 	const std::vector<DWARF_AddressRangeDescriptor<MEMORY_ADDR> *>& GetDescriptors() const;
@@ -105,7 +105,7 @@ private:
 	uint8_t address_size;        // The size of an address in bytes on the target architecture. For segmented addressing, this is
 	                             // the size of the offset portion of the address.
 
-	uint8_t segment_size;        // The size of a segment descriptor in bytes on the target architecture. If the target system uses a
+	uint8_t segment_selector_size;        // The size of a segment selector in bytes on the target architecture. If the target system uses a
 	                             // flat address space, this value is 0.
 	
 	std::vector<DWARF_AddressRangeDescriptor<MEMORY_ADDR> *> dw_addr_range_descriptors;

@@ -85,6 +85,8 @@ psha.execute = {
 
 	cpu->setRegSP(cpu->getRegSP()-1);
 	cpu->memWrite8(cpu->getRegSP(), cpu->getRegA());
+
+	return getCycles();
 }
 
 // PSHB: Push B
@@ -103,6 +105,8 @@ pshb.disasm = {
 pshb.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
 	cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+
+	return getCycles();
 }
 
 // PSHC: Push CCR (8 lower bits)
@@ -121,6 +125,8 @@ pshc.disasm = {
 pshc.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
 	cpu->memWrite8(cpu->getRegSP(), cpu->ccr->getCCRLow());
+
+	return getCycles();
 }
 
 // PSHCW: Push CCR word (16 bits)
@@ -139,6 +145,8 @@ pshcw.disasm = {
 pshcw.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
 	cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+
+	return getCycles();
 }
 
 // PSHD: Push D
@@ -157,6 +165,8 @@ pshd.disasm = {
 pshd.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
 	cpu->memWrite16(cpu->getRegSP(), cpu->getRegD());
+
+	return getCycles();
 }
 
 // PSHX: Push X
@@ -175,6 +185,8 @@ pshx.disasm = {
 pshx.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
 	cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
+
+	return getCycles();
 }
 
 // PSHY: Push Y
@@ -193,6 +205,8 @@ pshy.disasm = {
 pshy.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
 	cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
+
+	return getCycles();
 }
 
 // PULA: Pull A
@@ -211,6 +225,8 @@ pula.disasm = {
 pula.execute = {
 	cpu->setRegA(cpu->memRead8(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+1);
+
+	return getCycles();
 }
 
 // PULB: Pull B
@@ -229,6 +245,8 @@ pulb.disasm = {
 pulb.execute = {
 	cpu->setRegB(cpu->memRead8(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+1);
+
+	return getCycles();
 }
 
 // PULC: Pull CCR (16 lower bits)
@@ -247,6 +265,8 @@ pulc.disasm = {
 pulc.execute = {
 	cpu->ccr->setCCRLow(cpu->memRead8(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+1);
+
+	return getCycles();
 }
 
 // PULCW: Pull CCR word
@@ -265,6 +285,8 @@ pulcw.disasm = {
 pulcw.execute = {
 	cpu->ccr->setCCR(cpu->memRead16(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+2);
+
+	return getCycles();
 }
 
 // PULD: Pull D
@@ -283,6 +305,8 @@ puld.disasm = {
 puld.execute = {
 	cpu->setRegD(cpu->memRead16(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+2);
+
+	return getCycles();
 }
 
 // PULX: Pull X
@@ -301,6 +325,8 @@ pulx.disasm = {
 pulx.execute = {
 	cpu->setRegX(cpu->memRead16(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+2);
+
+	return getCycles();
 }
 
 // PULY: Pull Y
@@ -319,5 +345,7 @@ puly.disasm = {
 puly.execute = {
 	cpu->setRegY(cpu->memRead16(cpu->getRegSP()));
 	cpu->setRegSP(cpu->getRegSP()+2);
+
+	return getCycles();
 }
 

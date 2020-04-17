@@ -49,8 +49,6 @@ using std::ostream;
 using std::endl;
 using std::string;
 using std::cerr;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
 
 Property::Property(const string &_name, const string &_value)
 	: name(_name)
@@ -157,8 +155,6 @@ Node& Node::operator << (Node& child)
 	return *this;
 }
 
-const int MAX_TOK_VALUE_SIZE = 65536;
-
 const int TOK_LESS_SLASH = 256;
 const int TOK_SLASH_GREATER = 257;
 const int TOK_IDENTIFIER = 258;
@@ -171,8 +167,8 @@ const int GET_TOK = 1;
 const int CONTEXT_INITIAL = 0;
 const int CONTEXT_COMMENT = 1;
 
-Parser::Parser(unisim::kernel::logger::Logger& _logger)
-	: logger(_logger)
+Parser::Parser(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream)
+	: debug_info_stream(_debug_info_stream), debug_warning_stream(_debug_warning_stream), debug_error_stream(_debug_error_stream), root_node(NULL), current_lineno(0), look_ahead_token(0)
 {
 }
 
@@ -245,7 +241,7 @@ void Parser::Error(const string& filename, int lineno, const char *format, ...)
 
 	buf += sprintf(buf, "%s\n", s);
 	
-	logger << DebugError << buffer << EndDebugError;
+	debug_error_stream << buffer << std::endl;
 	va_end(args);
 }
 

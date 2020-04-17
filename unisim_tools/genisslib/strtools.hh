@@ -24,12 +24,13 @@
 #include <inttypes.h>
 #include <conststr.hh>
 
-namespace Str {
-  ConstStr_t                      fmt( char const* _fmt, ... );
-  ConstStr_t                      upper( char const* _str );
-  ConstStr_t                      capitalize( char const* _str );
-  ConstStr_t                      tokenize( char const* _str );
-  ConstStr_t                      dqcstring( char const* _str );
+namespace Str
+{
+  ConstStr                      fmt( char const* _fmt, ... );
+  ConstStr                      upper( char const* _str );
+  ConstStr                      capitalize( char const* _str );
+  ConstStr                      tokenize( char const* _str );
+  ConstStr                      dqcstring( char const* _str );
 };
 
 #endif // __STRTOOLS_HH__

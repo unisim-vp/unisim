@@ -35,20 +35,44 @@
 #ifndef __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 #define __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 
+#include <iostream>
 #include <inttypes.h>
 #include <string.h>
 
 #if defined(__APPLE_CC__)
 #include <sys/types.h>
-#elif defined(WIN32)
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define LITTLE_ENDIAN __LITTLE_ENDIAN
-#define BIG_ENDIAN __BIG_ENDIAN
-#define __BYTE_ORDER __LITTLE_ENDIAN
-#define BYTE_ORDER LITTLE_ENDIAN
 #else
-#include <endian.h>
+#include <sys/param.h>
+#endif
+
+#if !defined(BYTE_ORDER)
+#if defined(__BYTE_ORDER)
+#define BYTE_ORDER __BYTE_ORDER
+#elif defined(__BYTE_ORDER__)
+#define BYTE_ORDER __BYTE_ORDER__
+#else
+#error "Unknown host byte order"
+#endif
+#endif
+
+#if !defined(LITTLE_ENDIAN)
+#if defined(__LITTLE_ENDIAN)
+#define LITTLE_ENDIAN __LITTLE_ENDIAN
+#elif defined(__LITTLE_ENDIAN__)
+#define LITTLE_ENDIAN __LITTLE_ENDIAN__
+#else
+#error "Unknown host byte order"
+#endif
+#endif
+
+#if !defined(BIG_ENDIAN)
+#if defined(__BIG_ENDIAN)
+#define BIG_ENDIAN __BIG_ENDIAN
+#elif defined(__BIG_ENDIAN__)
+#define BIG_ENDIAN __BIG_ENDIAN__
+#else
+#error "Unknown host byte order"
+#endif
 #endif
 
 #include <unisim/util/inlining/inlining.hh>
@@ -166,7 +190,11 @@ inline void BSwap(uint8_t& value)
 	
 inline void BSwap(uint16_t& value)
 {
+#ifdef __GNUC__
+	value = __builtin_bswap16(value);
+#else
 	value = (value >> 8) | (value << 8);
+#endif
 }
 
 inline void BSwap(uint8_t value[3])
@@ -178,8 +206,8 @@ inline void BSwap(uint8_t value[3])
 
 inline void BSwap(uint32_t& value)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ __volatile__("bswapl %0" : "=r" (value) : "0" (value));
+#ifdef __GNUC__
+	value = __builtin_bswap32(value);
 #else
 	value = (value >> 24) | ((value >> 8) & 0x0000ff00UL) | ((value << 8) & 0x00ff0000UL) | (value << 24);
 #endif
@@ -187,16 +215,25 @@ inline void BSwap(uint32_t& value)
 
 inline void BSwap(uint64_t& value)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ __volatile__("bswapl %%eax; bswapl %%edx; xchg %%eax, %%edx" : "=&A" (value) : "0" (value));
-#elif defined(__GNUC__) && (__GNUC__ >= 3) && defined(__x86_64)
-	__asm__ __volatile__("bswapq %0" : "=r" (value) : "0" (value));
+#ifdef __GNUC__
+	value = __builtin_bswap64(value);
 #else
 	value = (value >> 56) | ((value & 0x00ff000000000000ULL) >> 40) |
 	        ((value & 0x0000ff0000000000ULL) >> 24) | ((value & 0x000000ff00000000ULL) >> 8) |
 	        ((value & 0x00000000ff000000ULL) << 8) | ((value & 0x0000000000ff0000ULL) << 24) |
 	        ((value & 0x000000000000ff00ULL) << 40) | ((value << 56));
 #endif
+}
+
+inline void BSwap(uint32_t *buffer, uint32_t count)
+{
+	if(count)
+	{
+		do
+		{
+			BSwap(*buffer++);
+		} while(--count);
+	}
 }
 
 inline uint8_t ByteSwap(uint8_t value)
@@ -483,6 +520,19 @@ inline void Target2Host(endian_type target_endian, uint32_t *dst, uint32_t *src,
 		BigEndian2Host(dst, src, count);
 	else
 		LittleEndian2Host(dst, src, count);
+}
+
+inline std::ostream& operator << (std::ostream& os, const endian_type& endian)
+{
+	switch(endian)
+	{
+		case E_BIG_ENDIAN    : os << "big-endian"; break;
+		case E_LITTLE_ENDIAN : os << "little-endian"; break;
+		case E_UNKNOWN_ENDIAN:
+		default              : os << "unknown-endian"; break;
+	}
+	
+	return os;
 }
 
 } // end of namespace endian

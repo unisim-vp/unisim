@@ -45,13 +45,15 @@ namespace generic_router {
 
 template<typename OWNER, class CONFIG>
 RouterDispatcher<OWNER, CONFIG>::
-RouterDispatcher(const sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb) :
-sc_module(name),
+RouterDispatcher(const sc_core::sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb) :
+sc_core::sc_module(name),
 m_owner(owner),
 m_cb(cb),
 m_id(id),
-m_cycle_time(SC_ZERO_TIME),
+m_cycle_time(sc_core::SC_ZERO_TIME),
 m_queue(),
+m_event("m_event"),
+m_complete_event("m_complete_event"),
 state(0)
 // m_queue(this, &RouterDispatcher<OWNER, CONFIG>::QueueCB)
 {
@@ -86,8 +88,10 @@ void
 RouterDispatcher<OWNER, CONFIG> ::
 Push(transaction_type &trans, const sc_core::sc_time &time) 
 {
-	trans.acquire();
-	m_queue.insert(pair_t(sc_core::sc_time_stamp() + time, &trans));
+	if(trans.has_mm()) trans.acquire();
+	sc_core::sc_time time_stamp(sc_core::sc_time_stamp());
+	time_stamp += time;
+	m_queue.insert(pair_t(time_stamp, &trans));
 	m_event.notify(time);
 	//phase_type phase = tlm::BEGIN_REQ;
 	//m_queue.notify(trans, phase, time);
@@ -113,51 +117,6 @@ QueueCB(transaction_type &trans, const phase_type &phase)
 {
 	(m_owner->*m_cb)(m_id, trans);
 }
-
-#if 0
-template<typename OWNER, class CONFIG>
-void
-RouterDispatcher<OWNER, CONFIG>::
-Run() 
-{
-	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
-
-	while(1) {
-		wait(m_event);
-		sc_core::sc_time now = sc_core::sc_time_stamp();
-		transaction_type *trans;
-
-		it = m_queue.begin();
-		if (it == m_queue.end()) continue;
-		if (it->first > now) {
-			m_event.notify(it->first - now);
-			continue;
-		}
-		trans = it->second;
-//		m_queue.erase(it);
-		(m_owner->*m_cb)(m_id, *trans);
-		wait(m_complete_event);
-		m_queue.erase(it);
-		trans->release();
-// ** Reda & Gilles 
-//       if (trans->is_write()) trans->release();
-// *** end Reda & Gilles
-		now = sc_core::sc_time_stamp();
-		it = m_queue.begin();
-		if (it == m_queue.end()) continue;
-		if (it->first > now) {
-			m_event.notify(it->first - now);
-			continue;
-		}
-		// we need to synchronize
-		uint64_t val = now.value() / m_cycle_time.value();
-		val = val + 1;
-		sc_core::sc_time fut = m_cycle_time * val;
-		fut += m_cycle_time;
-		m_event.notify(fut - now);
-	}
-}
-#endif
 
 template<typename OWNER, class CONFIG>
 bool
@@ -188,14 +147,14 @@ ProcessTransactionCompletion()
 {
 	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
 
-	sc_core::sc_time now = sc_core::sc_time_stamp();
+	sc_core::sc_time now(sc_core::sc_time_stamp());
 	transaction_type *trans;
 
 	it = m_queue.begin();
 	assert(it != m_queue.end());
 	trans = it->second;
 	m_queue.erase(it);
-	trans->release();
+	if(trans->has_mm()) trans->release();
 	it = m_queue.begin();
 	if (it == m_queue.end()) return true;
 	if (it->first > now) {
@@ -203,11 +162,18 @@ ProcessTransactionCompletion()
 		return true;
 	}
 	// we need to synchronize
+	sc_core::sc_time fut(now);
+	unisim::kernel::tlm2::AlignToClock(fut, m_cycle_time);
+	fut += m_cycle_time;
+	fut -= now;
+	m_event.notify(fut);
+#if 0
 	uint64_t val = now.value() / m_cycle_time.value();
 	val = val + 1;
 	sc_core::sc_time fut = m_cycle_time * val;
 	fut += m_cycle_time;
 	m_event.notify(fut - now);
+#endif
 	return true;
 }
 

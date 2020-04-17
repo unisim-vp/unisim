@@ -169,7 +169,7 @@ bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 {
 	if(blob) return true;
 	
-	blob = new unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+	blob = new unisim::util::blob::Blob<MEMORY_ADDR>();
 	blob->Catch();
 	
 	if(kernel_blob_import && !kernel_blob)
@@ -198,15 +198,15 @@ bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 	
 	if(!kernel_cmd_line_blob)
 	{
-		kernel_cmd_line_blob = new unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+		kernel_cmd_line_blob = new unisim::util::blob::Blob<MEMORY_ADDR>();
 		kernel_cmd_line_blob->Catch();
 
 		char *kernel_cmd_line_data = strdup(kernel_cmd_line.c_str());
 		unsigned int kernel_cmd_line_size = strlen(kernel_cmd_line_data);
 		
-		unisim::util::debug::blob::Section<MEMORY_ADDR> *kernel_cmd_line_section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-			unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
-			unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A,
+		unisim::util::blob::Section<MEMORY_ADDR> *kernel_cmd_line_section = new unisim::util::blob::Section<MEMORY_ADDR>(
+			unisim::util::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
+			unisim::util::blob::Section<MEMORY_ADDR>::SA_A,
 			"",
 			0,
 			0,
@@ -243,7 +243,7 @@ bool PPCUBoot<MEMORY_ADDR>::SetupLoad()
 	if(ppc_r6->GetSize() != sizeof(MEMORY_ADDR)) return false;
 	if(ppc_r7->GetSize() != sizeof(MEMORY_ADDR)) return false;
 
-	if(!kernel_blob || !(kernel_blob->GetCapability() & unisim::util::debug::blob::Blob<MEMORY_ADDR>::CAP_ENTRY_POINT)) return false;
+	if(!kernel_blob || !(kernel_blob->GetCapability() & unisim::util::blob::Blob<MEMORY_ADDR>::CAP_ENTRY_POINT)) return false;
 	return true;
 }
 
@@ -269,7 +269,7 @@ bool PPCUBoot<MEMORY_ADDR>::LoadKernelCmdLine()
 	if(memory_import)
 	{
 		if(!kernel_cmd_line_blob) return false;
-		const unisim::util::debug::blob::Section<MEMORY_ADDR> *kernel_cmd_line_section = kernel_cmd_line_blob->GetSection(0);
+		const unisim::util::blob::Section<MEMORY_ADDR> *kernel_cmd_line_section = kernel_cmd_line_blob->GetSection(0);
 		
 		MEMORY_ADDR kernel_cmd_line_start;
 		MEMORY_ADDR kernel_cmd_line_end;
@@ -325,7 +325,7 @@ bool PPCUBoot<MEMORY_ADDR>::LoadRegisters()
 	ppc_r5->SetValue(&initrd_end_offset); // Note: Linux (at least 2.6.31) do not use this value. Instead you should fill in device tree: choosen -> linux,initrd-end = <@>;
 
 	if(!kernel_cmd_line_blob) return false;
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *kernel_cmd_line_section = kernel_cmd_line_blob->GetSection(0);
+	const unisim::util::blob::Section<MEMORY_ADDR> *kernel_cmd_line_section = kernel_cmd_line_blob->GetSection(0);
 	if(!kernel_cmd_line_section) return false;
 		
 	MEMORY_ADDR kernel_cmd_line_start;
@@ -367,7 +367,7 @@ bool PPCUBoot<MEMORY_ADDR>::Load()
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *PPCUBoot<MEMORY_ADDR>::GetBlob() const
+const typename unisim::util::blob::Blob<MEMORY_ADDR> *PPCUBoot<MEMORY_ADDR>::GetBlob() const
 {
 	return blob;
 }

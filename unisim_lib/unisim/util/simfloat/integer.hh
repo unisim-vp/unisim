@@ -45,11 +45,11 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <iosfwd>
-#include <limits.h>
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <assert.h>
+#include <climits>
+#include <cfloat>
+#include <cmath>
+#include <cstdio>
+#include <cassert>
 #if !defined(__GNUC__) || !defined(__SUN__)
 #include <string.h>
 #include <ctype.h>
@@ -71,7 +71,7 @@ class Access {
   public:
    enum ComparisonResult { CRLess=0, CREqual=1, CRGreater=2 };
    static int log_base_2(unsigned int uValue)
-      {  register int uResult = 1;
+      {  int uResult = 1;
          while ((uValue >>= 1) != 0)
             ++uResult;
          return uResult;
@@ -105,7 +105,8 @@ class CellIntegerTraitsContract {
 };
 
 template <int uSize>
-class TBasicCellIntegerTraits : public CellIntegerTraitsContract {
+class TBasicCellIntegerTraits : public CellIntegerTraitsContract
+{
   private:
    unsigned int auArray[uSize];
    typedef TBasicCellIntegerTraits<uSize> thisType;
@@ -263,12 +264,12 @@ class TBigCellInt : public Details::Access, protected IntegerTraits {
    static HexaChars hcHexaChars;
 
    static unsigned int add(unsigned int& uCell, unsigned int uValue)
-      {  register unsigned int uTemp = uCell;
+      {  unsigned int uTemp = uCell;
          uCell += uValue;
          return (uCell < uTemp) ? 1U : 0U;
       }
    static unsigned int sub(unsigned int& uCell, unsigned int uValue)
-      {  register unsigned int uTemp = uCell;
+      {  unsigned int uTemp = uCell;
          uCell -= uValue;
          return (uCell > uTemp) ? 1U : 0U;
       }
@@ -302,7 +303,7 @@ class TBigCellInt : public Details::Access, protected IntegerTraits {
       MidArray(TBigCellInt<IntegerTraits>& biSource, int uIndexSource)
          : pitArray(&biSource), uIndex(uIndexSource) {}
       MidArray& operator=(unsigned int uValue)
-         {  register unsigned int uStore = pitArray->array(uIndex >> 1);
+         {  unsigned int uStore = pitArray->array(uIndex >> 1);
             pitArray->array(uIndex >> 1) = (uIndex & 1U)
                ? ((uValue << (4*sizeof(unsigned int)))
                   | (uStore & ~(~0U << 4*sizeof(unsigned int))))
@@ -322,7 +323,7 @@ class TBigCellInt : public Details::Access, protected IntegerTraits {
             :  (array(uIndex >> 1) & ~(~0U << 4*sizeof(unsigned int)));
       }
    void setMidArray(int uIndex, unsigned int uValue)
-      {  register unsigned int uStore = array(uIndex >> 1);
+      {  unsigned int uStore = array(uIndex >> 1);
          array(uIndex >> 1) = (uIndex & 1U)
             ? ((uValue << (4*sizeof(unsigned int)))
                | (uStore & ~(~0U << 4*sizeof(unsigned int))))
@@ -396,7 +397,21 @@ typename TBigCellInt<IntegerTraits>::ComparisonResult
 #else
 Integer::Details::Access::ComparisonResult
 #endif
-   compare(const thisType& biSource) const;
+   compare(const thisType& biSource) const
+   {
+      ComparisonResult crResult = CREqual;
+      int uIndex = inherited::querySize();
+      if (uIndex < biSource.inherited::querySize())
+         uIndex = biSource.inherited::querySize();
+       
+      while ((--uIndex >= 0) && (crResult == CREqual)) {
+         if (array(uIndex) < biSource.array(uIndex))
+            crResult = CRLess;
+         else if (array(uIndex) > biSource.array(uIndex))
+            crResult = CRGreater;
+      };
+      return crResult;
+   }
    bool operator<(const thisType& biSource) const
       {  return compare(biSource) == CRLess; }
    bool operator>(const thisType& biSource) const
@@ -416,8 +431,25 @@ Integer::Details::Access::ComparisonResult
    thisType& operator&=(const thisType& biSource);
    thisType& neg();
    thisType& neg(int uShift);
-   bool isZero() const;
-   bool hasZero(int uShift) const;
+   bool isZero() const
+   {
+     bool fResult = true;
+     for (int uIndex = inherited::querySize(); fResult && (--uIndex >= 0); )
+       fResult = array(uIndex) == 0;
+     return fResult;
+   } 
+   bool hasZero(int uShift) const
+   {
+      bool fResult = true;
+      if (uShift > 0) {
+         for (int uIndex = uShift/(8*sizeof(unsigned int)); fResult && (--uIndex >= 0); )
+            fResult = array(uIndex) == 0;
+         if (fResult && (uShift % (8*sizeof(unsigned int)) != 0))
+            fResult = ((array(uShift/(8*sizeof(unsigned int)))
+                        << ((8*sizeof(unsigned int))-(uShift% (8*sizeof(unsigned int))))) == 0);
+      };
+      return fResult;
+   }
    
    class Carry {
      private:
@@ -565,8 +597,8 @@ Integer::Details::Access::ComparisonResult
    thisType& operator/=(unsigned int uSource)
       {  divAssign(uSource);
          return *this;
-      }
-   typename inherited::QuotientResult operator/(const thisType& biSource) const;
+      } 
+  typename inherited::QuotientResult operator/(const thisType& biSource) const;
    unsigned int operator%(unsigned int uSource) const
       {  thisType bciCopy(*this);
          return bciCopy.divAssign(uSource).remainder();
@@ -587,6 +619,25 @@ Integer::Details::Access::ComparisonResult
    void clear() { inherited::clear(); }
 };
 
+template <class IntegerTraits>
+typename TBigCellInt<IntegerTraits>::Carry
+TBigCellInt<IntegerTraits>::sub(const thisType& biSource) {
+   Carry cCarry;
+   if (inherited::querySize() < biSource.inherited::querySize())
+      inherited::adjustSize(biSource.inherited::querySize());
+   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex) {
+      unsigned int uOldCell = array(uIndex);
+      array(uIndex) -= biSource.array(uIndex);
+      if (cCarry.hasCarry()) {
+         --array(uIndex);
+         cCarry.setCarry(array(uIndex) >= uOldCell);
+      }
+      else
+         cCarry.setCarry(array(uIndex) > uOldCell);
+   };
+   return cCarry;
+}
+  
 template <class IntegerTraits>
 inline TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator/=(const thisType& biSource) {
@@ -697,12 +748,12 @@ class TBigCellInt<Details::TCellIntegerTraits<1> > : public AloneBigCellInt {
    const unsigned int& value() const { return _array()[0]; }
 
    static unsigned int add(unsigned int& uCell, unsigned int uValue)
-      {  register unsigned int uTemp = uCell;
+      {  unsigned int uTemp = uCell;
          uCell += uValue;
          return (uCell < uTemp) ? 1U : 0U;
       }
    static unsigned int sub(unsigned int& uCell, unsigned int uValue)
-      {  register unsigned int uTemp = uCell;
+      {  unsigned int uTemp = uCell;
          uCell -= uValue;
          return (uCell > uTemp) ? 1U : 0U;
       }
@@ -832,7 +883,7 @@ class TBigCellInt<Details::TCellIntegerTraits<1> > : public AloneBigCellInt {
          return Carry((value() < biSource.value()) ? 1U : 0U);
       }
    Carry sub(const thisType& biSource)
-      {  register Carry cCarry((value() < biSource.value()) ? 1U : 0U);
+      {  Carry cCarry((value() < biSource.value()) ? 1U : 0U);
          value() -= biSource.value();
          return cCarry;
       }
@@ -948,19 +999,19 @@ class TBigCellInt<Details::TCellIntegerTraits<2> > : public DoubleBigCellInt {
    const unsigned long long int& value() const { return inherited::value(); } // { return *((unsigned long long int*) _array()); }
 
    static unsigned int add(unsigned int& uCell, unsigned int uValue)
-      {  register unsigned int uTemp = uCell;
+      {  unsigned int uTemp = uCell;
          uCell += uValue;
          return (uCell < uTemp) ? 1U : 0U;
       }
    static unsigned int sub(unsigned int& uCell, unsigned int uValue)
-      {  register unsigned int uTemp = uCell;
+      {  unsigned int uTemp = uCell;
          uCell -= uValue;
          return (uCell > uTemp) ? 1U : 0U;
       }
 
   protected:
    static int log_base_2(unsigned long long int uValue)
-      {  register int uResult = 1;
+      {  int uResult = 1;
          while ((uValue >>= 1) != 0)
             ++uResult;
          return uResult;
@@ -1094,7 +1145,7 @@ class TBigCellInt<Details::TCellIntegerTraits<2> > : public DoubleBigCellInt {
          return Carry((value() < biSource.value()) ? 1U : 0U);
       }
    Carry sub(const thisType& biSource)
-      {  register Carry cCarry((value() < biSource.value()) ? 1U : 0U);
+      {  Carry cCarry((value() < biSource.value()) ? 1U : 0U);
          value() -= biSource.value();
          return cCarry;
       }
@@ -1199,7 +1250,7 @@ class TIntegerTraits {
    void normalize()
       {  if (lastCellSize() < (int) (8*sizeof(unsigned int)))
             ctTraits[lastCellIndex()] &= ~(~0U << lastCellSize());
-         // for (register int uIndex = lastCellIndex()+1; uIndex < ctTraits.querySize(); ++uIndex)
+         // for (int uIndex = lastCellIndex()+1; uIndex < ctTraits.querySize(); ++uIndex)
          //   ctTraits[uIndex] = 0U;
       }
    
@@ -1366,7 +1417,7 @@ class TBigInt : public Details::Access, protected IntegerTraits {
       {  typename IntegerTraits::CellTraits::MultResult cmrLocalResult;
          cells().mult(biSource.cells(), cmrLocalResult);
          int uLast = mrResult.lastCellIndex();
-         for (register int uIndex = 0; uIndex <= uLast; ++uIndex)
+         for (int uIndex = 0; uIndex <= uLast; ++uIndex)
             mrResult[uIndex] = cmrLocalResult[uIndex];
       }
    thisType& operator*=(const thisType& biSource)

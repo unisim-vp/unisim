@@ -35,36 +35,115 @@
 #ifndef __UNISIM_KERNEL_TLM2_TLM_HH__
 #define __UNISIM_KERNEL_TLM2_TLM_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/hash_table/hash_table.hh>
 #include <unisim/util/likely/likely.hh>
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <stack>
 #include <vector>
 #include <map>
+#include <cassert>
 
 // to remove asap
 #include <iostream>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
+
+namespace sc_core
+{
+
+inline std::istream& operator >> (std::istream& is, sc_time_unit& time_unit)
+{
+	std::string time_unit_str;
+	if(is >> time_unit_str)
+	{
+		if(time_unit_str.compare("s") == 0) time_unit = sc_core::SC_SEC;
+		else if(time_unit_str.compare("ms") == 0) time_unit = SC_MS;
+		else if(time_unit_str.compare("us") == 0) time_unit = SC_US;
+		else if(time_unit_str.compare("ns") == 0) time_unit = SC_NS;
+		else if(time_unit_str.compare("ps") == 0) time_unit = SC_PS;
+		else if(time_unit_str.compare("fs") == 0) time_unit = SC_FS;
+		else time_unit = SC_FS;
+	}
+
+	return is;
+}
+
+inline std::istream& operator >> (std::istream& is, sc_time& t)
+{
+	double time_value = 0.0;
+	sc_time_unit time_unit = SC_FS;
+	
+	if((is >> time_value) && (is >> time_unit))
+	{
+		t = sc_time(time_value, time_unit);
+	}
+
+	return is;
+}
+
+} // end of namespace sc_core
 
 namespace unisim {
 namespace kernel {
 namespace tlm2 {
 
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, const sc_core::sc_time& clock_period)
+{
+	sc_core::sc_time skew(time_stamp);
+	skew %= clock_period;
+	
+	if(skew != sc_core::SC_ZERO_TIME)
+	{
+		time_stamp += clock_period;
+		time_stamp -= skew;
+	}
+	
+	return time_stamp;
+}
+
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, const sc_core::sc_time& clock_period, const sc_core::sc_time& clock_start_time, bool clock_posedge_first, double clock_duty_cycle)
+{
+	sc_core::sc_time first_pos_edge_time(clock_start_time);
+	if(unlikely(!clock_posedge_first))
+	{
+		sc_core::sc_time neg_to_pos_edge_time(clock_period);
+		neg_to_pos_edge_time *= (1.0 - clock_duty_cycle);
+		first_pos_edge_time += neg_to_pos_edge_time;
+	}
+
+	if(likely(time_stamp > first_pos_edge_time))
+	{
+		sc_core::sc_time skew(time_stamp);
+		skew -= first_pos_edge_time;
+		skew %= clock_period;
+		
+		if(skew != sc_core::SC_ZERO_TIME)
+		{
+			time_stamp += clock_period;
+			time_stamp -= skew;
+		}
+	}
+	else
+	{
+		time_stamp = first_pos_edge_time;
+	}
+	
+	return time_stamp;
+}
+
 class ManagedPayload
 {
 public:
 	ManagedPayload() :
-		extensions(tlm::max_num_extensions()),
 		memory_manager(0),
 		ref_count(0)
 	{
 	}
 	
 	explicit ManagedPayload(tlm::tlm_mm_interface *mm) :
-		extensions(tlm::max_num_extensions()),
 		memory_manager(mm),
 		ref_count(0)
 	{
@@ -100,178 +179,31 @@ public:
 	
 	void reset()
 	{
-		extensions.free_entire_cache();
 	};
-
-	void deep_copy_from(const ManagedPayload & other)
-	{
-		for(unsigned int i=0; i<other.extensions.size(); i++)
-		{
-			if(other.extensions[i])
-			{
-				if(!extensions[i])
-				{
-					tlm::tlm_extension_base *ext = other.extensions[i]->clone();
-					if(ext)
-					{
-						if(has_mm())
-						{
-							set_auto_extension(i, ext);
-						}
-						else
-						{
-							set_extension(i, ext);
-						}
-					}
-				}
-				else
-				{
-					extensions[i]->copy_from(*other.extensions[i]);
-				}
-			}
-		}
-	}
 	
-	void update_extensions_from(const ManagedPayload & other)
+	virtual ~ManagedPayload()
 	{
-		for(unsigned int i=0; i<other.extensions.size(); i++)
-		{
-			if(other.extensions[i])
-			{
-				if(extensions[i])
-				{
-					extensions[i]->copy_from(*other.extensions[i]);
-				}
-			}
-		}
 	}
 	
 	void free_all_extensions()
 	{
-		extensions.free_entire_cache();
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			if(extensions[i])
-			{
-				extensions[i]->free();
-				extensions[i] = 0;
-			}
-		}
 	}
-	
-	
-	virtual ~ManagedPayload()
-	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-			if(extensions[i]) extensions[i]->free();
-	}
-	
-	template <typename T> T* set_extension(T* ext)
-	{
-		return static_cast<T*>(set_extension(T::ID, ext));
-	}
-	
-	tlm::tlm_extension_base* set_extension(unsigned int index, tlm::tlm_extension_base* ext)
-	{
-		tlm::tlm_extension_base* tmp = extensions[index];
-		extensions[index] = ext;
-		return tmp;
-	}
-	
-	template <typename T> T* set_auto_extension(T* ext)
-	{
-		return static_cast<T*>(set_auto_extension(T::ID, ext));
-	}
-	
-	tlm::tlm_extension_base* set_auto_extension(unsigned int index, tlm::tlm_extension_base* ext)
-	{
-		tlm::tlm_extension_base* tmp = extensions[index];
-		extensions[index] = ext;
-		if (!tmp) extensions.insert_in_cache(&extensions[index]);
-		assert(memory_manager != 0);
-		return tmp;
-	}
-	
-	template <typename T> void get_extension(T*& ext) const
-	{
-		ext = get_extension<T>();
-	}
-	
-	template <typename T> T* get_extension() const
-	{
-		return static_cast<T*>(get_extension(T::ID));
-	}
-	
-	tlm::tlm_extension_base* get_extension(unsigned int index) const
-	{
-		return extensions[index];
-	}
-	
-	template <typename T> void clear_extension(const T* ext)
-	{
-		clear_extension<T>();
-	}
-	
-	template <typename T> void clear_extension()
-	{
-		clear_extension(T::ID);
-	}
-	
-	template <typename T> void release_extension(T* ext)
-	{
-		release_extension<T>();
-	}
-	
-	template <typename T> void release_extension()
-	{
-		release_extension(T::ID);
-	}
-
-    void resize_extensions()
-    {
-        extensions.expand(tlm::max_num_extensions());
-    }
 
 protected:
 
-	ManagedPayload(const ManagedPayload& x) :
-		extensions(tlm::max_num_extensions())
+	ManagedPayload(const ManagedPayload& x)
+		: memory_manager(0)
+		, ref_count(0)
+
 	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			extensions[i] = x.get_extension(i);
-		}
 	}
 	
 	ManagedPayload& operator= (const ManagedPayload& x)
 	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			extensions[i] = x.get_extension(i);
-		}
 		return (*this);
 	}
 
 private:
-	void clear_extension(unsigned int index)
-	{
-		extensions[index] = static_cast<tlm::tlm_extension_base*>(0);
-	}
-	
-	void release_extension(unsigned int index)
-	{
-		if (memory_manager)
-		{
-			extensions.insert_in_cache(&extensions[index]);
-		}
-		else
-		{
-			extensions[index]->free();
-			extensions[index] = static_cast<tlm::tlm_extension_base*>(0);
-		}
-	}
-	
-	tlm::tlm_array<tlm::tlm_extension_base*> extensions;
 	tlm::tlm_mm_interface* memory_manager;
 	unsigned int ref_count;
 };
@@ -281,17 +213,26 @@ class PayloadFabric : public tlm::tlm_mm_interface
 {
 public:
 	PayloadFabric()
+		: free_list()
+		, payloads()
 	{
 	}
 
 	~PayloadFabric()
 	{
-		while(!free_list.empty())
+		typename std::vector<PAYLOAD *>::iterator it;
+		
+		for(it = payloads.begin(); it != payloads.end(); it++)
 		{
-			PAYLOAD *payload = free_list.top();
-			free_list.pop();
+			PAYLOAD *payload = *it;
 			delete payload;
 		}
+// 		while(!free_list.empty())
+// 		{
+// 			PAYLOAD *payload = free_list.top();
+// 			free_list.pop();
+// 			delete payload;
+// 		}
 	}
 
 	PAYLOAD *allocate()
@@ -310,17 +251,19 @@ public:
 		payload = new PAYLOAD();
 		payload->set_mm(this);
 		payload->acquire();
+		payloads.push_back(payload);
 		return payload;
 	}
 
 	void free(tlm::tlm_generic_payload *_payload)
 	{
 		PAYLOAD *payload = reinterpret_cast<PAYLOAD *>(_payload);
-		payload->free_all_extensions();
+		//payload->free_all_extensions(); Note: extensions are freed by payload destructor
 		free_list.push(payload);
 	}
 private:
 	std::stack<PAYLOAD *, std::vector<PAYLOAD *> > free_list;
+	std::vector<PAYLOAD *> payloads;
 };
 
 template <class T>
@@ -355,6 +298,8 @@ public:
 	             bool (MODULE::*cb_get_direct_mem_ptr)(unsigned int, typename TYPES::tlm_payload_type& payload, tlm::tlm_dmi& dmi_data)
 	);
 	
+	virtual ~FwRedirector() {};
+
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename TYPES::tlm_payload_type& payload, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void b_transport(typename TYPES::tlm_payload_type& payload, sc_core::sc_time& t);
 	virtual unsigned int transport_dbg(typename TYPES::tlm_payload_type& payload);
@@ -419,6 +364,8 @@ public:
 	             void (MODULE::*cb_invalidate_direct_mem_ptr)(unsigned int, sc_dt::uint64, sc_dt::uint64)
 	);
 	
+	virtual ~BwRedirector() {}
+
 	virtual tlm::tlm_sync_enum nb_transport_bw(typename TYPES::tlm_payload_type& payload, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
@@ -460,7 +407,9 @@ public:
 	Schedule()
 		: schedule()
 		, free_list()
-		, kernel_event()
+		, kernel_event("schedule_kernel_event")
+		, paused(false)
+		, pause_time_stamp(sc_core::SC_ZERO_TIME)
 	{
 	}
 	
@@ -484,12 +433,35 @@ public:
 	
 	void Notify(EVENT *event)
 	{
-		const sc_time& time_stamp = event->GetTimeStamp();
+		const sc_core::sc_time& time_stamp = event->GetTimeStamp();
 		schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
-		sc_time t(time_stamp);
-		t -= sc_time_stamp();
-//		std::cerr << "notify(" << t << ") from" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
+		sc_core::sc_time t(time_stamp);
+		t -= sc_core::sc_time_stamp();
 		kernel_event.notify(t);
+	}
+	
+	void Cancel(EVENT *event)
+	{
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.find(event->GetKey());
+		
+		if(it != schedule.end())
+		{
+			schedule.erase(it);
+			
+			if(schedule.empty())
+			{
+				kernel_event.cancel();
+			}
+			else
+			{
+				it = schedule.begin();
+				const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+				const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+				sc_core::sc_time t(event_time_stamp);
+				t -= time_stamp;
+				kernel_event.notify(t);
+			}
+		}
 	}
 	
 	bool Empty() const
@@ -502,8 +474,8 @@ public:
 		if(schedule.empty()) return 0;
 		
 		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.begin();
-		const sc_time& time_stamp = sc_time_stamp();
-		const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+		const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 		if(event_time_stamp <= time_stamp)
 		{
 			EVENT *event = (*it).second;
@@ -511,7 +483,7 @@ public:
 			return event;
 		}
 		
-		sc_time t(event_time_stamp);
+		sc_core::sc_time t(event_time_stamp);
 		t -= time_stamp;
 		kernel_event.notify(t);
 		
@@ -536,7 +508,7 @@ public:
 		free_list.push(event);
 	}
 	
-	const sc_event& GetKernelEvent() const
+	const sc_core::sc_event& GetKernelEvent() const
 	{
 		return kernel_event;
 	}
@@ -552,24 +524,75 @@ public:
 		}
 		schedule.clear();
 		kernel_event.cancel();
+		paused = false;
 	}
 
+	void Pause()
+	{
+		if(schedule.empty()) return;
+		
+		kernel_event.cancel();
+		
+		pause_time_stamp = sc_core::sc_time_stamp();
+		paused = true;
+	}
+	
+	void Unpause()
+	{
+		if(!paused) return;
+		
+		if(schedule.empty()) return;
+
+		sc_core::sc_time unpause_time_stamp = sc_core::sc_time_stamp();
+		
+		sc_core::sc_time time_shift(unpause_time_stamp);
+		time_shift -= pause_time_stamp;
+		
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.begin();
+		
+		do
+		{
+			EVENT *event = (*it).second;
+			
+			sc_core::sc_time shifted_time_stamp(event->GetTimeStamp());
+			shifted_time_stamp += time_shift;
+			event->SetTimeStamp(shifted_time_stamp);
+			schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
+			
+			typename std::multimap<typename EVENT::Key, EVENT *>::iterator erase_it = it++;
+			schedule.erase(erase_it);
+		}
+		while(it != schedule.end());
+
+		it = schedule.begin();
+		
+		const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		
+		sc_core::sc_time t(event_time_stamp);
+		t -= unpause_time_stamp;
+		
+		kernel_event.notify(t);
+		
+		paused = false;
+	}
 private:
 	std::multimap<typename EVENT::Key, EVENT *> schedule;
 	std::stack<EVENT *, std::vector<EVENT *> > free_list;
-	sc_event kernel_event;
+	sc_core::sc_event kernel_event;
+	bool paused;
+	sc_core::sc_time pause_time_stamp;
 };
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
 class InitiatorStub
-	: public virtual unisim::kernel::service::Object
-	, public sc_module
+	: public virtual unisim::kernel::Object
+	, public sc_core::sc_module
 	, tlm::tlm_bw_transport_if<TYPES>
 {
 public:
 	tlm::tlm_initiator_socket<BUSWIDTH, TYPES> master_sock;
 	
-	InitiatorStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 
 	virtual tlm::tlm_sync_enum nb_transport_bw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
@@ -577,14 +600,14 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool enable;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_enable;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
-InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "An initiator stub")
-	, sc_module(name)
+InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "An initiator stub")
+	, sc_core::sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
 	, enable(true)
@@ -632,14 +655,14 @@ void InitiatorStub<BUSWIDTH, TYPES>::invalidate_direct_mem_ptr(sc_dt::uint64 sta
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
 class TargetStub
-	: public virtual unisim::kernel::service::Object
-	, public sc_module
+	: public virtual unisim::kernel::Object
+	, public sc_core::sc_module
 	, tlm::tlm_fw_transport_if<TYPES>
 {
 public:
 	tlm::tlm_target_socket<BUSWIDTH, TYPES> slave_sock;
 	
-	TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 
 	virtual void b_transport(typename TYPES::tlm_payload_type& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
@@ -649,14 +672,14 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool enable;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_enable;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
-TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "A target stub")
-	, sc_module(name)
+TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "A target stub")
+	, sc_core::sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
 	, enable(true)
@@ -695,7 +718,7 @@ void TargetStub<BUSWIDTH, TYPES>::b_transport(typename TYPES::tlm_payload_type& 
 	{
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << "b_transport(" << trans << ", " << (sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << "b_transport(" << trans << ", " << (sc_core::sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
 		}
 	}
 	else
@@ -714,7 +737,7 @@ tlm::tlm_sync_enum TargetStub<BUSWIDTH, TYPES>::nb_transport_fw(typename TYPES::
 		{
 			std::stringstream sstr_phase;
 			sstr_phase << phase;
-			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw(" << trans << ", " << sstr_phase.str() << ", " << (sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw(" << trans << ", " << sstr_phase.str() << ", " << (sc_core::sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
 		}
 	}
 	else
@@ -763,14 +786,14 @@ bool TargetStub<BUSWIDTH, TYPES>::get_direct_mem_ptr(typename TYPES::tlm_payload
 
 template <unsigned int BUSWIDTH>
 class TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>
-	: public virtual unisim::kernel::service::Object
-	, public sc_module
+	: public virtual unisim::kernel::Object
+	, public sc_core::sc_module
 	, tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
 {
 public:
 	tlm::tlm_target_socket<BUSWIDTH, tlm::tlm_base_protocol_types> slave_sock;
 	
-	TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 
 	virtual void b_transport(typename tlm::tlm_generic_payload& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename tlm::tlm_generic_payload& trans, typename tlm::tlm_phase& phase, sc_core::sc_time& t);
@@ -780,14 +803,14 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool enable;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_enable;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH>
-TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "A target stub")
-	, sc_module(name)
+TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "A target stub")
+	, sc_core::sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
 	, enable(true)
@@ -900,23 +923,29 @@ class LatencyLookupTable
 {
 public:
 	inline LatencyLookupTable();
-	inline LatencyLookupTable(const sc_time& base_lat);
+	inline LatencyLookupTable(const sc_core::sc_time& base_lat);
 	inline ~LatencyLookupTable();
-	inline void SetBaseLatency(const sc_time& base_lat);
-	inline const sc_time& Lookup(unsigned int n); // returns n * base_lat
+	inline void SetBaseLatency(const sc_core::sc_time& base_lat);
+	inline const sc_core::sc_time& GetBaseLatency() const;
+	inline const sc_core::sc_time& Lookup(unsigned int n) const; // returns n * base_lat
 private:
 	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
-	sc_time base_lat;
-	sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
-	std::map<unsigned int, sc_time> latency_slow_lookup;
+	sc_core::sc_time base_lat;
+	sc_core::sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
+	mutable std::map<unsigned int, sc_core::sc_time> latency_slow_lookup;
 };
 
 LatencyLookupTable::LatencyLookupTable()
-	: base_lat(SC_ZERO_TIME)
+	: base_lat(sc_core::SC_ZERO_TIME)
+	, latency_fast_lookup()
+	, latency_slow_lookup()
 {
 }
 
-LatencyLookupTable::LatencyLookupTable(const sc_time& _base_lat)
+LatencyLookupTable::LatencyLookupTable(const sc_core::sc_time& _base_lat)
+	: base_lat(sc_core::SC_ZERO_TIME)
+	, latency_fast_lookup()
+	, latency_slow_lookup()
 {
 	SetBaseLatency(_base_lat);
 }
@@ -925,7 +954,7 @@ LatencyLookupTable::~LatencyLookupTable()
 {
 }
 
-inline void LatencyLookupTable::SetBaseLatency(const sc_time& _base_lat)
+inline void LatencyLookupTable::SetBaseLatency(const sc_core::sc_time& _base_lat)
 {
 	base_lat = _base_lat;
 	
@@ -938,28 +967,33 @@ inline void LatencyLookupTable::SetBaseLatency(const sc_time& _base_lat)
 	latency_slow_lookup.clear();
 }
 
-const sc_time& LatencyLookupTable::Lookup(unsigned int n)
+const sc_core::sc_time& LatencyLookupTable::GetBaseLatency() const
 {
-	if(n < NUM_LATENCY_FAST_LOOKUP)
+	return base_lat;
+}
+
+const sc_core::sc_time& LatencyLookupTable::Lookup(unsigned int n) const
+{
+	if(likely(n < NUM_LATENCY_FAST_LOOKUP))
 	{
 		return latency_fast_lookup[n];
 	}
 	
 	do
 	{
-		std::map<unsigned int, sc_time>::iterator iter = latency_slow_lookup.find(n);
+		std::map<unsigned int, sc_core::sc_time>::const_iterator iter = latency_slow_lookup.find(n);
 		
-		if(iter != latency_slow_lookup.end())
+		if(likely(iter != latency_slow_lookup.end()))
 		{
 			return (*iter).second;
 		}
 		
-		sc_time latency = n * base_lat;
+		sc_core::sc_time latency = n * base_lat;
 		latency_slow_lookup[n] = latency;
 	}
 	while(1);
 	
-	return latency_fast_lookup[0]; // shall never occur
+	return sc_core::SC_ZERO_TIME; // shall never occur
 }
 
 class DMIRegionCache;
@@ -973,8 +1007,8 @@ public:
 	inline bool IsDenied() const;
 	inline DMIGrant GetGrant() const;
 	inline tlm::tlm_dmi *GetDMI() const;
-	inline const sc_time& GetReadLatency(unsigned int data_length);
-	inline const sc_time& GetWriteLatency(unsigned int data_length);
+	inline const sc_core::sc_time& GetReadLatency(unsigned int data_length);
+	inline const sc_core::sc_time& GetWriteLatency(unsigned int data_length);
 private:
 	friend class DMIRegionCache;
 	DMIGrant dmi_grant;
@@ -989,6 +1023,7 @@ inline DMIRegion::DMIRegion(DMIGrant _dmi_grant, tlm::tlm_dmi *_dmi_data)
 	, dmi_data(_dmi_data)
 	, read_lat_lut(dmi_data->get_read_latency())
 	, write_lat_lut(dmi_data->get_write_latency())
+	, next(NULL)
 {
 }
 
@@ -1017,15 +1052,20 @@ inline tlm::tlm_dmi *DMIRegion::GetDMI() const
 	return dmi_data;
 }
 
-inline const sc_time& DMIRegion::GetReadLatency(unsigned int data_length)
+inline const sc_core::sc_time& DMIRegion::GetReadLatency(unsigned int data_length)
 {
 	return read_lat_lut.Lookup(data_length);
 }
 
-inline const sc_time& DMIRegion::GetWriteLatency(unsigned int data_length)
+inline const sc_core::sc_time& DMIRegion::GetWriteLatency(unsigned int data_length)
 {
 	return write_lat_lut.Lookup(data_length);
 }
+
+struct DMI_InvalidateInterface
+{
+	virtual void DMI_Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 end_range) = 0;
+};
 
 class DMIRegionCache
 {
@@ -1034,10 +1074,11 @@ public:
 	inline ~DMIRegionCache();
 	
 	inline DMIRegion *Lookup(sc_dt::uint64 addr, sc_dt::uint64 size);
+	inline void Insert(DMIGrant dmi_grant, const tlm::tlm_dmi& dmi_data);
 	inline void Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data);
 	inline void Insert(DMIRegion *dmi_region);
 	inline void Remove(DMIRegion *dmi_region);
-	inline void Invalidate(sc_dt::uint64 start_range = 0, sc_dt::uint64 end_range = (sc_dt::uint64) -1);
+	inline void Invalidate(sc_dt::uint64 start_range = 0, sc_dt::uint64 end_range = (sc_dt::uint64) -1, DMI_InvalidateInterface *dmi_inv_if = 0);
 private:
 	DMIRegion *mru_dmi_region;
 };
@@ -1057,13 +1098,13 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 	sc_dt::uint64 end_addr = addr + size - 1;
 	
 	DMIRegion *cur = mru_dmi_region;
-	if(cur)
+	if(likely(cur))
 	{
 		tlm::tlm_dmi *dmi_data = cur->GetDMI();
 		sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
 		sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
 		
-		if((addr >= dmi_start_address) && (end_addr <= dmi_end_address))
+		if(likely((addr >= dmi_start_address) && (end_addr <= dmi_end_address)))
 		{
 			return cur;
 		}
@@ -1077,7 +1118,7 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 				sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
 				sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
 				
-				if((addr >= dmi_start_address) && (end_addr <= dmi_end_address))
+				if(likely((addr >= dmi_start_address) && (end_addr <= dmi_end_address)))
 				{
 					prev->next = cur->next;
 					cur->next= mru_dmi_region;
@@ -1092,17 +1133,38 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 	return 0;
 }
 
+inline void DMIRegionCache::Insert(DMIGrant dmi_grant, const tlm::tlm_dmi& dmi_data)
+{
+	tlm::tlm_dmi *dmi_data_owned_copy = new tlm::tlm_dmi();
+	*dmi_data_owned_copy = dmi_data;
+	Insert(dmi_grant, dmi_data_owned_copy);
+}
+
 inline void DMIRegionCache::Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data)
 {
-	DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_data->get_end_address() >= dmi_data->get_start_address()) // prevent us from crazy targets behavior
+	{
+		DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_data;
+	}
 }
 
 inline void DMIRegionCache::Insert(DMIRegion *dmi_region)
 {
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_region->GetDMI()->get_end_address() >= dmi_region->GetDMI()->get_start_address()) // prevent us from crazy targets behavior
+	{
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_region;
+	}
 }
 
 inline void DMIRegionCache::Remove(DMIRegion *dmi_region)
@@ -1135,7 +1197,7 @@ inline void DMIRegionCache::Remove(DMIRegion *dmi_region)
 	}
 }
 
-inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 end_range, DMI_InvalidateInterface *dmi_inv_if)
 {
 	if(end_range < start_range) return;
 	
@@ -1159,12 +1221,20 @@ inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 
 					if(end_range >= dmi_end_address)
 					{
 						// full delete
+						if(dmi_inv_if)
+						{
+							dmi_inv_if->DMI_Invalidate(dmi_start_address, dmi_end_address);
+						}
 						Remove(dmi_region);
 						delete dmi_region;
 					}
 					else
 					{
 						// cut lower range of region
+						if(dmi_inv_if)
+						{
+							dmi_inv_if->DMI_Invalidate(dmi_start_address, end_range);
+						}
 						unsigned char *dmi_ptr = dmi_data->get_dmi_ptr();
 						sc_dt::uint64 new_dmi_start_address = end_range + 1;
 						unsigned char *new_dmi_ptr = dmi_ptr + (new_dmi_start_address - dmi_start_address);
@@ -1177,12 +1247,20 @@ inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 
 					if(end_range >= dmi_end_address)
 					{
 						// cut upper range of region
+						if(dmi_inv_if)
+						{
+							dmi_inv_if->DMI_Invalidate(start_range, dmi_end_address);
+						}
 						sc_dt::uint64 new_dmi_end_address = start_range - 1;
 						dmi_data->set_end_address(new_dmi_end_address);
 					}
 					else
 					{
 						// split in two regions
+						if(dmi_inv_if)
+						{
+							dmi_inv_if->DMI_Invalidate(start_range, end_range);
+						}
 						DMIGrant dmi_grant = dmi_region->GetGrant();
 						tlm::tlm_dmi::dmi_access_e dmi_access = dmi_data->get_granted_access();
 						sc_core::sc_time dmi_read_latency = dmi_data->get_read_latency();
@@ -1226,6 +1304,104 @@ inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 
 		} while(dmi_region);
 	}
 }
+
+class QuantumKeeper
+{
+public:
+	static void set_global_quantum(const sc_core::sc_time& t)
+	{
+		tlm::tlm_global_quantum::instance().set(t);
+	}
+
+	static const sc_core::sc_time& get_global_quantum()
+	{
+		return tlm::tlm_global_quantum::instance().get();
+	}
+	
+	QuantumKeeper()
+		: local_time_offset(sc_core::SC_ZERO_TIME)
+		, sync_deadline(sc_core::SC_ZERO_TIME)
+	{
+		reset();
+	}
+	
+	void align_to_clock(const sc_core::sc_time& clock_period)
+	{
+		sc_core::sc_time current_time(sc_core::sc_time_stamp());
+		current_time += local_time_offset;
+		AlignToClock(current_time, clock_period);
+		local_time_offset = current_time;
+		local_time_offset -= sc_core::sc_time_stamp();
+	}
+	
+	void inc(const sc_core::sc_time& t)
+	{
+		local_time_offset += t;
+	}
+	
+	void set(const sc_core::sc_time& t)
+	{
+		local_time_offset = t;
+	}
+	
+	sc_core::sc_time get_current_time() const
+	{
+		sc_core::sc_time current_time(sc_core::sc_time_stamp());
+		current_time += local_time_offset;
+		return current_time;
+	}
+	
+	const sc_core::sc_time& get_local_time() const
+	{
+		return local_time_offset;
+	}
+	
+	sc_core::sc_time& get_local_time() // intended for passing local_time_offset to nb_transport/b_transport
+	{
+		return local_time_offset;
+	}
+	
+	bool need_sync() const
+	{
+		sc_core::sc_time current_time(sc_core::sc_time_stamp());
+		current_time += local_time_offset;
+		
+		return unlikely(current_time >= sync_deadline);
+	}
+	
+	void sync()
+	{
+		sc_core::wait(local_time_offset);
+		reset();
+	}
+	
+	void set_and_sync(const sc_core::sc_time& t)
+	{
+		set(t);
+		if(unlikely(need_sync())) sync();
+	}
+	
+	void reset()
+	{
+		local_time_offset = sc_core::SC_ZERO_TIME;
+		sync_deadline = sc_core::sc_time_stamp();
+
+		const sc_core::sc_time& global_quantum = get_global_quantum();
+		
+		if(likely(global_quantum != sc_core::SC_ZERO_TIME))
+		{
+			sc_core::sc_time offset(sc_core::sc_time_stamp());
+			offset %= global_quantum;
+			
+			sync_deadline += global_quantum;
+			sync_deadline -= offset;
+		}
+	}
+	
+private:
+	sc_core::sc_time local_time_offset;
+	sc_core::sc_time sync_deadline;
+};
 
 } // end of namespace tlm2
 } // end of namespace kernel

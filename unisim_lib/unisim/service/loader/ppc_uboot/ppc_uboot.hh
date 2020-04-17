@@ -35,26 +35,26 @@
 #ifndef __UNISIM_SERVICE_LOADER_PPC_UBOOT_PPC_UBOOT_HH__
 #define __UNISIM_SERVICE_LOADER_PPC_UBOOT_PPC_UBOOT_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/blob.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 
 namespace unisim {
 namespace service {
 namespace loader {
 namespace ppc_uboot {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
@@ -84,7 +84,7 @@ public:
 	ServiceImport<Loader> initrd_loader_import;
 	ServiceImport<Blob<MEMORY_ADDR> > initrd_blob_import;
 	
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 	virtual bool Load();
 
 	virtual bool BeginSetup();
@@ -96,17 +96,17 @@ private:
 	bool LoadKernelCmdLine();
 	bool LoadRegisters();
 
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *kernel_blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *device_tree_blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *initrd_blob;
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *kernel_cmd_line_blob;
-	unisim::util::debug::Register *ppc_cia;
-	unisim::util::debug::Register *ppc_r3;
-	unisim::util::debug::Register *ppc_r4;
-	unisim::util::debug::Register *ppc_r5;
-	unisim::util::debug::Register *ppc_r6;
-	unisim::util::debug::Register *ppc_r7;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *kernel_blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *device_tree_blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *initrd_blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *kernel_cmd_line_blob;
+	unisim::service::interfaces::Register *ppc_cia;
+	unisim::service::interfaces::Register *ppc_r3;
+	unisim::service::interfaces::Register *ppc_r4;
+	unisim::service::interfaces::Register *ppc_r5;
+	unisim::service::interfaces::Register *ppc_r6;
+	unisim::service::interfaces::Register *ppc_r7;
 	std::string kernel_cmd_line;
 	MEMORY_ADDR kernel_cmd_line_addr;
 	bool verbose;

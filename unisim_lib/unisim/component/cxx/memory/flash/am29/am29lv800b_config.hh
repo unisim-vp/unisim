@@ -47,7 +47,7 @@ namespace am29 {
 class AM29LV800BConfig
 {
 public:
-	typedef uint32_t ADDRESS;
+	typedef uint64_t ADDRESS;
 	typedef enum
 	{
 		ST_I0 = 0,

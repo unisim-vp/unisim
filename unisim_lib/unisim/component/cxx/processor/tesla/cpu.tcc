@@ -82,7 +82,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	Service<Resetable>(name, parent),
 	Service<Runnable>(name, parent),
 	Client<Loader<typename CONFIG::physical_address_t> >(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
+	Client<DebugYielding>(name, parent),
 	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 //	Service<Synchronizable>(name, parent),
@@ -98,7 +98,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid, int core_count) :
 	reset_export("reset-export", this),
 	run_export("run-export", this),
 	kernel_loader_import("kernel-loader-import", this),
-	debug_control_import("debug-control-import", this),
+	debug_yielding_import("debug-control-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_import("memory-import", this),
 //	synchronizable_export("synchronizable-export", this),
@@ -347,27 +347,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 template <class CONFIG>
 void CPU<CONFIG>::ProcessDebugCommands()
 {
-	typedef DebugControl<address_t> Dbg;
-	
-	
-	if(debug_control_import)
-	{
-		while(true)
-		{
-			typename Dbg::DebugCommand dbg_cmd(debug_control_import->FetchDebugCommand(GetPC()));
-			switch(dbg_cmd)
-			{
-			case Dbg::DBG_STEP:
-				return;
-			case Dbg::DBG_RESET:
-			case Dbg::DBG_KILL:
-			case Dbg::DBG_SYNC:
-			default:
-				// Ignore
-				break;
-			}
-		}
-	}
+	debug_yielding_import->DebugYield();
 }
 
 template <class CONFIG>

@@ -37,7 +37,7 @@
 
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/component/tlm/message/pci.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/component/cxx/pci/ide/pcidev.hh>
 #include <unisim/component/cxx/pci/ide/pci_master.hh>
 #include <unisim/component/tlm/message/interrupt.hh>
@@ -55,18 +55,18 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::component::tlm::message::PCIRequest;
 using unisim::component::tlm::message::PCIResponse;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::component::tlm::message::InterruptRequest;
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE> 
-class PCIDev: public sc_module,
+class PCIDev: public sc_core::sc_module,
 		virtual public Object,
   		public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
   		public virtual unisim::component::cxx::pci::ide::PCIMaster<ADDRESS_TYPE>,
@@ -99,8 +99,8 @@ private:
 		bool used;
 	};
 	
-	sc_event dispatch_event;
-	sc_event intr_dispatch_event;
+	sc_core::sc_event dispatch_event;
+	sc_core::sc_event intr_dispatch_event;
 	DeviceRequest intr_device_request;
 	list<unisim::component::cxx::pci::ide::Event *> event_stack;
 protected:
@@ -112,15 +112,15 @@ protected:
 	bool verbose;
 	Parameter<bool> param_verbose;
 public:
-	sc_export<TlmSendIfType> input_port;
-	sc_port<TlmSendIfType> output_port;
-	sc_port<TlmSendIf<InterruptRequest> > irq_port;
+	sc_core::sc_export<TlmSendIfType> input_port;
+	sc_core::sc_port<TlmSendIfType> output_port;
+	sc_core::sc_port<TlmSendIf<InterruptRequest> > irq_port;
 	//ServiceExport<PCIInterface<ADDRESS_TYPE> > *exp;
 	//ServiceImport<PCIInterface<ADDRESS_TYPE> > *import[NUM_TARGETS];
 
 	SC_HAS_PROCESS(PCIDev);
 
-	PCIDev(const sc_module_name &name, Object *parent = 0);
+	PCIDev(const sc_core::sc_module_name &name, Object *parent = 0);
 	void SetDevice(unisim::component::cxx::pci::ide::PciDev<ADDRESS_TYPE> * dev);
 	virtual ~PCIDev();
 	virtual bool BeginSetup ();

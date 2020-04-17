@@ -80,6 +80,9 @@ template <class MEMORY_ADDR> class DWARF_CFIRow;
 template <class MEMORY_ADDR> class DWARF_CFI;
 template <class MEMORY_ADDR> class DWARF_CallFrameVM;
 class DWARF_RegisterNumberMapping;
+template <class MEMORY_ADDR> class DWARF_RegisterBase;
+template <class MEMORY_ADDR, class VALUE_TYPE> class DWARF_Register;
+template <class MEMORY_ADDR> class DWARF_RegSet;
 template <class MEMORY_ADDR> class DWARF_Frame;
 template <class MEMORY_ADDR> class DWARF_RangeListEntry;
 template <class MEMORY_ADDR> class DWARF_MacInfoListEntry;
@@ -95,6 +98,7 @@ template <class MEMORY_ADDR> class DWARF_Pubs;
 template <class MEMORY_ADDR> class DWARF_LocListEntry;
 template <class MEMORY_ADDR> class DWARF_Handler;
 template <class MEMORY_ADDR> class DWARF_DataObject;
+template <class MEMORY_ADDR> class DWARF_SubProgram;
 
 } // end of namespace dwarf
 } // end of namespace debug

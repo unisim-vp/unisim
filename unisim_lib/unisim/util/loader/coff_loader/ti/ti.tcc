@@ -622,30 +622,30 @@ const SectionTable<MEMORY_ADDR> *File<MEMORY_ADDR>::GetSectionTable() const
 }
 
 template <class MEMORY_ADDR>
-void File<MEMORY_ADDR>::DumpFileHeader(ostream& os) const
+void File<MEMORY_ADDR>::DumpFileHeader(std::ostream& os) const
 {
 	os << " --- File Header ---";
-	os << endl << "Magic number: 0x" << hex << magic << dec << " / TI COFF v" << ti_coff_version << " (" << (header_endianness == E_LITTLE_ENDIAN ? "little-endian" : "big-endian") << " headers)";
-	os << endl << "Number of sections: " << num_sections;
-	os << endl << "Time and date: " << time_date;
-	os << endl << "Symbol table file pointer: " << symbol_table_file_ptr;
-	os << endl << "Number of symbols: " << num_symbols;
-	os << endl << "Flags: 0x" << hex << flags << dec;
-	if(ti_coff_version > 0) os << endl << "Target id: " << target_id;
-	os << endl;
+	os << std::endl << "Magic number: 0x" << std::hex << magic << std::dec << " / TI COFF v" << ti_coff_version << " (" << (header_endianness == E_LITTLE_ENDIAN ? "little-endian" : "big-endian") << " headers)";
+	os << std::endl << "Number of sections: " << num_sections;
+	os << std::endl << "Time and date: " << time_date;
+	os << std::endl << "Symbol table file pointer: " << symbol_table_file_ptr;
+	os << std::endl << "Number of symbols: " << num_symbols;
+	os << std::endl << "Flags: 0x" << std::hex << flags << std::dec;
+	if(ti_coff_version > 0) os << std::endl << "Target id: " << target_id;
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR>
-void File<MEMORY_ADDR>::DumpAoutHeader(ostream& os) const
+void File<MEMORY_ADDR>::DumpAoutHeader(std::ostream& os) const
 {
 	os << " --- Optional Header ---";
-	os << endl << "Entry point: 0x" << hex << entry_point << dec;
-	os << endl << "Text base: 0x" << hex << text_base << dec;
-	os << endl << "Data base: 0x" << hex << data_base << dec;
-	os << endl << "Text size: " << text_size << " 32-bit words";
-	os << endl << "Data size: " << data_size << " 32-bit words";
-	os << endl << "Bss size: " << bss_size << " 32-bit words";
-	os << endl;
+	os << std::endl << "Entry point: 0x" << std::hex << entry_point << std::dec;
+	os << std::endl << "Text base: 0x" << std::hex << text_base << std::dec;
+	os << std::endl << "Data base: 0x" << std::hex << data_base << std::dec;
+	os << std::endl << "Text size: " << text_size << " 32-bit words";
+	os << std::endl << "Data size: " << data_size << " 32-bit words";
+	os << std::endl << "Bss size: " << bss_size << " 32-bit words";
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR>
@@ -741,12 +741,12 @@ typename unisim::util::loader::coff_loader::Section<MEMORY_ADDR>::Type Section<M
 {
 	if((flags & (STYP_DATA | STYP_TEXT)))
 	{
-		if((flags & STYP_COPY) && name == string(".cinit"))
+		if((flags & STYP_COPY) && name == std::string(".cinit"))
 			return unisim::util::loader::coff_loader::Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT;
 		else
 			return unisim::util::loader::coff_loader::Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA;
 	}
-	if((flags & STYP_BSS) && name == string(".stack"))
+	if((flags & STYP_BSS) && name == std::string(".stack"))
 	{
 		return unisim::util::loader::coff_loader::Section<MEMORY_ADDR>::ST_STACK;
 	}
@@ -754,27 +754,27 @@ typename unisim::util::loader::coff_loader::Section<MEMORY_ADDR>::Type Section<M
 }
 
 template <class MEMORY_ADDR>
-void Section<MEMORY_ADDR>::DumpHeader(ostream& os) const
+void Section<MEMORY_ADDR>::DumpHeader(std::ostream& os) const
 {
 	os << " --- Section Header  (TI COFF v" << ti_coff_version << ") ---";
-	os << endl << "Section name: " << name;
-	os << endl << "Physical address: 0x" << hex << paddr << dec;
-	os << endl << "Virtual address: 0x" << hex << vaddr << dec;
-	os << endl << "Section size: " << size << " 32-bit words";
-	os << endl << "File pointer to content: " << content_file_ptr;
-	os << endl << "File pointer to relocation: " << reloc_file_ptr;
-	os << endl << "File pointer to line number: " << lineno_file_ptr;
-	os << endl << "Number of relocation entries: " << num_reloc_entries;
-	os << endl << "Number of line number entries: " << num_lineno_entries;
-	os << endl << "Flags: 0x" << hex << flags << dec;
-	os << endl << "Memory page number: " << page;
-	os << endl;
+	os << std::endl << "Section name: " << name;
+	os << std::endl << "Physical address: 0x" << std::hex << paddr << std::dec;
+	os << std::endl << "Virtual address: 0x" << std::hex << vaddr << std::dec;
+	os << std::endl << "Section size: " << size << " 32-bit words";
+	os << std::endl << "File pointer to content: " << content_file_ptr;
+	os << std::endl << "File pointer to relocation: " << reloc_file_ptr;
+	os << std::endl << "File pointer to line number: " << lineno_file_ptr;
+	os << std::endl << "Number of relocation entries: " << num_reloc_entries;
+	os << std::endl << "Number of line number entries: " << num_lineno_entries;
+	os << std::endl << "Flags: 0x" << std::hex << flags << std::dec;
+	os << std::endl << "Memory page number: " << page;
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR>
 bool Section<MEMORY_ADDR>::LoadSpecificContent(unisim::service::interfaces::Memory<MEMORY_ADDR> *output, const void *content, uint32_t size) const
 {
-	if((flags & STYP_COPY) && name == string(".cinit"))
+	if((flags & STYP_COPY) && name == std::string(".cinit"))
 	{
 		uint32_t *record = (uint32_t *) content;
 		uint32_t nrecords = size;

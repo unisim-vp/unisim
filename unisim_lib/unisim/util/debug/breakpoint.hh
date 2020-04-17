@@ -43,32 +43,30 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class ADDRESS> class Breakpoint;
+template <typename ADDRESS> class Breakpoint;
 
-template <class ADDRESS>
-std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp);
-
-template <class ADDRESS>
+template <typename ADDRESS>
 class Breakpoint : public Event<ADDRESS>
 {
 public:
-	Breakpoint(ADDRESS addr)
-		: Event<ADDRESS>(Event<ADDRESS>::EV_BREAKPOINT)
-	{
-		this->addr = addr;
-	}
-
-	inline ADDRESS GetAddress() const { return addr; }
+	Breakpoint(ADDRESS _addr) : Event<ADDRESS>(Event<ADDRESS>::EV_BREAKPOINT), addr(_addr), ref(), id(-1) {}
+	Breakpoint(ADDRESS _addr, Event<ADDRESS> *_ref) : Event<ADDRESS>(Event<ADDRESS>::EV_BREAKPOINT) , addr(_addr), ref(_ref), id(-1) {}
 	
-	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Breakpoint<ADDRESS>& brkp);
+	inline int GetId() const { return id; }
+	inline ADDRESS GetAddress() const { return addr; }
+	inline Event<ADDRESS> *GetReference() const { return ref; }
+	inline void SetId(unsigned int _id) { id = _id; }
+	
 private:
 	ADDRESS addr;
+	Event<ADDRESS> *ref;
+	int id;
 };
 
-template <class ADDRESS>
+template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp)
 {
-	os << "breakpoint at 0x" << std::hex << brkp.addr << std::dec;
+	os << "breakpoint #" << brkp.GetId() << " at 0x" << std::hex << brkp.GetAddress() << std::dec << " for processor #" << brkp.GetProcessorNumber() << " and front-end #" << brkp.GetFrontEndNumber();
 	
 	return os;
 }

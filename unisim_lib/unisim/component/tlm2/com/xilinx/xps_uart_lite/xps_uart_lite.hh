@@ -35,8 +35,9 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
 #include <unisim/component/tlm2/interrupt/types.hh>
 #include <stack>
@@ -49,12 +50,12 @@ namespace com {
 namespace xilinx {
 namespace xps_uart_lite {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::tlm2::Schedule;
 using unisim::component::tlm2::interrupt::InterruptPayload;
@@ -62,7 +63,7 @@ using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 
 template <class CONFIG>
 class XPS_UARTLite
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::com::xilinx::xps_uart_lite::XPS_UARTLite<CONFIG>
 	, public tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
 	, public tlm::tlm_bw_transport_if<InterruptProtocolTypes>
@@ -79,7 +80,7 @@ public:
 	// Interrupt
 	interrupt_master_socket interrupt_master_sock;
 
-	XPS_UARTLite(const sc_module_name& name, Object *parent = 0);
+	XPS_UARTLite(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~XPS_UARTLite();
 	
 	virtual bool BeginSetup();
@@ -98,7 +99,7 @@ public:
 	
 protected:
 private:
-	void AlignToClock(sc_time& t);
+	void AlignToClock(sc_core::sc_time& t);
 	
 	class Event
 	{
@@ -114,31 +115,31 @@ private:
 		{
 		public:
 			Key()
-				: time_stamp(SC_ZERO_TIME)
+				: time_stamp(sc_core::SC_ZERO_TIME)
 				, type(EV_TELNET_IO)
 			{
 			}
 			
-			Key(const sc_time& _time_stamp, Type _type)
+			Key(const sc_core::sc_time& _time_stamp, Type _type)
 				: time_stamp(_time_stamp)
 				, type(_type)
 			{
 			}
 			
-			void Initialize(const sc_time& _time_stamp, Type _type)
+			void Initialize(const sc_core::sc_time& _time_stamp, Type _type)
 			{
 				time_stamp = _time_stamp;
 				type = _type;
 			}
 			
-			void SetTimeStamp(const sc_time& _time_stamp)
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 			{
 				time_stamp = _time_stamp;
 			}
 			
 			void Clear()
 			{
-				time_stamp = SC_ZERO_TIME;
+				time_stamp = sc_core::SC_ZERO_TIME;
 				type = EV_CPU;
 			}
 			
@@ -147,7 +148,7 @@ private:
 				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type)));
 			}
 			
-			const sc_time& GetTimeStamp() const
+			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
@@ -157,7 +158,7 @@ private:
 				return type;
 			}
 		private:
-			sc_time time_stamp;
+			sc_core::sc_time time_stamp;
 			typename Event::Type type;
 		};
 
@@ -173,14 +174,14 @@ private:
 			Clear();
 		}
 		
-		void InitializeTelnetIOEvent(const sc_time& time_stamp)
+		void InitializeTelnetIOEvent(const sc_core::sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_TELNET_IO);
 			cpu_payload = 0;
 			ev_completed = 0;
 		}
 
-		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_time& time_stamp, sc_event *_ev_completed = 0)
+		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_core::sc_time& time_stamp, sc_core::sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
 			key.Initialize(time_stamp, EV_CPU);
@@ -201,12 +202,12 @@ private:
 			return key.GetType();
 		}
 		
-		void SetTimeStamp(const sc_time& time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& time_stamp)
 		{
 			key.SetTimeStamp(time_stamp);
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
@@ -216,7 +217,7 @@ private:
 			return cpu_payload;
 		}
 		
-		sc_event *GetCompletionEvent() const
+		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return ev_completed;
 		}
@@ -228,23 +229,23 @@ private:
 	private:
 		Key key;
 		tlm::tlm_generic_payload *cpu_payload;
-		sc_event *ev_completed;
+		sc_core::sc_event *ev_completed;
 	};
 
 
-	sc_time process_local_time_offset;
+	sc_core::sc_time process_local_time_offset;
 	/** Cycle time */
-	sc_time cycle_time;
-	sc_time telnet_refresh_time;
+	sc_core::sc_time cycle_time;
+	sc_core::sc_time telnet_refresh_time;
 	
-	sc_time time_stamp;
-	sc_time ready_time_stamp;
+	sc_core::sc_time time_stamp;
+	sc_core::sc_time ready_time_stamp;
 
 	bool interrupt_output;
 	
 	/** The parameter for the cycle time */
-	Parameter<sc_time> param_cycle_time;
-	Parameter<sc_time> param_telnet_refresh_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_telnet_refresh_time;
 
 	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 	Schedule<Event> schedule;

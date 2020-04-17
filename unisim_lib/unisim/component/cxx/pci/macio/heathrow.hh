@@ -35,8 +35,9 @@
 #ifndef __UNISIM_COMPONENT_CXX_PCI_MACIO_HEATHROW_HH__
 #define __UNISIM_COMPONENT_CXX_PCI_MACIO_HEATHROW_HH__
 
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/device/register.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 namespace unisim {
@@ -45,15 +46,15 @@ namespace cxx {
 namespace pci {
 namespace macio {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 using unisim::util::device::Register;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
 
 template <class ADDRESS>
 class Heathrow : virtual public Object

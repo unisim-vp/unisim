@@ -39,7 +39,8 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
+#include <set>
+#include <vector>
 
 namespace unisim {
 namespace util {
@@ -75,7 +76,7 @@ public:
 	unsigned int GetBitOffset() const;
 private:
 	MEMORY_ADDR dw_addr;
-	unsigned int dw_bit_offset;
+	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 };
 
 template <class MEMORY_ADDR>
@@ -89,7 +90,7 @@ public:
 	unsigned int GetBitOffset() const;
 private:
 	unsigned int dw_reg_num;
-	unsigned int dw_bit_offset;
+	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 };
 
 const unsigned int DW_LOC_NULL                  = 0;
@@ -100,12 +101,16 @@ const unsigned int DW_LOC_IMPLICIT_SIMPLE_VALUE = 4;
 const unsigned int DW_LOC_IMPLICIT_BLOCK_VALUE  = 5;
 
 template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc);
+
+template <class MEMORY_ADDR>
 class DWARF_Location
 {
 public:
 	DWARF_Location();
 	~DWARF_Location();
 	void Clear();
+	void ClearRanges();
 	unsigned int GetType() const;
 	void Add(DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece);
 	const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& GetLocationPieces() const;
@@ -119,30 +124,37 @@ public:
 	const DWARF_Block<MEMORY_ADDR> *GetImplicitBlockValue() const;
 	void SetByteSize(uint64_t byte_size);
 	void SetBitOffset(int64_t bit_offset);
+	void IncBitOffset(int64_t bit_offset);
 	void SetBitSize(uint64_t bit_size);
 	void SetEncoding(uint8_t encoding);
+	void SetRanges(const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges);
 	uint64_t GetByteSize() const;
 	int64_t GetBitOffset() const;
 	uint64_t GetBitSize() const;
 	uint8_t GetEncoding() const;
+	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges() const;
+	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges();
+	
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc);
 private:
 	unsigned int dw_loc_type;
 	unsigned int dw_reg_num;
 	MEMORY_ADDR dw_addr;
 	MEMORY_ADDR dw_implicit_simple_value;
 	DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value;
-	uint64_t dw_byte_size;
-	int64_t dw_bit_offset;
-	uint64_t dw_bit_size;
+	uint64_t dw_byte_size; // byte size (padding included)
+	int64_t dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
+	uint64_t dw_bit_size; // actual bit size (padding excluded)
 	uint8_t dw_encoding;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
+	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
 };
 
 template <class MEMORY_ADDR>
 class DWARF_ExpressionVM
 {
 public:
-	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num);
 	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_ExpressionVM();
 	
@@ -154,6 +166,7 @@ public:
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	unsigned int prc_num;
 	const DWARF_RegisterNumberMapping *reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	DWARF_Frame<MEMORY_ADDR> *dw_frame;
@@ -168,8 +181,10 @@ private:
 	bool has_object_addr;
 	MEMORY_ADDR pc;
 	bool has_pc;
-	bool debug;
-	unisim::kernel::logger::Logger& logger;
+	const bool& debug;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 
