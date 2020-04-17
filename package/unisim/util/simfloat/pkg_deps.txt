@@ -3,6 +3,7 @@ libc/fenv
 libc/math
 libc/string
 std/cassert
+std/climits
 std/cmath
 std/cstdio
 std/iosfwd
