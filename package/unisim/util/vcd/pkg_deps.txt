@@ -1,6 +1,8 @@
 libc/stdint
+std/cassert
 std/climits
 std/deque
+std/fstream
 std/iomanip
 std/iostream
 std/map

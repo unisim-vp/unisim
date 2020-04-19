@@ -36,12 +36,14 @@
 #define __UNISIM_UTIL_VCD_VCD_HH__
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <string>
 #include <map>
 #include <vector>
 #include <deque>
 #include <climits>
+#include <cassert>
 #include <stdint.h>
 
 namespace unisim {
@@ -259,6 +261,7 @@ private:
 	Samples samples;
 	typedef std::vector<Sample<T> *> FreeList;
 	FreeList free_list;
+	Sample<T> *last_sample;
 
 	template <OutputProcessor::CommitPolicy COMMIT_POLICY> void Update(uint64_t target);
 };
@@ -337,14 +340,18 @@ public:
 	static void SetWarningLog(std::ostream& warn_log);
 	static void SetErrorLog(std::ostream& err_log);
 	
-	Writer(std::ostream& stream);
+	Writer(std::ostream& stream, bool interactive = false);
+	Writer(std::ofstream& fstream, std::streamsize io_buffer_size = 8192);
 	~Writer();
 	void Trace(const std::string& name);
 private:
 	friend class OutputBase;
 	friend class Variable;
+	friend class OutputProcessor;
 	
-	std::ostream& stream;
+	std::ostream *stream;
+	char *io_buffer;
+	bool interactive;
 	bool initialized;
 	std::string next_variable_identifier;
 	Module top;
@@ -357,6 +364,7 @@ private:
 	Module& GetModule(Module& module, const std::string& leaf_hierarchical_name);
 	Module& GetVariableOwner(const std::string& variable_name);
 	inline void Add(Variable& variable, SampleBase& sample);
+	inline void EndOfCommit();
 	
 	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanVariables(SCANNER& scanner, ARG_TYPE& arg) const;
 	
@@ -449,6 +457,7 @@ Output<T>::Output(const std::string& _name, const std::string& _type)
 	, registered(false)
 	, samples()
 	, free_list()
+	, last_sample(0)
 {
 	if((registered = OutputProcessor::Instance().Register(*this)))
 	{
@@ -470,6 +479,7 @@ Output<T>::~Output()
 		Sample<T> *sample = *it;
 		delete sample;
 	}
+	if(last_sample) delete last_sample;
 }
 
 template <typename T>
@@ -487,18 +497,25 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 		return;
 	}
 	
-	if(samples.size())
+	if(last_sample)
 	{
-		Sample<T> *last_sample = samples.back();
 		if(value == last_sample->GetValue())
 		{
 			curr_time_stamp = time_stamp;
 			return;
 		}
-		if(time_stamp == curr_time_stamp)
+		if(samples.size())
 		{
-			last_sample->SetValue(value);
-			return;
+			if(time_stamp == curr_time_stamp)
+			{
+				assert(last_sample->GetTimeStamp() == curr_time_stamp);
+				last_sample->SetValue(value);
+				return;
+			}
+		}
+		else
+		{
+			free_list.push_back(last_sample);
 		}
 	}
 	
@@ -517,13 +534,17 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 
 	sample->Initialize(curr_time_stamp, value);
 	samples.push_back(sample);
+	last_sample = sample;
 	RequestUpdate();
 }
 
 template <typename T>
 void Output<T>::Free(Sample<T> *sample)
 {
-	free_list.push_back(sample);
+	if(sample != last_sample)
+	{
+		free_list.push_back(sample);
+	}
 }
 
 template <typename T>
@@ -563,6 +584,17 @@ void Output<T>::Update(uint64_t target)
 		{
 			RequestUpdate();
 		}
+	}
+	switch(COMMIT_POLICY)
+	{
+		case OutputProcessor::COMMIT_BEFORE:
+			assert(target != 0);
+			if(target > curr_time_stamp) curr_time_stamp = target;
+			break;
+			
+		case OutputProcessor::COMMIT_UNTIL:
+			if(target >= curr_time_stamp) curr_time_stamp = target + 1;
+			break;
 	}
 }
 
@@ -701,11 +733,19 @@ inline void Writer::Add(Variable& variable, SampleBase& sample)
 	if(new_time_stamp)
 	{
 		curr_time_stamp = time_stamp;
-		stream << "#" << curr_time_stamp << std::endl;
+		(*stream) << "#" << curr_time_stamp << '\n';
 	}
 	
-	sample.Print(stream, variable.GetIdentifier());
-	stream << std::endl;
+	sample.Print(*stream, variable.GetIdentifier());
+	(*stream) << '\n';
+}
+
+inline void Writer::EndOfCommit()
+{
+	if(interactive)
+	{
+		(*stream).flush();
+	}
 }
 
 template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE>
@@ -795,6 +835,7 @@ void OutputProcessor::Commit(uint64_t target)
 		ErrLog() << "When committing output timed stamp values, the time stamp shall increase monotonically" << std::endl;
 		return;
 	}
+	
 	timescale_fixed = true;
 	
 	Outputs& curr_updatable_outputs = updatable_outputs[toggle];
@@ -806,7 +847,7 @@ void OutputProcessor::Commit(uint64_t target)
 		output->update_requested = false;
 		switch(COMMIT_POLICY)
 		{
-			case COMMIT_BEFORE:	output->UpdateBefore(target); break;
+			case COMMIT_BEFORE:	if(!target) { output->UpdateBefore(target); } break;
 			case COMMIT_UNTIL : output->UpdateUntil(target);  break;
 		}
 	}
@@ -837,6 +878,11 @@ void OutputProcessor::Commit(uint64_t target)
 			      (((COMMIT_POLICY == COMMIT_BEFORE) && (((sample_time_stamp = (*sample_it).first) < target) || !target)) ||
 			       ((COMMIT_POLICY == COMMIT_UNTIL) && ((sample_time_stamp = (*sample_it).first) <= target))));
 		}
+	}
+	for(Writers::iterator writer_it = writers.begin(); writer_it != writers.end(); ++writer_it)
+	{
+		Writer *writer = *writer_it;
+		writer->EndOfCommit();
 	}
 	switch(COMMIT_POLICY)
 	{
