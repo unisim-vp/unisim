@@ -538,8 +538,11 @@ struct Processor
   template <typename OP>
   void UndefinedInstruction( OP* op ) { not_implemented(); }
 
-  bool concretize( Expr const& cexp )
+  bool concretize( Expr cexp )
   {
+    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
+      return cnode->Get( bool() );
+
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );
     return predicate;
@@ -551,11 +554,7 @@ struct Processor
     if (not cond.expr.good())
       throw std::logic_error( "Not a valid condition" );
 
-    Expr cexp( BOOL(cond).expr );
-    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
-
-    return concretize( cexp );
+    return concretize( BOOL(cond).expr );
   }
     
   void FPTrap( unsigned exc )

@@ -848,8 +848,11 @@ public:
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================
 
-  bool concretize( Expr const& cexp )
+  bool concretize( Expr cexp )
   {
+    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
+      return cnode->Get( bool() );
+
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );
     return predicate;
@@ -861,11 +864,7 @@ public:
     if (not cond.expr.good())
       throw std::logic_error( "Not a valid condition" );
 
-    Expr cexp( bit_t(cond).expr );
-    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
-
-    return concretize( cexp );
+    return concretize( bit_t(cond).expr );
   }
 
   static Operation* Decode(uint64_t address, uint8_t const* bytes);
