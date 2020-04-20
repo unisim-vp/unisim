@@ -54,6 +54,7 @@ OutputBase::OutputBase(const std::string& _name, const std::string& _type, unsig
 	: name(_name)
 	, type(_type)
 	, size(_size)
+	, registered(false)
 	, update_requested(false)
 	, variables()
 {
@@ -62,6 +63,20 @@ OutputBase::OutputBase(const std::string& _name, const std::string& _type, unsig
 OutputBase::~OutputBase()
 {
 }
+
+void OutputBase::Register()
+{
+	if((registered = OutputProcessor::Instance().Register(*this)))
+	{
+		AttachVariables();
+	}
+}
+
+void OutputBase::Unregister()
+{
+	OutputProcessor::Instance().Unregister(*this);
+}
+
 bool OutputBase::VarAttachScanner::VisitVariable(Variable& variable, OutputBase& output)
 {
 	if(variable.GetName() == output.GetName())
@@ -81,8 +96,11 @@ bool OutputBase::WritersScanner::VisitWriter(Writer& writer, OutputBase& output)
 
 void OutputBase::AttachVariables()
 {
-	WritersScanner writers_scanner;
-	OutputProcessor::Instance().ScanWriters<WritersScanner, OutputBase, bool>(writers_scanner, *this);
+	if(registered)
+	{
+		WritersScanner writers_scanner;
+		OutputProcessor::Instance().ScanWriters<WritersScanner, OutputBase, bool>(writers_scanner, *this);
+	}
 }
 
 void OutputBase::Add(Variable& _variable)
@@ -327,26 +345,29 @@ void Writer::Initialize()
 
 const std::string& Writer::NextVariableIdentifier()
 {
+	const char first = '!';
+	const char last = '~';
 	std::size_t len = next_variable_identifier.length();
 	if(len)
 	{
-		std::size_t back_pos = len - 1;
-		char c = next_variable_identifier[back_pos];
-		if(c < '~')
+		std::size_t pos = len - 1;
+		do
 		{
-			next_variable_identifier[back_pos]++;
+			char c = next_variable_identifier[pos];
+			bool extend = (c == last);
+			next_variable_identifier[pos] = extend ? first : (c + 1);
+			if(!extend) return next_variable_identifier;
+			if(!pos)
+			{
+				next_variable_identifier.insert(0, 1, first);
+				return next_variable_identifier;
+			}
+			--pos;
 		}
-		else
-		{
-			next_variable_identifier.push_back('!');
-		}
+		while(1);
 	}
-	else
-	{
-		next_variable_identifier = '!';
-	}
-	
-	return next_variable_identifier;
+
+	return next_variable_identifier = first;
 }
 
 Module& Writer::GetModule(Module& module, const std::string& leaf_hierarchical_name)
