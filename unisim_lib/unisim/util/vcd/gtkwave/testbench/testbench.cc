@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
 	srand(1);
 	uint64_t t;
-	for(t = 0; t < 1000000; t++)
+	for(t = 0; t < 100000000; t++)
 	{
 		int r = rand() - ((RAND_MAX / 2) + 1);
 		foo.Push(t, r >= 0);

@@ -534,7 +534,7 @@ bool Stream::Start()
 		started = true;
 	}
 
-	if(verbose)
+	if(verbose || debug)
 	{
 		Log() << "GTKWave has " << (alive ? "started" : "not started") << std::endl;
 	}
@@ -551,7 +551,7 @@ bool Stream::Stop()
 		// kill GTKWave if it was alive (last time we checked) and kill is needed
 		bool exited = KillPeer(1000); // 1 second timeout for exiting
 		
-		if(verbose)
+		if(verbose || debug)
 		{
 			if(exited)
 			{
@@ -596,41 +596,47 @@ bool Stream::Send(const std::string& s)
 {
 	if(s.empty() || sink) return true; // string is empty or we're acting just like a sink
 	
-	unsigned int try_count = 0;
+	unsigned int timeout = 10; // when pushing a string failed, initial timeout before retrying is 10 ms
+	
 	while(!Killed())
 	{
-		// pop as more as more as possible consumed string
+		// pop as more as more as possible consumed strings
 		while(!Killed() && ring_buffer.PopString());
 
 		// try pushing a string
 		if(ring_buffer.PushString(s))
 		{
-			// string was pushed
+			// string was pushed, return a success to the caller
 			return true;
 		}
 		
-		if(try_count++ >= 10)
+		// check that GTKWave process is still alive, if not return and signal failure to the caller
+		if(!PingPeer())
 		{
-			// check that GTKWave process is still alive, if not return and signal failure to caller
-			if(!PingPeer())
+			if(verbose || debug)
 			{
-				if(verbose)
-				{
-					Log() << "GTKWave has exited" << std::endl;
-				}
-				alive = false;
-				break;
+				Log() << "GTKWave has exited" << std::endl;
 			}
+			sink = true;
+			alive = false;
+			return false;
 		}
 		
-		// let give time to GTKWave for consuming pushed strings (10 ms)
-		WaitTime(10);
+		if(debug)
+		{
+			Log() << "GTKWave is alive but unresponsive, waiting " << timeout << " ms before retrying" << std::endl;
+		}
+		
+		WaitTime(timeout);
+		
+		// timeout between retries starts at 10 ms and increases progressively to 15, 22, 33, 49, 73, 109, 163, 244 ms, up to 366 ms
+		if(timeout < 366) timeout = (timeout * 3) / 2;
 	}
-
-	// we've been killed or GTKWave has exited or GTKWave is unresponsive
+	
+	// we've been killed
 	sink = true;
 	
-	// string was not sent
+	// string was not sent, return a failure to the caller
 	return false;
 }
 
