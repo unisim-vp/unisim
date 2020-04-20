@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_VCD_VCD_HH__
 #define __UNISIM_UTIL_VCD_VCD_HH__
 
+#include <unisim/util/likely/likely.hh>
+
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -156,14 +158,18 @@ protected:
 	virtual void UpdateBefore(uint64_t before) = 0;
 	virtual void UpdateUntil(uint64_t until) = 0;
 protected:
+	void Register();
+	void Unregister();
 	void AttachVariables();
 	inline void RequestUpdate();
+	inline bool HasAttachedVariables() const;
 private:
 	friend class OutputProcessor;
 	
 	std::string name;
 	std::string type;
 	unsigned int size;
+	bool registered;
 	bool update_requested;
 	typedef std::vector<Variable *> Variables;
 	Variables variables;
@@ -256,7 +262,6 @@ protected:
 	virtual void UpdateUntil(uint64_t until);
 private:
 	uint64_t curr_time_stamp;
-	bool registered;
 	typedef std::deque<Sample<T> *> Samples;
 	Samples samples;
 	typedef std::vector<Sample<T> *> FreeList;
@@ -448,27 +453,28 @@ inline void OutputBase::RequestUpdate()
 	}
 }
 
+inline bool OutputBase::HasAttachedVariables() const
+{
+	return variables.size() != 0;
+}
+
 /////////////////////////////////// Output<> //////////////////////////////////
 
 template <typename T>
 Output<T>::Output(const std::string& _name, const std::string& _type)
 	: OutputBase(_name, _type.length() ? _type : std::string(TypeTrait<T>::GetDefaultType()), TypeTrait<T>::GetSize())
 	, curr_time_stamp(0)
-	, registered(false)
 	, samples()
 	, free_list()
 	, last_sample(0)
 {
-	if((registered = OutputProcessor::Instance().Register(*this)))
-	{
-		this->AttachVariables();
-	}
+	this->Register();
 }
 
 template <typename T>
 Output<T>::~Output()
 {
-	OutputProcessor::Instance().Unregister(*this);
+	this->Unregister();
 	for(typename Samples::iterator it = samples.begin(); it != samples.end(); ++it)
 	{
 		Sample<T> *sample = *it;
@@ -485,28 +491,28 @@ Output<T>::~Output()
 template <typename T>
 void Output<T>::Push(uint64_t time_stamp, const T& value)
 {
-	if(time_stamp < curr_time_stamp)
+	if(unlikely(time_stamp < curr_time_stamp))
 	{
 		OutputProcessor::Instance().ErrLog() << "When pushing time stamped values through Output \"" << this->GetName() << "\", the time stamp shall increase monotonically" << std::endl;
 		return;
 	}
 
-	if(!registered)
+	if(likely(!HasAttachedVariables()))
 	{
 		curr_time_stamp = time_stamp;
 		return;
 	}
 	
-	if(last_sample)
+	if(likely(last_sample))
 	{
-		if(value == last_sample->GetValue())
+		if(unlikely(value == last_sample->GetValue()))
 		{
 			curr_time_stamp = time_stamp;
 			return;
 		}
-		if(samples.size())
+		if(likely(samples.size()))
 		{
-			if(time_stamp == curr_time_stamp)
+			if(unlikely(time_stamp == curr_time_stamp))
 			{
 				assert(last_sample->GetTimeStamp() == curr_time_stamp);
 				last_sample->SetValue(value);
@@ -522,7 +528,7 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 	curr_time_stamp = time_stamp;
 	
 	Sample<T> *sample;
-	if(free_list.size())
+	if(likely(free_list.size()))
 	{
 		sample = free_list.back();
 		free_list.pop_back();
@@ -563,7 +569,7 @@ template <typename T>
 template <OutputProcessor::CommitPolicy COMMIT_POLICY>
 void Output<T>::Update(uint64_t target)
 {
-	if(samples.size())
+	if(likely(samples.size()))
 	{
 		Sample<T> *sample = samples.front();
 		if(((COMMIT_POLICY == OutputProcessor::COMMIT_BEFORE) && ((sample->GetTimeStamp() <  target) || !target)) ||
@@ -580,7 +586,7 @@ void Output<T>::Update(uint64_t target)
 			       ((COMMIT_POLICY == OutputProcessor::COMMIT_UNTIL ) && (((sample = samples.front())->GetTimeStamp() <= target)))));
 		}
 		
-		if(samples.size())
+		if(unlikely(samples.size()))
 		{
 			RequestUpdate();
 		}
@@ -829,8 +835,8 @@ inline bool OutputProcessor::SampleDispatcher::VisitVariable(Variable& variable,
 template <OutputProcessor::CommitPolicy COMMIT_POLICY>
 void OutputProcessor::Commit(uint64_t target)
 {
-	if(((COMMIT_POLICY == COMMIT_BEFORE) && (target < next_time_stamp)) ||
-	   ((COMMIT_POLICY == COMMIT_UNTIL ) && (target < curr_time_stamp)))
+	if(unlikely(((COMMIT_POLICY == COMMIT_BEFORE) && (target < next_time_stamp)) ||
+	            ((COMMIT_POLICY == COMMIT_UNTIL ) && (target < curr_time_stamp))))
 	{
 		ErrLog() << "When committing output timed stamp values, the time stamp shall increase monotonically" << std::endl;
 		return;
@@ -839,28 +845,32 @@ void OutputProcessor::Commit(uint64_t target)
 	timescale_fixed = true;
 	
 	Outputs& curr_updatable_outputs = updatable_outputs[toggle];
-	toggle ^= 1;
 	
-	for(Outputs::iterator output_it = curr_updatable_outputs.begin(); output_it != curr_updatable_outputs.end(); ++output_it)
+	if(unlikely(curr_updatable_outputs.size()))
 	{
-		OutputBase *output = *output_it;
-		output->update_requested = false;
-		switch(COMMIT_POLICY)
-		{
-			case COMMIT_BEFORE:	if(!target) { output->UpdateBefore(target); } break;
-			case COMMIT_UNTIL : output->UpdateUntil(target);  break;
-		}
-	}
-	curr_updatable_outputs.clear();
-	
-	Samples::iterator sample_it = samples.begin();
+		toggle ^= 1;
 		
-	if(sample_it != samples.end())
+		for(Outputs::iterator output_it = curr_updatable_outputs.begin(); output_it != curr_updatable_outputs.end(); ++output_it)
+		{
+			OutputBase *output = *output_it;
+			output->update_requested = false;
+			switch(COMMIT_POLICY)
+			{
+				case COMMIT_BEFORE:	if(!target) { output->UpdateBefore(target); } break;
+				case COMMIT_UNTIL : output->UpdateUntil(target);  break;
+			}
+		}
+		curr_updatable_outputs.clear();
+	}
+	
+	if(unlikely(samples.size()))
 	{
+		Samples::iterator sample_it = samples.begin();
+			
 		uint64_t sample_time_stamp = (*sample_it).first;
 		
 		if(((COMMIT_POLICY == COMMIT_BEFORE) && ((sample_time_stamp < target) || !target)) ||
-		   ((COMMIT_POLICY == COMMIT_UNTIL ) &&  (sample_time_stamp <= target)))
+		((COMMIT_POLICY == COMMIT_UNTIL ) &&  (sample_time_stamp <= target)))
 		{
 			do
 			{
@@ -876,13 +886,13 @@ void OutputProcessor::Commit(uint64_t target)
 			}
 			while((sample_it != samples.end()) &&
 			      (((COMMIT_POLICY == COMMIT_BEFORE) && (((sample_time_stamp = (*sample_it).first) < target) || !target)) ||
-			       ((COMMIT_POLICY == COMMIT_UNTIL) && ((sample_time_stamp = (*sample_it).first) <= target))));
+			      ((COMMIT_POLICY == COMMIT_UNTIL) && ((sample_time_stamp = (*sample_it).first) <= target))));
 		}
-	}
-	for(Writers::iterator writer_it = writers.begin(); writer_it != writers.end(); ++writer_it)
-	{
-		Writer *writer = *writer_it;
-		writer->EndOfCommit();
+		for(Writers::iterator writer_it = writers.begin(); writer_it != writers.end(); ++writer_it)
+		{
+			Writer *writer = *writer_it;
+			writer->EndOfCommit();
+		}
 	}
 	switch(COMMIT_POLICY)
 	{

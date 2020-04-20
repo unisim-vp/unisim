@@ -548,6 +548,11 @@ bool Stream::Stop()
 	
 	if(alive && kill_gtkwave)
 	{
+		if(verbose || debug)
+		{
+			Log() << "Killing GTKWave" << std::endl;
+		}
+
 		// kill GTKWave if it was alive (last time we checked) and kill is needed
 		bool exited = KillPeer(1000); // 1 second timeout for exiting
 		
