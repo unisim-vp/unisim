@@ -299,6 +299,11 @@ Writer::Writer(std::ofstream& _stream, std::streamsize io_buffer_size)
 
 Writer::~Writer()
 {
+	for(StreamPool::iterator it = stream_pool.begin(); it != stream_pool.end(); ++it)
+	{
+		std::ostringstream *osstr = *it;
+		delete osstr;
+	}
 	OutputProcessor::Instance().Unregister(*this);
 	if(io_buffer) delete[] io_buffer;
 }
@@ -332,7 +337,7 @@ void Writer::Trace(const std::string& name)
 	}
 	
 	variables.push_back(variable);
-	stream_pool.resize(variables.size());
+	stream_pool.push_back(new std::ostringstream());
 }
 
 bool Writer::Printer::VisitChild(Module& child, std::ostream& stream)
