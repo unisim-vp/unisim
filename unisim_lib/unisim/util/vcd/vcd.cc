@@ -42,6 +42,36 @@ namespace vcd {
 //                                 Definitions                               //
 ///////////////////////////////////////////////////////////////////////////////
 
+void SetOption(Option opt, bool flag)
+{
+	OutputProcessor::Instance().SetOption(opt, flag);
+}
+
+void GetOption(Option opt, bool& flag)
+{
+	OutputProcessor::Instance().GetOption(opt, flag);
+}
+
+void SetTimeScale(const std::string& timescale)
+{
+	OutputProcessor::Instance().SetTimeScale(timescale);
+}
+
+void SetLog(std::ostream& log)
+{
+	OutputProcessor::Instance().SetLog(log);
+}
+
+void SetWarningLog(std::ostream& warn_log)
+{
+	OutputProcessor::Instance().SetWarningLog(warn_log);
+}
+
+void SetErrorLog(std::ostream& err_log)
+{
+	OutputProcessor::Instance().SetErrorLog(err_log);
+}
+
 /////////////////////////////////// SampleBase ////////////////////////////////
 
 SampleBase::~SampleBase()
@@ -51,11 +81,13 @@ SampleBase::~SampleBase()
 ///////////////////////////////// OutputBase //////////////////////////////////
 
 OutputBase::OutputBase(const std::string& _name, const std::string& _type, unsigned int _size)
-	: name(_name)
+	: push_time_stamp(TimeStamp())
+	, name(_name)
 	, type(_type)
 	, size(_size)
+	, id(0)
 	, registered(false)
-	, update_requested(false)
+	, pull_requested(false)
 	, variables()
 {
 }
@@ -74,6 +106,7 @@ void OutputBase::Register()
 
 void OutputBase::Unregister()
 {
+	DetachVariables();
 	OutputProcessor::Instance().Unregister(*this);
 }
 
@@ -103,6 +136,15 @@ void OutputBase::AttachVariables()
 	}
 }
 
+void OutputBase::DetachVariables()
+{
+	for(Variables::iterator variable_it = variables.begin(); variable_it != variables.end(); ++variable_it)
+	{
+		Variable *variable = *variable_it;
+		variable->Detach();
+	}
+}
+
 void OutputBase::Add(Variable& _variable)
 {
 	for(Variables::iterator it = variables.begin(); it != variables.end(); ++it)
@@ -127,17 +169,23 @@ void OutputBase::Remove(Variable& _variable)
 	}
 }
 
+void OutputBase::SetId(unsigned int _id)
+{
+	id = _id;
+}
+
 /////////////////////////////////// Output<> //////////////////////////////////
 
 
 ///////////////////////////////////// Variable ////////////////////////////////
 
-Variable::Variable(Writer& _writer, Module& _owner, const std::string& _name, const std::string& _identifier)
+Variable::Variable(Writer& _writer, Module& _owner, const std::string& _name, const std::string& _identifier, unsigned int _id)
 	: writer(_writer)
 	, owner(_owner)
 	, output(0)
 	, name(_name)
 	, identifier(_identifier)
+	, id(_id)
 {
 	owner.Add(*this);
 }
@@ -146,6 +194,11 @@ void Variable::Attach(OutputBase& _output)
 {
 	output = &_output;
 	output->Add(*this);
+}
+
+void Variable::Detach()
+{
+	output = 0;
 }
 
 Variable::~Variable()
@@ -209,35 +262,19 @@ Module *Module::FindChild(const std::string& child_name) const
 
 /////////////////////////////////// Writer ////////////////////////////////////
 
-void Writer::SetTimeScale(const std::string& timescale)
-{
-	OutputProcessor::Instance().SetTimeScale(timescale);
-}
-
-void Writer::SetLog(std::ostream& log)
-{
-	OutputProcessor::Instance().SetLog(log);
-}
-
-void Writer::SetWarningLog(std::ostream& warn_log)
-{
-	OutputProcessor::Instance().SetWarningLog(warn_log);
-}
-
-void Writer::SetErrorLog(std::ostream& err_log)
-{
-	OutputProcessor::Instance().SetErrorLog(err_log);
-}
-
 Writer::Writer(std::ostream& _stream, bool _interactive)
 	: stream(&_stream)
 	, io_buffer(0)
 	, interactive(_interactive)
 	, initialized(false)
 	, next_variable_identifier()
+	, next_id(0)
+	, sort_variables(OutputProcessor::Instance().sort_variables)
 	, top()
 	, curr_time_stamp(0)
 	, variables()
+	, stream_pool()
+	, emit_order()
 {
 	OutputProcessor::Instance().Register(*this);
 }
@@ -248,9 +285,13 @@ Writer::Writer(std::ofstream& _stream, std::streamsize io_buffer_size)
 	, interactive(false)
 	, initialized(false)
 	, next_variable_identifier()
+	, next_id(0)
+	, sort_variables(OutputProcessor::Instance().sort_variables)
 	, top()
 	, curr_time_stamp(0)
 	, variables()
+	, stream_pool()
+	, emit_order()
 {
 	_stream.rdbuf()->pubsetbuf(io_buffer, io_buffer_size);
 	OutputProcessor::Instance().Register(*this);
@@ -280,7 +321,7 @@ void Writer::Trace(const std::string& name)
 	}
 	
 	Module& owner = GetVariableOwner(name);
-	Variable *variable = new Variable(*this, owner, name, NextVariableIdentifier());
+	Variable *variable = new Variable(*this, owner, name, NextVariableIdentifier(), next_id++);
 	
 	OutputScanner output_scanner;
 	OutputBase *output = OutputProcessor::Instance().ScanOutputs<OutputScanner, const std::string, OutputBase *>(output_scanner, name);
@@ -291,6 +332,7 @@ void Writer::Trace(const std::string& name)
 	}
 	
 	variables.push_back(variable);
+	stream_pool.resize(variables.size());
 }
 
 bool Writer::Printer::VisitChild(Module& child, std::ostream& stream)
@@ -405,10 +447,13 @@ OutputProcessor::OutputProcessor()
 	: toggle(0)
 	, writers()
 	, outputs()
-	, updatable_outputs()
+	, pullable_outputs()
+	, rounds()
+	, free_list()
 	, samples()
 	, curr_time_stamp(0)
-	, next_time_stamp(0)
+	, sort_variables(false)
+	, debug(false)
 	, timescale("1 ps")
 	, timescale_fixed(false)
 	, log(&std::cout)
@@ -423,6 +468,11 @@ OutputProcessor::~OutputProcessor()
 	{
 		SampleBase *sample = (*it).second;
 		sample->Free();
+	}
+	for(typename FreeList::iterator it = free_list.begin(); it != free_list.end(); ++it)
+	{
+		Round *round = *it;
+		delete round;
 	}
 }
 
@@ -460,7 +510,15 @@ bool OutputProcessor::Register(OutputBase& _output)
 			return false;
 		}
 	}
+	unsigned int output_id = outputs.size();
+	_output.SetId(output_id);
 	outputs.push_back(&_output);
+	
+	for(Rounds::iterator round_it = rounds.begin(); round_it != rounds.end(); ++round_it)
+	{
+		Round *round = (*round_it).second;
+		round->agreements.resize(outputs.size());
+	}
 	return true;
 }
 
@@ -471,9 +529,83 @@ void OutputProcessor::Unregister(OutputBase& _output)
 		OutputBase *output = *it;
 		if(output == &_output)
 		{
+			Outputs& curr_pullable_outputs = pullable_outputs[toggle];
+			for(Outputs::iterator output_it = curr_pullable_outputs.begin(); output_it != curr_pullable_outputs.end(); ++output_it)
+			{
+				OutputBase *committable_output = *output_it;
+				if(committable_output == &_output)
+				{
+					curr_pullable_outputs.erase(output_it);
+					break;
+				}
+			}
+			
+			for(Rounds::iterator round_it = rounds.begin(); round_it != rounds.end(); ++round_it)
+			{
+				Round *round = (*round_it).second;
+				if(round->agreements[_output.GetId()]) round->agreement_count--;
+				round->agreements.erase(round->agreements.begin() + _output.GetId());
+			}
+			
 			outputs.erase(it);
+			
+			for(Rounds::iterator round_it = rounds.begin(); round_it != rounds.end(); ++round_it)
+			{
+				Round *round = (*round_it).second;
+				if(round->agreement_count >= outputs.size())
+				{
+					uint64_t agreed_time_stamp = (*round_it).first;
+					CommitUntil(agreed_time_stamp);
+				}
+			}
+			
+			unsigned int output_id = 0;
+			for(Outputs::iterator it = outputs.begin(); it != outputs.end(); ++it, ++output_id)
+			{
+				OutputBase *output = *it;
+				output->SetId(output_id);
+			}
 			return;
 		}
+	}
+}
+
+void OutputProcessor::DumpRounds()
+{
+	Log() << "[";
+	for(Rounds::const_iterator round_it = rounds.begin(); round_it != rounds.end(); ++round_it)
+	{
+		if(round_it != rounds.begin()) Log() << ", ";
+		uint64_t time_stamp = (*round_it).first;
+		Round *round = (*round_it).second;
+		Log() << time_stamp << " => (" << round->agreement_count << "/" << outputs.size() << ":";
+		for(Agreements::const_iterator agreement_it = round->agreements.begin(); agreement_it != round->agreements.end(); ++agreement_it)
+		{
+			bool agreement = *agreement_it;
+			Log() << (agreement ? 'x' : '.');
+		}
+		Log() << ")";
+	}
+	Log() << "]";
+}
+
+void OutputProcessor::SetOption(Option opt, bool flag)
+{
+	switch(opt)
+	{
+		case OPT_SORT_VARIABLES: sort_variables = flag; break;
+		case OPT_DEBUG: debug = flag; break;
+		default: break;
+	}
+}
+
+void OutputProcessor::GetOption(Option opt, bool& flag)
+{
+	switch(opt)
+	{
+		case OPT_SORT_VARIABLES: flag = sort_variables; break;
+		case OPT_DEBUG: flag = debug; break;
+		default: break;
 	}
 }
 

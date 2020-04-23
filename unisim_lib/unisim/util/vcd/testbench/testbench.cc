@@ -39,11 +39,11 @@ int main(int argc, char *argv[])
 	reg16.Push(2, 0x2345);
 	reg16.Push(3, 0x6789);
 
-	unisim::util::vcd::Writer::SetTimeScale("1 ns");
+	unisim::util::vcd::SetTimeScale("1 ns");
 
-	unisim::util::vcd::Writer::CommitUntil(2);
+	unisim::util::vcd::CommitUntil(2);
 
-	unisim::util::vcd::Writer::CommitBefore(6);
+	unisim::util::vcd::CommitBefore(6);
 
 	delete writer;
 	

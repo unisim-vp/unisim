@@ -44,6 +44,7 @@
 #include <map>
 #include <vector>
 #include <deque>
+#include <set>
 #include <climits>
 #include <cassert>
 #include <stdint.h>
@@ -69,6 +70,26 @@ class OutputProcessor;
 ///////////////////////////////////////////////////////////////////////////////
 //                                Declarations                               //
 ///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////// Option ////////////////////////////////////
+
+enum Option
+{
+	OPT_SORT_VARIABLES,
+	OPT_DEBUG
+};
+
+////////////////////////////// Global Functions ///////////////////////////////
+
+void SetOption(Option opt, bool flag);
+void GetOption(Option opt, bool& flag);
+void SetTimeScale(const std::string& timescale);
+void SetLog(std::ostream& log);
+void SetWarningLog(std::ostream& warn_log);
+void SetErrorLog(std::ostream& err_log);
+inline void CommitBefore(uint64_t before);
+inline void CommitUntil(uint64_t until);
+inline uint64_t TimeStamp();
 
 ////////////////////////////////// TypeTrait<> ////////////////////////////////
 
@@ -141,6 +162,86 @@ private:
 	uint64_t time_stamp;
 };
 
+//////////////////////////////// OutputProcessor //////////////////////////////
+
+class OutputProcessor
+{
+private:
+	OutputProcessor();
+	~OutputProcessor();
+	friend class OutputBase;
+	friend class Writer;
+	template <typename T> friend class Output;
+	friend void SetOption(Option opt, bool flag);
+	friend void GetOption(Option opt, bool& flag);
+	friend void SetTimeScale(const std::string& timescale);
+	friend void SetLog(std::ostream& log);
+	friend void SetWarningLog(std::ostream& warn_log);
+	friend void SetErrorLog(std::ostream& err_log);
+	friend void CommitBefore(uint64_t before);
+	friend void CommitUntil(uint64_t until);
+	friend uint64_t TimeStamp();
+
+	unsigned int toggle;
+	typedef std::vector<Writer *> Writers;
+	Writers writers;
+	typedef std::vector<OutputBase *> Outputs;
+	Outputs outputs;
+	Outputs pullable_outputs[2];
+	typedef std::vector<bool> Agreements;
+	struct Round
+	{
+		unsigned int agreement_count;
+		Agreements agreements;
+	};
+	typedef std::map<uint64_t, Round *> Rounds;
+	Rounds rounds;
+	typedef std::vector<Round *> FreeList;
+	FreeList free_list;
+	typedef std::multimap<uint64_t, SampleBase *> Samples;
+	Samples samples;
+	uint64_t curr_time_stamp;
+	bool sort_variables;
+	bool debug;
+	std::string timescale;
+	bool timescale_fixed;
+	std::ostream *log;
+	std::ostream *warn_log;
+	std::ostream *err_log;
+
+	static inline OutputProcessor& Instance();
+
+	void Register(Writer& writer);
+	void Unregister(Writer& writer);
+	bool Register(OutputBase& output);
+	void Unregister(OutputBase& output);
+	inline void RequestPull(OutputBase& output);
+	inline void RequestCommitUntil(OutputBase& output, uint64_t until);
+	inline void Add(SampleBase& sample);
+	
+	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanWriters(SCANNER& scanner, ARG_TYPE& arg) const;
+	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanOutputs(SCANNER& scanner, ARG_TYPE& arg) const;
+	
+	void SetOption(Option opt, bool flag);
+	void GetOption(Option opt, bool& flag);
+	void SetTimeScale(const std::string& timescale);
+	inline uint64_t TimeStamp() const;
+	void SetLog(std::ostream& log);
+	void SetWarningLog(std::ostream& warn_log);
+	void SetErrorLog(std::ostream& err_log);
+	std::ostream& Log() const;
+	std::ostream& WarnLog() const;
+	std::ostream& ErrLog() const;
+	inline void CommitBefore(uint64_t before);
+	inline void CommitUntil(uint64_t until);
+	void DumpRounds();
+	
+	struct SampleDispatcher
+	{
+		inline bool VisitVariable(Variable& variable, SampleBase& sample);
+	};
+};
+
 ///////////////////////////////// OutputBase //////////////////////////////////
 
 class OutputBase
@@ -153,24 +254,29 @@ public:
 	inline unsigned int GetSize() const;
 	void Add(Variable& variable);
 	void Remove(Variable& variable);
+	inline void CommitUntil(uint64_t until);
 	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanVariables(SCANNER& scanner, ARG_TYPE& arg) const;
 protected:
-	virtual void UpdateBefore(uint64_t before) = 0;
-	virtual void UpdateUntil(uint64_t until) = 0;
-protected:
+	uint64_t push_time_stamp;
+
+	virtual void PullUntil(uint64_t until) = 0;
 	void Register();
 	void Unregister();
 	void AttachVariables();
-	inline void RequestUpdate();
+	void DetachVariables();
+	inline void RequestPull();
 	inline bool HasAttachedVariables() const;
+	inline unsigned int GetId() const;
+	void SetId(unsigned int id);
 private:
 	friend class OutputProcessor;
 	
 	std::string name;
 	std::string type;
 	unsigned int size;
+	unsigned int id;
 	bool registered;
-	bool update_requested;
+	bool pull_requested;
 	typedef std::vector<Variable *> Variables;
 	Variables variables;
 	
@@ -186,67 +292,6 @@ private:
 
 };
 
-//////////////////////////////// OutputProcessor //////////////////////////////
-
-class OutputProcessor
-{
-public:
-	OutputProcessor();
-	~OutputProcessor();
-private:
-	friend class OutputBase;
-	friend class Writer;
-	template <typename T> friend class Output;
-	
-	enum CommitPolicy
-	{
-		COMMIT_BEFORE = 0,
-		COMMIT_UNTIL  = 1
-	};
-	
-	unsigned int toggle;
-	typedef std::vector<Writer *> Writers;
-	Writers writers;
-	typedef std::vector<OutputBase *> Outputs;
-	Outputs outputs;
-	Outputs updatable_outputs[2];
-	typedef std::multimap<uint64_t, SampleBase *> Samples;
-	Samples samples;
-	uint64_t curr_time_stamp;
-	uint64_t next_time_stamp;
-	std::string timescale;
-	bool timescale_fixed;
-	std::ostream *log;
-	std::ostream *warn_log;
-	std::ostream *err_log;
-
-	static inline OutputProcessor& Instance();
-
-	void Register(Writer& writer);
-	void Unregister(Writer& writer);
-	bool Register(OutputBase& output);
-	void Unregister(OutputBase& output);
-	inline void RequestUpdate(OutputBase& output);
-	inline void Add(SampleBase& sample);
-	
-	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanWriters(SCANNER& scanner, ARG_TYPE& arg) const;
-	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanOutputs(SCANNER& scanner, ARG_TYPE& arg) const;
-	
-	void SetTimeScale(const std::string& timescale);
-	void SetLog(std::ostream& log);
-	void SetWarningLog(std::ostream& warn_log);
-	void SetErrorLog(std::ostream& err_log);
-	std::ostream& Log() const;
-	std::ostream& WarnLog() const;
-	std::ostream& ErrLog() const;
-	template <CommitPolicy COMMIT_POLICY> void Commit(uint64_t target);
-	
-	struct SampleDispatcher
-	{
-		inline bool VisitVariable(Variable& variable, SampleBase& sample);
-	};
-};
-
 /////////////////////////////////// Output<> //////////////////////////////////
 
 template <typename T>
@@ -258,17 +303,13 @@ public:
 	void Push(uint64_t time_stamp, const T& value);
 	void Free(Sample<T> *sample);
 protected:
-	virtual void UpdateBefore(uint64_t before);
-	virtual void UpdateUntil(uint64_t until);
+	virtual void PullUntil(uint64_t until);
 private:
-	uint64_t curr_time_stamp;
 	typedef std::deque<Sample<T> *> Samples;
 	Samples samples;
 	typedef std::vector<Sample<T> *> FreeList;
 	FreeList free_list;
 	Sample<T> *last_sample;
-
-	template <OutputProcessor::CommitPolicy COMMIT_POLICY> void Update(uint64_t target);
 };
 
 ///////////////////////////////////// Variable ////////////////////////////////
@@ -276,21 +317,24 @@ private:
 class Variable
 {
 public:
-	Variable(Writer& writer, Module& owner, const std::string& name, const std::string& identifier);
+	Variable(Writer& writer, Module& owner, const std::string& name, const std::string& identifier, unsigned int id);
 	virtual ~Variable();
 	inline const std::string& GetName() const;
 	inline const std::string& GetIdentifier() const;
+	inline unsigned int GetId() const;
 	inline Writer& GetWriter() const;
 	inline Module& GetOwner() const;
 	inline OutputBase *GetOutput() const;
 	inline void Add(SampleBase& sample);
 	void Attach(OutputBase& output);
+	void Detach();
 private:
 	Writer& writer;
 	Module& owner;
 	OutputBase *output;
 	std::string name;
 	std::string identifier;
+	unsigned int id;
 };
 
 /////////////////////////////// Sample<> //////////////////////////////////////
@@ -338,13 +382,6 @@ private:
 class Writer
 {
 public:
-	static void SetTimeScale(const std::string& timescale);
-	static inline void CommitBefore(uint64_t before);
-	static inline void CommitUntil(uint64_t until);
-	static void SetLog(std::ostream& log);
-	static void SetWarningLog(std::ostream& warn_log);
-	static void SetErrorLog(std::ostream& err_log);
-	
 	Writer(std::ostream& stream, bool interactive = false);
 	Writer(std::ofstream& fstream, std::streamsize io_buffer_size = 8192);
 	~Writer();
@@ -359,15 +396,23 @@ private:
 	bool interactive;
 	bool initialized;
 	std::string next_variable_identifier;
+	unsigned int next_id;
+	bool sort_variables;
 	Module top;
 	uint64_t curr_time_stamp;
 	typedef std::vector<Variable *> Variables;
 	Variables variables;
+	typedef std::vector<std::ostringstream> StreamPool;
+	StreamPool stream_pool;
+	typedef std::set<unsigned int> EmitOrder;
+	EmitOrder emit_order;
 	
 	void Initialize();
 	const std::string& NextVariableIdentifier();
 	Module& GetModule(Module& module, const std::string& leaf_hierarchical_name);
 	Module& GetVariableOwner(const std::string& variable_name);
+	inline void Emit(Variable& variable, SampleBase& sample);
+	inline void SortedEmit();
 	inline void Add(Variable& variable, SampleBase& sample);
 	inline void EndOfCommit();
 	
@@ -397,6 +442,21 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 //                                 Definitions                               //
 ///////////////////////////////////////////////////////////////////////////////
+
+inline void CommitBefore(uint64_t before)
+{
+	OutputProcessor::Instance().CommitBefore(before);
+}
+
+inline void CommitUntil(uint64_t until)
+{
+	OutputProcessor::Instance().CommitUntil(until);
+}
+
+inline uint64_t TimeStamp()
+{
+	return OutputProcessor::Instance().TimeStamp();
+}
 
 /////////////////////////////////// SampleBase ////////////////////////////////
 
@@ -432,6 +492,16 @@ inline unsigned int OutputBase::GetSize() const
 	return size;
 }
 
+inline unsigned int OutputBase::GetId() const
+{
+	return id;
+}
+
+inline void OutputBase::CommitUntil(uint64_t until)
+{
+	OutputProcessor::Instance().RequestCommitUntil(*this, until);
+}
+
 template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE>
 RET_TYPE OutputBase::ScanVariables(SCANNER& scanner, ARG_TYPE& arg) const
 {
@@ -444,12 +514,12 @@ RET_TYPE OutputBase::ScanVariables(SCANNER& scanner, ARG_TYPE& arg) const
 	return RET_TYPE();
 }
 
-inline void OutputBase::RequestUpdate()
+inline void OutputBase::RequestPull()
 {
-	if(!update_requested)
+	if(!pull_requested)
 	{
-		OutputProcessor::Instance().RequestUpdate(*this);
-		update_requested = true;
+		OutputProcessor::Instance().RequestPull(*this);
+		pull_requested = true;
 	}
 }
 
@@ -463,7 +533,6 @@ inline bool OutputBase::HasAttachedVariables() const
 template <typename T>
 Output<T>::Output(const std::string& _name, const std::string& _type)
 	: OutputBase(_name, _type.length() ? _type : std::string(TypeTrait<T>::GetDefaultType()), TypeTrait<T>::GetSize())
-	, curr_time_stamp(0)
 	, samples()
 	, free_list()
 	, last_sample(0)
@@ -478,6 +547,7 @@ Output<T>::~Output()
 	for(typename Samples::iterator it = samples.begin(); it != samples.end(); ++it)
 	{
 		Sample<T> *sample = *it;
+		if(sample == last_sample) last_sample = 0;
 		delete sample;
 	}
 	for(typename FreeList::iterator it = free_list.begin(); it != free_list.end(); ++it)
@@ -491,7 +561,7 @@ Output<T>::~Output()
 template <typename T>
 void Output<T>::Push(uint64_t time_stamp, const T& value)
 {
-	if(unlikely(time_stamp < curr_time_stamp))
+	if(unlikely(time_stamp < push_time_stamp))
 	{
 		OutputProcessor::Instance().ErrLog() << "When pushing time stamped values through Output \"" << this->GetName() << "\", the time stamp shall increase monotonically" << std::endl;
 		return;
@@ -499,7 +569,7 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 
 	if(likely(!HasAttachedVariables()))
 	{
-		curr_time_stamp = time_stamp;
+		push_time_stamp = time_stamp;
 		return;
 	}
 	
@@ -507,14 +577,14 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 	{
 		if(unlikely(value == last_sample->GetValue()))
 		{
-			curr_time_stamp = time_stamp;
+			push_time_stamp = time_stamp;
 			return;
 		}
 		if(likely(samples.size()))
 		{
-			if(unlikely(time_stamp == curr_time_stamp))
+			if(unlikely(time_stamp == push_time_stamp))
 			{
-				assert(last_sample->GetTimeStamp() == curr_time_stamp);
+				assert(last_sample->GetTimeStamp() == push_time_stamp);
 				last_sample->SetValue(value);
 				return;
 			}
@@ -525,7 +595,7 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 		}
 	}
 	
-	curr_time_stamp = time_stamp;
+	push_time_stamp = time_stamp;
 	
 	Sample<T> *sample;
 	if(likely(free_list.size()))
@@ -538,10 +608,10 @@ void Output<T>::Push(uint64_t time_stamp, const T& value)
 		sample = new Sample<T>(*this);
 	}
 
-	sample->Initialize(curr_time_stamp, value);
+	sample->Initialize(push_time_stamp, value);
 	samples.push_back(sample);
 	last_sample = sample;
-	RequestUpdate();
+	RequestPull();
 }
 
 template <typename T>
@@ -554,54 +624,29 @@ void Output<T>::Free(Sample<T> *sample)
 }
 
 template <typename T>
-void Output<T>::UpdateBefore(uint64_t before)
-{
-	Update<OutputProcessor::COMMIT_BEFORE>(before);
-}
-
-template <typename T>
-void Output<T>::UpdateUntil(uint64_t until)
-{
-	Update<OutputProcessor::COMMIT_UNTIL>(until);
-}
-
-template <typename T>
-template <OutputProcessor::CommitPolicy COMMIT_POLICY>
-void Output<T>::Update(uint64_t target)
+void Output<T>::PullUntil(uint64_t until)
 {
 	if(likely(samples.size()))
 	{
 		Sample<T> *sample = samples.front();
-		if(((COMMIT_POLICY == OutputProcessor::COMMIT_BEFORE) && ((sample->GetTimeStamp() <  target) || !target)) ||
-		   ((COMMIT_POLICY == OutputProcessor::COMMIT_UNTIL ) && ((sample->GetTimeStamp() <= target))))
-			
+		if(sample->GetTimeStamp() <= until)
 		{
 			do
 			{
 				OutputProcessor::Instance().Add(*sample);
 				samples.pop_front();
 			}
-			while(samples.size() &&
-			      (((COMMIT_POLICY == OutputProcessor::COMMIT_BEFORE) && (((sample = samples.front())->GetTimeStamp() <  target) || !target)) ||
-			       ((COMMIT_POLICY == OutputProcessor::COMMIT_UNTIL ) && (((sample = samples.front())->GetTimeStamp() <= target)))));
+			while(samples.size() && ((sample = samples.front())->GetTimeStamp() <= until));
 		}
 		
 		if(unlikely(samples.size()))
 		{
-			RequestUpdate();
+			RequestPull();
 		}
 	}
-	switch(COMMIT_POLICY)
-	{
-		case OutputProcessor::COMMIT_BEFORE:
-			assert(target != 0);
-			if(target > curr_time_stamp) curr_time_stamp = target;
-			break;
-			
-		case OutputProcessor::COMMIT_UNTIL:
-			if(target >= curr_time_stamp) curr_time_stamp = target + 1;
-			break;
-	}
+	
+	// Do not accept push before pull
+	if(until >= push_time_stamp) push_time_stamp = until + 1;
 }
 
 ///////////////////////////////////// Variable ////////////////////////////////
@@ -614,6 +659,11 @@ inline const std::string& Variable::GetName() const
 inline const std::string& Variable::GetIdentifier() const
 {
 	return identifier;
+}
+
+inline unsigned int Variable::GetId() const
+{
+	return id;
 }
 
 inline Writer& Variable::GetWriter() const
@@ -716,14 +766,41 @@ RET_TYPE Module::ScanVariables(SCANNER& scanner, ARG_TYPE& arg) const
 
 /////////////////////////////////// Writer ////////////////////////////////////
 
-inline void Writer::CommitBefore(uint64_t before)
+inline void Writer::Emit(Variable& variable, SampleBase& sample)
 {
-	OutputProcessor::Instance().Commit<OutputProcessor::COMMIT_BEFORE>(before);
+	if(unlikely(sort_variables))
+	{
+		unsigned int variable_id = variable.GetId();
+		std::ostringstream& output_stream = stream_pool[variable_id];
+		output_stream.str(std::string());
+		sample.Print(output_stream, variable.GetIdentifier());
+		output_stream << '\n';
+		emit_order.insert(variable_id);
+	}
+	else
+	{
+		sample.Print(*stream, variable.GetIdentifier());
+		(*stream) << '\n';
+	}
 }
 
-inline void Writer::CommitUntil(uint64_t until)
+inline void Writer::SortedEmit()
 {
-	OutputProcessor::Instance().Commit<OutputProcessor::COMMIT_UNTIL>(until);
+	if(unlikely(sort_variables))
+	{
+		if(emit_order.size())
+		{
+			EmitOrder::iterator it = emit_order.begin();
+			do
+			{
+				unsigned int variable_id = *it;
+				std::ostringstream& osstr = stream_pool[variable_id];
+				(*stream) << osstr.str();
+			}
+			while(++it != emit_order.end());
+			emit_order.clear();
+		}
+	}
 }
 
 inline void Writer::Add(Variable& variable, SampleBase& sample)
@@ -738,17 +815,19 @@ inline void Writer::Add(Variable& variable, SampleBase& sample)
 	
 	if(new_time_stamp)
 	{
+		if(unlikely(sort_variables)) SortedEmit();
 		curr_time_stamp = time_stamp;
 		(*stream) << "#" << curr_time_stamp << '\n';
 	}
-	
-	sample.Print(*stream, variable.GetIdentifier());
-	(*stream) << '\n';
+
+	Emit(variable, sample);
 }
 
 inline void Writer::EndOfCommit()
 {
-	if(interactive)
+	if(unlikely(sort_variables)) SortedEmit();
+	
+	if(unlikely(interactive))
 	{
 		(*stream).flush();
 	}
@@ -792,9 +871,115 @@ inline OutputProcessor& OutputProcessor::Instance()
 	return instance;
 }
 
-inline void OutputProcessor::RequestUpdate(OutputBase& output)
+inline void OutputProcessor::RequestPull(OutputBase& output)
 {
-	updatable_outputs[toggle].push_back(&output);
+	pullable_outputs[toggle].push_back(&output);
+}
+
+inline void OutputProcessor::RequestCommitUntil(OutputBase& output, uint64_t until)
+{
+	if(until < curr_time_stamp) return; // already committed
+	
+	if(unlikely(debug))
+	{
+		Log() << "RequestCommitUntil(output=#" << output.GetId() << ",until=" << until << "):" << std::endl;
+		DumpRounds(); Log() << std::endl;
+	}
+	unsigned output_id = output.GetId();
+	bool agree = false;
+	bool existing_round = false;
+	uint64_t agreed_time_stamp;
+	Round *next_round = 0;
+	
+	// for each round
+	if(rounds.size())
+	{
+		Rounds::iterator it = rounds.begin();
+		do
+		{
+			uint64_t round_time_stamp = (*it).first;
+			Round *round = (*it).second;
+			unsigned int& agreement_count = round->agreement_count;
+			unsigned int num_voters = outputs.size();
+			Agreements& agreements = round->agreements;
+			// if it's a last minute vote, and all other voters have agreed beyond round date, then consider we all agree
+			if(round_time_stamp > until)
+			{
+				next_round = round;
+				if((agreement_count + 1) >= num_voters)
+				{
+					agree = true;
+					agreed_time_stamp = until;
+				}
+				break;
+			}
+			else if(round_time_stamp <= until)
+			{
+				// vote to past rounds (acknowledge) we've not participated
+				if(round_time_stamp == until)
+				{
+					existing_round = true;
+				}
+				assert(output_id < agreements.size());
+				if(!agreements[output_id])
+				{
+					agreements[output_id] = true;
+					assert(output_id < num_voters);
+					if(++agreement_count >= num_voters)
+					{
+						agree = true;
+						agreed_time_stamp = round_time_stamp;
+					}
+				}
+			}
+		}
+		while(++it != rounds.end());
+	}
+	if(agree)
+	{
+		// if we agree, then commit until agreed time stamp
+		if(unlikely(debug))
+		{
+			Log() << "Agreed:" << std::endl;
+			DumpRounds(); Log() << std::endl;
+		}
+		CommitUntil(agreed_time_stamp);
+	}
+	else if(!existing_round)
+	{
+		// if we're not agreed and round has not started, then start a new round and vote
+		Round *round;
+		if(likely(free_list.size()))
+		{
+			round = free_list.back();
+			free_list.pop_back();
+		}
+		else
+		{
+			round = new Round();
+		}
+		if(next_round)
+		{
+			// take care of next round agreements, as agreements of further rounds applies to previous rounds
+			*round = *next_round;
+			++round->agreement_count;
+			round->agreements[output_id] = true;
+		}
+		else
+		{
+			// very last round, we're the first to vote
+			round->agreement_count = 1;
+			round->agreements.clear();
+			round->agreements.resize(outputs.size());
+			round->agreements[output_id] = true;
+		}
+		rounds.insert(Rounds::value_type(until, round));
+		if(unlikely(debug))
+		{
+			Log() << "Not existing:" << std::endl;
+			DumpRounds(); Log() << std::endl;
+		}
+	}
 }
 
 inline void OutputProcessor::Add(SampleBase& sample)
@@ -832,11 +1017,23 @@ inline bool OutputProcessor::SampleDispatcher::VisitVariable(Variable& variable,
 	return false;
 }
 
-template <OutputProcessor::CommitPolicy COMMIT_POLICY>
-void OutputProcessor::Commit(uint64_t target)
+uint64_t OutputProcessor::TimeStamp() const
 {
-	if(unlikely(((COMMIT_POLICY == COMMIT_BEFORE) && (target < next_time_stamp)) ||
-	            ((COMMIT_POLICY == COMMIT_UNTIL ) && (target < curr_time_stamp))))
+	return curr_time_stamp;
+}
+
+void OutputProcessor::CommitBefore(uint64_t before)
+{
+	CommitUntil(before - 1);
+}
+
+void OutputProcessor::CommitUntil(uint64_t until)
+{
+	if(unlikely(debug))
+	{
+		Log() << "CommitUntil(until=" << until << ")" << std::endl;
+	}
+	if(until < curr_time_stamp)
 	{
 		ErrLog() << "When committing output timed stamp values, the time stamp shall increase monotonically" << std::endl;
 		return;
@@ -844,23 +1041,34 @@ void OutputProcessor::Commit(uint64_t target)
 	
 	timescale_fixed = true;
 	
-	Outputs& curr_updatable_outputs = updatable_outputs[toggle];
+	if(unlikely(rounds.size()))
+	{
+		Rounds::iterator it = rounds.begin();
+		do
+		{
+			Rounds::iterator next_it = it;
+			++next_it;
+			Round *round = (*it).second;
+			free_list.push_back(round);
+			rounds.erase(it);
+			it = next_it;
+		}
+		while((it != rounds.end()) && ((*it).first <= until));
+	}
 	
-	if(unlikely(curr_updatable_outputs.size()))
+	Outputs& curr_pullable_outputs = pullable_outputs[toggle];
+	
+	if(unlikely(curr_pullable_outputs.size()))
 	{
 		toggle ^= 1;
 		
-		for(Outputs::iterator output_it = curr_updatable_outputs.begin(); output_it != curr_updatable_outputs.end(); ++output_it)
+		for(Outputs::iterator output_it = curr_pullable_outputs.begin(); output_it != curr_pullable_outputs.end(); ++output_it)
 		{
 			OutputBase *output = *output_it;
-			output->update_requested = false;
-			switch(COMMIT_POLICY)
-			{
-				case COMMIT_BEFORE:	if(!target) { output->UpdateBefore(target); } break;
-				case COMMIT_UNTIL : output->UpdateUntil(target);  break;
-			}
+			output->pull_requested = false;
+			output->PullUntil(until);
 		}
-		curr_updatable_outputs.clear();
+		curr_pullable_outputs.clear();
 	}
 	
 	if(unlikely(samples.size()))
@@ -869,8 +1077,7 @@ void OutputProcessor::Commit(uint64_t target)
 			
 		uint64_t sample_time_stamp = (*sample_it).first;
 		
-		if(((COMMIT_POLICY == COMMIT_BEFORE) && ((sample_time_stamp < target) || !target)) ||
-		((COMMIT_POLICY == COMMIT_UNTIL ) &&  (sample_time_stamp <= target)))
+		if(sample_time_stamp <= until)
 		{
 			do
 			{
@@ -884,9 +1091,7 @@ void OutputProcessor::Commit(uint64_t target)
 				samples.erase(sample_it);
 				sample_it = samples.begin();
 			}
-			while((sample_it != samples.end()) &&
-			      (((COMMIT_POLICY == COMMIT_BEFORE) && (((sample_time_stamp = (*sample_it).first) < target) || !target)) ||
-			      ((COMMIT_POLICY == COMMIT_UNTIL) && ((sample_time_stamp = (*sample_it).first) <= target))));
+			while((sample_it != samples.end()) && ((sample_time_stamp = (*sample_it).first) <= until));
 		}
 		for(Writers::iterator writer_it = writers.begin(); writer_it != writers.end(); ++writer_it)
 		{
@@ -894,11 +1099,7 @@ void OutputProcessor::Commit(uint64_t target)
 			writer->EndOfCommit();
 		}
 	}
-	switch(COMMIT_POLICY)
-	{
-		case COMMIT_BEFORE: next_time_stamp = target;     break;
-		case COMMIT_UNTIL : next_time_stamp = target + 1; break;
-	}
+	++curr_time_stamp;
 }
 
 } // end of namespace vcd
