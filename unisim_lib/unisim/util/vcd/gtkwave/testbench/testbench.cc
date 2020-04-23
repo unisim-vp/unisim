@@ -2,6 +2,7 @@
 #include <unisim/util/vcd/gtkwave/gtkwave.hh>
 
 #include <fstream>
+#include <cstdlib>
 
 static const unsigned int NUM_OUTPUTS = 1000;
 static const unsigned int NUM_CYCLES = 100000;

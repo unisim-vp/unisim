@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <string>
 #include <map>
@@ -402,7 +403,7 @@ private:
 	uint64_t curr_time_stamp;
 	typedef std::vector<Variable *> Variables;
 	Variables variables;
-	typedef std::vector<std::ostringstream> StreamPool;
+	typedef std::vector<std::ostringstream *> StreamPool;
 	StreamPool stream_pool;
 	typedef std::set<unsigned int> EmitOrder;
 	EmitOrder emit_order;
@@ -771,10 +772,10 @@ inline void Writer::Emit(Variable& variable, SampleBase& sample)
 	if(unlikely(sort_variables))
 	{
 		unsigned int variable_id = variable.GetId();
-		std::ostringstream& output_stream = stream_pool[variable_id];
-		output_stream.str(std::string());
-		sample.Print(output_stream, variable.GetIdentifier());
-		output_stream << '\n';
+		std::ostringstream* output_stream = stream_pool[variable_id];
+		output_stream->str(std::string());
+		sample.Print(*output_stream, variable.GetIdentifier());
+		(*output_stream) << '\n';
 		emit_order.insert(variable_id);
 	}
 	else
@@ -794,8 +795,8 @@ inline void Writer::SortedEmit()
 			do
 			{
 				unsigned int variable_id = *it;
-				std::ostringstream& osstr = stream_pool[variable_id];
-				(*stream) << osstr.str();
+				std::ostringstream *osstr = stream_pool[variable_id];
+				(*stream) << osstr->str();
 			}
 			while(++it != emit_order.end());
 			emit_order.clear();
