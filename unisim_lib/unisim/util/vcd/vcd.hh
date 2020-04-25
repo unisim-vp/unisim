@@ -54,7 +54,7 @@ namespace unisim {
 namespace util {
 namespace vcd {
 
-//                       Outputs                  OutputProcessor                    Writers                VCD Bridges
+//                      Outputs                   OutputProcessor                    Writers                VCD Bridges
 //                                                                   
 //                                          +-------------------------+        +-----------------+      +-----------------+
 //                       . . .              |                         |        |                 | VCD  |                 |
@@ -65,16 +65,16 @@ namespace vcd {
 //                                          |                         |=======>| Writer          |
 //                       . . .              |                         |        | * Trace(...)    |
 //                                          |                         |        | * Initialize()  |
-//                +------------------+      |                         |        | * Write(...)    |
-//           Push |                  | Pull |                         |        | * EndOfCommit() |
-//  (t,val) =====>| Output<T>        |=====>| OutputProcessor         |        +-----------------+
-//                | * Push(...)      |      | * CommitBefore(t)       |   
-//                +------------------+      | * CommitUntil(t)        |        +-----------------+      +-----------------+
-//                |                  |      | * RequestPull()         |        |                 | VCD  |                 |
-//                | OutputBase       |      | * RequestCommitUntil(t) |        | StreamWriter    |=====>|  GTKWave Stream |=====> GTKWave
-//                | * CommitUntil(t) |      |                         |        |                 |      |                 |
-//                +------------------+      |                         |        +-----------------+      +-----------------+
-//                                          |                         | Write  |                 |
+//               +-------------------+      |                         |        | * Write(...)    |
+//          Push |                   | Pull |                         |        | * EndOfCommit() |
+// (t,val) =====>| Output<T>         |=====>| OutputProcessor         |        +-----------------+
+//               | * Push(...)       |      | * CommitBefore(t)       |   
+//               +-------------------+      | * CommitUntil(t)        |        +-----------------+      +-----------------+
+//               |                   |      | * RequestPull()         |        |                 | VCD  |                 |
+//               | OutputBase        |      | * RequestCommitUntil(t) |        | StreamWriter    |=====>|  GTKWave Stream |=====> GTKWave
+//               | * CommitBefore(t) |      |                         |        |                 |      |                 |
+//               | * CommitUntil(t)  |      |                         |        +-----------------+      +-----------------+
+//               +-------------------+      |                         | Write  |                 |
 //                       . . .              |                         |=======>| Writer          |
 //                                          |                         |        | * Trace(...)    |
 //                       . . .              |                         |        | * Initialize()  |
@@ -301,6 +301,7 @@ public:
 	inline unsigned int GetSize() const;
 	void Add(Variable& variable);
 	void Remove(Variable& variable);
+	inline void CommitBefore(Time before);
 	inline void CommitUntil(Time until);
 	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE ScanVariables(SCANNER& scanner, ARG_TYPE& arg) const;
 	virtual void Dump(std::ostream& stream, const std::string& identifier) = 0;
@@ -600,6 +601,11 @@ inline unsigned int OutputBase::GetSize() const
 inline unsigned int OutputBase::GetId() const
 {
 	return id;
+}
+
+inline void OutputBase::CommitBefore(Time before)
+{
+	CommitUntil(before - 1);
 }
 
 inline void OutputBase::CommitUntil(Time until)
