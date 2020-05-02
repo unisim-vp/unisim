@@ -39,15 +39,20 @@
 #include "channels/signal_if.h"
 #include "utilities/fwd.h"
 #include <string>
+#include <iostream>
 #include <fstream>
+#include <iomanip>
 
 namespace sc_core {
+
+//////////////////////////////// declaration //////////////////////////////////
+
+//////////////////////////////// sc_trace_file ////////////////////////////////
 
 class sc_trace_file
 {
 public:
 	virtual void set_time_unit(double d, sc_time_unit tu) = 0;
-	//implementation-defined
 protected:
 	friend class sc_kernel;
 	friend sc_trace_file *sc_create_vcd_trace_file(const char *name);
@@ -164,9 +169,60 @@ protected:
 	virtual void trace(const sc_signal_in_if<int>& signal_in_if, const std::string& name, int width) = 0;
 	virtual void trace(const sc_signal_in_if<long>& signal_in_if, const std::string& name, int width) = 0;
 	
-	virtual void initialize() = 0;
 	virtual void do_tracing() = 0;
 };
+
+///////////////////////////// sc_trace_file_base //////////////////////////////
+
+class sc_trace_file_base : public sc_trace_file
+{
+public:
+	virtual void set_time_unit(double d, sc_time_unit tu);
+protected:
+	std::string comment;
+	std::ofstream file;
+	double time_unit_value;
+	sc_time_unit time_unit_unit;
+	
+	sc_trace_file_base(const char *name, const char *ext);
+	virtual ~sc_trace_file_base();
+	virtual void close();
+	virtual void write_comment(const std::string& comment);
+	bool advance();
+	sc_dt::uint64 time_stamp() const;
+	virtual void do_initialize() = 0;
+private:
+	bool scaling_up;
+	sc_dt::uint64 scaling;
+	sc_dt::uint64 curr_time_stamp;
+	bool initialized;
+	
+	void initialize();
+};
+
+//////////////////////////////// sc_vcd_module ////////////////////////////////
+
+class sc_vcd_module
+{
+public:
+	sc_vcd_module();
+	sc_vcd_module(const std::string& name, sc_vcd_module& parent);
+	~sc_vcd_module();
+	const std::string& name() const;
+	sc_vcd_module *find_child(const std::string& name) const;
+	void add(sc_vcd_module& child);
+	void add(sc_vcd_variable_base& variable);
+	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE scan_children(SCANNER& scanner, ARG_TYPE& arg) const;
+	template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE> RET_TYPE scan_variables(SCANNER& scanner, ARG_TYPE& arg) const;
+private:
+	std::string module_name;
+	typedef std::vector<sc_vcd_module *> children_t;
+	children_t children;
+	typedef std::vector<sc_vcd_variable_base *> variables_t;
+	variables_t variables;
+};
+
+//////////////////////////// sc_vcd_variable_base /////////////////////////////
 
 class sc_vcd_variable_base
 {
@@ -188,6 +244,63 @@ private:
 	int var_width;
 };
 
+///////////////////////////// sc_vcd_type_trait<> /////////////////////////////
+
+template <typename T>
+struct sc_vcd_type_trait
+{
+	static const char *type() { return "wire"; }
+	static int width() { return sizeof(T) * CHAR_BIT; }
+	static void print(std::ostream& stream, const T& value, const std::string& identifier)
+	{
+		if(width() > 1)
+		{
+			stream << 'b';
+			for(int i = width() - 1; i >= 0; --i) stream << ((value >> i) & 1);
+		}
+		else
+		{
+			stream << (value ? '1' :'0');
+		}
+		stream << ' ' << identifier;
+	}
+};
+
+template <>
+struct sc_vcd_type_trait<bool>
+{
+	static const char *type() { return "wire"; }
+	static int width() { return 1; }
+	static void print(std::ostream& stream, const bool& value, const std::string& identifier)
+	{
+		stream << (value ? '1' : '0') << identifier;
+	}
+};
+
+template <>
+struct sc_vcd_type_trait<float>
+{
+	static const char *type() { return "real"; }
+	static int width() { return 1; }
+	static void print(std::ostream& stream, const float& value, const std::string& identifier)
+	{
+		stream << 'r' << std::setprecision(8) << value << ' ' << identifier;
+	}
+};
+
+template <>
+struct sc_vcd_type_trait<double>
+{
+	static const char *type() { return "real"; }
+	static int width() { return 1; }
+	static void print(std::ostream& stream, const double& value, const std::string& identifier)
+	{
+		stream << 'r' << std::setprecision(16) << value << ' ' << identifier;
+	}
+};
+
+/////////////////////////////// sc_vcd_variable<> /////////////////////////////
+
 template <class T>
 class sc_vcd_variable : public sc_vcd_variable_base
 {
@@ -203,35 +316,27 @@ private:
 	T prev_value;
 };
 
-class sc_vcd_trace_file : public sc_trace_file
+/////////////////////////////// sc_vcd_trace_file /////////////////////////////
+
+class sc_vcd_trace_file : public sc_trace_file_base
 {
-public:
-	virtual void set_time_unit(double d, sc_time_unit tu);
 protected:
 	friend class sc_kernel;
 	
-	double timescale_value;
-	sc_time_unit timescale_unit;
-	bool scaling_up;
-	sc_dt::uint64 scaling;
-	sc_dt::uint64 curr_time_stamp;
-	bool initialized;
-	
+	sc_vcd_module top;
 	typedef std::vector<sc_vcd_variable_base *> variables_t;
 	variables_t variables;
 	std::string next_variable_identifier;
-	std::string comment;
-	std::ofstream file;
 	
 	sc_vcd_trace_file(const char *name);
 	virtual ~sc_vcd_trace_file();
 	sc_vcd_variable_base *find_variable(const std::string& name) const;
 	const std::string& gen_variable_identifier();
+	sc_vcd_module& make_module(sc_vcd_module& module, const std::string& leaf_hierarchical_name);
+	sc_vcd_module& make_module(const std::string& variable_name);
 	bool value_changed() const;
 	template <class T> void trace(const T& value, const std::string& name);
 	template <class T> void trace(const T& value, const std::string& name, int width);
-	virtual void close();
-	virtual void write_comment(const std::string& comment);
 	virtual void trace(const bool& value, const std::string& name);
 	virtual void trace(const bool* value, const std::string& name);
 	virtual void trace(const float& value, const std::string& name);
@@ -285,9 +390,17 @@ protected:
 	virtual void trace(const sc_signal_in_if<int>& signal_in_if, const std::string& name, int width);
 	virtual void trace(const sc_signal_in_if<long>& signal_in_if, const std::string& name, int width);
 
-	virtual void initialize();
+	virtual void do_initialize();
 	virtual void do_tracing();
+	
+	struct sc_vcd_var_decl_printer
+	{
+		bool visit_child(sc_vcd_module& child, std::ostream& stream);
+		bool visit_variable(sc_vcd_variable_base& variable, std::ostream& stream);
+	};
 };
+
+////////////////////////////// global functions ///////////////////////////////
 
 sc_trace_file *sc_create_vcd_trace_file(const char *name);
 void sc_close_vcd_trace_file(sc_trace_file *tf);
@@ -347,18 +460,17 @@ void sc_trace(sc_trace_file *tf, const sc_signal_in_if<short>& signal_in_if, con
 void sc_trace(sc_trace_file *tf, const sc_signal_in_if<int>& signal_in_if, const std::string& name, int width);
 void sc_trace(sc_trace_file *tf, const sc_signal_in_if<long>& signal_in_if, const std::string& name, int width);
 
-template <class T>
-void sc_trace(sc_trace_file *tf, const sc_signal_in_if<T>& signal_in_if, const std::string& name)
-{
-	sc_trace(tf, signal_in_if.read(), name);
-}
+///////////////////////////////// definition //////////////////////////////////
 
 template <class T>
 void sc_vcd_trace_file::trace(const T& value, const std::string& name)
 {
 	if(!find_variable(name))
 	{
-		variables.push_back(new sc_vcd_variable<T>(name, gen_variable_identifier(), value));
+		sc_vcd_module& module = make_module(name);
+		sc_vcd_variable_base *variable = new sc_vcd_variable<T>(name, gen_variable_identifier(), value);
+		variables.push_back(variable);
+		module.add(*variable);
 	}
 }
 
@@ -367,8 +479,41 @@ void sc_vcd_trace_file::trace(const T& value, const std::string& name, int width
 {
 	if(!find_variable(name))
 	{
-		variables.push_back(new sc_vcd_variable<T>(name, gen_variable_identifier(), value, width));
+		sc_vcd_module& module = make_module(name);
+		sc_vcd_variable_base *variable = new sc_vcd_variable<T>(name, gen_variable_identifier(), value, width);
+		variables.push_back(variable);
+		module.add(*variable);
 	}
+}
+
+template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE>
+RET_TYPE sc_vcd_module::scan_children(SCANNER& scanner, ARG_TYPE& arg) const
+{
+	for(children_t::const_iterator it = children.begin(); it != children.end(); ++it)
+	{
+		sc_vcd_module *child = *it;
+		RET_TYPE r = scanner.visit_child(*child, arg);
+		if(r) return r;
+	}
+	return RET_TYPE();
+}
+
+template <typename SCANNER, typename ARG_TYPE, typename RET_TYPE>
+RET_TYPE sc_vcd_module::scan_variables(SCANNER& scanner, ARG_TYPE& arg) const
+{
+	for(variables_t::const_iterator it = variables.begin(); it != variables.end(); ++it)
+	{
+		sc_vcd_variable_base *variable = *it;
+		RET_TYPE r = scanner.visit_variable(*variable, arg);
+		if(r) return r;
+	}
+	return RET_TYPE();
+}
+
+template <class T>
+void sc_trace(sc_trace_file *tf, const sc_signal_in_if<T>& signal_in_if, const std::string& name)
+{
+	sc_trace(tf, signal_in_if.read(), name);
 }
 
 } // end of namespace sc_core
