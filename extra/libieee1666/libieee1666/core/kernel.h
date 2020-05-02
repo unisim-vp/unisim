@@ -48,6 +48,7 @@
 #include "core/process_handle.h"
 #include "core/stack.h"
 #include "core/coroutine.h"
+#include "utilities/trace_file.h"
 
 #if !defined(DLL_EXPORT) && (defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64))
 #define ___LIBIEEE1666_DLL_EXPORT__ __declspec(dllexport)
@@ -104,12 +105,15 @@ public:
 	sc_process_handle create_cthread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *, sc_event_finder& edge_event_finder);
 	sc_process_handle create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *);
 	
+	sc_trace_file *create_vcd_trace_file(const char *name);
+	
 	void initialize();
 	void do_evaluation_phase();
 	void do_update_phase();
 	void do_delta_notification_phase();
 	void do_delta_steps(bool once);
 	bool do_timed_notification_phase();
+	void do_tracing();
 	void simulate(const sc_time& duration);
 	void end_simulation();
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
@@ -257,6 +261,10 @@ private:
 	method_process_table_t method_process_table;
 	typedef std::vector<sc_process_handle> process_handle_table_t;
 	process_handle_table_t process_handle_table;
+	
+	// tracing
+	typedef std::vector<sc_trace_file *> trace_files_t;
+	trace_files_t trace_files;
 
 	// coroutine & stack
 	sc_coroutine_system *coroutine_system;
