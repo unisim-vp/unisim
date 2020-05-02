@@ -34,14 +34,15 @@
 
 #include "utilities/trace_file.h"
 #include "core/kernel.h"
-#include <iomanip>
 #include <math.h>
 
 namespace sc_core {
 
 static const char *time_unit_strings[SC_SEC + 1] = { "fs", "ps", "ns", "us", "ms", "s" };
 
-/////////////////////////// global functions ///////////////////////////////////
+///////////////////////////////// definition //////////////////////////////////
+
+////////////////////////////// global functions ///////////////////////////////
 
 sc_trace_file* sc_create_vcd_trace_file(const char *name)
 {
@@ -318,6 +319,8 @@ void sc_trace(sc_trace_file *tf, const sc_signal_in_if<long>& signal_in_if, cons
 	tf->trace(signal_in_if, name, width);
 }
 
+//////////////////////////////// sc_trace_file ////////////////////////////////
+
 sc_trace_file::sc_trace_file()
 {
 }
@@ -325,6 +328,147 @@ sc_trace_file::sc_trace_file()
 sc_trace_file::~sc_trace_file()
 {
 }
+
+///////////////////////////// sc_trace_file_base //////////////////////////////
+
+sc_trace_file_base::sc_trace_file_base(const char *name, const char *ext)
+	: sc_trace_file()
+	, comment()
+	, file((std::string(name) + '.' + ext).c_str())
+	, time_unit_value(1.0)
+	, time_unit_unit(SC_PS)
+	, scaling_up(true)
+	, scaling(1)
+	, curr_time_stamp(0)
+	, initialized(false)
+{
+}
+
+void sc_trace_file_base::set_time_unit(double d, sc_time_unit tu)
+{
+	double log10_d = log10(d);
+	double log10_d_int_part;
+    if(modf(log10_d, &log10_d_int_part) != 0.0 )
+	{
+		throw std::runtime_error("sc_trace_file time unit shall be a power of ten");
+	}
+	time_unit_value = d;
+	time_unit_unit = tu;
+}
+
+void sc_trace_file_base::close()
+{
+	file.close();
+}
+
+void sc_trace_file_base::write_comment(const std::string& _comment)
+{
+	comment = _comment;
+}
+
+void sc_trace_file_base::initialize()
+{
+	double time_unit = 1e-12;
+	switch(time_unit_unit)
+	{
+		case SC_FS: time_unit = time_unit_value * 1e-15; break;
+		case SC_PS: time_unit = time_unit_value * 1e-12; break;
+		case SC_NS: time_unit = time_unit_value * 1e-9; break;
+		case SC_US: time_unit = time_unit_value * 1e-6; break;
+		case SC_MS: time_unit = time_unit_value * 1e-3; break;
+		case SC_SEC: time_unit = time_unit_value; break;
+	}
+	
+	double time_resolution = sc_get_time_resolution().to_seconds();
+	scaling_up = (time_resolution >= time_unit);
+	scaling = (scaling_up ? (time_resolution / time_unit) : (time_unit / time_resolution)) + 0.5;
+	
+	sc_dt::uint64 time_stamp = sc_time_stamp().value();
+	curr_time_stamp = scaling_up ? (time_stamp * scaling) : (time_stamp / scaling);
+	
+	do_initialize();
+	initialized = true;
+}
+
+bool sc_trace_file_base::advance()
+{
+	if(!initialized)
+	{
+		initialize();
+	}
+	
+	sc_dt::uint64 time_stamp = sc_time_stamp().value();
+	time_stamp = scaling_up ? (time_stamp * scaling) : (time_stamp / scaling);
+	if(time_stamp != curr_time_stamp)
+	{
+		curr_time_stamp = time_stamp;
+		return true;
+	}
+	return false;
+}
+
+sc_dt::uint64 sc_trace_file_base::time_stamp() const
+{
+	return curr_time_stamp;
+}
+
+//////////////////////////////// sc_vcd_module ////////////////////////////////
+
+sc_vcd_module::sc_vcd_module()
+	: module_name()
+	, children()
+	, variables()
+{
+}
+
+sc_vcd_module::sc_vcd_module(const std::string& _name, sc_vcd_module& parent)
+	: module_name(_name)
+	, children()
+	, variables()
+{
+	parent.add(*this);
+}
+
+sc_vcd_module::~sc_vcd_module()
+{
+	for(variables_t::iterator it = variables.begin(); it != variables.end(); ++it)
+	{
+		sc_vcd_variable_base *variable = *it;
+		delete variable;
+	}
+	for(children_t::iterator it = children.begin(); it != children.end(); ++it)
+	{
+		sc_vcd_module *child = *it;
+		delete child;
+	}
+}
+
+const std::string& sc_vcd_module::name() const
+{
+	return module_name;
+}
+
+void sc_vcd_module::add(sc_vcd_module& child)
+{
+	children.push_back(&child);
+}
+
+void sc_vcd_module::add(sc_vcd_variable_base& variable)
+{
+	variables.push_back(&variable);
+}
+
+sc_vcd_module *sc_vcd_module::find_child(const std::string& child_name) const
+{
+	for(children_t::const_iterator it = children.begin(); it != children.end(); ++it)
+	{
+		sc_vcd_module *child = *it;
+		if(child->name() == child_name) return child;
+	}
+	return 0;
+}
+
+//////////////////////////// sc_vcd_variable_base /////////////////////////////
 
 sc_vcd_variable_base::sc_vcd_variable_base(const std::string& _name, const std::string& _identifier, const std::string& _type, int _width)
 	: var_name(_name)
@@ -363,58 +507,7 @@ void sc_vcd_variable_base::print_decl(std::ostream& stream)
 	stream << "$var " << var_type << " " << var_width << " " << var_identifier << " " << var_name << " $end" << '\n';
 }
 
-template <typename T>
-struct sc_vcd_type_trait
-{
-	static const char *type() { return "wire"; }
-	static int width() { return sizeof(T) * CHAR_BIT; }
-	static void print(std::ostream& stream, const T& value, const std::string& identifier)
-	{
-		if(width() > 1)
-		{
-			stream << 'b';
-			for(int i = width() - 1; i >= 0; --i) stream << ((value >> i) & 1);
-		}
-		else
-		{
-			stream << (value ? '1' :'0');
-		}
-		stream << ' ' << identifier;
-	}
-};
-
-template <>
-struct sc_vcd_type_trait<bool>
-{
-	static const char *type() { return "wire"; }
-	static int width() { return 1; }
-	static void print(std::ostream& stream, const bool& value, const std::string& identifier)
-	{
-		stream << (value ? '1' : '0') << identifier;
-	}
-};
-
-template <>
-struct sc_vcd_type_trait<float>
-{
-	static const char *type() { return "real"; }
-	static int width() { return 1; }
-	static void print(std::ostream& stream, const float& value, const std::string& identifier)
-	{
-		stream << 'r' << std::setprecision(8) << value << ' ' << identifier;
-	}
-};
-
-template <>
-struct sc_vcd_type_trait<double>
-{
-	static const char *type() { return "real"; }
-	static int width() { return 1; }
-	static void print(std::ostream& stream, const double& value, const std::string& identifier)
-	{
-		stream << 'r' << std::setprecision(16) << value << ' ' << identifier;
-	}
-};
+/////////////////////////////// sc_vcd_variable<> /////////////////////////////
 
 template <class T>
 sc_vcd_variable<T>::sc_vcd_variable(const std::string& _name, const std::string& _identifier, const T& _value)
@@ -457,44 +550,18 @@ void sc_vcd_variable<T>::print(std::ostream& stream)
 	prev_value = value;
 }
 
-void sc_vcd_trace_file::set_time_unit(double d, sc_time_unit tu)
-{
-	double log10_d = log10(d);
-	double log10_d_int_part;
-    if(modf(log10_d, &log10_d_int_part) != 0.0 )
-	{
-		throw std::runtime_error("VCD time unit shall be a power of ten");
-	}
-	timescale_value = d;
-	timescale_unit = tu;
-}
+/////////////////////////////// sc_vcd_trace_file /////////////////////////////
 
 sc_vcd_trace_file::sc_vcd_trace_file(const char *name)
-	: sc_trace_file()
-	, timescale_value(1.0)
-	, timescale_unit(SC_PS)
-	, scaling_up(true)
-	, scaling(1)
-	, curr_time_stamp(0)
-	, initialized(false)
+	: sc_trace_file_base(name, "vcd")
+	, top()
 	, variables()
 	, next_variable_identifier()
-	, comment()
-	, file((std::string(name) + ".vcd").c_str())
 {
-	if(sc_get_status() >= SC_START_OF_SIMULATION)
-	{
-		initialize();
-	}
 }
 
 sc_vcd_trace_file::~sc_vcd_trace_file()
 {
-	for(variables_t::iterator it = variables.begin(); it != variables.end(); ++it)
-	{
-		sc_vcd_variable_base *variable = *it;
-		delete variable;
-	}
 }
 
 sc_vcd_variable_base *sc_vcd_trace_file::find_variable(const std::string& name) const
@@ -532,16 +599,6 @@ const std::string& sc_vcd_trace_file::gen_variable_identifier()
 	}
 
 	return next_variable_identifier = first;
-}
-
-void sc_vcd_trace_file::close()
-{
-	file.close();
-}
-
-void sc_vcd_trace_file::write_comment(const std::string& _comment)
-{
-	comment = _comment;
 }
 
 void sc_vcd_trace_file::trace(const bool& value, const std::string& name)
@@ -804,40 +861,19 @@ void sc_vcd_trace_file::trace(const sc_signal_in_if<long>& signal_in_if, const s
 	trace<long>(signal_in_if.read(), name, width);
 }
 
-void sc_vcd_trace_file::initialize()
+void sc_vcd_trace_file::do_initialize()
 {
-	double timescale = 1e-12;
-	switch(timescale_unit)
-	{
-		case SC_FS: timescale = timescale_value * 1e-15; break;
-		case SC_PS: timescale = timescale_value * 1e-12; break;
-		case SC_NS: timescale = timescale_value * 1e-9; break;
-		case SC_US: timescale = timescale_value * 1e-6; break;
-		case SC_MS: timescale = timescale_value * 1e-3; break;
-		case SC_SEC: timescale = timescale_value; break;
-	}
-	
-	double time_resolution = sc_get_time_resolution().to_seconds();
-	scaling_up = (time_resolution >= timescale);
-	scaling = (scaling_up ? (time_resolution / timescale) : (timescale / time_resolution)) + 0.5;
-	
-	sc_dt::uint64 time_stamp = sc_time_stamp().value();
-	curr_time_stamp = scaling_up ? (time_stamp * scaling) : (time_stamp / scaling);
-	
 	file << "$version Generated by libieee1666 $end" << '\n';
 	if(comment.length())
 	{
 		file << "$comment " << comment << " $end" << '\n';
 	}
-	file << "$timescale " << timescale_value << " " << time_unit_strings[timescale_unit] << " $end" << '\n';
+	file << "$timescale " << time_unit_value << " " << time_unit_strings[time_unit_unit] << " $end" << '\n';
 	
 	file << "$scope module TOP $end" << '\n';
-	for(variables_t::iterator it = variables.begin(); it != variables.end(); ++it)
-	{
-		sc_vcd_variable_base *variable = *it;
-		variable->print_decl(file);
-		file << '\n';
-	}
+	sc_vcd_var_decl_printer vcd_var_decl_printer;
+	top.scan_variables<sc_vcd_var_decl_printer, std::ostream, bool>(vcd_var_decl_printer, file);
+	top.scan_children<sc_vcd_var_decl_printer, std::ostream, bool>(vcd_var_decl_printer, file);
 	file << "$upscope $end" << '\n';
 	
 	file << "$enddefinitions $end" << '\n';
@@ -850,8 +886,36 @@ void sc_vcd_trace_file::initialize()
 		file << '\n';
 	}
 	file << "$end" << std::endl;
-	
-	initialized = true;
+}
+
+sc_vcd_module& sc_vcd_trace_file::make_module(sc_vcd_module& module, const std::string& leaf_hierarchical_name)
+{
+	std::size_t hierarchical_delimiter_pos = leaf_hierarchical_name.find_first_of('.');
+	std::string child_name = leaf_hierarchical_name.substr(0, hierarchical_delimiter_pos);
+	sc_vcd_module *child = module.find_child(child_name);
+	if(!child) child = new sc_vcd_module(child_name, module);
+	return (hierarchical_delimiter_pos == std::string::npos) ? (*child) : make_module(*child, leaf_hierarchical_name.substr(hierarchical_delimiter_pos + 1));
+}
+
+sc_vcd_module& sc_vcd_trace_file::make_module(const std::string& variable_name)
+{
+	std::size_t hierarchical_delimiter_pos = variable_name.find_last_of('.');
+	return (hierarchical_delimiter_pos == std::string::npos) ? top : make_module(top, variable_name.substr(0, hierarchical_delimiter_pos));
+}
+
+bool sc_vcd_trace_file::sc_vcd_var_decl_printer::visit_child(sc_vcd_module& child, std::ostream& stream)
+{
+	stream << "$scope module " << child.name() << " $end" << '\n';
+	child.scan_variables<sc_vcd_var_decl_printer, std::ostream, bool>(*this, stream);
+	child.scan_children<sc_vcd_var_decl_printer, std::ostream, bool>(*this, stream);
+	stream << "$upscope $end" << '\n';
+	return false;
+}
+
+bool sc_vcd_trace_file::sc_vcd_var_decl_printer::visit_variable(sc_vcd_variable_base& variable, std::ostream& stream)
+{
+	stream << "$var " << variable.type() << ' ' << variable.width() << ' ' << variable.identifier() << ' ' << variable.name() << " $end" << '\n';
+	return false;
 }
 
 bool sc_vcd_trace_file::value_changed() const
@@ -866,19 +930,11 @@ bool sc_vcd_trace_file::value_changed() const
 
 void sc_vcd_trace_file::do_tracing()
 {
-	if(!initialized)
+	if(advance())
 	{
-		initialize();
-	}
-	
-	sc_dt::uint64 time_stamp = sc_time_stamp().value();
-	time_stamp = scaling_up ? (time_stamp * scaling) : (time_stamp / scaling);
-	if(time_stamp != curr_time_stamp)
-	{
-		curr_time_stamp = time_stamp;
 		if(value_changed())
 		{
-			file << '#' << curr_time_stamp << '\n';
+			file << '#' << time_stamp() << '\n';
 			for(variables_t::iterator it = variables.begin(); it != variables.end(); ++it)
 			{
 				sc_vcd_variable_base *variable = *it;
