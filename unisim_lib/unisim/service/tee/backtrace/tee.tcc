@@ -77,7 +77,7 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-std::vector<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBackTrace(ADDRESS pc) const
+std::vector<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBackTrace() const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -86,7 +86,7 @@ std::vector<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBackTrace(ADDRESS pc) const
 		{
 			if(*backtrace_import[i])
 			{
-				std::vector<ADDRESS> *backtrace = (*backtrace_import[i])->GetBackTrace(pc);
+				std::vector<ADDRESS> *backtrace = (*backtrace_import[i])->GetBackTrace();
 				
 				if(backtrace) return backtrace;
 			}
@@ -97,7 +97,7 @@ std::vector<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBackTrace(ADDRESS pc) const
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-bool Tee<ADDRESS, MAX_IMPORTS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
+bool Tee<ADDRESS, MAX_IMPORTS>::GetReturnAddress(ADDRESS& ret_addr) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -106,7 +106,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) 
 		{
 			if(*backtrace_import[i])
 			{
-				if((*backtrace_import[i])->GetReturnAddress(pc, ret_addr)) return true;
+				if((*backtrace_import[i])->GetReturnAddress(ret_addr)) return true;
 			}
 		}
 	}

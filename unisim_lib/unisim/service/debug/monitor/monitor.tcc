@@ -193,10 +193,10 @@ bool DataObject<ADDRESS>::GetValue(void *value) const
 {
 	if(data_object)
 	{
-		ADDRESS cia = 0;
-		reg_pc->GetValue(&cia);
-
-		data_object->Seek(cia);
+// 		ADDRESS cia = 0;
+// 		reg_pc->GetValue(&cia);
+// 
+// 		data_object->Seek(cia);
 		
 		if(data_object->Exists())
 		{

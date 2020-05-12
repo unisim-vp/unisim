@@ -64,8 +64,8 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	virtual std::vector<ADDRESS> *GetBackTrace(ADDRESS pc) const;
-	virtual bool GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const;
+	virtual std::vector<ADDRESS> *GetBackTrace() const;
+	virtual bool GetReturnAddress(ADDRESS& ret_addr) const;
 };
 
 } // end of namespace backtrace

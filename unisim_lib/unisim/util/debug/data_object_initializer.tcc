@@ -67,7 +67,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_CHAR:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name);
 				
 				if(data_object)
 				{
@@ -112,7 +112,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_INTEGER:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name);
 				
 				if(data_object)
 				{
@@ -157,7 +157,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_FLOAT:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name);
 				
 				if(data_object)
 				{
@@ -218,7 +218,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_BOOL:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name);
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -290,7 +290,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_POINTER:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name);
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -318,7 +318,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 											char_object_name_sstr << data_object_name << "[" << i << "]";
 											std::string char_object_name(char_object_name_sstr.str());
 											
-											DataObject<ADDRESS> *char_object = data_object_lookup_if->FindDataObject(char_object_name.c_str(), pc);
+											DataObject<ADDRESS> *char_object = data_object_lookup_if->FindDataObject(char_object_name.c_str());
 											
 											if(!char_object)
 											{
@@ -395,7 +395,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_ENUM:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name);
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())

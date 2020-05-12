@@ -96,15 +96,13 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream);
 	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type);
 	virtual ~DWARF_DataObject();
 	virtual const char *GetName() const;
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
 	virtual const unisim::util::debug::Type *GetType() const;
-	virtual void Seek(MEMORY_ADDR pc);
-	virtual bool GetPC() const;
+	virtual MEMORY_ADDR GetPC() const;
 	virtual bool Exists() const;
 	virtual bool IsOptimizedOut() const;
 	virtual bool GetAddress(MEMORY_ADDR& addr) const;
@@ -119,23 +117,24 @@ private:
 	unsigned int prc_num;
 	std::string data_object_name;
 	const CLocOperationStream c_loc_operation_stream;
-	std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
-	std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> cache;
-	bool exists;
-	MEMORY_ADDR pc;
-	const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
-	const unisim::util::debug::Type *dw_data_object_type;
+	mutable std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
+	mutable std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> cache;
+	mutable bool exists;
+	mutable bool fetched;
+	mutable MEMORY_ADDR pc;
+	mutable const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
+	mutable const unisim::util::debug::Type *dw_data_object_type;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int arch_address_size;
-	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	DWARF_BitVector bv;
+	mutable DWARF_BitVector bv;
 	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
 	
-	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type);
+	void Seek() const;
+	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type) const;
 	void InvalidateCache();
 	const DWARF_DataObjectInfo<MEMORY_ADDR> *LookupCache(MEMORY_ADDR pc) const;
 };

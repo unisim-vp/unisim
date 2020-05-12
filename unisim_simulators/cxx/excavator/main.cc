@@ -1022,7 +1022,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						{
 							std::cout << "Discovering Subprogram " << subprogram_name << std::endl;
 						}
-						unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram = dw_die->GetSubProgram(0);
+						unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram = dw_die->GetSubProgram();
 						
 						if(subprogram->IsDeclaration())
 						{
@@ -1033,7 +1033,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							const unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram_def = dw_handler->FindSubProgramDIE(subprogram_name, 0);
 							if(dw_die_subprogram_def)
 							{
-								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram_def->GetSubProgram(0);
+								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram_def->GetSubProgram();
 								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
 									std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram_def->GetId() << " (" << dw_die->GetHREF() << "): looking for dependencies" << std::endl;
@@ -1074,7 +1074,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						if(!IsAutoVariable(dw_die))
 						{
-							unisim::util::debug::Variable const *variable = dw_die->GetVariable(0);
+							unisim::util::debug::Variable const *variable = dw_die->GetVariable();
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Discovering Variable " << variable->BuildCDecl() << std::endl;
@@ -1119,7 +1119,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					const char *enum_name = dw_die->GetName();
 					if(enum_name && !IsSuppressedType(enum_name))
 					{
-						const unisim::util::debug::EnumType *enum_type = (const unisim::util::debug::EnumType *) dw_die->GetType(0);
+						const unisim::util::debug::EnumType *enum_type = (const unisim::util::debug::EnumType *) dw_die->GetType();
 						Insert(enum_type, dw_die);
 					}
 					break;
@@ -1130,7 +1130,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					const char *struct_name = dw_die->GetName();
 					if(struct_name && !IsSuppressedType(struct_name))
 					{
-						const unisim::util::debug::StructureType *struct_type = (const unisim::util::debug::StructureType *) dw_die->GetType(0);
+						const unisim::util::debug::StructureType *struct_type = (const unisim::util::debug::StructureType *) dw_die->GetType();
 						Insert(struct_type, dw_die);
 						dw_die->ScanType(*this);
 					}
@@ -1142,7 +1142,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					const char *union_name = dw_die->GetName();
 					if(union_name && !IsSuppressedType(union_name))
 					{
-						const unisim::util::debug::UnionType *union_type = (const unisim::util::debug::UnionType *) dw_die->GetType(0);
+						const unisim::util::debug::UnionType *union_type = (const unisim::util::debug::UnionType *) dw_die->GetType();
 						Insert(union_type, dw_die);
 						dw_die->ScanType(*this);
 					}
@@ -1154,7 +1154,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					const char *typedef_name = dw_die->GetName();
 					if(typedef_name && !IsSuppressedType(typedef_name))
 					{
-						const unisim::util::debug::Typedef *_typedef = (const unisim::util::debug::Typedef *) dw_die->GetType(0);
+						const unisim::util::debug::Typedef *_typedef = (const unisim::util::debug::Typedef *) dw_die->GetType();
 						unisim::util::debug::Type const *type = _typedef->GetType();
 						if(type->IsComposite())
 						{
@@ -1397,7 +1397,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							const unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = dw_handler->FindSubProgramDIE(subprogram_name, 0);
 							if(dw_die_subprogram)
 							{
-								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram(0);
+								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram();
 								
 								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
@@ -1451,7 +1451,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						const unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = dw_handler->FindSubProgramDIE(subprogram_name, 0);
 						if(dw_die_subprogram)
 						{
-							unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram(0);
+							unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram();
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
 								std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
@@ -1504,7 +1504,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							
 							if(dw_die_variable_def)
 							{
-								unisim::util::debug::Variable const *variable_def = dw_die_variable_def->GetVariable(0);
+								unisim::util::debug::Variable const *variable_def = dw_die_variable_def->GetVariable();
 								
 								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{

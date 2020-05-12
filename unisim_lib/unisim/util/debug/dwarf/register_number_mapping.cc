@@ -36,6 +36,7 @@
 #include <unisim/util/xml/xml.hh>
 #include <stdlib.h>
 #include <iostream>
+#include <sstream>
 
 namespace unisim {
 namespace util {
@@ -47,7 +48,9 @@ DWARF_RegisterNumberMapping::DWARF_RegisterNumberMapping(std::ostream& _debug_in
 	, debug_warning_stream(_debug_warning_stream)
 	, debug_error_stream(_debug_error_stream)
 	, regs_if(_regs_if)
+	, has_sp_reg_num(false)
 	, sp_reg_num(0)
+	, program_counter(0)
 {
 }
 
@@ -122,8 +125,15 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 			{
 				if((*xml_node_property)->Name() == std::string("dw_reg_num"))
 				{
-					dw_reg_num = atoi((*xml_node_property)->Value().c_str());
-					has_dw_reg_num = true;
+					std::stringstream sstr((*xml_node_property)->Value());
+					if((sstr >> dw_reg_num) && sstr.eof())
+					{
+						has_dw_reg_num = true;
+					}
+					else
+					{
+						debug_warning_stream << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' 'dw_reg_num' property value is ill-formed (not an integer)" << std::endl;						
+					}
 				}
 				else if((*xml_node_property)->Name() == std::string("arch_reg"))
 				{
@@ -161,13 +171,21 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 			{
 				if((*xml_node_property)->Name() == std::string("dw_reg_num"))
 				{
-					dw_reg_num = atoi((*xml_node_property)->Value().c_str());
-					has_dw_reg_num = true;
+					std::stringstream sstr((*xml_node_property)->Value());
+					if((sstr >> dw_reg_num) && sstr.eof())
+					{
+						has_dw_reg_num = true;
+					}
+					else
+					{
+						debug_warning_stream << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' 'dw_reg_num' property value is ill-formed (not an integer)" << std::endl;						
+					}
 				}
 			}
 			
 			if(has_dw_reg_num)
 			{
+				has_sp_reg_num = true;
 				sp_reg_num = dw_reg_num;
 			}
 			else
@@ -176,7 +194,53 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 				return false;
 			}
 		}
+		else if((*xml_node)->Name() == std::string("program_counter"))
+		{
+			bool has_program_counter_name = false;
+			std::string program_counter_name;
+			const std::list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
 			
+			std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+			for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+			{
+				if((*xml_node_property)->Name() == std::string("name"))
+				{
+					program_counter_name = (*xml_node_property)->Value();
+					has_program_counter_name = true;
+				}
+			}
+			
+			if(has_program_counter_name)
+			{
+				unisim::service::interfaces::Register *arch_reg = regs_if->GetRegister(program_counter_name.c_str());
+				
+				if(arch_reg)
+				{
+					program_counter = arch_reg;
+				}
+				else
+				{
+					debug_warning_stream << "CPU does not support register " << program_counter_name << std::endl;
+				}
+			}
+			else
+			{
+				debug_warning_stream << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'name' property" << std::endl;
+				return false;
+			}
+		}
+	}
+	
+	if(!has_sp_reg_num)
+	{
+		debug_warning_stream << "No usable stack pointer register" << std::endl;
+		return false;
+	}
+	
+	if(!program_counter)
+	{
+		debug_warning_stream << "No usable program counter register" << std::endl;
+		return false;
 	}
 	
 	return true;
@@ -187,14 +251,14 @@ void DWARF_RegisterNumberMapping::Map(unsigned int dw_reg_num, unisim::service::
 	reg_num_mapping[dw_reg_num] = arch_reg;
 }
 
-const unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num) const
+const unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetRegister(unsigned int dw_reg_num) const
 {
 	std::map<unsigned int, unisim::service::interfaces::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
 	
 	return (iter != reg_num_mapping.end()) ? (*iter).second : 0;
 }
 
-unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num)
+unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetRegister(unsigned int dw_reg_num)
 {
 	std::map<unsigned int, unisim::service::interfaces::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
 	
@@ -214,9 +278,20 @@ void DWARF_RegisterNumberMapping::EnumRegisterNumbers(std::set<unsigned int>& re
 	}
 }
 
-unsigned int DWARF_RegisterNumberMapping::GetSPRegNum() const
+bool DWARF_RegisterNumberMapping::GetStackPointerRegisterNumber(unsigned int& _sp_reg_num) const
 {
-	return sp_reg_num;
+	if(has_sp_reg_num)
+	{
+		_sp_reg_num = sp_reg_num;
+		return true;
+	}
+	
+	return false;
+}
+
+unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetProgramCounterRegister() const
+{
+	return program_counter;
 }
 
 std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping)

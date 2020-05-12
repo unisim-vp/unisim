@@ -1811,7 +1811,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 
 // unisim::service::interfaces::BackTrace<ADDRESS> (tagged)
 template <typename CONFIG>
-std::vector<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetBackTrace(unsigned int front_end_num, ADDRESS pc) const
+std::vector<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetBackTrace(unsigned int front_end_num) const
 {
 	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
 	
@@ -1823,7 +1823,7 @@ std::vector<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetBackTrace(unsigned i
 		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			std::vector<ADDRESS> *backtrace = elf32_loader->GetBackTrace(prc_num, pc);
+			std::vector<ADDRESS> *backtrace = elf32_loader->GetBackTrace(prc_num);
 			if(backtrace) return backtrace;
 		}
 	}
@@ -1834,7 +1834,7 @@ std::vector<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetBackTrace(unsigned i
 		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			std::vector<ADDRESS> *backtrace = elf64_loader->GetBackTrace(prc_num, pc);
+			std::vector<ADDRESS> *backtrace = elf64_loader->GetBackTrace(prc_num);
 			if(backtrace) return backtrace;
 		}
 	}
@@ -1843,7 +1843,7 @@ std::vector<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetBackTrace(unsigned i
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::GetReturnAddress(unsigned int front_end_num, ADDRESS pc, ADDRESS& ret_addr) const
+bool Debugger<CONFIG>::GetReturnAddress(unsigned int front_end_num, ADDRESS& ret_addr) const
 {
 	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
 
@@ -1855,7 +1855,7 @@ bool Debugger<CONFIG>::GetReturnAddress(unsigned int front_end_num, ADDRESS pc, 
 		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			if(elf32_loader->GetReturnAddress(prc_num, pc, ret_addr)) return true;
+			if(elf32_loader->GetReturnAddress(prc_num, ret_addr)) return true;
 		}
 	}
 
@@ -1865,7 +1865,7 @@ bool Debugger<CONFIG>::GetReturnAddress(unsigned int front_end_num, ADDRESS pc, 
 		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			if(elf64_loader->GetReturnAddress(prc_num, pc, ret_addr)) return true;
+			if(elf64_loader->GetReturnAddress(prc_num, ret_addr)) return true;
 		}
 	}
 	
@@ -2166,7 +2166,7 @@ bool Debugger<CONFIG>::IsBinaryEnabled(unsigned int front_end_num, const char *f
 
 // unisim::service::interfaces::DataObjectLookup<ADDRESS> (tagged)
 template <typename CONFIG>
-unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::GetDataObject(unsigned int front_end_num, const char *data_object_name, const char *filename, const char *compilation_unit_name) const
+unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindDataObject(unsigned int front_end_num, const char *data_object_name) const
 {
 	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
 
@@ -2178,7 +2178,7 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Get
 		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(prc_num, data_object_name, filename, compilation_unit_name);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(prc_num, data_object_name);
 			if(data_object) return data_object;
 		}
 	}
@@ -2189,7 +2189,7 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Get
 		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(prc_num, data_object_name, filename, compilation_unit_name);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(prc_num, data_object_name);
 			if(data_object) return data_object;
 		}
 	}
@@ -2198,10 +2198,10 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Get
 }
 
 template <typename CONFIG>
-unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindDataObject(unsigned int front_end_num, const char *data_object_name, ADDRESS pc) const
+void Debugger<CONFIG>::EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
 {
 	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
-
+	
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
@@ -2210,8 +2210,7 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Fin
 		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(prc_num, data_object_name, pc);
-			if(data_object) return data_object;
+			elf32_loader->EnumerateDataObjectNames(prc_num, name_set, scope);
 		}
 	}
 
@@ -2221,36 +2220,7 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Fin
 		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(prc_num, data_object_name, pc);
-			if(data_object) return data_object;
-		}
-	}
-	
-	return 0;
-}
-
-template <typename CONFIG>
-void Debugger<CONFIG>::EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
-{
-	unsigned int i;
-	
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; i++)
-	{
-		if(enable_elf32_loaders[front_end_num][i])
-		{
-			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			elf32_loader->EnumerateDataObjectNames(name_set, pc, scope);
-		}
-	}
-
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; i++)
-	{
-		if(enable_elf64_loaders[front_end_num][i])
-		{
-			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			elf64_loader->EnumerateDataObjectNames(name_set, pc, scope);
+			elf64_loader->EnumerateDataObjectNames(prc_num, name_set, scope);
 		}
 	}
 }
@@ -2260,8 +2230,6 @@ void Debugger<CONFIG>::EnumerateDataObjectNames(unsigned int front_end_num, std:
 template <typename CONFIG>
 const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
 {
-	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
-
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
@@ -2270,7 +2238,7 @@ const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG
 		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name);
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(subprogram_name, filename, compilation_unit_name);
 			if(subprogram) return subprogram;
 		}
 	}
@@ -2281,7 +2249,7 @@ const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG
 		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name);
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(subprogram_name, filename, compilation_unit_name);
 			if(subprogram) return subprogram;
 		}
 	}

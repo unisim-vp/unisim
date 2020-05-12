@@ -2349,7 +2349,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBackTrace()
 {
-	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
+	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace();
 	
 	if(backtrace)
 	{
@@ -2416,7 +2416,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace()
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS& ret_addr) const
 {
-	return backtrace_import->GetReturnAddress(cia, ret_addr);
+	return backtrace_import->GetReturnAddress(ret_addr);
 }
 
 template <class ADDRESS>
@@ -2830,7 +2830,7 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -2931,7 +2931,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 		{
 			// requesting address of data object
 			data_object_name++; // skip '&'
-			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 			
 			if(data_object)
 			{
@@ -2953,7 +2953,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 		}
 		else
 		{
-			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 			// requesting value of data object
 			if(data_object)
 			{
@@ -2979,7 +2979,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name)
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -3079,7 +3079,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, const 
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -3209,7 +3209,7 @@ void InlineDebugger<ADDRESS>::ListDataObjects(typename unisim::service::interfac
 	if(data_object_lookup_import)
 	{
 		std::set<std::string> data_object_name_set;
-		data_object_lookup_import->EnumerateDataObjectNames(data_object_name_set, cia, scope);
+		data_object_lookup_import->EnumerateDataObjectNames(data_object_name_set, scope);
 		
 		std::set<std::string>::const_iterator it;
 		for(it = data_object_name_set.begin(); it != data_object_name_set.end(); it++)
@@ -3228,7 +3228,7 @@ void InlineDebugger<ADDRESS>::TrackDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -3268,7 +3268,7 @@ void InlineDebugger<ADDRESS>::PrintTrackedDataObjects()
 	{
 		unisim::util::debug::DataObject<ADDRESS> *data_object = *it;
 		
-		data_object->Seek(cia);
+// 		data_object->Seek(cia);
 		
 		PrintDataObject(data_object);
 	}
@@ -3294,7 +3294,7 @@ void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObjec
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::PrintDataObjectType(const char *data_object_name)
 {
-	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 	
 	if(data_object)
 	{

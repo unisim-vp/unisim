@@ -85,7 +85,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
-	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR& frame_base) const;
 	const char *GetName() const;
 	uint16_t GetLanguage() const;
 	const char *GetProducer() const;
@@ -114,8 +114,8 @@ public:
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Reference<MEMORY_ADDR> * & p_dw_ref_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_String<MEMORY_ADDR> * & p_dw_str_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const;
-	bool GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, uint64_t& value) const;
-	bool GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, int64_t& value) const;
+	bool GetAttributeStaticDynamicValue(int prc_num, uint16_t dw_at, uint64_t& value) const;
+	bool GetAttributeStaticDynamicValue(int prc_num, uint16_t dw_at, int64_t& value) const;
 	
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:

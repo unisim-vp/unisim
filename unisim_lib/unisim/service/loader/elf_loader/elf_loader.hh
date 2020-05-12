@@ -127,8 +127,8 @@ public:
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 
 	// unisim::service::interfaces::BackTrace
-	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
-	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	virtual std::vector<MEMORY_ADDR> *GetBackTrace() const;
+	virtual bool GetReturnAddress(MEMORY_ADDR& ret_addr) const;
 private:
 	unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> *elf_loader;
 	std::string filename;

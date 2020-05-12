@@ -154,7 +154,7 @@ template <class MEMORY_ADDR>
 class DWARF_ExpressionVM
 {
 public:
-	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, int prc_num);
 	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_ExpressionVM();
 	
@@ -162,12 +162,10 @@ public:
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 	void SetFrameBase(MEMORY_ADDR frame_base);
 	void SetObjectAddress(MEMORY_ADDR object_addr);
-	void SetPC(MEMORY_ADDR pc);
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unsigned int prc_num;
-	const DWARF_RegisterNumberMapping *reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	DWARF_Frame<MEMORY_ADDR> *dw_frame;
 	unisim::util::endian::endian_type file_endianness;
@@ -179,8 +177,6 @@ private:
 	bool has_frame_base;
 	MEMORY_ADDR object_addr;
 	bool has_object_addr;
-	MEMORY_ADDR pc;
-	bool has_pc;
 	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;

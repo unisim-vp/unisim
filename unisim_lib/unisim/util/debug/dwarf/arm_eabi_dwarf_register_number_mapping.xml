@@ -1,6 +1,7 @@
 <dw_reg_num_mapping>
 	<architecture name="arm">
 		<stack_pointer dw_reg_num="13"/>
+		<program_counter name="pc"/>
 		<register dw_reg_num="0" arch_reg="r0"/>
 		<register dw_reg_num="1" arch_reg="r1"/>
 		<register dw_reg_num="2" arch_reg="r2"/>

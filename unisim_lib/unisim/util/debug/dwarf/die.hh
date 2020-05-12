@@ -709,23 +709,23 @@ public:
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNonContigousAddressRange() const;
 	const DWARF_Expression<MEMORY_ADDR> *GetSegment() const;
 	bool GetCallingConvention(uint8_t& calling_convention) const;
-	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
-	bool GetLowerBound(unsigned int prc_num, int64_t& upper_bound) const;
-	bool GetUpperBound(unsigned int prc_num, int64_t& upper_bound) const;
-	bool GetCount(unsigned int prc_num, uint64_t& count) const;
-	bool GetArrayElementCount(unsigned int prc_num, unsigned int dim, uint64_t& count) const;
-	bool GetByteSize(unsigned int prc_num, uint64_t& byte_size) const;
-	bool GetBitSize(unsigned int prc_num, uint64_t& bit_size) const;
-	bool GetArrayElementPaddedBitSize(unsigned int prc_num, uint64_t& bit_size) const;
-	bool GetBitOffset(unsigned int prc_num, int64_t& bit_offset) const;
-	bool GetBitStride(unsigned int prc_num, uint64_t& bit_stride) const;
-	bool GetDataBitOffset(unsigned int prc_num, int64_t& data_bit_offset) const;
-	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR& frame_base) const;
+	bool GetLowerBound(int prc_num, int64_t& upper_bound) const;
+	bool GetUpperBound(int prc_num, int64_t& upper_bound) const;
+	bool GetCount(int prc_num, uint64_t& count) const;
+	bool GetArrayElementCount(int prc_num, unsigned int dim, uint64_t& count) const;
+	bool GetByteSize(int prc_num, uint64_t& byte_size) const;
+	bool GetBitSize(int prc_num, uint64_t& bit_size) const;
+	bool GetArrayElementPaddedBitSize(int prc_num, uint64_t& bit_size) const;
+	bool GetBitOffset(int prc_num, int64_t& bit_offset) const;
+	bool GetBitStride(int prc_num, uint64_t& bit_stride) const;
+	bool GetDataBitOffset(int prc_num, int64_t& data_bit_offset) const;
+	bool GetLocationExpression(uint16_t dw_at, int prc_num, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
+	bool GetLocation(int prc_num, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool HasRanges() const;
 	bool GetRanges(const DWARF_RangeListEntry<MEMORY_ADDR> *& range_list_entry) const;
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetDataMemberLocation(int prc_num, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
 	bool GetDeclarationFlag(bool& declaration_flag) const;
 	bool GetOrdering(uint8_t& ordering) const;
@@ -744,11 +744,11 @@ public:
 	bool GetDeclColumn(unsigned int& decl_column) const;
 	const unisim::util::debug::DeclLocation *GetDeclLocation() const;
 	
-	const unisim::util::debug::Type *GetType(unsigned int prc_num, bool following_pointer = false, unsigned int array_dim = 0) const;
-	const unisim::util::debug::Type *GetTypeOf(unsigned int prc_num) const;
+	const unisim::util::debug::Type *GetType(int prc_num = -1, bool following_pointer = false, unsigned int array_dim = 0) const;
+	const unisim::util::debug::Type *GetTypeOf(int prc_num) const;
 	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *GetSubProgram(unsigned int prc_num) const;
-	const unisim::util::debug::Variable *GetVariable(unsigned int prc_num) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *GetSubProgram() const;
+	const unisim::util::debug::Variable *GetVariable() const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;
@@ -765,8 +765,8 @@ public:
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Reference<MEMORY_ADDR> * & p_dw_ref_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_String<MEMORY_ADDR> * & p_dw_str_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const;
-	bool GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, uint64_t& value) const;
-	bool GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, int64_t& value) const;
+	bool GetAttributeStaticDynamicValue(int prc_num, uint16_t dw_at, uint64_t& value) const;
+	bool GetAttributeStaticDynamicValue(int prc_num, uint16_t dw_at, int64_t& value) const;
 	
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 	template <typename VISITOR> void ScanType(VISITOR& visitor) const;

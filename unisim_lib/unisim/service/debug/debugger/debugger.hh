@@ -220,8 +220,8 @@ private:
 	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 	
 	// unisim::service::interfaces::BackTrace<ADDRESS> (tagged)
-	std::vector<ADDRESS> *GetBackTrace(unsigned int front_end_num, ADDRESS pc) const;
-	bool GetReturnAddress(unsigned int front_end_num, ADDRESS pc, ADDRESS& ret_addr) const;
+	std::vector<ADDRESS> *GetBackTrace(unsigned int front_end_num) const;
+	bool GetReturnAddress(unsigned int front_end_num, ADDRESS& ret_addr) const;
 	
 	// unisim::service::interfaces::DebugInfoLoading (tagged)
 	bool LoadDebugInfo(unsigned int front_end_num, const char *filename);
@@ -230,9 +230,8 @@ private:
 	bool IsBinaryEnabled(unsigned int front_end_num, const char *filename) const;
 	
 	// unisim::service::interfaces::DataObjectLookup<ADDRESS> (tagged)
-	unisim::util::debug::DataObject<ADDRESS> *GetDataObject(unsigned int front_end_num, const char *data_object_name, const char *filename, const char *compilation_unit_name) const;
-	unisim::util::debug::DataObject<ADDRESS> *FindDataObject(unsigned int front_end_num, const char *data_object_name, ADDRESS pc) const;
-	void EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const;
+	unisim::util::debug::DataObject<ADDRESS> *FindDataObject(unsigned int front_end_num, const char *data_object_name) const;
+	void EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const;
 	
 	// unisim::service::interfaces::SubProgramLookup<ADDRESS> (tagged)
 	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename, const char *compilation_unit_name) const;
@@ -506,8 +505,8 @@ private:
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, source_code_location); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::BackTrace<ADDRESS>
-		virtual std::vector<ADDRESS> *GetBackTrace(ADDRESS pc) const { bool l = dbg.Lock(id); std::vector<ADDRESS> *ret = dbg.GetBackTrace(id, pc); if(l) { dbg.Unlock(id); } return ret; }
-		virtual bool GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const { bool l = dbg.Lock(id); bool ret = dbg.GetReturnAddress(id, pc, ret_addr); if(l) { dbg.Unlock(id); } return ret; }
+		virtual std::vector<ADDRESS> *GetBackTrace() const { bool l = dbg.Lock(id); std::vector<ADDRESS> *ret = dbg.GetBackTrace(id); if(l) { dbg.Unlock(id); } return ret; }
+		virtual bool GetReturnAddress(ADDRESS& ret_addr) const { bool l = dbg.Lock(id); bool ret = dbg.GetReturnAddress(id, ret_addr); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::DebugInfoLoading
 		virtual bool LoadDebugInfo(const char *filename) { bool l = dbg.Lock(id); bool ret = dbg.LoadDebugInfo(id, filename); if(l) { dbg.Unlock(id); } return ret; }
@@ -516,9 +515,8 @@ private:
 		virtual bool IsBinaryEnabled(const char *filename) const { bool l = dbg.Lock(id); bool ret = dbg.IsBinaryEnabled(id, filename); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::DataObjectLookup<ADDRESS>
-		virtual unisim::util::debug::DataObject<ADDRESS> *GetDataObject(const char *data_object_name, const char *filename, const char *compilation_unit_name) const { bool l = dbg.Lock(id); unisim::util::debug::DataObject<ADDRESS> *ret = dbg.GetDataObject(id, data_object_name, filename, compilation_unit_name); if(l) { dbg.Unlock(id); } return ret; }
-		virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const { bool l = dbg.Lock(id); unisim::util::debug::DataObject<ADDRESS> *ret = dbg.FindDataObject(id, data_object_name, pc); if(l) { dbg.Unlock(id); } return ret; }
-		virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(id); dbg.EnumerateDataObjectNames(id, name_set, pc, scope); if(l) { dbg.Unlock(id); } }
+		virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name) const { bool l = dbg.Lock(id); unisim::util::debug::DataObject<ADDRESS> *ret = dbg.FindDataObject(id, data_object_name); if(l) { dbg.Unlock(id); } return ret; }
+		virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(id); dbg.EnumerateDataObjectNames(id, name_set, scope); if(l) { dbg.Unlock(id); } }
 		
 		// unisim::service::interfaces::SubProgramLookup<ADDRESS>
 		virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const { bool l = dbg.Lock(id); const unisim::util::debug::SubProgram<ADDRESS> *ret = dbg.FindSubProgram(id, subprogram_name, filename, compilation_unit_name); if(l) { dbg.Unlock(id); } return ret; }
