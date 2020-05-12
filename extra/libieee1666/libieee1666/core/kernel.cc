@@ -301,6 +301,12 @@ sc_kernel::~sc_kernel()
 		top_level_event->kernel = 0;
 	}
 	
+	for(trace_files_t::iterator it = trace_files.begin(); it != trace_files.end(); ++it)
+	{
+		sc_trace_file *tf = *it;
+		delete tf;
+	}
+	
 	delete coroutine_system;
 	delete stack_system;
 }
@@ -424,6 +430,27 @@ sc_process_handle sc_kernel::create_method_process(const char *name, sc_process_
 	}
 
 	return method_process_handle;
+}
+
+sc_trace_file *sc_kernel::create_vcd_trace_file(const char *name)
+{
+	sc_trace_file *tf = new sc_vcd_trace_file(name);
+	trace_files.push_back(tf);
+	return tf;
+}
+
+void sc_kernel::do_tracing()
+{
+	if(trace_files.size())
+	{
+		trace_files_t::iterator it = trace_files.begin();
+		do
+		{
+			sc_trace_file *tf = *it;
+			tf->do_tracing();
+		}
+		while(++it != trace_files.end());
+	}
 }
 
 sc_stack_system *sc_kernel::get_stack_system()
@@ -751,6 +778,7 @@ void sc_kernel::simulate(const sc_time& duration)
 		do
 		{
 			do_delta_steps(false);
+			do_tracing();
 			if(user_requested_stop || user_requested_pause) break;
 			pending_timed_notifications_exist = do_timed_notification_phase();
 			if(user_requested_stop) break;
