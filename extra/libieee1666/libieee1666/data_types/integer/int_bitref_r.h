@@ -70,6 +70,11 @@ public:
 	
 protected:
 	sc_int_bitref_r();
+	sc_int_bitref_r(const sc_int_base *obj, int bit_pos);
+	uint_type mask() const;
+	
+	sc_int_base *obj;
+	int bit_pos;
 	
 private:
 	// Disabled

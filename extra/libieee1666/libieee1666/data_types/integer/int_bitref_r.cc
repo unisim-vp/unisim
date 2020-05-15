@@ -33,6 +33,7 @@
  */
 
 #include <data_types/integer/int_bitref_r.h>
+#include <data_types/integer/int_base.h>
 
 namespace sc_dt {
 
@@ -40,6 +41,8 @@ namespace sc_dt {
 
 // Copy constructor
 sc_int_bitref_r::sc_int_bitref_r(const sc_int_bitref_r& a)
+	: obj(a.obj)
+	, bit_pos(a.bit_pos)
 {
 }
 
@@ -51,38 +54,58 @@ sc_int_bitref_r::~sc_int_bitref_r()
 // Capacity
 int sc_int_bitref_r::length() const
 {
+	return 1;
 }
 
 // Implicit conversion to uint64
 sc_int_bitref_r::operator uint64 () const
 {
+	return to_bool();
 }
 
 bool sc_int_bitref_r::operator ! () const
 {
+	return !to_bool();
 }
 
 bool sc_int_bitref_r::operator ~ () const
 {
+	return !to_bool();
 }
 
 // Explicit conversions
 bool sc_int_bitref_r::to_bool() const
 {
+	return obj && ((obj->value >> bit_pos) & 1);
 }
 
 // Other methods
 void sc_int_bitref_r::print(std::ostream& os) const
 {
+	os << to_bool();
 }
 
 sc_int_bitref_r::sc_int_bitref_r()
+	: obj(0)
+	, bit_pos(0)
 {
+}
+
+sc_int_bitref_r::sc_int_bitref_r(const sc_int_base *_obj, int _bit_pos)
+	: obj((sc_int_base *) _obj)
+	, bit_pos(_bit_pos)
+{
+}
+
+uint_type sc_int_bitref_r::mask() const
+{
+	return uint_type(1) << bit_pos;
 }
 
 // Disabled
 sc_int_bitref_r& sc_int_bitref_r::operator = (const sc_int_bitref_r&)
 {
+	return *this;
 }
 
 } // end of namespace sc_dt

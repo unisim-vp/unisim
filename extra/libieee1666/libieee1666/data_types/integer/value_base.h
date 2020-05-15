@@ -41,14 +41,16 @@ namespace sc_dt {
 
 //////////////////////////////// declaration //////////////////////////////////
 
+typedef uint_type concat_word;
+
 class sc_value_base
 {
 	friend class sc_concatref;
 	
 private:
 	virtual void concat_clear_data(bool to_ones = false);
-	virtual bool concat_get_ctrl(/*implementation-defined*/ unsigned int *dst_p, int low_i) const;
-	virtual bool concat_get_data(/*implementation-defined*/ unsigned int *dst_p, int low_i) const;
+	virtual bool concat_get_ctrl(concat_word *dst_p, int low_i) const;
+	virtual bool concat_get_data(concat_word *dst_p, int low_i) const;
 	virtual uint64 concat_get_uint64() const;
 	virtual int concat_length(bool *xz_present_p = 0) const;
 	virtual void concat_set(int64 src, int low_i);
