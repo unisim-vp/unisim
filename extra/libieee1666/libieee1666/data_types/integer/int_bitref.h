@@ -64,6 +64,7 @@ public:
 	
 private:
 	sc_int_bitref();
+	sc_int_bitref(sc_int_base *obj, int bit_pos);
 };
 
 } // end of namespace sc_dt

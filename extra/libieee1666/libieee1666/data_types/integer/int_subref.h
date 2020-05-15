@@ -74,6 +74,7 @@ public:
 
 protected:
 	sc_int_subref();
+	sc_int_subref(sc_int_base *obj, int left, int right);	
 };
 
 ///////////////////////////////// definition //////////////////////////////////

@@ -86,6 +86,12 @@ public:
 
 protected:
 	sc_uint_subref_r();
+	sc_uint_subref_r(const sc_uint_base *obj, int left, int right);
+	uint_type mask() const;
+	
+	sc_uint_base *obj;
+	int left;
+	int right;
 
 private:
 	// Disabled

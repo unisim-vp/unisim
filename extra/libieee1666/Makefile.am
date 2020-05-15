@@ -61,6 +61,7 @@ libieee1666/channels/semaphore.h \
 libieee1666/data_types/algorithm.h \
 libieee1666/data_types/native.h \
 libieee1666/data_types/fwd.h \
+libieee1666/data_types/util.h \
 libieee1666/data_types/bit/concref.h \
 libieee1666/data_types/bit/logic.h \
 libieee1666/data_types/bit/bv.h \
@@ -204,6 +205,7 @@ libieee1666/channels/semaphore.cc \
 libieee1666/channels/semaphore_if.cc \
 libieee1666/channels/signal.cc \
 libieee1666/channels/signal_if.cc \
+libieee1666/data_types/util.cc \
 libieee1666/data_types/context/length_context.cc \
 libieee1666/data_types/context/length_param.cc \
 libieee1666/data_types/context/fxcast_context.cc \

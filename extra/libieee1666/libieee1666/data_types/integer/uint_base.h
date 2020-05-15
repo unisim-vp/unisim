@@ -136,7 +136,44 @@ public:
 	// Other methods
 	void print(std::ostream& os = std::cout) const;
 	void scan(std::istream& is = std::cin);
+
+	// Arithmetic operators
+	sc_uint_base& operator += (uint_type v);
+	sc_uint_base& operator -= (uint_type v);
+	sc_uint_base& operator *= (uint_type v);
+	sc_uint_base& operator /= (uint_type v);
+	sc_uint_base& operator %= (uint_type v);
+	
+	// Bitwise operators
+	sc_uint_base& operator &= (uint_type v);
+	sc_uint_base& operator |= (uint_type v);
+	sc_uint_base& operator ^= (uint_type v);
+	sc_uint_base& operator <<= (uint_type v);
+	sc_uint_base& operator >>= (uint_type v);
+
+	friend bool operator == (const sc_uint_base& a, const sc_uint_base& b);
+	friend bool operator != (const sc_uint_base& a, const sc_uint_base& b);
+	friend bool operator < (const sc_uint_base& a, const sc_uint_base& b);
+	friend bool operator <= (const sc_uint_base& a, const sc_uint_base& b);
+	friend bool operator > (const sc_uint_base& a, const sc_uint_base& b);
+	friend bool operator >= (const sc_uint_base& a, const sc_uint_base& b);
+
+private:
+	uint_type value;
+	int len;
+	
+	void crop();
+	bool check_bit_select(int bit_pos) const;
+	bool check_part_select(int left, int right) const;
 };
+
+// Comparison operators
+bool operator == (const sc_uint_base& a, const sc_uint_base& b);
+bool operator != (const sc_uint_base& a, const sc_uint_base& b);
+bool operator < (const sc_uint_base& a, const sc_uint_base& b);
+bool operator <= (const sc_uint_base& a, const sc_uint_base& b);
+bool operator > (const sc_uint_base& a, const sc_uint_base& b);
+bool operator >= (const sc_uint_base& a, const sc_uint_base& b);
 
 ///////////////////////////////// definition //////////////////////////////////
 
