@@ -38,6 +38,11 @@ namespace sc_dt {
 
 ///////////////////////////////// definition //////////////////////////////////
 
+const sc_logic SC_LOGIC_0(Log_0);
+const sc_logic SC_LOGIC_1(Log_1);
+const sc_logic SC_LOGIC_Z(Log_Z);
+const sc_logic SC_LOGIC_X(Log_X);
+
 sc_logic_value_t sc_logic::bool2value(bool a)
 {
 	return a ? Log_1 : Log_0;

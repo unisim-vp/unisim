@@ -161,10 +161,10 @@ private:
 	sc_logic_value_t logic_value;
 };
 
-const sc_logic SC_LOGIC_0(Log_0);
-const sc_logic SC_LOGIC_1(Log_1);
-const sc_logic SC_LOGIC_Z(Log_Z);
-const sc_logic SC_LOGIC_X(Log_X);
+extern const sc_logic SC_LOGIC_0;
+extern const sc_logic SC_LOGIC_1;
+extern const sc_logic SC_LOGIC_Z;
+extern const sc_logic SC_LOGIC_X;
 
 } // end of namespace sc_dt
 
