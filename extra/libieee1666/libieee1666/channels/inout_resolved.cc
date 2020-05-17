@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,109 +32,74 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <data_types/context/fxtype_params.h>
+#include "channels/inout_resolved.h"
+#include "channels/signal_resolved.h"
 
-namespace sc_dt {
+namespace sc_core {
 
-///////////////////////////////// definition //////////////////////////////////
-
-const sc_q_mode SC_DEFAULT_Q_MODE_ = SC_TRN;
-const sc_o_mode SC_DEFAULT_O_MODE_ = SC_WRAP;
-const int SC_DEFAULT_N_BITS_ = 0;
-
-// Constructors and destructor
-sc_fxtype_params::sc_fxtype_params()
+sc_inout_resolved::sc_inout_resolved()
+	: sc_inout<sc_dt::sc_logic>()
 {
 }
 
-sc_fxtype_params::sc_fxtype_params(int, int)
+sc_inout_resolved::sc_inout_resolved(const char *_name)
+	: sc_inout<sc_dt::sc_logic>(_name)
 {
 }
 
-sc_fxtype_params::sc_fxtype_params(sc_q_mode, sc_o_mode, int)
+sc_inout_resolved::~sc_inout_resolved()
 {
 }
 
-sc_fxtype_params::sc_fxtype_params(int, int, sc_q_mode, sc_o_mode, int)
+void sc_inout_resolved::end_of_elaboration()
+{
+	sc_interface *itf = get_interface();
+	
+	if(!dynamic_cast<sc_signal_resolved *>(itf))
+	{
+		throw std::runtime_error("sc_inout_resolved is not bound to a sc_signal_resolved");
+	}
+}
+
+sc_inout_resolved& sc_inout_resolved::operator = (const sc_dt::sc_logic& v)
+{
+	sc_inout<sc_dt::sc_logic>::operator = (v);
+	return *this;
+}
+
+sc_inout_resolved& sc_inout_resolved::operator = (const sc_signal_in_if<sc_dt::sc_logic>& itf)
+{
+	sc_inout<sc_dt::sc_logic>::operator = (itf.read());
+	return *this;	
+}
+
+sc_inout_resolved& sc_inout_resolved::operator = (const sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& port)
+{
+	sc_inout<sc_dt::sc_logic>::operator = (port->read());
+	return *this;	
+}
+
+sc_inout_resolved& sc_inout_resolved::operator = (const sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& port)
+{
+	sc_inout<sc_dt::sc_logic>::operator = (port->read());
+	return *this;	
+}
+
+sc_inout_resolved& sc_inout_resolved::operator = (const sc_inout_resolved& inout_resolved)
+{
+	sc_inout<sc_dt::sc_logic>::operator = (inout_resolved->read());
+	return *this;	
+}
+
+const char *sc_inout_resolved::kind() const
+{
+	return "sc_inout_resolved";
+}
+
+// Disabled
+sc_inout_resolved::sc_inout_resolved(const sc_inout_resolved&)
 {
 }
 
-sc_fxtype_params::sc_fxtype_params(const sc_fxtype_params&)
-{
-}
 
-sc_fxtype_params::sc_fxtype_params(const sc_fxtype_params&, int, int)
-{
-}
-
-sc_fxtype_params::sc_fxtype_params(const sc_fxtype_params&, sc_q_mode, sc_o_mode, int)
-{
-}
-
-// Operators
-sc_fxtype_params& sc_fxtype_params::operator = (const sc_fxtype_params&)
-{
-}
-
-bool operator == (const sc_fxtype_params&, const sc_fxtype_params&)
-{
-}
-
-bool operator != (const sc_fxtype_params&, const sc_fxtype_params&)
-{
-}
-
-// Methods
-int sc_fxtype_params::wl() const
-{
-}
-
-void sc_fxtype_params::wl(int)
-{
-}
-
-int sc_fxtype_params::iwl() const
-{
-}
-
-void sc_fxtype_params::iwl(int)
-{
-}
-
-sc_q_mode sc_fxtype_params::q_mode() const
-{
-}
-
-void sc_fxtype_params::q_mode(sc_q_mode)
-{
-}
-
-sc_o_mode sc_fxtype_params::o_mode() const
-{
-}
-
-void sc_fxtype_params::o_mode(sc_o_mode)
-{
-}
-
-int sc_fxtype_params::n_bits() const
-{
-}
-
-void sc_fxtype_params::n_bits(int)
-{
-}
-
-const std::string sc_fxtype_params::to_string() const
-{
-}
-
-void sc_fxtype_params::print(std::ostream& os) const
-{
-}
-
-void sc_fxtype_params::dump(std::ostream& is) const
-{
-}
-
-} // end of namespace sc_dt
+} // end of namespace sc_core

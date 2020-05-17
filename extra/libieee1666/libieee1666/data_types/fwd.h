@@ -104,9 +104,9 @@ enum sc_context_begin
 	SC_LATER
 };
 
-const sc_q_mode SC_DEFAULT_Q_MODE_ = SC_TRN;
-const sc_o_mode SC_DEFAULT_O_MODE_ = SC_WRAP;
-const int SC_DEFAULT_N_BITS_ = 0;
+extern const sc_q_mode SC_DEFAULT_Q_MODE_;
+extern const sc_o_mode SC_DEFAULT_O_MODE_;
+extern const int SC_DEFAULT_N_BITS_;
 
 template <class T1, class T2> class sc_concref;
 class sc_logic;

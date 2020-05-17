@@ -41,6 +41,7 @@
 #include "channels/fwd.h"
 #include "channels/signal_if.h"
 #include "utilities/trace_file.h"
+#include "data_types/bit/logic.h"
 #include <string>
 
 namespace sc_core {
@@ -121,61 +122,48 @@ private:
 template <>
 inline void sc_trace<bool>( sc_trace_file*, const sc_inout<bool>&, const std::string& );
 
-// template <>
-// class sc_inout<sc_dt::sc_logic> : public sc_port<sc_signal_inout_if<sc_dt::sc_logic>,1>
-// {
-// public:
-// 	sc_inout();
-// 	explicit sc_inout( const char* );
-// 	virtual ~sc_inout();
-// 	void initialize( const sc_dt::sc_logic& );
-// 	void initialize( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	virtual void end_of_elaboration();
-// 	const sc_dt::sc_logic& read() const;
-// 	operator const sc_dt::sc_logic& () const;
-// 	void write( const sc_dt::sc_logic& );
-// 	sc_inout<sc_dt::sc_logic>& operator= ( const sc_dt::sc_logic& );
-// 	sc_inout<sc_dt::sc_logic>& operator= ( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	sc_inout<sc_dt::sc_logic>& operator= ( const sc_port< sc_signal_in_if<sc_dt::sc_logic>, 1>& );
-// 	sc_inout<sc_dt::sc_logic>& operator= ( const sc_port< sc_signal_inout_if<sc_dt::sc_logic>, 1>&);
-// 	sc_inout<sc_dt::sc_logic>& operator= ( const sc_inout<sc_dt::sc_logic>& );
-// 	const sc_event& default_event() const;
-// 	const sc_event& value_changed_event() const;
-// 	const sc_event& posedge_event() const;
-// 	const sc_event& negedge_event() const;
-// 	bool event() const;
-// 	bool posedge() const;
-// 	bool negedge() const;
-// 	sc_event_finder& value_changed() const;
-// 	sc_event_finder& pos() const;
-// 	sc_event_finder& neg() const;
-// 	virtual const char* kind() const;
-// private:
-// 	// Disabled
-// 	sc_inout( const sc_inout<sc_dt::sc_logic>& );
-// };
-// 
-// template <>
-// inline void sc_trace<sc_dt::sc_logic>( sc_trace_file*, const sc_inout<sc_dt::sc_logic>&, const std::string& );
-// 
-// class sc_inout_resolved : public sc_inout<sc_dt::sc_logic>
-// {
-// public:
-// 	sc_inout_resolved();
-// 	explicit sc_inout_resolved( const char* );
-// 	virtual ~sc_inout_resolved();
-// 	virtual void end_of_elaboration();
-// 	sc_inout_resolved& operator= ( const sc_dt::sc_logic& );
-// 	sc_inout_resolved& operator= ( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	sc_inout_resolved& operator= ( const sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& );
-// 	sc_inout_resolved& operator= ( const sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& );
-// 	sc_inout_resolved& operator= ( const sc_inout_resolved& );
-// 	virtual const char* kind() const;
-// private:
-// 	// Disabled
-// 	sc_inout_resolved( const sc_inout_resolved& );
-// };
-// 
+template <>
+class sc_inout<sc_dt::sc_logic> : public sc_port<sc_signal_inout_if<sc_dt::sc_logic>,1>
+{
+public:
+	sc_inout();
+	explicit sc_inout( const char* );
+	virtual ~sc_inout();
+	void initialize( const sc_dt::sc_logic& );
+	void initialize( const sc_signal_in_if<sc_dt::sc_logic>& );
+	virtual void end_of_elaboration();
+	const sc_dt::sc_logic& read() const;
+	operator const sc_dt::sc_logic& () const;
+	void write( const sc_dt::sc_logic& );
+	sc_inout<sc_dt::sc_logic>& operator= ( const sc_dt::sc_logic& );
+	sc_inout<sc_dt::sc_logic>& operator= ( const sc_signal_in_if<sc_dt::sc_logic>& );
+	sc_inout<sc_dt::sc_logic>& operator= ( const sc_port< sc_signal_in_if<sc_dt::sc_logic>, 1>& );
+	sc_inout<sc_dt::sc_logic>& operator= ( const sc_port< sc_signal_inout_if<sc_dt::sc_logic>, 1>&);
+	sc_inout<sc_dt::sc_logic>& operator= ( const sc_inout<sc_dt::sc_logic>& );
+	const sc_event& default_event() const;
+	const sc_event& value_changed_event() const;
+	const sc_event& posedge_event() const;
+	const sc_event& negedge_event() const;
+	bool event() const;
+	bool posedge() const;
+	bool negedge() const;
+	sc_event_finder& value_changed() const;
+	sc_event_finder& pos() const;
+	sc_event_finder& neg() const;
+	virtual const char* kind() const;
+private:
+	// Disabled
+	sc_inout( const sc_inout<sc_dt::sc_logic>& );
+
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> > *value_changed_event_finder;
+	sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> > *posedge_event_finder;
+	sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> > *negedge_event_finder;
+};
+
+template <>
+inline void sc_trace<sc_dt::sc_logic>( sc_trace_file*, const sc_inout<sc_dt::sc_logic>&, const std::string& );
+
 // template <int W>
 // class sc_inout_rv : public sc_inout<sc_dt::sc_lv<W>>
 // {

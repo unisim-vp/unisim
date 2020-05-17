@@ -89,36 +89,36 @@ void sc_trace(sc_trace_file *tf, const double *value, const std::string& name)
 	tf->trace(value, name);
 }
 
-// void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic& value, const std::string& name)
-// {
-// 	tf->trace(value, name);
-// }
-// 
-// void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic *value, const std::string& name)
-// {
-// 	tf->trace(value, name);
-// }
-// 
-// void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base& value, const std::string& name)
-// {
-// 	tf->trace(value, name);
-// }
-// 
-// void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base *value, const std::string& name)
-// {
-// 	tf->trace(value, name);
-// }
-// 
-// void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base& value, const std::string& name)
-// {
-// 	tf->trace(value, name);
-// }
-// 
-// void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base *value, const std::string& name)
-// {
-// 	tf->trace(value, name);
-// }
-// 
+void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic& value, const std::string& name)
+{
+	tf->trace(value, name);
+}
+
+void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic *value, const std::string& name)
+{
+	tf->trace(value, name);
+}
+
+void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base& value, const std::string& name)
+{
+	tf->trace(value, name);
+}
+
+void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base *value, const std::string& name)
+{
+	tf->trace(value, name);
+}
+
+void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base& value, const std::string& name)
+{
+	tf->trace(value, name);
+}
+
+void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base *value, const std::string& name)
+{
+	tf->trace(value, name);
+}
+
 // void sc_trace(sc_trace_file *tf, const sc_dt::sc_signed& value, const std::string& name)
 // {
 // 	tf->trace(value, name);
@@ -511,7 +511,7 @@ void sc_vcd_variable_base::print_decl(std::ostream& stream)
 
 template <class T>
 sc_vcd_variable<T>::sc_vcd_variable(const std::string& _name, const std::string& _identifier, const T& _value)
-	: sc_vcd_variable_base(_name, _identifier, sc_vcd_type_trait<T>::type(), sc_vcd_type_trait<T>::width())
+	: sc_vcd_variable_base(_name, _identifier, sc_vcd_type_trait<T>::type(), sc_vcd_type_trait<T>::width(_value))
 	, value(_value)
 	, prev_value(_value)
 {
@@ -631,36 +631,36 @@ void sc_vcd_trace_file::trace(const double* value, const std::string& name)
 	trace<double>(*value, name);
 }
 
-// void sc_vcd_trace_file::trace(const sc_dt::sc_logic& value, const std::string& name)
-// {
-//	trace<sc_dt::sc_logic>(value, name);
-// }
-// 
-// void sc_vcd_trace_file::trace(const sc_dt::sc_logic* value, const std::string& name)
-// {
-//	trace<sc_dt::sc_logic>(*value, name);
-// }
-// 
-// void sc_vcd_trace_file::trace(const sc_dt::sc_int_base& value, const std::string& name)
-// {
-//	trace<sc_dt::sc_int_base>(value, name);
-// }
-// 
-// void sc_vcd_trace_file::trace(const sc_dt::sc_int_base* value, const std::string& name)
-// {
-//	trace<sc_dt::sc_int_base>(*value, name);
-// }
-// 
-// void sc_vcd_trace_file::trace(const sc_dt::sc_uint_base& value, const std::string& name)
-// {
-//	trace<sc_dt::sc_uint_base>(value, name);
-// }
-// 
-// void sc_vcd_trace_file::trace(const sc_dt::sc_uint_base* value, const std::string& name)
-// {
-//	trace<sc_dt::sc_uint_base>(*value, name);
-// }
-// 
+void sc_vcd_trace_file::trace(const sc_dt::sc_logic& value, const std::string& name)
+{
+	trace<sc_dt::sc_logic>(value, name);
+}
+
+void sc_vcd_trace_file::trace(const sc_dt::sc_logic* value, const std::string& name)
+{
+	trace<sc_dt::sc_logic>(*value, name);
+}
+
+void sc_vcd_trace_file::trace(const sc_dt::sc_int_base& value, const std::string& name)
+{
+	trace<sc_dt::sc_int_base>(value, name);
+}
+
+void sc_vcd_trace_file::trace(const sc_dt::sc_int_base* value, const std::string& name)
+{
+	trace<sc_dt::sc_int_base>(*value, name);
+}
+
+void sc_vcd_trace_file::trace(const sc_dt::sc_uint_base& value, const std::string& name)
+{
+	trace<sc_dt::sc_uint_base>(value, name);
+}
+
+void sc_vcd_trace_file::trace(const sc_dt::sc_uint_base* value, const std::string& name)
+{
+	trace<sc_dt::sc_uint_base>(*value, name);
+}
+
 // void sc_vcd_trace_file::trace(const sc_dt::sc_signed& value, const std::string& name)
 // {
 //	trace<sc_dt::sc_signed>(value, name);

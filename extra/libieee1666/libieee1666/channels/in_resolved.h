@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,109 +32,31 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <data_types/context/fxtype_params.h>
+#ifndef __LIBIEEE1666_CHANNELS_IN_RESOLVED_H__
+#define __LIBIEEE1666_CHANNELS_IN_RESOLVED_H__
 
-namespace sc_dt {
+#include "channels/fwd.h"
+#include "channels/in.h"
+#include "data_types/bit/logic.h"
 
-///////////////////////////////// definition //////////////////////////////////
+namespace sc_core {
 
-const sc_q_mode SC_DEFAULT_Q_MODE_ = SC_TRN;
-const sc_o_mode SC_DEFAULT_O_MODE_ = SC_WRAP;
-const int SC_DEFAULT_N_BITS_ = 0;
+//////////////////////////////// sc_in_resolved //////////////////////////////////////
 
-// Constructors and destructor
-sc_fxtype_params::sc_fxtype_params()
+class sc_in_resolved : public sc_in<sc_dt::sc_logic>
 {
-}
+public:
+	sc_in_resolved();
+	explicit sc_in_resolved(const char *);
+	virtual ~sc_in_resolved();
+	virtual void end_of_elaboration();
+	virtual const char *kind() const;
+private:
+	// Disabled
+	sc_in_resolved(const sc_in_resolved&);
+	sc_in_resolved& operator = (const sc_in_resolved&);
+};
 
-sc_fxtype_params::sc_fxtype_params(int, int)
-{
-}
+} // end of namespace sc_core
 
-sc_fxtype_params::sc_fxtype_params(sc_q_mode, sc_o_mode, int)
-{
-}
-
-sc_fxtype_params::sc_fxtype_params(int, int, sc_q_mode, sc_o_mode, int)
-{
-}
-
-sc_fxtype_params::sc_fxtype_params(const sc_fxtype_params&)
-{
-}
-
-sc_fxtype_params::sc_fxtype_params(const sc_fxtype_params&, int, int)
-{
-}
-
-sc_fxtype_params::sc_fxtype_params(const sc_fxtype_params&, sc_q_mode, sc_o_mode, int)
-{
-}
-
-// Operators
-sc_fxtype_params& sc_fxtype_params::operator = (const sc_fxtype_params&)
-{
-}
-
-bool operator == (const sc_fxtype_params&, const sc_fxtype_params&)
-{
-}
-
-bool operator != (const sc_fxtype_params&, const sc_fxtype_params&)
-{
-}
-
-// Methods
-int sc_fxtype_params::wl() const
-{
-}
-
-void sc_fxtype_params::wl(int)
-{
-}
-
-int sc_fxtype_params::iwl() const
-{
-}
-
-void sc_fxtype_params::iwl(int)
-{
-}
-
-sc_q_mode sc_fxtype_params::q_mode() const
-{
-}
-
-void sc_fxtype_params::q_mode(sc_q_mode)
-{
-}
-
-sc_o_mode sc_fxtype_params::o_mode() const
-{
-}
-
-void sc_fxtype_params::o_mode(sc_o_mode)
-{
-}
-
-int sc_fxtype_params::n_bits() const
-{
-}
-
-void sc_fxtype_params::n_bits(int)
-{
-}
-
-const std::string sc_fxtype_params::to_string() const
-{
-}
-
-void sc_fxtype_params::print(std::ostream& os) const
-{
-}
-
-void sc_fxtype_params::dump(std::ostream& is) const
-{
-}
-
-} // end of namespace sc_dt
+#endif

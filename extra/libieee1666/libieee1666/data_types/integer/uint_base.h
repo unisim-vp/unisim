@@ -177,8 +177,19 @@ bool operator >= (const sc_uint_base& a, const sc_uint_base& b);
 
 ///////////////////////////////// definition //////////////////////////////////
 
+template <class T> sc_uint_base::sc_uint_base(const sc_generic_base<T>& a)
+	: value(a->to_uint64())
+	, len(a->length())
+{
+	crop();
+}
+
 template <class T> sc_uint_base& sc_uint_base::operator = (const sc_generic_base<T>& a)
 {
+	value = a->to_uint64();
+	len = a->length();
+	crop();
+	return *this;
 }
 
 } // end of namespace sc_dt

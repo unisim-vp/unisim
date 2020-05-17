@@ -64,10 +64,6 @@ sc_uint_base::sc_uint_base(const sc_uint_subref_r& a)
 {
 }
 
-template <class T> sc_uint_base::sc_uint_base(const sc_generic_base<T>& a)
-{
-}
-
 sc_uint_base::sc_uint_base(const sc_bv_base& v)
 {
 }

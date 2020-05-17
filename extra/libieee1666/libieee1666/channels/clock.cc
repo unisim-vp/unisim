@@ -198,14 +198,14 @@ void sc_clock::initialize()
 
 void sc_clock::posedge_process()
 {
-	new_value() = true;
+	new_value = true;
 	request_update();
 	gen_negedge_event.notify(clock_negedge_time);
 }
 
 void sc_clock::negedge_process()
 {
-	new_value() = false;
+	new_value = false;
 	request_update();
 	gen_posedge_event.notify(clock_posedge_time);
 }

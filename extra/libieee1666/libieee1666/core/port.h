@@ -325,6 +325,7 @@ sc_port<IF, N, P>::sc_port( const sc_port<IF,N,P>& )
 template <class IF, int N, sc_port_policy P>
 sc_port<IF,N,P>& sc_port<IF, N, P>::operator= ( const sc_port<IF,N,P>& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

@@ -183,12 +183,19 @@ bool operator >= (const sc_int_base& a, const sc_int_base& b);
 
 // Constructors
 template <typename T> sc_int_base::sc_int_base(const sc_generic_base<T>& a)
+	: value(a->to_int64())
+	, len(a->length())
 {
+	sign_extend();
 }
 
 // Assignment operators
 template <class T> sc_int_base& sc_int_base::operator = (const sc_generic_base<T>& a)
 {
+	value = a->to_int64();
+	len = a->length();
+	sign_extend();
+	return *this;
 }
 
 } // end of namespace sc_dt

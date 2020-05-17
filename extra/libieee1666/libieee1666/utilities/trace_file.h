@@ -38,6 +38,9 @@
 #include "core/time.h"
 #include "channels/signal_if.h"
 #include "utilities/fwd.h"
+#include "data_types/bit/logic.h"
+#include "data_types/integer/int_base.h"
+#include "data_types/integer/uint_base.h"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -64,12 +67,12 @@ protected:
 	friend void sc_trace(sc_trace_file *tf, const float *value, const std::string& name);
 	friend void sc_trace(sc_trace_file *tf, const double& value, const std::string& name);
 	friend void sc_trace(sc_trace_file *tf, const double *value, const std::string& name);
-//	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic& value, const std::string& name);
-//	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic *value, const std::string& name);
-//	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base& value, const std::string& name);
-//	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base *value, const std::string& name);
-//	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base& value, const std::string& name);
-//	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base *value, const std::string& name);
+	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic& value, const std::string& name);
+	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_logic *value, const std::string& name);
+	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base& value, const std::string& name);
+	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_int_base *value, const std::string& name);
+	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base& value, const std::string& name);
+	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_uint_base *value, const std::string& name);
 //	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_signed& value, const std::string& name);
 //	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_signed *value, const std::string& name);
 //	friend void sc_trace(sc_trace_file *tf, const sc_dt::sc_unsigned& value, const std::string& name);
@@ -122,12 +125,12 @@ protected:
 	virtual void trace(const float* value, const std::string& name) = 0;
 	virtual void trace(const double& value, const std::string& name) = 0;
 	virtual void trace(const double* value, const std::string& name) = 0;
-//	virtual void trace(const sc_dt::sc_logic& value, const std::string& name) = 0;
-//	virtual void trace(const sc_dt::sc_logic* value, const std::string& name) = 0;
-//	virtual void trace(const sc_dt::sc_int_base& value, const std::string& name) = 0;
-//	virtual void trace(const sc_dt::sc_int_base* value, const std::string& name) = 0;
-//	virtual void trace(const sc_dt::sc_uint_base& value, const std::string& name) = 0;
-//	virtual void trace(const sc_dt::sc_uint_base* value, const std::string& name) = 0;
+	virtual void trace(const sc_dt::sc_logic& value, const std::string& name) = 0;
+	virtual void trace(const sc_dt::sc_logic* value, const std::string& name) = 0;
+	virtual void trace(const sc_dt::sc_int_base& value, const std::string& name) = 0;
+	virtual void trace(const sc_dt::sc_int_base* value, const std::string& name) = 0;
+	virtual void trace(const sc_dt::sc_uint_base& value, const std::string& name) = 0;
+	virtual void trace(const sc_dt::sc_uint_base* value, const std::string& name) = 0;
 //	virtual void trace(const sc_dt::sc_signed& value, const std::string& name) = 0;
 //	virtual void trace(const sc_dt::sc_signed* value, const std::string& name) = 0;
 //	virtual void trace(const sc_dt::sc_unsigned& value, const std::string& name) = 0;
@@ -250,13 +253,14 @@ template <typename T>
 struct sc_vcd_type_trait
 {
 	static const char *type() { return "wire"; }
-	static int width() { return sizeof(T) * CHAR_BIT; }
+	static int width(const T& value) { return sizeof(T) * CHAR_BIT; }
 	static void print(std::ostream& stream, const T& value, const std::string& identifier)
 	{
-		if(width() > 1)
+		int w = width(value);
+		if(w > 1)
 		{
 			stream << 'b';
-			for(int i = width() - 1; i >= 0; --i) stream << ((value >> i) & 1);
+			for(int i = w - 1; i >= 0; --i) stream << ((value >> i) & 1);
 		}
 		else
 		{
@@ -270,7 +274,7 @@ template <>
 struct sc_vcd_type_trait<bool>
 {
 	static const char *type() { return "wire"; }
-	static int width() { return 1; }
+	static int width(const bool& value) { return 1; }
 	static void print(std::ostream& stream, const bool& value, const std::string& identifier)
 	{
 		stream << (value ? '1' : '0') << identifier;
@@ -281,7 +285,7 @@ template <>
 struct sc_vcd_type_trait<float>
 {
 	static const char *type() { return "real"; }
-	static int width() { return 1; }
+	static int width(const float& value) { return 1; }
 	static void print(std::ostream& stream, const float& value, const std::string& identifier)
 	{
 		stream << 'r' << std::setprecision(8) << value << ' ' << identifier;
@@ -292,10 +296,43 @@ template <>
 struct sc_vcd_type_trait<double>
 {
 	static const char *type() { return "real"; }
-	static int width() { return 1; }
+	static int width(const double& value) { return 1; }
 	static void print(std::ostream& stream, const double& value, const std::string& identifier)
 	{
 		stream << 'r' << std::setprecision(16) << value << ' ' << identifier;
+	}
+};
+
+template <>
+struct sc_vcd_type_trait<sc_dt::sc_logic>
+{
+	static const char *type() { return "wire"; }
+	static int width(const sc_dt::sc_logic& value) { return 1; }
+	static void print(std::ostream& stream, const sc_dt::sc_logic& value, const std::string& identifier)
+	{
+		stream << value.to_char() << identifier;
+	}
+};
+
+template <>
+struct sc_vcd_type_trait<sc_dt::sc_int_base>
+{
+	static const char *type() { return "wire"; }
+	static int width(const sc_dt::sc_int_base& value) { return value.length(); }
+	static void print(std::ostream& stream, const sc_dt::sc_int_base& value, const std::string& identifier)
+	{
+		stream << value.to_string(sc_dt::SC_BIN) << ' ' << identifier;
+	}
+};
+
+template <>
+struct sc_vcd_type_trait<sc_dt::sc_uint_base>
+{
+	static const char *type() { return "wire"; }
+	static int width(const sc_dt::sc_uint_base& value) { return value.length(); }
+	static void print(std::ostream& stream, const sc_dt::sc_uint_base& value, const std::string& identifier)
+	{
+		stream << value.to_string(sc_dt::SC_BIN) << ' ' << identifier;
 	}
 };
 
@@ -343,12 +380,12 @@ protected:
 	virtual void trace(const float* value, const std::string& name);
 	virtual void trace(const double& value, const std::string& name);
 	virtual void trace(const double* value, const std::string& name);
-//	virtual void trace(const sc_dt::sc_logic& value, const std::string& name);
-//	virtual void trace(const sc_dt::sc_logic* value, const std::string& name);
-//	virtual void trace(const sc_dt::sc_int_base& value, const std::string& name);
-//	virtual void trace(const sc_dt::sc_int_base* value, const std::string& name);
-//	virtual void trace(const sc_dt::sc_uint_base& value, const std::string& name);
-//	virtual void trace(const sc_dt::sc_uint_base* value, const std::string& name);
+	virtual void trace(const sc_dt::sc_logic& value, const std::string& name);
+	virtual void trace(const sc_dt::sc_logic* value, const std::string& name);
+	virtual void trace(const sc_dt::sc_int_base& value, const std::string& name);
+	virtual void trace(const sc_dt::sc_int_base* value, const std::string& name);
+	virtual void trace(const sc_dt::sc_uint_base& value, const std::string& name);
+	virtual void trace(const sc_dt::sc_uint_base* value, const std::string& name);
 //	virtual void trace(const sc_dt::sc_signed& value, const std::string& name);
 //	virtual void trace(const sc_dt::sc_signed* value, const std::string& name);
 //	virtual void trace(const sc_dt::sc_unsigned& value, const std::string& name);

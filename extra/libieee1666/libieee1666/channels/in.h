@@ -118,56 +118,47 @@ private:
 template <>
 inline void sc_trace<bool>( sc_trace_file*, const sc_in<bool>&, const std::string& );
 
-// template <>
-// class sc_in<sc_dt::sc_logic> : public sc_port<sc_signal_in_if<sc_dt::sc_logic>,1>
-// {
-// public:
-// 	sc_in();
-// 	explicit sc_in( const char* );
-// 	virtual ~sc_in();
-// 	virtual void bind ( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	void operator() ( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	virtual void bind ( sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& );
-// 	void operator() ( sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& );
-// 	virtual void bind ( sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& );
-// 	void operator() ( sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& );
-// 	virtual void end_of_elaboration();
-// 	const sc_dt::sc_logic& read() const;
-// 	operator const sc_dt::sc_logic& () const;
-// 	const sc_event& default_event() const;
-// 	const sc_event& value_changed_event() const;
-// 	const sc_event& posedge_event() const;
-// 	const sc_event& negedge_event() const;
-// 	bool event() const;
-// 	bool posedge() const;
-// 	bool negedge() const;
-// 	sc_event_finder& value_changed() const;
-// 	sc_event_finder& pos() const;
-// 	sc_event_finder& neg() const;
-// 	virtual const char* kind() const;
-// private:
-// 	// Disabled
-// 	sc_in( const sc_in<sc_dt::sc_logic>& );
-// 	sc_in<sc_dt::sc_logic>& operator= ( const sc_in<sc_dt::sc_logic>& );
-// };
-// 
-// template <>
-// inline void sc_trace<sc_dt::sc_logic>( sc_trace_file*, const sc_in<sc_dt::sc_logic>&, const std::string& );
-// 
-// class sc_in_resolved : public sc_in<sc_dt::sc_logic>
-// {
-// public:
-// 	sc_in_resolved();
-// 	explicit sc_in_resolved( const char* );
-// 	virtual ~sc_in_resolved();
-// 	virtual void end_of_elaboration();
-// 	virtual const char* kind() const;
-// private:
-// 	// Disabled
-// 	sc_in_resolved( const sc_in_resolved& );
-// 	sc_in_resolved& operator= (const sc_in_resolved& );
-// };
-// 
+template <>
+class sc_in<sc_dt::sc_logic> : public sc_port<sc_signal_in_if<sc_dt::sc_logic>,1>
+{
+public:
+	sc_in();
+	explicit sc_in( const char* );
+	virtual ~sc_in();
+	virtual void bind ( const sc_signal_in_if<sc_dt::sc_logic>& );
+	void operator() ( const sc_signal_in_if<sc_dt::sc_logic>& );
+	virtual void bind ( sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& );
+	void operator() ( sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& );
+	virtual void bind ( sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& );
+	void operator() ( sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& );
+	virtual void end_of_elaboration();
+	const sc_dt::sc_logic& read() const;
+	operator const sc_dt::sc_logic& () const;
+	const sc_event& default_event() const;
+	const sc_event& value_changed_event() const;
+	const sc_event& posedge_event() const;
+	const sc_event& negedge_event() const;
+	bool event() const;
+	bool posedge() const;
+	bool negedge() const;
+	sc_event_finder& value_changed() const;
+	sc_event_finder& pos() const;
+	sc_event_finder& neg() const;
+	virtual const char* kind() const;
+private:
+	// Disabled
+	sc_in( const sc_in<sc_dt::sc_logic>& );
+	sc_in<sc_dt::sc_logic>& operator= ( const sc_in<sc_dt::sc_logic>& );
+
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> > *value_changed_event_finder;
+	sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> > *posedge_event_finder;
+	sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> > *negedge_event_finder;
+};
+
+template <>
+inline void sc_trace<sc_dt::sc_logic>( sc_trace_file*, const sc_in<sc_dt::sc_logic>&, const std::string& );
+
 // template <int W>
 // class sc_in_rv : public sc_in<sc_dt::sc_lv<W>>
 // {
@@ -303,8 +294,9 @@ sc_in<T>& sc_in<T>::operator= ( const sc_in<T>& )
 }
 
 template <class T>
-inline void sc_trace( sc_trace_file*, const sc_in<T>&, const std::string& )
+inline void sc_trace( sc_trace_file *tf, const sc_in<T>& in, const std::string& name)
 {
+	sc_trace(tf, in.read(), name);
 }
 
 } // end of namespace sc_core
