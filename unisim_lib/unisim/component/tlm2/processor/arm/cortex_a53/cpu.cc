@@ -408,8 +408,6 @@ CPU::PhysicalReadMemory( uint64_t addr, uint8_t* buffer, unsigned size )
   return true;
 }
 
-  
-
 bool
 CPU::PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
@@ -495,6 +493,13 @@ CPU::PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
       << EndDebugInfo;
 
   return true;
+}
+
+void
+CPU::dc_zva(uint64_t addr)
+{
+  uint8_t buffer[64] = {0};
+  PhysicalWriteMemory( addr & -(sizeof buffer), buffer, sizeof buffer );
 }
 
 /**
@@ -583,7 +588,7 @@ CPU::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint
         static struct : public SysReg {
           char const* Name() const { return "DCZID_EL0"; }
           char const* Describe() const { return "Data Cache Zero ID register"; }
-          uint64_t Read( CPU& cpu ) const { return 4; /* TODO: DZP should depend on SCTLR_EL1 and HCR_EL2 */ }
+          uint64_t Read( PCPU& cpu ) const override { return 4; /* TODO: DZP should depend on SCTLR_EL1 and HCR_EL2 */ }
         } x; return x;
       } break;
 

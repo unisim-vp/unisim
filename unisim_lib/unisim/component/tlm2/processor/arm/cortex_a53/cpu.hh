@@ -159,8 +159,12 @@ private:
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
 
+public:
   // System Registers
   virtual SysReg const&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) override;
+
+  // Cache operation
+  void dc_zva(uint64_t addr);
 };
 
 } // end of namespace cortex_a53

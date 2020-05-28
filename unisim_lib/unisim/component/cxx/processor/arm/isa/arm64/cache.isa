@@ -43,6 +43,10 @@ op dc_zva( 0b1101010100001[13] : 0b011[3] : 0b0111[4] : 0b0100[4] : 0b001[3] : r
 dc_zva.disasm = {
   sink << "dc\tzva, " << DisasmGZXR(rt);
 };
+
+dc_zva.execute = {
+  cpu.dc_zva( cpu.GetGZR(rt) );
+};
   
 op dc_cisw( 0b1101010100001[13] : 0b000[3] : 0b0111[4] : 0b1110[4] : 0b010[3] : rt[5] );
 dc_cisw.var format : {char const*} = {"base,2897"};
