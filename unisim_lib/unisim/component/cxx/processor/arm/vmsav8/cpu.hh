@@ -100,7 +100,7 @@ namespace vmsav8 {
  * Defines and implements architectural state of armv8 processors.
  */
 
-template <typename CONFIG>
+template <typename CPU_IMPL>
 struct CPU
   : public virtual unisim::kernel::Object
   , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
@@ -115,7 +115,6 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
-  typedef CONFIG Config;
   // typedef simfloat::FP FP;
   // typedef FP::F64  F64;
   // typedef FP::F32  F32;
@@ -196,7 +195,7 @@ struct CPU
     
   void StepInstruction();
 
-  void UndefinedInstruction( isa::arm64::Operation<CPU>* insn );
+  void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL>* insn );
   
   bool Cond( bool cond ) { return cond; }
   
@@ -497,7 +496,7 @@ private:
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
   
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU> decoder;
+  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU_IMPL> decoder;
   
   // Intrusive memory accesses
   virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;

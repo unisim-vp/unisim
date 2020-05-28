@@ -8835,6 +8835,12 @@ udiv_xxx.execute = {
  * end of UDIV
  *******************************************************************/
 
+/*******************************************************************
+ * UMADDL
+ *
+ * Unsigned multiply-add long: Xd = Xa + Wn * Wm
+ */
+
 op umaddl_xw( 0b10011011101[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
 umaddl_xw.var format : {char const*} = {"base,237"};
 
@@ -8845,6 +8851,24 @@ umaddl_xw.disasm = {
     sink << "umaddl\t" << DisasmGZXR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmGZXR(ra);
 };
 
+umaddl_xw.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  
+  U64 op1( U32(cpu.GetGZR(rn)) ), op2( U32(cpu.GetGZR(rm)) ), res( cpu.GetGZR(ra) + op1*op2 );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of UMADDL
+ *******************************************************************/
+
+/*******************************************************************
+ * UMSUBL
+ *
+ * Unsigned multiply-subtract long: Xd = Xa - Wn * Wm
+ */
+
 op umsubl_xw( 0b10011011101[11] : rm[5] : 0b1[1] : ra[5] : rn[5] : rd[5] );
 umsubl_xw.var format : {char const*} = {"base,238"};
 
@@ -8854,6 +8878,18 @@ umsubl_xw.disasm = {
   else
     sink << "umsubl\t" << DisasmGZXR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmGZXR(ra);
 };
+
+umsubl_xw.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  
+  U64 op1( U32(cpu.GetGZR(rn)) ), op2( U32(cpu.GetGZR(rm)) ), res( cpu.GetGZR(ra) - op1*op2 );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of UMSUBL
+ *******************************************************************/
 
 /*******************************************************************
  * UMULH

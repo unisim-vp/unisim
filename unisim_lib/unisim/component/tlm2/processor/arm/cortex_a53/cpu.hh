@@ -48,37 +48,37 @@ namespace processor {
 namespace arm {
 namespace cortex_a53 {
 
-struct ConfigCA53
-{
-  //=====================================================================
-  //=                  ARM architecture model description               =
-  //=====================================================================
+// struct ConfigCA53
+// {
+//   //=====================================================================
+//   //=                  ARM architecture model description               =
+//   //=====================================================================
   
-  // Following a standard armv7 configuration
-  // static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
-  static bool const     insns4T = true;
-  static bool const     insns5E = true;
-  static bool const     insns5J = true;
-  static bool const     insns5T = true;
-  static bool const     insns6  = true;
-  static bool const     insnsRM = true;
-  static bool const     insnsT2 = true;
-  static bool const     insns7  = true;
-  static bool const     hasVFP  = true;
-  static bool const     hasAdvSIMD = false;
-};
+//   // Following a standard armv7 configuration
+//   // static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
+//   static bool const     insns4T = true;
+//   static bool const     insns5E = true;
+//   static bool const     insns5J = true;
+//   static bool const     insns5T = true;
+//   static bool const     insns6  = true;
+//   static bool const     insnsRM = true;
+//   static bool const     insnsT2 = true;
+//   static bool const     insns7  = true;
+//   static bool const     hasVFP  = true;
+//   static bool const     hasAdvSIMD = false;
+// };
 
 
 struct CPU
   : public sc_core::sc_module
   , public tlm::tlm_bw_transport_if<>
-  , public unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>
+  , public unisim::component::cxx::processor::arm::vmsav8::CPU<CPU>
 {
   typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
   typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
   typedef tlm::tlm_sync_enum     sync_enum_type;
 	
-  typedef unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53> PCPU;
+  typedef unisim::component::cxx::processor::arm::vmsav8::CPU<CPU> PCPU;
   // typedef PCPU::CP15CPU CP15CPU;
   // typedef PCPU::CP15Reg CP15Reg;
 
@@ -158,6 +158,9 @@ private:
   // Non-itrusive memory accesses
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
+
+  // System Registers
+  virtual SysReg const&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) override;
 };
 
 } // end of namespace cortex_a53

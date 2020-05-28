@@ -67,8 +67,8 @@ using unisim::kernel::logger::EndDebugError;
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
-template <class CONFIG>
-CPU<CONFIG>::CPU(const char *name, Object *parent)
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
   : unisim::kernel::Object(name, parent)
   , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<unisim::service::interfaces::TrapReporting>(name, parent)
@@ -171,8 +171,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
  * Takes care of releasing:
  *  - Debug Registers
  */
-template <class CONFIG>
-CPU<CONFIG>::~CPU()
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::~CPU()
 {
 }
 
@@ -183,9 +183,9 @@ CPU<CONFIG>::~CPU()
  *
  * @return a pointer to the RegisterInterface corresponding to name
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 unisim::service::interfaces::Register*
-CPU<CONFIG>::GetRegister( const char* name )
+CPU<CPU_IMPL>::GetRegister( const char* name )
 {
   return registers_registry.GetRegister(name);
 }
@@ -195,9 +195,9 @@ CPU<CONFIG>::GetRegister( const char* name )
  *  Allows clients of the Registers interface to scan available
  * register by providing a suitable RegisterScanner interface.
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+CPU<CPU_IMPL>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
   // scanner.Append( this->GetRegister( "r0" ) );
   // scanner.Append( this->GetRegister( "r1" ) );
@@ -234,9 +234,9 @@ CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanne
  *
  * @return true on success, false otherwise
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 bool
-CPU<CONFIG>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
+CPU<CPU_IMPL>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
   uint8_t* rbuffer = (uint8_t*)buffer;
 
@@ -255,9 +255,9 @@ CPU<CONFIG>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
  *
  * @return true on success, false otherwise
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 bool
-CPU<CONFIG>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
+CPU<CPU_IMPL>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
@@ -273,9 +273,9 @@ CPU<CONFIG>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
  *
  * @return the disassembling of the requested instruction address
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 std::string 
-CPU<CONFIG>::Disasm(uint64_t addr, uint64_t& next_addr)
+CPU<CPU_IMPL>::Disasm(uint64_t addr, uint64_t& next_addr)
 {
   std::stringstream buffer;
   
@@ -288,10 +288,10 @@ CPU<CONFIG>::Disasm(uint64_t addr, uint64_t& next_addr)
   
   insn = unisim::util::endian::LittleEndian2Host(insn);
   
-  isa::arm64::Operation<CPU>* op = decoder.Decode(addr, insn);
+  isa::arm64::Operation<CPU_IMPL>* op = decoder.Decode(addr, insn);
   
   buffer << std::hex << std::setfill('0') << std::setw(8) << op->GetEncoding() << std::dec << " ";
-  op->disasm(*this, buffer);
+  op->disasm(*static_cast<CPU_IMPL*>(this), buffer);
   
   next_addr = addr + 4;
 
@@ -303,9 +303,9 @@ CPU<CONFIG>::Disasm(uint64_t addr, uint64_t& next_addr)
  * @param report if true/false sets/unsets the reporting of memory
  *        acesseses
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
+CPU<CPU_IMPL>::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
 {
   switch (type) {
   case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
@@ -324,9 +324,9 @@ CPU<CONFIG>::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryA
  *
  * @return true on success, false otherwise
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 bool 
-CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
+CPU<CPU_IMPL>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
   uint8_t* rbuffer = (uint8_t*)buffer;
 
@@ -349,9 +349,9 @@ CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
  *
  * @return true on success, false otherwise
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 bool
-CPU<CONFIG>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size )
+CPU<CPU_IMPL>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
@@ -374,9 +374,9 @@ CPU<CONFIG>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size
  * instruction execution, as complete as possible.  Any synchronous
  * exception that occurs will immediately be signaled.
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void 
-CPU<CONFIG>::StepInstruction()
+CPU<CPU_IMPL>::StepInstruction()
 {
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
   uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
@@ -404,7 +404,7 @@ CPU<CONFIG>::StepInstruction()
     ReadInsn(insn_addr, insn);
     
     /* Decode current PC */
-    isa::arm64::Operation<CPU>* op;
+    isa::arm64::Operation<CPU_IMPL>* op;
     op = decoder.Decode(insn_addr, insn);
     
     this->next_insn_addr += 4;
@@ -417,7 +417,7 @@ CPU<CONFIG>::StepInstruction()
     
     /* Execute instruction */
     asm volatile( "arm64_operation_execute:" );
-    op->execute( *this );
+    op->execute( *static_cast<CPU_IMPL*>(this) );
     
     // uint64_t newspval = GetGSR(31);
     
@@ -486,9 +486,9 @@ CPU<CONFIG>::StepInstruction()
  * @param address the address to read data from
  * @param val the buffer to fill with the read data
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void 
-CPU<CONFIG>::ReadInsn( uint64_t address, isa::arm64::CodeType& insn )
+CPU<CPU_IMPL>::ReadInsn( uint64_t address, isa::arm64::CodeType& insn )
 {
   uint64_t base_address = address & -IPB_LINE_SIZE;
   unsigned buffer_index = address % IPB_LINE_SIZE;
@@ -516,9 +516,9 @@ CPU<CONFIG>::ReadInsn( uint64_t address, isa::arm64::CodeType& insn )
  *     instruction that the prefetch instruction buffer should
  *     encompass, once the refill is complete.
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 bool
-CPU<CONFIG>::RefillInsnPrefetchBuffer(uint64_t base_address)
+CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint64_t base_address)
 {
   this->ipb_base_address = base_address;
   
@@ -539,12 +539,12 @@ CPU<CONFIG>::RefillInsnPrefetchBuffer(uint64_t base_address)
  * This method allows an invalid instruction to signal the undefined
  * instruction to the CPU.
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::UndefinedInstruction( isa::arm64::Operation<CPU>* insn )
+CPU<CPU_IMPL>::UndefinedInstruction( isa::arm64::Operation<CPU_IMPL>* insn )
 {
   std::ostringstream oss;
-  insn->disasm( *this, oss );
+  insn->disasm( *static_cast<CPU_IMPL*>(this), oss );
   
   logger << DebugWarning << "Undefined instruction (" << insn->GetName() << ") @"
          << std::hex << current_insn_addr << std::dec << ": " << oss.str() << EndDebugWarning;
@@ -561,9 +561,9 @@ CPU<CONFIG>::UndefinedInstruction( isa::arm64::Operation<CPU>* insn )
  * @param addr   the address of the memory read access
  * @param size   the size of the memory read access
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
+CPU<CPU_IMPL>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
 {
   // Over-simplistic read from memory system
   if (not PhysicalReadMemory(addr, buffer, size))
@@ -581,9 +581,9 @@ CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
  * @param buffer the byte buffer from which bytes are written to memory
  * @param size   the size of the memory write access
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
+CPU<CPU_IMPL>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
   // Over-simplistic read from memory system
   if (not PhysicalWriteMemory( addr, buffer, size ))
@@ -600,9 +600,9 @@ CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
  *  This method is called by SWI/SVC instructions to handle software interrupts.
  * @param imm     the "imm" field of the instruction code
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::CallSupervisor( uint32_t imm )
+CPU<CPU_IMPL>::CallSupervisor( uint32_t imm )
 {
   if (linux_os_import)
     {
@@ -647,9 +647,9 @@ CPU<CONFIG>::CallSupervisor( uint32_t imm )
  *
  * @param op1     the "op1" field of the instruction code 
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::CheckSystemAccess(uint8_t op1)
+CPU<CPU_IMPL>::CheckSystemAccess(uint8_t op1)
 {
   
 }
@@ -662,9 +662,9 @@ CPU<CONFIG>::CheckSystemAccess(uint8_t op1)
  * @param op2     the "op2" field of the instruction code
  * @return        the read value
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 uint64_t
-CPU<CONFIG>::ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
+CPU<CPU_IMPL>::ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
 {
   return GetSystemRegister( op0, op1, crn, crm, op2 ).Read( *this );
 }
@@ -677,9 +677,9 @@ CPU<CONFIG>::ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t 
  * @param op2     the "op2" field of the instruction code
  * @param val     value to be written to the register
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint64_t value )
+CPU<CPU_IMPL>::WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint64_t value )
 {
   GetSystemRegister( op0, op1, crn, crm, op2 ).Write( *this, value );
 }
@@ -692,9 +692,9 @@ CPU<CONFIG>::WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
  * @param op2     the "op2" field of the instruction code
  * @return        a C string describing the CP15 register
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink )
+CPU<CPU_IMPL>::DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink )
 {
   SysReg const& sysreg = GetSystemRegister( op0, op1, crn, crm, op2 );
   if (char const* sysreg_desc = sysreg.Describe())
@@ -711,9 +711,9 @@ CPU<CONFIG>::DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint
  * @param op2     the "op2" field of the instruction code
  * @return        a C string describing the CP15 register
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink )
+CPU<CPU_IMPL>::NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink )
 {
   SysReg const&  sysreg = GetSystemRegister( op0, op1, crn, crm, op2 );
   
@@ -739,11 +739,11 @@ CPU<CONFIG>::NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t 
  * @param op1     the "op1" field of the instruction code
  * @param crm     the "crm" field of the instruction code
  * @param op2     the "op2" field of the instruction code
- * @return        an internal CP15Reg
+ * @return        an internal System Register
  */
-template <class CONFIG>
-typename CPU<CONFIG>::SysReg const&
-CPU<CONFIG>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
+template <class CPU_IMPL>
+typename CPU<CPU_IMPL>::SysReg const&
+CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
 {
 
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
@@ -921,14 +921,6 @@ CPU<CONFIG>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t c
         static struct : public SysReg {
           char const* Name() const { return "DACR32_EL2"; }
           char const* Describe() const { return "Domain Access Control Register"; }
-        } x; return x;
-      } break;
-
-    case SYSENCODE(0b11,0b011,0b0000,0b0000,0b111): // 2.23: DCZID_EL0, Data Cache Zero ID register
-      {
-        static struct : public SysReg {
-          char const* Name() const { return "DCZID_EL0"; }
-          char const* Describe() const { return "Data Cache Zero ID register"; }
         } x; return x;
       } break;
 
@@ -2466,9 +2458,9 @@ CPU<CONFIG>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t c
 
 /** Resets the internal values of corresponding CP15 Registers
  */
-template <class CONFIG>
+template <class CPU_IMPL>
 void
-CPU<CONFIG>::ResetSystemRegisters()
+CPU<CPU_IMPL>::ResetSystemRegisters()
 {
   // // Base default values for SCTLR (may be overwritten by memory architectures)
   // SCTLR = 0x00c50058; // SBO mask

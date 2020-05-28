@@ -77,3 +77,4 @@ impl {
 
 include "base.isa"
 include "simd_fp.isa"
+include "cache.isa"
