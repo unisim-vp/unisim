@@ -50,14 +50,17 @@ Processor::eregread( unsigned reg, unsigned size, unsigned pos )
     
   struct
   {
-    Expr ui( unsigned sz, Expr const& src ) const
+    Expr ui( unsigned sz, bool mode64, Expr const& src ) const
     {
-      switch (sz) {
+      switch ((sz << 1) | mode64) {
       default: throw 0;
-      case 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
-      case 2: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
-      case 4: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
-      case 8: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
+      case (1 << 1) | 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
+      case (2 << 1) | 1: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
+      case (4 << 1) | 1: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
+      case (8 << 1) | 1: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
+      case (1 << 1) | 0: return new unisim::util::symbolic::CastNode<uint8_t,uint32_t>( src );
+      case (2 << 1) | 0: return new unisim::util::symbolic::CastNode<uint16_t,uint32_t>( src );
+      case (4 << 1) | 0: return new unisim::util::symbolic::CastNode<uint32_t,uint32_t>( src );
       }
       return 0;
     }
@@ -69,22 +72,22 @@ Processor::eregread( unsigned reg, unsigned size, unsigned pos )
       unsigned src = pos;
       do { src = src & (src-1); } while (not regvalues[reg][src].node);
       unsigned shift = 8*(pos - src);
-      return cast.ui( size, make_operation( "Lsr", regvalues[reg][src], make_const( shift ) ) );
+      return cast.ui( size, mode64, make_operation( "Lsr", regvalues[reg][src], make_const( shift ) ) );
     }
-  else if (not regvalues[reg][(pos|size)&(GREGSIZE-1)].node)
+  else if (not regvalues[reg][(pos|size)&(gregsize()-1)].node)
     {
       // requested read is in lower bits of a larger value
-      return cast.ui( size, regvalues[reg][pos] );
+      return cast.ui( size, mode64, regvalues[reg][pos] );
     }
   else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
     {
       // requested read is a concatenation of multiple source values
-      Expr concat = cast.ui( size, regvalues[reg][pos] );
+      Expr concat = cast.ui( size, mode64, regvalues[reg][pos] );
       for (unsigned idx = 0; ++idx < size;)
         {
           if (not regvalues[reg][pos+idx].node)
             continue;
-          concat = make_operation( "Or", make_operation( "Lsl", cast.ui( size, regvalues[reg][idx] ), make_const( 8*idx ) ), concat );
+          concat = make_operation( "Or", make_operation( "Lsl", cast.ui( size, mode64, regvalues[reg][idx] ), make_const( 8*idx ) ), concat );
         }
       return concat;
     }
@@ -96,17 +99,17 @@ Processor::eregread( unsigned reg, unsigned size, unsigned pos )
 void
 Processor::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
 {
-  Expr nxt[GREGSIZE];
+  Expr nxt[gregsize()];
     
   for (unsigned ipos = pos, isize = size, cpos;
-       cpos = (ipos^isize) & (GREGSIZE-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
+       cpos = (ipos^isize) & (gregsize()-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
        isize *= 2, ipos &= -isize
        )
     {
       nxt[cpos] = eregread( reg, isize, cpos );
     }
     
-  for (unsigned ipos = 0; ipos < GREGSIZE; ++ipos)
+  for (unsigned ipos = 0; ipos < gregsize(); ++ipos)
     {
       if (nxt[ipos].node)
         regvalues[reg][ipos] = nxt[ipos];
@@ -120,25 +123,37 @@ Processor::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr
     }
 }
 
+unisim::util::symbolic::Expr
+Processor::newIRegWrite( unsigned reg, unisim::util::symbolic::Expr const& expr )
+{
+  if (mode64)
+    return newRegWrite( RIRegID(RIRegID::Code(reg)), expr );
+  Expr i32 = (u32_t(u64_t(expr))).expr;
+  i32 = unisim::util::symbolic::binsec::ASExprNode::Simplify( i32 );
+  return newRegWrite( EIRegID(EIRegID::Code(reg)), expr );
+}
+  
+
 void
-Processor::eregsinks( RIRegID reg )
+Processor::eregsinks( unsigned reg )
 {
   using unisim::util::symbolic::binsec::BitFilter;
+  unsigned regsize = gregsize();
   // using unisim::util::symbolic::make_const;
-    
+
   { // Check for constant values
-    Expr dr = unisim::util::symbolic::binsec::ASExprNode::Simplify( eregread( reg.idx(), 8, 0 ) );
+    Expr dr = unisim::util::symbolic::binsec::ASExprNode::Simplify( eregread( reg, regsize, 0 ) );
     if (dr.ConstSimplify())
       {
-        path->add_sink( newRegWrite( reg, dr ) );
+        path->add_sink( newIRegWrite( reg, dr ) );
         return;
       }
   }
 
   // Check for monolithic value
-  if (not regvalues[reg.idx()][GREGSIZE/2].node)
+  if (not regvalues[reg][gregsize()/2].node)
     {
-      path->add_sink( newRegWrite( reg, eregread(reg.idx(),GREGSIZE,0) ) );
+      path->add_sink( newIRegWrite( reg, eregread(reg,gregsize()/2,0) ) );
       return;
     }
 
@@ -146,7 +161,7 @@ Processor::eregsinks( RIRegID reg )
   // // Requested read is a concatenation of multiple source values
   // struct _
   // {
-  //   _( Processor& _core, unsigned _reg ) : core(_core), reg(_reg) { Process( 0, GREGSIZE ); } Processor& core; unsigned reg;
+  //   _( Processor& _core, unsigned _reg ) : core(_core), reg(_reg) { Process( 0, gregsize() ); } Processor& core; unsigned reg;
   //   void Process( unsigned pos, unsigned size )
   //   {
   //     unsigned half = size / 2, mid = pos+half;
@@ -194,10 +209,11 @@ Processor::eregsinks( RIRegID reg )
 //   return 0;
 // }
 
-Processor::Processor()
+Processor::Processor(bool _mode64)
   : path(0)
   , next_insn_addr()
   , next_insn_mode(ipjmp)
+  , mode64(_mode64)
 {
   for (FLAG reg; reg.next();)
     flagvalues[reg.idx()] = newRegRead( reg );
@@ -221,13 +237,13 @@ Processor::close( Processor const& ref, uint32_t linear_nia )
     path->add_sink( new Call( next_insn_addr.expr, return_address ) );
   else
     path->add_sink( new Goto( next_insn_addr.expr ) );
-    
-  for (RIRegID reg; reg.next();)
+
+  for (int reg = gregcount(); --reg >= 0;)
     {
-      if (regvalues[reg.idx()][0] != ref.regvalues[reg.idx()][0])
+      if (regvalues[reg][0] != ref.regvalues[reg][0])
         eregsinks(reg);
     }
-    
+  
   // Flags
   for (FLAG reg; reg.next();)
     if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])

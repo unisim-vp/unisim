@@ -54,10 +54,9 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 
 Processor::Operation*
-Processor::Decode(uint64_t address, uint8_t const* bytes)
+Processor::Decode(unisim::component::cxx::processor::intel::Mode const& mode, uint64_t address, uint8_t const* bytes)
 {
   typedef unisim::component::cxx::processor::intel::InputCode<Processor> InputCode;
-  unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 ); /* intel64 mode */
   return getoperation( InputCode(mode, bytes, Processor::OpHeader(address) ) );
 }
 

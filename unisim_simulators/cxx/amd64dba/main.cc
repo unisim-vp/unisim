@@ -50,8 +50,8 @@ struct Translator
 {
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
   
-  Translator( uint64_t _addr, std::vector<uint8_t>&& _code )
-    : code(std::move(_code)), addr(_addr), coderoot(new ActionNode)
+  Translator(bool _mode64, uint64_t _addr, std::vector<uint8_t>&& _code)
+    : code(std::move(_code)), addr(_addr), coderoot(new ActionNode), mode64(_mode64)
   {}
   ~Translator() { delete coderoot; }
   
@@ -65,17 +65,17 @@ struct Translator
     // Instruction decoding
     struct Instruction
     {
-      Instruction(uint64_t address, uint8_t* bytes) : operation(0)
+      Instruction(bool mode64, uint64_t address, uint8_t* bytes) : operation()
       {
-        operation = Processor::Decode(address, bytes);
+        typedef unisim::component::cxx::processor::intel::Mode Mode;
+        operation = Processor::Decode(mode64 ? Mode(1, 0, 1) : Mode(0, 1, 1), address, bytes);
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
       Operation& operator * () { return *operation; }
       Operation* operation;
     };
-    
-    Instruction instruction( addr, &code[0] );
+    Instruction instruction( mode64, addr, &code[0] );
 
     if (instruction->length > code.size()) { struct LengthError {}; throw LengthError(); }
     code.resize(instruction->length);
@@ -88,7 +88,7 @@ struct Translator
     Processor::addr_t insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     uint64_t nia = addr + instruction->length;
     // Processor::U32      insn_addr = Expr(new InstructionAddress()); //< symbolic instruction address
-    Processor reference;
+    Processor reference(mode64);
     
     // Disassemble
     sink << "(mnemonic . \"";
@@ -99,10 +99,10 @@ struct Translator
     // Get actions
     for (bool end = false; not end;)
       {
-        Processor state;
+        Processor state(mode64);
         state.path = coderoot;
         state.step(*instruction);
-        end = state.close( reference, nia );
+        end = state.close(reference, nia);
       }
     coderoot->simplify();
     coderoot->commit_stats();
@@ -132,9 +132,11 @@ struct Translator
     for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
       sink << "(" << unisim::util::symbolic::binsec::dbx(8, addr) << ',' << itr->first << ") " << itr->second << std::endl;
   }
+  
   std::vector<uint8_t> code;
   uint64_t addr;
   ActionNode* coderoot;
+  bool mode64;
 };
   
 bool getu64( uint64_t& res, char const* arg )
@@ -161,13 +163,13 @@ bool getbytes( std::vector<uint8_t>& res, char const* arg )
 char const* usage()
 {
   return
-    "usage: <program> arm|intel <address> <encoding>\n";
+    "usage: <program> x86|intel64 <address> <encoding>\n";
 }
 
 int
 main( int argc, char** argv )
 {
-  if (argc != 3)
+  if (argc != 4)
     {
       std::cerr << "Wrong number of CLI arguments.\n" << usage();
       return 1;
@@ -176,13 +178,15 @@ main( int argc, char** argv )
   uint64_t addr;
   std::vector<uint8_t> code;
 
-  if (not getu64(addr, argv[1]) or not getbytes(code, argv[2]))
+  if (not getu64(addr, argv[2]) or not getbytes(code, argv[3]))
     {
       std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
       return 1;
     }
 
-  Translator actset( addr, std::move(code) );
+  bool mode64 = strcmp("intel64", argv[2]);
+  
+  Translator actset( mode64, addr, std::move(code) );
   actset.translate( std::cout );
   
   return 0;

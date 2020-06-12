@@ -163,6 +163,8 @@ struct Processor
   template <typename RID>
   static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
   
+  unisim::util::symbolic::Expr newIRegWrite( unsigned reg, unisim::util::symbolic::Expr const& expr );
+  
   struct Goto : public Br
   {
     Goto( Expr const& value ) : Br( value ) {}
@@ -218,6 +220,35 @@ struct Processor
   bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
   void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
+
+  struct EIRegID : public unisim::util::identifier::Identifier<EIRegID>
+  {
+    typedef uint64_t register_type;
+    enum Code { eax = 0, ecx = 1, edx = 2, ebx = 3, esp = 4, ebp = 5, esi = 6, edi = 7, end } code;
+
+    char const* c_str() const
+    {
+      switch (code)
+        {
+        case eax: return "eax";
+        case ecx: return "ecx";
+        case edx: return "edx";
+        case ebx: return "ebx";
+        case esp: return "esp";
+        case ebp: return "ebp";
+        case esi: return "esi";
+        case edi: return "edi";
+        
+        case end: break;
+        }
+      return "NA";
+    }
+    
+    EIRegID() : code(end) {}
+    EIRegID( Code _code ) : code(_code) {}
+    EIRegID( char const* _code ) : code(end) { init( _code ); }
+  };
+  
   struct RIRegID : public unisim::util::identifier::Identifier<RIRegID>
   {
     typedef uint64_t register_type;
@@ -299,13 +330,16 @@ struct Processor
   enum {VREGCOUNT = 16, GREGCOUNT = 16, FREGCOUNT=8};
   
   static unsigned const GREGSIZE = 8;
+  unsigned gregsize() const { return mode64 ? GREGSIZE : GREGSIZE/2; }
+  unsigned gregcount() const { return mode64 ? GREGCOUNT : GREGCOUNT/2; }
+  unsigned vregcount() const { return mode64 ? VREGCOUNT : VREGCOUNT/2; }
 
   Expr                        eregread( unsigned reg, unsigned size, unsigned pos );
   void                        eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr );
 
   Expr                        regvalues[GREGCOUNT][GREGSIZE];
 
-  void                        eregsinks( RIRegID reg );
+  void                        eregsinks( unsigned reg );
  
 
   // VRegRead should never be a binsec::node (no dba available for it)
@@ -822,7 +856,7 @@ private:
   
 public:
   
-  Processor();
+  Processor( bool _mode64 );
   
   bool close( Processor const& ref, uint32_t linear_nia );
   
@@ -867,12 +901,13 @@ public:
     return concretize( bit_t(cond).expr );
   }
 
-  static Operation* Decode(uint64_t address, uint8_t const* bytes);
+  static Operation* Decode(unisim::component::cxx::processor::intel::Mode const& mode, uint64_t address, uint8_t const* bytes);
   
   ActionNode*      path;
   uint64_t         return_address;
   addr_t           next_insn_addr;
   ipproc_t         next_insn_mode;
+  bool             mode64;
   //  branch_type_t    branch_type;
 };
 
