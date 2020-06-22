@@ -78,7 +78,7 @@ It can also be used has a x86 32 bits decoder, using the same compatibility mech
 A significant par if the instruction set is supported, and the dba translation is evolving toward decent maturity.
 The decoder is available through the `dist_amd64dba.sh` distribution script and the installation steps described above.
 
-usage: usage: <program> x86|intel64 <address> <encoding>
+usage: `usage: <program> x86|intel64 <address> <encoding>`
 
 The instruction encoding is given as an objdump-like byte sequence.
 
