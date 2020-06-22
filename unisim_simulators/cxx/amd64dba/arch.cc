@@ -33,244 +33,114 @@
  */
 
 #include <arch.hh>
+#include <iostream>
+
+ProcessorBase::ProcessorBase()
+  : path(0)
+  , next_insn_mode(ipjmp)
+{
+  for (FLAG reg; reg.next();)
+    flagvalues[reg.idx()] = newRegRead( reg );
+}
 
 void
-Processor::FTop::Repr( std::ostream& sink ) const
+ProcessorBase::FTop::Repr( std::ostream& sink ) const
 {
   sink << "FpuStackTop";
 }
 
-unisim::util::symbolic::Expr& Processor::fpaccess( unsigned reg, bool write ) { throw Unimplemented();}
-
-Processor::Expr
-Processor::eregread( unsigned reg, unsigned size, unsigned pos )
+unisim::util::symbolic::Expr&
+ProcessorBase::fpaccess( unsigned reg, bool write )
 {
-  using unisim::util::symbolic::ExprNode;
-  using unisim::util::symbolic::make_const;
-    
-  struct
-  {
-    Expr ui( unsigned sz, bool mode64, Expr const& src ) const
-    {
-      switch ((sz << 1) | mode64) {
-      default: throw 0;
-      case (1 << 1) | 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
-      case (2 << 1) | 1: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
-      case (4 << 1) | 1: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
-      case (8 << 1) | 1: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
-      case (1 << 1) | 0: return new unisim::util::symbolic::CastNode<uint8_t,uint32_t>( src );
-      case (2 << 1) | 0: return new unisim::util::symbolic::CastNode<uint16_t,uint32_t>( src );
-      case (4 << 1) | 0: return new unisim::util::symbolic::CastNode<uint32_t,uint32_t>( src );
-      }
-      return 0;
-    }
-  } cast;
-    
-  if (not regvalues[reg][pos].node)
-    {
-      // requested read is in the middle of a larger value
-      unsigned src = pos;
-      do { src = src & (src-1); } while (not regvalues[reg][src].node);
-      unsigned shift = 8*(pos - src);
-      return cast.ui( size, mode64, make_operation( "Lsr", regvalues[reg][src], make_const( shift ) ) );
-    }
-  else if (not regvalues[reg][(pos|size)&(gregsize()-1)].node)
-    {
-      // requested read is in lower bits of a larger value
-      return cast.ui( size, mode64, regvalues[reg][pos] );
-    }
-  else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
-    {
-      // requested read is a concatenation of multiple source values
-      Expr concat = cast.ui( size, mode64, regvalues[reg][pos] );
-      for (unsigned idx = 0; ++idx < size;)
-        {
-          if (not regvalues[reg][pos+idx].node)
-            continue;
-          concat = make_operation( "Or", make_operation( "Lsl", cast.ui( size, mode64, regvalues[reg][idx] ), make_const( 8*idx ) ), concat );
-        }
-      return concat;
-    }
-    
-  // requested read is directly available
-  return regvalues[reg][pos];
-}
-  
-void
-Processor::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
-{
-  Expr nxt[gregsize()];
-    
-  for (unsigned ipos = pos, isize = size, cpos;
-       cpos = (ipos^isize) & (gregsize()-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
-       isize *= 2, ipos &= -isize
-       )
-    {
-      nxt[cpos] = eregread( reg, isize, cpos );
-    }
-    
-  for (unsigned ipos = 0; ipos < gregsize(); ++ipos)
-    {
-      if (nxt[ipos].node)
-        regvalues[reg][ipos] = nxt[ipos];
-    }
-    
-  regvalues[reg][pos] = xpr;
-    
-  for (unsigned rem = 1; rem < size; ++rem)
-    {
-      regvalues[reg][pos+rem] = 0;
-    }
-}
-
-unisim::util::symbolic::Expr
-Processor::newIRegWrite( unsigned reg, unisim::util::symbolic::Expr const& expr )
-{
-  if (mode64)
-    return newRegWrite( RIRegID(RIRegID::Code(reg)), expr );
-  Expr i32 = (u32_t(u64_t(expr))).expr;
-  i32 = unisim::util::symbolic::binsec::ASExprNode::Simplify( i32 );
-  return newRegWrite( EIRegID(EIRegID::Code(reg)), expr );
-}
-  
-
-void
-Processor::eregsinks( unsigned reg )
-{
-  using unisim::util::symbolic::binsec::BitFilter;
-  unsigned regsize = gregsize();
-  // using unisim::util::symbolic::make_const;
-
-  { // Check for constant values
-    Expr dr = unisim::util::symbolic::binsec::ASExprNode::Simplify( eregread( reg, regsize, 0 ) );
-    if (dr.ConstSimplify())
-      {
-        path->add_sink( newIRegWrite( reg, dr ) );
-        return;
-      }
-  }
-
-  // Check for monolithic value
-  if (not regvalues[reg][gregsize()/2].node)
-    {
-      path->add_sink( newIRegWrite( reg, eregread(reg,gregsize()/2,0) ) );
-      return;
-    }
-
-  throw Unimplemented(); // Yet
-  // // Requested read is a concatenation of multiple source values
-  // struct _
-  // {
-  //   _( Processor& _core, unsigned _reg ) : core(_core), reg(_reg) { Process( 0, gregsize() ); } Processor& core; unsigned reg;
-  //   void Process( unsigned pos, unsigned size )
-  //   {
-  //     unsigned half = size / 2, mid = pos+half;
-  //     if (size > 1 and core.regvalues[reg][mid].node)
-  //       {
-  //         Process( pos, half );
-  //         Process( mid, half );
-  //       }
-  //     else
-  //       {
-  //         unsigned begin = pos*8, end = begin+size*8;
-  //         Expr value( new BitFilter( core.eregread(reg,size,pos), 64, size*8, size*8, false ) );
-  //         core.path->add_sink( new GregPartialWrite( reg, begin, end, value ) );
-  //       }
-  //   }
-  // } concat( *this, reg );
-}
-
-// Operation*
-// AMD64::decode( uint64_t addr, MemCode& ct, std::string& disasm )
-// {
-//   try
-//     {
-//       unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 ); // x86_64
-//       unisim::component::cxx::processor::intel::InputCode<ut::Processor> ic( mode, &ct.bytes[0], addr );
-//       Operation* op = getoperation( ic );
-//       if (not op)
-//         {
-//           uint8_t const* oc = ic.opcode();
-//           unsigned opcode_length = ic.vex() ? 5 - (oc[0] & 1) : oc[0] == 0x0f ? (oc[1] & ~2) == 0x38 ? 4 : 3 : 2;
-//           ct.length = ic.opcode_offset + opcode_length;
-//           throw ut::Untestable("#UD");
-//         }
-//       ct.length = op->length;
-//       std::ostringstream buf;
-//       op->disasm(buf);
-//       disasm = buf.str();
-//       return op;
-//     }
-//   catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& perr)
-//     {
-//       ct.length = perr.len;
-//       throw ut::Untestable("#UD");
-//     }
-//   return 0;
-// }
-
-Processor::Processor(bool _mode64)
-  : path(0)
-  , next_insn_addr()
-  , next_insn_mode(ipjmp)
-  , mode64(_mode64)
-{
-  for (FLAG reg; reg.next();)
-    flagvalues[reg.idx()] = newRegRead( reg );
-    
-  for (RIRegID reg; reg.next();)
-    regvalues[reg.idx()][0] = newRegRead( reg );
-
-  for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
-    {
-      VmmRegister v( new VRegRead( reg ) );
-      *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
-    }
-}
-
-bool
-Processor::close( Processor const& ref, uint32_t linear_nia )
-{
-  bool complete = path->close();
-  
-  if (next_insn_mode == ipcall)
-    path->add_sink( new Call( next_insn_addr.expr, return_address ) );
-  else
-    path->add_sink( new Goto( next_insn_addr.expr ) );
-
-  for (int reg = gregcount(); --reg >= 0;)
-    {
-      if (regvalues[reg][0] != ref.regvalues[reg][0])
-        eregsinks(reg);
-    }
-  
-  // Flags
-  for (FLAG reg; reg.next();)
-    if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])
-      path->add_sink( newRegWrite( reg, flagvalues[reg.idx()] ) );
-
-  for (Expr const& store : stores)
-    path->add_sink( store );
-    
-  return complete;
-}
-  
-void
-Processor::step( Operation const& op )
-{
-  uint64_t insn_addr = op.address, nia = insn_addr + op.length;
-  return_address = nia;
-  next_insn_addr = addr_t(nia);
-  op.execute( *this );
-}
-  
-void
-Processor::noexec( Operation const& op )
-{
-  std::cerr
-    << "error: no execute method in `" << typeid(op).name() << "'\n"
-    << std::hex << op.address << ":\t";
-  op.disasm( std::cerr );
-  std::cerr << '\n';
   throw Unimplemented();
 }
+
+void
+Compat32::IRegID::Repr(std::ostream& sink) const
+{
+  sink << c_str();
+}
+
+void
+Intel64::IRegID::Repr(std::ostream& sink) const
+{
+  sink << c_str();
+}
+
+void
+ProcessorBase::FLAG::Repr( std::ostream& sink ) const
+{
+  sink << c_str();
+}
+
+void
+ProcessorBase::FTopWrite::GetRegName(std::ostream& sink) const
+{
+  sink << "ftop";
+}
+
+void
+ProcessorBase::Goto::GetRegName( std::ostream& sink ) const
+{
+  sink << "pc";
+}
+
+template <>
+void
+Processor<Compat32>::Call::annotate(std::ostream& sink) const
+{
+  sink << " // call (" << unisim::util::symbolic::binsec::dbx(4,return_address) << ",0)";
+}
+
+template <>
+void
+Processor<Intel64>::Call::annotate(std::ostream& sink) const
+{
+  sink << " // call (" << unisim::util::symbolic::binsec::dbx(8,return_address) << ",0)";
+}
+
+void
+ProcessorBase::VRegRead::Repr( std::ostream& sink ) const
+{
+  sink << "VRegRead(" << std::dec << reg << ")";
+}
+
+void
+ProcessorBase::VUConfigBase::VMix::Repr( std::ostream& sink ) const
+{
+  sink << "VMix( " << l << ", " << r << " )";
+}
+
+void
+ProcessorBase::VUConfigBase::VTransBase::Repr( std::ostream& sink ) const
+{
+  sink << "VTrans<"  << ScalarType(GetType()).name << ">({" << Byte::sexp << "," << Byte::span << "}, " << rshift << ")";
+}
+
+void
+ProcessorBase::VmmIndirectReadBase::Repr( std::ostream& sink ) const
+{
+  sink << "VmmIndirectReadRead<" << GetVSize() << ","  << GetVName() << ">(";
+  for (unsigned idx = 0, end = SubCount()-1; idx < end; ++idx)
+    sink << GetSub(idx) << ", ";
+  sink << index << ")";
+}
+
+namespace
+{
+  template <class OP>
+  void
+  noexec_error( OP const& op )
+  {
+    std::cerr
+      << "error: no execute method in `" << typeid(op).name() << "'\n"
+      << std::hex << op.address << ":\t";
+    op.disasm( std::cerr );
+    std::cerr << '\n';
+    throw ProcessorBase::Unimplemented();
+  }
+}
+
+template <> void Processor<Compat32>::noexec( Processor<Compat32>::Operation const& op ) { noexec_error(op); }
+template <> void Processor <Intel64>::noexec( Processor<Intel64>::Operation const& op ) { noexec_error(op); }
+

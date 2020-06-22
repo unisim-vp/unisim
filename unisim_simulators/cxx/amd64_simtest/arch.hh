@@ -67,30 +67,7 @@ namespace ut
 
       uint8_t const* text() const { return &bytes[0]; }
       
-      bool get( std::istream& source )
-      {
-        unsigned idx = 0;
-        
-        for (bool nibble = false;;)
-          {
-            char ch;
-            if (not source.get( ch ).good()) return false;
-            if (ch == ' ')     { if (nibble) return false; continue; }
-            if (ch == '\t')    { if (nibble) return false; break; }
-            if (idx >= sizeof(bytes)) throw 0;
-
-            bytes[idx] <<= 4;
-            if      ('0' <= ch and ch <= '9') bytes[idx] |= ch - '0';
-            else if ('a' <= ch and ch <= 'f') bytes[idx] |= ch - 'a' + 10;
-            else return false;
-
-            idx += nibble;
-            nibble = not nibble;
-          }
-      
-        length = idx;
-        return true;
-      }
+      bool get( std::istream& source );
 
       uint8_t getbyte( unsigned idx, uint8_t _default ) const { return idx < length ? bytes[idx] : _default; }
 

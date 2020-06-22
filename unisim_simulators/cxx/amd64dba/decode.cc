@@ -34,18 +34,31 @@
 
 #include <arch.hh>
 
-inline void eval_div( Processor& arch, Processor::u64_t& hi, Processor::u64_t& lo, Processor::u64_t const& divisor )    { throw Processor::Unimplemented(); }
-inline void eval_div( Processor& arch, Processor::s64_t& hi, Processor::s64_t& lo, Processor::s64_t const& divisor )    { throw Processor::Unimplemented(); }
-inline void eval_mul( Processor& arch, Processor::u64_t& hi, Processor::u64_t& lo, Processor::u64_t const& multiplier ) { throw Processor::Unimplemented(); }
-inline void eval_mul( Processor& arch, Processor::s64_t& hi, Processor::s64_t& lo, Processor::s64_t const& multiplier ) { throw Processor::Unimplemented(); }
-  
-inline Processor::f64_t eval_fprem ( Processor& arch, Processor::f64_t const& dividend, Processor::f64_t const& modulus ) { throw Processor::Unimplemented(); }
-inline Processor::f64_t eval_fprem1( Processor& arch, Processor::f64_t const& dividend, Processor::f64_t const& modulus ) { throw Processor::Unimplemented(); }
+typedef Processor<Intel64>  P64;
+typedef Processor<Compat32> P32;
+
+typedef ProcessorBase::u64_t U64;
+typedef ProcessorBase::s64_t S64;
+typedef ProcessorBase::f64_t F64;
+
+void eval_div( P32& arch, U64& hi, U64& lo, U64 const& divisor ) { throw ProcessorBase::Unimplemented(); }
+void eval_div( P64& arch, U64& hi, U64& lo, U64 const& divisor ) { throw ProcessorBase::Unimplemented(); }
+void eval_div( P32& arch, S64& hi, S64& lo, S64 const& divisor ) { throw ProcessorBase::Unimplemented(); }
+void eval_div( P64& arch, S64& hi, S64& lo, S64 const& divisor ) { throw ProcessorBase::Unimplemented(); }
+void eval_mul( P32& arch, U64& hi, U64& lo, U64 const& multiplier ) { throw ProcessorBase::Unimplemented(); }
+void eval_mul( P64& arch, U64& hi, U64& lo, U64 const& multiplier ) { throw ProcessorBase::Unimplemented(); }
+void eval_mul( P32& arch, S64& hi, S64& lo, S64 const& multiplier ) { throw ProcessorBase::Unimplemented(); }
+void eval_mul( P64& arch, S64& hi, S64& lo, S64 const& multiplier ) { throw ProcessorBase::Unimplemented(); }
+
+F64 eval_fprem ( P32& arch, F64 const& dividend, F64 const& modulus ) { throw ProcessorBase::Unimplemented(); }
+F64 eval_fprem ( P64& arch, F64 const& dividend, F64 const& modulus ) { throw ProcessorBase::Unimplemented(); }
+F64 eval_fprem1( P32& arch, F64 const& dividend, F64 const& modulus ) { throw ProcessorBase::Unimplemented(); }
+F64 eval_fprem1( P64& arch, F64 const& dividend, F64 const& modulus ) { throw ProcessorBase::Unimplemented(); }
 
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
           template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
           {
-            throw Processor::Unimplemented();
+            throw ProcessorBase::Unimplemented();
             return FPT();
           }
         } /* namespace unisim */ } /* namespace component */ } /* namespace cxx */ } /* namespace processor */ } /* namespace intel */
@@ -53,10 +66,21 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 
-Processor::Operation*
-Processor::Decode(unisim::component::cxx::processor::intel::Mode const& mode, uint64_t address, uint8_t const* bytes)
+typedef unisim::component::cxx::processor::intel::Mode Mode;
+
+template <>
+P64::Operation*
+P64::Decode(uint64_t address, uint8_t const* bytes)
 {
-  typedef unisim::component::cxx::processor::intel::InputCode<Processor> InputCode;
-  return getoperation( InputCode(mode, bytes, Processor::OpHeader(address) ) );
+  typedef unisim::component::cxx::processor::intel::InputCode<P64> InputCode;
+  return getoperation( InputCode( Mode(1, 0, 1), bytes, OpHeader(address) ) );
+}
+
+template <>
+P32::Operation*
+P32::Decode(uint32_t address, uint8_t const* bytes)
+{
+  typedef unisim::component::cxx::processor::intel::InputCode<P32> InputCode;
+  return getoperation( InputCode( Mode(0, 1, 1), bytes, OpHeader(address) ) );
 }
 

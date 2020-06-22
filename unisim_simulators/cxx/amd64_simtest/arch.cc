@@ -778,5 +778,30 @@ namespace ut
     if (addrs.insert(addr).second)
       sink << addr << std::endl;
   }
+  
+  bool ut::AMD64::MemCode::get(std::istream& source)
+  {
+    unsigned idx = 0;
+        
+    for (bool nibble = false;;)
+      {
+        char ch;
+        if (not source.get( ch ).good()) return false;
+        if (ch == ' ')     { if (nibble) return false; continue; }
+        if (ch == '\t')    { if (nibble) return false; break; }
+        if (idx >= sizeof(bytes)) throw 0;
 
+        bytes[idx] <<= 4;
+        if      ('0' <= ch and ch <= '9') bytes[idx] |= ch - '0';
+        else if ('a' <= ch and ch <= 'f') bytes[idx] |= ch - 'a' + 10;
+        else return false;
+
+        idx += nibble;
+        nibble = not nibble;
+      }
+      
+    length = idx;
+    return true;
+  }
 }
+

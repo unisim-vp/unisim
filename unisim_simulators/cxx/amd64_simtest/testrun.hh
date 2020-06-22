@@ -652,36 +652,8 @@ namespace ut {
         //               (0 << 12/*X*/) );
       }
     
-      void
-      fcwwrite( u16_t _value )
-      {
-        m_fcw = _value;
-        struct field { uint16_t offset, mask, expected, err; char const* name; };
-        static field fields[] =
-          {
-            { 0, 1, 1, 0, "IM"},
-            { 1, 1, 1, 0, "DM"},
-            { 2, 1, 1, 0, "ZM"},
-            { 3, 1, 1, 0, "OM"},
-            { 4, 1, 1, 0, "UM"},
-            { 5, 1, 1, 0, "PM"},
-            { 8, 3, 2, 0, "PC"},
-            {10, 3, 0, 0, "RC"},
-            {12, 1, 0, 0, "X"},
-          };
-        for (uintptr_t idx = 0; idx < (sizeof (fields) / sizeof (field)); ++idx)
-          {
-            uint16_t field_val = ((_value >> fields[idx].offset) & fields[idx].mask);
-            if (field_val == fields[idx].expected)
-              continue; /* value is expected one*/
-            if ((fields[idx].err >> field_val) & 1)
-              continue; /* error already reported */
-            fields[idx].err |= (1 << field_val);
-            std::cerr << "Warning: unimplemented FPUControlWord." << fields[idx].name
-                      << " value: " << field_val << ".\n";
-          }
-      }
-    
+      void  fcwwrite( u16_t _value );
+      
       u64_t tscread();
     
     public: 
