@@ -86,7 +86,7 @@ struct Translator
     sink << "(opcode . \"";
     char const* sep = "";
     for (auto byte : code) { sink << sep; sep = " "; for (int n = 0; n < 2; n++, byte <<=4) sink << "0123456789abcdef"[byte>>4&15]; }
-    sink << "\")\n";
+    sink << "\")\n(size . " << code.size() << ")\n";
     
     typename Proc::addr_t insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     // Proc::U32      insn_addr = Expr(new InstructionAddress()); //< symbolic instruction address
