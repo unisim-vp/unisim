@@ -3379,126 +3379,170 @@ struct Translator
   Processor::StatusRegister status;
   uint32_t    addr, code;
 };
+
+#include "decsec_callback.h"
+
+namespace
+{
+  struct _Processor* arm_create_processor()
+  {
+    debugPrint((DomainValue*) nullptr);
+    return reinterpret_cast<struct _Processor*>(new Processor());
+  }
+
+  void arm_set_domain_functions(struct _Processor* aprocessor, struct _DomainElementFunctions* functionTable)
+  {
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    processor->setDomainFunctions(*functionTable);
+  }
+
+  struct _DomainElementFunctions* arm_get_domain_functions(struct _Processor* aprocessor)
+  {
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    return &processor->getDomainFunctions();
+  }
+
+  void arm_initialize_memory(struct _Processor* aprocessor, MemoryModel* memory,
+                         MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
+  {
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    MemoryState memoryState(memory, memory_functions, parameters);
+    memoryState.initializeThumbMemory(processor->getDomainFunctions());
+  }
+
+  void arm_set_verbose(struct _Processor* processor)
+  {
+    if (processor) reinterpret_cast<Processor*>(processor)->setVerbose();
+  }
+
+  void arm_free_processor(struct _Processor* processor)
+  {
+    delete reinterpret_cast<Processor*>(processor);
+  }
+
+  int arm_get_registers_number(struct _Processor* processor)
+  {
+    return Processor::RLEnd;
+  }
+
+  int arm_get_register_index(struct _Processor* processor, const char* name)
+  {
+    int code = Processor::RegID(name).code;
+    if (code == Processor::RegID::end)
+      {
+        code = Processor::SRegID(name).code;
+        if (code == Processor::SRegID::end)
+          return -1;
+        return Processor::RegID::end + code;
+      }
+    
+    return code;
+  }
   
-extern "C" {
-
-DLL_API struct _Processor* create_processor()
-{  debugPrint((DomainValue*) nullptr);
-   return reinterpret_cast<struct _Processor*>(new Processor());
-}
-
-DLL_API void set_domain_functions(struct _Processor* aprocessor, struct _DomainElementFunctions* functionTable)
-{  auto* processor = reinterpret_cast<Processor*>(aprocessor);
-   processor->setDomainFunctions(*functionTable);
-}
-
-DLL_API struct _DomainElementFunctions* get_domain_functions(
-      struct _Processor* aprocessor)
-{  auto* processor = reinterpret_cast<Processor*>(aprocessor);
-   return &processor->getDomainFunctions();
-}
-
-DLL_API void initialize_memory(struct _Processor* aprocessor, MemoryModel* memory,
-      MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
-{  auto* processor = reinterpret_cast<Processor*>(aprocessor);
-   MemoryState memoryState(memory, memory_functions, parameters);
-   memoryState.initializeThumbMemory(processor->getDomainFunctions());
-}
-
-DLL_API void processor_set_verbose(struct _Processor* processor)
-{  if (processor) reinterpret_cast<Processor*>(processor)->setVerbose(); }
-
-DLL_API void free_processor(struct _Processor* processor)
-{  delete reinterpret_cast<Processor*>(processor); }
-
-DLL_API int processor_get_registers_number(struct _Processor* processor)
-{  return Processor::RLEnd; }
-
-DLL_API int processor_get_register_index(struct _Processor* processor,
-      const char* name)
-{  int code = Processor::RegID(name).code;
-   if (code == Processor::RegID::end) {
-      code = Processor::SRegID(name).code;
-      if (code == Processor::SRegID::end)
-         return -1;
-      return Processor::RegID::end + code;
-   }
-   return code;
-}
-  
-DLL_API const char* processor_get_register_name(struct _Processor* processor,
-      int register_index)
-{  if (register_index < 0)
+  const char* arm_get_register_name(struct _Processor* processor, int register_index)
+  {
+    if (register_index < 0)
       return nullptr;
-   if (register_index >= Processor::RegID::end)
+    if (register_index >= Processor::RegID::end)
       return Processor::SRegID((Processor::SRegID::Code)
-            (register_index-Processor::RegID::end)).c_str();
-   return Processor::RegID((Processor::RegID::Code) register_index).c_str();
-}
+                               (register_index-Processor::RegID::end)).c_str();
+    return Processor::RegID((Processor::RegID::Code) register_index).c_str();
+  }
   
-DLL_API struct _DecisionVector* processor_create_decision_vector(struct _Processor* processor)
-{  return reinterpret_cast<struct _DecisionVector*>(new DecisionVector()); }
+  struct _DecisionVector* arm_create_decision_vector(struct _Processor* processor)
+  {
+    return reinterpret_cast<struct _DecisionVector*>(new DecisionVector());
+  }
 
-DLL_API struct _DecisionVector* processor_clone_decision_vector(struct _DecisionVector* decision_vector)
-{  return reinterpret_cast<struct _DecisionVector*>(new DecisionVector(
-         *reinterpret_cast<DecisionVector*>(decision_vector)));
+  struct _DecisionVector* arm_clone_decision_vector(struct _DecisionVector* decision_vector)
+  {
+    return reinterpret_cast<struct _DecisionVector*>(new DecisionVector(*reinterpret_cast<DecisionVector*>(decision_vector)));
+  }
+
+  void arm_free_decision_vector(struct _DecisionVector* decision_vector)
+  {
+    delete reinterpret_cast<DecisionVector*>(decision_vector);
+  }
+
+  void arm_filter_decision_vector(struct _DecisionVector* decision_vector, uint64_t target)
+  {
+    auto* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
+    decisionVector->setToLastInstruction();
+    decisionVector->filter(target);
+  }
+
+  bool arm_next_targets(struct _Processor* processor, char* instruction_buffer,
+                              size_t buffer_size, uint64_t address, TargetAddresses* target_addresses,
+                              MemoryModel* memory, MemoryModelFunctions* memory_functions,
+                              struct _DecisionVector* decision_vector, InterpretParameters* parameters)
+  {
+    Processor* proc = reinterpret_cast<Processor*>(processor);
+    proc->setMemoryFunctions(*memory_functions);
+    MemoryState memoryState(memory, memory_functions, parameters);
+    proc->setMemoryState(memoryState);
+    proc->setInterpretParameters(*parameters);
+
+    uint32_t code;
+    memcpy(&code, instruction_buffer, sizeof(code));
+    unisim::util::endian::ByteSwap(code);
+
+    Translator actset( address, code );
+    Processor::StatusRegister& status = actset.status;
+    status.iset = status.Thumb;
+    DecisionVector* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
+    decisionVector->setToNextInstruction();
+    actset.next_targets(*proc, *target_addresses, *decisionVector);
+    return true;
+  }
+
+  bool arm_interpret(struct _Processor* processor, char* instruction_buffer,
+                           size_t buffer_size, uint64_t* address, uint64_t target_address,
+                           MemoryModel* memory, MemoryModelFunctions* memory_functions,
+                           struct _DecisionVector* decision_vector, InterpretParameters* parameters)
+  {
+    Processor* proc = reinterpret_cast<Processor*>(processor);
+    proc->setMemoryFunctions(*memory_functions);
+    MemoryState memoryState(memory, memory_functions, parameters);
+    proc->setMemoryState(memoryState);
+    proc->setInterpretParameters(*parameters);
+
+    uint32_t code;
+    memcpy(&code, instruction_buffer, sizeof(code));
+    unisim::util::endian::ByteSwap(code);
+
+    Translator actset( *address, code );
+    Processor::StatusRegister& status = actset.status;
+    status.iset = status.Thumb;
+    DecisionVector* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
+    actset.interpret(*proc, *decisionVector);
+    *address = actset.addr;
+    return decisionVector->isEmpty();
+  }
 }
 
-DLL_API void processor_free_decision_vector(struct _DecisionVector* decision_vector)
-{  delete reinterpret_cast<DecisionVector*>(decision_vector); }
+extern "C"
+{
 
-DLL_API void processor_filter_decision_vector(struct _DecisionVector* decision_vector,
-      uint64_t target)
-{  auto* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
-   decisionVector->setToLastInstruction();
-   decisionVector->filter(target);
-}
+  DLL_API uint64_t init_processor_functions(struct _ProcessorFunctions* functions)
+  {
+    functions->create_processor = arm_create_processor;
+    functions->set_domain_functions = arm_set_domain_functions;
+    functions->get_domain_functions = arm_get_domain_functions;
+    functions->initialize_memory = arm_initialize_memory;
+    functions->set_verbose = arm_set_verbose;
+    functions->free_processor = arm_free_processor;
+    functions->get_registers_number = arm_get_registers_number;
+    functions->get_register_index = arm_get_register_index;
+    functions->get_register_name = arm_get_register_name;
+    functions->create_decision_vector = arm_create_decision_vector;
+    functions->clone_decision_vector = arm_clone_decision_vector;
+    functions->free_decision_vector = arm_free_decision_vector;
+    functions->filter_decision_vector = arm_filter_decision_vector;
+    functions->processor_next_targets = arm_next_targets;
+    functions->processor_interpret = arm_interpret;
 
-DLL_API bool processor_next_targets(struct _Processor* processor, char* instruction_buffer,
-      size_t buffer_size, uint64_t address, TargetAddresses* target_addresses,
-      MemoryModel* memory, MemoryModelFunctions* memory_functions,
-      struct _DecisionVector* decision_vector, InterpretParameters* parameters) {
-  Processor* proc = reinterpret_cast<Processor*>(processor);
-  proc->setMemoryFunctions(*memory_functions);
-  MemoryState memoryState(memory, memory_functions, parameters);
-  proc->setMemoryState(memoryState);
-  proc->setInterpretParameters(*parameters);
-
-  uint32_t code;
-  memcpy(&code, instruction_buffer, sizeof(code));
-  unisim::util::endian::ByteSwap(code);
-
-  Translator actset( address, code );
-  Processor::StatusRegister& status = actset.status;
-  status.iset = status.Thumb;
-  DecisionVector* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
-  decisionVector->setToNextInstruction();
-  actset.next_targets(*proc, *target_addresses, *decisionVector);
-  return true;
-}
-
-DLL_API bool processor_interpret(struct _Processor* processor, char* instruction_buffer,
-      size_t buffer_size, uint64_t* address, uint64_t target_address,
-      MemoryModel* memory, MemoryModelFunctions* memory_functions,
-      struct _DecisionVector* decision_vector, InterpretParameters* parameters) {
-  Processor* proc = reinterpret_cast<Processor*>(processor);
-  proc->setMemoryFunctions(*memory_functions);
-  MemoryState memoryState(memory, memory_functions, parameters);
-  proc->setMemoryState(memoryState);
-  proc->setInterpretParameters(*parameters);
-
-  uint32_t code;
-  memcpy(&code, instruction_buffer, sizeof(code));
-  unisim::util::endian::ByteSwap(code);
-
-  Translator actset( *address, code );
-  Processor::StatusRegister& status = actset.status;
-  status.iset = status.Thumb;
-  DecisionVector* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
-  actset.interpret(*proc, *decisionVector);
-  *address = actset.addr;
-  return decisionVector->isEmpty();
-}
-
+    return 1;
+  }
+    
 }
 

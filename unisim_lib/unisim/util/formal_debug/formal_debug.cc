@@ -10,7 +10,7 @@
 //      decoder at binary level.
 //
 
-#include "Analyzer/Assembly/DynamicInterpreters/Interface/DecoderInterface.hpp"
+#include <unisim/util/formal_debug/formal_debug.hh>
 
 void
 ScalarElement::applyAssign(const Operation& operation, Flags& flags)

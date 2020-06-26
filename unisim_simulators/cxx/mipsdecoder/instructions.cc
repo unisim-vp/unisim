@@ -1,5 +1,5 @@
-#include <Mips_Decoder.hh>
-#include <Mips_Interpreter.hh>
+#include "instructions.hh"
+#include "architecture.hh"
 #include <unisim/component/cxx/processor/mips/isa/mipsel.tcc>
 #include <unisim/util/endian/endian.hh>
 #include <sstream>

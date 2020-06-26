@@ -1,5 +1,5 @@
-#ifndef __MIPS_DECODER_HH__
-#define __MIPS_DECODER_HH__
+#ifndef __MIPSDECODER_INSTRUCTIONS_HH__
+#define __MIPSDECODER_INSTRUCTIONS_HH__
 
 #include <unisim/util/identifier/identifier.hh>
 #include <iosfwd>
@@ -92,4 +92,4 @@ namespace Mips
   };
 }
 
-#endif /*__MIPS_DECODER_HH__*/
+#endif /*__MIPSDECODER_INSTRUCTIONS_HH__*/

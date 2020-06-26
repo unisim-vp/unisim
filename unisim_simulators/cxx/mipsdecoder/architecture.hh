@@ -1,8 +1,8 @@
 #ifndef __MIPS_INTERPRETER_HH__
 #define __MIPS_INTERPRETER_HH__
 
-#include <Mips_Decoder.hh>
-#include <Interface/DecoderInterface.hpp>
+#include <instructions.hh>
+#include <unisim/util/formal_debug/formal_debug.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <set>
 #include <vector>
@@ -96,7 +96,7 @@ namespace Mips
 
     struct Store : public Update
     {
-      Store( Expr const& _addr, unsigned _bytes, Expr const& _value ) : addr(_addr), bytes(_bytes), value(_value) {}
+      Store( Expr const& _addr, unsigned _bytes, Expr const& _value ) : addr(_addr), value(_value), bytes(_bytes) {}
       virtual Store* Mutate() const override { return new Store(*this); };
       virtual unsigned SubCount() const override { return 2; }
       virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }

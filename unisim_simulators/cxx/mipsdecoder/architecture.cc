@@ -1,4 +1,4 @@
-#include <Mips_Interpreter.hh>
+#include <architecture.hh>
 
 namespace Mips
 {

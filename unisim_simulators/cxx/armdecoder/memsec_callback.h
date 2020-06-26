@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "domsec_callback.hh"
+#include "domsec_callback.h"
 
 #include <stddef.h>
 

@@ -8,6 +8,7 @@ source "$(dirname $0)/dist_common.sh"
 import_genisslib || exit
 
 import unisim/component/cxx/processor/mips/isa
+import unisim/util/formal_debug || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
@@ -27,35 +28,29 @@ import std/vector || exit
 
 import m4/ax_cflags_warn_all || exit
 
-copy isa_thumb isa_mips32 source header template data
+copy isa source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb)"
-
-UNISIM_LIB_SIMULATOR_ISA_MIPS32_FILES="$(files isa_mips32)"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa)"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
-${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
-${UNISIM_LIB_SIMULATOR_ISA_MIPS32_FILES} \
+${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 $(files header) \
-$(files template)"
+$(files template) \
+"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
-UNISIM_SIMULATOR_TOP_THUMB_ISA="\
-"
-UNISIM_SIMULATOR_TOP_MIPS32_ISA="\
-"
+UNISIM_ISA_PREFIX="unisim/component/cxx/processor/mips/isa/mipsel"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 architecture.cc \
 formal_debug_bindings.cc \
 instructions.cc \
-main.cc \
 mipssec_decoder.cc \
 "
 
@@ -63,8 +58,9 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 architecture.hh \
 instructions.hh \
 mipssec_decoder.hh \
-memsec_callback.hh \
-domsec_callback.hh \
+memsec_callback.h \
+domsec_callback.h \
+decsec_callback.h \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\
@@ -236,24 +232,16 @@ dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/top_mips32.hh\
-	\$(top_builddir)/top_mips32.tcc\
-	\$(top_builddir)/top_thumb.hh\
-	\$(top_builddir)/top_thumb.tcc\
+	\$(top_builddir)/${UNISIM_ISA_PREFIX}.hh\
+	\$(top_builddir)/${UNISIM_ISA_PREFIX}.tcc\
 
 CLEANFILES=\
-	\$(top_builddir)/top_mips32.hh\
-	\$(top_builddir)/top_mips32.tcc\
-	\$(top_builddir)/top_thumb.hh\
-	\$(top_builddir)/top_thumb.tcc\
+	\$(top_builddir)/${UNISIM_ISA_PREFIX}.hh\
+	\$(top_builddir)/${UNISIM_ISA_PREFIX}.tcc\
 
-\$(top_builddir)/top_mips32.tcc: \$(top_builddir)/top_mips32.hh
-\$(top_builddir)/top_mips32.hh: ${UNISIM_SIMULATOR_TOP_MIPS32_ISA} ${UNISIM_LIB_SIMULATOR_ISA_MIPS32_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_mips32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_MIPS32_ISA}
-
-\$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh
-\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_TOP_THUMB_ISA} ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_THUMB_ISA}
+\$(top_builddir)/${UNISIM_ISA_PREFIX}.tcc: \$(top_builddir)/${UNISIM_ISA_PREFIX}.hh
+\$(top_builddir)/${UNISIM_ISA_PREFIX}.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/${UNISIM_ISA_PREFIX} -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_ISA_PREFIX}.isa
 	 
 EOF
 )
