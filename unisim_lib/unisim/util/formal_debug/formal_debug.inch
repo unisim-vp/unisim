@@ -1,0 +1,72 @@
+/////////////////////////////////
+//
+// Library   : Analyzer/Assembly
+// Unit      : Instructions
+// File      : DecoderInterface.inch
+// Copyright : CEA LIST - 2013 - 2020
+//
+// Description :
+//   Definition of a generic C Interface to make the connection
+//   between the binary static analysis and the interpretation
+//   of the instructions.
+//
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+struct _Decoder;
+enum DefaultTargetEndianness { DTEUndefined, DTELittleEndian, DTEBigEndian };
+
+DefineStartGenericFunctions
+DLL_API struct _Decoder* DefineDecoderPrefix(decoder_create)(int default_decoder_state);
+DLL_API void DefineDecoderPrefix(decoder_free)(struct _Decoder* decoder);
+
+DLL_API int DefineDecoderPrefix(get_max_size_address_in_bytes)(struct _Decoder* decoder);
+DLL_API struct _Instruction* DefineDecoderPrefix(decode_instruction)(struct _Decoder* decoder,
+      const char* instruction, unsigned* size_instruction, uint64_t* address_value,
+      size_t size_address, int external_state);
+
+DLL_API DefaultTargetEndianness DefineDecoderPrefix(get_default_endianness)(
+      struct _Decoder* decoder);
+    
+DLL_API void DefineDecoderPrefix(initialize_memory)(struct _Decoder* decoder,
+      struct _MemoryState* memory, struct _MemoryStateFunctions* memoryFunctions,
+      struct _InterpretParameters* parameters,
+      struct _InterpretParametersFunctions* parametersFunctions);
+
+DLL_API void DefineDecoderPrefix(retrieve_targets)(struct _Decoder* decoder,
+      struct _Instruction* instruction, struct _Iteration* iteration, bool may_follow_graph,
+      bool is_family_required, struct _IterationFunctions* iteration_functions);
+
+DLL_API void DefineDecoderPrefix(interpret_forward)(struct _Decoder* decoder,
+      struct _Instruction* instruction, uint64_t* address, struct _MemoryState* memory,
+      struct _MemoryStateFunctions* memoryFunctions, uint64_t* destination,
+      struct _InterpretParameters* parameters,
+      struct _InterpretParametersFunctions* parametersFunctions);
+
+DLL_API void DefineDecoderPrefix(interpret_backward)(struct _Decoder* decoder,
+      struct _Instruction* instruction, uint64_t* address, struct _MemoryState* after_memory,
+      struct _MemoryState* before_memory_to_constraint,
+      struct _MemoryStateFunctions* memoryFunctions, uint64_t* after_memory_address,
+      struct _InterpretParameters* parameters,
+      struct _InterpretParametersFunctions* parametersFunctions);
+
+DLL_API FamilyInstruction DefineDecoderPrefix(get_family_instruction)(struct _Decoder* decoder,
+      struct _Instruction* instruction, uint64_t* target_address_validation);
+
+DLL_API const char* DefineDecoderPrefix(print_instruction)(struct _Instruction* instruction,
+      uint64_t* address);
+DLL_API void DefineDecoderPrefix(free_instruction)(struct _Instruction* instruction);
+DLL_API struct _Instruction* DefineDecoderPrefix(clone_instruction)(
+      struct _Instruction* instruction);
+
+DLL_API int DefineDecoderPrefix(get_registers_number)(struct _Decoder* decoder);
+DLL_API int DefineDecoderPrefix(get_size_register)(struct _Decoder* decoder, int register_index);
+DLL_API void DefineDecoderPrefix(set_support_syntactic_condition)(struct _Decoder* decoder);
+
+DLL_API char* DefineDecoderPrefix(get_register_name)(struct _Decoder* decoder, int register_index);
+DLL_API int DefineDecoderPrefix(get_register_index)(struct _Decoder* decoder, char* register_name,
+      unsigned* size, unsigned* low_bit, unsigned* high_bit, bool* is_floating_register);
+DefineEndGenericFunctions
+
