@@ -1,3 +1,3 @@
-unisim/util/formal_debug/formal_debug.hh
-unisim/util/formal_debug/formal_debug.h
-unisim/util/formal_debug/instruction_callback.h
+unisim/util/forbint/debug/forbint/debug.hh
+unisim/util/forbint/debug/forbint/debug.h
+unisim/util/forbint/debug/instruction_callback.h

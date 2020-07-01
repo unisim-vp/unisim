@@ -1,7 +1,17 @@
 #include "instructions.hh"
-#include <unisim/util/formal_debug/formal_debug.hh>
+#include <unisim/util/forbint/debug/forbint/debug.hh>
 #include <unisim/util/endian/endian.hh>
 #include <sstream>
+
+#if defined(_WIN32) && defined(_USRDLL)
+#ifdef DLL_EXPORTS
+#define DLL_API __declspec(dllexport)
+#else
+#define DLL_API __declspec(dllimport)
+#endif // APE_EXPORTS
+#else
+#define DLL_API
+#endif // _USRDLL
 
 extern "C"
 {
@@ -23,10 +33,10 @@ extern "C"
   get_max_size_address_in_bytes(struct _Decoder* decoder)
   {  return 4; }
 
-  DLL_API DefaultTargetEndianness
+  DLL_API unisim::util::forbint::debug::DefaultTargetEndianness
   get_default_endianness(struct _Decoder* decoder)
   {
-    return DTELittleEndian;
+    return unisim::util::forbint::debug::DTELittleEndian;
   }
    
   DLL_API struct _Instruction*
@@ -51,12 +61,12 @@ extern "C"
                     struct _InterpretParameters* parameters,
                     struct _InterpretParametersFunctions* parametersFunctions)
   {
-    MemoryState memory(amemory, memoryFunctions);
-    MemoryFlags flags(parameters, parametersFunctions);
+    unisim::util::forbint::debug::MemoryState memory(amemory, memoryFunctions);
+    unisim::util::forbint::debug::MemoryFlags flags(parameters, parametersFunctions);
     memory.setNumberOfRegisters(Mips::RegisterIndex::end);
     for (Mips::RegisterIndex reg; reg.next();)
       {
-        ScalarElement value = flags.newTop(32);
+        unisim::util::forbint::debug::ScalarElement value = flags.newTop(32);
         memory.setRegisterValue(reg.idx(), value, flags);
       }
   }
@@ -68,6 +78,7 @@ extern "C"
   {
     if (Mips::Instruction* instruction = reinterpret_cast<Mips::Instruction*>(ainstruction))
       {
+        typedef unisim::util::forbint::debug::Iteration Iteration;
         Iteration iteration(aiteration, (bool) may_follow_graph, (bool) is_family_required, iteration_functions);
         instruction->retrieveTargets(iteration);
         return;
@@ -85,6 +96,9 @@ extern "C"
     if (Mips::Instruction* instruction = reinterpret_cast<Mips::Instruction*>(ainstruction))
       {
         uint32_t insn_addr = unisim::util::endian::Host2LittleEndian(*address);
+        typedef unisim::util::forbint::debug::MemoryState MemoryState;
+        typedef unisim::util::forbint::debug::Target Target;
+        typedef unisim::util::forbint::debug::MemoryFlags MemoryFlags;
         MemoryState memory(amemory, memoryFunctions);
         Target destination(adestination);
         MemoryFlags flags(parameters, parametersFunctions);

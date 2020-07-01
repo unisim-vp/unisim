@@ -45,12 +45,12 @@ namespace Mips
       {
         Fork(Interpreter::ActionNode& root) : cond(root.cond), nexts{root.getnext(false)->cfg,root.getnext(true)->cfg} {}
 
-        virtual void retrieveFamily( Iteration::FamilyInstruction& family, uint32_t origin ) const override
+        virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& f, uint32_t origin ) const override
         {
-          nexts[0]->retrieveFamily( family, origin );
-          nexts[1]->retrieveFamily( family, origin );
+          nexts[0]->retrieveFamily( f, origin );
+          nexts[1]->retrieveFamily( f, origin );
         }
-        virtual void retrieveTargets( Iteration& iteration ) const override
+        virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override
         {
         }
         
@@ -65,7 +65,7 @@ namespace Mips
 
     unsigned get_family() const override
     {
-      Iteration::FamilyInstruction result;
+      unisim::util::forbint::debug::Iteration::FamilyInstruction result;
       if (not cfg)
         result.setSequential();
       else
@@ -76,7 +76,7 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    virtual void retrieveTargets(Iteration& iteration) const override
+    virtual void retrieveTargets(unisim::util::forbint::debug::Iteration& iteration) const override
     {
       if (not cfg)
         iteration.addNextTarget();
@@ -87,14 +87,17 @@ namespace Mips
 
       if (iteration.isFamilyRequired())
         {
-          Iteration::FamilyInstruction family;
+          unisim::util::forbint::debug::Iteration::FamilyInstruction family;
           if (cfg) cfg->retrieveFamily(family, operation->GetAddr());
           else     family.setSequential();
           iteration.setFamily(family);
         }
     }
     virtual unsigned getSize() const override { return size; }
-    virtual void interpretForward(uint32_t addr, MemoryState& ms, Target& tg, MemoryFlags& mf) const override
+    virtual void interpretForward(uint32_t addr,
+                                  unisim::util::forbint::debug::MemoryState& ms,
+                                  unisim::util::forbint::debug::Target& tg,
+                                  unisim::util::forbint::debug::MemoryFlags& mf) const override
     {
       std::vector<std::unique_ptr<Interpreter::SideEffect>> side_effects;
       side_effects.reserve(actions.size());

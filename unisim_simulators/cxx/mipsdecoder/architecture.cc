@@ -51,9 +51,11 @@ namespace Mips
 
   void
   Interpreter::INode::ComputeForward(unisim::util::symbolic::Expr const& expr,
-                                     ScalarElement& res, MemoryState& memory, Target& dest, MemoryFlags& flags)
+                                     FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
   {
     unsigned subcount = expr->SubCount();
+    typedef unisim::util::forbint::debug::MultiBit::Operation MultiBitOperation;
+    typedef unisim::util::forbint::debug::MultiBit::CastMultiBitOperation CastMultiBitOperation;
     
     if (auto node = expr->AsConstNode())
       {
@@ -64,19 +66,20 @@ namespace Mips
     else if (auto node = expr->AsOpNode())
       {
         using unisim::util::symbolic::Op;
+        
         Interpreter::INode::ComputeForward(expr->GetSub(0), res, memory, dest, flags);
         
         if (subcount == 1)
           {
             switch (node->op.code)
               {
-              case Op::Not: res.applyAssign(MultiBit::Operation().setBitNegate(), flags.scalarPart()); return;
-              case Op::Neg: res.applyAssign(MultiBit::Operation().setOppositeSigned(), flags.scalarPart()); return;
+              case Op::Not: res.applyAssign(MultiBitOperation().setBitNegate(), flags.scalarPart()); return;
+              case Op::Neg: res.applyAssign(MultiBitOperation().setOppositeSigned(), flags.scalarPart()); return;
               case Op::Cast:
                 {
                   auto const& cnb = dynamic_cast<unisim::util::symbolic::CastNodeBase const&>( *expr.node );
                   ScalarType dst( cnb.GetType() );
-                  res.applyAssign(MultiBit::CastMultiBitOperation().setSize(dst.bitsize), flags.scalarPart());
+                  res.applyAssign(CastMultiBitOperation().setSize(dst.bitsize), flags.scalarPart());
                 }
                 return;
                 
@@ -88,29 +91,29 @@ namespace Mips
         else if (subcount == 2)
           {
             // Interpreter::INode::ComputeForward(expr->GetSub(0), res, memory, dest, flags);
-            ScalarElement arg;
+            FDScalarElement arg;
             Interpreter::INode::ComputeForward(expr->GetSub(1), arg, memory, dest, flags);
             
             switch (node->op.code)
               {
-              case Op::Xor: res.applyAssign(MultiBit::Operation().setBitExclusiveOr(), arg, flags.scalarPart()); return;
-              case Op::And: res.applyAssign(MultiBit::Operation().setBitAnd(), arg, flags.scalarPart()); return;
-              case Op::Or:  res.applyAssign(MultiBit::Operation().setBitOr(), arg, flags.scalarPart()); return;
-              case Op::Lsl: res.applyAssign(MultiBit::Operation().setLeftShift(), arg, flags.scalarPart()); return;
-              case Op::Asr: res.applyAssign(MultiBit::Operation().setArithmeticRightShift(), arg, flags.scalarPart()); return;
-              case Op::Lsr: res.applyAssign(MultiBit::Operation().setLogicalRightShift(), arg, flags.scalarPart()); return;
-              case Op::Add: res.applyAssign(MultiBit::Operation().setPlusSigned(), arg, flags.scalarPart()); return;
-              case Op::Sub: res.applyAssign(MultiBit::Operation().setMinusSigned(), arg, flags.scalarPart()); return;
-              case Op::Teq: res.applyAssign(MultiBit::Operation().setCompareEqual(), arg, flags.scalarPart()); return;
-              case Op::Tne: res.applyAssign(MultiBit::Operation().setCompareDifferent(), arg, flags.scalarPart()); return;
-              case Op::Tge: res.applyAssign(MultiBit::Operation().setCompareGreaterOrEqualSigned(), arg, flags.scalarPart()); return;
-              case Op::Tgt: res.applyAssign(MultiBit::Operation().setCompareGreaterSigned(), arg, flags.scalarPart()); return;
-              case Op::Tle: res.applyAssign(MultiBit::Operation().setCompareLessOrEqualSigned(), arg, flags.scalarPart()); return;
-              case Op::Tlt: res.applyAssign(MultiBit::Operation().setCompareLessSigned(), arg, flags.scalarPart()); return;
-              case Op::Tgeu: res.applyAssign(MultiBit::Operation().setCompareGreaterOrEqualUnsigned(), arg, flags.scalarPart()); return;
-              case Op::Tgtu: res.applyAssign(MultiBit::Operation().setCompareGreaterUnsigned(), arg, flags.scalarPart()); return;
-              case Op::Tleu: res.applyAssign(MultiBit::Operation().setCompareLessOrEqualUnsigned(), arg, flags.scalarPart()); return;
-              case Op::Tltu: res.applyAssign(MultiBit::Operation().setCompareLessUnsigned(), arg, flags.scalarPart()); return;
+              case Op::Xor: res.applyAssign(MultiBitOperation().setBitExclusiveOr(), arg, flags.scalarPart()); return;
+              case Op::And: res.applyAssign(MultiBitOperation().setBitAnd(), arg, flags.scalarPart()); return;
+              case Op::Or:  res.applyAssign(MultiBitOperation().setBitOr(), arg, flags.scalarPart()); return;
+              case Op::Lsl: res.applyAssign(MultiBitOperation().setLeftShift(), arg, flags.scalarPart()); return;
+              case Op::Asr: res.applyAssign(MultiBitOperation().setArithmeticRightShift(), arg, flags.scalarPart()); return;
+              case Op::Lsr: res.applyAssign(MultiBitOperation().setLogicalRightShift(), arg, flags.scalarPart()); return;
+              case Op::Add: res.applyAssign(MultiBitOperation().setPlusSigned(), arg, flags.scalarPart()); return;
+              case Op::Sub: res.applyAssign(MultiBitOperation().setMinusSigned(), arg, flags.scalarPart()); return;
+              case Op::Teq: res.applyAssign(MultiBitOperation().setCompareEqual(), arg, flags.scalarPart()); return;
+              case Op::Tne: res.applyAssign(MultiBitOperation().setCompareDifferent(), arg, flags.scalarPart()); return;
+              case Op::Tge: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualSigned(), arg, flags.scalarPart()); return;
+              case Op::Tgt: res.applyAssign(MultiBitOperation().setCompareGreaterSigned(), arg, flags.scalarPart()); return;
+              case Op::Tle: res.applyAssign(MultiBitOperation().setCompareLessOrEqualSigned(), arg, flags.scalarPart()); return;
+              case Op::Tlt: res.applyAssign(MultiBitOperation().setCompareLessSigned(), arg, flags.scalarPart()); return;
+              case Op::Tgeu: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualUnsigned(), arg, flags.scalarPart()); return;
+              case Op::Tgtu: res.applyAssign(MultiBitOperation().setCompareGreaterUnsigned(), arg, flags.scalarPart()); return;
+              case Op::Tleu: res.applyAssign(MultiBitOperation().setCompareLessOrEqualUnsigned(), arg, flags.scalarPart()); return;
+              case Op::Tltu: res.applyAssign(MultiBitOperation().setCompareLessUnsigned(), arg, flags.scalarPart()); return;
 
               default: break;
               }
@@ -127,29 +130,29 @@ namespace Mips
   }
 
   void
-  Interpreter::Load::ComputeForward(ScalarElement& elem, MemoryState& memory, Target& dest, MemoryFlags& flags) const
+  Interpreter::Load::ComputeForward(FDScalarElement& elem, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
-    ScalarElement address;
+    FDScalarElement address;
     INode::ComputeForward(addr, address, memory, dest, flags);
     elem = memory.loadValue(address, bytes*8, flags);
   }
   
   std::unique_ptr<Interpreter::SideEffect>
-  Interpreter::Store::InterpretForward(MemoryState& memory, Target& dest, MemoryFlags& flags) const
+  Interpreter::Store::InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
     struct DoStore : public Interpreter::SideEffect
     {
-      DoStore(unsigned _bytes, Expr _addr, Expr _value, MemoryState& memory, Target& dest, MemoryFlags& flags)
+      DoStore(unsigned _bytes, Expr _addr, Expr _value, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
         : addr(), value(), bytes(_bytes)
       {
         INode::ComputeForward( _addr,  addr, memory, dest, flags);
         INode::ComputeForward(_value, value, memory, dest, flags);
       }
-      virtual void Commit(MemoryState& memory, Target& dest, MemoryFlags& flags) override
+      virtual void Commit(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) override
       {
         memory.storeValue(addr, value, flags);
       }
-      ScalarElement addr, value;
+      FDScalarElement addr, value;
       unsigned bytes;
     };
     
@@ -157,26 +160,26 @@ namespace Mips
   }
   
   void
-  Interpreter::RegRead::ComputeForward(ScalarElement& elem, MemoryState& memory, Target& dest, MemoryFlags& flags) const
+  Interpreter::RegRead::ComputeForward(FDScalarElement& elem, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
-    elem = memory.getRegisterValue(reg.idx(), flags, TIMultiBit);
+    elem = memory.getRegisterValue(reg.idx(), flags, unisim::util::forbint::debug::TIMultiBit);
   }
   
   std::unique_ptr<Interpreter::SideEffect>
-  Interpreter::RegWrite::InterpretForward(MemoryState& memory, Target& dest, MemoryFlags& flags) const
+  Interpreter::RegWrite::InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
     struct DoRegWrite : public Interpreter::SideEffect
     {
-      DoRegWrite(RegisterIndex _reg, Expr _value, MemoryState& memory, Target& dest, MemoryFlags& flags)
+      DoRegWrite(RegisterIndex _reg, Expr _value, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
         : value(), reg(_reg)
       {
         INode::ComputeForward(_value, value, memory, dest, flags);
       }
-      virtual void Commit(MemoryState& memory, Target& dest, MemoryFlags& flags) override
+      virtual void Commit(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) override
       {
         memory.setRegisterValue(reg.idx(), value, flags);
       }
-      ScalarElement value;
+      FDScalarElement value;
       RegisterIndex reg;
     };
     
@@ -184,7 +187,7 @@ namespace Mips
   }
   
   void
-  Interpreter::Goto::retrieveFamily( Iteration::FamilyInstruction& family, uint32_t origin ) const
+  Interpreter::Goto::retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const
   {
     switch (btype)
       {
@@ -211,7 +214,7 @@ namespace Mips
   }
 
   void
-  Interpreter::Goto::retrieveTargets( Iteration& iteration ) const
+  Interpreter::Goto::retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const
   {
     if (iteration.mayFollowGraph())
       {

@@ -5,10 +5,12 @@
 #include <iosfwd>
 #include <inttypes.h>
 
-struct Iteration;
-struct MemoryState;
-struct Target;
-struct MemoryFlags;
+namespace unisim { namespace util { namespace forbint { namespace debug {
+  struct Iteration;
+  struct MemoryState;
+  struct Target;
+  struct MemoryFlags;
+} } } }
 
 namespace Mips
 {
@@ -17,8 +19,11 @@ namespace Mips
     virtual ~Instruction() {}
     virtual unsigned get_family() const = 0;
     virtual Instruction* clone() const = 0;
-    virtual void retrieveTargets(Iteration&) const = 0;
-    virtual void interpretForward(uint32_t, MemoryState&, Target&, MemoryFlags&) const = 0;
+    virtual void retrieveTargets(unisim::util::forbint::debug::Iteration&) const = 0;
+    virtual void interpretForward(uint32_t,
+                                  unisim::util::forbint::debug::MemoryState&,
+                                  unisim::util::forbint::debug::Target&,
+                                  unisim::util::forbint::debug::MemoryFlags&) const = 0;
     virtual void disasm(std::ostream& sink) const = 0;
     virtual unsigned getSize() const = 0;
   };

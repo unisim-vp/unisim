@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2007-2020,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -35,7 +35,7 @@
 #ifndef __UNISIM_UTIL_FORMAL_DEBUG_HH__
 #define __UNISIM_UTIL_FORMAL_DEBUG_HH__
 
-#include <unisim/util/formal_debug/formal_debug.h>
+#include <unisim/util/formal_debug/instruction_callback.h>
 #include <cassert>
 #include <cstring>
 #include <iostream>

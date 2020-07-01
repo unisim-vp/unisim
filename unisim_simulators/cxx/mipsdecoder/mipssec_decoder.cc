@@ -32,59 +32,66 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include "instructions.hh"
 #include "mipssec_decoder.hh"
+#include "domsec_callback.h"
 #include <unisim/util/identifier/identifier.hh>
 #include <functional>
+#include <memory>
+#include <map>
 #include <cmath>
-
 #include <cassert>
 
   
 namespace
 {
+  struct Processor
+  {
+    Processor() {}
+    ~Processor() {}
+
+    void setVerbose() { verbose = true; }
+    
+    std::map< uint32_t, std::unique_ptr<Mips::Instruction> > instructions;
+    DomainElementFunctions dftable;
+    bool verbose;
+  };
+
 
   struct _Processor* mips_create_processor()
   {
-    struct TODO {}; throw TODO();
-    // debugPrint((DomainValue*) nullptr);
-    // return reinterpret_cast<struct _Processor*>(new Processor());
+    return reinterpret_cast<struct _Processor*>(new Processor());
     return 0;
   }
 
   void mips_set_domain_functions(struct _Processor* aprocessor, struct _DomainElementFunctions* functionTable)
   {
-    struct TODO {}; throw TODO();
-    // auto* processor = reinterpret_cast<Processor*>(aprocessor);
-    // processor->setDomainFunctions(*functionTable);
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    processor->dftable = *functionTable;
   }
   
   struct _DomainElementFunctions* mips_get_domain_functions(struct _Processor* aprocessor)
   {
-    struct TODO {}; throw TODO();
-    // auto* processor = reinterpret_cast<Processor*>(aprocessor);
-    // return &processor->getDomainFunctions();
-    return 0;
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    return &processor->dftable;
   }
 
   void mips_initialize_memory(struct _Processor* aprocessor, MemoryModel* memory,
                               MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
   {
-    struct TODO {}; throw TODO();
-    // auto* processor = reinterpret_cast<Processor*>(aprocessor);
-    // MemoryState memoryState(memory, memory_functions, parameters);
-    // memoryState.initializeThumbMemory(processor->getDomainFunctions());
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    MemoryState memoryState(memory, memory_functions, parameters);
+    memoryState.initializeThumbMemory(processor->getDomainFunctions());
   }
 
   void mips_set_verbose(struct _Processor* processor)
   {
-    struct TODO {}; throw TODO();
-    //  if (processor) reinterpret_cast<Processor*>(processor)->setVerbose();
+    if (processor) reinterpret_cast<Processor*>(processor)->setVerbose();
   }
 
   void mips_free_processor(struct _Processor* processor)
   {
-    struct TODO {}; throw TODO();
-    // delete reinterpret_cast<Processor*>(processor);
+    delete reinterpret_cast<Processor*>(processor);
   }
 
   int mips_get_registers_number(struct _Processor* processor)

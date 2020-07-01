@@ -2,7 +2,7 @@
 #define __MIPS_INTERPRETER_HH__
 
 #include <instructions.hh>
-#include <unisim/util/formal_debug/formal_debug.hh>
+#include <unisim/util/forbint/debug/forbint/debug.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <set>
 #include <vector>
@@ -36,19 +36,24 @@ namespace Mips
     //   typedef unisim::util::symbolic::FP                   FP;
     typedef unisim::util::symbolic::Expr                 Expr;
     typedef unisim::util::symbolic::ScalarType           ScalarType;
-    
+
+    typedef unisim::util::forbint::debug::ScalarElement    FDScalarElement;
+    typedef unisim::util::forbint::debug::MemoryState      FDMemoryState;
+    typedef unisim::util::forbint::debug::MemoryFlags      FDMemoryFlags;
+    typedef unisim::util::forbint::debug::Target           FDTarget;
+
     struct INode : public unisim::util::symbolic::ExprNode
     {
       typedef unisim::util::symbolic::Expr Expr;
     
-      static void ComputeForward(Expr const&, ScalarElement& res, MemoryState& memory, Target& dest, MemoryFlags& flags);
-      virtual void ComputeForward(ScalarElement& res, MemoryState& memory, Target& dest, MemoryFlags& flags) const = 0;
+      static void ComputeForward(Expr const&, FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags);
+      virtual void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
     };
   
     struct SideEffect
     {
       virtual ~SideEffect() {}
-      virtual void Commit(MemoryState& memory, Target& dest, MemoryFlags& flags) = 0;
+      virtual void Commit(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) = 0;
     };
     
     struct Update : public unisim::util::symbolic::ExprNode
@@ -56,14 +61,14 @@ namespace Mips
       typedef unisim::util::symbolic::Expr Expr;
       
       virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
-      virtual std::unique_ptr<SideEffect> InterpretForward(MemoryState& memory, Target& dest, MemoryFlags& flags) const = 0;
+      virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
     };
   
     struct Ctrl
     {
       virtual ~Ctrl() {}
-      virtual void retrieveFamily( Iteration::FamilyInstruction& family, uint32_t origin ) const = 0;
-      virtual void retrieveTargets( Iteration& iteration ) const = 0;
+      virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const = 0;
+      virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const = 0;
     };
   
     struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
@@ -88,7 +93,7 @@ namespace Mips
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
 
-      void ComputeForward(ScalarElement& res, MemoryState& memory, Target& dest, MemoryFlags& flags) const override;
+      void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
 
       Expr addr;
       unsigned bytes;
@@ -104,7 +109,7 @@ namespace Mips
       virtual int cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<Store const&>( rhs ) ); }
       int compare( Store const& rhs ) const { return int(bytes) - int(rhs.bytes); }
 
-      std::unique_ptr<SideEffect> InterpretForward(MemoryState& memory, Target& dest, MemoryFlags& flags) const override;
+      std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
 
       unisim::util::symbolic::Expr addr, value;
       unsigned bytes;
@@ -122,7 +127,7 @@ namespace Mips
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
       int compare( RegRead const& rhs ) const { return reg.cmp( rhs.reg ); }
       
-      void ComputeForward(ScalarElement& res, MemoryState& memory, Target& dest, MemoryFlags& flags) const override;
+      void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
     };
 
     struct RegWrite : public Update
@@ -135,7 +140,7 @@ namespace Mips
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
       int compare( RegWrite const& rhs ) const { return reg.cmp( rhs.reg ); }
       
-      std::unique_ptr<SideEffect> InterpretForward(MemoryState& memory, Target& dest, MemoryFlags& flags) const override;
+      std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
 
       unisim::util::symbolic::Expr value;
       RegisterIndex reg;
@@ -277,8 +282,8 @@ namespace Mips
     struct Goto : public Ctrl
     {
       Goto( U32 const& _target, branch_type_t _btype ) : target(_target.expr), btype(_btype) {}
-      virtual void retrieveFamily( Iteration::FamilyInstruction& family, uint32_t origin ) const override;
-      virtual void retrieveTargets( Iteration& iteration ) const override;
+      virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const override;
+      virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override;
 
       Expr target;
       branch_type_t btype;
@@ -290,8 +295,8 @@ namespace Mips
     }
     struct CancelDS : public Ctrl
     {
-      virtual void retrieveFamily( Iteration::FamilyInstruction& family, uint32_t origin ) const override {}
-      virtual void retrieveTargets( Iteration& iteration ) const override { struct Issue {}; throw Issue (); }
+      virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const override {}
+      virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override { struct Issue {}; throw Issue (); }
     };
     void CancelDelaySlot()
     {
