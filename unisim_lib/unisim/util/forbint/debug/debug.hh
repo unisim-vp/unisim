@@ -32,10 +32,10 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_FORMAL_DEBUG_HH__
-#define __UNISIM_UTIL_FORMAL_DEBUG_HH__
+#ifndef __UNISIM_UTIL_FORBINT_DEBUG_DEBUG_HH__
+#define __UNISIM_UTIL_FORBINT_DEBUG_DEBUG_HH__
 
-#include <unisim/util/formal_debug/instruction_callback.h>
+#include <unisim/util/forbint/debug/instruction_callback.h>
 #include <cassert>
 #include <cstring>
 #include <iostream>
@@ -1911,4 +1911,4 @@ VirtualInstruction::retrieveTargets(Iteration& iteration) const {
       iteration.setFamily(Iteration::FamilyInstruction().setSequential());
 }
 
-#endif /* __UNISIM_UTIL_FORMAL_DEBUG_HH__ */
+#endif /* __UNISIM_UTIL_FORBINT_DEBUG_DEBUG_HH__ */

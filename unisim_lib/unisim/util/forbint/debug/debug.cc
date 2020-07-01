@@ -10,7 +10,7 @@
 //      decoder at binary level.
 //
 
-#include <unisim/util/formal_debug/formal_debug.hh>
+#include <unisim/util/forbint/debug/debug.hh>
 
 void
 ScalarElement::applyAssign(const Operation& operation, Flags& flags)
