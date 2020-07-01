@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "memsec_callback.h"
+#include <unisim/util/forbint/contract/memsec_callback.h>
 
 #if defined(_WIN32)
 #define DLL_CDECL __cdecl
