@@ -416,7 +416,7 @@ public:
 
 namespace Bit {
 
-class Operation : public ::Operation {
+class Operation : public debug::Operation {
 public:
   enum Type {
     TUndefined, TCastMultiBit, EndOfCast,
@@ -429,7 +429,7 @@ public:
   };
 
 private:
-  typedef ::Operation inherited;
+  typedef debug::Operation inherited;
   Type _type;
 
   Operation& setField(Type type)
@@ -484,7 +484,7 @@ class Operation;
 
 namespace MultiBit {
 
-class Operation : public ::Operation {
+class Operation : public debug::Operation {
 public:
   enum Type {
     TUndefined, TExtendWithZero, TExtendWithSign, TConcat, TReduce, TBitSet, EndOfExtension,
@@ -522,7 +522,7 @@ public:
   bool isDifferentCompare() const { return (_type == TCompareDifferent) || (_type == TCompareDifferentFloat); }
 
 private:
-  typedef ::Operation inherited;
+  typedef debug::Operation inherited;
   Operation& setField(Type type) { assert(!_type); _type = type; return *this; }
 
 protected:
@@ -757,9 +757,9 @@ public:
 
 namespace Floating {
 
-class Operation : public ::Operation {
+class Operation : public debug::Operation {
 private:
-  typedef ::Operation inherited;
+  typedef debug::Operation inherited;
 
 public:
   enum Type {

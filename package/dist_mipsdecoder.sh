@@ -9,6 +9,7 @@ import_genisslib || exit
 
 import unisim/component/cxx/processor/mips/isa
 import unisim/util/forbint/debug || exit
+import unisim/util/forbint/contract || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit

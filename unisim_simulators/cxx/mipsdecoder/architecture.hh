@@ -2,7 +2,7 @@
 #define __MIPS_INTERPRETER_HH__
 
 #include <instructions.hh>
-#include <unisim/util/forbint/debug/forbint/debug.hh>
+#include <unisim/util/forbint/debug/debug.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <set>
 #include <vector>

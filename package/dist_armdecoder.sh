@@ -8,6 +8,7 @@ source "$(dirname $0)/dist_common.sh"
 import_genisslib || exit
 
 import dist_armdecoder || exit
+import unisim/util/forbint/contract || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit

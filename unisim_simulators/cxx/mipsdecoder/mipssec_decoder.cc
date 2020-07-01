@@ -79,9 +79,10 @@ namespace
   void mips_initialize_memory(struct _Processor* aprocessor, MemoryModel* memory,
                               MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
   {
-    auto* processor = reinterpret_cast<Processor*>(aprocessor);
-    MemoryState memoryState(memory, memory_functions, parameters);
-    memoryState.initializeThumbMemory(processor->getDomainFunctions());
+    struct TODO {}; throw TODO();
+    // auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    // MemoryState memoryState(memory, memory_functions, parameters);
+    // memoryState.initializeThumbMemory(processor->getDomainFunctions());
   }
 
   void mips_set_verbose(struct _Processor* processor)
