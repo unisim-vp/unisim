@@ -1398,12 +1398,6 @@ class MemoryState {
          value.svalue() = DomainElement{};
       }
 
-   void initializeThumbMemory(struct _DomainElementFunctions& functions)
-      {  
-        auto bg = DomainMultiBitValue<uint32_t>(0x13 /* SUPERVISOR_MODE */ | ((0x60 >> 6) << 10) | ((0x60 & 0x3) << 25) );
-        setRegisterValue(CPSR_ID, std::move(bg), functions);
-      }
-
    DomainElement getRegisterValueAsElement(int registerIndex) const
       {  DomainElementFunctions* domainFunctions = nullptr;
          return (*pfFunctions->get_register_value)
@@ -1797,6 +1791,13 @@ public:
   std::unique_ptr<MemoryStateOwner>   sourceMemoryState;
   struct _MemoryModelFunctions   memoryFunctions;
 
+  void initializeThumbMemory(MemoryModel* memory, MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
+  {
+    MemoryState memoryState(memory, memory_functions, parameters);
+    auto bg = DomainMultiBitValue<uint32_t>(0x13 /* SUPERVISOR_MODE */ | ((0x60 >> 6) << 10) | ((0x60 & 0x3) << 25) );
+    memoryState.setRegisterValue(CPSR_ID, std::move(bg), domainFunctions);
+  }
+  
   struct SRegID : public unisim::util::identifier::Identifier<SRegID>
   {
     enum Code {
@@ -3406,8 +3407,7 @@ namespace
                          MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
   {
     auto* processor = reinterpret_cast<Processor*>(aprocessor);
-    MemoryState memoryState(memory, memory_functions, parameters);
-    memoryState.initializeThumbMemory(processor->getDomainFunctions());
+    processor->initializeThumbMemory(memory, memory_functions, parameters);
   }
 
   void arm_set_verbose(struct _Processor* processor)

@@ -40,6 +40,11 @@
 #include <cstring>
 #include <iostream>
 
+namespace unisim {
+namespace util {
+namespace forbint {
+namespace debug {
+
 enum DefaultTargetEndianness { DTEUndefined, DTELittleEndian, DTEBigEndian };
 
 /*! \class Flags
@@ -1910,5 +1915,10 @@ VirtualInstruction::retrieveTargets(Iteration& iteration) const {
    if (iteration.isFamilyRequired())
       iteration.setFamily(Iteration::FamilyInstruction().setSequential());
 }
+
+} /* namespace debug */
+} /* namespace forbint */
+} /* namespace util */
+} /* namespace unisim */
 
 #endif /* __UNISIM_UTIL_FORBINT_DEBUG_DEBUG_HH__ */
