@@ -78,12 +78,12 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    virtual void next_addresses(std::set<unsigned int>& addresses, void* mem_model, void* mem_functions, void* parameters) const override
+    virtual void next_addresses(std::set<unsigned int>& addresses, unisim::util::forbint::contract::MemoryState&) const override
     {
       struct TODO {}; throw TODO();
     }
 
-    virtual void interpret( uint32_t addr, uint32_t next_addr, void* mem_model, void* mem_functions, void* parameters) const override
+    virtual void interpret( uint32_t addr, uint32_t next_addr, unisim::util::forbint::contract::MemoryState&) const override
     {
       struct TODO {}; throw TODO();
     }

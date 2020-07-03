@@ -14,6 +14,9 @@ namespace unisim { namespace util { namespace forbint { namespace debug {
   struct Target;
   struct MemoryFlags;
 } } } }
+namespace unisim { namespace util { namespace forbint { namespace contract {
+  struct MemoryState;
+} } } }
 
 
 namespace Mips
@@ -23,16 +26,16 @@ namespace Mips
     virtual ~Instruction() {}
     virtual unsigned get_family() const = 0;
     virtual Instruction* clone() const = 0;
+    virtual void disasm(std::ostream& sink) const = 0;
+    virtual unsigned getSize() const = 0;
+    virtual bool match(uint32_t const* words) const = 0;
     virtual void retrieveTargets(unisim::util::forbint::debug::Iteration&) const = 0;
     virtual void interpretForward(uint32_t,
                                   unisim::util::forbint::debug::MemoryState&,
                                   unisim::util::forbint::debug::Target&,
                                   unisim::util::forbint::debug::MemoryFlags&) const = 0;
-    virtual void disasm(std::ostream& sink) const = 0;
-    virtual unsigned getSize() const = 0;
-    virtual bool match(uint32_t const* words) const = 0;
-    virtual void next_addresses(std::set<unsigned int>&, void* mem_model, void* mem_functions, void* parameters) const = 0;
-    virtual void interpret(uint32_t addr, uint32_t next_addr, void* mem_model, void* mem_functions, void* parameters) const = 0;
+    virtual void next_addresses(std::set<unsigned int>&, unisim::util::forbint::contract::MemoryState&) const = 0;
+    virtual void interpret(uint32_t addr, uint32_t next_addr, unisim::util::forbint::contract::MemoryState&) const = 0;
   };
   
   struct RegisterIndex : public unisim::util::identifier::Identifier<RegisterIndex>

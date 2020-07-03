@@ -511,6 +511,18 @@ public:
         return DomainMultiFloatValue<ResultType>((ResultType) uConstant);
     }
 
+  void moveToRegisterValue(unisim::util::forbint::contract::MemoryState& memory, int registerIndex, struct _DomainElementFunctions& defTable)
+    {
+      if (not inherited::isValid())
+        { // Constant
+          VALUE_TYPE val;
+          isConstant(&val);
+          DomainIntegerConstant cst{8*sizeof(VALUE_TYPE), std::numeric_limits<VALUE_TYPE>::is_signed, (uint64_t) val};
+          svalue() = (*defTable.multibit_create_constant)(cst);
+        }
+
+      memory.setRegisterValue(registerIndex, *this);
+    }
   void reduce(int first, int last)
     {
       if (inherited::isValid())
@@ -1226,171 +1238,6 @@ public:
     { applyUnary(DMFUOSqrt, [](VALUE_TYPE val) { return std::sqrt(val); }); }
 };
 
-class MemoryStateOwner;
-class MemoryState {
-  private:
-   MemoryModel* pmModel;
-   struct _MemoryModelFunctions* pfFunctions;
-   InterpretParameters* pParameters;
-   DomainEvaluationEnvironment* peDomainEnv;
-   mutable unsigned uErrors; /* set of MemoryEvaluationErrorFlags */
-   friend class MemoryStateOwner;
-
-  public:
-   MemoryState()
-      :  pmModel(nullptr), pfFunctions(nullptr), pParameters(nullptr),
-         peDomainEnv(nullptr), uErrors(0U) {}
-   MemoryState(MemoryModel* model, struct _MemoryModelFunctions* functions,
-         InterpretParameters* parameters)
-      :  pmModel(model), pfFunctions(functions), pParameters(parameters),
-         peDomainEnv(nullptr), uErrors(0U) {}
-   MemoryState(Processor& proc);
-   void assign(const MemoryStateOwner& source);
-
-   bool hasError() const { return uErrors; }
-   const unsigned& errors() const { return uErrors; }
-   void clearErrors() { uErrors = 0U; }
-   void mergeWith(MemoryStateOwner& source);
-
-   void setNumberOfRegisters(int number)
-      {  (*pfFunctions->set_number_of_registers)(pmModel, number); }
-   void setEvaluationEnvironment(DomainEvaluationEnvironment& domainEnvironment)
-      {  peDomainEnv = &domainEnvironment; }
-   template <typename TypeInt>
-   void setRegisterValue(int registerIndex, DomainMultiBitValue<TypeInt>&& value, struct _DomainElementFunctions& functionTable)
-      {  if (!((unisim::util::forbint::contract::DomainValue&) value).isValid()) {
-            TypeInt val;
-            value.isConstant(&val);
-            value = DomainMultiBitValue<TypeInt>((*functionTable.multibit_create_constant)(
-                  DomainIntegerConstant{8*sizeof(TypeInt),
-                  std::numeric_limits<TypeInt>::is_signed, (uint64_t) val}),
-                  &functionTable, peDomainEnv);
-         }
-         (*pfFunctions->set_register_value)(pmModel, registerIndex,
-            &value.svalue(), pParameters, &uErrors);
-         value.svalue() = DomainElement{};
-      }
-
-   DomainElement getRegisterValueAsElement(int registerIndex) const
-      {  DomainElementFunctions* domainFunctions = nullptr;
-         return (*pfFunctions->get_register_value)
-               (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
-      }
-   DomainBitValue getRegisterValueAsBit(int registerIndex) const
-      {  DomainElementFunctions* domainFunctions = nullptr; 
-         DomainElement result = (*pfFunctions->get_register_value)
-               (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
-         DomainMultiBitValue<char> res(std::move(result), domainFunctions, peDomainEnv); 
-         return DomainBitValue(std::move(res));
-      }
-   template <typename TypeInt>
-   DomainMultiBitValue<TypeInt> getRegisterValueAsMultiBit(int registerIndex) const
-      {  DomainElementFunctions* domainFunctions = nullptr; 
-         DomainElement result = (*pfFunctions->get_register_value)
-               (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
-         return DomainMultiBitValue<TypeInt>(std::move(result), domainFunctions, peDomainEnv);
-      }
-   // DomainMultiFloatValue getRegisterValueAsMultiFloat(int registerIndex) const
-   //    {  DomainElementFunctions* domainFunctions = nullptr; 
-   //       DomainElement result = (*pfFunctions->get_register_value)
-   //             (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
-   //       return DomainMultiFloatValue(std::move(result), domainFunctions, peDomainEnv);
-   //    }
-
-   template <class IntType>
-   DomainMultiBitValue<IntType> loadMultiBitValue(
-         const DomainMultiBitValue<uint32_t>& indirectAddress) const
-      {  DomainElementFunctions* domainFunctions = nullptr; 
-         DomainElement result = (*pfFunctions->load_multibit_value)
-               (pmModel, indirectAddress.value(), sizeof(IntType), pParameters, &uErrors,
-                &domainFunctions);
-         return DomainMultiBitValue<IntType>(std::move(result), domainFunctions, peDomainEnv);
-      }
-   template <class IntType>
-   DomainMultiBitValue<IntType> loadMultiBitDisjunctionValue(
-         DomainMultiBitValue<uint32_t>&& indirectAddress) const
-      {  DomainElementFunctions* domainFunctions = nullptr; 
-         DomainElement result = (*pfFunctions->load_multibit_disjunctive_value)
-               (pmModel, indirectAddress.value(), sizeof(IntType), pParameters, &uErrors,
-                &domainFunctions);
-         return DomainMultiBitValue<IntType>(std::move(result), domainFunctions, peDomainEnv);
-      }
-   template <class FloatType>
-   DomainMultiFloatValue<FloatType> loadMultiFloatValue(
-         DomainMultiBitValue<uint32_t>&& indirectAddress) const
-      {  DomainElementFunctions* domainFunctions = nullptr; 
-         DomainElement result = (*pfFunctions->load_multifloat_value)
-               (pmModel, indirectAddress.value(), sizeof(FloatType), pParameters, &uErrors,
-                &domainFunctions);
-         return DomainMultiFloatValue<FloatType>(std::move(result), domainFunctions, peDomainEnv);
-      }
-
-   template <class IntType>
-   void storeMultiBitValue(const DomainMultiBitValue<uint32_t>& indirectAddress,
-         const DomainMultiBitValue<IntType>& value)
-      {  (*pfFunctions->store_value)(pmModel, indirectAddress.value(),
-               value.value(), pParameters, &uErrors);
-      }
-   template <class FloatType>
-   void storeMultiFloatValue(const DomainMultiBitValue<uint32_t>& indirectAddress,
-         const DomainMultiFloatValue<FloatType>& value)
-      {  (*pfFunctions->store_value)(pmModel, indirectAddress.value(),
-               value.value(), pParameters, &uErrors);
-      }
-   template <class IntType>
-   void constraintStoreValue(const DomainMultiBitValue<uint32_t>& indirectAddress,
-         const DomainMultiBitValue<IntType>& value, unsigned indirectRegister)
-      {  (*pfFunctions->constraint_store_value)(pmModel, indirectAddress.value(),
-            value.value(), indirectRegister, pParameters, &uErrors);
-      }
-   template <class IntType>
-   void constraintAddress(const DomainMultiBitValue<uint32_t>& indirectAddress,
-         const DomainMultiBitValue<IntType>& value)
-      {  (*pfFunctions->constraint_address)(pmModel, indirectAddress.value(),
-            value.value(), pParameters, &uErrors);
-      }
-};
-
-class MemoryStateOwner {
-  private:
-   MemoryModel* pmModel;
-   struct _MemoryModelFunctions* pfFunctions;
-   friend class MemoryState;
-
-  public:
-   MemoryStateOwner(const MemoryState& source)
-      :  pmModel(nullptr), pfFunctions(source.pfFunctions)
-      {  if (source.pmModel)
-            pmModel = (*pfFunctions->clone)(source.pmModel);
-      }
-   ~MemoryStateOwner()
-      {  if (pmModel) {
-            (*pfFunctions->free)(pmModel);
-            pmModel = nullptr;
-         }
-      }
-   void swap(MemoryState& source)
-      {  if (pmModel && source.pmModel)
-            (*pfFunctions->swap)(pmModel, source.pmModel);
-      }
-   void mergeWith(MemoryState& source)
-      {  if (pmModel && source.pmModel)
-            (*pfFunctions->merge)(pmModel, source.pmModel);
-      }
-};
-
-inline void
-MemoryState::assign(const MemoryStateOwner& source) {
-   if (pmModel && source.pmModel)
-      (*pfFunctions->assign)(pmModel, source.pmModel);
-}
-
-inline void
-MemoryState::mergeWith(MemoryStateOwner& source) {
-   if (pmModel && source.pmModel)
-      (*pfFunctions->merge)(pmModel, source.pmModel);
-}
-
 struct FP
 {
   template <typename FLOAT>
@@ -1656,19 +1503,22 @@ private:
   Processor( Processor const& );
 
 public:
-  DomainEvaluationEnvironment    domainEnvironment;
-  struct _DomainElementFunctions domainFunctions;
-  InterpretParameters*           interpretParameters;
-  MemoryState*                   memoryState;
-  std::unique_ptr<MemoryStateOwner>   mergedMemoryState;
-  std::unique_ptr<MemoryStateOwner>   sourceMemoryState;
-  struct _MemoryModelFunctions   memoryFunctions;
+  typedef unisim::util::forbint::contract::MemoryState      MemoryState;
+  typedef unisim::util::forbint::contract::MemoryStateOwner MemoryStateOwner;
+  
+  DomainEvaluationEnvironment       domainEnvironment;
+  struct _DomainElementFunctions    domainFunctions;
+  InterpretParameters*              interpretParameters;
+  MemoryState*                      memoryState;
+  std::unique_ptr<MemoryStateOwner> mergedMemoryState;
+  std::unique_ptr<MemoryStateOwner> sourceMemoryState;
+  struct _MemoryModelFunctions      memoryFunctions;
 
   void initializeThumbMemory(MemoryModel* memory, MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
   {
     MemoryState memoryState(memory, memory_functions, parameters);
     auto bg = DomainMultiBitValue<uint32_t>(0x13 /* SUPERVISOR_MODE */ | ((0x60 >> 6) << 10) | ((0x60 & 0x3) << 25) );
-    memoryState.setRegisterValue(CPSR_ID, std::move(bg), domainFunctions);
+    bg.moveToRegisterValue(memoryState, CPSR_ID, domainFunctions);
   }
   
   struct SRegID : public unisim::util::identifier::Identifier<SRegID>
@@ -2003,7 +1853,7 @@ public:
     { assert(memoryState);
       if (next_targets_queries) {
         if (id != 15)
-          memoryState->setRegisterValue(RegID("r0").code + id, std::move(value), domainFunctions);
+          value.moveToRegisterValue(*memoryState,RegID("r0").code + id, domainFunctions);
         else {
           uint32_t val;
           if (value.isConstant(&val))
@@ -2016,7 +1866,7 @@ public:
         }
       }
       else if (memoryState) { // isInterpret
-        memoryState->setRegisterValue(id, std::move(value), domainFunctions);
+        value.moveToRegisterValue(*memoryState, id, domainFunctions);
         if (id == 15 && decisionVector) {
           uint32_t val;
           if (value.isConstant(&val))
@@ -2027,7 +1877,7 @@ public:
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   void SetGPR( uint32_t id, const U32& value ) {
     if (id != 15)
-      memoryState->setRegisterValue(RegID("r0").code + id, U32(value), domainFunctions);
+      U32(value).moveToRegisterValue(*memoryState, RegID("r0").code + id, domainFunctions);
     else
       SetNIA( value, B_JMP );
   }
@@ -2070,14 +1920,13 @@ public:
 
     RegisterAccess& operator=(const U32& source)
       {  if (proc)
-            proc->memoryState->setRegisterValue(RegID("fpscr").code, U32(source),
-                  proc->domainFunctions);
+            U32(source).moveToRegisterValue(*proc->memoryState, RegID("fpscr").code, proc->domainFunctions);
          else
             val = source;
          return *this;
       }
     operator U32() const
-      {  return proc ? proc->memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpscr").code) : val; }
+    {  return proc ? U32(proc->memoryState->getRegisterValueAsElement(RegID("fpscr").code),*proc) : val; }
 
   private:
     U32 val;
@@ -2167,23 +2016,23 @@ public:
   //   =         Vector and Floating-point Registers access methods       =
   //   ====================================================================
 
-  U32 RoundTowardsZeroFPSCR() const
+  U32 RoundTowardsZeroFPSCR()
   {
-    U32 fpscr = memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpscr").code);
+    U32 fpscr( memoryState->getRegisterValueAsElement(RegID("fpscr").code), *this );
     unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
     return fpscr;
   }
     
-  U32 RoundToNearestFPSCR() const
+  U32 RoundToNearestFPSCR()
   {
-    U32 fpscr = memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpscr").code);
+    U32 fpscr( memoryState->getRegisterValueAsElement(RegID("fpscr").code), *this );
     unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundToNearest) );
     return fpscr;
   }
     
   U64 eneonread( unsigned reg, unsigned size, unsigned pos )
   {
-    U64 res = memoryState->getRegisterValueAsMultiBit<uint64_t>(RLStartNeonRegs + reg);
+    U64 res( memoryState->getRegisterValueAsElement(RLStartNeonRegs + reg), *this );
     if (pos > 0 || size < 64) {
        res.reduce(pos, pos+size-1);
        res.extendWithZero(64);
@@ -2194,14 +2043,14 @@ public:
   void eneonwrite( unsigned reg, unsigned size, unsigned pos, const U64& xpr )
   {
     if (pos > 0 || size < 64) {
-       U64 res = memoryState->getRegisterValueAsMultiBit<uint64_t>(RLStartNeonRegs + reg);
+       U64 res( memoryState->getRegisterValueAsElement(RLStartNeonRegs + reg), *this );
        U64 source = xpr;
        source.reduce(0, size-1);
        res.bitset(pos, pos+size-1, source);
-       memoryState->setRegisterValue(RLStartNeonRegs + reg, std::move(res), domainFunctions);
+       res.moveToRegisterValue(*memoryState, RLStartNeonRegs + reg, domainFunctions);
     }
     else
-       memoryState->setRegisterValue(RLStartNeonRegs + reg, U64(xpr), domainFunctions);
+       U64(xpr).moveToRegisterValue(*memoryState, RLStartNeonRegs + reg, domainFunctions);
   }
 
   U32  GetVSU( unsigned idx ) { return U32( eneonread( idx / 2, 4, (idx*4) & 4 ) ); }
@@ -2242,27 +2091,17 @@ public:
   //   =                       Memory access methods                       =
   //   =====================================================================
   
-  U32  MemURead32( U32 const& addr )
-    { return memoryState->loadMultiBitValue<uint32_t>(addr); }
-  U16  MemURead16( U32 const& addr )
-    { return memoryState->loadMultiBitValue<uint16_t>(addr); }
-  U32  MemRead32( U32 const& addr )
-    { return memoryState->loadMultiBitValue<uint32_t>(addr); }
-  U16  MemRead16( U32 const& addr )
-    { return memoryState->loadMultiBitValue<uint16_t>(addr); }
-  U8  MemRead8( U32 const& addr )
-    { return memoryState->loadMultiBitValue<uint8_t>(addr); }
+  U32  MemURead32( U32 const& addr )   { return U32( memoryState->loadMultiBit(addr,4), *this); }
+  U16  MemURead16( U32 const& addr )   { return U16( memoryState->loadMultiBit(addr,2), *this); }
+  U32  MemRead32( U32 const& addr )    { return U32( memoryState->loadMultiBit(addr,4), *this); }
+  U16  MemRead16( U32 const& addr )    { return U16( memoryState->loadMultiBit(addr,2), *this); }
+  U8   MemRead8( U32 const& addr )     { return U8 ( memoryState->loadMultiBit(addr,1), *this); }
   
-  void MemUWrite32( U32 const& addr, U32 const& value )
-    { return memoryState->storeMultiBitValue<uint32_t>(addr, value); }
-  void MemUWrite16( U32 const& addr, U16 const& value )
-    { return memoryState->storeMultiBitValue<uint16_t>(addr, value); }
-  void MemWrite32( U32 const& addr, U32 const& value )
-    { return memoryState->storeMultiBitValue<uint32_t>(addr, value); }
-  void MemWrite16( U32 const& addr, U16 const& value )
-    { return memoryState->storeMultiBitValue<uint16_t>(addr, value); }
-  void MemWrite8( U32 const& addr, U8 const& value )
-    { return memoryState->storeMultiBitValue<uint8_t>(addr, value); }
+  void MemUWrite32( U32 const& addr, U32 const& value )    { return memoryState->valueStore(addr, value); }
+  void MemUWrite16( U32 const& addr, U16 const& value )    { return memoryState->valueStore(addr, value); }
+  void MemWrite32( U32 const& addr, U32 const& value )     { return memoryState->valueStore(addr, value); }
+  void MemWrite16( U32 const& addr, U16 const& value )     { return memoryState->valueStore(addr, value); }
+  void MemWrite8( U32 const& addr, U8 const& value )       { return memoryState->valueStore(addr, value); }
     
   void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
   bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
@@ -2317,15 +2156,13 @@ public:
 
     _FPSCR& operator=(const U32& source)
       {  if (proc)
-            proc->memoryState->setRegisterValue(RegID("fpscr").code, U32(source), proc->domainFunctions);
+            U32(source).moveToRegisterValue(*proc->memoryState, RegID("fpscr").code, proc->domainFunctions);
          else
             val = source;
          return *this;
       }
-    operator U32() const
-      {  return proc ? proc->memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpscr").code) : val; }
-    operator BOOL() const
-      {  return proc ? BOOL(proc->memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpscr").code)) : val.operator BOOL(); }
+    operator U32() const    {  return proc ? U32( proc->memoryState->getRegisterValueAsElement(RegID("fpscr").code), *proc) : val; }
+    operator BOOL() const   {  return BOOL( proc ? U32( proc->memoryState->getRegisterValueAsElement(RegID("fpscr").code), *proc) : val ); }
     template <typename TypeOperand>
     U32 operator&(const TypeOperand& source) const { return this->operator U32() & source; }
     template <typename TypeOperand>
@@ -2347,15 +2184,15 @@ public:
 
     _FPEXC& operator=(const U32& source)
       {  if (proc)
-            proc->memoryState->setRegisterValue(RegID("fpexc").code, U32(source), proc->domainFunctions);
+            U32(source).moveToRegisterValue(*proc->memoryState, RegID("fpexc").code, proc->domainFunctions);
          else
             val = source;
          return *this;
       }
     operator U32() const
-      {  return proc ? proc->memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpexc").code) : val; }
+      {  return proc ? U32(proc->memoryState->getRegisterValueAsElement(RegID("fpexc").code), *proc) : val; }
     operator BOOL() const
-      {  return proc ? BOOL(proc->memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("fpexc").code)) : val.operator BOOL(); }
+      {  return BOOL(proc ? U32(proc->memoryState->getRegisterValueAsElement(RegID("fpexc").code), *proc) : val); }
     template <typename TypeOperand>
     U32 operator&(const TypeOperand& source) const { return this->operator U32() & source; }
     template <typename TypeOperand>
@@ -2504,7 +2341,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CTR, Cache Type Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ctr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ctr").code), proc); }
         } x;
         return x;
       } break;
@@ -2515,7 +2352,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "MPIDR, Multiprocessor Affinity Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("mpidr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("mpidr").code), proc); }
         } x;
         return x;
       } break;
@@ -2526,7 +2363,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("id_pfr0").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("id_pfr0").code), proc); }
         } x;
         return x;
       } break;
@@ -2537,7 +2374,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ccsidr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ccsidr").code), proc); }
         } x;
         return x;
       } break;
@@ -2548,7 +2385,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("clidr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("clidr").code), proc); }
         } x;
         return x;
       } break;
@@ -2559,9 +2396,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("csselr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("csselr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("csselr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("csselr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2575,9 +2412,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "SCTLR, System Control Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("sctlr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("sctlr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("sctlr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("sctlr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2588,9 +2425,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "ACTLR, Auxiliary Control Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("actlr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("actlr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("actlr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("actlr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2601,9 +2438,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CPACR, Coprocessor Access Control Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("cpacr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("cpacr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("cpacr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("cpacr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2614,9 +2451,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "NSACR, Non-Secure Access Control Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("nsacr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("nsacr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("nsacr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("nsacr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2630,9 +2467,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("ttbr0").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ttbr0").code, proc.domainFunctions); }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ttbr0").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ttbr0").code), proc); }
         } x;
         return x;
       } break;
@@ -2643,9 +2480,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("ttbr1").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ttbr1").code, proc.domainFunctions); }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ttbr1").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ttbr1").code), proc); }
         } x;
         return x;
       } break;
@@ -2656,9 +2493,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("ttbcr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ttbcr").code, proc.domainFunctions); }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ttbcr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ttbcr").code), proc); }
         } x;
         return x;
       } break;
@@ -2669,9 +2506,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DACR, Domain Access Control Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dacr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dacr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dacr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dacr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2686,9 +2523,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DFSR, Data Fault Status Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dfsr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dfsr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dfsr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dfsr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2699,9 +2536,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ifsr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ifsr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("ifsr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ifsr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2712,9 +2549,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DFAR, Data Fault Status Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dfar").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dfar").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dfar").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dfar").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2725,9 +2562,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "IFAR, Instruction Fault Status Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("ifar").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ifar").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("ifar").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ifar").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2742,9 +2579,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "ICIALLUIS, Invalidate all instruction caches to PoU Inner Shareable"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("icialluis").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("icialluis").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("icialluis").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("icialluis").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2755,9 +2592,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "BPIALLIS, Invalidate all branch predictors Inner Shareable"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("bpiallis").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("bpiallis").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("bpiallis").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("bpiallis").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2768,9 +2605,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("iciallu").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("iciallu").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("iciallu").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("iciallu").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2781,9 +2618,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("icimvau").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("icimvau").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("icimvau").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("icimvau").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2794,9 +2631,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("bpiall").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("bpiall").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("bpiall").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("bpiall").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2807,9 +2644,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DCIMVAC, Invalidate data* cache line by MVA to PoC"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dcimvac").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dcimvac").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dcimvac").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dcimvac").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2820,9 +2657,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DCISW, Invalidate data* cache line by set/way"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dcisw").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dcisw").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dcisw").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dcisw").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2833,9 +2670,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dccmvac").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dccmvac").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dccmvac").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccmvac").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2846,9 +2683,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DCCSW, Clean data* cache line by set/way"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dccsw").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dccsw").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dccsw").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccsw").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2859,9 +2696,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dccmvau").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dccmvau").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dccmvau").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccmvau").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2872,9 +2709,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DCCIMVAC, Clean and invalidate data* cache line by MVA to PoC"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("dccimvac").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("dccimvac").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("dccimvac").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccimvac").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2889,9 +2726,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "TLBIALLIS, Invalidate entire TLB Inner Shareable"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("tlbiallis").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("tlbiallis").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("tlbiallis").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("tlbiallis").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2902,9 +2739,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("tlbiall").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("tlbiall").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("tlbiall").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("tlbiall").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2915,9 +2752,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "TLBIASID, invalidate unified TLB by ASID match"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("tlbiasid").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("tlbiasid").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("tlbiasid").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("tlbiasid").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2928,9 +2765,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "VBAR, Vector Base Address Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("vbar").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("vbar").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("vbar").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("vbar").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2945,9 +2782,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("contextidr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("contextidr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("contextidr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("contextidr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2960,9 +2797,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "DIAGCR, undocumented Diagnostic Control register"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("diagcr").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("diagcr").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("diagcr").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("diagcr").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -2973,9 +2810,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         {
           char const* Describe() { return "CBAR, Configuration Base Address"; }
           U32 Read( Processor& proc )
-            { return proc.memoryState->getRegisterValueAsMultiBit<uint32_t>(RegID("cbar").code); }
+            { return U32(proc.memoryState->getRegisterValueAsElement(RegID("cbar").code), proc); }
           void Write( Processor& proc, U32 const& value )
-            { return proc.memoryState->setRegisterValue(RegID("cbar").code, U32(value), proc.domainFunctions); }
+            { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("cbar").code, proc.domainFunctions); }
         } x;
         return x;
       } break;
@@ -3081,7 +2918,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
       }
     } while (mask != 0);
   };
-  proc.memoryState->setRegisterValue(CPSR_ID, std::move(bg), proc.domainFunctions);
+  bg.moveToRegisterValue(*proc.memoryState, CPSR_ID, proc.domainFunctions);
 }
 
 struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb::Decoder<Processor>
@@ -3182,7 +3019,7 @@ struct Translator
             proc.next_targets_queries = true;
             proc.target_addresses = targets;
             proc.decisionVector = &decisionVector;
-            proc.sourceMemoryState.reset(new MemoryStateOwner(*proc.memoryState));
+            proc.sourceMemoryState.reset(new unisim::util::forbint::contract::MemoryStateOwner(*proc.memoryState));
             extract( thumbisa, proc );
             targets = proc.target_addresses;
             proc.next_targets_queries = false;
@@ -3229,7 +3066,7 @@ struct Translator
             THUMBISA thumbisa;
             proc.decisionVector = &decisionVector;
             if (decisionVector.doesNeedSeveralExecution())
-               proc.sourceMemoryState.reset(new MemoryStateOwner(*proc.memoryState));
+              proc.sourceMemoryState.reset(new unisim::util::forbint::contract::MemoryStateOwner(*proc.memoryState));
             extract( thumbisa, proc );
             proc.sourceMemoryState.reset();
             proc.decisionVector = nullptr;
@@ -3348,7 +3185,7 @@ namespace
   {
     Processor* proc = reinterpret_cast<Processor*>(processor);
     proc->setMemoryFunctions(*memory_functions);
-    MemoryState memoryState(memory, memory_functions, parameters);
+    unisim::util::forbint::contract::MemoryState memoryState(memory, memory_functions, parameters);
     proc->setMemoryState(memoryState);
     proc->setInterpretParameters(*parameters);
 
@@ -3372,13 +3209,13 @@ namespace
   {
     Processor* proc = reinterpret_cast<Processor*>(processor);
     proc->setMemoryFunctions(*memory_functions);
-    MemoryState memoryState(memory, memory_functions, parameters);
+    unisim::util::forbint::contract::MemoryState memoryState(memory, memory_functions, parameters);
     proc->setMemoryState(memoryState);
     proc->setInterpretParameters(*parameters);
 
     uint32_t code;
     memcpy(&code, instruction_buffer, sizeof(code));
-    unisim::util::endian::ByteSwap(code);
+    unisim::util::endian::Host2LittleEndian(code);
 
     Translator actset( *address, code );
     Processor::StatusRegister& status = actset.status;

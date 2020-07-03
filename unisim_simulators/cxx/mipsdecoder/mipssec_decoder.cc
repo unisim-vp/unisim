@@ -34,8 +34,7 @@
 
 #include "instructions.hh"
 //#include "mipssec_decoder.hh"
-#include <unisim/util/forbint/contract/domsec_callback.h>
-#include <unisim/util/forbint/contract/decsec_callback.h>
+#include <unisim/util/forbint/contract/contract.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <unisim/util/endian/endian.hh>
 #include <functional>
@@ -197,7 +196,10 @@ namespace
     //auto& dv = *reinterpret_cast<DecisionVector*>(decision_vector);
 
     std::set<uint32_t> addresses;
-    insn->next_addresses(addresses, memory, memory_functions, parameters);
+    unisim::util::forbint::contract::MemoryState memstate(memory, memory_functions, parameters);
+    DomainEvaluationEnvironment env;
+    memstate.setEvaluationEnvironment(env);
+    insn->next_addresses(addresses, memstate);
 
     for (int needed = addresses.size(); target_addresses->addresses_array_size < needed;)
       {
@@ -224,7 +226,10 @@ namespace
 
     auto insn = proc->decode((uint8_t const*)instruction_buffer, buffer_size, addr);
 
-    insn->interpret(addr, target_address, memory, memory_functions, parameters);
+    unisim::util::forbint::contract::MemoryState memstate(memory, memory_functions, parameters);
+    DomainEvaluationEnvironment env;
+    memstate.setEvaluationEnvironment(env);
+    insn->interpret(addr, target_address, memstate);
 
     return true;
   }

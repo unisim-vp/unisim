@@ -60,7 +60,7 @@ private:
   DomainEvaluationEnvironment* peEnv;
 
 protected:
-  //  friend class MemoryState;
+  friend class MemoryState;
   DomainElement& svalue() { return deValue; }
   bool hasFunctionTable() const { return pfFunctions; }
   struct _DomainElementFunctions& functionTable() const { assert(pfFunctions); return *pfFunctions; }
@@ -159,6 +159,195 @@ public:
 
   char* write() const;
 };
+
+class MemoryStateOwner;
+class MemoryState {
+  private:
+   MemoryModel* pmModel;
+   struct _MemoryModelFunctions* pfFunctions;
+   InterpretParameters* pParameters;
+   DomainEvaluationEnvironment* peDomainEnv;
+   mutable unsigned uErrors; /* set of MemoryEvaluationErrorFlags */
+   friend class MemoryStateOwner;
+
+  public:
+   MemoryState()
+      :  pmModel(nullptr), pfFunctions(nullptr), pParameters(nullptr),
+         peDomainEnv(nullptr), uErrors(0U) {}
+   MemoryState(MemoryModel* model, struct _MemoryModelFunctions* functions,
+         InterpretParameters* parameters)
+      :  pmModel(model), pfFunctions(functions), pParameters(parameters),
+         peDomainEnv(nullptr), uErrors(0U) {}
+  //MemoryState(Processor& proc);
+   void assign(const MemoryStateOwner& source);
+
+   bool hasError() const { return uErrors; }
+   const unsigned& errors() const { return uErrors; }
+   void clearErrors() { uErrors = 0U; }
+   void mergeWith(MemoryStateOwner& source);
+
+   void setNumberOfRegisters(int number)
+      {  (*pfFunctions->set_number_of_registers)(pmModel, number); }
+   void setEvaluationEnvironment(DomainEvaluationEnvironment& domainEnvironment)
+      {  peDomainEnv = &domainEnvironment; }
+
+   DomainEvaluationEnvironment* env() const { return peDomainEnv; }
+
+   void setRegisterValue(int registerIndex, DomainValue& value) const
+      {
+         assert(value.isValid());
+         (*pfFunctions->set_register_value)(pmModel, registerIndex, &value.svalue(), pParameters, &uErrors);
+         value.svalue() = DomainElement{};
+      }
+   DomainElement getRegisterValueAsElement(int registerIndex) const
+      {  DomainElementFunctions* domainFunctions = nullptr;
+         return (*pfFunctions->get_register_value)
+               (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
+      }
+   // DomainValue getRegisterValueAsBit(int registerIndex) const
+   //    {  DomainElementFunctions* domainFunctions = nullptr;
+   //       DomainElement result = (*pfFunctions->get_register_value)
+   //             (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
+   //       DomainMultiBitValue<char> res(std::move(result), domainFunctions, peDomainEnv); 
+   //       return DomainBitValue(std::move(res));
+   //    }
+   // template <typename TypeInt>
+   // DomainMultiBitValue<TypeInt> getRegisterValueAsMultiBit(int registerIndex) const
+   //    {  DomainElementFunctions* domainFunctions = nullptr; 
+   //       DomainElement result = (*pfFunctions->get_register_value)
+   //             (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
+   //       return DomainMultiBitValue<TypeInt>(std::move(result), domainFunctions, peDomainEnv);
+   //    }
+   // DomainMultiFloatValue getRegisterValueAsMultiFloat(int registerIndex) const
+   //    {  DomainElementFunctions* domainFunctions = nullptr; 
+   //       DomainElement result = (*pfFunctions->get_register_value)
+   //             (pmModel, registerIndex, pParameters, &uErrors, &domainFunctions);
+   //       return DomainMultiFloatValue(std::move(result), domainFunctions, peDomainEnv);
+   //    }
+
+  DomainElement loadMultiBit(DomainValue const& address, unsigned size) const
+   {
+      DomainElementFunctions* domainFunctions = nullptr; 
+      return (*pfFunctions->load_multibit_value)
+        (pmModel, address.value(), size, pParameters, &uErrors, &domainFunctions);
+   }
+   // template <class IntType>
+   // DomainMultiBitValue<IntType> loadMultiBitValue(
+   //       const DomainMultiBitValue<uint32_t>& indirectAddress) const
+   //    {  DomainElementFunctions* domainFunctions = nullptr; 
+   //       DomainElement result = (*pfFunctions->load_multibit_value)
+   //             (pmModel, indirectAddress.value(), sizeof(IntType), pParameters, &uErrors,
+   //              &domainFunctions);
+   //       return DomainMultiBitValue<IntType>(std::move(result), domainFunctions, peDomainEnv);
+   //    }
+  DomainElement loadMultiBitDisjunction(DomainValue const& address, unsigned size) const
+   {
+      DomainElementFunctions* domainFunctions = nullptr; 
+      return (*pfFunctions->load_multibit_disjunctive_value)
+        (pmModel, address.value(), size, pParameters, &uErrors, &domainFunctions);
+   }
+   // template <class IntType>
+   // DomainMultiBitValue<IntType> loadMultiBitDisjunctionValue(
+   //       DomainMultiBitValue<uint32_t>&& indirectAddress) const
+   //    {  DomainElementFunctions* domainFunctions = nullptr; 
+   //       DomainElement result = (*pfFunctions->load_multibit_disjunctive_value)
+   //             (pmModel, indirectAddress.value(), sizeof(IntType), pParameters, &uErrors,
+   //              &domainFunctions);
+   //       return DomainMultiBitValue<IntType>(std::move(result), domainFunctions, peDomainEnv);
+   //    }
+  DomainElement loadMultiFloat(DomainValue const& address, unsigned size) const
+   {
+      DomainElementFunctions* domainFunctions = nullptr; 
+      return (*pfFunctions->load_multifloat_value)
+        (pmModel, address.value(), size, pParameters, &uErrors, &domainFunctions);
+   }
+   // template <class FloatType>
+   // DomainMultiFloatValue<FloatType> loadMultiFloatValue(
+   //       DomainMultiBitValue<uint32_t>&& indirectAddress) const
+   //    {  DomainElementFunctions* domainFunctions = nullptr; 
+   //       DomainElement result = (*pfFunctions->load_multifloat_value)
+   //             (pmModel, indirectAddress.value(), sizeof(FloatType), pParameters, &uErrors,
+   //              &domainFunctions);
+   //       return DomainMultiFloatValue<FloatType>(std::move(result), domainFunctions, peDomainEnv);
+   //    }
+
+   void valueStore(DomainValue const& address, DomainValue const& value) const
+      {
+         (*pfFunctions->store_value)(pmModel, address.value(), value.value(), pParameters, &uErrors);
+      }
+   // template <class IntType>
+   // void storeMultiBitValue(const DomainMultiBitValue<uint32_t>& indirectAddress,
+   //       const DomainMultiBitValue<IntType>& value)
+   //    {  (*pfFunctions->store_value)(pmModel, indirectAddress.value(),
+   //             value.value(), pParameters, &uErrors);
+   //    }
+   // template <class FloatType>
+   // void storeMultiFloatValue(const DomainMultiBitValue<uint32_t>& indirectAddress,
+   //       const DomainMultiFloatValue<FloatType>& value)
+   //    {  (*pfFunctions->store_value)(pmModel, indirectAddress.value(),
+   //             value.value(), pParameters, &uErrors);
+   //    }
+   void constraintStore(DomainValue const& address, DomainValue const& value, unsigned indirectRegister) const
+      {
+         (*pfFunctions->constraint_store_value)(pmModel, address.value(), value.value(), indirectRegister, pParameters, &uErrors);
+      }
+   // template <class IntType>
+   // void constraintStoreValue(const DomainMultiBitValue<uint32_t>& indirectAddress,
+   //       const DomainMultiBitValue<IntType>& value, unsigned indirectRegister)
+   //    {  (*pfFunctions->constraint_store_value)(pmModel, indirectAddress.value(),
+   //          value.value(), indirectRegister, pParameters, &uErrors);
+   //    }
+   void constraintAddress(DomainValue const& address, DomainValue const& value) const
+      {
+         (*pfFunctions->constraint_address)(pmModel, address.value(), value.value(), pParameters, &uErrors);
+      }
+   // template <class IntType>
+   // void constraintAddress(const DomainMultiBitValue<uint32_t>& indirectAddress,
+   //       const DomainMultiBitValue<IntType>& value)
+   //    {  (*pfFunctions->constraint_address)(pmModel, indirectAddress.value(),
+   //          value.value(), pParameters, &uErrors);
+   //    }
+};
+
+class MemoryStateOwner {
+  private:
+   MemoryModel* pmModel;
+   struct _MemoryModelFunctions* pfFunctions;
+   friend class MemoryState;
+
+  public:
+   MemoryStateOwner(const MemoryState& source)
+      :  pmModel(nullptr), pfFunctions(source.pfFunctions)
+      {  if (source.pmModel)
+            pmModel = (*pfFunctions->clone)(source.pmModel);
+      }
+   ~MemoryStateOwner()
+      {  if (pmModel) {
+            (*pfFunctions->free)(pmModel);
+            pmModel = nullptr;
+         }
+      }
+   void swap(MemoryState& source)
+      {  if (pmModel && source.pmModel)
+            (*pfFunctions->swap)(pmModel, source.pmModel);
+      }
+   void mergeWith(MemoryState& source)
+      {  if (pmModel && source.pmModel)
+            (*pfFunctions->merge)(pmModel, source.pmModel);
+      }
+};
+
+inline void
+MemoryState::assign(const MemoryStateOwner& source) {
+   if (pmModel && source.pmModel)
+      (*pfFunctions->assign)(pmModel, source.pmModel);
+}
+
+inline void
+MemoryState::mergeWith(MemoryStateOwner& source) {
+   if (pmModel && source.pmModel)
+      (*pfFunctions->merge)(pmModel, source.pmModel);
+}
 
   
 } /* namespace contract */
