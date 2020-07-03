@@ -218,25 +218,15 @@ namespace
                                    MemoryModel* memory, MemoryModelFunctions* memory_functions,
                                    struct _DecisionVector* decision_vector, InterpretParameters* parameters)
   {
-    struct TODO {}; throw TODO();
-    // Processor* proc = reinterpret_cast<Processor*>(processor);
-    // proc->setMemoryFunctions(*memory_functions);
-    // MemoryState memoryState(memory, memory_functions, parameters);
-    // proc->setMemoryState(memoryState);
-    // proc->setInterpretParameters(*parameters);
+    Processor* proc = reinterpret_cast<Processor*>(processor);
 
-    // uint32_t code;
-    // memcpy(&code, instruction_buffer, sizeof(code));
-    // unisim::util::endian::ByteSwap(code);
+    uint32_t addr = unisim::util::endian::Host2LittleEndian(*address);
 
-    // Translator actset( *address, code );
-    // Processor::StatusRegister& status = actset.status;
-    // status.iset = status.Thumb;
-    // DecisionVector* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
-    // actset.interpret(*proc, *decisionVector);
-    // *address = actset.addr;
-    // return decisionVector->isEmpty();
-    return false;
+    auto insn = proc->decode((uint8_t const*)instruction_buffer, buffer_size, addr);
+
+    insn->interpret(addr, target_address, memory, memory_functions, parameters);
+
+    return true;
   }
 
 }

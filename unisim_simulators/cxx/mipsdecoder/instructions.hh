@@ -30,6 +30,7 @@ namespace Mips
     virtual unsigned getSize() const = 0;
     virtual bool match(uint32_t const* words) const = 0;
     virtual void next_addresses(std::set<unsigned int>&, void* mem_model, void* mem_functions, void* parameters) const = 0;
+    virtual void interpret(uint32_t addr, uint32_t next_addr, void* mem_model, void* mem_functions, void* parameters) const = 0;
   };
   
   struct RegisterIndex : public unisim::util::identifier::Identifier<RegisterIndex>

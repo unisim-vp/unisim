@@ -50,15 +50,14 @@ UNISIM_ISA_PREFIX="unisim/component/cxx/processor/mips/isa/mipsel"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 architecture.cc \
-formal_debug_bindings.cc \
 instructions.cc \
+formal_debug_bindings.cc \
 mipssec_decoder.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 architecture.hh \
 instructions.hh \
-mipssec_decoder.hh \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\
