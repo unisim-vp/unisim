@@ -33,12 +33,40 @@
  */
 
 #include <unisim/util/forbint/contract/contract.hh>
+#include <vector>
 
 namespace unisim {
 namespace util {
 namespace forbint {
 namespace contract {
+
+char*
+DomainValue::write() const
+{
+  if (not pfFunctions)
+    return 0;
   
+  static std::vector<char> buffer;
+  buffer.clear();
+  
+  struct ibs
+  {
+    static char* increase_vector_char_buffer_size(char* buffer, int old_length, int new_length, void* awriter)
+    {
+      std::vector<char>* writer = reinterpret_cast<std::vector<char>*>(awriter);
+      assert(&(*writer)[0] == buffer && int(writer->size()) == old_length);
+      writer->insert(writer->end(), new_length-old_length, '\0');
+      return &(*writer)[0];
+    }
+  };
+
+  buffer.insert(buffer.begin(), 40, '\0');
+  int buffer_size = 40, length = 0;
+  (*pfFunctions->write)(deValue, &buffer[0], buffer_size, &length, &buffer, &ibs::increase_vector_char_buffer_size);
+  buffer.resize(length+1);
+  return &buffer[0];
+}
+
 } /* namespace contract */
 } /* namespace forbint */
 } /* namespace util */

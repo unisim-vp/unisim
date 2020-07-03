@@ -59,9 +59,6 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 architecture.hh \
 instructions.hh \
 mipssec_decoder.hh \
-memsec_callback.h \
-domsec_callback.h \
-decsec_callback.h \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\

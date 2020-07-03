@@ -60,9 +60,6 @@ armsec_decoder.cc \
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 armsec_decoder.hh \
-memsec_callback.h \
-domsec_callback.h \
-decsec_callback.h \
 ${UNISIM_SIMULATOR_TOP_THUMB_ISA} \
 ${UNISIM_SIMULATOR_TOP_ARM32_ISA} \
 "

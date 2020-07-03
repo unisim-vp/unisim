@@ -1,6 +1,7 @@
 #include "armsec_decoder.hh"
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/util/forbint/contract/contract.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <unisim/util/likely/likely.hh>
 #include <functional>
@@ -198,165 +199,38 @@ struct ScalarType
 };
   
 
-struct Processor;
-class MemoryState;
-class DomainValue
+char const* debugPrint(const unisim::util::forbint::contract::DomainValue* value)
 {
-private:
-  DomainElement deValue;
-  struct _DomainElementFunctions* pfFunctions;
-  DomainEvaluationEnvironment* peEnv;
-
-protected:
-  friend class MemoryState;
-  DomainElement& svalue() { return deValue; }
-  bool hasFunctionTable() const { return pfFunctions; }
-  struct _DomainElementFunctions& functionTable() const { assert(pfFunctions); return *pfFunctions; }
-  DomainEvaluationEnvironment* env() const { return peEnv; }
-
-public:
-  const DomainElement& value() const { return deValue; }
-
-public:
-  DomainValue() : deValue{ nullptr }, pfFunctions(nullptr), peEnv(nullptr) {}
-  class Empty {};
-  DomainValue(Empty, const DomainValue& ref)
-    : deValue{ nullptr }, pfFunctions(ref.pfFunctions), peEnv(ref.peEnv) {}
-  DomainValue(DomainElement&& value, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
-    : deValue(std::move(value)), pfFunctions(functions), peEnv(env) {}
-  DomainValue(Processor& processor);
-  DomainValue(DomainElement&& value, Processor& processor);
-  DomainValue(DomainElement&& value, const DomainValue& source)
-    : deValue(value), pfFunctions(source.pfFunctions), peEnv(source.peEnv)
-    { value.content = nullptr; }
-  DomainValue(DomainValue&& source)
-    : deValue(source.deValue), pfFunctions(source.pfFunctions), peEnv(source.peEnv)
-    { source.deValue.content = nullptr; }
-  DomainValue(const DomainValue& source)
-    : deValue{ nullptr }, pfFunctions(source.pfFunctions), peEnv(source.peEnv)
-    {
-      if (source.deValue.content) {
-        assert(pfFunctions);
-        deValue = (*pfFunctions->clone)(source.deValue);
-      }
-    }
-  DomainValue& operator=(DomainValue&& source)
-    {
-      if (this == &source)
-        return *this;
-      if (deValue.content)
-      {
-        assert(pfFunctions);
-        (*pfFunctions->free)(&deValue);
-      }
-      pfFunctions = source.pfFunctions;
-      peEnv = source.peEnv;
-      deValue = source.deValue;
-      source.deValue.content = nullptr;
-      return *this;
-    }
-  DomainValue& operator=(const DomainValue& source)
-    {
-      if (this == &source)
-        return *this;
-      if (deValue.content)
-        (*pfFunctions->free)(&deValue);
-      pfFunctions = source.pfFunctions;
-      peEnv = source.peEnv;
-      if (source.deValue.content)
-      {
-        assert(pfFunctions);
-        deValue = (*pfFunctions->clone)(source.deValue);
-      }
-      return *this;
-    }
-  ~DomainValue()
-    { if (deValue.content && pfFunctions) (*pfFunctions->free)(&deValue); }
-
-  void clear()
-    {
-      if (deValue.content)
-      {
-        assert(pfFunctions);
-        (*pfFunctions->free)(&deValue);
-      }
-    }
-  bool isValid() const { return deValue.content; }
-  DomainType getType() const
-    {
-      assert(pfFunctions);
-      return (*pfFunctions->get_type)(deValue);
-    }
-  ZeroResult queryZeroResult() const
-    {
-      assert(pfFunctions);
-      return (*pfFunctions->query_zero_result)(deValue);
-    }
-  int getSizeInBits() const
-    {
-      assert(pfFunctions);
-      return (*pfFunctions->get_size_in_bits)(deValue);
-    }
-  bool is_top() const
-    {
-      assert(pfFunctions);
-      return (*pfFunctions->is_top)(deValue);
-    }
-  friend char* debugPrint(const DomainValue* value);
-};
-
-static char*
-increase_vector_char_buffer_size(char* buffer, int old_length, int new_length, void* awriter)
-{  std::vector<char>* writer = reinterpret_cast<std::vector<char>*>(awriter);
-   assert(&(*writer)[0] == buffer && int(writer->size()) == old_length);
-   writer->insert(writer->end(), new_length-old_length, '\0');
-   return &(*writer)[0];
+  if (value and value->isValid())
+    if (char* s = value->write())
+      return s;
+  
+  return "...";
 }
 
-char* debugPrint(const DomainValue* value)
-{  static std::vector<char> buffer;
-   buffer.clear();
-   if (!value || !value->deValue.content || !value->pfFunctions) {
-      buffer.insert(buffer.begin(), 3, '.');
-      buffer.push_back('\0');
-   }
-   else {
-      buffer.insert(buffer.begin(), 40, '\0');
-      int buffer_size = 40;
-      int length = 0;
-      (*value->pfFunctions->write)(value->deValue, &buffer[0], buffer_size, &length, &buffer,
-            &increase_vector_char_buffer_size);
-      buffer.resize(length+1);
-   }
-   return &buffer[0];
-}
-
-// extern DomainValue getRootDomainValue();
-
+struct Processor;
 template <typename TypeInt>
 class DomainMultiBitValue;
-class DomainBitValue : public DomainValue
+class DomainBitValue : public unisim::util::forbint::contract::DomainValue
 {
 private:
-  typedef DomainValue inherited;
+  typedef unisim::util::forbint::contract::DomainValue inherited;
   bool fConstant;
 
 protected:
-  DomainBitValue(Empty empty, const DomainValue& ref)
-    : DomainValue(empty, ref), fConstant(false) {}
+  DomainBitValue(Empty empty, const unisim::util::forbint::contract::DomainValue& ref)
+    : unisim::util::forbint::contract::DomainValue(empty, ref), fConstant(false) {}
 
 public:
   DomainBitValue() : fConstant(false) {}
   DomainBitValue(DomainBitElement&& value, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
-    : DomainValue(std::move(value), functions, env), fConstant(false) {}
+    : unisim::util::forbint::contract::DomainValue(std::move(value), functions, env), fConstant(false) {}
   DomainBitValue(Processor& processor);
   DomainBitValue(DomainBitElement&& value, Processor& processor);
-  DomainBitValue(DomainBitElement&& value, const DomainValue& source);
-  explicit DomainBitValue(bool value, Processor& processor)
-    : DomainValue(processor), fConstant(false)
-    { svalue() = (*functionTable().bit_create_constant)(value); }
+  DomainBitValue(DomainBitElement&& value, const unisim::util::forbint::contract::DomainValue& source);
+  explicit DomainBitValue(bool value, Processor& processor);
   explicit DomainBitValue( bool value )
-    : DomainValue(), fConstant(value) {}
+    : unisim::util::forbint::contract::DomainValue(), fConstant(value) {}
 
   DomainBitValue(DomainBitValue&& source) = default;
   DomainBitValue(const DomainBitValue& source) = default;
@@ -536,11 +410,11 @@ template <typename VALUE_TYPE>
 class DomainMultiFloatValue;
 
 template <typename VALUE_TYPE>
-class DomainMultiBitValue : public DomainValue
+class DomainMultiBitValue : public unisim::util::forbint::contract::DomainValue
 {
 private:
   typedef DomainMultiBitValue<VALUE_TYPE> this_type;
-  typedef DomainValue inherited;
+  typedef unisim::util::forbint::contract::DomainValue inherited;
   VALUE_TYPE uConstant;
   template <typename SRC_VALUE_TYPE>
   friend class DomainMultiBitValue;
@@ -554,13 +428,13 @@ public:
 
   explicit DomainMultiBitValue( value_type value ) : uConstant(value) {}
   DomainMultiBitValue( DomainMultiBitValue&& other ) = default;
-  DomainMultiBitValue( Empty empty, const DomainValue& other )
+  DomainMultiBitValue( Empty empty, const unisim::util::forbint::contract::DomainValue& other )
     : inherited(empty, other), uConstant(0) {}
   DomainMultiBitValue( const DomainMultiBitValue& other ) = default;
   DomainMultiBitValue& operator=( DomainMultiBitValue&& other ) = default;
   DomainMultiBitValue& operator=( const DomainMultiBitValue& other ) = default;
   explicit DomainMultiBitValue( const DomainBitValue& other )
-    : DomainValue(Empty(), other)
+    : unisim::util::forbint::contract::DomainValue(Empty(), other)
     {
       if (inherited::hasFunctionTable())
         svalue() = (*functionTable().bit_create_cast_multibit)(other.value(),8*sizeof(VALUE_TYPE),env());
@@ -570,12 +444,11 @@ public:
         uConstant = res;
       }
     }
-  DomainMultiBitValue(DomainElement&& element, Processor& proc)
-    : DomainValue(std::move(element), proc) {}
-  DomainMultiBitValue(DomainElement&& element, DomainValue const& value)
-    : DomainValue(std::move(element), value) {}
+  DomainMultiBitValue(DomainElement&& element, Processor& processor);
+  DomainMultiBitValue(DomainElement&& element, unisim::util::forbint::contract::DomainValue const& value)
+    : unisim::util::forbint::contract::DomainValue(std::move(element), value) {}
   DomainMultiBitValue(DomainElement&& value, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
-    : DomainValue(std::move(value), functions, env) {}
+    : unisim::util::forbint::contract::DomainValue(std::move(value), functions, env) {}
 
   template <typename SRC_VALUE_TYPE>
   explicit DomainMultiBitValue( DomainMultiBitValue<SRC_VALUE_TYPE> const& other )
@@ -595,8 +468,8 @@ private:
   bool isSigned() const { return std::numeric_limits<VALUE_TYPE>::is_signed; }
 
 public:
-  DomainElement& svalue() { return DomainValue::svalue(); }
-  const DomainElement& value() const { return DomainValue::value(); }
+  DomainElement& svalue() { return unisim::util::forbint::contract::DomainValue::svalue(); }
+  const DomainElement& value() const { return unisim::util::forbint::contract::DomainValue::value(); }
 
 public:
   DomainMultiBitValue& setToConstant(VALUE_TYPE value)
@@ -1071,10 +944,10 @@ public:
 };
 
 template <typename VALUE_TYPE>
-struct DomainMultiFloatValue : public DomainValue {
+struct DomainMultiFloatValue : public unisim::util::forbint::contract::DomainValue {
 private:
   typedef DomainMultiFloatValue<VALUE_TYPE> this_type;
-  typedef DomainValue inherited;
+  typedef unisim::util::forbint::contract::DomainValue inherited;
   VALUE_TYPE vtConstant;
   template <typename SRC_VALUE_TYPE>
   friend class DomainMultiBitValue;
@@ -1084,17 +957,17 @@ private:
 public:
   DomainMultiFloatValue() : vtConstant(0.0) {}
   DomainMultiFloatValue(VALUE_TYPE val) : vtConstant(val) {}
-  DomainMultiFloatValue(Empty empty, const DomainValue& ref)
-    : DomainValue(empty, ref), vtConstant(0.0) {}
+  DomainMultiFloatValue(Empty empty, const unisim::util::forbint::contract::DomainValue& ref)
+    : unisim::util::forbint::contract::DomainValue(empty, ref), vtConstant(0.0) {}
   DomainMultiFloatValue(DomainMultiFloatElement&& value, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
-    : DomainValue(std::move(value), functions, env), vtConstant(0.0) {}
+    : unisim::util::forbint::contract::DomainValue(std::move(value), functions, env), vtConstant(0.0) {}
   DomainMultiFloatValue(Processor& processor);
 
   DomainMultiFloatValue(DomainMultiFloatElement&& value, Processor& processor);
-  DomainMultiFloatValue(DomainMultiFloatElement&& value, const DomainValue& source)
-    : DomainValue(std::move(value), source) {}
+  DomainMultiFloatValue(DomainMultiFloatElement&& value, const unisim::util::forbint::contract::DomainValue& source)
+    : unisim::util::forbint::contract::DomainValue(std::move(value), source) {}
   explicit DomainMultiFloatValue(DomainFloatingPointConstant value, Processor& processor)
-    : DomainValue(processor)
+    : unisim::util::forbint::contract::DomainValue(processor)
     { svalue() = (*functionTable().multifloat_create_constant)(value); }
   DomainMultiFloatValue(DomainMultiFloatValue&& source) = default;
   DomainMultiFloatValue(const DomainMultiFloatValue& source) = default;
@@ -1385,7 +1258,7 @@ class MemoryState {
       {  peDomainEnv = &domainEnvironment; }
    template <typename TypeInt>
    void setRegisterValue(int registerIndex, DomainMultiBitValue<TypeInt>&& value, struct _DomainElementFunctions& functionTable)
-      {  if (!((DomainValue&) value).isValid()) {
+      {  if (!((unisim::util::forbint::contract::DomainValue&) value).isValid()) {
             TypeInt val;
             value.isConstant(&val);
             value = DomainMultiBitValue<TypeInt>((*functionTable.multibit_create_constant)(
@@ -1751,7 +1624,7 @@ struct Processor
         res.extendWithZero(ITHIRF::size);
         reg.reduce(ITHIRF::pos, ITHIRF::pos+ITHIRF::size-1);
         res.bitset(ITLORF::size, ITLORF::size+ITHIRF::size-1, reg);
-        result = std::move(*static_cast<U8*>(static_cast<DomainValue*>(&res)));
+        result = std::move(*static_cast<U8*>(static_cast<unisim::util::forbint::contract::DomainValue*>(&res)));
       }
       return result;
     }
@@ -2510,33 +2383,30 @@ public:
 };
 
 inline
-DomainValue::DomainValue(Processor& processor)
-   :  deValue{ nullptr }, pfFunctions(&processor.domainFunctions),
-      peEnv(&processor.domainEnvironment) {}
-
-inline
-DomainValue::DomainValue(DomainElement&& value, Processor& processor)
-   :  deValue(value), pfFunctions(&processor.domainFunctions),
-      peEnv(&processor.domainEnvironment)
-   {  value.content = nullptr; }
-
+DomainBitValue::DomainBitValue(bool value, Processor& processor)
+   :  unisim::util::forbint::contract::DomainValue(unisim::util::forbint::contract::DomainValue::Empty(), &processor.domainFunctions, &processor.domainEnvironment), fConstant(false)
+{ svalue() = (*functionTable().bit_create_constant)(value); }
+   
 inline
 DomainBitValue::DomainBitValue(Processor& processor)
-   : DomainValue(processor) {}
+   :  unisim::util::forbint::contract::DomainValue(unisim::util::forbint::contract::DomainValue::Empty(), &processor.domainFunctions, &processor.domainEnvironment) {}
    
 inline
 DomainBitValue::DomainBitValue(DomainBitElement&& value, Processor& processor)
-   :  DomainValue(std::move(value), processor) {}
+   :  unisim::util::forbint::contract::DomainValue(std::move(value), &processor.domainFunctions, &processor.domainEnvironment) {}
    
 inline
-DomainBitValue::DomainBitValue(DomainBitElement&& value,
-      const DomainValue& source)
-   :  DomainValue(std::move(value), source) {}
+DomainBitValue::DomainBitValue(DomainBitElement&& value, const unisim::util::forbint::contract::DomainValue& source)
+   :  unisim::util::forbint::contract::DomainValue(std::move(value), source) {}
+
+template <typename TYPE>
+DomainMultiBitValue<TYPE>::DomainMultiBitValue(DomainElement&& element, Processor& processor)
+   :  unisim::util::forbint::contract::DomainValue(std::move(element), &processor.domainFunctions, &processor.domainEnvironment) {}
 
 template <class ResultType, int size>
 inline DomainMultiBitValue<ResultType>
 DomainBitValue::castToMultiBit() const {
-   if (DomainValue::isValid())
+   if (unisim::util::forbint::contract::DomainValue::isValid())
       return DomainMultiBitValue<char>((*functionTable().bit_create_cast_multibit)
             (value(), size, env()), *this);
    else
@@ -2545,23 +2415,23 @@ DomainBitValue::castToMultiBit() const {
 
 // inline
 // DomainMultiBitValue::DomainMultiBitValue(Processor& processor)
-//    : DomainValue(processor), fSigned(false) {}
+//    : unisim::util::forbint::contract::DomainValue(processor), fSigned(false) {}
 
 // inline
 // DomainMultiBitValue::DomainMultiBitValue(DomainMultiBitElement&& value,
 //       Processor& processor, bool isSigned)
-//    :  DomainValue(std::move(value), processor), fSigned(isSigned) {}
+//    :  unisim::util::forbint::contract::DomainValue(std::move(value), processor), fSigned(isSigned) {}
    
 template < typename FLOAT >
 inline
 DomainMultiFloatValue<FLOAT>::DomainMultiFloatValue(Processor& processor)
-   : DomainValue(processor) {}
+   : unisim::util::forbint::contract::DomainValue(processor) {}
 
 template < typename FLOAT >
 inline
 DomainMultiFloatValue<FLOAT>::DomainMultiFloatValue(DomainMultiFloatElement&& value,
       Processor& processor)
-   :  DomainValue(std::move(value), processor) {}
+   :  unisim::util::forbint::contract::DomainValue(std::move(value), processor) {}
 
 bool CheckCondition( Processor& state, unsigned cond )
 {
@@ -3387,7 +3257,7 @@ namespace
 {
   struct _Processor* arm_create_processor()
   {
-    debugPrint((DomainValue*) nullptr);
+    debugPrint((unisim::util::forbint::contract::DomainValue*) nullptr);
     return reinterpret_cast<struct _Processor*>(new Processor());
   }
 

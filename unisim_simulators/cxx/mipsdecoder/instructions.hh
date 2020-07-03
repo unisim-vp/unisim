@@ -3,6 +3,7 @@
 
 #include <unisim/util/identifier/identifier.hh>
 #include <iosfwd>
+#include <set>
 #include <inttypes.h>
 
 namespace unisim { namespace util { namespace forbint { namespace debug {
@@ -11,6 +12,7 @@ namespace unisim { namespace util { namespace forbint { namespace debug {
   struct Target;
   struct MemoryFlags;
 } } } }
+
 
 namespace Mips
 {
@@ -26,6 +28,8 @@ namespace Mips
                                   unisim::util::forbint::debug::MemoryFlags&) const = 0;
     virtual void disasm(std::ostream& sink) const = 0;
     virtual unsigned getSize() const = 0;
+    virtual bool match(uint32_t const* words) const = 0;
+    virtual void next_addresses(std::set<unsigned int>&, void* mem_model, void* mem_functions, void* parameters) const = 0;
   };
   
   struct RegisterIndex : public unisim::util::identifier::Identifier<RegisterIndex>

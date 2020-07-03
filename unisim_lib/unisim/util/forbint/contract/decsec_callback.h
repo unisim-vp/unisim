@@ -61,6 +61,7 @@ typedef struct _MemoryModel MemoryModel;
 typedef struct _MemoryModelFunctions MemoryModelFunctions;
 struct _Processor;
 struct _DecisionVector;
+struct _TargetAddresses;
 
 typedef struct _ProcessorFunctions {
 

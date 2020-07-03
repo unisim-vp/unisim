@@ -33,12 +33,16 @@
  */
 
 #include "instructions.hh"
-#include "mipssec_decoder.hh"
-#include "domsec_callback.h"
+//#include "mipssec_decoder.hh"
+#include <unisim/util/forbint/contract/domsec_callback.h>
+#include <unisim/util/forbint/contract/decsec_callback.h>
 #include <unisim/util/identifier/identifier.hh>
+#include <unisim/util/endian/endian.hh>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <map>
+#include <set>
 #include <cmath>
 #include <cassert>
 
@@ -51,10 +55,38 @@ namespace
     ~Processor() {}
 
     void setVerbose() { verbose = true; }
+
+    
+    Mips::Instruction* decode(uint8_t const* bytes, size_t length, uint32_t addr)
+    {
+      if (length < 8)
+        std::cerr << "need to have at least 8 byte in instruction buffer to decode";
+      uint32_t words[2];
+      std::copy(&bytes[0], &bytes[8], reinterpret_cast<uint8_t*>(&words[0]));
+      if (unisim::util::endian::IsHostBigEndian())
+        unisim::util::endian::BSwap(words, 2);
+          
+      auto itr = instructions.lower_bound(addr);
+      if (itr != instructions.end() and itr->first == addr)
+        {
+          if (itr->second->match(&words[0]))
+            return itr->second.get();
+          itr = instructions.erase(itr);
+        }
+      Mips::Decoder d;
+      itr = instructions.emplace_hint(itr, std::piecewise_construct,
+                                      std::forward_as_tuple(addr),
+                                      std::forward_as_tuple(d.decode(words, addr)));
+      return itr->second.get();
+    }
     
     std::map< uint32_t, std::unique_ptr<Mips::Instruction> > instructions;
     DomainElementFunctions dftable;
     bool verbose;
+  };
+
+  struct DecisionVector
+  {
   };
 
 
@@ -79,10 +111,15 @@ namespace
   void mips_initialize_memory(struct _Processor* aprocessor, MemoryModel* memory,
                               MemoryModelFunctions* memory_functions, InterpretParameters* parameters)
   {
-    struct TODO {}; throw TODO();
-    // auto* processor = reinterpret_cast<Processor*>(aprocessor);
-    // MemoryState memoryState(memory, memory_functions, parameters);
-    // memoryState.initializeThumbMemory(processor->getDomainFunctions());
+    auto* processor = reinterpret_cast<Processor*>(aprocessor);
+    
+    // for (Mips::RegisterIndex reg; reg.next();)
+    //   {
+    //     unisim::util::forbint::debug::ScalarElement value = flags.newTop(32);
+    //     memory.setRegisterValue(reg.idx(), value, flags);
+    //   }
+    auto de = (*processor->dftable.multibit_create_constant)(DomainIntegerConstant{32,false,0});
+    (*memory_functions->set_register_value)(memory, 0, &de, 0, 0);
   }
 
   void mips_set_verbose(struct _Processor* processor)
@@ -97,90 +134,82 @@ namespace
 
   int mips_get_registers_number(struct _Processor* processor)
   {
-    struct TODO {}; throw TODO();
-    // return Processor::RLEnd;
+    return Mips::RegisterIndex::end;
   }
 
-  int mips_get_register_index(struct _Processor* processor,
-                                           const char* name)
+
+  int mips_get_register_index(struct _Processor* processor, const char* name)
   {
-    struct TODO {}; throw TODO();
-    // int code = Processor::RegID(name).code;
-    // if (code == Processor::RegID::end)
-    //   {
-    //     code = Processor::SRegID(name).code;
-    //     if (code == Processor::SRegID::end)
-    //       return -1;
-    //     return Processor::RegID::end + code;
-    //   }
-    // return code;
-    return 0;
+    Mips::RegisterIndex reg(name);
+
+    return reg.code != reg.end ? reg.idx() : -1;
   }
   
   const char* mips_get_register_name(struct _Processor* processor, int register_index)
   {
-    struct TODO {}; throw TODO();
-    // if (register_index < 0)
-    //   return nullptr;
-    // if (register_index >= Processor::RegID::end)
-    //   return Processor::SRegID((Processor::SRegID::Code)
-    //                            (register_index-Processor::RegID::end)).c_str();
-    // return Processor::RegID((Processor::RegID::Code) register_index).c_str();
-    return "";
+    return Mips::RegisterIndex(Mips::RegisterIndex::Code(register_index)).c_str();
   }
   
   struct _DecisionVector* mips_create_decision_vector(struct _Processor* processor)
   {
-    struct TODO {}; throw TODO();
-    // return reinterpret_cast<struct _DecisionVector*>(new DecisionVector());
-    return 0;
+    return reinterpret_cast<struct _DecisionVector*>(new DecisionVector());
   }
 
   struct _DecisionVector* mips_clone_decision_vector(struct _DecisionVector* decision_vector)
   {
-    struct TODO {}; throw TODO();
-    // return reinterpret_cast<struct _DecisionVector*>(new DecisionVector(
-    //        *reinterpret_cast<DecisionVector*>(decision_vector)));
+    return reinterpret_cast<struct _DecisionVector*>(new DecisionVector(*reinterpret_cast<DecisionVector*>(decision_vector)));
   }
 
   void mips_free_decision_vector(struct _DecisionVector* decision_vector)
   {
-    struct TODO {}; throw TODO();
-    //  delete reinterpret_cast<DecisionVector*>(decision_vector);
+    delete reinterpret_cast<DecisionVector*>(decision_vector);
   }
 
-  void mips_filter_decision_vector(struct _DecisionVector* decision_vector,
-                                                uint64_t target)
+  void mips_filter_decision_vector(struct _DecisionVector* decision_vector, uint64_t target)
   {
     struct TODO {}; throw TODO();
     // auto* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
     // decisionVector->setToLastInstruction();
     // decisionVector->filter(target);
   }
-
+  
   bool mips_next_targets(struct _Processor* processor, char* instruction_buffer,
-                                      size_t buffer_size, uint64_t address, TargetAddresses* target_addresses,
-                                      MemoryModel* memory, MemoryModelFunctions* memory_functions,
-                                      struct _DecisionVector* decision_vector, InterpretParameters* parameters)
+                         size_t buffer_size, uint64_t address, struct _TargetAddresses* atarget_addresses,
+                         MemoryModel* memory, MemoryModelFunctions* memory_functions,
+                         struct _DecisionVector* decision_vector, InterpretParameters* parameters)
 
   {
-    struct TODO {}; throw TODO();
-    // Processor* proc = reinterpret_cast<Processor*>(processor);
-    // proc->setMemoryFunctions(*memory_functions);
-    // MemoryState memoryState(memory, memory_functions, parameters);
-    // proc->setMemoryState(memoryState);
-    // proc->setInterpretParameters(*parameters);
+    struct TargetAddresses
+    {
+      uint64_t* addresses;
+      int addresses_array_size;
+      int addresses_length;
 
-    // uint32_t code;
-    // memcpy(&code, instruction_buffer, sizeof(code));
-    // unisim::util::endian::ByteSwap(code);
+      uint64_t* (*realloc_addresses)(uint64_t* old_addresses, int old_size, int* new_size, void* address_container);
+      void* address_container;
+    };
 
-    // Translator actset( address, code );
-    // Processor::StatusRegister& status = actset.status;
-    // status.iset = status.Thumb;
-    // DecisionVector* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
-    // decisionVector->setToNextInstruction();
-    // actset.next_targets(*proc, *target_addresses, *decisionVector);
+    Processor* proc = reinterpret_cast<Processor*>(processor);
+    TargetAddresses* target_addresses = reinterpret_cast<TargetAddresses*>(atarget_addresses);
+
+    auto insn = proc->decode((uint8_t const*)instruction_buffer, buffer_size, address);
+
+    //auto& dv = *reinterpret_cast<DecisionVector*>(decision_vector);
+
+    std::set<uint32_t> addresses;
+    insn->next_addresses(addresses, memory, memory_functions, parameters);
+
+    for (int needed = addresses.size(); target_addresses->addresses_array_size < needed;)
+      {
+        target_addresses->addresses =
+          (*target_addresses->realloc_addresses)(target_addresses->addresses, target_addresses->addresses_array_size,
+                                                &target_addresses->addresses_array_size, target_addresses->address_container);
+      }
+    
+    target_addresses->addresses_length = 0;
+    for (auto addr : addresses)
+      target_addresses->addresses[target_addresses->addresses_length++] = addr;
+    
     return true;
   }
 
@@ -211,8 +240,6 @@ namespace
   }
 
 }
-
-#include "decsec_callback.h"
 
 extern "C"
 {

@@ -52,6 +52,114 @@ namespace util {
 namespace forbint {
 namespace contract {
 
+class DomainValue
+{
+private:
+  DomainElement deValue;
+  struct _DomainElementFunctions* pfFunctions;
+  DomainEvaluationEnvironment* peEnv;
+
+protected:
+  //  friend class MemoryState;
+  DomainElement& svalue() { return deValue; }
+  bool hasFunctionTable() const { return pfFunctions; }
+  struct _DomainElementFunctions& functionTable() const { assert(pfFunctions); return *pfFunctions; }
+  DomainEvaluationEnvironment* env() const { return peEnv; }
+
+public:
+  const DomainElement& value() const { return deValue; }
+
+public:
+  DomainValue() : deValue{ nullptr }, pfFunctions(nullptr), peEnv(nullptr) {}
+  class Empty {};
+  DomainValue(Empty, const DomainValue& ref)
+    : deValue{ nullptr }, pfFunctions(ref.pfFunctions), peEnv(ref.peEnv) {}
+  DomainValue(Empty, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
+    : deValue{ nullptr }, pfFunctions(functions), peEnv(env) {}
+  DomainValue(DomainElement&& value, struct _DomainElementFunctions* functions, DomainEvaluationEnvironment* env)
+    : deValue(std::move(value)), pfFunctions(functions), peEnv(env) {}
+  DomainValue(DomainElement&& value, const DomainValue& source)
+    : deValue(value), pfFunctions(source.pfFunctions), peEnv(source.peEnv)
+    { value.content = nullptr; }
+  DomainValue(DomainValue&& source)
+    : deValue(source.deValue), pfFunctions(source.pfFunctions), peEnv(source.peEnv)
+    { source.deValue.content = nullptr; }
+  DomainValue(const DomainValue& source)
+    : deValue{ nullptr }, pfFunctions(source.pfFunctions), peEnv(source.peEnv)
+    {
+      if (source.deValue.content) {
+        assert(pfFunctions);
+        deValue = (*pfFunctions->clone)(source.deValue);
+      }
+    }
+// inline
+
+  DomainValue& operator=(DomainValue&& source)
+    {
+      if (this == &source)
+        return *this;
+      if (deValue.content)
+      {
+        assert(pfFunctions);
+        (*pfFunctions->free)(&deValue);
+      }
+      pfFunctions = source.pfFunctions;
+      peEnv = source.peEnv;
+      deValue = source.deValue;
+      source.deValue.content = nullptr;
+      return *this;
+    }
+  DomainValue& operator=(const DomainValue& source)
+    {
+      if (this == &source)
+        return *this;
+      if (deValue.content)
+        (*pfFunctions->free)(&deValue);
+      pfFunctions = source.pfFunctions;
+      peEnv = source.peEnv;
+      if (source.deValue.content)
+      {
+        assert(pfFunctions);
+        deValue = (*pfFunctions->clone)(source.deValue);
+      }
+      return *this;
+    }
+  ~DomainValue()
+    { if (deValue.content && pfFunctions) (*pfFunctions->free)(&deValue); }
+
+  void clear()
+    {
+      if (deValue.content)
+      {
+        assert(pfFunctions);
+        (*pfFunctions->free)(&deValue);
+      }
+    }
+  bool isValid() const { return deValue.content; }
+  DomainType getType() const
+    {
+      assert(pfFunctions);
+      return (*pfFunctions->get_type)(deValue);
+    }
+  ZeroResult queryZeroResult() const
+    {
+      assert(pfFunctions);
+      return (*pfFunctions->query_zero_result)(deValue);
+    }
+  int getSizeInBits() const
+    {
+      assert(pfFunctions);
+      return (*pfFunctions->get_size_in_bits)(deValue);
+    }
+  bool is_top() const
+    {
+      assert(pfFunctions);
+      return (*pfFunctions->is_top)(deValue);
+    }
+
+  char* write() const;
+};
+
   
 } /* namespace contract */
 } /* namespace forbint */

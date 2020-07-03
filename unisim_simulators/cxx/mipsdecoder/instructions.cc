@@ -63,6 +63,8 @@ namespace Mips
     
     virtual void disasm(std::ostream& sink) const override { operation->disasm(sink); }
 
+    virtual bool match( uint32_t const* words ) const override { return operation->GetEncoding() == words[0]; }
+
     unsigned get_family() const override
     {
       unisim::util::forbint::debug::Iteration::FamilyInstruction result;
@@ -75,6 +77,11 @@ namespace Mips
     }
     
     Instruction* clone() const override { return new FullInstruction(*this); }
+
+    virtual void next_addresses(std::set<unsigned int>& addressed, void* mem_model, void* mem_functions, void* parameters) const override
+    {
+      struct TODO {}; throw TODO();
+    }
 
     virtual void retrieveTargets(unisim::util::forbint::debug::Iteration& iteration) const override
     {
