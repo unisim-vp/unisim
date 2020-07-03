@@ -65,7 +65,7 @@ namespace
       std::copy(&bytes[0], &bytes[8], reinterpret_cast<uint8_t*>(&words[0]));
       if (unisim::util::endian::IsHostBigEndian())
         unisim::util::endian::BSwap(words, 2);
-          
+
       auto itr = instructions.lower_bound(addr);
       if (itr != instructions.end() and itr->first == addr)
         {
@@ -73,13 +73,13 @@ namespace
             return itr->second.get();
           itr = instructions.erase(itr);
         }
-      Mips::Decoder d;
-      itr = instructions.emplace_hint(itr, std::piecewise_construct,
-                                      std::forward_as_tuple(addr),
-                                      std::forward_as_tuple(d.decode(words, addr)));
+
+      std::unique_ptr<Mips::Instruction> insn( decoder.decode(words, addr) );
+      itr = instructions.emplace_hint(itr, std::piecewise_construct, std::make_tuple(addr), std::forward_as_tuple(std::move(insn)));
       return itr->second.get();
     }
     
+    Mips::Decoder decoder;
     std::map< uint32_t, std::unique_ptr<Mips::Instruction> > instructions;
     DomainElementFunctions dftable;
     bool verbose;

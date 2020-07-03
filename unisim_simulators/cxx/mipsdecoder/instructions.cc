@@ -16,8 +16,8 @@ namespace Mips
   {
     typedef unisim::component::cxx::processor::mips::isa::Operation<Mips::Interpreter> Operation;
     
-    FullInstruction( std::shared_ptr<Operation>& op, unsigned _size )
-      : operation(op), actions(), cfg(), size(_size)
+    FullInstruction( std::shared_ptr<Operation>&& op, unsigned _size )
+      : operation(std::move(op)), actions(), cfg(), size(_size)
     {
       // Get actions
       std::unique_ptr<Interpreter::ActionNode> coderoot = std::make_unique<Interpreter::ActionNode>();
@@ -132,16 +132,19 @@ namespace Mips
   Decoder::decode(uint32_t const* words, uint32_t addr)
   {
     static unisim::component::cxx::processor::mips::isa::Decoder<Mips::Interpreter> idecoder;
-    std::shared_ptr<FullInstruction::Operation> op( idecoder.NCDecode(addr, unisim::util::endian::Host2LittleEndian(words[0])) );
-    std::unique_ptr<FullInstruction> insn = std::make_unique<FullInstruction>( op, 4 );
+
+    typedef std::shared_ptr<FullInstruction::Operation> op_ptr;
+    FullInstruction::Operation* op = idecoder.NCDecode(addr, unisim::util::endian::Host2LittleEndian(words[0]));
+    std::unique_ptr<FullInstruction> insn = std::make_unique<FullInstruction>( op_ptr(op), 4 );
 
     if (insn->cfg)
       {
         struct DBOp : public FullInstruction::Operation
         {
-          DBOp( std::shared_ptr<FullInstruction::Operation> first, std::shared_ptr<FullInstruction::Operation> last )
-            : FullInstruction::Operation( first->GetEncoding(), first->GetAddr(), "DBOp" )
-            , ops{first, last}
+          typedef FullInstruction::Operation Operation;
+          DBOp( op_ptr&& first, op_ptr&& last )
+            : Operation( first->GetEncoding(), first->GetAddr(), "DBOp" )
+            , ops{std::move(first), std::move(last)}
           {}
           virtual void execute( Interpreter& arch ) const override
           {
@@ -158,14 +161,13 @@ namespace Mips
             ops[1]->disasm( sink );
           }
           
-          std::shared_ptr<Operation> ops[2];
+          op_ptr ops[2];
         };
-        op.reset( idecoder.NCDecode(addr + 4, unisim::util::endian::Host2LittleEndian(words[1])) );
-        op.reset( new DBOp( insn->operation, op ) );
-        insn = std::make_unique<FullInstruction>( op, 8 );
+        op = idecoder.NCDecode(addr + 4, unisim::util::endian::Host2LittleEndian(words[1]));
+        op = new DBOp( std::move(insn->operation), op_ptr(op) );
+        insn = std::make_unique<FullInstruction>( op_ptr(op), 8 );
       }
-    
+
     return insn.release();
   }
-
 }

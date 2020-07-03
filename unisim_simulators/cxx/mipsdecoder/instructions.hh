@@ -4,6 +4,8 @@
 #include <unisim/util/identifier/identifier.hh>
 #include <iosfwd>
 #include <set>
+#include <map>
+#include <memory>
 #include <inttypes.h>
 
 namespace unisim { namespace util { namespace forbint { namespace debug {
