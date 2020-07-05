@@ -24,11 +24,6 @@
 extern "C" {
 #endif
 
-enum MemoryEvaluationErrorFlags
-{  MEEFNoError=0, MEEFImpreciseAccess=1<<1, MEEFUndefinedAccess=1<<2, MEEFNullAccess=1<<3,
-   MEEFUnallocatedAccess=1<<4, MEEFMemoryExhausted=1<<5, MEEFOSDependantAcess=1<<6
-};
-
 typedef struct _InterpretParameters InterpretParameters;
 typedef struct _MemoryModel MemoryModel;
 typedef struct _MemoryModelFunctions {

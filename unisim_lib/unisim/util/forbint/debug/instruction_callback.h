@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <unisim/util/forbint/forbint.h>
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -242,11 +244,6 @@ struct _InterpretParametersFunctions {
   bool (*is_else_origin)(struct _InterpretParameters* parameters);
   struct _Instruction* (*get_current_instruction)(struct _InterpretParameters* parameters, uint64_t* address, int size_address_in_cells);
   struct _Instruction* (*query_origin_instruction)(struct _InterpretParameters* parameters, uint64_t* address, int size_address_in_cells);
-};
-
-enum MemoryEvaluationErrorFlags
-{  MEEFNoError=0, MEEFImpreciseAccess=1<<1, MEEFUndefinedAccess=1<<2, MEEFNullAccess=1<<3,
-   MEEFUnallocatedAccess=1<<4, MEEFMemoryExhausted=1<<5, MEEFOSDependantAcess=1<<6
 };
 
 struct _MemoryStateFunctions {

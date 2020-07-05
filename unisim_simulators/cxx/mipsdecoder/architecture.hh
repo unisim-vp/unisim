@@ -3,6 +3,7 @@
 
 #include <instructions.hh>
 #include <unisim/util/forbint/debug/debug.hh>
+#include <unisim/util/forbint/contract/contract.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <set>
 #include <vector>
@@ -41,6 +42,10 @@ namespace Mips
     typedef unisim::util::forbint::debug::MemoryState      FDMemoryState;
     typedef unisim::util::forbint::debug::MemoryFlags      FDMemoryFlags;
     typedef unisim::util::forbint::debug::Target           FDTarget;
+    typedef unisim::util::forbint::debug::Iteration        FDIteration;
+
+    typedef unisim::util::forbint::contract::MemoryState   FCMemoryState;
+    typedef unisim::util::forbint::contract::DomainValue   FCDomainValue;
 
     struct INode : public unisim::util::symbolic::ExprNode
     {
@@ -48,6 +53,10 @@ namespace Mips
     
       static void ComputeForward(Expr const&, FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags);
       virtual void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
+
+      
+      static FCDomainValue Compute(Expr const&, FCMemoryState& mem);
+      virtual FCDomainValue Compute(FCMemoryState& mem) const = 0;
     };
   
     struct SideEffect
@@ -64,22 +73,23 @@ namespace Mips
       virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
     };
   
-    struct Ctrl
+    struct Ctrl : public Update
     {
       virtual ~Ctrl() {}
-      virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const = 0;
-      virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const = 0;
+      virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const = 0;
+      virtual void retrieveTargets( FDIteration& iteration ) const = 0;
+      
+      virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override { throw 0; return 0; };
     };
   
     struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
     {
-      ActionNode() : Conditional<ActionNode>(), updates(), cfg() {}
+      ActionNode() : Conditional<ActionNode>(), updates() {}
       
       void                    add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
       void                    simplify();
 
       std::set<Expr> updates;
-      std::shared_ptr<Ctrl> cfg;
     };
 
     struct Load : public INode
@@ -87,13 +97,15 @@ namespace Mips
       Load( Expr const& _addr, unsigned _bytes ) : addr(_addr), bytes(_bytes) {}
       virtual Load* Mutate() const override { return new Load(*this); }
       virtual ScalarType::id_t GetType() const override { return ScalarType::IntegerType(false, bytes); }
-      virtual void Repr(std::ostream& sink) const override {}
+      virtual void Repr(std::ostream& sink) const override;
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
       int compare( Load const& rhs ) const { return int(bytes) - int(rhs.bytes); }
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
 
       void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
+
+      FCDomainValue Compute(Mips::Interpreter::FCMemoryState&) const override;
 
       Expr addr;
       unsigned bytes;
@@ -106,7 +118,7 @@ namespace Mips
       virtual unsigned SubCount() const override { return 2; }
       virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
       virtual void Repr( std::ostream& sink ) const override {}
-      virtual int cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<Store const&>( rhs ) ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
       int compare( Store const& rhs ) const { return int(bytes) - int(rhs.bytes); }
 
       std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
@@ -122,12 +134,13 @@ namespace Mips
       RegRead( RegisterIndex _reg ) : reg(_reg) {}
       virtual RegRead* Mutate() const override { return new RegRead( *this ); }
       virtual ScalarType::id_t GetType() const override { return ScalarType::U32; }
-      virtual void Repr(std::ostream& sink) const override {}
+      virtual void Repr(std::ostream& sink) const override;
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
       int compare( RegRead const& rhs ) const { return reg.cmp( rhs.reg ); }
       
       void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
+      FCDomainValue Compute(Mips::Interpreter::FCMemoryState&) const override;
     };
 
     struct RegWrite : public Update
@@ -282,26 +295,41 @@ namespace Mips
     struct Goto : public Ctrl
     {
       Goto( U32 const& _target, branch_type_t _btype ) : target(_target.expr), btype(_btype) {}
-      virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const override;
-      virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override;
+      virtual Goto* Mutate() const override { return new Goto(*this); }
+      virtual unsigned SubCount() const override { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return target; }
+      virtual void Repr(std::ostream& sink) const override;
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Goto const&>( rhs ) ); }
+      int compare( Goto const& rhs ) const { return int(btype) - int(rhs.btype); }
+      
+      virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const override;
+      virtual void retrieveTargets( FDIteration& iteration ) const override;
 
       Expr target;
       branch_type_t btype;
     };
+    
     void Branch( U32 const& target, branch_type_t btype )
     {
       if (in_delay_slot) { struct Ouch {}; throw Ouch(); }
-      path->cfg = std::make_shared<Goto>(target,btype);
+      path->add_update( new Goto(target,btype) );
     }
+    
     struct CancelDS : public Ctrl
     {
-      virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const override {}
-      virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override { struct Issue {}; throw Issue (); }
+      virtual CancelDS* Mutate() const override { return new CancelDS(*this); }
+      virtual unsigned SubCount() const override { return 0; }
+      virtual void Repr(std::ostream& sink) const override;
+      virtual int cmp( ExprNode const& rhs ) const override { return 0; }
+      
+      virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const override {}
+      virtual void retrieveTargets( FDIteration& iteration ) const override { struct Issue {}; throw Issue (); }
     };
+    
     void CancelDelaySlot()
     {
       if (in_delay_slot) { struct Ouch {}; throw Ouch(); }
-      path->cfg = std::make_shared<CancelDS>();
+      path->add_update(new CancelDS);
       in_delay_slot = true;
     }
 

@@ -28,6 +28,7 @@ namespace Mips
     
     factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
     
+    
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
@@ -130,11 +131,26 @@ namespace Mips
   }
 
   void
+  Interpreter::Load::Repr(std::ostream& sink) const
+  {
+    sink << "Load( ";
+    for (unsigned idx = 0; idx < SubCount(); ++idx)
+      { GetSub(idx)->Repr(sink); sink << ", "; }
+    sink << bytes << " )";
+  }
+
+  void
   Interpreter::Load::ComputeForward(FDScalarElement& elem, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
     FDScalarElement address;
     INode::ComputeForward(addr, address, memory, dest, flags);
     elem = memory.loadValue(address, bytes*8, flags);
+  }
+  
+  Interpreter::FCDomainValue
+  Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState&) const
+  {
+    struct TODO {}; throw TODO();
   }
   
   std::unique_ptr<Interpreter::SideEffect>
@@ -157,6 +173,18 @@ namespace Mips
     };
     
     return std::make_unique<DoStore>(bytes,addr,value, memory, dest, flags);
+  }
+  
+  void
+  Interpreter::RegRead::Repr(std::ostream& sink) const
+  {
+    sink << "RegRead( " << reg.c_str() << " )";
+  }
+
+  Interpreter::FCDomainValue
+  Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState&) const
+  {
+    struct TODO {}; throw TODO();
   }
   
   void
@@ -238,5 +266,20 @@ namespace Mips
           }
       }
   }
-  
+
+  void
+  Interpreter::Goto::Repr(std::ostream& sink) const
+  {
+    sink << "Goto( ";
+    for (unsigned idx = 0; idx < SubCount(); ++idx)
+      { GetSub(idx)->Repr(sink); sink << ", "; }
+    sink << unsigned(btype) << " )";
+  }
+
+  void
+  Interpreter::CancelDS::Repr(std::ostream& sink) const
+  {
+    sink << "CancelDS";
+  }
+
 }

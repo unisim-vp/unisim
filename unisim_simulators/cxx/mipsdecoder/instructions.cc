@@ -31,34 +31,70 @@ namespace Mips
       
       coderoot->simplify();
       std::swap(actions, coderoot->updates);
-      
+
+      struct BadCFG {};
+
       if (not coderoot->cond.good())
         {
-          cfg = coderoot->cfg;
+          for (auto itr = actions.begin(), end = actions.end(); itr != end;)
+            {
+              if (not dynamic_cast<Interpreter::Ctrl const*>(itr->node))
+                { ++itr; continue; }
+              if (cfg.good())
+                throw BadCFG();
+              cfg = *itr;
+              itr = actions.erase(itr);
+            }
           return;
         }
-      if (coderoot->getnext(false)->cond.good()    or coderoot->getnext(true)->cond.good() or
-          coderoot->getnext(false)->updates.size() or coderoot->getnext(true)->updates.size())
-        { struct BadCond {}; throw BadCond(); }
+
+      for (unsigned alt = 0; alt < 2; ++alt)
+        {
+          if (coderoot->getnext(alt)->cond.good())
+            throw BadCFG();
+          if (coderoot->updates.size() == 0)
+            continue;
+          if (coderoot->updates.size() != 1 or not dynamic_cast<Interpreter::Ctrl const*>(coderoot->updates.begin()->node))
+            throw BadCFG();
+        }
 
       struct Fork : Interpreter::Ctrl
       {
-        Fork(Interpreter::ActionNode& root) : cond(root.cond), nexts{root.getnext(false)->cfg,root.getnext(true)->cfg} {}
+        Fork(Interpreter::ActionNode& root)
+          : cond(root.cond), nexts()
+        {
+          for (unsigned alt = 0; alt < 2; ++alt)
+            for (auto const& ctrl : root.getnext(alt)->updates)
+              nexts[alt] = ctrl;
+        }
+        virtual Fork* Mutate() const override { return new Fork(*this); }
 
+        virtual unsigned SubCount() const { return 3; }
+        virtual Expr const& GetSub(unsigned idx) const override
+        { switch (idx) { case 0: case 1: return nexts[idx]; case 2: return cond; } return ExprNode::GetSub(idx); }
+        virtual void Repr( std::ostream& sink ) const override
+        {
+          sink << "Fork( ";
+          char const* sep = "";
+          for (unsigned idx = 0; idx < SubCount(); ++idx, sep = ", ")
+            GetSub(idx)->Repr(sink << sep);
+          sink << " )";
+        }
+        virtual int cmp( ExprNode const& rhs ) const override { return 0; }
+        
         virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& f, uint32_t origin ) const override
         {
-          nexts[0]->retrieveFamily( f, origin );
-          nexts[1]->retrieveFamily( f, origin );
+          dynamic_cast<Interpreter::Ctrl const&>( *nexts[0] ).retrieveFamily( f, origin );
+          dynamic_cast<Interpreter::Ctrl const&>( *nexts[1] ).retrieveFamily( f, origin );
         }
         virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override
         {
         }
         
-        unisim::util::symbolic::Expr cond;
-        std::shared_ptr<Ctrl> nexts[2];
+        unisim::util::symbolic::Expr cond, nexts[2];
       };
 
-      cfg = std::make_shared<Fork>(*coderoot);
+      cfg = unisim::util::symbolic::Expr( new Fork( *coderoot ) );
     }
     
     virtual void disasm(std::ostream& sink) const override { operation->disasm(sink); }
@@ -68,18 +104,32 @@ namespace Mips
     unsigned get_family() const override
     {
       unisim::util::forbint::debug::Iteration::FamilyInstruction result;
-      if (not cfg)
+      if (not cfg.good())
         result.setSequential();
       else
-        cfg->retrieveFamily(result, operation->GetAddr());
+        dynamic_cast<Interpreter::Ctrl const&>( *cfg ).retrieveFamily(result, operation->GetAddr());
 
       return result.getComputedFamily();
     }
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    virtual void next_addresses(std::set<unsigned int>& addresses, unisim::util::forbint::contract::MemoryState&) const override
+    virtual void next_addresses(std::set<unsigned int>& addresses, unisim::util::forbint::contract::MemoryState& mem) const override
     {
+      //DomainValue cond = INode::compute();
+      //   DomainValue value = 
+      //     bool isConstant(bool* value) const
+      // {
+      //   if (inherited::isValid())
+      //     return (*functionTable().bit_is_constant_value)(this->value(), value);
+      //   else
+      //   {
+      //     if (value)
+      //       *value = fConstant;
+      //     return true;
+      //   }
+      // }
+
       struct TODO {}; throw TODO();
     }
 
@@ -90,18 +140,18 @@ namespace Mips
 
     virtual void retrieveTargets(unisim::util::forbint::debug::Iteration& iteration) const override
     {
-      if (not cfg)
+      if (not cfg.good())
         iteration.addNextTarget();
       else
-        cfg->retrieveTargets(iteration);
+        dynamic_cast<Interpreter::Ctrl const&>( *cfg ).retrieveTargets(iteration);
 
       // TODO
 
       if (iteration.isFamilyRequired())
         {
           unisim::util::forbint::debug::Iteration::FamilyInstruction family;
-          if (cfg) cfg->retrieveFamily(family, operation->GetAddr());
-          else     family.setSequential();
+          if (cfg.good()) dynamic_cast<Interpreter::Ctrl const&>( *cfg ).retrieveFamily(family, operation->GetAddr());
+          else            family.setSequential();
           iteration.setFamily(family);
         }
     }
@@ -124,7 +174,7 @@ namespace Mips
 
     std::shared_ptr<Operation> operation;
     std::set<unisim::util::symbolic::Expr> actions;
-    std::shared_ptr<Interpreter::Ctrl> cfg;
+    unisim::util::symbolic::Expr cfg;
     unsigned size;
   };
     
@@ -137,7 +187,7 @@ namespace Mips
     FullInstruction::Operation* op = idecoder.NCDecode(addr, unisim::util::endian::Host2LittleEndian(words[0]));
     std::unique_ptr<FullInstruction> insn = std::make_unique<FullInstruction>( op_ptr(op), 4 );
 
-    if (insn->cfg)
+    if (insn->cfg.good())
       {
         struct DBOp : public FullInstruction::Operation
         {
