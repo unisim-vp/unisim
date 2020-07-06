@@ -59,14 +59,13 @@ private:
   struct _DomainElementFunctions* pfFunctions;
   DomainEvaluationEnvironment* peEnv;
 
-protected:
+public:
   friend class MemoryState;
   DomainElement& svalue() { return deValue; }
   bool hasFunctionTable() const { return pfFunctions; }
   struct _DomainElementFunctions& functionTable() const { assert(pfFunctions); return *pfFunctions; }
+  struct _DomainElementFunctions& funcs() const { assert(pfFunctions); return *pfFunctions; }
   DomainEvaluationEnvironment* env() const { return peEnv; }
-
-public:
   const DomainElement& value() const { return deValue; }
 
 public:
@@ -93,6 +92,14 @@ public:
       }
     }
 // inline
+  DomainValue& assign(DomainElement&& value)
+    {
+      if (deValue.content)
+        (*pfFunctions->free)(&deValue);
+      deValue = value;
+      value.content = 0;
+      return *this;
+    }
 
   DomainValue& operator=(DomainValue&& source)
     {
@@ -151,11 +158,55 @@ public:
       assert(pfFunctions);
       return (*pfFunctions->get_size_in_bits)(deValue);
     }
+  bool may_be_zero() const
+  {
+    struct TODO {}; throw TODO();
+  }
+  
+  bool may_be_nonzero() const
+  {
+    struct TODO {}; throw TODO();
+  }
   bool is_top() const
     {
       assert(pfFunctions);
       return (*pfFunctions->is_top)(deValue);
     }
+
+  template <typename T>
+  bool is_constant( T& value )
+  {
+    switch (getType())
+      {
+      case DTBit:
+        {
+          bool res = false;
+          if (not (*pfFunctions->bit_is_constant_value)(deValue, &res))
+            return false;
+          value = T(res);
+          return true;
+        }
+      case DTInteger:
+        {
+          DomainIntegerConstant divalue;
+          if (not (*pfFunctions->multibit_is_constant_value)(deValue, &divalue))
+            return false;
+          if (std::numeric_limits<T>::is_signed != divalue.isSigned)
+            { struct SignError {}; throw SignError(); }
+          value = T(divalue.integerValue);
+          struct EncodingError {};
+          if (divalue.isSigned)
+            { if ((int64_t)divalue.integerValue != value) throw EncodingError(); }
+          else
+            { if (         divalue.integerValue != value) throw EncodingError(); }
+          return true;
+        }
+      case DTFloating:
+      case DTUndefined:
+        break;
+      }
+    return false;
+  }
 
   char* write() const;
 };

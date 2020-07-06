@@ -1,3 +1,37 @@
+/*
+ *  Copyright (c) 2007-2020,
+ *  Commissariat a l'Energie Atomique (CEA),
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
+ */
+
 #include <architecture.hh>
 
 namespace Mips
@@ -130,8 +164,110 @@ namespace Mips
 
   }
 
+  Interpreter::FCDomainValue
+  Interpreter::INode::Compute(Expr const& expr, FCMemoryState& memory, DomainElementFunctions* def)
+  {
+    unsigned subcount = expr->SubCount();
+    
+    if (auto node = expr->AsConstNode())
+      {
+        ScalarType valtype( node->GetType() );
+
+        if (valtype.is_integer)
+          {
+            if (valtype.bitsize == 1)
+              return Interpreter::FCDomainValue( def->bit_create_constant(node->Get( bool() )), def, memory.env() );
+            DomainIntegerConstant divalue{int(valtype.bitsize),valtype.is_signed,node->Get(uint64_t())};
+            return Interpreter::FCDomainValue( def->multibit_create_constant(divalue), def, memory.env() );
+          }
+        //typedef long double float_container;
+        typedef double float_container;
+        DomainFloatingPointConstant dfpvalue{int(valtype.bitsize), node->Get(float_container())};
+        return Interpreter::FCDomainValue( def->multifloat_create_constant(dfpvalue), def, memory.env() );
+      }
+    else if (auto node = expr->AsOpNode())
+      {
+        using unisim::util::symbolic::Op;
+        
+        Interpreter::FCDomainValue res = Interpreter::INode::Compute(expr->GetSub(0), memory, def);
+        
+        if (subcount == 1)
+          {
+            switch (node->op.code)
+              {                
+              case Op::Not:
+                {
+                  if (res.getSizeInBits() == 1) (*def->bit_unary_apply_assign)(&res.svalue(),     DBUONegate, memory.env());
+                  else                     (*def->multibit_unary_apply_assign)(&res.svalue(), DMBUOBitNegate, memory.env());
+                  return res;
+                }
+              case Op::Neg:
+                {
+                  (*def->multibit_unary_apply_assign)(&res.svalue(), DMBUOOppositeSigned, memory.env());
+                  return res;
+                }
+              case Op::Cast:
+                {
+                  auto const& cnb = dynamic_cast<unisim::util::symbolic::CastNodeBase const&>( *expr.node );
+                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
+                  if (src.bitsize == 1)
+                    res.assign( (*def->bit_create_cast_multibit)(res.value(), dst.bitsize, memory.env()) );
+                  else if (dst.bitsize == 1)
+                    res.assign( (*def->multibit_create_cast_bit)(res.value(), memory.env()) );
+                  else if (src.is_integer and dst.is_integer)
+                    res.assign( (*def->multibit_create_cast_multibit)(res.value(), dst.bitsize, dst.is_signed, memory.env()) );
+                  else
+                    break;
+                  return res;
+                }
+                
+              default:
+                break;
+              }
+            
+          }
+        else if (subcount == 2)
+          {
+      //       // Interpreter::INode::ComputeForward(expr->GetSub(0), res, memory, dest, flags);
+      //       FDScalarElement arg;
+      //       Interpreter::INode::ComputeForward(expr->GetSub(1), arg, memory, dest, flags);
+            
+      //       switch (node->op.code)
+      //         {
+      //         case Op::Xor: res.applyAssign(MultiBitOperation().setBitExclusiveOr(), arg, flags.scalarPart()); return;
+      //         case Op::And: res.applyAssign(MultiBitOperation().setBitAnd(), arg, flags.scalarPart()); return;
+      //         case Op::Or:  res.applyAssign(MultiBitOperation().setBitOr(), arg, flags.scalarPart()); return;
+      //         case Op::Lsl: res.applyAssign(MultiBitOperation().setLeftShift(), arg, flags.scalarPart()); return;
+      //         case Op::Asr: res.applyAssign(MultiBitOperation().setArithmeticRightShift(), arg, flags.scalarPart()); return;
+      //         case Op::Lsr: res.applyAssign(MultiBitOperation().setLogicalRightShift(), arg, flags.scalarPart()); return;
+      //         case Op::Add: res.applyAssign(MultiBitOperation().setPlusSigned(), arg, flags.scalarPart()); return;
+      //         case Op::Sub: res.applyAssign(MultiBitOperation().setMinusSigned(), arg, flags.scalarPart()); return;
+      //         case Op::Teq: res.applyAssign(MultiBitOperation().setCompareEqual(), arg, flags.scalarPart()); return;
+      //         case Op::Tne: res.applyAssign(MultiBitOperation().setCompareDifferent(), arg, flags.scalarPart()); return;
+      //         case Op::Tge: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualSigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tgt: res.applyAssign(MultiBitOperation().setCompareGreaterSigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tle: res.applyAssign(MultiBitOperation().setCompareLessOrEqualSigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tlt: res.applyAssign(MultiBitOperation().setCompareLessSigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tgeu: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualUnsigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tgtu: res.applyAssign(MultiBitOperation().setCompareGreaterUnsigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tleu: res.applyAssign(MultiBitOperation().setCompareLessOrEqualUnsigned(), arg, flags.scalarPart()); return;
+      //         case Op::Tltu: res.applyAssign(MultiBitOperation().setCompareLessUnsigned(), arg, flags.scalarPart()); return;
+            
+      //         default: break;
+      //         }
+          }
+            
+        { struct NotYet {}; throw NotYet(); }
+      }
+    else if (auto node = dynamic_cast<Interpreter::INode const*>(expr.node))
+      {
+        return node->Compute(memory, def);
+      }
+    return Interpreter::FCDomainValue();
+  }
+
   void
-  Interpreter::Load::Repr(std::ostream& sink) const
+    Interpreter::Load::Repr(std::ostream& sink) const
   {
     sink << "Load( ";
     for (unsigned idx = 0; idx < SubCount(); ++idx)
@@ -148,7 +284,7 @@ namespace Mips
   }
   
   Interpreter::FCDomainValue
-  Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState&) const
+  Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
   {
     struct TODO {}; throw TODO();
   }
@@ -182,7 +318,7 @@ namespace Mips
   }
 
   Interpreter::FCDomainValue
-  Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState&) const
+  Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
   {
     struct TODO {}; throw TODO();
   }
@@ -277,9 +413,26 @@ namespace Mips
   }
 
   void
+  Interpreter::Goto::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const
+  {
+    FCDomainValue addr = INode::Compute(target , mem, def);
+    uint32_t addr_as_uint32;
+    if (addr.is_constant(addr_as_uint32))
+      addresses.insert(addr_as_uint32);
+  }
+
+
+  void
+  Interpreter::CancelDS::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const
+  {
+    struct TODO {}; throw TODO();
+  }
+  
+  void
   Interpreter::CancelDS::Repr(std::ostream& sink) const
   {
     sink << "CancelDS";
   }
 
+  
 }

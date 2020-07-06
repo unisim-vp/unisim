@@ -50,13 +50,14 @@ namespace Mips
     struct INode : public unisim::util::symbolic::ExprNode
     {
       typedef unisim::util::symbolic::Expr Expr;
-    
+
+      /**DEBUG**/
       static void ComputeForward(Expr const&, FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags);
       virtual void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
 
-      
-      static FCDomainValue Compute(Expr const&, FCMemoryState& mem);
-      virtual FCDomainValue Compute(FCMemoryState& mem) const = 0;
+      /**CONTRACT**/
+      static FCDomainValue Compute(Expr const&, FCMemoryState& mem, DomainElementFunctions* def);
+      virtual FCDomainValue Compute(FCMemoryState& mem, DomainElementFunctions* def) const = 0;
     };
   
     struct SideEffect
@@ -76,10 +77,15 @@ namespace Mips
     struct Ctrl : public Update
     {
       virtual ~Ctrl() {}
+      
+      /**DEBUG**/
+      virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState&, FDTarget&, FDMemoryFlags&) const override
+      { struct InterpretShouldNotBranch {}; throw  InterpretShouldNotBranch(); return 0; };
       virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const = 0;
       virtual void retrieveTargets( FDIteration& iteration ) const = 0;
       
-      virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override { throw 0; return 0; };
+      /**CONTRACT**/
+      virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const = 0;
     };
   
     struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
@@ -105,7 +111,7 @@ namespace Mips
 
       void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
 
-      FCDomainValue Compute(Mips::Interpreter::FCMemoryState&) const override;
+      FCDomainValue Compute(Mips::Interpreter::FCMemoryState&, DomainElementFunctions*) const override;
 
       Expr addr;
       unsigned bytes;
@@ -140,7 +146,7 @@ namespace Mips
       int compare( RegRead const& rhs ) const { return reg.cmp( rhs.reg ); }
       
       void ComputeForward(FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
-      FCDomainValue Compute(Mips::Interpreter::FCMemoryState&) const override;
+      FCDomainValue Compute(Mips::Interpreter::FCMemoryState&, DomainElementFunctions*) const override;
     };
 
     struct RegWrite : public Update
@@ -302,9 +308,13 @@ namespace Mips
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Goto const&>( rhs ) ); }
       int compare( Goto const& rhs ) const { return int(btype) - int(rhs.btype); }
       
+      /**DEBUG**/
       virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const override;
       virtual void retrieveTargets( FDIteration& iteration ) const override;
 
+      /**CONTRACT**/
+      virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions*) const override;
+      
       Expr target;
       branch_type_t btype;
     };
@@ -322,8 +332,12 @@ namespace Mips
       virtual void Repr(std::ostream& sink) const override;
       virtual int cmp( ExprNode const& rhs ) const override { return 0; }
       
+      /**DEBUG**/
       virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const override {}
       virtual void retrieveTargets( FDIteration& iteration ) const override { struct Issue {}; throw Issue (); }
+      
+      /**CONTRACT**/
+      virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const override;
     };
     
     void CancelDelaySlot()

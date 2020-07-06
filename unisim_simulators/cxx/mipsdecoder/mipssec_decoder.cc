@@ -199,7 +199,7 @@ namespace
     unisim::util::forbint::contract::MemoryState memstate(memory, memory_functions, parameters);
     DomainEvaluationEnvironment env;
     memstate.setEvaluationEnvironment(env);
-    insn->next_addresses(addresses, memstate);
+    insn->next_addresses(addresses, memstate, &proc->dftable);
 
     for (int needed = addresses.size(); target_addresses->addresses_array_size < needed;)
       {

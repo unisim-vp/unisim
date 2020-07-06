@@ -8,6 +8,7 @@
 #include <memory>
 #include <inttypes.h>
 
+struct _DomainElementFunctions;
 namespace unisim { namespace util { namespace forbint { namespace debug {
   struct Iteration;
   struct MemoryState;
@@ -17,7 +18,6 @@ namespace unisim { namespace util { namespace forbint { namespace debug {
 namespace unisim { namespace util { namespace forbint { namespace contract {
   struct MemoryState;
 } } } }
-
 
 namespace Mips
 {
@@ -29,12 +29,16 @@ namespace Mips
     virtual void disasm(std::ostream& sink) const = 0;
     virtual unsigned getSize() const = 0;
     virtual bool match(uint32_t const* words) const = 0;
+    /**DEBUG**/
     virtual void retrieveTargets(unisim::util::forbint::debug::Iteration&) const = 0;
     virtual void interpretForward(uint32_t,
                                   unisim::util::forbint::debug::MemoryState&,
                                   unisim::util::forbint::debug::Target&,
                                   unisim::util::forbint::debug::MemoryFlags&) const = 0;
-    virtual void next_addresses(std::set<unsigned int>&, unisim::util::forbint::contract::MemoryState&) const = 0;
+    /**CONTRACT**/
+    virtual void next_addresses(std::set<unsigned int>&,
+                                unisim::util::forbint::contract::MemoryState&,
+                                struct _DomainElementFunctions*) const = 0;
     virtual void interpret(uint32_t addr, uint32_t next_addr, unisim::util::forbint::contract::MemoryState&) const = 0;
   };
   

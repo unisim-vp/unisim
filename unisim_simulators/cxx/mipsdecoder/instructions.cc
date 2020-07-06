@@ -82,13 +82,25 @@ namespace Mips
         }
         virtual int cmp( ExprNode const& rhs ) const override { return 0; }
         
-        virtual void retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& f, uint32_t origin ) const override
+        virtual void retrieveFamily( Interpreter::FDIteration::FamilyInstruction& f, uint32_t origin ) const override
         {
           dynamic_cast<Interpreter::Ctrl const&>( *nexts[0] ).retrieveFamily( f, origin );
           dynamic_cast<Interpreter::Ctrl const&>( *nexts[1] ).retrieveFamily( f, origin );
         }
-        virtual void retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const override
+        virtual void retrieveTargets( Interpreter::FDIteration& iteration ) const override
         {
+          struct TODO {}; throw TODO();
+        }
+        
+        /**CONTRACT**/
+        virtual void next_addresses(std::set<unsigned int>& addresses,
+                                    Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
+        {
+          Interpreter::FCDomainValue then = Interpreter::INode::Compute(cond, mem, def);
+          if (then.may_be_zero())
+            dynamic_cast<Interpreter::Ctrl const&>( *nexts[0] ).next_addresses(addresses, mem, def);
+          if (then.may_be_nonzero())
+            dynamic_cast<Interpreter::Ctrl const&>( *nexts[1] ).next_addresses(addresses, mem, def);
         }
         
         unisim::util::symbolic::Expr cond, nexts[2];
@@ -103,7 +115,7 @@ namespace Mips
 
     unsigned get_family() const override
     {
-      unisim::util::forbint::debug::Iteration::FamilyInstruction result;
+      Interpreter::FDIteration::FamilyInstruction result;
       if (not cfg.good())
         result.setSequential();
       else
@@ -114,8 +126,14 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    virtual void next_addresses(std::set<unsigned int>& addresses, unisim::util::forbint::contract::MemoryState& mem) const override
+    void next_addresses(std::set<unsigned int>& addresses,
+                        Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
+      if (not cfg.good())
+        addresses.insert(operation->GetAddr() + size);
+      else
+        dynamic_cast<Interpreter::Ctrl const&>(*cfg).next_addresses(addresses, mem, def);
+      
       //DomainValue cond = INode::compute();
       //   DomainValue value = 
       //     bool isConstant(bool* value) const
@@ -130,15 +148,15 @@ namespace Mips
       //   }
       // }
 
-      struct TODO {}; throw TODO();
+      //      struct TODO {}; throw TODO();
     }
 
-    virtual void interpret( uint32_t addr, uint32_t next_addr, unisim::util::forbint::contract::MemoryState&) const override
+    virtual void interpret( uint32_t addr, uint32_t next_addr, Interpreter::FCMemoryState&) const override
     {
       struct TODO {}; throw TODO();
     }
 
-    virtual void retrieveTargets(unisim::util::forbint::debug::Iteration& iteration) const override
+    virtual void retrieveTargets(Interpreter::FDIteration& iteration) const override
     {
       if (not cfg.good())
         iteration.addNextTarget();
@@ -149,7 +167,7 @@ namespace Mips
 
       if (iteration.isFamilyRequired())
         {
-          unisim::util::forbint::debug::Iteration::FamilyInstruction family;
+          Interpreter::FDIteration::FamilyInstruction family;
           if (cfg.good()) dynamic_cast<Interpreter::Ctrl const&>( *cfg ).retrieveFamily(family, operation->GetAddr());
           else            family.setSequential();
           iteration.setFamily(family);
@@ -157,9 +175,9 @@ namespace Mips
     }
     virtual unsigned getSize() const override { return size; }
     virtual void interpretForward(uint32_t addr,
-                                  unisim::util::forbint::debug::MemoryState& ms,
-                                  unisim::util::forbint::debug::Target& tg,
-                                  unisim::util::forbint::debug::MemoryFlags& mf) const override
+                                  Interpreter::FDMemoryState& ms,
+                                  Interpreter::FDTarget& tg,
+                                  Interpreter::FDMemoryFlags& mf) const override
     {
       std::vector<std::unique_ptr<Interpreter::SideEffect>> side_effects;
       side_effects.reserve(actions.size());
