@@ -229,7 +229,7 @@ namespace
     unisim::util::forbint::contract::MemoryState memstate(memory, memory_functions, parameters);
     DomainEvaluationEnvironment env;
     memstate.setEvaluationEnvironment(env);
-    insn->interpret(addr, target_address, memstate);
+    insn->interpret(addr, target_address, memstate, &proc->dftable);
 
     return true;
   }

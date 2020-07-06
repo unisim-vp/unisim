@@ -39,7 +39,9 @@ namespace Mips
     virtual void next_addresses(std::set<unsigned int>&,
                                 unisim::util::forbint::contract::MemoryState&,
                                 struct _DomainElementFunctions*) const = 0;
-    virtual void interpret(uint32_t addr, uint32_t next_addr, unisim::util::forbint::contract::MemoryState&) const = 0;
+    virtual void interpret(uint32_t addr, uint32_t next_addr,
+                           unisim::util::forbint::contract::MemoryState&,
+                           struct _DomainElementFunctions*) const = 0;
   };
   
   struct RegisterIndex : public unisim::util::identifier::Identifier<RegisterIndex>

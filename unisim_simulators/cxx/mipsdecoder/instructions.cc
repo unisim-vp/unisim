@@ -89,7 +89,99 @@ namespace Mips
         }
         virtual void retrieveTargets( Interpreter::FDIteration& iteration ) const override
         {
+          typedef Interpreter::FDIteration Iteration;
+          typedef Interpreter::FDScalarElement ScalarElement;
+          Iteration::Target firstTarget, thenTarget, elseTarget;
+          if (iteration.mayFollowGraph())
+            {
+              if (/*_isMultitarget*/false)
+                {
+                  if (!(firstTarget = iteration.getLocalTarget()).isValid())
+                    {
+                      Iteration::TargetCursor targetCursor = iteration.newCursorOnExistingTargets();
+                      while (targetCursor.setToNext())
+                        {
+                          bool isFirst = false, isThen = false, isElse = false;
+                          Iteration::Target target = targetCursor.elementAt(isFirst, isThen, isElse);
+                          if (isFirst)
+                            firstTarget = target;
+                          if (isThen)
+                            thenTarget = target;
+                          if (isElse)
+                            elseTarget = target;
+                        }
+                      if (/*_doesStoreNext*/false and not iteration.advanceOnCallInstruction() and not iteration.advanceOnNextGraphInstruction())
+                        {
+                          iteration.assumeAcceptEmptyDestination();
+                        }
+                    }
+                }
+              else
+                {
+                  if (!iteration.localAdvanceOnInstruction())
+                    {
+                      if (/*_doesStoreNext*/false and not iteration.advanceOnCallInstruction() and not iteration.advanceOnNextGraphInstruction())
+                        {
+                          iteration.assumeAcceptEmptyDestination();
+                        }
+                    }
+                }
+            }
+
+          // if (doesSupportSyntacticCondition)
+          //   {
+          //     if (!_previousInstruction)
+          //       _previousInstruction = (BasicInstruction*) iteration.getPreviousInstruction(&_previousInstructionAddress, 1);
+          //   }
+
           struct TODO {}; throw TODO();
+          // ComputeForward currently works with an Interpret
+          // architecture, but here we work with a Iteration
+          // architecture. We need to work on a common abstraction
+          // layer... (most probably a virtual ScalarElement Computer)
+          
+          ScalarElement se_cond/* = Interpreter::INode::ComputeForward(cond, iteration)*/;
+          // ScalarElement target;
+  
+          // if (se_cond.queryZeroResult().mayBeDifferentZero())
+          //   {
+          //     uint64_t elseAddress = 0;
+          //     if (/*_isAbsoluteTarget*/false)
+          //       elseAddress = _target;
+          //     else
+          //       {
+          //         iteration.getCurrentInstruction(&elseAddress, 1);
+          //         if (elseAddress + _target == 0x10000000)
+          //           return;
+          //         elseAddress += _target;
+          //       }
+          //     if (firstTarget.isValid() && firstTarget.hasAddress(&elseAddress, 1))
+          //       elseTarget = firstTarget;
+          //     if (elseTarget.isValid())
+          //       iteration.addElseTarget(elseTarget);
+          //     else
+          //       iteration.addElseTarget(&elseAddress, 1);
+          //   }
+          // if (se_cond.queryZeroResult().mayBeZero())
+          //   {
+          //     uint64_t thenAddress = 0;
+          //     iteration.getCurrentInstruction(&thenAddress, 1);
+          //     // iteration.retrieveCurrentAddress(&thenAddress, 1);
+          //     thenAddress += 4;
+          //     if (!thenTarget.isValid() && firstTarget.isValid() && firstTarget.hasAddress(&thenAddress, 1))
+          //       thenTarget = firstTarget;
+          //     if (thenTarget.isValid())
+          //       iteration.addThenTarget(thenTarget);
+          //     else
+          //       iteration.addThenTarget(&thenAddress, 1);
+          //   }
+  
+          // if (iteration.isFamilyRequired())
+          //   {
+          //     Iteration::FamilyInstruction family;
+          //     retrieveFamilyInstruction(family, NULL);
+          //     iteration.setFamily(family);
+          //   }
         }
         
         /**CONTRACT**/
@@ -151,7 +243,8 @@ namespace Mips
       //      struct TODO {}; throw TODO();
     }
 
-    virtual void interpret( uint32_t addr, uint32_t next_addr, Interpreter::FCMemoryState&) const override
+    virtual void interpret( uint32_t addr, uint32_t next_addr,
+                            Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
       struct TODO {}; throw TODO();
     }
