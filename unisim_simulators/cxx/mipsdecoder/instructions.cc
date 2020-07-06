@@ -33,6 +33,46 @@ namespace Mips
       std::swap(actions, coderoot->updates);
 
       struct BadCFG {};
+      uint32_t cont = operation->GetAddr() + size;
+      struct Cont : Interpreter::Ctrl
+      {
+        Cont(uint32_t _addr) : addr(_addr) {} uint32_t addr;
+        virtual Cont* Mutate() const override { return new Cont(*this); }
+        virtual unsigned SubCount() const { return 0; }
+        virtual void Repr( std::ostream& sink ) const override { sink << "Cont( " << addr << " )"; }
+        virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Cont const&>(rhs) ); }
+        int compare( Cont const& rhs ) const { return (addr > rhs.addr) ? 1 : addr < rhs.addr ? -1 : 0; }
+        /**DEBUG**/
+        virtual void retrieveFamily( Interpreter::FDIteration::FamilyInstruction& f, uint32_t ) const override
+        { f.setForwardJump(); }
+        virtual void retrieveTargets( Interpreter::FDIteration& iteration ) const override
+        {
+          if (iteration.mayFollowGraph())
+            {
+              if (!iteration.localAdvanceOnInstruction())
+                {
+                  if (!iteration.advanceOnCallInstruction() && !iteration.advanceOnNextGraphInstruction()) {
+                    iteration.assumeAcceptEmptyDestination();
+                  }
+                }
+            }
+          else
+            {
+              uint64_t address = addr;
+              iteration.addTarget(&address, 1);
+            }
+          // if (iteration.isFamilyRequired())
+          //   {
+          //     Interpreter::FDIteration::FamilyInstruction family;
+          //     retrieveFamily(family, NULL);
+          //     iteration.setFamily(family);
+          //   }
+        }
+        /**CONTRACT**/
+        void next_addresses(std::set<unsigned int>& addresses, Interpreter::FCMemoryState&, DomainElementFunctions*) const override
+        { addresses.insert(addr); }
+      };
+      
 
       if (not coderoot->cond.good())
         {
@@ -45,6 +85,8 @@ namespace Mips
               cfg = *itr;
               itr = actions.erase(itr);
             }
+          if (not cfg.good())
+            cfg = new Cont(cont);
           return;
         }
 
@@ -189,10 +231,9 @@ namespace Mips
                                     Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
         {
           Interpreter::FCDomainValue then = Interpreter::INode::Compute(cond, mem, def);
-          if (then.may_be_zero())
-            dynamic_cast<Interpreter::Ctrl const&>( *nexts[0] ).next_addresses(addresses, mem, def);
-          if (then.may_be_nonzero())
-            dynamic_cast<Interpreter::Ctrl const&>( *nexts[1] ).next_addresses(addresses, mem, def);
+          auto zr = then.queryZeroResult();
+          if (zr != ZRZero)           dynamic_cast<Interpreter::Ctrl const&>( *nexts[1] ).next_addresses(addresses, mem, def);
+          if (zr != ZRDifferentZero)  dynamic_cast<Interpreter::Ctrl const&>( *nexts[0] ).next_addresses(addresses, mem, def);
         }
         
         unisim::util::symbolic::Expr cond, nexts[2];
@@ -240,7 +281,6 @@ namespace Mips
       //   }
       // }
 
-      //      struct TODO {}; throw TODO();
     }
 
     virtual void interpret( uint32_t addr, uint32_t next_addr,
@@ -272,7 +312,7 @@ namespace Mips
                                   Interpreter::FDTarget& tg,
                                   Interpreter::FDMemoryFlags& mf) const override
     {
-      std::vector<std::unique_ptr<Interpreter::SideEffect>> side_effects;
+      std::vector<std::unique_ptr<Interpreter::FDSideEffect>> side_effects;
       side_effects.reserve(actions.size());
       for (auto const& action : actions)
         if (auto update = dynamic_cast<Interpreter::Update const*>(action.node))

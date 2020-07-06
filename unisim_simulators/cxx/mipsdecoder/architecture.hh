@@ -60,10 +60,16 @@ namespace Mips
       virtual FCDomainValue Compute(FCMemoryState& mem, DomainElementFunctions* def) const = 0;
     };
   
-    struct SideEffect
+    struct FDSideEffect
     {
-      virtual ~SideEffect() {}
+      virtual ~FDSideEffect() {}
       virtual void Commit(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) = 0;
+    };
+    
+    struct FCSideEffect
+    {
+      virtual ~FCSideEffect() {}
+      virtual void Commit(FCMemoryState& memory, DomainElementFunctions* def) = 0;
     };
     
     struct Update : public unisim::util::symbolic::ExprNode
@@ -71,20 +77,26 @@ namespace Mips
       typedef unisim::util::symbolic::Expr Expr;
       
       virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
-      virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
+      /**DEBUG**/
+      virtual std::unique_ptr<FDSideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const = 0;
+      /**CONTRACT**/
+      virtual std::unique_ptr<FCSideEffect> Interpret(FCMemoryState& mem, DomainElementFunctions* def) const = 0;
     };
-  
+    
     struct Ctrl : public Update
     {
       virtual ~Ctrl() {}
-      
+
+      struct InterpretShouldNotBranch {};
       /**DEBUG**/
-      virtual std::unique_ptr<SideEffect> InterpretForward(FDMemoryState&, FDTarget&, FDMemoryFlags&) const override
-      { struct InterpretShouldNotBranch {}; throw  InterpretShouldNotBranch(); return 0; };
+      virtual std::unique_ptr<FDSideEffect>
+      InterpretForward(FDMemoryState&, FDTarget&, FDMemoryFlags&) const override { throw InterpretShouldNotBranch(); return 0; };
       virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const = 0;
       virtual void retrieveTargets( FDIteration& iteration ) const = 0;
       
       /**CONTRACT**/
+      virtual std::unique_ptr<FCSideEffect>
+      Interpret(FCMemoryState& mem, DomainElementFunctions* def) const override { throw InterpretShouldNotBranch(); return 0; }
       virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const = 0;
     };
   
@@ -127,7 +139,8 @@ namespace Mips
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
       int compare( Store const& rhs ) const { return int(bytes) - int(rhs.bytes); }
 
-      std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
+      std::unique_ptr<FDSideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
+      std::unique_ptr<FCSideEffect> Interpret(FCMemoryState& mem, DomainElementFunctions* def) const override;
 
       unisim::util::symbolic::Expr addr, value;
       unsigned bytes;
@@ -159,7 +172,8 @@ namespace Mips
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
       int compare( RegWrite const& rhs ) const { return reg.cmp( rhs.reg ); }
       
-      std::unique_ptr<SideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
+      std::unique_ptr<FDSideEffect> InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const override;
+      std::unique_ptr<FCSideEffect> Interpret(FCMemoryState& mem, DomainElementFunctions* def) const override;
 
       unisim::util::symbolic::Expr value;
       RegisterIndex reg;

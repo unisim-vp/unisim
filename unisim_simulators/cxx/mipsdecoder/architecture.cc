@@ -267,7 +267,7 @@ namespace Mips
   }
 
   void
-    Interpreter::Load::Repr(std::ostream& sink) const
+  Interpreter::Load::Repr(std::ostream& sink) const
   {
     sink << "Load( ";
     for (unsigned idx = 0; idx < SubCount(); ++idx)
@@ -286,13 +286,21 @@ namespace Mips
   Interpreter::FCDomainValue
   Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
   {
+    Interpreter::FCDomainValue dv_addr = Interpreter::INode::Compute(addr, mem, def);
+    
+    return Interpreter::FCDomainValue( mem.loadMultiBit(dv_addr, bytes), def, mem.env() );
+  }
+  
+  std::unique_ptr<Interpreter::FCSideEffect>
+  Interpreter::Store::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
+  {
     struct TODO {}; throw TODO();
   }
   
-  std::unique_ptr<Interpreter::SideEffect>
+  std::unique_ptr<Interpreter::FDSideEffect>
   Interpreter::Store::InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
-    struct DoStore : public Interpreter::SideEffect
+    struct DoStore : public Interpreter::FDSideEffect
     {
       DoStore(unsigned _bytes, Expr _addr, Expr _value, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
         : addr(), value(), bytes(_bytes)
@@ -320,7 +328,7 @@ namespace Mips
   Interpreter::FCDomainValue
   Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
   {
-    struct TODO {}; throw TODO();
+    return Interpreter::FCDomainValue( mem.getRegisterValueAsElement(reg.idx()), def, mem.env() );
   }
   
   void
@@ -329,10 +337,16 @@ namespace Mips
     elem = memory.getRegisterValue(reg.idx(), flags, unisim::util::forbint::debug::TIMultiBit);
   }
   
-  std::unique_ptr<Interpreter::SideEffect>
+  std::unique_ptr<Interpreter::FCSideEffect>
+  Interpreter::RegWrite::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
+  {
+    struct TODO {}; throw TODO();
+  }
+  
+  std::unique_ptr<Interpreter::FDSideEffect>
   Interpreter::RegWrite::InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
-    struct DoRegWrite : public Interpreter::SideEffect
+    struct DoRegWrite : public Interpreter::FDSideEffect
     {
       DoRegWrite(RegisterIndex _reg, Expr _value, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
         : value(), reg(_reg)
@@ -398,6 +412,7 @@ namespace Mips
           }
         else
           {
+            /* Indirect branch are not handled yet */
             struct TODO {}; throw TODO();
           }
       }
@@ -425,7 +440,9 @@ namespace Mips
   void
   Interpreter::CancelDS::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const
   {
-    struct TODO {}; throw TODO();
+    /* We should never get here since delay slots should be merge with
+       their previous instruction. */
+    struct InternalError {}; throw InternalError();
   }
   
   void

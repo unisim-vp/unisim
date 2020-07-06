@@ -158,15 +158,7 @@ public:
       assert(pfFunctions);
       return (*pfFunctions->get_size_in_bits)(deValue);
     }
-  bool may_be_zero() const
-  {
-    struct TODO {}; throw TODO();
-  }
   
-  bool may_be_nonzero() const
-  {
-    struct TODO {}; throw TODO();
-  }
   bool is_top() const
     {
       assert(pfFunctions);
