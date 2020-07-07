@@ -166,6 +166,7 @@ namespace
 
   void mips_filter_decision_vector(struct _DecisionVector* decision_vector, uint64_t target)
   {
+    // No decision vector used for now...
     struct TODO {}; throw TODO();
     // auto* decisionVector = reinterpret_cast<DecisionVector*>(decision_vector);
     // decisionVector->setToLastInstruction();

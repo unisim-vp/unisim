@@ -176,11 +176,11 @@ namespace Mips
           //       _previousInstruction = (BasicInstruction*) iteration.getPreviousInstruction(&_previousInstructionAddress, 1);
           //   }
 
-          struct TODO {}; throw TODO();
           // ComputeForward currently works with an Interpret
           // architecture, but here we work with a Iteration
           // architecture. We need to work on a common abstraction
           // layer... (most probably a virtual ScalarElement Computer)
+          struct TODO {}; throw TODO();
           
           ScalarElement se_cond/* = Interpreter::INode::ComputeForward(cond, iteration)*/;
           // ScalarElement target;
@@ -286,7 +286,15 @@ namespace Mips
     virtual void interpret( uint32_t addr, uint32_t next_addr,
                             Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
-      struct TODO {}; throw TODO();
+      std::vector<std::unique_ptr<Interpreter::FCSideEffect>> side_effects;
+      side_effects.reserve(actions.size());
+      for (auto const& action : actions)
+        if (auto update = dynamic_cast<Interpreter::Update const*>(action.node))
+          side_effects.push_back(update->Interpret(mem, def));
+        else
+          { struct NotAnUpdate {}; throw NotAnUpdate(); }
+      for (auto const& side_effect : side_effects)
+        side_effect->Commit(mem, def);
     }
 
     virtual void retrieveTargets(Interpreter::FDIteration& iteration) const override

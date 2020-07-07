@@ -284,17 +284,11 @@ namespace Mips
   }
   
   Interpreter::FCDomainValue
-  Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
+  Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState& memory, DomainElementFunctions* def) const
   {
-    Interpreter::FCDomainValue dv_addr = Interpreter::INode::Compute(addr, mem, def);
+    Interpreter::FCDomainValue dv_addr = Interpreter::INode::Compute(addr, memory, def);
     
-    return Interpreter::FCDomainValue( mem.loadMultiBit(dv_addr, bytes), def, mem.env() );
-  }
-  
-  std::unique_ptr<Interpreter::FCSideEffect>
-  Interpreter::Store::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    struct TODO {}; throw TODO();
+    return Interpreter::FCDomainValue( memory.loadMultiBit(dv_addr, bytes), def, memory.env() );
   }
   
   std::unique_ptr<Interpreter::FDSideEffect>
@@ -319,6 +313,25 @@ namespace Mips
     return std::make_unique<DoStore>(bytes,addr,value, memory, dest, flags);
   }
   
+  std::unique_ptr<Interpreter::FCSideEffect>
+  Interpreter::Store::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
+  {
+    struct DoStore : public Interpreter::FCSideEffect
+    {
+      DoStore(unsigned _bytes, Expr _addr, Expr _value, FCMemoryState& memory, DomainElementFunctions* def)
+        : addr(INode::Compute(_addr, memory, def)), value(INode::Compute(_value, memory, def)), bytes(_bytes)
+      {}
+      virtual void Commit(FCMemoryState& memory, DomainElementFunctions* def) override
+      {
+        memory.valueStore(addr, value);
+      }
+      FCDomainValue addr, value;
+      unsigned bytes;
+    };
+
+    return std::make_unique<DoStore>(bytes, addr, value, memory, def);
+  }
+  
   void
   Interpreter::RegRead::Repr(std::ostream& sink) const
   {
@@ -326,21 +339,15 @@ namespace Mips
   }
 
   Interpreter::FCDomainValue
-  Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
+  Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState& memory, DomainElementFunctions* def) const
   {
-    return Interpreter::FCDomainValue( mem.getRegisterValueAsElement(reg.idx()), def, mem.env() );
+    return Interpreter::FCDomainValue( memory.getRegisterValueAsElement(reg.idx()), def, memory.env() );
   }
   
   void
   Interpreter::RegRead::ComputeForward(FDScalarElement& elem, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
   {
     elem = memory.getRegisterValue(reg.idx(), flags, unisim::util::forbint::debug::TIMultiBit);
-  }
-  
-  std::unique_ptr<Interpreter::FCSideEffect>
-  Interpreter::RegWrite::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    struct TODO {}; throw TODO();
   }
   
   std::unique_ptr<Interpreter::FDSideEffect>
@@ -362,6 +369,25 @@ namespace Mips
     };
     
     return std::make_unique<DoRegWrite>(reg, value, memory, dest, flags);
+  }
+  
+  std::unique_ptr<Interpreter::FCSideEffect>
+  Interpreter::RegWrite::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
+  {
+    struct DoRegWrite : public Interpreter::FCSideEffect
+    {
+      DoRegWrite(RegisterIndex _reg, Expr _value, FCMemoryState& memory, DomainElementFunctions* def)
+        : value(INode::Compute(_value, memory, def)), reg(_reg)
+      {}
+      virtual void Commit(FCMemoryState& memory, DomainElementFunctions* def) override
+      {
+        memory.setRegisterValue(reg.idx(), value);
+      }
+      FCDomainValue value;
+      RegisterIndex reg;
+    };
+    
+    return std::make_unique<DoRegWrite>(reg, value, memory, def);
   }
   
   void
@@ -428,9 +454,9 @@ namespace Mips
   }
 
   void
-  Interpreter::Goto::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const
+  Interpreter::Goto::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& memory, DomainElementFunctions* def) const
   {
-    FCDomainValue addr = INode::Compute(target , mem, def);
+    FCDomainValue addr = INode::Compute(target , memory, def);
     uint32_t addr_as_uint32;
     if (addr.is_constant(addr_as_uint32))
       addresses.insert(addr_as_uint32);
@@ -438,7 +464,7 @@ namespace Mips
 
 
   void
-  Interpreter::CancelDS::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const
+  Interpreter::CancelDS::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& memory, DomainElementFunctions* def) const
   {
     /* We should never get here since delay slots should be merge with
        their previous instruction. */
