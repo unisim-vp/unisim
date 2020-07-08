@@ -291,8 +291,8 @@ namespace Mips
       if (iteration.isFamilyRequired())
         {
           Interpreter::FDIteration::FamilyInstruction family;
-          if (cfg.good()) dynamic_cast<Interpreter::Ctrl const&>( *cfg ).retrieveFamily(family, operation->GetAddr());
-          else            family.setSequential();
+          if (dynamic_cast<Cont const*>(cfg.node)) family.setSequential();
+          else dynamic_cast<Interpreter::Ctrl const&>( *cfg ).retrieveFamily(family, operation->GetAddr());
           iteration.setFamily(family);
         }
     }
@@ -328,7 +328,7 @@ namespace Mips
     FullInstruction::Operation* op = idecoder.NCDecode(addr, unisim::util::endian::Host2LittleEndian(words[0]));
     std::unique_ptr<FullInstruction> insn = std::make_unique<FullInstruction>( op_ptr(op), 4 );
 
-    if (insn->cfg.good())
+    if (not dynamic_cast<Cont const*>(insn->cfg.node))
       {
         struct DBOp : public FullInstruction::Operation
         {
