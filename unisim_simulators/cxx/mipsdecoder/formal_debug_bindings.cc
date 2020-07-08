@@ -69,6 +69,12 @@ extern "C"
         unisim::util::forbint::debug::ScalarElement value = flags.newTop(32);
         memory.setRegisterValue(reg.idx(), value, flags);
       }
+
+    /* Concretizing SP */
+    {
+      unisim::util::forbint::debug::ScalarElement value = flags.newMultiBitConstant((uint64_t)0x80000000, 32);
+      memory.setRegisterValue(Mips::RegisterIndex("sp").idx(), value, flags);
+    }
   }
 
   DLL_API void
