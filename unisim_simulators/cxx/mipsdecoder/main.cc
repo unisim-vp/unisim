@@ -32,11 +32,23 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include "instructions.hh"
 #include <iostream>
 
 int
 main( int argc, char** argv )
 {
-  std::cout << "Test Main!\n";
+  //uint32_t words[] = {0x01001104, 0x00000000};
+  uint32_t words[] = {0x04110001, 0x00000000};
+
+  Mips::Decoder decoder;
+  Mips::Instruction* insn = decoder.decode(&words[0], 0x00400344);
+
+  insn->disasm( std::cout );
+  std::cout << std::endl;
+  
+  delete insn;
+  
+  //std::cout << "Test Main!\n";
   return 0;
 }

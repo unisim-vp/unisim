@@ -21,10 +21,10 @@ namespace Mips
     {
       // Get actions
       std::unique_ptr<Interpreter::ActionNode> coderoot = std::make_unique<Interpreter::ActionNode>();
-      Interpreter reference(op->GetAddr(), coderoot.get());
+      Interpreter reference(operation->GetAddr(), coderoot.get());
       for (bool end = false; not end;)
         {
-          Interpreter state(op->GetAddr(), coderoot.get());
+          Interpreter state(operation->GetAddr(), coderoot.get());
           operation->execute( state );
           end = state.close( reference );
         }
