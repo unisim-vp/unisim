@@ -358,7 +358,8 @@ namespace Mips
           virtual void execute( Interpreter& arch ) const override
           {
             ops[0]->execute( arch );
-            if (arch.in_delay_slot) return;
+            if (arch.in_delay_slot) /* if true, delay slot has been canceled */
+              return;
             arch.in_delay_slot = true;
             arch.current_address = Interpreter::U32(ops[1]->GetAddr());
             ops[1]->execute( arch );
