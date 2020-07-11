@@ -87,17 +87,8 @@ namespace Mips
     {
       virtual ~Ctrl() {}
 
-      struct InterpretShouldNotBranch {};
       /**DEBUG**/
-      virtual std::unique_ptr<FDSideEffect>
-      InterpretForward(FDMemoryState&, FDTarget&, FDMemoryFlags&) const override { throw InterpretShouldNotBranch(); return 0; };
-      virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const = 0;
-      virtual void retrieveTargets( FDIteration& iteration ) const = 0;
-      
       /**CONTRACT**/
-      virtual std::unique_ptr<FCSideEffect>
-      Interpret(FCMemoryState& mem, DomainElementFunctions* def) const override { throw InterpretShouldNotBranch(); return 0; }
-      virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const = 0;
     };
   
     struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
@@ -312,8 +303,10 @@ namespace Mips
     //   =====================================================================
     
     U32  GetPC() { return current_address; }
-    struct Goto : public Ctrl
+    struct Goto : public Update
     {
+      struct InterpretShouldNotBranch {};
+      
       Goto( U32 const& _target, branch_type_t _btype ) : target(_target.expr), btype(_btype) {}
       virtual Goto* Mutate() const override { return new Goto(*this); }
       virtual unsigned SubCount() const override { return 1; }
@@ -323,11 +316,12 @@ namespace Mips
       int compare( Goto const& rhs ) const { return int(btype) - int(rhs.btype); }
       
       /**DEBUG**/
-      virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const override;
-      virtual void retrieveTargets( FDIteration& iteration ) const override;
-
+      virtual std::unique_ptr<FDSideEffect>
+      InterpretForward(FDMemoryState&, FDTarget&, FDMemoryFlags&) const override { throw InterpretShouldNotBranch(); return 0; };
+      
       /**CONTRACT**/
-      virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions*) const override;
+      virtual std::unique_ptr<FCSideEffect>
+      Interpret(FCMemoryState& mem, DomainElementFunctions* def) const override { throw InterpretShouldNotBranch(); return 0; }
       
       Expr target;
       branch_type_t btype;
@@ -339,25 +333,9 @@ namespace Mips
       path->add_update( new Goto(target,btype) );
     }
     
-    struct CancelDS : public Ctrl
-    {
-      virtual CancelDS* Mutate() const override { return new CancelDS(*this); }
-      virtual unsigned SubCount() const override { return 0; }
-      virtual void Repr(std::ostream& sink) const override;
-      virtual int cmp( ExprNode const& rhs ) const override { return 0; }
-      
-      /**DEBUG**/
-      virtual void retrieveFamily( FDIteration::FamilyInstruction& family, uint32_t origin ) const override {}
-      virtual void retrieveTargets( FDIteration& iteration ) const override { struct Issue {}; throw Issue (); }
-      
-      /**CONTRACT**/
-      virtual void next_addresses(std::set<unsigned int>& addresses, FCMemoryState& mem, DomainElementFunctions* def) const override;
-    };
-    
     void CancelDelaySlot()
     {
       if (in_delay_slot) { struct Ouch {}; throw Ouch(); }
-      path->add_update(new CancelDS);
       in_delay_slot = true;
     }
 

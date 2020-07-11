@@ -391,60 +391,6 @@ namespace Mips
   }
   
   void
-  Interpreter::Goto::retrieveFamily( unisim::util::forbint::debug::Iteration::FamilyInstruction& family, uint32_t origin ) const
-  {
-    switch (btype)
-      {
-      case B_JMP:
-        {
-          Expr mt(target);
-          if (auto addr = mt.ConstSimplify())
-            {
-              uint32_t destination = addr->Get( uint32_t() );
-              if (destination > origin)
-                family.setForwardJump();
-              else
-                family.setBackwardJump();
-            }
-          else
-            family.setComputedJump();
-        } break;
-      case B_CALL: family.setCall(); break;
-      case B_RET:  family.setReturn(); break;
-      case B_EXC:  family.setBranch(); break;
-      case B_DBG:  family.setBranch(); break;
-      case B_RFE:  family.setReturn(); break;
-      }
-  }
-
-  void
-  Interpreter::Goto::retrieveTargets( unisim::util::forbint::debug::Iteration& iteration ) const
-  {
-    if (iteration.mayFollowGraph())
-      {
-        if (!iteration.localAdvanceOnInstruction())
-          {
-            if (!iteration.advanceOnCallInstruction() && !iteration.advanceOnNextGraphInstruction()) {
-              iteration.assumeAcceptEmptyDestination();
-            }
-          }
-      }
-    else
-      {
-        if (auto cnb = target->AsConstNode())
-          {
-            uint64_t address = cnb->Get(uint32_t());
-            iteration.addTarget(&address, 1);
-          }
-        else
-          {
-            /* Indirect branch are not handled yet */
-            struct TODO {}; throw TODO();
-          }
-      }
-  }
-
-  void
   Interpreter::Goto::Repr(std::ostream& sink) const
   {
     sink << "Goto( ";
@@ -453,29 +399,4 @@ namespace Mips
     sink << unsigned(btype) << " )";
   }
 
-  void
-  Interpreter::Goto::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    FCDomainValue addr = INode::Compute(target , memory, def);
-    uint32_t addr_as_uint32;
-    if (addr.is_constant(addr_as_uint32))
-      addresses.insert(addr_as_uint32);
-  }
-
-
-  void
-  Interpreter::CancelDS::next_addresses(std::set<unsigned int>& addresses, FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    /* We should never get here since delay slots should be merge with
-       their previous instruction. */
-    struct InternalError {}; throw InternalError();
-  }
-  
-  void
-  Interpreter::CancelDS::Repr(std::ostream& sink) const
-  {
-    sink << "CancelDS";
-  }
-
-  
 }
