@@ -119,6 +119,12 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
+    bool compute_branch_target( uint32_t& address, Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
+    {
+      Interpreter::FCDomainValue addr = Interpreter::INode::Compute(branch.dest, mem, def);
+      return addr.is_constant(address);
+    }
+
     void next_addresses(std::set<unsigned int>& addresses,
                         Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
@@ -129,22 +135,105 @@ namespace Mips
       
       if (branch.dest.good())
         {
-          Interpreter::FCDomainValue addr = Interpreter::INode::Compute(branch.dest, mem, def);
-          uint32_t addr_as_uint32;
-          if (addr.is_constant(addr_as_uint32))
+          uint32_t addr_as_uint32 = 0;
+          if (compute_branch_target(addr_as_uint32, mem, def))
             addresses.insert(addr_as_uint32);
-        }
-      else
-        {
-          /* Should inform that a target wasn't computable in current
-           * memory state.
-           */
+          else
+            {
+              /* Should inform that a target wasn't computable in current
+               * memory state.
+               */
+            }
         }
     }
 
     virtual void interpret( uint32_t addr, uint32_t next_addr,
                             Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
+      uint32_t addrs[2] = {operation->GetAddr() + size, 0};
+      bool bt_known = false;
+      if (branch.dest.good())
+        bt_known = compute_branch_target(addrs[1], mem, def);
+
+      struct Ouch {};
+      
+      if (branch.cond.good())
+        {
+          bool cond = false;
+          if (bt_known and next_addr == addrs[1]) cond = true;
+          else if (        next_addr == addrs[0]) cond = false;
+          else throw Ouch();
+
+          if (auto comp = branch.cond->AsOpNode())
+            {
+              using unisim::util::symbolic::Op;
+
+              if (comp->SubCount() != 2)
+                throw Ouch();
+              
+              /* Getting compared registers (note 0 is effectively r0
+               * which is a zeroed register)*/
+              unsigned regs[2] = {0,0};
+              for (unsigned alt = 0; alt < 2; ++alt)
+                {
+                  auto const& op = comp->GetSub(alt);
+                  if (auto z = op->AsConstNode())
+                    {
+                      if (z->Get(uint32_t()) != 0) throw Ouch(); /* in mips comparisons, constant is always zero */
+                      regs[alt] = 0;
+                    }
+                  else if (Interpreter::RegRead const* reg = dynamic_cast<Interpreter::RegRead const*>( op.node ))
+                    {
+                      regs[alt] = reg->reg.idx();
+                    }
+                  else
+                    throw Ouch();
+                }
+
+              /* TODO: need to signal constraint on register operands (0 is the zero constant) */
+              switch (comp->op.code)
+                {
+                default:
+                  throw Ouch();
+                case Op::Teq: /* operands are equals if cond is true */
+                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                  break;
+                case Op::Tne: /* operands are not equals if cond is true */
+                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                  break;
+
+                  /*in the following, one operand should be 0 (most probably the second) */
+                case Op::Tgt: /* operand0 is greater than operand1 (signed) */
+                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                  break;
+                case Op::Tge: /* operand0 is greater or equal to operand1 (signed) */
+                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                  break;
+                case Op::Tlt: /* operand0 is less than operand1 (signed) */
+                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                  break;
+                case Op::Tle: /* operand0 is less or equal to operand1 (signed) */
+                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                  break;
+                  
+                }
+            }
+          else
+            {
+              throw Ouch();
+            }
+        }      
+      else if (branch.dest.good())
+        {
+          if (not bt_known or next_addr != addrs[1])
+            throw Ouch();
+        }
+      else
+        {
+          if (next_addr != addrs[0])
+            throw Ouch();
+        }
+      
       std::vector<std::unique_ptr<Interpreter::FCSideEffect>> side_effects;
       side_effects.reserve(actions.size());
       for (auto const& action : actions)

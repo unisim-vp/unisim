@@ -202,6 +202,7 @@ namespace
     memstate.setEvaluationEnvironment(env);
     insn->next_addresses(addresses, memstate, &proc->dftable);
 
+    // realloc target_addresses to the needed size
     for (int needed = addresses.size(); target_addresses->addresses_array_size < needed;)
       {
         target_addresses->addresses =
@@ -209,9 +210,8 @@ namespace
                                                 &target_addresses->addresses_array_size, target_addresses->address_container);
       }
     
-    target_addresses->addresses_length = 0;
-    for (auto addr : addresses)
-      target_addresses->addresses[target_addresses->addresses_length++] = addr;
+    target_addresses->addresses_length = addresses.size();
+    std::copy(addresses.begin(), addresses.end(), &target_addresses->addresses[0] );
     
     return true;
   }
