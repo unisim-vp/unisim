@@ -222,8 +222,11 @@ struct _InterpretParametersFunctions {
   struct _Element* (*create_float_zero)(struct _InterpretParameters* parameters, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_float_one)(struct _InterpretParameters* parameters, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_float_two)(struct _InterpretParameters* parameters, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
+  struct _Element* (*create_float_constant)(struct _InterpretParameters* parameters, double value, int size_exponent_in_bits, int size_mantissa_in_bits, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_byte)(struct _InterpretParameters* parameters, char value, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_top)(struct _InterpretParameters* parameters, int size_in_bits, struct _ElementFunctions** elementFunctions);
+  struct _Element* (*create_top_float)(struct _InterpretParameters* parameters, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
+  struct _Element* (*create_top_bit)(struct _InterpretParameters* parameters, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_interval)(struct _InterpretParameters* parameters, struct _Element* min, struct _Element* max, struct _ElementFunctions** elementFunctions);
   bool (*is_constant)(struct _InterpretParameters* parameters, struct _Element* element, int* result_size_in_bits);
   bool (*is_constant_disjunction)(struct _InterpretParameters* parameters, struct _Element** element, int* number_of_elements, int* result_size_in_bits);
@@ -349,12 +352,15 @@ struct _IterationFunctions {
   struct _Element* (*create_multibit_constant_64)(struct _Iteration* iteration, unsigned low, unsigned high, int size_in_bits, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_multibit_constant_32)(struct _Iteration* iteration, uint64_t value, int size_in_bits, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_multibit_constant)(struct _Iteration* iteration, uint64_t* value, int size_in_bits, struct _ElementFunctions** elementFunctions);
+  struct _Element* (*create_float_constant)(struct _Iteration* iteration, double value, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_bit_constant)(struct _Iteration* iteration, bool value, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_float_zero)(struct _Iteration* iteration, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_float_one)(struct _Iteration* iteration, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_float_two)(struct _Iteration* iteration, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_byte)(struct _Iteration* iteration, char value, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_top)(struct _Iteration* iteration, int size_in_bits, struct _ElementFunctions** elementFunctions);
+  struct _Element* (*create_top_float)(struct _Iteration* iteration, int size_exponent, int size_mantissa, struct _ElementFunctions** elementFunctions);
+  struct _Element* (*create_top_bit)(struct _Iteration* iteration, struct _ElementFunctions** elementFunctions);
   struct _Element* (*create_interval)(struct _Iteration* iteration, struct _Element* min, struct _Element* max, struct _ElementFunctions** elementFunctions);
 
   struct _Element* (*get_register_value)(struct _Iteration* iteration, int registerIndex,

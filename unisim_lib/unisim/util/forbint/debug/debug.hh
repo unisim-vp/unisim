@@ -1308,12 +1308,15 @@ public:
       return newMultiBitConstant(&value, size);
     }
   ScalarElement newMultiBitConstant(uint64_t* value, int size) const;
+  ScalarElement newFloatConstant(double val, int sizeExponent, int sizeMantissa) const;
   ScalarElement newBitConstant(bool value) const;
   ScalarElement newZeroFloat(int size_exponent, int size_mantissa) const;
   ScalarElement newOneFloat(int size_exponent, int size_mantissa) const;
   ScalarElement newTwoFloat(int size_exponent, int size_mantissa) const;
   ScalarElement newByte(char value) const;
   ScalarElement newTop(int size) const;
+  ScalarElement newTopFloat(int sizeExponent, int sizeMantissa) const;
+  ScalarElement newTopBit() const;
   ScalarElement newInterval(ScalarElement& min, ScalarElement& max) const;
   ScalarElement newByteInterval(char min, char max) const;
   bool isConstant(const ScalarElement& element, int& size) const;
@@ -1825,6 +1828,8 @@ public:
   ScalarElement newTwoFloat(int size_exponent, int size_mantissa) const;
   ScalarElement newByte(char value) const;
   ScalarElement newTop(int size) const;
+  ScalarElement newTopFloat(int sizeExponent, int sizeMantissa) const;
+  ScalarElement newTopBit() const;
   ScalarElement newInterval(ScalarElement& min, ScalarElement& max) const;
   ScalarElement newByteInterval(char min, char max) const;
   /* end -- only for DBA */
@@ -1838,6 +1843,7 @@ public:
       return newMultiBitConstant(&value, size);
     }
   ScalarElement newMultiBitConstant(uint64_t* value, int size) const;
+  ScalarElement newFloatConstant(double val, int sizeExponent, int sizeMantissa) const;
   ScalarElement newBitConstant(bool value) const;
   ScalarElement getRegisterValue(int registerIndex, TypeInfo type) const;
   ScalarElement loadValue(ScalarElement& indirectAddress, int size) const;

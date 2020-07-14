@@ -235,7 +235,13 @@ class MemoryState {
       {  peDomainEnv = &domainEnvironment; }
 
    DomainEvaluationEnvironment* env() const { return peDomainEnv; }
-
+   void clearEnv()
+      {  if (peDomainEnv) {
+            peDomainEnv->warnings = 0;
+            peDomainEnv->emptyResult = false;
+            peDomainEnv->verdict = DEVNotPerformed;
+         }
+      }
    void setRegisterValue(int registerIndex, DomainValue& value) const
       {
          assert(value.isValid());

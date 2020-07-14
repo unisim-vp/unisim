@@ -86,38 +86,52 @@ namespace Mips
 
   void
   Interpreter::INode::ComputeForward(unisim::util::symbolic::Expr const& expr,
-                                     FDScalarElement& res, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
+                                     ComputationResult& res)
   {
     unsigned subcount = expr->SubCount();
-    typedef unisim::util::forbint::debug::MultiBit::Operation MultiBitOperation;
-    typedef unisim::util::forbint::debug::MultiBit::CastMultiBitOperation CastMultiBitOperation;
-    
     if (auto node = expr->AsConstNode())
       {
-        ScalarType dst_type( node->GetType() );
-        res = flags.newMultiBitConstant(node->Get( uint64_t() ), dst_type.bitsize);
+        ScalarType valtype( node->GetType() );
+        if (valtype.is_integer)
+          {
+            if (valtype.bitsize == 1) {
+              res.setBoolResultFromConstant(node->Get( bool() ));
+              return;
+            }
+            uint64_t val = node->Get( uint64_t() );
+            res.setMultiBitResultFromConstant(&val, valtype.bitsize, valtype.is_signed);
+            return;
+          }
+        typedef long double float_container;
+        res.setMultiFloatResultFromConstant(node->Get(float_container()), int(valtype.bitsize));
         return;
       }
     else if (auto node = expr->AsOpNode())
       {
         using unisim::util::symbolic::Op;
-        
-        Interpreter::INode::ComputeForward(expr->GetSub(0), res, memory, dest, flags);
-        
+        Interpreter::INode::ComputeForward(expr->GetSub(0), res);
         if (subcount == 1)
           {
             switch (node->op.code)
               {
-              case Op::Not: res.applyAssign(MultiBitOperation().setBitNegate(), flags.scalarPart()); return;
-              case Op::Neg: res.applyAssign(MultiBitOperation().setOppositeSigned(), flags.scalarPart()); return;
+              case Op::Not:
+                  if (ScalarType(expr.node->GetType()).bitsize == 1)
+                     res.applyBitNegate();
+                  else
+                     res.applyMultiBitNegate();
+                  return;
+              case Op::Neg:
+                  res.applyMultiBitOpposite();
               case Op::Cast:
                 {
                   auto const& cnb = dynamic_cast<unisim::util::symbolic::CastNodeBase const&>( *expr.node );
-                  ScalarType dst( cnb.GetType() );
-                  res.applyAssign(CastMultiBitOperation().setSize(dst.bitsize), flags.scalarPart());
+                  ScalarType dst( cnb.GetType() ), src ( cnb.GetSrcType() );
+                  if (dst.is_integer && src.is_integer)
+                    res.applyMultiBitCast(src.bitsize > 1, dst.bitsize > 1, dst.is_signed, dst.bitsize);
+                  else
+                    { struct NotYet {}; throw NotYet(); }
                 }
                 return;
-                
               default:
                 break;
               }
@@ -125,30 +139,93 @@ namespace Mips
           }
         else if (subcount == 2)
           {
-            // Interpreter::INode::ComputeForward(expr->GetSub(0), res, memory, dest, flags);
-            FDScalarElement arg;
-            Interpreter::INode::ComputeForward(expr->GetSub(1), arg, memory, dest, flags);
+            std::unique_ptr<ComputationResult> arg(res.Mutate());
+            Interpreter::INode::ComputeForward(expr->GetSub(1), *arg);
             
+            ScalarType valtype( node->GetType() );
             switch (node->op.code)
               {
-              case Op::Xor: res.applyAssign(MultiBitOperation().setBitExclusiveOr(), arg, flags.scalarPart()); return;
-              case Op::And: res.applyAssign(MultiBitOperation().setBitAnd(), arg, flags.scalarPart()); return;
-              case Op::Or:  res.applyAssign(MultiBitOperation().setBitOr(), arg, flags.scalarPart()); return;
-              case Op::Lsl: res.applyAssign(MultiBitOperation().setLeftShift(), arg, flags.scalarPart()); return;
-              case Op::Asr: res.applyAssign(MultiBitOperation().setArithmeticRightShift(), arg, flags.scalarPart()); return;
-              case Op::Lsr: res.applyAssign(MultiBitOperation().setLogicalRightShift(), arg, flags.scalarPart()); return;
-              case Op::Add: res.applyAssign(MultiBitOperation().setPlusSigned(), arg, flags.scalarPart()); return;
-              case Op::Sub: res.applyAssign(MultiBitOperation().setMinusSigned(), arg, flags.scalarPart()); return;
-              case Op::Teq: res.applyAssign(MultiBitOperation().setCompareEqual(), arg, flags.scalarPart()); return;
-              case Op::Tne: res.applyAssign(MultiBitOperation().setCompareDifferent(), arg, flags.scalarPart()); return;
-              case Op::Tge: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualSigned(), arg, flags.scalarPart()); return;
-              case Op::Tgt: res.applyAssign(MultiBitOperation().setCompareGreaterSigned(), arg, flags.scalarPart()); return;
-              case Op::Tle: res.applyAssign(MultiBitOperation().setCompareLessOrEqualSigned(), arg, flags.scalarPart()); return;
-              case Op::Tlt: res.applyAssign(MultiBitOperation().setCompareLessSigned(), arg, flags.scalarPart()); return;
-              case Op::Tgeu: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualUnsigned(), arg, flags.scalarPart()); return;
-              case Op::Tgtu: res.applyAssign(MultiBitOperation().setCompareGreaterUnsigned(), arg, flags.scalarPart()); return;
-              case Op::Tleu: res.applyAssign(MultiBitOperation().setCompareLessOrEqualUnsigned(), arg, flags.scalarPart()); return;
-              case Op::Tltu: res.applyAssign(MultiBitOperation().setCompareLessUnsigned(), arg, flags.scalarPart()); return;
+              case Op::Xor:
+                if (valtype.bitsize == 1)
+                  res.applyBitExclusiveOr(*arg);
+                else
+                  res.applyMultiBitExclusiveOr(*arg);
+                return;
+              case Op::And:
+                if (valtype.bitsize == 1)
+                  res.applyBitAnd(*arg);
+                else
+                  res.applyMultiBitAnd(*arg);
+                return;
+              case Op::Or:
+                if (valtype.bitsize == 1)
+                  res.applyBitOr(*arg);
+                else
+                  res.applyMultiBitOr(*arg);
+                return;
+              case Op::Lsl: res.applyMultiBitLeftShift(*arg); return;
+              case Op::Asr: res.applyMultiBitArithmeticRightShift(*arg); return;
+              case Op::Lsr: res.applyMultiBitLogicalRightShift(*arg); return;
+              case Op::Add:
+                if (valtype.is_integer)
+                  res.applyMultiBitPlusSigned(*arg);
+                else
+                  res.applyMultiFloatPlus(*arg);
+                return;
+              case Op::Sub:
+                if (valtype.is_integer)
+                  res.applyMultiBitMinusSigned(*arg);
+                else
+                  res.applyMultiFloatMinus(*arg);
+                return;
+              case Op::Teq:
+                if (valtype.is_integer) {
+                  if (valtype.bitsize == 1)
+                    res.applyBitCompareEqual(*arg);
+                  else
+                    res.applyMultiBitCompareEqual(*arg);
+                }
+                else
+                   res.applyMultiFloatCompareEqual(*arg);
+                return;
+              case Op::Tne:
+                if (valtype.is_integer) {
+                  if (valtype.bitsize == 1)
+                    res.applyBitCompareDifferent(*arg);
+                  else
+                    res.applyMultiBitCompareDifferent(*arg);
+                }
+                else
+                   res.applyMultiFloatCompareDifferent(*arg);
+                return;
+              case Op::Tge:
+                if (valtype.is_integer)
+                   res.applyMultiBitCompareGreaterOrEqualSigned(*arg);
+                else
+                   res.applyMultiFloatCompareGreaterOrEqual(*arg);
+                return;
+              case Op::Tgt:
+                if (valtype.is_integer)
+                   res.applyMultiBitCompareGreaterSigned(*arg);
+                else
+                   res.applyMultiFloatCompareGreater(*arg);
+                return;
+              case Op::Tle:
+                if (valtype.is_integer)
+                   res.applyMultiBitCompareLessOrEqualSigned(*arg);
+                else
+                   res.applyMultiFloatCompareLessOrEqual(*arg);
+                return;
+              case Op::Tlt:
+                if (valtype.is_integer)
+                   res.applyMultiBitCompareLessSigned(*arg);
+                else
+                   res.applyMultiFloatCompareLess(*arg);
+                return;
+              case Op::Tgeu: res.applyMultiBitCompareGreaterOrEqualUnsigned(*arg); return;
+              case Op::Tgtu: res.applyMultiBitCompareGreaterUnsigned(*arg); return;
+              case Op::Tleu: res.applyMultiBitCompareLessOrEqualUnsigned(*arg); return;
+              case Op::Tltu: res.applyMultiBitCompareLessUnsigned(*arg); return;
 
               default: break;
               }
@@ -158,112 +235,10 @@ namespace Mips
       }
     else if (auto node = dynamic_cast<Interpreter::INode const*>(expr.node))
       {
-        node->ComputeForward(res, memory, dest, flags);
+        node->ComputeForward(res);
         return;
       }
 
-  }
-
-  Interpreter::FCDomainValue
-  Interpreter::INode::Compute(Expr const& expr, FCMemoryState& memory, DomainElementFunctions* def)
-  {
-    unsigned subcount = expr->SubCount();
-    
-    if (auto node = expr->AsConstNode())
-      {
-        ScalarType valtype( node->GetType() );
-
-        if (valtype.is_integer)
-          {
-            if (valtype.bitsize == 1)
-              return Interpreter::FCDomainValue( def->bit_create_constant(node->Get( bool() )), def, memory.env() );
-            DomainIntegerConstant divalue{int(valtype.bitsize),valtype.is_signed,node->Get(uint64_t())};
-            return Interpreter::FCDomainValue( def->multibit_create_constant(divalue), def, memory.env() );
-          }
-        //typedef long double float_container;
-        typedef double float_container;
-        DomainFloatingPointConstant dfpvalue{int(valtype.bitsize), node->Get(float_container())};
-        return Interpreter::FCDomainValue( def->multifloat_create_constant(dfpvalue), def, memory.env() );
-      }
-    else if (auto node = expr->AsOpNode())
-      {
-        using unisim::util::symbolic::Op;
-        
-        Interpreter::FCDomainValue res = Interpreter::INode::Compute(expr->GetSub(0), memory, def);
-        
-        if (subcount == 1)
-          {
-            switch (node->op.code)
-              {                
-              case Op::Not:
-                {
-                  if (res.getSizeInBits() == 1) (*def->bit_unary_apply_assign)(&res.svalue(),     DBUONegate, memory.env());
-                  else                     (*def->multibit_unary_apply_assign)(&res.svalue(), DMBUOBitNegate, memory.env());
-                  return res;
-                }
-              case Op::Neg:
-                {
-                  (*def->multibit_unary_apply_assign)(&res.svalue(), DMBUOOppositeSigned, memory.env());
-                  return res;
-                }
-              case Op::Cast:
-                {
-                  auto const& cnb = dynamic_cast<unisim::util::symbolic::CastNodeBase const&>( *expr.node );
-                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
-                  if (src.bitsize == 1)
-                    res.assign( (*def->bit_create_cast_multibit)(res.value(), dst.bitsize, memory.env()) );
-                  else if (dst.bitsize == 1)
-                    res.assign( (*def->multibit_create_cast_bit)(res.value(), memory.env()) );
-                  else if (src.is_integer and dst.is_integer)
-                    res.assign( (*def->multibit_create_cast_multibit)(res.value(), dst.bitsize, dst.is_signed, memory.env()) );
-                  else
-                    break;
-                  return res;
-                }
-                
-              default:
-                break;
-              }
-            
-          }
-        else if (subcount == 2)
-          {
-      //       // Interpreter::INode::ComputeForward(expr->GetSub(0), res, memory, dest, flags);
-      //       FDScalarElement arg;
-      //       Interpreter::INode::ComputeForward(expr->GetSub(1), arg, memory, dest, flags);
-            
-      //       switch (node->op.code)
-      //         {
-      //         case Op::Xor: res.applyAssign(MultiBitOperation().setBitExclusiveOr(), arg, flags.scalarPart()); return;
-      //         case Op::And: res.applyAssign(MultiBitOperation().setBitAnd(), arg, flags.scalarPart()); return;
-      //         case Op::Or:  res.applyAssign(MultiBitOperation().setBitOr(), arg, flags.scalarPart()); return;
-      //         case Op::Lsl: res.applyAssign(MultiBitOperation().setLeftShift(), arg, flags.scalarPart()); return;
-      //         case Op::Asr: res.applyAssign(MultiBitOperation().setArithmeticRightShift(), arg, flags.scalarPart()); return;
-      //         case Op::Lsr: res.applyAssign(MultiBitOperation().setLogicalRightShift(), arg, flags.scalarPart()); return;
-      //         case Op::Add: res.applyAssign(MultiBitOperation().setPlusSigned(), arg, flags.scalarPart()); return;
-      //         case Op::Sub: res.applyAssign(MultiBitOperation().setMinusSigned(), arg, flags.scalarPart()); return;
-      //         case Op::Teq: res.applyAssign(MultiBitOperation().setCompareEqual(), arg, flags.scalarPart()); return;
-      //         case Op::Tne: res.applyAssign(MultiBitOperation().setCompareDifferent(), arg, flags.scalarPart()); return;
-      //         case Op::Tge: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualSigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tgt: res.applyAssign(MultiBitOperation().setCompareGreaterSigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tle: res.applyAssign(MultiBitOperation().setCompareLessOrEqualSigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tlt: res.applyAssign(MultiBitOperation().setCompareLessSigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tgeu: res.applyAssign(MultiBitOperation().setCompareGreaterOrEqualUnsigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tgtu: res.applyAssign(MultiBitOperation().setCompareGreaterUnsigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tleu: res.applyAssign(MultiBitOperation().setCompareLessOrEqualUnsigned(), arg, flags.scalarPart()); return;
-      //         case Op::Tltu: res.applyAssign(MultiBitOperation().setCompareLessUnsigned(), arg, flags.scalarPart()); return;
-            
-      //         default: break;
-      //         }
-          }
-            
-        { struct NotYet {}; throw NotYet(); }
-      }
-    else if (auto node = dynamic_cast<Interpreter::INode const*>(expr.node))
-      {
-        return node->Compute(memory, def);
-      }
-    return Interpreter::FCDomainValue();
   }
 
   void
@@ -276,60 +251,35 @@ namespace Mips
   }
 
   void
-  Interpreter::Load::ComputeForward(FDScalarElement& elem, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
+  Interpreter::Load::ComputeForward(ComputationResult& res) const
   {
     FDScalarElement address;
-    INode::ComputeForward(addr, address, memory, dest, flags);
-    elem = memory.loadValue(address, bytes*8, flags);
+    INode::ComputeForward(addr, res);
+    res.loadValue(bytes*8);
   }
   
-  Interpreter::FCDomainValue
-  Interpreter::Load::Compute(Mips::Interpreter::FCMemoryState& memory, DomainElementFunctions* def) const
+  std::unique_ptr<Interpreter::SideEffect>
+  Interpreter::Store::InterpretForward(ComputationResult& computationUnit) const
   {
-    Interpreter::FCDomainValue dv_addr = Interpreter::INode::Compute(addr, memory, def);
-    
-    return Interpreter::FCDomainValue( memory.loadMultiBit(dv_addr, bytes), def, memory.env() );
-  }
-  
-  std::unique_ptr<Interpreter::FDSideEffect>
-  Interpreter::Store::InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
-  {
-    struct DoStore : public Interpreter::FDSideEffect
+    struct DoStore : public Interpreter::SideEffect
     {
-      DoStore(unsigned _bytes, Expr _addr, Expr _value, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
+      DoStore(unsigned _bytes, Expr _addr, Expr _value, ComputationResult& computationUnit)
         : addr(), value(), bytes(_bytes)
       {
-        INode::ComputeForward( _addr,  addr, memory, dest, flags);
-        INode::ComputeForward(_value, value, memory, dest, flags);
+        addr = std::unique_ptr<ComputationResult>(computationUnit.Mutate());
+        value = std::unique_ptr<ComputationResult>(computationUnit.Mutate());
+        INode::ComputeForward( _addr, *addr);
+        INode::ComputeForward(_value, *value);
       }
-      virtual void Commit(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) override
+      virtual void Commit(ComputationResult& res) override
       {
-        memory.storeValue(addr, value, flags);
+        res.storeValue(*addr, *value);
       }
-      FDScalarElement addr, value;
+      std::unique_ptr<ComputationResult> addr, value;
       unsigned bytes;
     };
     
-    return std::make_unique<DoStore>(bytes,addr,value, memory, dest, flags);
-  }
-  
-  std::unique_ptr<Interpreter::FCSideEffect>
-  Interpreter::Store::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    struct DoStore : public Interpreter::FCSideEffect
-    {
-      DoStore(unsigned _bytes, Expr _addr, Expr _value, FCMemoryState& memory, DomainElementFunctions* def)
-        : addr(INode::Compute(_addr, memory, def)), value(INode::Compute(_value, memory, def)), bytes(_bytes)
-      {}
-      virtual void Commit(FCMemoryState& memory, DomainElementFunctions* def) override
-      {
-        memory.valueStore(addr, value);
-      }
-      FCDomainValue addr, value;
-      unsigned bytes;
-    };
-
-    return std::make_unique<DoStore>(bytes, addr, value, memory, def);
+    return std::make_unique<DoStore>(bytes,addr,value,computationUnit);
   }
   
   void
@@ -338,56 +288,32 @@ namespace Mips
     sink << "RegRead( " << reg.c_str() << " )";
   }
 
-  Interpreter::FCDomainValue
-  Interpreter::RegRead::Compute(Mips::Interpreter::FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    return Interpreter::FCDomainValue( memory.getRegisterValueAsElement(reg.idx()), def, memory.env() );
-  }
-  
   void
-  Interpreter::RegRead::ComputeForward(FDScalarElement& elem, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
+  Interpreter::RegRead::ComputeForward(ComputationResult& res) const
   {
-    elem = memory.getRegisterValue(reg.idx(), flags, unisim::util::forbint::debug::TIMultiBit);
+    res.getRegisterValue(reg.idx());
   }
   
-  std::unique_ptr<Interpreter::FDSideEffect>
-  Interpreter::RegWrite::InterpretForward(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) const
+  std::unique_ptr<Interpreter::SideEffect>
+  Interpreter::RegWrite::InterpretForward(ComputationResult& computationUnit) const
   {
-    struct DoRegWrite : public Interpreter::FDSideEffect
+    struct DoRegWrite : public Interpreter::SideEffect
     {
-      DoRegWrite(RegisterIndex _reg, Expr _value, FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags)
+      DoRegWrite(RegisterIndex _reg, Expr _value, ComputationResult& computationUnit)
         : value(), reg(_reg)
       {
-        INode::ComputeForward(_value, value, memory, dest, flags);
+        value = std::unique_ptr<ComputationResult>(computationUnit.Mutate());
+        INode::ComputeForward(_value, *value);
       }
-      virtual void Commit(FDMemoryState& memory, FDTarget& dest, FDMemoryFlags& flags) override
+      virtual void Commit(ComputationResult& res) override
       {
-        memory.setRegisterValue(reg.idx(), value, flags);
+        res.setRegisterValue(reg.idx(), *value);
       }
-      FDScalarElement value;
+      std::unique_ptr<ComputationResult> value;
       RegisterIndex reg;
     };
     
-    return std::make_unique<DoRegWrite>(reg, value, memory, dest, flags);
-  }
-  
-  std::unique_ptr<Interpreter::FCSideEffect>
-  Interpreter::RegWrite::Interpret(FCMemoryState& memory, DomainElementFunctions* def) const
-  {
-    struct DoRegWrite : public Interpreter::FCSideEffect
-    {
-      DoRegWrite(RegisterIndex _reg, Expr _value, FCMemoryState& memory, DomainElementFunctions* def)
-        : value(INode::Compute(_value, memory, def)), reg(_reg)
-      {}
-      virtual void Commit(FCMemoryState& memory, DomainElementFunctions* def) override
-      {
-        memory.setRegisterValue(reg.idx(), value);
-      }
-      FCDomainValue value;
-      RegisterIndex reg;
-    };
-    
-    return std::make_unique<DoRegWrite>(reg, value, memory, def);
+    return std::make_unique<DoRegWrite>(reg, value, computationUnit);
   }
   
   void

@@ -119,10 +119,12 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    bool compute_branch_target( uint32_t& address, Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const
+    bool compute_branch_target( uint32_t& address, Interpreter::FCMemoryState& mem,
+          DomainElementFunctions* def) const
     {
-      Interpreter::FCDomainValue addr = Interpreter::INode::Compute(branch.dest, mem, def);
-      return addr.is_constant(address);
+      Interpreter::ContractComputationResult addr(mem, def);
+      Interpreter::INode::ComputeForward(branch.dest, addr);
+      return addr.res.is_constant(address);
     }
 
     void next_addresses(std::set<unsigned int>& addresses,
@@ -234,15 +236,16 @@ namespace Mips
             throw Ouch();
         }
       
-      std::vector<std::unique_ptr<Interpreter::FCSideEffect>> side_effects;
+      Interpreter::ContractComputationResult computationUnit(mem, def);
+      std::vector<std::unique_ptr<Interpreter::SideEffect>> side_effects;
       side_effects.reserve(actions.size());
       for (auto const& action : actions)
         if (auto update = dynamic_cast<Interpreter::Update const*>(action.node))
-          side_effects.push_back(update->Interpret(mem, def));
+          side_effects.push_back(update->InterpretForward(computationUnit));
         else
           { struct NotAnUpdate {}; throw NotAnUpdate(); }
       for (auto const& side_effect : side_effects)
-        side_effect->Commit(mem, def);
+        side_effect->Commit(computationUnit);
     }
 
     virtual void retrieveTargets(Interpreter::FDIteration& iteration) const override
@@ -270,6 +273,12 @@ namespace Mips
               else
                 {
                   /* Indirect branch are not handled yet */
+                  typedef Interpreter::FDIteration Iteration;
+                  typedef Interpreter::FDScalarElement ScalarElement;
+                  typedef Interpreter::FDMemoryFlags Flags;
+                  Interpreter::DebugIterationComputationResult destination(iteration);
+                  Interpreter::INode::ComputeForward(branch.dest, destination);
+
                   struct TODO {}; throw TODO();
                 }
             }
@@ -372,15 +381,16 @@ namespace Mips
                                   Interpreter::FDTarget& tg,
                                   Interpreter::FDMemoryFlags& mf) const override
     {
-      std::vector<std::unique_ptr<Interpreter::FDSideEffect>> side_effects;
+      std::vector<std::unique_ptr<Interpreter::SideEffect>> side_effects;
       side_effects.reserve(actions.size());
+      Interpreter::DebugMemoryComputationResult computationUnit(ms, mf);
       for (auto const& action : actions)
         if (auto update = dynamic_cast<Interpreter::Update const*>(action.node))
-          side_effects.push_back(update->InterpretForward(ms, tg, mf));
+          side_effects.push_back(update->InterpretForward(computationUnit));
         else
           { struct NotAnUpdate {}; throw NotAnUpdate(); }
       for (auto const& side_effect : side_effects)
-        side_effect->Commit(ms, tg, mf);
+        side_effect->Commit(computationUnit);
     };
 
     std::shared_ptr<Operation> operation;

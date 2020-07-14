@@ -1351,6 +1351,14 @@ MemoryFlags::newMultiBitConstant(uint64_t* value, int size) const
 }
 
 ScalarElement
+MemoryFlags::newFloatConstant(double value, int sizeExponent, int sizeMantissa) const
+{ ScalarElement result;
+  result._implementation = (*_functions->create_float_constant)(_implementation, value, sizeExponent, sizeMantissa, &result._functions);
+  result._type = TIFloat;
+  return result;
+}
+
+ScalarElement
 MemoryFlags::newBitConstant(bool value) const
 { ScalarElement result;
   result._implementation = (*_functions->create_bit_constant)(_implementation, value, &result._functions);
@@ -1395,6 +1403,22 @@ MemoryFlags::newTop(int size) const
 { ScalarElement result;
   result._implementation = (*_functions->create_top)(_implementation, size, &result._functions);
   result._type = TIMultiBit;
+  return result;
+}
+
+ScalarElement
+MemoryFlags::newTopFloat(int sizeExponent, int sizeMantissa) const
+{ ScalarElement result;
+  result._implementation = (*_functions->create_top_float)(_implementation, sizeExponent, sizeMantissa, &result._functions);
+  result._type = TIFloat;
+  return result;
+}
+
+ScalarElement
+MemoryFlags::newTopBit() const
+{ ScalarElement result;
+  result._implementation = (*_functions->create_top_bit)(_implementation, &result._functions);
+  result._type = TIBit;
   return result;
 }
 
@@ -1675,6 +1699,22 @@ Iteration::newTop(int size) const
 }
 
 ScalarElement
+Iteration::newTopFloat(int sizeExponent, int sizeMantissa) const
+{ ScalarElement result;
+  result._implementation = (*_functions->create_top_float)(_implementation, sizeExponent, sizeMantissa, &result._functions);
+  result._type = TIFloat;
+  return result;
+}
+
+ScalarElement
+Iteration::newTopBit() const
+{ ScalarElement result;
+  result._implementation = (*_functions->create_top_bit)(_implementation, &result._functions);
+  result._type = TIBit;
+  return result;
+}
+
+ScalarElement
 Iteration::newInterval(ScalarElement& min, ScalarElement& max) const
 { ScalarElement result;
   assert(min._type == max._type);
@@ -1739,6 +1779,14 @@ Iteration::newBitConstant(bool value) const
 { ScalarElement result;
   result._implementation = (*_functions->create_bit_constant)(_implementation, value, &result._functions);
   result._type = TIBit;
+  return result;
+}
+
+ScalarElement
+Iteration::newFloatConstant(double value, int sizeExponent, int sizeMantissa) const
+{ ScalarElement result;
+  result._implementation = (*_functions->create_float_constant)(_implementation, value, sizeExponent, sizeMantissa, &result._functions);
+  result._type = TIFloat;
   return result;
 }
 
