@@ -41,7 +41,7 @@ struct Processor
     {
       using is_transparent = void;
       bool operator() (Page const& a, Page const& b) const { return a > b; }
-      bool operator() (Page const& a, unsigned b) const { return a.base > b; }
+      bool operator() (Page const& a, uint64_t b) const { return a.base > b; }
     };
     Page( Page&& page )
       : base(page.base), last(page.last), data(page.data)

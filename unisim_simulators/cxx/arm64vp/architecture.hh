@@ -32,6 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <iosfwd>
 #include <set>
 #include <algorithm>
@@ -52,7 +53,7 @@ struct AArch64
     {
       using is_transparent = void;
       bool operator() (Page const& a, Page const& b) const { return a > b; }
-      bool operator() (Page const& a, unsigned b) const { return a.base > b; }
+      bool operator() (Page const& a, uint64_t b) const { return a.base > b; }
     };
     struct Free
     {
@@ -120,11 +121,40 @@ struct AArch64
   };
 
   typedef std::set<Page, Page::Above> Pages;
-  Pages pages;
 
+  Page const& access_page( uint64_t addr )
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end() or pi->last < addr)
+      { struct Bad {}; throw Bad(); }
+    return *pi;
+  }
+  
+  void free_read_memory(uint64_t address, uint8_t* buffer, unsigned size)
+  {
+    Page const& page = access_page(address);
+    page.read(address, buffer, size);
+  }
+
+  struct IPB
+  {
+    static unsigned const LINE_SIZE = 32; //< IPB size
+    uint8_t bytes[LINE_SIZE];             //< The IPB content
+    uint32_t base_address;                //< base address of IPB content (cache line size aligned if valid)
+    IPB() : bytes(), base_address( -1 ) {}
+    uint8_t* get(AArch64& core, uint64_t address);
+  };
+  
   void error_mem_overlap( Page const& a, Page const& b );
   
   bool mem_map(uint64_t addr, uint64_t size);
   bool mem_map(Page&& page);
+
+  void step_instruction();
+
+  Pages    pages;
+  IPB      ipb;
+  unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> decoder;
+  uint64_t current_insn_addr, next_insn_addr;
 };
 
