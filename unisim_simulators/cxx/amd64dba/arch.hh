@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/disasm.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 
@@ -660,7 +661,7 @@ struct Processor : public ProcessorBase
   struct VUConfig : VUConfigBase { static unsigned const REGCOUNT = VREGCOUNT; };
 
   struct VmmBrick { char _[sizeof(u8_t)]; };
-  typedef unisim::component::cxx::processor::intel::VUnion<VUConfig> VUnion;
+  typedef unisim::component::cxx::vector::VUnion<VUConfig> VUnion;
   VUnion umms[VUConfig::REGCOUNT];
   VmmBrick vmm_storage[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
 

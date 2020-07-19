@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -420,62 +421,68 @@ protected:
   virtual void     ResetSystemRegisters();
   
   static unsigned const VECTORCOUNT = 32;
-  
-  struct VUnion
+
+  struct VUConfig
   {
-    static unsigned const BYTECOUNT = 16;
+  };
+  unisim::component::cxx::vector::VUnion<VUConfig> umms[8];
+  vector_view[VECTORCOUNT];
+  // struct VUnion
+  // {
+  //   static unsigned const BYTECOUNT = 16;
     
-    typedef void (*arrangement_t)( uint8_t* storage );
-    arrangement_t arrangement;
+  //   typedef void (*arrangement_t)( uint8_t* storage );
+  //   arrangement_t arrangement;
     
-    template <typename T>
-    static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
+  //   template <typename T>
+  //   static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
     
-    template <typename T>
-    static void ToBytes( uint8_t* storage )
-    {
-      T const* vec = reinterpret_cast<T const*>( storage );
+  //   template <typename T>
+  //   static void ToBytes( uint8_t* storage )
+  //   {
+  //     T const* vec = reinterpret_cast<T const*>( storage );
       
-      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-        T val = vec[idx];
-        VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
-      }
-    }
+  //     for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
+  //       T val = vec[idx];
+  //       VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
+  //     }
+  //   }
 
-    template <typename T>
-    T*
-    GetStorage( uint8_t* storage )
-    {
-      T* res = reinterpret_cast<T*>( storage );
+  //   template <typename T>
+  //   T*
+  //   GetStorage( uint8_t* storage )
+  //   {
+  //     T* res = reinterpret_cast<T*>( storage );
 
-      arrangement_t current = &ToBytes<T>;
-      if (arrangement != current) {
-        arrangement( storage );
+  //     arrangement_t current = &ToBytes<T>;
+  //     if (arrangement != current) {
+  //       arrangement( storage );
         
-        for (int idx = ItemCount<T>(); --idx >= 0;) {
-          T val;
-          VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
-          res[idx] = val;
-        }
-        arrangement = current;
-      }
+  //       for (int idx = ItemCount<T>(); --idx >= 0;) {
+  //         T val;
+  //         VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
+  //         res[idx] = val;
+  //       }
+  //       arrangement = current;
+  //     }
       
-      return res;
-    }
+  //     return res;
+  //   }
     
-    template <typename T>
-    T*
-    GetZeroedStorage( uint8_t* storage )
-    {
-      T* res = reinterpret_cast<T*>( storage );
-      arrangement = &ToBytes<T>;
-      for (int idx = ItemCount<T>(); --idx >= 0;)
-        res[idx] = T();
-      return res;
-    }
+  //   template <typename T>
+  //   T*
+  //   GetZeroedStorage( uint8_t* storage )
+  //   {
+  //     T* res = reinterpret_cast<T*>( storage );
+  //     arrangement = &ToBytes<T>;
+  //     for (int idx = ItemCount<T>(); --idx >= 0;)
+  //       res[idx] = T();
+  //     return res;
+  //   }
       
-    VUnion() : arrangement( &ToBytes<uint8_t> ) {}
-  } vector_view[VECTORCOUNT];
+  //   VUnion() : arrangement( &ToBytes<uint8_t> ) {}
+  // };
+  
     
   uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
   

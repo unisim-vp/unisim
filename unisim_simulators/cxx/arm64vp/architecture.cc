@@ -188,3 +188,11 @@ AArch64::step_instruction()
       throw exc;
     }
 }
+
+void
+AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>* op)
+{
+  std::cerr << "Undefined instruction : `";
+  op->disasm(*this,std::cerr);
+  std::cerr << "`.\n";
+}

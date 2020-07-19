@@ -46,10 +46,12 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
+taint.cc \
 architecture.cc \
 main.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
+taint.hh \
 architecture.hh \
 "
 

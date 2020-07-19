@@ -664,7 +664,7 @@ namespace ut {
         typedef u8_t Byte;
       };
 
-    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[16];
+      unisim::component::cxx::vector::VUnion<VUConfig> umms[16];
   
       uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
       uint32_t mxcsr;

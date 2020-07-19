@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/processor/intel/disasm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/simple_register.hh>
@@ -808,8 +809,8 @@ public:
     template <typename T> using TypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
     typedef u8_t Byte;
   };
-
-  unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[16];
+  
+  unisim::component::cxx::vector::VUnion<VUConfig> umms[16];
   
   uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
   uint32_t mxcsr;
