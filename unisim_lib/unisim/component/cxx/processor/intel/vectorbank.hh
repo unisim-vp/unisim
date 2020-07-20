@@ -44,43 +44,6 @@ namespace cxx {
 namespace processor {
 namespace intel {
 
-  template <typename T>
-  struct VectorTypeInfo
-  {
-    enum { bytecount = sizeof (T) };
-    static void ToBytes( uint8_t* dst, T src )
-    {
-      for (unsigned idx = 0; idx < sizeof (T); ++idx)
-        { dst[idx] = src & 0xff; src >>= 8; }
-    }
-    static void FromBytes( T& dst, uint8_t const* src )
-    {
-      T tmp = 0;
-      for (unsigned idx = sizeof (T); idx-- > 0;)
-        { tmp <<= 8; tmp |= uint32_t( src[idx] ); }
-      dst = tmp;
-    }
-    static void Destroy( T& obj ) { /* Base scalar types don't need any specific destructor */ }
-    static void Allocate( T& obj ) { /* Base scalar type doesn't need any specific constructor */ }
-  };
-
-  template <> struct VectorTypeInfo<float>
-  {
-    enum bytecount_t { bytecount = 4 };
-    static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
-    static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
-    static void Destroy( float& obj ) { /* float type doesn't need any specific destructor */ }
-    static void Allocate( float& obj ) { /* float type doesn't need any specific constructor */ }
-  };
-
-  template <> struct VectorTypeInfo<double>
-  {
-    enum bytecount_t { bytecount = 8 };
-    static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
-    static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
-    static void Destroy( double& obj ) { /* double type doesn't need any specific destructor */ }
-    static void Allocate( double& obj ) { /* double type doesn't need any specific constructor */ }
-  };
 
 } // end of namespace intel
 } // end of namespace processor

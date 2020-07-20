@@ -724,7 +724,7 @@ namespace intel {
     struct VUConfig
     {
       static unsigned const BYTECOUNT = 32;
-      template <typename T> using TypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+      template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
       typedef u8_t Byte;
     };
 
@@ -772,22 +772,22 @@ namespace intel {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
-  
+    
     void vmm_memwrite( unsigned seg, u64_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, u64_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, u64_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
-
+    
     // void vmm_memwrite( unsigned seg, u64_t addr, u8_t  const& e ) { return memwrite< 8>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u16_t const& e ) { return memwrite<16>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u32_t const& e ) { return memwrite<32>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u64_t const& e ) { return memwrite<64>( seg, addr, e ); }
-  
+    
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
-      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
     
     template <class VR, class ELEM>
@@ -795,9 +795,8 @@ namespace intel {
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
-      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
-
   };
   
 

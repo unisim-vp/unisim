@@ -806,7 +806,7 @@ public:
   struct VUConfig
   {
     static unsigned const BYTECOUNT = 32;
-    template <typename T> using TypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+    template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
     typedef u8_t Byte;
   };
   

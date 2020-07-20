@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2015-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -118,12 +118,55 @@ namespace vector {
       return rearrange<ELEM>( storage, std::max(size, final_size) );
     }
 
+    void Truncate(unsigned final_size)
+    {
+      size = std::min(size, final_size);
+    }
+    
     static void initial( Byte*, void*, unsigned, bool ) {}
 
     VUnion() : transfer( &initial ), size(0) {}
 
     transfer_t transfer;
     unsigned   size;
+  };
+
+  template <typename T, unsigned E>
+  struct VectorTypeInfo
+  {
+    enum { bytecount = sizeof (T) };
+    static void ToBytes( uint8_t* dst, T src )
+    {
+      for (unsigned idx = 0; idx < sizeof (T); ++idx)
+        { dst[idx^E] = src & 0xff; src >>= 8; }
+    }
+    static void FromBytes( T& dst, uint8_t const* src )
+    {
+      T tmp = 0;
+      for (unsigned idx = sizeof (T); idx-- > 0;)
+        { tmp <<= 8; tmp |= uint32_t( src[idx^E] ); }
+      dst = tmp;
+    }
+    static void Destroy( T& obj ) { /* Base scalar types don't need any specific destructor */ }
+    static void Allocate( T& obj ) { /* Base scalar type doesn't need any specific constructor */ }
+  };
+
+  template <unsigned E> struct VectorTypeInfo<float,E>
+  {
+    enum bytecount_t { bytecount = 4 };
+    static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t,E>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
+    static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t,E>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
+    static void Destroy( float& obj ) { /* float type doesn't need any specific destructor */ }
+    static void Allocate( float& obj ) { /* float type doesn't need any specific constructor */ }
+  };
+
+  template <unsigned E> struct VectorTypeInfo<double,E>
+  {
+    enum bytecount_t { bytecount = 8 };
+    static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t,E>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
+    static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t,E>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
+    static void Destroy( double& obj ) { /* double type doesn't need any specific destructor */ }
+    static void Allocate( double& obj ) { /* double type doesn't need any specific constructor */ }
   };
 
 } // end of namespace vector

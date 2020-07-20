@@ -79,7 +79,7 @@ struct ProcessorBase
   struct Unimplemented {};
 
   template <typename T> using SmartValue = unisim::util::symbolic::SmartValue<T>;
-  template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+  template <typename T> using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
   typedef SmartValue<uint8_t>     u8_t;

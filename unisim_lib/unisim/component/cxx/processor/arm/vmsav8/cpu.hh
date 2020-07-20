@@ -64,38 +64,6 @@ namespace processor {
 namespace arm {
 namespace vmsav8 {
   
-  template <typename T>
-  struct VectorTypeInfo
-  {
-    enum { bytecount = sizeof (T) };
-    static void ToBytes( uint8_t* dst, T src )
-    {
-      for (unsigned idx = 0; idx < sizeof (T); ++idx)
-        { dst[idx] = src & 0xff; src >>= 8; }
-    }
-    static void FromBytes( T& dst, uint8_t const* src )
-    {
-      T tmp = 0;
-      for (unsigned idx = sizeof (T); idx-- > 0;)
-        { tmp <<= 8; tmp |= unsigned( src[idx] ); }
-      dst = tmp;
-    }
-  };
-
-  template <> struct VectorTypeInfo<float>
-  {
-    enum bytecount_t { bytecount = 4 };
-    static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
-    static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
-  };
-
-  template <> struct VectorTypeInfo<double>
-  {
-    enum bytecount_t { bytecount = 8 };
-    static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
-    static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
-  };
-
 /** Armv8 cpu
  *
  * Defines and implements architectural state of armv8 processors.
@@ -265,17 +233,26 @@ struct CPU
   void SetVS16( unsigned reg, unsigned sub, S16 value ) { VectorStorage<S16>(reg)[sub] = value; }
   void SetVS32( unsigned reg, unsigned sub, S32 value ) { VectorStorage<S32>(reg)[sub] = value; }
   void SetVS64( unsigned reg, unsigned sub, S64 value ) { VectorStorage<S64>(reg)[sub] = value; }
+
+  void SetVU8 ( unsigned reg, U8 value )  { SetVU(reg, value); }
+  void SetVU16( unsigned reg, U16 value ) { SetVU(reg, value); }
+  void SetVU32( unsigned reg, U32 value ) { SetVU(reg, value); }
+  void SetVU64( unsigned reg, U64 value ) { SetVU(reg, value); }
+  void SetVS8 ( unsigned reg, S8 value )  { SetVU(reg, value); }
+  void SetVS16( unsigned reg, S16 value ) { SetVU(reg, value); }
+  void SetVS32( unsigned reg, S32 value ) { SetVU(reg, value); }
+  void SetVS64( unsigned reg, S64 value ) { SetVU(reg, value); }
   
-  void SetVU8 ( unsigned reg, U8 value )  { VectorZeroedStorage<U8> (reg)[0] = value; }
-  void SetVU16( unsigned reg, U16 value ) { VectorZeroedStorage<U16>(reg)[0] = value; }
-  void SetVU32( unsigned reg, U32 value ) { VectorZeroedStorage<U32>(reg)[0] = value; }
-  void SetVU64( unsigned reg, U64 value ) { VectorZeroedStorage<U64>(reg)[0] = value; }
-  void SetVS8 ( unsigned reg, S8 value )  { VectorZeroedStorage<S8> (reg)[0] = value; }
-  void SetVS16( unsigned reg, S16 value ) { VectorZeroedStorage<S16>(reg)[0] = value; }
-  void SetVS32( unsigned reg, S32 value ) { VectorZeroedStorage<S32>(reg)[0] = value; }
-  void SetVS64( unsigned reg, S64 value ) { VectorZeroedStorage<S64>(reg)[0] = value; }
+  template <typename T>
+  void SetVU(unsigned reg, T value )
+  {
+    *(vector_view[reg].template GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
+  }
   
-  void ClearHighV( unsigned reg, unsigned bytes ) { for (unsigned idx = bytes; idx < VUnion::BYTECOUNT; idx+=1 ) vector_data[reg][idx] = 0; }
+  void ClearHighV( unsigned reg, unsigned bytes )
+  {
+    vector_view[reg].Truncate(bytes);
+  }
 
   //=====================================================================
   //=              Special/System Registers access methods              =
@@ -424,70 +401,22 @@ protected:
 
   struct VUConfig
   {
+    static unsigned const BYTECOUNT = 16;
+    template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
+    typedef U8 Byte;
   };
-  unisim::component::cxx::vector::VUnion<VUConfig> umms[8];
-  vector_view[VECTORCOUNT];
-  // struct VUnion
-  // {
-  //   static unsigned const BYTECOUNT = 16;
-    
-  //   typedef void (*arrangement_t)( uint8_t* storage );
-  //   arrangement_t arrangement;
-    
-  //   template <typename T>
-  //   static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
-    
-  //   template <typename T>
-  //   static void ToBytes( uint8_t* storage )
-  //   {
-  //     T const* vec = reinterpret_cast<T const*>( storage );
-      
-  //     for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-  //       T val = vec[idx];
-  //       VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
-  //     }
-  //   }
-
-  //   template <typename T>
-  //   T*
-  //   GetStorage( uint8_t* storage )
-  //   {
-  //     T* res = reinterpret_cast<T*>( storage );
-
-  //     arrangement_t current = &ToBytes<T>;
-  //     if (arrangement != current) {
-  //       arrangement( storage );
-        
-  //       for (int idx = ItemCount<T>(); --idx >= 0;) {
-  //         T val;
-  //         VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
-  //         res[idx] = val;
-  //       }
-  //       arrangement = current;
-  //     }
-      
-  //     return res;
-  //   }
-    
-  //   template <typename T>
-  //   T*
-  //   GetZeroedStorage( uint8_t* storage )
-  //   {
-  //     T* res = reinterpret_cast<T*>( storage );
-  //     arrangement = &ToBytes<T>;
-  //     for (int idx = ItemCount<T>(); --idx >= 0;)
-  //       res[idx] = T();
-  //     return res;
-  //   }
-      
-  //   VUnion() : arrangement( &ToBytes<uint8_t> ) {}
-  // };
+  unisim::component::cxx::vector::VUnion<VUConfig> vector_view[VECTORCOUNT];;
   
-    
-  uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
+  uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
   
-  template <typename T> T* VectorStorage( unsigned reg ) { return vector_view[reg].template GetStorage<T>( &vector_data[reg][0] ); }
-  template <typename T> T* VectorZeroedStorage( unsigned reg ) { return vector_view[reg].template GetZeroedStorage<T>( &vector_data[reg][0] ); }
+  template <typename T> T* VectorStorage( unsigned reg )
+  {
+    return vector_view[reg].template GetStorage( &vector_data[reg][0], T(), VUConfig::BYTECOUNT );
+  }
+  template <typename T> T* VectorZeroedStorage( unsigned reg )
+  {
+    return vector_view[reg].template GetZeroedStorage<T>( &vector_data[reg][0] );
+  }
   
 private:
   virtual void Sync() = 0;
