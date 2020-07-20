@@ -58,6 +58,10 @@ namespace Mips
       // template <class TComputationResult>
       static void ComputeForward(Expr const&, ComputationResult& res);
       virtual void ComputeForward(ComputationResult& res) const = 0;
+      static bool requiresOriginValue(const Expr& expr, FDIteration& iteration,
+          RequirementLevel requirementLevel);
+      virtual bool requiresOriginValue(FDIteration& iteration, RequirementLevel requirementLevel) const = 0;
+
     };
   
     struct SideEffect
@@ -104,6 +108,7 @@ namespace Mips
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
 
       void ComputeForward(ComputationResult& res) const override;
+      bool requiresOriginValue(FDIteration& iteration, RequirementLevel requirementLevel) const override;
 
       Expr addr;
       unsigned bytes;
@@ -138,6 +143,7 @@ namespace Mips
       int compare( RegRead const& rhs ) const { return reg.cmp( rhs.reg ); }
       
       void ComputeForward(ComputationResult& res) const override;
+      bool requiresOriginValue(FDIteration& iteration, RequirementLevel requirementLevel) const override;
     };
 
     struct RegWrite : public Update
@@ -243,7 +249,7 @@ namespace Mips
       bool complete = path->close();
       for (RegisterIndex reg(RegisterIndex::zero); reg.next();)
         {
-          if (regs[reg.idx()].expr != regs[reg.idx()].expr)
+          if (regs[reg.idx()].expr != ref.regs[reg.idx()].expr)
             path->add_update( new RegWrite( reg, regs[reg.idx()].expr ) );
         }
       return complete;
@@ -782,6 +788,7 @@ namespace Mips
     DebugIterationComputationResult(const DebugIterationComputationResult& source)
       : iteration(source.iteration) {}
 
+    void clear() { res = FDScalarElement(); flags.clear(); }
     virtual ComputationResult* Mutate() const { return new DebugIterationComputationResult(*this); }
     virtual void setBoolResultFromConstant(bool value)
       { res = iteration.newBitConstant(value); }
