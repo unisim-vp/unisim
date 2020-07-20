@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 20016e,
+ *  Copyright (c) 2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,18 +32,83 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include "architecture.hh"
 #include <iostream>
-
-struct AArch64
-{
-  AArch64() { std::cout << "Let's go!\n"; }
-};
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 int
 main(int argc, char *argv[])
 {
-  AArch64 aarch64;
-  
+  // Loading image
+  char const* img_filename = "Image";
+  std::cerr << "*** Loading linux image: " << img_filename << " ***" << std::endl;
 
+  struct MMapped : AArch64::Page::Free
+  {
+    MMapped(char const* filename)
+      : fd(open(filename,O_RDONLY))
+    {
+      if (fd < 0)
+        {
+            std::cerr << "With '" << filename << "': " << std::flush;
+            perror("open error");
+        }
+    }
+    ~MMapped() { close(fd); }
+    void free (AArch64::Page& page) const override
+    {
+      munmap((void*)page.get_data(), page.size());
+    }
+    
+    int fd;
+  } linux_image( img_filename );
+
+  if (linux_image.fd < 0)
+    return 1;
+    
+  AArch64 arch;
+  
+  // SETUP the VirtIO Hypervisor Emulator
+  // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
+  // cpu.SetLinuxOS( &linux32 );
+  // linux32.Setup( simargs, envs );
+  
+  //  arch.m_disasm = false;
+  
+  {
+    struct stat f_stat;
+    if (fstat(linux_image.fd,&f_stat) < 0)
+      {
+        std::cerr << "With '" << img_filename << "': " << std::flush;
+        perror("fstat error");
+        return 1;
+      }
+    uint64_t base = 0x01000000, size = f_stat.st_size;
+    uint8_t* data = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, linux_image.fd, 0);
+    arch.mem_map(AArch64::Page(base,base+size-1,data,&linux_image));
+  }
+  
+  // std::cerr << "\n*** Run ***" << std::endl;
+  
+  // while (not linux32.exited)
+  //   {
+  //     Arch::Operation* op = cpu.fetch();
+  //     // op->disasm( std::cerr );
+  //     // std::cerr << std::endl;
+  //     asm volatile ("operation_execute:");
+  //     op->execute( cpu );
+  //     //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      
+  //     // if ((cpu.m_instcount % 0x1000000) == 0)
+  //     //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
+  //   }
+  
+  // std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
+  
+  
   return 0;
-};
+}

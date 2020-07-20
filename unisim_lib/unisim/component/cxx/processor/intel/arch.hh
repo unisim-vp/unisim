@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -727,7 +728,7 @@ namespace intel {
       typedef u8_t Byte;
     };
 
-    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[8];
+    unisim::component::cxx::vector::VUnion<VUConfig> umms[8];
     uint8_t vmm_storage[8][VUConfig::BYTECOUNT];
     uint32_t mxcsr;
 
