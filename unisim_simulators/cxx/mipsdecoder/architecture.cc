@@ -84,6 +84,35 @@ namespace Mips
       
   }
 
+  bool
+  Interpreter::INode::requiresOriginValue(unisim::util::symbolic::Expr const& expr,
+        FDIteration& iteration, RequirementLevel requirementLevel)
+  {
+    unsigned subcount = expr->SubCount();
+    if (auto node = expr->AsConstNode())
+      return true;
+    else if (auto node = expr->AsOpNode())
+      {
+        using unisim::util::symbolic::Op;
+        bool first = Interpreter::INode::requiresOriginValue(expr->GetSub(0), iteration, requirementLevel);
+        if (subcount == 1)
+          return first;
+        else if (subcount == 2)
+          {
+            if (!first)
+              return false;
+            return Interpreter::INode::requiresOriginValue(expr->GetSub(1), iteration, requirementLevel);
+          }
+        
+        { struct NotYet {}; throw NotYet(); }
+      }
+    else if (auto node = dynamic_cast<Interpreter::INode const*>(expr.node))
+      {
+        return node->requiresOriginValue(iteration, requirementLevel);
+      }
+    return true;
+  }
+
   void
   Interpreter::INode::ComputeForward(unisim::util::symbolic::Expr const& expr,
                                      ComputationResult& res)
@@ -250,10 +279,36 @@ namespace Mips
     sink << bytes << " )";
   }
 
+  bool
+  Interpreter::Load::requiresOriginValue(FDIteration& iteration, RequirementLevel requirementLevel) const
+  {
+    if (not INode::requiresOriginValue(addr, iteration, RLStore))
+      return false;
+    Interpreter::DebugIterationComputationResult address(iteration);
+    INode::ComputeForward(addr, address);
+
+    int sizeInBits = 0;
+    int numberOfElements = 0;
+    bool isConstantAddress = iteration.isConstant(address.res, sizeInBits);
+    if (isConstantAddress
+          || iteration.isConstantDisjunction(address.res, numberOfElements, sizeInBits))
+      {
+        FDScalarElement expressionValue(iteration.loadDisjunctiveValue(address.res, bytes*8));
+        assert(expressionValue.getTypeInfo() == unisim::util::forbint::debug::TIMultiBit);
+        sizeInBits = 0;
+        numberOfElements = 0;
+        if (!iteration.isConstant(expressionValue, sizeInBits)
+              && !iteration.isConstantDisjunction(expressionValue, numberOfElements, sizeInBits))
+           return iteration.requiresAddressValue(expressionValue, bytes*8, requirementLevel);
+        else if (isConstantAddress && !iteration.isConstant(expressionValue, sizeInBits))
+          iteration.storeValue(address.res, expressionValue);
+      }
+    return true;
+  }
+
   void
   Interpreter::Load::ComputeForward(ComputationResult& res) const
   {
-    FDScalarElement address;
     INode::ComputeForward(addr, res);
     res.loadValue(bytes*8);
   }
@@ -286,6 +341,12 @@ namespace Mips
   Interpreter::RegRead::Repr(std::ostream& sink) const
   {
     sink << "RegRead( " << reg.c_str() << " )";
+  }
+
+  bool
+  Interpreter::RegRead::requiresOriginValue(FDIteration& iteration, RequirementLevel requirementLevel) const
+  {
+    iteration.requiresRegisterValue(reg.idx(), requirementLevel);
   }
 
   void

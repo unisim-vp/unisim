@@ -12,6 +12,8 @@ namespace Mips
   {
   }
   
+  typedef unsigned LocalLabel; // persistent unique id among the brothers of an ActionNode ("fratrie" in french)
+
   struct FullInstruction : public Instruction
   {
     typedef unisim::component::cxx::processor::mips::isa::Operation<Mips::Interpreter> Operation;
@@ -56,11 +58,12 @@ namespace Mips
         {
           if (coderoot->getnext(alt)->cond.good())
             throw BadCFG();
-          if (coderoot->updates.size() == 0)
+          auto* next = coderoot->getnext(alt);
+          if (next->updates.size() == 0)
             continue;
-          if (coderoot->updates.size() != 1)
+          if (next->updates.size() != 1)
             throw BadCFG();
-          if (auto b = dynamic_cast<Interpreter::Goto const*>(coderoot->updates.begin()->node))
+          if (auto b = dynamic_cast<Interpreter::Goto const*>(next->updates.begin()->node))
             {
               if (branch.dest.good())
                 throw BadCFG();
@@ -248,123 +251,228 @@ namespace Mips
         side_effect->Commit(computationUnit);
     }
 
+    void
+    addDynamicTarget(Interpreter::branch_type_t type, uint64_t targetValue,
+          Interpreter::FDIteration& iteration, Interpreter::FDIteration::TargetCursor& nextCursor,
+          Interpreter::FDIteration::CalleeCursor& callCursor,
+          Interpreter::FDIteration::Target& target, Interpreter::FDIteration::Exit& exit) const {
+       if (type == Interpreter::B_JMP || type == Interpreter::B_EXC
+             || type == Interpreter::B_DBG)
+         {
+           bool hasFound = false;
+           if (target.isValid() && target.hasAddress(&targetValue, 1))
+             {
+               iteration.addIdentifiedTarget(target, 1);
+               hasFound = true;
+             }
+           if (!hasFound && target.isValid() && nextCursor.isValid())
+             {
+               int index = 0;
+               while (!hasFound && nextCursor.setToNext()) {
+                 Interpreter::FDIteration::Target nextTarget = nextCursor.elementAt();
+                 if (nextTarget.hasAddress(&targetValue, 1)) {
+                   iteration.addIdentifiedTarget(nextTarget, index);
+                   hasFound = true;
+                 };
+                 ++index;
+               };
+             }
+           if (!hasFound)
+              iteration.addIdentifiedTarget(&targetValue, 1, 1);
+         }
+       else if (type == Interpreter::B_CALL) {
+          bool hasFound = false;
+          if (target.isValid() && target.hasAddress(&targetValue, 1)) {
+             // _iteration->addIdentifiedTarget(target, index);
+             iteration.addTarget(target);
+             hasFound = true;
+          }
+          if (!hasFound && target.isValid() && callCursor.isValid()) {
+             while (!hasFound && callCursor.setToNext()) {
+                Interpreter::FDIteration::Target callTarget = callCursor.elementAt();
+                if (callTarget.hasAddress(&targetValue, 1)) {
+                   // _iteration->addIdentifiedTarget(callTarget, index);
+                   iteration.addTarget(callTarget);
+                   hasFound = true;
+                };
+             };
+          }
+          if (!hasFound)
+             // _iteration->addIdentifiedTarget(targetValue, 1, index);
+             iteration.addTarget(&targetValue, 1);
+       }
+       else if (type == Interpreter::B_RET || type == Interpreter::B_RFE) {
+          bool hasFound = false;
+          if (nextCursor.isValid() || exit.isValid()) {
+             Interpreter::FDIteration::Exit newExit = exit;
+             do {
+                if (nextCursor.isValid()) {
+                   if (nextCursor.setToNext())
+                      newExit = nextCursor.exitAt();
+                   else
+                      break;
+                };
+                Interpreter::FDIteration::Target returnTarget = iteration.advanceOnExitReturn(newExit);
+                if ((hasFound = returnTarget.isValid()) != false
+                      && returnTarget.hasAddress(&targetValue, 1))
+                   iteration.addTarget(returnTarget);
+             } while (!hasFound && nextCursor.isValid());
+          };
+          if (!hasFound)
+             iteration.addTarget(&targetValue, 1);
+       };
+    }
+
     virtual void retrieveTargets(Interpreter::FDIteration& iteration) const override
     {
-      if (branch.cond.good() or not branch.dest.good())
+      if (not branch.cond.good() and not branch.dest.good())
         iteration.addNextTarget();
-      else if (not branch.cond.good())
-        {
-          if (iteration.mayFollowGraph())
-            {
-              if (!iteration.localAdvanceOnInstruction())
-                {
-                  if (!iteration.advanceOnCallInstruction() && !iteration.advanceOnNextGraphInstruction()) {
-                    iteration.assumeAcceptEmptyDestination();
-                  }
-                }
-            }
-          else
-            {
-              if (auto cnb = branch.dest->AsConstNode())
-                {
-                  uint64_t address = cnb->Get(uint32_t());
-                  iteration.addTarget(&address, 1);
-                }
-              else
-                {
-                  /* Indirect branch are not handled yet */
-                  typedef Interpreter::FDIteration Iteration;
-                  typedef Interpreter::FDScalarElement ScalarElement;
-                  typedef Interpreter::FDMemoryFlags Flags;
-                  Interpreter::DebugIterationComputationResult destination(iteration);
-                  Interpreter::INode::ComputeForward(branch.dest, destination);
-
-                  struct TODO {}; throw TODO();
-                }
-            }
-        }
-      else
+      else if (not branch.cond.good()) // branch.dest.good()
         {
           typedef Interpreter::FDIteration Iteration;
           typedef Interpreter::FDScalarElement ScalarElement;
-          Iteration::Target firstTarget, thenTarget, elseTarget;
-          if (iteration.mayFollowGraph())
+          typedef Interpreter::FDMemoryFlags Flags;
+          Iteration::TargetCursor nextCursor;
+          Iteration::CalleeCursor callCursor;
+          Iteration::Target target;
+          Iteration::Exit exit;
+
+          if (auto cnb = branch.dest->AsConstNode())
             {
-              if (/*_isMultitarget*/false)
+              if (iteration.mayFollowGraph()) {
+                if (!iteration.localAdvanceOnInstruction()) {
+                  if (!iteration.advanceOnCallInstruction() && !iteration.advanceOnNextGraphInstruction()) {
+                    iteration.assumeAcceptEmptyDestination();
+                  };
+                }
+              }
+              else {
+                uint64_t address = cnb->Get(uint32_t());
+                iteration.addTarget(&address, 1);
+              }
+            }
+          else
+            {
+              if (iteration.mayFollowGraph())
                 {
-                  if (!(firstTarget = iteration.getLocalTarget()).isValid())
+                  switch (branch.type)
                     {
-                      Iteration::TargetCursor targetCursor = iteration.newCursorOnExistingTargets();
-                      while (targetCursor.setToNext())
-                        {
-                          bool isFirst = false, isThen = false, isElse = false;
-                          Iteration::Target target = targetCursor.elementAt(isFirst, isThen, isElse);
-                          if (isFirst)
-                            firstTarget = target;
-                          if (isThen)
-                            thenTarget = target;
-                          if (isElse)
-                            elseTarget = target;
-                        }
-                      if (/*_doesStoreNext*/false and not iteration.advanceOnCallInstruction() and not iteration.advanceOnNextGraphInstruction())
-                           {
-                          iteration.assumeAcceptEmptyDestination();
-                        }
+                    case Interpreter::B_JMP: case Interpreter::B_EXC: case Interpreter::B_DBG:
+                      if (not (target = iteration.getLocalTarget()).isValid())
+                        nextCursor = iteration.newCursorOnExistingTargets();
+                      break;
+                    case Interpreter::B_CALL:
+                      if (not (target = iteration.getLocalTarget()).isValid())
+                        callCursor = iteration.newCursorOnExistingCallees();
+                      break;
+                    case Interpreter::B_RET: case Interpreter::B_RFE:
+                      if (!(exit = iteration.advanceOnExit()).isValid()) {
+                        if (!(target = iteration.getLocalTarget()).isValid())
+                          nextCursor = iteration.newCursorOnExistingTargets();
+                      };
+                      break;
+                    default:
+                      assert(false);
                     }
                 }
-              else
+
+                Interpreter::DebugIterationComputationResult destination(iteration);
+                Interpreter::INode::ComputeForward(branch.dest, destination);
+                int sizeInBits = 0;
+                int numberOfElements = 0;
+                if (!iteration.isConstant(destination.res, sizeInBits)
+                      && !iteration.isConstantDisjunction(destination.res, numberOfElements, sizeInBits)) {
+                  if (not Interpreter::INode::requiresOriginValue(branch.dest, iteration, RLJump)) {
+                    iteration.notifyUndefinedTarget();
+                    return;
+                  }
+                  destination.clear();
+                  Interpreter::INode::ComputeForward(branch.dest, destination);
+                }
+                if (iteration.isConstant(destination.res, sizeInBits)) {
+                  iteration.notifyDynamicTargets(destination.res);
+                  uint64_t targetValue = 0UL;
+                  iteration.retrieveConstant(destination.res, &targetValue, 1);
+                  if (targetValue != 0U)
+                    addDynamicTarget(branch.type, targetValue, iteration,
+                          nextCursor, callCursor, target, exit);
+                }
+                else if (iteration.isConstantDisjunction(destination.res, numberOfElements, sizeInBits))
                 {
-                  if (!iteration.localAdvanceOnInstruction())
+                  iteration.notifyDynamicTargets(destination.res);
+                  assert(numberOfElements > 0 && sizeInBits > 0 /* == 32 */);
+                  int sizeTargetInCell = (sizeInBits+sizeof(uint64_t)*8-1)
+                        /(sizeof(uint64_t)*8);
+                  assert(sizeTargetInCell == 1);
+                  uint64_t* targetResult = new uint64_t[numberOfElements*sizeTargetInCell];
+                  uint64_t** tab = new uint64_t*[numberOfElements];
+                  for (int i = 0; i < numberOfElements; ++i)
+                    tab[i] = &targetResult[i*sizeTargetInCell];
+                  iteration.retrieveConstantDisjunction(destination.res, tab, sizeTargetInCell,
+                        numberOfElements);
+                  for (int i = 0; i < numberOfElements; ++i) {
+                    if (targetResult[i*sizeTargetInCell]) {
+                      addDynamicTarget(branch.type, targetResult[i*sizeTargetInCell], iteration,
+                            nextCursor, callCursor, target, exit);
+                    };
+                  }
+                }
+                else
+                   iteration.notifyUndefinedTarget();
+            }
+        }
+      else // branch.cond.good()
+        {
+          assert(branch.dest.good());
+          auto cnb = branch.dest->AsConstNode();
+          assert(cnb);
+          uint64_t elseAddress = cnb->Get(uint32_t());
+          uint64_t thenAddress = operation->GetAddr() + 4;
+          // iteration.getCurrentInstruction(&thenAddress, 1);
+          // thenAddress += 4;
+
+          Interpreter::FDIteration::Target firstTarget, thenTarget, elseTarget;
+          if (iteration.mayFollowGraph())
+            {
+              if (!(firstTarget = iteration.getLocalTarget()).isValid())
+                {
+                  Interpreter::FDIteration::TargetCursor targetCursor
+                      = iteration.newCursorOnExistingTargets();
+                  while (targetCursor.setToNext())
                     {
-                      if (/*_doesStoreNext*/false and not iteration.advanceOnCallInstruction() and not iteration.advanceOnNextGraphInstruction())
-                        {
-                          iteration.assumeAcceptEmptyDestination();
-                        }
+                      bool isFirst = false, isThen = false, isElse = false;
+                      Interpreter::FDIteration::Target target
+                         = targetCursor.elementAt(isFirst, isThen, isElse);
+                      if (isFirst)
+                        firstTarget = target;
+                      if (isThen)
+                        thenTarget = target;
+                      if (isElse)
+                        elseTarget = target;
                     }
                 }
             }
 
-          // ComputeForward currently works with an Interpret
-          // architecture, but here we work with a Iteration
-          // architecture. We need to work on a common abstraction
-          // layer... (most probably a virtual ScalarElement Computer)
-          struct TODO {}; throw TODO();
-          
-          ScalarElement se_cond/* = Interpreter::INode::ComputeForward(cond, iteration)*/;
-          // ScalarElement target;
-  
-          // if (se_cond.queryZeroResult().mayBeDifferentZero())
-          //   {
-          //     uint64_t elseAddress = 0;
-          //     if (/*_isAbsoluteTarget*/false)
-          //       elseAddress = _target;
-          //     else
-          //       {
-          //         iteration.getCurrentInstruction(&elseAddress, 1);
-          //         if (elseAddress + _target == 0x10000000)
-          //           return;
-          //         elseAddress += _target;
-          //       }
-          //     if (firstTarget.isValid() && firstTarget.hasAddress(&elseAddress, 1))
-          //       elseTarget = firstTarget;
-          //     if (elseTarget.isValid())
-          //       iteration.addElseTarget(elseTarget);
-          //     else
-          //       iteration.addElseTarget(&elseAddress, 1);
-          //   }
-          // if (se_cond.queryZeroResult().mayBeZero())
-          //   {
-          //     uint64_t thenAddress = 0;
-          //     iteration.getCurrentInstruction(&thenAddress, 1);
-          //     // iteration.retrieveCurrentAddress(&thenAddress, 1);
-          //     thenAddress += 4;
-          //     if (!thenTarget.isValid() && firstTarget.isValid() && firstTarget.hasAddress(&thenAddress, 1))
-          //       thenTarget = firstTarget;
-          //     if (thenTarget.isValid())
-          //       iteration.addThenTarget(thenTarget);
-          //     else
-          //       iteration.addThenTarget(&thenAddress, 1);
-          //   }
+          Interpreter::DebugIterationComputationResult condition(iteration);
+          Interpreter::INode::ComputeForward(branch.cond, condition);
+          if (condition.res.queryZeroResult().mayBeDifferentZero())
+            {
+              if (firstTarget.isValid() && firstTarget.hasAddress(&elseAddress, 1))
+                elseTarget = firstTarget;
+              if (elseTarget.isValid())
+                iteration.addElseTarget(elseTarget);
+              else
+                iteration.addElseTarget(&elseAddress, 1);
+            }
+          if (condition.res.queryZeroResult().mayBeZero())
+            {
+              if (!thenTarget.isValid() && firstTarget.isValid() && firstTarget.hasAddress(&thenAddress, 1))
+                thenTarget = firstTarget;
+              if (thenTarget.isValid())
+                iteration.addThenTarget(thenTarget);
+              else
+                iteration.addThenTarget(&thenAddress, 1);
+            }
         }
 
       if (iteration.isFamilyRequired())
@@ -391,7 +499,7 @@ namespace Mips
           { struct NotAnUpdate {}; throw NotAnUpdate(); }
       for (auto const& side_effect : side_effects)
         side_effect->Commit(computationUnit);
-    };
+    }
 
     std::shared_ptr<Operation> operation;
     std::set<unisim::util::symbolic::Expr> actions;
