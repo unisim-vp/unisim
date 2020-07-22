@@ -32,6 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <limits>
 #include <inttypes.h>
 
@@ -61,21 +62,22 @@ template <> struct TX< int32_t> { typedef uint32_t as_mask; };
 template <> struct TX< int64_t> { typedef uint64_t as_mask; };
 template <> struct TX<   float> { typedef uint32_t as_mask; };
 template <> struct TX<  double> { typedef uint64_t as_mask; };
+template <> struct TX<    bool> { typedef bool as_mask; };
 
-template <typename DST, typename SRC> struct CastUBits { TX<DST> process( TX<SRC> mask ) { return DST(SRC(mask)); } };
-template <typename SRC> struct CastUBits<float,SRC> { uint32_t process( TX<SRC> mask ) { return mask ? -1 : 0; } };
-template <typename SRC> struct CastUBits<double,SRC> { uint64_t process( TX<SRC> mask ) { return mask ? -1 : 0; } };
-template <typename DST> struct CastUBits<DST,float> { TX<DST> process( uint32_t mask ) { return mask ? -1 : 0; } };
-template <typename DST> struct CastUBits<DST,double> { TX<DST> process( uint64_t mask ) { return mask ? -1 : 0; } };
-template <> struct CastUBits<float,float> { uint32_t process( uint32_t mask ) { return mask; } };
-template <> struct CastUBits<double,double> { uint64_t process( uint64_t mask ) { return mask; } };
+template <typename DST, typename SRC> struct CastUBits { static typename TX<DST>::as_mask process( typename TX<SRC>::as_mask mask ) { return DST(SRC(mask)); } };
+template <typename SRC> struct CastUBits<float,SRC> { static uint32_t process( typename TX<SRC>::as_mask mask ) { return mask ? -1 : 0; } };
+template <typename SRC> struct CastUBits<double,SRC> { static uint64_t process( typename TX<SRC>::as_mask mask ) { return mask ? -1 : 0; } };
+template <typename DST> struct CastUBits<DST,float> { static typename TX<DST>::as_mask process( uint32_t mask ) { return mask ? -1 : 0; } };
+template <typename DST> struct CastUBits<DST,double> { static typename TX<DST>::as_mask process( uint64_t mask ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<float,float> { static uint32_t process( uint32_t mask ) { return mask; } };
+template <> struct CastUBits<double,double> { static uint64_t process( uint64_t mask ) { return mask; } };
 
 template <typename VALUE_TYPE>
 struct TaintedValue
-{
-  typedef VALUE_TYPE               value_type;
-  typedef TaintedValue<value_type>  this_type;
-  typedef TX<value_type>           ubits_type;
+{ 
+  typedef TaintedValue<VALUE_TYPE>         this_type;
+  typedef VALUE_TYPE                       value_type;
+  typedef typename TX<value_type>::as_mask ubits_type;
 
   value_type value; /* concrete value */
   ubits_type ubits; /* uninitialized bits */
@@ -113,8 +115,8 @@ struct TaintedValue
   this_type& operator %= ( this_type const& other ) { value %= other.value; ubits = (ubits or other.ubits) ? -1 : 0; return *this; }
   
   this_type& operator ^= ( this_type const& other ) { value ^= other.value; ubits |= other.ubits; return *this; }
-  this_type& operator &= ( this_type const& other ) { value &= other.value; ubits |= other.ubits; return *this; }
-  this_type& operator |= ( this_type const& other ) { value |= other.value; ubits |= other.ubits; return *this; }
+  this_type& operator &= ( this_type const& other ) { value &= other.value; ubits = (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits); return *this; }
+  this_type& operator |= ( this_type const& other ) { value |= other.value; ubits = (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits); return *this; }
 
   this_type operator + ( this_type const& other ) const { return this_type( value + other.value, (ubits or other.ubits) ? -1 : 0 ); }
   this_type operator - ( this_type const& other ) const { return this_type( value - other.value, (ubits or other.ubits) ? -1 : 0 ); }
@@ -123,8 +125,77 @@ struct TaintedValue
   this_type operator % ( this_type const& other ) const { return this_type( value % other.value, (ubits or other.ubits) ? -1 : 0 ); }
   
   this_type operator ^ ( this_type const& other ) const { return this_type( value ^ other.value, ubits | other.ubits ); }
-  this_type operator & ( this_type const& other ) const { return this_type( value & other.value, ubits | other.ubits ); }
-  this_type operator | ( this_type const& other ) const { return this_type( value | other.value, ubits | other.ubits ); }
+  this_type operator & ( this_type const& other ) const { return this_type( value & other.value, (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits) ); }
+  this_type operator | ( this_type const& other ) const { return this_type( value | other.value, (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits) ); }
+
+  TaintedValue<bool> operator == ( this_type const& other ) const { return TaintedValue<bool>( value == other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator != ( this_type const& other ) const { return TaintedValue<bool>( value != other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator <= ( this_type const& other ) const { return TaintedValue<bool>( value <= other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator >= ( this_type const& other ) const { return TaintedValue<bool>( value >= other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator < ( this_type const& other ) const  { return TaintedValue<bool>( value <  other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator > ( this_type const& other ) const  { return TaintedValue<bool>( value >  other.value, ubits or other.ubits ); }
+
+  TaintedValue<bool> operator ! () const
+  { AssertBool<value_type>::check(); return TaintedValue<bool>( not value, ubits ); }
+
+  TaintedValue<bool> operator && ( TaintedValue<bool> const& other ) const
+  { AssertBool<value_type>::check(); return TaintedValue<bool>( value and other.value, ubits or other.ubits ); }
+
+  TaintedValue<bool> operator || ( TaintedValue<bool> const& other ) const
+  { AssertBool<value_type>::check(); return TaintedValue<bool>( value or other.value, ubits or other.ubits ); }
 };
+
+template <typename T>
+struct TaintedTypeInfo
+{
+  enum { bytecount = sizeof (T) };
+  static void ToBytes( TaintedValue<uint8_t>* dst, T const& src )
+  {
+    typedef typename TX<typename T::value_type>::as_mask bits_type;
+
+    bits_type value = *reinterpret_cast<bits_type const*>(&src.value);
+    bits_type ubits = src.ubits;
+    
+    for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
+      {
+        dst[idx].value = value & 0xff; value >>= 8;
+        dst[idx].ubits = ubits & 0xff; ubits >>= 8;
+      }
+  }
+  static void FromBytes( T& dst, TaintedValue<uint8_t> const* src )
+  {
+    typedef typename T::value_type value_type;
+    typedef typename TX<value_type>::as_mask bits_type;
+
+    bits_type value = 0, ubits = 0;
+    for (unsigned idx = sizeof (T); idx-- > 0;)
+      {
+        value <<= 8; value |= bits_type( src[idx].value );
+        ubits <<= 8; ubits |= bits_type( src[idx].ubits );
+      }
+    dst.value = *reinterpret_cast<value_type const*>(&value);
+    dst.ubits = ubits;
+  }
+  static void Destroy( T& obj ) { obj.~T(); }
+  static void Allocate( T& obj ) { new (&obj) T(); }
+};
+
+template <typename UTP>
+UTP RotateRight( UTP const& value, uint8_t sh )
+{
+  return UTP( unisim::util::arithmetic::RotateRight(value.value, sh), unisim::util::arithmetic::RotateRight(value.ubits, sh) );
+}
+template <typename UTP, typename STP>
+UTP RotateRight( UTP const& value, STP const& sh )
+{
+  return UTP( unisim::util::arithmetic::RotateRight(value.value, sh.value), sh.ubits ? -1 : unisim::util::arithmetic::RotateRight(value.ubits, sh.value) );
+}
+
+template <typename UTP>
+UTP BitScanReverse( UTP const& value )
+{
+  auto bit = unisim::util::arithmetic::BitScanReverse(value.value);
+  return UTP( bit, (value.ubits >> bit) ? -1 : 0 );
+}
 
 #endif /* __ARM64VP_TAINT_HH__ */

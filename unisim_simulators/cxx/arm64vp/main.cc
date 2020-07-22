@@ -62,6 +62,7 @@ main(int argc, char *argv[])
     void free (AArch64::Page& page) const override
     {
       munmap((void*)page.get_data(), page.size());
+      munmap((void*)page.get_udat(), page.size());
     }
     
     int fd;
@@ -89,7 +90,8 @@ main(int argc, char *argv[])
       }
     uint64_t base = 0x01000000, size = f_stat.st_size;
     uint8_t* data = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, linux_image.fd, 0);
-    arch.mem_map(AArch64::Page(base,base+size-1,data,&linux_image));
+    uint8_t* udat = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, -1, 0);
+    arch.mem_map(AArch64::Page(0,base,base+size-1,data,udat,&linux_image));
   }
   
   // std::cerr << "\n*** Run ***" << std::endl;

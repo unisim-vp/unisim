@@ -84,6 +84,8 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
+  typedef CPU<CPU_IMPL> this_type;
+  
   // typedef simfloat::FP FP;
   // typedef FP::F64  F64;
   // typedef FP::F32  F32;
@@ -216,42 +218,54 @@ struct CPU
   //=                 Special  Registers access methods                 
   //====================================================================
 
-  U8  GetVU8 ( unsigned reg, unsigned sub ) { return VectorStorage<U8> (reg)[sub]; }
-  U16 GetVU16( unsigned reg, unsigned sub ) { return VectorStorage<U16>(reg)[sub]; }
-  U32 GetVU32( unsigned reg, unsigned sub ) { return VectorStorage<U32>(reg)[sub]; }
-  U64 GetVU64( unsigned reg, unsigned sub ) { return VectorStorage<U64>(reg)[sub]; }
-  S8  GetVS8 ( unsigned reg, unsigned sub ) { return VectorStorage<S8> (reg)[sub]; }
-  S16 GetVS16( unsigned reg, unsigned sub ) { return VectorStorage<S16>(reg)[sub]; }
-  S32 GetVS32( unsigned reg, unsigned sub ) { return VectorStorage<S32>(reg)[sub]; }
-  S64 GetVS64( unsigned reg, unsigned sub ) { return VectorStorage<S64>(reg)[sub]; }
+  template <typename T>
+  T vector_read(unsigned reg, unsigned sub)
+  {
+    return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
+  }
   
-  void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { VectorStorage<U8> (reg)[sub] = value; }
-  void SetVU16( unsigned reg, unsigned sub, U16 value ) { VectorStorage<U16>(reg)[sub] = value; }
-  void SetVU32( unsigned reg, unsigned sub, U32 value ) { VectorStorage<U32>(reg)[sub] = value; }
-  void SetVU64( unsigned reg, unsigned sub, U64 value ) { VectorStorage<U64>(reg)[sub] = value; }
-  void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { VectorStorage<S8> (reg)[sub] = value; }
-  void SetVS16( unsigned reg, unsigned sub, S16 value ) { VectorStorage<S16>(reg)[sub] = value; }
-  void SetVS32( unsigned reg, unsigned sub, S32 value ) { VectorStorage<S32>(reg)[sub] = value; }
-  void SetVS64( unsigned reg, unsigned sub, S64 value ) { VectorStorage<S64>(reg)[sub] = value; }
-
-  void SetVU8 ( unsigned reg, U8 value )  { SetVU(reg, value); }
-  void SetVU16( unsigned reg, U16 value ) { SetVU(reg, value); }
-  void SetVU32( unsigned reg, U32 value ) { SetVU(reg, value); }
-  void SetVU64( unsigned reg, U64 value ) { SetVU(reg, value); }
-  void SetVS8 ( unsigned reg, S8 value )  { SetVU(reg, value); }
-  void SetVS16( unsigned reg, S16 value ) { SetVU(reg, value); }
-  void SetVS32( unsigned reg, S32 value ) { SetVU(reg, value); }
-  void SetVS64( unsigned reg, S64 value ) { SetVU(reg, value); }
+  U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
+  U16 GetVU16( unsigned reg, unsigned sub ) { return vector_read<U16>(reg, sub); }
+  U32 GetVU32( unsigned reg, unsigned sub ) { return vector_read<U32>(reg, sub); }
+  U64 GetVU64( unsigned reg, unsigned sub ) { return vector_read<U64>(reg, sub); }
+  S8  GetVS8 ( unsigned reg, unsigned sub ) { return vector_read<S8> (reg, sub); }
+  S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
+  S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
+  S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
   
   template <typename T>
-  void SetVU(unsigned reg, T value )
+  void vector_write(unsigned reg, unsigned sub, T value )
   {
-    *(vector_view[reg].template GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
+    (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
   }
+  
+  void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
+  void SetVU16( unsigned reg, unsigned sub, U16 value ) { vector_write( reg, sub, value ); }
+  void SetVU32( unsigned reg, unsigned sub, U32 value ) { vector_write( reg, sub, value ); }
+  void SetVU64( unsigned reg, unsigned sub, U64 value ) { vector_write( reg, sub, value ); }
+  void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { vector_write( reg, sub, value ); }
+  void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
+  void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
+  void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+
+  template <typename T>
+  void vector_write(unsigned reg, T value )
+  {
+    *(vector_views[reg].GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
+  }
+  
+  void SetVU8 ( unsigned reg, U8 value )  { vector_write(reg, value); }
+  void SetVU16( unsigned reg, U16 value ) { vector_write(reg, value); }
+  void SetVU32( unsigned reg, U32 value ) { vector_write(reg, value); }
+  void SetVU64( unsigned reg, U64 value ) { vector_write(reg, value); }
+  void SetVS8 ( unsigned reg, S8 value )  { vector_write(reg, value); }
+  void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
+  void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
+  void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
   
   void ClearHighV( unsigned reg, unsigned bytes )
   {
-    vector_view[reg].Truncate(bytes);
+    vector_views[reg].Truncate(bytes);
   }
 
   //=====================================================================
@@ -405,18 +419,9 @@ protected:
     template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
     typedef U8 Byte;
   };
-  unisim::component::cxx::vector::VUnion<VUConfig> vector_view[VECTORCOUNT];;
+  unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
   
   uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
-  
-  template <typename T> T* VectorStorage( unsigned reg )
-  {
-    return vector_view[reg].template GetStorage( &vector_data[reg][0], T(), VUConfig::BYTECOUNT );
-  }
-  template <typename T> T* VectorZeroedStorage( unsigned reg )
-  {
-    return vector_view[reg].template GetZeroedStorage<T>( &vector_data[reg][0] );
-  }
   
 private:
   virtual void Sync() = 0;
@@ -424,11 +429,16 @@ private:
   //=====================================================================
   //=                          Memory Accesses                          =
   //=====================================================================
-  static unsigned const IPB_LINE_SIZE = 32; //< IPB: Instruction prefetch buffer
-  uint8_t ipb_bytes[IPB_LINE_SIZE];  //< The instruction prefetch buffer
-  uint32_t ipb_base_address;         //< base address of IPB content (cache line size aligned if valid)
+
+  struct IPB
+  {
+    static unsigned const LINE_SIZE = 32; //< IPB: Instruction prefetch buffer
+    uint8_t bytes[LINE_SIZE];             //< The instruction prefetch buffer
+    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
+    IPB() : bytes(), base_address( -1 ) {}
+    uint8_t* get(this_type& core, U64 address);
+  } ipb;
   
-  bool RefillInsnPrefetchBuffer( uint64_t base_address );
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
   
   /** Decoder for the ARM32 instruction set. */

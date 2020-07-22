@@ -97,7 +97,7 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
   /* privates */
   , logger(*this)
   , verbose(false)
-  , ipb_base_address( -1 )
+  , ipb()
   , requires_memory_access_reporting(false)
   , requires_fetch_instruction_reporting(false)
   , requires_commit_instruction_reporting(false)
@@ -478,6 +478,32 @@ CPU<CPU_IMPL>::StepInstruction()
   }
 }
 
+template <class CPU_IMPL>
+uint8_t*
+CPU<CPU_IMPL>::IPB::get(CPU<CPU_IMPL>& core, U64 address)
+{
+  unsigned idx = address % LINE_SIZE;
+  uint64_t req_base_address = address & -LINE_SIZE;
+
+  if (base_address != req_base_address)
+    {
+      // No instruction cache present, just request the insn to the
+      // memory system.
+      if (not core.PhysicalReadMemory(req_base_address, &bytes[0], LINE_SIZE))
+        {
+          base_address = -1;
+          return 0;
+        }
+      base_address = req_base_address;
+  
+      if (unlikely(core.requires_memory_access_reporting and core.memory_access_reporting_import))
+        core.memory_access_reporting_import->
+          ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, LINE_SIZE);
+    }
+
+  return &bytes[idx];
+
+}
 /** Reads ARM32 instructions from the memory system
  * This method allows the user to read instructions from the memory system,
  *   that is, it tries to read from the pertinent caches and if failed from
@@ -490,48 +516,11 @@ template <class CPU_IMPL>
 void 
 CPU<CPU_IMPL>::ReadInsn( uint64_t address, isa::arm64::CodeType& insn )
 {
-  uint64_t base_address = address & -IPB_LINE_SIZE;
-  unsigned buffer_index = address % IPB_LINE_SIZE;
-  
-  if (unlikely(ipb_base_address != base_address))
-    {
-      RefillInsnPrefetchBuffer( base_address );
-    }
-  
-  uint32_t word;
-  memcpy( &word, &ipb_bytes[buffer_index], 4 );
-  
-  // In ARMv8
-  insn = Target2Host(unisim::util::endian::E_LITTLE_ENDIAN, word);
-}
-
-/** Refill the Instruction Prefetch Buffer from the memory system
- * (through the instruction cache if present).
- *
- * This method allows the user to prefetch instructions from the memory
- * system, that is, it tries to read from the pertinent caches and if
- * failed from the external memory system.
- * 
- * @param base_address the (physical) address of the required
- *     instruction that the prefetch instruction buffer should
- *     encompass, once the refill is complete.
- */
-template <class CPU_IMPL>
-bool
-CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint64_t base_address)
-{
-  this->ipb_base_address = base_address;
-  
-  // No instruction cache present, just request the insn to the
-  // memory system.
-  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE))
-    return false;
-  
-  if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
-    memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, IPB_LINE_SIZE);
-  
-  return true;
+  // ARMv8 instruction streams are always little endian
+  uint32_t word = 0;
+  for (uint8_t *beg = ipb.get(*this, address), *itr = &beg[4]; --itr >= beg;)
+    word = word << 8 | *itr;
+  insn = word;
 }
 
 /** Signal an undefined instruction

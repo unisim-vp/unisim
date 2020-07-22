@@ -6253,9 +6253,10 @@ sbc_www.disasm = {
 };
 
 sbc_www.execute = {
+  typedef typename ARCH::BOOL BOOL;
   typedef typename ARCH::U32 U32;
   
-  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not cpu.GetCarry());
+  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not BOOL(cpu.GetCarry()));
   cpu.SetGSR(rd, res);
 };
 
@@ -6270,9 +6271,10 @@ sbc_xxx.disasm = {
 };
 
 sbc_xxx.execute = {
+  typedef typename ARCH::BOOL BOOL;
   typedef typename ARCH::U64 U64;
   
-  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not cpu.GetCarry());
+  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not BOOL(cpu.GetCarry()));
   cpu.SetGSR(rd, res);
 };
 
@@ -6301,7 +6303,7 @@ sbcs_www.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::BOOL BOOL;
   
-  BOOL borrow( not cpu.GetCarry() );
+  BOOL borrow( not BOOL(cpu.GetCarry()) );
   U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(borrow);
   cpu.SetGSR(rd, res);
   
@@ -6327,7 +6329,7 @@ sbcs_xxx.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::BOOL BOOL;
   
-  BOOL borrow( not cpu.GetCarry() );
+  BOOL borrow( not BOOL(cpu.GetCarry()) );
   U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(borrow);
   cpu.SetGSR(rd, res);
   

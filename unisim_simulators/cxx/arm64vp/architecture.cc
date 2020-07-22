@@ -71,12 +71,30 @@ AArch64::mem_map(Page&& page)
   return true;
 }
 
-bool
-AArch64::mem_map(uint64_t addr, uint64_t size)
+AArch64::Page const&
+AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 {
-  static struct : Page::Free { void free (Page& page) const override { delete [] page.get_data(); } } free;
-  
-  return this->mem_map( Page(addr, size, new uint8_t[size], &free) );
+  unsigned const PAGE_SIZE = 0x10000;
+  uint64_t base = addr & -PAGE_SIZE, last = base + PAGE_SIZE - 1;
+  if (pi != pages.end() and pi->last >= base)
+    base = pi->last + 1;
+  if (pages.size() and pi != pages.begin() and (--pi)->base <= last)
+    { last = pi->base - 1; }
+
+  unsigned size = last-base+1;
+  auto udat = new uint8_t[size];
+  std::fill(&udat[0], &udat[size], -1);
+  static struct : Page::Free { void free (Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
+  return *pages.insert(pi, Page(0, base, last, new uint8_t[size], udat, &free));
+}
+
+bool
+AArch64::new_page(uint64_t addr, uint64_t size)
+{
+  auto udat = new uint8_t[size];
+  std::fill(&udat[0], &udat[size], -1);
+  static struct : Page::Free { void free (Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
+  return this->mem_map( Page(0, addr, addr+size-1, new uint8_t[size], udat, &free) );
 }
 
 AArch64::Page::Free AArch64::Page::Free::nop;
@@ -86,10 +104,13 @@ AArch64::IPB::get(AArch64& core, uint64_t address)
 {
   unsigned idx = address % LINE_SIZE;
   uint64_t req_base_address = address & -LINE_SIZE;
-
   if (base_address != req_base_address)
     {
-      core.free_read_memory(req_base_address, &bytes[0], LINE_SIZE);
+      uint8_t ubuf[LINE_SIZE];
+      if (core.access_page(address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
+        { struct Bad {}; throw Bad(); }
+      if (not std::all_of( &ubuf[0], &ubuf[LINE_SIZE], [](unsigned char const byte) { return byte == 0; } ))
+        { struct Bad {}; throw Bad(); }
       base_address = req_base_address;
     }
   
@@ -196,3 +217,29 @@ AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64
   op->disasm(*this,std::cerr);
   std::cerr << "`.\n";
 }
+
+void AArch64::SysReg::Write( AArch64& cpu, U64 value ) const
+{
+  std::cerr << "Writing " << Describe();
+  throw 0; // cpu.UnpredictableInsnBehaviour();
+}
+
+AArch64::U64
+AArch64::SysReg::Read( AArch64& cpu ) const
+{
+  std::cerr << "Reading " << Describe();
+  throw 0; // cpu.UnpredictableInsnBehaviour();
+  return U64();
+}
+
+void
+AArch64::dc_zva(U64 addr)
+{
+  if (addr.ubits) { struct Bad {}; throw Bad (); }
+  unsigned const size = 64;
+  uint8_t buffer[size] = {0};
+  if (modify_page(addr.value).write(addr.value,&buffer[0],&buffer[0],size) != size)
+    { struct Bad {}; throw Bad (); }
+}
+
+
