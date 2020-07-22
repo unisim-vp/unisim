@@ -280,14 +280,14 @@ struct AArch64
   struct SysReg
   {
     virtual            ~SysReg() {}
-    virtual void        Write( AArch64& cpu, U64 value ) const;
+    virtual void        Write( AArch64& cpu, U64 const& value ) const;
     virtual U64         Read( AArch64& cpu ) const;
     virtual char const* Describe() const = 0;
     virtual char const* Name() const = 0;
   };
   
-  virtual SysReg const&  GetSystemRegister( U8 op0, U8 op1, U8 crn, U8 crm, U8 op2 );
-  virtual void     ResetSystemRegisters();
+  virtual SysReg const&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  virtual void           ResetSystemRegisters();
   
   struct VUConfig
   {
