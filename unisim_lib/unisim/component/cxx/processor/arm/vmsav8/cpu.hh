@@ -98,6 +98,10 @@ struct CPU
   typedef int32_t  S32;
   typedef int64_t  S64;
   typedef bool     BOOL;
+
+  typedef U64      UREG;
+  typedef S64      SREG;
+  
   
   /**********************************************************************
    ***                   Constructors / Destructors                   ***
@@ -408,8 +412,8 @@ protected:
     virtual char const* Name() const = 0;
   };
   
-  virtual SysReg const&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  virtual void     ResetSystemRegisters();
+  virtual SysReg const& GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  virtual void          ResetSystemRegisters();
   
   static unsigned const VECTORCOUNT = 32;
 

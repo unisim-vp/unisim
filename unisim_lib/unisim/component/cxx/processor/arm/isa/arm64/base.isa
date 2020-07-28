@@ -5480,20 +5480,18 @@ movk_x.execute = {
  * Move from system register
  */
 
-op mrs_reg( 0b110101010011[12] : o0[1] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
-mrs_reg.var format : {char const*} = {"base,249"};
+op mrs( 0b1101010100[10] : 1[1] : op0[2] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
+mrs.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(op0, op1, crn, crm, op2)};
+mrs.var format : {char const*} = {"base,249"};
 
-mrs_reg.disasm = {
-  sink << "mrs\t" << DisasmGZXR(rt) << ", ";
-  cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2, sink );
-  sink << "\t; ";
-  cpu.DescribeSystemRegister( 2+o0, op1, crn, crm, op2, sink );
+mrs.disasm = {
+  sysreg->DisasmRead(op0, op1, crn, crm, op2, rt, sink);
 };
 
-mrs_reg.execute = {
+mrs.execute = {
   cpu.CheckSystemAccess(op1);
-  typename ARCH::U64 src( cpu.ReadSystemRegister( 2+o0, op1, crn, crm, op2 ) );
-  cpu.SetGZR(rt, src);
+  
+  cpu.SetGZR(rt, sysreg->Read(op0, op1, crn, crm, op2, cpu));
 };
 
 /*
@@ -5506,7 +5504,7 @@ mrs_reg.execute = {
  * Move immediate to processor state field
  */
 
-op msr_imm( 0b1101010100000[13] : op1[3] : 0b0100[4] : imm[4] : op2[3] : rt[5] );
+op msr_imm( 0b1101010100[10] : 0[1] : 0[2] : op1[3] : 0b0100[4] : imm[4] : op2[3] : rt[5] );
 msr_imm.var format : {char const*} = {"base,1794"};
 
 msr_imm.disasm = {
@@ -5523,20 +5521,18 @@ msr_imm.disasm = {
  * Move to system register
  */
 
-op msr_reg( 0b110101010001[12] : o0[1] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
-msr_reg.var format : {char const*} = {"base,248"};
+op msr( 0b1101010100[10] : 0[1] : op0[2] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
+msr.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(op0, op1, crn, crm, op2)};
+msr.var format : {char const*} = {"base,248"};
 
-msr_reg.disasm = {
-  sink << "msr\t";
-  cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2, sink );
-  sink << ", " << DisasmGZXR(rt) << "\t; ";
-  cpu.DescribeSystemRegister( 2+o0, op1, crn, crm, op2, sink );
+msr.disasm = {
+  sysreg->DisasmWrite(op0, op1, crn, crm, op2, rt, sink);
 };
 
-msr_reg.execute = {
+msr.execute = {
   cpu.CheckSystemAccess(op1);
-  typename ARCH::U64 src( cpu.GetGZR(rt) );
-  cpu.WriteSystemRegister( 2+o0, op1, crn, crm, op2, src );
+
+  sysreg->Write(op0, op1, crn, crm, op2, cpu, cpu.GetGZR(rt));
 };
 
 /*
@@ -5598,6 +5594,9 @@ nop.var format : {char const*} = {"base,2948"};
 
 nop.disasm = {
   sink << "nop";
+};
+
+nop.execute = {
 };
 
 /*
@@ -8675,12 +8674,11 @@ svc.execute = {
  * System instruction
  */
 
-op sys( 0b1101010100001[13] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
-sys.var format : {char const*} = {"base,352"};
+// op sys( 0b1101010100[10] : 0[1] : 1[2] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
+// sys.var format : {char const*} = {"base,352"};
 
-sys.disasm = {
-  sink << "sys\t" << DisasmI(op1) << ", " << DisasmC(crn) << ", " << DisasmC(crm) << ", " << DisasmI(op2) << ", " << DisasmGZXR(rt);
-};
+// sys.disasm = {
+// };
 
 /*
  * end of SYS
@@ -8692,12 +8690,11 @@ sys.disasm = {
  * System instruction with result
  */
 
-op sysl( 0b1101010100101[13] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
-sysl.var format : {char const*} = {"base,353"};
+// op sysl( 0b1101010100101[13] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
+// sysl.var format : {char const*} = {"base,353"};
 
-sysl.disasm = {
-  sink << "sysl\t" << DisasmGZXR(rt) << ", " << DisasmI(op1) << ", " << DisasmC(crn) << ", " << DisasmC(crm) << ", " << DisasmI(op2);
-};
+// sysl.disasm = {
+// };
 
 /*
  * end of SYSL

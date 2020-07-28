@@ -90,27 +90,21 @@ main(int argc, char *argv[])
       }
     uint64_t base = 0x01000000, size = f_stat.st_size;
     uint8_t* data = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, linux_image.fd, 0);
-    uint8_t* udat = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, -1, 0);
+    if (data == (void*)-1) { perror("mmap error"); return 1; }
+    uint8_t* udat = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    if (udat == (void*)-1) { perror("mmap error"); return 1; }
     arch.mem_map(AArch64::Page(0,base,base+size-1,data,udat,&linux_image));
+    arch.BranchTo(AArch64::U64(base),arch.B_JMP);
   }
   
-  // std::cerr << "\n*** Run ***" << std::endl;
+  std::cerr << "\n*** Run ***" << std::endl;
+
+  for (;;)
+    {
+      arch.step_instruction();
+    }
   
-  // while (not linux32.exited)
-  //   {
-  //     Arch::Operation* op = cpu.fetch();
-  //     // op->disasm( std::cerr );
-  //     // std::cerr << std::endl;
-  //     asm volatile ("operation_execute:");
-  //     op->execute( cpu );
-  //     //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-      
-  //     // if ((cpu.m_instcount % 0x1000000) == 0)
-  //     //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
-  //   }
-  
-  // std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
-  
+  std::cerr << "WTF" << std::endl;
   
   return 0;
 }

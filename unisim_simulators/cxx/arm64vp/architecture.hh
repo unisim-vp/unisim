@@ -37,6 +37,7 @@
 
 #include "taint.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/arm/system_register.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <iosfwd>
 #include <set>
@@ -55,10 +56,15 @@ struct AArch64
   typedef TaintedValue< int64_t> S64;
   
   typedef TaintedValue<  bool  > BOOL;
+
+  typedef U64 UREG;
+  typedef U64 SREG;
+  
   
   AArch64();
-
+ 
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>*);
+  void UndefinedInstruction();
 
   /** Get the value contained by a General-purpose or Stack Register.
    *
@@ -181,12 +187,16 @@ struct AArch64
   
   /** Get the next Program Counter */
   U64 GetNPC() { return U64(next_insn_addr); }
+
+  /** Manage System Registers **/
+  typedef unisim::component::cxx::processor::arm::SystemRegister<AArch64> SysReg;
+  static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  void                 CheckSystemAccess( uint8_t op1 );
   
-  void        CheckSystemAccess( uint8_t op1 );
-  U64         ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, U64 value );
-  void        DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
-  void        NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
+  // U64         ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  // void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, U64 value );
+  // void        DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
+  // void        NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
   
   //=====================================================================
   //=                      Control Transfer methods                     =
@@ -269,25 +279,9 @@ struct AArch64
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
   
-
-  // Cache operation
-  void dc_zva(U64 addr);
-  
   /**********************************************************************
    ***                       Architectural state                      ***
    **********************************************************************/
-  
-  struct SysReg
-  {
-    virtual            ~SysReg() {}
-    virtual void        Write( AArch64& cpu, U64 const& value ) const;
-    virtual U64         Read( AArch64& cpu ) const;
-    virtual char const* Describe() const = 0;
-    virtual char const* Name() const = 0;
-  };
-  
-  virtual SysReg const&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  virtual void           ResetSystemRegisters();
   
   struct VUConfig
   {
