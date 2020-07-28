@@ -207,11 +207,19 @@ extern "C"
   }
 
   DLL_API int
-  get_register_index(struct _Decoder* adecoder, char const* register_name, unsigned* size, unsigned* low_bit, unsigned* high_bit, bool* is_floating_register)
+  get_register_index(struct _Decoder* adecoder, char const* register_name, unsigned* size,
+        unsigned* low_bit, unsigned* high_bit, bool* is_floating_register)
   {
     Mips::RegisterIndex reg(register_name);
 
-    return reg.code != reg.end ? reg.idx() : -1;
+    int result = reg.code != reg.end ? reg.idx() : -1;
+    if (result >= 0) {
+      if (size) *size = 32;
+      if (low_bit) *low_bit = 0;
+      if (high_bit) *high_bit = 31;
+      if (is_floating_register) *is_floating_register = false;
+    }
+    return result;
   }
 
   DLL_API void

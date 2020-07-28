@@ -61,7 +61,7 @@ namespace Mips
           auto* next = coderoot->getnext(alt);
           if (next->updates.size() == 0)
             continue;
-          if (next->updates.size() != 1)
+          if (next->updates.size() > 2) // an update may exist after the branch
             throw BadCFG();
           if (auto b = dynamic_cast<Interpreter::Goto const*>(next->updates.begin()->node))
             {
