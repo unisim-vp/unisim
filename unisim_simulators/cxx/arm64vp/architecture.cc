@@ -215,6 +215,7 @@ void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>* op)
 {
   op->disasm(*this, std::cerr << "Undefined instruction : `"); std::cerr << "`.\n";
+  UndefinedInstruction();
 }
 
 void
@@ -355,6 +356,40 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     virtual char const* WriteOperation() const override { return "dc"; }
   };
   
+  struct PStateSysReg : public SysReg
+  {
+    virtual char const* Name() const = 0;
+    void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    { sink << "msr\t<read-error>, " << Name(); }
+    void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    {
+      sink << "msr\t" << Name() << ", " << unisim::component::cxx::processor::arm::isa::arm64::DisasmI(crm);
+    }
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override
+    {
+      DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr); std::cerr << std::endl;
+      cpu.UndefinedInstruction();
+      return U64();
+    }
+  };
+  
+  struct BarrierSysReg : public SysReg
+  {
+    virtual char const* Operation() const = 0;
+    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    { sink << Operation() << "\t<read-error>"; }
+    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    { sink << Operation() << '\t' << unisim::component::cxx::processor::arm::isa::arm64::DisasmBarrierOption(crm); }
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override
+    {
+      DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr); std::cerr << std::endl;
+      cpu.UndefinedInstruction();
+      return U64();
+    }
+    virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
+    { /* No OoO nor speculative execution, nothing to do */ }
+  };
+
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
       /*** Data Cache Maintenance ***/
@@ -2142,6 +2177,54 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     }
 
+  /*  System instructions with immediate, CRm used as immediate field,
+   *  and thus ignored during decode.  (TODO: rt should be 0b11111).
+   */
+  switch (SYSENCODE(op0, op1, crn, 0, op2))
+    {
+    case SYSENCODE(0b00,0b011,0b0011,0b0000,0b100):
+      {
+        static struct : public BarrierSysReg { virtual char const* Operation() const override { return "dsb"; } } x;
+        return &x;
+      } break;
+      
+    case SYSENCODE(0b00,0b011,0b0011,0b0000,0b101):
+      {
+        static struct : public BarrierSysReg { virtual char const* Operation() const override { return "dmb"; } } x;
+        return &x;
+      } break;
+      
+    case SYSENCODE(0b00,0b011,0b0011,0b0000,0b110):
+      {
+        static struct : public BarrierSysReg { virtual char const* Operation() const override { return "isb"; } } x;
+        return &x;
+      } break;
+      
+    case SYSENCODE(0b00,0b000,0b0100,0b0000,0b101):
+      {
+        static struct : public PStateSysReg {
+          virtual char const* Name() const override { return "PSTATEField_SP"; }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override { throw 0; }
+        } x; return &x;
+      } break;
+      
+    case SYSENCODE(0b00,0b011,0b0100,0b0000,0b110):
+      {
+        static struct : public PStateSysReg {
+          virtual char const* Name() const override { return "PSTATEField_DAIFSet"; }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override { throw 0; }
+        } x; return &x;
+      } break;
+      
+    case SYSENCODE(0b00,0b011,0b0100,0b0000,0b111):
+      {
+        static struct : public PStateSysReg {
+          virtual char const* Name() const override { return "PSTATEField_DAIFClr"; }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override { throw 0; }
+        } x; return &x;
+      } break;
+    }
+  
   static struct UnknownSysReg : public SysReg
   {
     void fields(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink) const
