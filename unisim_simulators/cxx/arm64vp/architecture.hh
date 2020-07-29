@@ -37,7 +37,6 @@
 
 #include "taint.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
-#include <unisim/component/cxx/processor/arm/system_register.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <iosfwd>
 #include <set>
@@ -189,14 +188,20 @@ struct AArch64
   U64 GetNPC() { return U64(next_insn_addr); }
 
   /** Manage System Registers **/
-  typedef unisim::component::cxx::processor::arm::SystemRegister<AArch64> SysReg;
+  struct SysReg
+  {
+    virtual char const* Name() const { return 0; };
+    virtual char const* Describe() const { return 0; };
+    virtual char const* ReadOperation() const { return "mrs"; }
+    virtual char const* WriteOperation() const { return "msr"; };
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const;
+    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+  };
+  
   static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   void                 CheckSystemAccess( uint8_t op1 );
-  
-  // U64         ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  // void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, U64 value );
-  // void        DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
-  // void        NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
   
   //=====================================================================
   //=                      Control Transfer methods                     =

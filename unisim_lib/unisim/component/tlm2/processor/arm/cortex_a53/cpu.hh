@@ -161,7 +161,7 @@ private:
 
 public:
   // System Registers
-  virtual SysReg const&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) override;
+  static SysReg const*  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
 
   // Cache operation
   void dc_zva(uint64_t addr);

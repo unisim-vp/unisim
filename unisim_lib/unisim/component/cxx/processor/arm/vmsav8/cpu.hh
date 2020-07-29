@@ -171,6 +171,7 @@ struct CPU
   void StepInstruction();
 
   void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL>* insn );
+  void UndefinedInstruction();
   
   bool Cond( bool cond ) { return cond; }
   
@@ -296,12 +297,22 @@ struct CPU
   
   /** Get the next Program Counter */
   uint64_t GetNPC() { return next_insn_addr; }
+
+  /** Manage System Registers **/
+  struct SysReg
+  {
+    virtual char const* Name() const { return 0; };
+    virtual char const* Describe() const { return 0; };
+    virtual char const* ReadOperation() const { return "mrs"; }
+    virtual char const* WriteOperation() const { return "msr"; };
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const;
+    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+  };
   
+  static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   void        CheckSystemAccess( uint8_t op1 );
-  uint64_t    ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint64_t value );
-  void        DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
-  void        NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink );
   
   //=====================================================================
   //=                      Control Transfer methods                     =
@@ -396,23 +407,6 @@ protected:
 
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register
   
-  struct SysReg
-  {
-    virtual            ~SysReg() {}
-    virtual void        Write( CPU& cpu, uint64_t value ) const {
-      cpu.logger << unisim::kernel::logger::DebugWarning << "Writing " << Describe() << unisim::kernel::logger::EndDebugWarning;
-      throw 0; // cpu.UnpredictableInsnBehaviour();
-    }
-    virtual uint64_t    Read( CPU& cpu ) const {
-      cpu.logger << unisim::kernel::logger::DebugWarning << "Reading " << Describe() << unisim::kernel::logger::EndDebugWarning;
-      throw 0; // cpu.UnpredictableInsnBehaviour();
-      return 0;
-    }
-    virtual char const* Describe() const = 0;
-    virtual char const* Name() const = 0;
-  };
-  
-  virtual SysReg const& GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   virtual void          ResetSystemRegisters();
   
   static unsigned const VECTORCOUNT = 32;

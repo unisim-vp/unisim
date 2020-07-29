@@ -11,4 +11,3 @@ unisim/component/cxx/processor/arm/models.hh
 unisim/component/cxx/processor/arm/psr.hh
 unisim/component/cxx/processor/arm/register_field.hh
 unisim/component/cxx/processor/arm/simfloat.hh
-unisim/component/cxx/processor/arm/system_register.hh
