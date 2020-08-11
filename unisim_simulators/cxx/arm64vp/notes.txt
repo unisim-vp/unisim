@@ -1,0 +1,2 @@
+CurrentEL is compared at start to a full 32-bits constant "0x8"; which
+shouldn't be done as all bits except 2 and 3 are res0.  

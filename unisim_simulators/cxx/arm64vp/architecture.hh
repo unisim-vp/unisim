@@ -190,17 +190,14 @@ struct AArch64
   /** Manage System Registers **/
   struct SysReg
   {
-    virtual char const* Name() const { return 0; };
-    virtual char const* Describe() const { return 0; };
-    virtual char const* ReadOperation() const { return "mrs"; }
-    virtual char const* WriteOperation() const { return "msr"; };
-    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const;
-    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const;
-    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
-    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const = 0;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const = 0;
+    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
+    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
   };
   
   static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  static unsigned      GetExceptionLevel( uint8_t op1 ) { switch (op1) { case 0: case 1: case 2: return 1; case 4: return 2; case 6: return 3; } return 0; }
   void                 CheckSystemAccess( uint8_t op1 );
   
   //=====================================================================
@@ -408,6 +405,13 @@ struct AArch64
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
   
+  void error_mem_overlap( Page const& a, Page const& b );
+  
+  bool new_page(uint64_t addr, uint64_t size);
+  bool mem_map(Page&& page);
+
+  void step_instruction();
+
   struct IPB
   {
     static unsigned const LINE_SIZE = 32; //< IPB size
@@ -416,19 +420,37 @@ struct AArch64
     IPB() : bytes(), base_address( -1 ) {}
     uint8_t* get(AArch64& core, uint64_t address);
   };
-  
-  void error_mem_overlap( Page const& a, Page const& b );
-  
-  bool new_page(uint64_t addr, uint64_t size);
-  bool mem_map(Page&& page);
 
-  void step_instruction();
+  struct PState
+  {
+    unsigned D  :  1;
+    unsigned A  :  1;
+    unsigned I  :  1;
+    unsigned F  :  1;
+    unsigned SS :  1;
+    unsigned IL :  1;
+    unsigned EL :  2;
+    unsigned SP :  1;
+    PState() : D(), A(), I(), F(), SS(), IL(), EL(1), SP(1) {}
 
+    U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
+  };
+
+  struct EL
+  {
+    U32 SCTLR;
+  };
+  
+  EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
+  
   Pages    pages;
   IPB      ipb;
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> decoder;
   
   U64      gpr[32];
+  U64      sp_el[4];
+  EL       el1;
+  PState   pstate;
   U8       nzcv;
   uint64_t current_insn_addr, next_insn_addr;
   U64      TPIDRURW; //< User Read/Write Thread ID Register
