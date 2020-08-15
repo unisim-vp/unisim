@@ -1,2 +1,6 @@
+#1 Defensive programming
 CurrentEL is compared at start to a full 32-bits constant "0x8"; which
 shouldn't be done as all bits except 2 and 3 are res0.  
+
+#2 The one shot FUJITSU
+FUJITSU errata; tcr_clear_errata_bits - Clear TCR bits that trigger an errata on this CPU

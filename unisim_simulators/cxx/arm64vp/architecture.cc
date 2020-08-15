@@ -1076,7 +1076,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR0_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "AArch64 Memory Model Feature Register 0"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          { return U64(); }
+          {
+            return
+              U64(0)                << 32 | // RES0
+              U64(0,0b1111)         << 28 | // TGran4, Support for 4 Kbyte memory translation granule size
+              U64(0,0b1111)         << 24 | // TGran64, Support for 64 Kbyte memory translation granule size
+              U64(0,0b1111)         << 20 | // TGran16, Support for 16 Kbyte memory translation granule size
+              U64(0b0000)           << 16 | // BigEndEL0, Mixed-endian configuration support
+              U64(0b0000)           << 12 | // SNSMem, Secure versus Non-secure Memory distinction
+              U64(0b0000)           <<  8 | // BigEnd, Mixed-endian configuration support
+              U64(0,0b1111)         <<  4 | // ASIDBits, Number of ASID bits
+              U64(0b0101)           <<  0;  // PARange, Physical Address range supported
+          }
         } x; return &x;
       } break;
 
