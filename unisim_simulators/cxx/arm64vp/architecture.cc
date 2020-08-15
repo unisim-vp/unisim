@@ -38,6 +38,20 @@
 #include <iomanip>
 
 AArch64::AArch64()
+  : mmu()
+  , pages()
+  , ipb()
+  , decoder()
+  , gpr()
+  , sp_el()
+  , el1()
+  , pstate()
+  , nzcv()
+  , current_insn_addr()
+  , next_insn_addr()
+  , TPIDRURW()
+  , CPACR()
+  , event()
 {
   std::cout << "Let's go!\n";
 }
@@ -224,6 +238,13 @@ AArch64::UndefinedInstruction()
   struct Bad {}; throw Bad ();
 }
 
+void
+AArch64::TODO()
+{
+  //struct Bad {}; throw Bad ();
+  std::cerr << "!TODO!\n";
+}
+
 /** CallSupervisor
  *
  *  This method is called by SWI/SVC instructions to handle software interrupts.
@@ -330,6 +351,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
   {
     virtual char const* ReadOperation() const override { return "ic<bad-read>"; }
     virtual char const* WriteOperation() const override { return "ic"; }
+  };
+
+  struct TLBIASysReg : public BaseSysReg
+  {
+    virtual char const* ReadOperation() const override { return "tlbi<bad-read>"; }
+    virtual char const* WriteOperation() const override { return "tlbi"; }
+  };
+
+  struct TLBISysReg : public TLBIASysReg
+  {
+    void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    {
+      Encoding e{op0, op1, crn, crm, op2};
+      Name(e, sink << "tlbi\t");
+      Describe(e, "\t; ", sink);
+    }
   };
 
   struct PStateSysReg : public BaseSysReg
@@ -458,7 +495,237 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
+
+      /*** Data Cache Maintenance ***/
       
+    case SYSENCODE(0b01,0b100,0b1000,0b0111,0b100):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "alle1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0011,0b100):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "alle1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0111,0b000):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "alle2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0011,0b000):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "alle2is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b110,0b1000,0b0111,0b000):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "alle3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b110,0b1000,0b0011,0b000):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "alle3is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0111,0b010):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "aside1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0011,0b010):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "aside1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0100,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "ipas2e1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0000,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "ipas2e1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0100,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "ipas2le1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0000,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "ipas2le1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0111,0b011):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vaae1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0011,0b011):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vaae1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0111,0b111):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vaale1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0011,0b111):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vaale1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0111,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vae1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0011,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vae1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0111,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vae2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0011,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vae2is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b110,0b1000,0b0111,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vae3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b110,0b1000,0b0011,0b001):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vae3is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0111,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vale1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0011,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vale1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0111,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vale2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0011,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vale2is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b110,0b1000,0b0111,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vale3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b110,0b1000,0b0011,0b101):
+      {
+        static struct : public TLBIASysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vale3is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0111,0b000):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vmalle1"; }
+          void Describe(Encoding, char const* p, std::ostream& sink) const override
+          { sink << p << "TLB Invalidate by VMID, All entries at stage 1, EL1"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
+          { cpu.TODO(); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b000,0b1000,0b0011,0b000):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vmalle1is"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0111,0b110):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vmalls12e1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b1000,0b0011,0b110):
+      {
+        static struct : public TLBISysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "vmalls12e1is"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0100,0b0010,0b010): // CurrentEL, Current Exception Level
       {
         static struct : public BaseSysReg {
@@ -604,7 +871,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CPACR_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Architectural Feature Access Control Register"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override
+          { sink << prefix << "Architectural Feature Access Control Register"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.CPACR = value.value; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          { return U64(cpu.CPACR); }
         } x; return &x;
       } break;
 
@@ -640,7 +912,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return
-              U64(0,0b1)          << 31 | // RES1, Reserved.
+              U64(1,0b1)          << 31 | // RES1, Reserved.
               U64(0,0b111)        << 28 | // RES0, Reserved.
               U64(0,0b1111)       << 24 | // CWG, Cache Writeback Granule.
               U64(0,0b1111)       << 20 | // ERG, Exclusives Reservation Granule.
@@ -648,8 +920,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(0,0b11)         << 14 | // L1Ip, Level 1 instruction cache policy.
               U64(0,0b1111111111) <<  4 | // RES0, Reserved.
               U64(0b0011)         <<  0;  // IminLine,  (8 words)
-            return U64((0b100 << 29) | (3 << 24) | (3 << 20) | (3 << 16) | (0b11 << 14) | (3 <<  0)
-                       );
           }
         } x; return &x;
       } break;
@@ -771,6 +1041,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64DFR0_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "AArch64 Debug Feature Register 0"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          { cpu.TODO(); return U64(0); }
         } x; return &x;
       } break;
 
@@ -803,6 +1075,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR0_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "AArch64 Memory Model Feature Register 0"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          { return U64(); }
         } x; return &x;
       } break;
 
@@ -963,6 +1237,10 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Memory Attribute Indirection Register (EL1)"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.mmu.MAIR_EL1 = value.value; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          { return U64(cpu.mmu.MAIR_EL1); }
         } x; return &x;
       } break;
 
@@ -987,10 +1265,21 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MIDR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Main ID Register"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
+          {
+            if (cpu.event.pop(cpu.event.am_i_fujitsu))
+              return U64(0);
+            return
+              U64(0,0b11111111)     << 24 | // Implementer, The Implementer code.
+              U64(0,0b1111)         << 20 | // Variant, An IMPLEMENTATION DEFINED variant number.
+              U64(0,0b1111)         << 16 | // Architecture.
+              U64(0,0b111111111111) <<  4 | // PartNum, An IMPLEMENTATION DEFINED primary part number for the device.
+              U64(0,0b1111)         <<  0;  // Revision, An IMPLEMENTATION DEFINED revision number for the device.
+          }
         } x; return &x;
       } break;
 
-    case SYSENCODE(0b11,0b000,0b0000,0b0000,0b101): // 2.65: MPIDR_EL1, Multiprocessor A0nity Register
+    case SYSENCODE(0b11,0b000,0b0000,0b0000,0b101): // 2.65: MPIDR_EL1, Multiprocessor Affinity Register
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MPIDR_EL1"; }
@@ -1443,6 +1732,10 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MDSCR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Monitor Debug System Control Register"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.TODO(); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          { return U64(); }
         } x; return &x;
       } break;
 

@@ -65,6 +65,8 @@ struct AArch64
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>*);
   void UndefinedInstruction();
 
+  void TODO();
+
   /** Get the value contained by a General-purpose or Stack Register.
    *
    * @param id the register index
@@ -443,6 +445,25 @@ struct AArch64
   
   EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
   
+  struct MMU
+  {
+    MMU() : MAIR_EL1() {}
+
+    uint64_t MAIR_EL1;
+    // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
+    // uint32_t ttbcr; /*< Translation Table Base Control Register */
+    // uint32_t ttbr0; /*< Translation Table Base Register 0 */
+    // uint32_t ttbr1; /*< Translation Table Base Register 1 */
+    // uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
+    // uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
+    // uint32_t dacr;
+
+    // uint16_t attr_cache[64];
+
+    // void refresh_attr_cache( bool tre );
+  };
+  
+  MMU      mmu;  
   Pages    pages;
   IPB      ipb;
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> decoder;
@@ -453,7 +474,21 @@ struct AArch64
   PState   pstate;
   U8       nzcv;
   uint64_t current_insn_addr, next_insn_addr;
+  /** system registers**/
   U64      TPIDRURW; //< User Read/Write Thread ID Register
+  uint32_t CPACR;
+
+  struct Event
+  {
+    enum evt_type { am_i_fujitsu = 0, end } current;
+    Event() : current(am_i_fujitsu) {}
+    bool pop( evt_type evt )
+    {
+      if (evt != current) return false;
+      evt = evt_type(int(evt)+1);
+      return true;
+    }
+  } event;
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */
