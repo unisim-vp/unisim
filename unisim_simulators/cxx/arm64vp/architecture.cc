@@ -1096,6 +1096,13 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR1_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "AArch64 Memory Model Feature Register 1"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          {
+            /* RES0, Reserved for future expansion of the information
+             * about the implemented memory model and memory
+             * management support in AArch64. */
+            return U64(0);
+          }
         } x; return &x;
       } break;
 
