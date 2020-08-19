@@ -450,6 +450,7 @@ struct AArch64
     MMU() : MAIR_EL1() {}
 
     uint64_t MAIR_EL1;
+    uint64_t TCR_EL1;
     // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
     // uint32_t ttbcr; /*< Translation Table Base Control Register */
     // uint32_t ttbr0; /*< Translation Table Base Register 0 */
