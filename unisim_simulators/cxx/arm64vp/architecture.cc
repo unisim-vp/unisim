@@ -400,6 +400,10 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public DCSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "iallu"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Invalidate all instruction caches to Point of Unification"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
+          {
+            cpu.ipb.base_address = -1;
+          }
         } x; return &x;
       } break;
 
@@ -1079,9 +1083,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           {
             return
               U64(0)                << 32 | // RES0
-              U64(0,0b1111)         << 28 | // TGran4, Support for 4 Kbyte memory translation granule size
-              U64(0,0b1111)         << 24 | // TGran64, Support for 64 Kbyte memory translation granule size
-              U64(0,0b1111)         << 20 | // TGran16, Support for 16 Kbyte memory translation granule size
+              U64(0b0000)           << 28 | // TGran4, Support for 4 Kbyte memory translation granule size
+              U64(0b0000)           << 24 | // TGran64, Support for 64 Kbyte memory translation granule size
+              U64(0b0000)           << 20 | // TGran16, Support for 16 Kbyte memory translation granule size
               U64(0b0000)           << 16 | // BigEndEL0, Mixed-endian configuration support
               U64(0b0000)           << 12 | // SNSMem, Secure versus Non-secure Memory distinction
               U64(0b0000)           <<  8 | // BigEnd, Mixed-endian configuration support
@@ -1408,8 +1412,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "SCTLR_EL" << AArch64::GetExceptionLevel(e.op1); }
           void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "System Control Register (EL" << AArch64::GetExceptionLevel(e.op1) << ")"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(cpu.GetExceptionLevel(op1)).SCTLR); }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.get_el(cpu.GetExceptionLevel(op1)).SCTLR = U32(value); }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(cpu.GetExceptionLevel(op1)).SCTLR); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
+          {
+            if (value.ubits) { struct Bad {}; throw Bad(); }
+            cpu.get_el(cpu.GetExceptionLevel(op1)).SetSCTLR(cpu, value.value);
+          }
         } x; return &x;
       } break;
 
@@ -1423,7 +1431,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           {
             if (value.ubits) { struct Bad {}; throw Bad (); }
             cpu.mmu.TCR_EL1 = value.value;
-            throw 0;
           }
         } x; return &x;
       } break;
@@ -1509,6 +1516,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Translation Table Base Register 0 (EL1)"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TTBR0_EL1); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
+          {
+            if (value.ubits) { struct Bad {}; throw Bad (); }
+            cpu.mmu.TTBR0_EL1 = value.value;
+          }
         } x; return &x;
       } break;
 
@@ -1533,6 +1546,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR1_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Translation Table Base Register 1"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TTBR1_EL1); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
+          {
+            if (value.ubits) { struct Bad {}; throw Bad (); }
+            cpu.mmu.TTBR1_EL1 = value.value;
+          }
         } x; return &x;
       } break;
 

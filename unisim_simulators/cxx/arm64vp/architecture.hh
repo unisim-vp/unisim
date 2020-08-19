@@ -440,7 +440,11 @@ struct AArch64
 
   struct EL
   {
-    U32 SCTLR;
+    uint32_t SCTLR;
+    void SetSCTLR(AArch64& cpu, uint32_t value)
+    {
+      SCTLR = value;
+    }
   };
   
   EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
@@ -451,6 +455,8 @@ struct AArch64
 
     uint64_t MAIR_EL1;
     uint64_t TCR_EL1;
+    uint64_t TTBR0_EL1;
+    uint64_t TTBR1_EL1;
     // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
     // uint32_t ttbcr; /*< Translation Table Base Control Register */
     // uint32_t ttbr0; /*< Translation Table Base Register 0 */
