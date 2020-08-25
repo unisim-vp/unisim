@@ -115,10 +115,11 @@ AArch64::new_page(uint64_t addr, uint64_t size)
 AArch64::Page::Free AArch64::Page::Free::nop;
 
 uint8_t*
-AArch64::IPB::get(AArch64& core, uint64_t address)
+AArch64::IPB::get(AArch64& core, uint64_t vaddr)
 {
-  unsigned idx = address % LINE_SIZE;
+  uint64_t address = core.translate_address(vaddr, mat_exec, LINE_SIZE);
   uint64_t req_base_address = address & -LINE_SIZE;
+  unsigned idx = vaddr % LINE_SIZE;
   if (base_address != req_base_address)
     {
       uint8_t ubuf[LINE_SIZE];
@@ -2632,3 +2633,70 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
 //   // CPACR = 0x0;
 // }
+
+template <class POLICY>
+bool
+AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& tlbe, uint64_t vaddr )
+{
+  unsigned lsb = 0, hit;
+  uint32_t key = 0;
+  Entry*   matching_tlbe = 0;
+  
+  for (hit = 0; hit < kcount; ++hit)
+    {
+      key = keys[hit];
+      lsb = key & 31;
+      if ((vaddr ^ key) >> lsb)
+        continue;
+      matching_tlbe = &entries[(key >> 5) & 127];
+      // if (not matching_tlbe->nG or matching_tlbe->asid == asid)
+      //   break;
+    }
+  if (hit >= kcount)
+    return false; // TLB miss
+
+  // TLB hit
+  if (not POLICY::DEBUG) {
+    // MRU sort
+    for (unsigned idx = hit; idx > 0; idx -= 1)
+      keys[idx] = keys[idx-1];
+    keys[0] = key;
+  }
+  
+  // Address translation and attributes
+  tlbe = *matching_tlbe;
+  uint32_t himask = uint32_t(-1) << lsb;
+  tlbe.pa = (tlbe.pa & himask) | (vaddr & ~himask);
+  return true;
+}
+
+struct DebugAccess { static bool const DEBUG = true; static bool const VERBOSE = true; };
+struct QuietAccess { static bool const DEBUG = true; static bool const VERBOSE = false; };
+struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE = false; };
+
+uint64_t
+AArch64::translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size)
+{
+  if (not unisim::component::cxx::processor::arm::sctlr::M.Get(el1.SCTLR))
+    return vaddr;
+
+  MMU::TLB::Entry entry;
+  // Stage 1 MMU enabled
+  if (unlikely(not mmu.tlb.GetTranslation<PlainAccess>( entry, vaddr )))
+    TranslationTableWalk<PlainAccess>( entry, vaddr, mat, size );
+  // else {
+  //   // Check if hit is coherent
+  //   TLB::Entry tlbe_chk;
+  //   TranslationTableWalk<QuietAccess>( tlbe_chk, mva, mat, size );
+  //   if (tlbe_chk.pa != tlbe.pa)
+  //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
+  // }
+  return entry.pa;
+}
+
+template <class POLICY>
+void
+AArch64::TranslationTableWalk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size )
+{
+  struct TODO {}; throw TODO();
+}

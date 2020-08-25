@@ -37,6 +37,7 @@
 
 #include "taint.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <iosfwd>
 #include <set>
@@ -223,18 +224,25 @@ struct AArch64
   //=                       Memory access methods                       =
   //=====================================================================
   
+  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  uint64_t translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size);
+
   template <typename T>
   T
   memory_read(U64 addr)
   {
+    if (addr.ubits) { struct Bad {}; throw Bad(); }
+    
     unsigned const size = sizeof (typename T::value_type);
+    uint64_t paddr = translate_address(addr.value, mat_read, size);
+    
     uint8_t dbuf[size], ubuf[size];
-    if (access_page(addr).read(addr.value,&dbuf[0],&ubuf[0],size) != size)
+    if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
       { struct Bad {}; throw Bad (); }
 
     typedef typename T::value_type value_type;
     typedef typename TX<value_type>::as_mask bits_type;
-    
+
     bits_type value = 0, ubits = 0;
     for (unsigned idx = size; idx-- > 0;)
       {
@@ -248,15 +256,18 @@ struct AArch64
   U32 MemRead32(U64 addr) { return memory_read<U32>(addr); }
   U16 MemRead16(U64 addr) { return memory_read<U16>(addr); }
   U8  MemRead8 (U64 addr) { return memory_read<U8> (addr); }
-  
+
   void MemRead( U8* buffer, U64 addr, unsigned size );
-  
+
   template <typename T>
   void
   memory_write(U64 addr, T src)
   {
     if (addr.ubits) { struct Bad {}; throw Bad(); }
+    
     unsigned const size = sizeof (typename T::value_type);
+    uint64_t paddr = translate_address(addr.value, mat_write, size);
+    
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
     bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
@@ -267,26 +278,26 @@ struct AArch64
         dbuf[idx] = value & 0xff; value >>= 8;
         ubuf[idx] = ubits & 0xff; ubits >>= 8;
       }
-    
-    if (modify_page(addr.value).write(addr.value,&dbuf[0],&ubuf[0],size) != size)
+
+    if (modify_page(paddr).write(paddr,&dbuf[0],&ubuf[0],size) != size)
       { struct Bad {}; throw Bad (); }
   }
-  
+
   void MemWrite64(U64 addr, U64 val) { memory_write(addr, val); }
   void MemWrite32(U64 addr, U32 val) { memory_write(addr, val); }
   void MemWrite16(U64 addr, U16 val) { memory_write(addr, val); }
   void MemWrite8 (U64 addr, U8  val) { memory_write(addr, val); }
-  
+
   void MemWrite( U64 addr, U8 const* buffer, unsigned size );
 
   void     SetExclusiveMonitors( U64 addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
-  
+
   /**********************************************************************
    ***                       Architectural state                      ***
    **********************************************************************/
-  
+
   struct VUConfig
   {
     static unsigned const BYTECOUNT = 16;
@@ -298,7 +309,7 @@ struct AArch64
 
   unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
   Vector vectors[VECTORCOUNT];
-  
+
   struct Page
   {
     uint64_t hi() const { return last; }
@@ -330,7 +341,7 @@ struct AArch64
     }
     Page( Page const& ) = delete;
     ~Page();
-    
+
     uint64_t write(uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const
     {
       uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
@@ -385,11 +396,6 @@ struct AArch64
 
   typedef std::set<Page, Page::Above> Pages;
 
-  Page const& access_page( U64 addr )
-  {
-    if (addr.ubits) { struct Bad {}; throw Bad(); }
-    return access_page(addr.value);
-  }
   Page const& access_page( uint64_t addr )
   {
     auto pi = pages.lower_bound(addr);
@@ -406,9 +412,9 @@ struct AArch64
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
-  
+
   void error_mem_overlap( Page const& a, Page const& b );
-  
+
   bool new_page(uint64_t addr, uint64_t size);
   bool mem_map(Page&& page);
 
@@ -446,17 +452,18 @@ struct AArch64
       SCTLR = value;
     }
   };
-  
+
   EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
-  
+
   struct MMU
   {
-    MMU() : MAIR_EL1() {}
+    MMU() : MAIR_EL1(), TCR_EL1(), TTBR0_EL1(), TTBR1_EL1() {}
 
     uint64_t MAIR_EL1;
     uint64_t TCR_EL1;
     uint64_t TTBR0_EL1;
     uint64_t TTBR1_EL1;
+
     // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
     // uint32_t ttbcr; /*< Translation Table Base Control Register */
     // uint32_t ttbr0; /*< Translation Table Base Register 0 */
@@ -468,13 +475,29 @@ struct AArch64
     // uint16_t attr_cache[64];
 
     // void refresh_attr_cache( bool tre );
+
+    struct TLB
+    {
+      struct Entry { uint64_t pa; };
+    
+      template <class POLICY>  bool GetTranslation( Entry& tlbe, uint64_t vaddr );
+
+      enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
+
+      uint64_t keys[kcount];
+      Entry    entries[kcount];
+    } tlb;
   };
+
+  template <class POLICY>
+  void
+  TranslationTableWalk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
   
-  MMU      mmu;  
+  MMU      mmu;
   Pages    pages;
   IPB      ipb;
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> decoder;
-  
+
   U64      gpr[32];
   U64      sp_el[4];
   EL       el1;
