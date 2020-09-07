@@ -37,7 +37,9 @@
 
 #include "taint.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <iosfwd>
 #include <set>
@@ -59,7 +61,8 @@ struct AArch64
 
   typedef U64 UREG;
   typedef U64 SREG;
-  
+
+  enum { ZID=4 };
   
   AArch64();
  
@@ -208,7 +211,7 @@ struct AArch64
   //=====================================================================
   
   /** Set the next Program Counter */
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC };
   void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; throw Bad(); } next_insn_addr = addr.value; }
   bool Test( bool cond ) { return cond; }
   template <typename T>
@@ -219,7 +222,7 @@ struct AArch64
     return cond.value;
   }  
   void CallSupervisor( uint32_t imm );
-  
+
   //=====================================================================
   //=                       Memory access methods                       =
   //=====================================================================
@@ -294,6 +297,21 @@ struct AArch64
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
 
+  //=====================================================================
+  //=                            Exceptions                             =
+  //=====================================================================
+
+  struct Abort {};
+  void EndOfInstruction() { throw Abort(); }
+  /* AArch32 obsolete arguments
+   * - bool taketohypmode
+   * - LDFSRformat
+   * AArch32 left over arguments:
+   * - domain    // Domain number, AArch32 only (UNKNOWN in AArch64)
+   * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
+   */
+  void DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
+  
   /**********************************************************************
    ***                       Architectural state                      ***
    **********************************************************************/
@@ -442,10 +460,24 @@ struct AArch64
     PState() : D(), A(), I(), F(), SS(), IL(), EL(1), SP(1) {}
 
     U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
+
+    uint32_t AsSPSR() const;
   };
+
+  void SetPStateSP(unsigned sp)
+  {
+    pstate.selsp(*this) = gpr[31];
+    pstate.SP = sp;
+    gpr[31] = pstate.selsp(*this);
+  }
+
+  U32 GetSPSRFromPSTATE() { return U32(nzcv) << 28 | U32(pstate.AsSPSR()); }
 
   struct EL
   {
+    EL() : VBAR(0) {}
+    U32 SPSR, ESR;
+    U64 ELR, FAR, VBAR;
     uint32_t SCTLR;
     void SetSCTLR(AArch64& cpu, uint32_t value)
     {
@@ -464,6 +496,11 @@ struct AArch64
     uint64_t TTBR0_EL1;
     uint64_t TTBR1_EL1;
 
+    unsigned GetASID() const
+    {
+      return (unisim::component::cxx::processor::arm::vmsav8::tcr::A1.Get(TCR_EL1) ? TTBR1_EL1 : TTBR0_EL1) >> 48;
+    }
+    
     // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
     // uint32_t ttbcr; /*< Translation Table Base Control Register */
     // uint32_t ttbr0; /*< Translation Table Base Register 0 */
@@ -478,20 +515,51 @@ struct AArch64
 
     struct TLB
     {
-      struct Entry { uint64_t pa; };
+      struct Entry
+      {
+        uint64_t pa;
+        uint32_t sh         : 2;  // 2
+        uint32_t attridx    : 3;  // 5
+        uint32_t domain     : 4;  // 9
+        // <Permission>
+        uint32_t ap         : 3;  // 12
+        uint32_t xn         : 1;  // 13
+        uint32_t pxn        : 1;  // 14
+        // </Permission>
+        uint32_t NS         : 1;  // 15
+        uint32_t nG         : 1;  // 16
+        uint32_t level      : 2;  // 18
+        uint32_t blocksize  : 6;  // 24
+        
+        // uint32_t   asid     : 8;
+        // Permissions perms,
+        // bit nG,
+        // bits(4) domain,
+        // boolean contiguous,
+        // integer level,
+        // integer blocksize,
+        // AddressDescriptor addrdesc
+      };
     
-      template <class POLICY>  bool GetTranslation( Entry& tlbe, uint64_t vaddr );
+      template <class POLICY>  bool GetTranslation( Entry& tlbe, uint64_t vaddr, unsigned asid );
+      void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
       enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
 
+      TLB();
+
+      /* 64-bit-keys: 
+       * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
+       *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
+       */
       uint64_t keys[kcount];
+      unsigned indices[kcount];
       Entry    entries[kcount];
     } tlb;
   };
 
   template <class POLICY>
-  void
-  TranslationTableWalk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
+  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
   
   MMU      mmu;
   Pages    pages;

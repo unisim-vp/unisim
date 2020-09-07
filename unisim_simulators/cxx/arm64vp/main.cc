@@ -88,7 +88,7 @@ main(int argc, char *argv[])
         perror("fstat error");
         return 1;
       }
-    uint64_t base = 0x01000000, size = f_stat.st_size;
+    uint64_t base = 0x80000, size = f_stat.st_size;
     uint8_t* data = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, linux_image.fd, 0);
     if (data == (void*)-1) { perror("mmap error"); return 1; }
     uint8_t* udat = (uint8_t*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);

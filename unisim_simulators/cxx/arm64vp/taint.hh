@@ -34,6 +34,7 @@
 
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <limits>
+#include <iosfwd>
 #include <inttypes.h>
 
 #ifndef __ARM64VP_TAINT_HH__
@@ -196,6 +197,16 @@ UTP BitScanReverse( UTP const& value )
 {
   auto bit = unisim::util::arithmetic::BitScanReverse(value.value);
   return UTP( bit, (value.ubits >> bit) ? -1 : 0 );
+}
+
+extern void Print( std::ostream& sink, uint64_t vbits, uint64_t dbits );
+
+template <typename T>
+void Print( std::ostream& sink, TaintedValue<T> const& tv )
+{
+  typedef typename TX<T>::as_mask bits;
+  bits value = *reinterpret_cast<bits const*>(&tv.value);
+  Print(sink, value, tv.ubits);
 }
 
 #endif /* __ARM64VP_TAINT_HH__ */

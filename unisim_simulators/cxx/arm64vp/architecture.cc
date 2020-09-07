@@ -161,8 +161,6 @@ AArch64::step_instruction()
       op->disasm( *this, std::cerr );
       std::cerr << std::endl;
 
-      // uint64_t oldspval = GetGSR(31);
-
       /* Execute instruction */
       asm volatile( "arm64_operation_execute:" );
       op->execute( *this );
@@ -176,49 +174,16 @@ AArch64::step_instruction()
       // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
       //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 
-      //instruction_counter++; /* Instruction regularly finished */
-
-
-  // catch (SVCException const& svexc) {
-  //   /* Resuming execution, since SVC exceptions are explicitly
-  //    * requested from regular instructions. ITState will be updated as
-  //    * needed by TakeSVCException (as done in the ARM spec). */
-  //   if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-  //     memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
-
-  //   instruction_counter++; /* Instruction regularly finished */
-
-  //   this->TakeSVCException();
-  // }
-
-  // catch (DataAbortException const& daexc) {
-  //   /* Abort execution, and take processor to data abort handler */
-
-  //   if (unlikely(trap_reporting_import))
-  //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
-
-  //   this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
-  // }
-
-  // catch (PrefetchAbortException const& paexc) {
-  //   /* Abort execution, and take processor to prefetch abort handler */
-
-  //   if (unlikely(trap_reporting_import))
-  //     trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
-
-  //   this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
-  // }
-
-  // catch (UndefInstrException const& undexc) {
-  //   /* Abort execution, and take processor to undefined handler */
-
-  //   if (unlikely( trap_reporting_import))
-  //     trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
-
-  //   this->TakeUndefInstrException();
-  // }
+      // instruction_counter++; /* Instruction regularly finished */
     }
 
+  catch (Abort const&)
+    {
+      /* Instruction aborted, proceed to next */
+      //   if (unlikely(trap_reporting_import))
+      //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    }
+  
   catch (std::exception const& exc)
     {
       std::cerr << "Unimplemented exception <" << exc.what() << "> @pc=" << std::hex << current_insn_addr << std::dec << std::endl;
@@ -433,9 +398,10 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
             if (addr.ubits) { struct Bad {}; throw Bad (); }
-            unsigned const size = 64;
-            uint8_t buffer[size] = {0};
-            if (cpu.modify_page(addr.value).write(addr.value & -size, &buffer[0], &buffer[0], size) != size)
+            unsigned const zsize = 4 << cpu.ZID;
+            uint64_t paddr = cpu.translate_address(addr.value, mat_write, zsize);
+            uint8_t buffer[zsize] = {0};
+            if (cpu.modify_page(paddr).write(paddr & -zsize, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; throw Bad (); }
           }
         } x; return &x;
@@ -744,6 +710,26 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0100,0b0001,0b000): // SP_EL0, Stack Pointer (EL0)
+    case SYSENCODE(0b11,0b100,0b0100,0b0001,0b000): // SP_EL1, Stack Pointer (EL1)
+    case SYSENCODE(0b11,0b110,0b0100,0b0001,0b000): // SP_EL2, Stack Pointer (EL2)
+      {
+        static struct : public BaseSysReg {
+          unsigned level(unsigned op1) const { return AArch64::GetExceptionLevel(op1) - 1; }
+          U64& GetSP(AArch64& cpu, unsigned op1) const
+          {
+            unsigned lvl = level(op1);
+            if (cpu.pstate.SP == 0 and lvl == 0)
+              cpu.UndefinedInstruction();
+            return cpu.sp_el[lvl];
+          }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SP_EL" << level(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Stack Pointer (EL" << level(e.op1) << ")"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return GetSP(cpu, op1); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { GetSP(cpu, op1) = value; }
+        } x; return &x;
+      } break;
+      
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b001): // 2.1: ACTLR_EL1, Auxiliary Control Register (EL1)
       {
         static struct : public BaseSysReg {
@@ -937,6 +923,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b011,0b0000,0b0000,0b111): // 2.23: DCZID_EL0, Data Cache Zero ID register
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "DCZID_EL0"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Data Cache Zero ID register"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
+          {
+            return U64((not unisim::component::cxx::processor::arm::vmsav8::sctlr::DZE.Get(cpu.el1.SCTLR)) << 4 | cpu.ZID);
+          }
+        } x; return &x;
+      } break;
+      
     case SYSENCODE(0b11,0b000,0b0101,0b0010,0b000): // 2.24: ESR_EL1, Exception Syndrome Register (EL1)
       {
         static struct : public BaseSysReg {
@@ -1306,7 +1304,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MPIDR_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Multiprocessor A0nity Register"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Multiprocessor Affinity Register"; }
         } x; return &x;
       } break;
 
@@ -1557,26 +1555,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b1100,0b0000,0b000): // 2.96: VBAR_EL1, Vector Base Address Register (EL1)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "VBAR_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL1)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b100,0b1100,0b0000,0b000): // 2.97: VBAR_EL2, Vector Base Address Register (EL2)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "VBAR_EL2"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL2)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b110,0b1100,0b0000,0b000): // 2.98: VBAR_EL3, Vector Base Address Register (EL3)
       {
         static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "VBAR_EL3"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL3)"; }
+          unsigned level(unsigned op1) const { return AArch64::GetExceptionLevel(op1); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VBAR_EL" << level(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL" << level(e.op1) << ")"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.get_el(level(op1)).VBAR; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.get_el(level(op1)).VBAR = value; }
         } x; return &x;
       } break;
 
@@ -2535,9 +2522,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "SPSel"; }
           virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
           {
-            cpu.pstate.selsp(cpu) = cpu.gpr[31];
-            cpu.pstate.SP = crm;
-            cpu.gpr[31] = cpu.pstate.selsp(cpu);
+            cpu.SetPStateSP(crm);
           }
         } x; return &x;
       } break;
@@ -2607,66 +2592,74 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
   return &err;
 }
 
-/** Resets the internal values of corresponding CP15 Registers
- */
-// void
-// AArch64::ResetSystemRegisters()
-// {
-//   // // Base default values for SCTLR (may be overwritten by memory architectures)
-//   // SCTLR = 0x00c50058; // SBO mask
-//   // sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
-//   // sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
-//   // sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
-//   // sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
-//   // sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
-//   // sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
-//   // sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
-//   // sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
-//   // sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
-//   // sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
-//   // sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-//   // sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
-//   // sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
-//   // sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
-//   // sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
-//   // sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
+AArch64::MMU::TLB::TLB()
+  : keys()
+{
+  for (unsigned idx = 0; idx < kcount; ++idx)
+    indices[idx] = idx;
+}
 
-//   // CPACR = 0x0;
-// }
+void
+AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_t vaddr, unsigned asid )
+{
+  // LRU Replacement
+  unsigned lru_idx = indices[kcount-1];
+  for (unsigned idx = kcount; --idx > 0;)
+    {
+      keys[idx] = keys[idx-1];
+      indices[idx] = indices[idx-1];
+    }
+  
+  unsigned significant = tlbe.blocksize - 1, global = not tlbe.nG;
+  keys[0] = (((vaddr >> 12) << 27) >> 16) | (uint64_t(asid) << 48) | (global << 6) | significant;
+  indices[0] = lru_idx;
+  entries[lru_idx] = tlbe;
+}
 
 template <class POLICY>
 bool
-AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& tlbe, uint64_t vaddr )
+AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t vaddr, unsigned asid )
 {
-  unsigned lsb = 0, hit;
+  unsigned rsh = 0, hit;
   uint32_t key = 0;
-  Entry*   matching_tlbe = 0;
+  /* 64-bit-keys: 
+   * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
+   *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
+   */
   
+  uint64_t vakey = ((vaddr << 15) >> 16) | (uint64_t(asid) << 48) | 1;
+
   for (hit = 0; hit < kcount; ++hit)
     {
       key = keys[hit];
-      lsb = key & 31;
-      if ((vaddr ^ key) >> lsb)
-        continue;
-      matching_tlbe = &entries[(key >> 5) & 127];
-      // if (not matching_tlbe->nG or matching_tlbe->asid == asid)
-      //   break;
+      rsh = key & 63;
+      if (not (((vakey ^ key) >> rsh) << (rsh + ((key >> 2) & 16))))
+        break;
     }
   if (hit >= kcount)
     return false; // TLB miss
 
   // TLB hit
-  if (not POLICY::DEBUG) {
-    // MRU sort
-    for (unsigned idx = hit; idx > 0; idx -= 1)
-      keys[idx] = keys[idx-1];
-    keys[0] = key;
-  }
+  unsigned idx = indices[hit];
+  Entry& entry = entries[idx];
+  
+  if (not POLICY::DEBUG)
+    {
+      // MRU sort
+      for (unsigned idx = hit; idx > 0; idx -= 1)
+        {
+          keys[idx] = keys[idx-1];
+          indices[idx] = indices[idx-1];
+        }
+      keys[0] = key;
+      indices[0] = idx;
+    }
   
   // Address translation and attributes
-  tlbe = *matching_tlbe;
-  uint32_t himask = uint32_t(-1) << lsb;
-  tlbe.pa = (tlbe.pa & himask) | (vaddr & ~himask);
+  result = entry;
+  
+  uint64_t himask = uint64_t(-2) << rsh; /* blocksize = rsh + 1; */
+  result.pa = (result.pa & himask) | (vaddr & ~himask);
   return true;
 }
 
@@ -2682,12 +2675,16 @@ AArch64::translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size)
 
   MMU::TLB::Entry entry;
   // Stage 1 MMU enabled
-  if (unlikely(not mmu.tlb.GetTranslation<PlainAccess>( entry, vaddr )))
-    TranslationTableWalk<PlainAccess>( entry, vaddr, mat, size );
+  unsigned asid = mmu.GetASID();
+  if (unlikely(not mmu.tlb.GetTranslation<PlainAccess>( entry, vaddr, asid )))
+    {
+      translation_table_walk<PlainAccess>( entry, vaddr, mat, size );
+      mmu.tlb.AddTranslation( entry, vaddr, asid );
+    }
   // else {
   //   // Check if hit is coherent
   //   TLB::Entry tlbe_chk;
-  //   TranslationTableWalk<QuietAccess>( tlbe_chk, mva, mat, size );
+  //   translation_table_walk<QuietAccess>( tlbe_chk, mva, mat, size );
   //   if (tlbe_chk.pa != tlbe.pa)
   //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
   // }
@@ -2696,7 +2693,218 @@ AArch64::translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size)
 
 template <class POLICY>
 void
-AArch64::TranslationTableWalk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size )
+AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size )
 {
-  struct TODO {}; throw TODO();
+  bool tbi, epd;
+  unsigned grainsize, tsz;
+  uint64_t ttbr;
+
+  struct Bad {};
+  
+  struct Descriptor
+  {
+    
+    Descriptor(AArch64& _cpu)
+      : cpu(_cpu)
+      , endianness(unisim::component::cxx::processor::arm::sctlr::EE.Get(cpu.el1.SCTLR) ? 0b111 : 0b000)
+    {}
+    
+    AArch64& cpu;
+    unsigned endianness;
+    enum {size = 8};
+    
+    uint64_t read(uint64_t paddr)
+    {
+      uint8_t dbuf[size], ubuf[size];
+      if (cpu.access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) throw Bad();
+      uint64_t value = 0;
+      for (unsigned idx = size; idx-- > 0;)
+      { if (ubuf[idx]) throw Bad(); value = (value << 8) | dbuf[idx ^ endianness]; }
+      return value;
+    }
+  } descriptor(*this);
+  // top = AddrTop(inputaddr); bit 55 or 63 (depending on TCR.TBI)
+  // should be conserved down to vaddr::size (tablesize).  Because ,
+  // tablesize max at 48, at least bits 55 downto 48 should always be
+  // identical.  ARM says that bit 55 is used to determine the value
+  // of these hyptothesized identical bits, and thus determine the VA range.
+
+  
+  if ((vaddr >> 55) & 1)
+    {
+      /* high VA range */
+      ttbr =  mmu.TTBR1_EL1;
+      tbi = unisim::component::cxx::processor::arm::vmsav8::tcr::TBI1.Get(mmu.TCR_EL1);
+      switch (unisim::component::cxx::processor::arm::vmsav8::tcr::TG1.Get(mmu.TCR_EL1))
+        { // TG1 and TG0 encodings differ
+        default: grainsize = 12; break;
+        case 1:  grainsize = 14; break;
+        case 3:  grainsize = 16; break;
+        }
+      epd = unisim::component::cxx::processor::arm::vmsav8::tcr::EPD1.Get(mmu.TCR_EL1);
+      tsz = unisim::component::cxx::processor::arm::vmsav8::tcr::T1SZ.Get(mmu.TCR_EL1);
+      // descaddr.memattrs = WalkAttrDecode(TCR_EL1.SH1, TCR_EL1.ORGN1, TCR_EL1.IRGN1);
+    }
+  else
+    {
+      /* low VA range */
+      ttbr =  mmu.TTBR0_EL1;
+      tbi = unisim::component::cxx::processor::arm::vmsav8::tcr::TBI0.Get(mmu.TCR_EL1);
+      switch (unisim::component::cxx::processor::arm::vmsav8::tcr::TG0.Get(mmu.TCR_EL1))
+        { // TG1 and TG0 encodings differ
+        default: grainsize = 12; break;
+        case 1:  grainsize = 16; break;
+        case 2:  grainsize = 14; break;
+        }
+      epd = unisim::component::cxx::processor::arm::vmsav8::tcr::EPD0.Get(mmu.TCR_EL1);
+      tsz = unisim::component::cxx::processor::arm::vmsav8::tcr::T0SZ.Get(mmu.TCR_EL1);
+      // descaddr.memattrs = WalkAttrDecode(TCR_EL1.SH0, TCR_EL1.ORGN0, TCR_EL1.IRGN0);
+    }
+
+  if (epd)
+    { struct Bad {}; throw Bad(); }
+
+  if (tbi)
+    {
+      // TODO: extract tag here ?
+      vaddr = (int64_t(vaddr) << 8) >> 8;
+    }
+  
+  // firstblocklevel = first level where a block entry is allowed
+  // firstblocklevel = {4K =>1, 64K => 2, 16K => 2} <=> blocks < 2^32
+  
+  unsigned stride = grainsize - 3, tablesize = 64 - tsz;
+  if (tablesize > 48) tablesize = 48;
+  if (tablesize < 25) tablesize = 25;
+
+  unsigned walkdepth = (tablesize - grainsize - 1) / stride;
+  // level = 3 - walkdepth
+  // psize = Physical Address size as encoded in TCR_EL1.IPS or TCR_ELx/VTCR_EL2.PS
+  // assert IsSameBits(vaddr<top:tablesize>)
+  // reversedescriptors = SCTLR_EL1.EE == ‘1’
+  // singlepriv = FALSE;
+
+  uint64_t tbladdr, desc;
+  {
+    // baseaddress = base<47:baselowerbound>:Zeros(baselowerbound);
+    unsigned baselo = tablesize - stride*(walkdepth+1);
+    tbladdr = ((ttbr >> baselo) << (baselo+16)) >> 16;
+  }
+  // assert uint64_t((int64_t(vaddr) << tsz) >> tsz) == vaddr
+  unsigned direct_bits = walkdepth*stride + grainsize, level;
+  
+  /* attr_table is NS[1] : ap_table[2] : UX[1] (=!UXN) : PX[1] (=!PXN) */
+  unsigned attr_table = 0b11111; // should be 0b11010 for non EL0&1 regimes and 0b10000 should depend on `lookupsecure`
+  
+  {
+    uint64_t walkidx = (vaddr << tsz) >> tsz, walkmask = (1 << stride)-1;
+    for (level = 3 - walkdepth; true; ++level, direct_bits -= stride)
+      {
+        unsigned index = (walkidx >> direct_bits) & walkmask;
+        
+        desc = descriptor.read(tbladdr + 8*index);
+
+        if (not (desc & 1))
+          DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
+
+        if (not (desc & 2))
+          {
+            /*illegal at page grain*/
+            if (level == 3) { struct Bad {}; throw Bad(); }
+            break; /* a block */
+          }
+        else if (level == 3)
+          break; /* a page*/
+        
+        /* a table */
+        tbladdr = ((desc >> grainsize) << (grainsize+16)) >> 16;
+        attr_table &= ((desc >> 59) ^ 0b00011);
+      }
+  }    
+  if (direct_bits > 32) { struct Bad {}; throw Bad(); }
+    
+  unsigned vaclr = 64 - direct_bits;
+  entry.pa = (((desc >> direct_bits) << (direct_bits + 16)) >> 16) | ((vaddr << vaclr) >> vaclr);
+  entry.blocksize = direct_bits;
+  entry.ap = (((desc >> 4) | (attr_table ^ 4) | 2) >> 1) & 7;
+  unsigned xperms = ((desc >> 53) | (attr_table ^ 3)) & 3;
+  entry.xn = (xperms >> 1) & 1;
+  entry.pxn = (xperms >> 0) & 1;
+  entry.level = level;
+  entry.nG = (desc >> 11) & 1;
+  entry.NS = 1;
+  entry.sh = (desc >> 8) & 3;
+  entry.attridx = (desc >> 2) & 7;
+}
+
+void
+AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
+{
+  unsigned const target_el = 1;
+
+  unsigned vect_offset = 0x0;
+  if (target_el > pstate.EL)
+    vect_offset += 0x400; /* + 0x600 if lower uses AArch32 */
+  else if (pstate.SP)
+    vect_offset += 0x200;
+
+
+  // spsr = GetSPSRFromPSTATE();
+  U32 spsr = GetSPSRFromPSTATE();
+  // ESR[target_el] = ec<5:0>:il:syndrome;
+  
+  get_el(target_el).ESR = U32()
+    | U32((mat == mat_exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
+    | U32(1) << 25 // IL
+    | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
+    | U32(0,0b1111) << 10
+    | U32(0,0b1) << 9 // IsExternalAbort(fault)
+    | U32(0,0b1) << 8 // IN {AccType_DC, AccType_IC} 
+    | U32(s2fs1walk) << 7
+    | U32(mat == mat_write) << 6
+    | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
+  // FAR[target_el] = exception.vaddress;
+  get_el(target_el).FAR = U64(va);
+  //     if target_el == EL2 && exception.ipavalid then
+  //     HPFAR_EL2<39:4> = exception.ipaddress<47:12>;
+
+  pstate.EL = target_el;
+  SetPStateSP(1);
+
+  get_el(target_el).SPSR = spsr;
+  get_el(target_el).ELR = U64(current_insn_addr);
+  
+  pstate.D = 1;
+  pstate.A = 1;
+  pstate.I = 1;
+  pstate.F = 1;
+
+  {
+    U32 nRW(1);
+    nRW &= spsr >> 4;
+    if ((nRW.ubits | nRW.value) & 1) { struct NoAArch32 {}; throw NoAArch32(); }
+  }
+
+  // BranchTo(VBAR[] + vect_offset, BranchType_EXCEPTION);
+  BranchTo( get_el(target_el).VBAR + U64(vect_offset), B_EXC );
+  
+  EndOfInstruction();
+}
+
+uint32_t
+AArch64::PState::AsSPSR() const
+{
+  // Return an SPSR value which represents thebits(32) spsr = Zeros();
+  uint32_t spsr = 0
+    | IL << 21
+    | SS << 20
+    /* AArch64*/
+    | D << 9
+    | A << 8
+    | I << 7
+    | F << 6
+    | EL << 2
+    | SP << 0;
+  
+  return spsr;
 }

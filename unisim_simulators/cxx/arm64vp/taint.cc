@@ -33,4 +33,22 @@
  */
 
 #include <taint.hh>
+#include <iostream>
 
+void Print( std::ostream& sink, uint64_t vbits, uint64_t ubits )
+{
+  struct
+  {
+    void recurse( std::ostream& sink, uint64_t vbits, uint64_t ubits )
+    {
+      {
+        uint64_t _vbits = vbits >> 1, _ubits = ubits >> 1;
+        if (_vbits | _ubits)
+          recurse( sink, _vbits, _ubits );
+      }
+      sink << "01XX"[2*(ubits & 1) | 1*(vbits & 1) ];
+    }
+  } _;
+  
+  _.recurse(sink << "0b", vbits, ubits);
+}
