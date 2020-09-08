@@ -691,7 +691,7 @@ CPU<CPU_IMPL>::SysReg::Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
 #define SYSENCODE( OP0, OP1, CRN, CRM, OP2 ) ((OP0 << 16) | (OP1 << 12) | (CRN << 8) | (CRM << 4) | (OP2 << 0))
 
-/** Get the Internal representation of the CP15 Register
+/** Get the Internal representation of the sytem register
  *
  * @param crn     the "crn" field of the instruction code
  * @param op1     the "op1" field of the instruction code
@@ -2590,37 +2590,17 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     }
   } err;
 
-  err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown CP15 register: ");
+  err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown system register: ");
   std::cerr << std::endl;
   return &err;
 }
 
-/** Resets the internal values of corresponding CP15 Registers
+/** Resets the internal values of corresponding system registers
  */
 template <class CPU_IMPL>
 void
 CPU<CPU_IMPL>::ResetSystemRegisters()
 {
-  // // Base default values for SCTLR (may be overwritten by memory architectures)
-  // SCTLR = 0x00c50058; // SBO mask
-  // sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
-  // sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
-  // sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
-  // sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
-  // sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
-  // sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
-  // sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
-  // sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
-  // sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
-  // sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
-  // sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-  // sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
-  // sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
-  // sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
-  // sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
-  // sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
-
-  // CPACR = 0x0;
 }
 
 

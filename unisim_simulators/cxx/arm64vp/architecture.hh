@@ -293,6 +293,11 @@ struct AArch64
 
   void MemWrite( U64 addr, U8 const* buffer, unsigned size );
 
+  void PrefetchMemory(unsigned op, U64 addr)
+  {
+    // No caches, nothing to do
+  };
+
   void     SetExclusiveMonitors( U64 addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
@@ -393,6 +398,7 @@ struct AArch64
     // }
     bool has_data() const { return data; }
     uint8_t const* get_data() const { return data; }
+    uint8_t const* get_data(uint64_t addr) const { return &data[addr-base]; }
     bool has_udat() const { return data; }
     uint8_t const* get_udat() const { return udat; }
     uint64_t size() const { return last - base + 1; }
@@ -460,6 +466,12 @@ struct AArch64
     PState() : D(), A(), I(), F(), SS(), IL(), EL(1), SP(1) {}
 
     U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
+    U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
+    void SetDAIF(U64 const& xt)
+    {
+      if (xt.ubits) { struct Bad {}; throw Bad(); }
+      D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
+    }
 
     uint32_t AsSPSR() const;
   };
@@ -567,13 +579,13 @@ struct AArch64
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> decoder;
 
   U64      gpr[32];
-  U64      sp_el[4];
+  U64      sp_el[2];
   EL       el1;
   PState   pstate;
   U8       nzcv;
   uint64_t current_insn_addr, next_insn_addr;
   /** system registers**/
-  U64      TPIDRURW; //< User Read/Write Thread ID Register
+  U64      TPIDR[2]; //<  Thread Pointer / ID Register
   uint32_t CPACR;
 
   struct Event

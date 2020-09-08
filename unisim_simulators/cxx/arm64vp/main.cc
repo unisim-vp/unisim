@@ -96,6 +96,12 @@ main(int argc, char *argv[])
     arch.mem_map(AArch64::Page(0,base,base+size-1,data,udat,&linux_image));
     arch.BranchTo(AArch64::U64(base),arch.B_JMP);
   }
+
+  // ffffffc010eb5198 0x20000
+  AArch64::Page const& logbuf = arch.modify_page(0xeb5198);
+  uint8_t const* logbytes = logbuf.get_data(0xeb5198);
+  std::cerr << "logbuf: " << (void*)logbytes << std::endl;
+
   
   std::cerr << "\n*** Run ***" << std::endl;
 

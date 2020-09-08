@@ -49,7 +49,7 @@ AArch64::AArch64()
   , nzcv()
   , current_insn_addr()
   , next_insn_addr()
-  , TPIDRURW()
+  , TPIDR()
   , CPACR()
   , event()
 {
@@ -253,7 +253,7 @@ AArch64::CheckSystemAccess(uint8_t op1)
 
 #define SYSENCODE( OP0, OP1, CRN, CRM, OP2 ) ((OP0 << 16) | (OP1 << 12) | (CRN << 8) | (CRM << 4) | (OP2 << 0))
 
-/** Get the Internal representation of the CP15 Register
+/** Get the Internal representation of the system register
  *
  * @param crn     the "crn" field of the instruction code
  * @param op1     the "op1" field of the instruction code
@@ -707,6 +707,16 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             return U64(cpu.pstate.EL << 2);
             //return U64(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
           }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b001): // DAIF, Interrupt Mask Bits
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "DAIF"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Interrupt Mask Bits"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.pstate.GetDAIF(); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.pstate.SetDAIF(value); }
         } x; return &x;
       } break;
 
@@ -1305,6 +1315,20 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MPIDR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Multiprocessor Affinity Register"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
+          {
+            return U64(0)
+              | U64(0, 0xffffff)  << 40  // Reserved, RES0.
+              | U64(0)            << 32  // Aff3, Affinity level 3.
+              | U64(1, 1)         << 31  // Reserved, RES1.
+              | U64(1)            << 30  // U, bit [30] Uniprocessor system.
+              | U64(0, 0x1f)      << 25  // Bits [29:25] Reserved, RES0.
+              | U64(0)            << 24  // MT, bit [24] Lowest level of affinity consists of multi-threaded logical processors.
+              | U64(0)            << 16  // Aff2, Affinity level 2.
+              | U64(0)            <<  8  // Aff1, Affinity level 1.
+              | U64(0)            <<  0  // Aff0, Affinity level 0.
+              ;
+          }
         } x; return &x;
       } break;
 
@@ -1467,38 +1491,16 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1101,0b0000,0b010): // 2.87: TPIDR_EL0, Thread Pointer / ID Register (EL0)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL0"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL0)"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          { return cpu.TPIDRURW; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
-          { cpu.TPIDRURW = value; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b000,0b1101,0b0000,0b100): // 2.88: TPIDR_EL1, Thread Pointer / ID Register (EL1)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL1)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b100,0b1101,0b0000,0b010): // 2.89: TPIDR_EL2, Thread Pointer / ID Register (EL2)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL2"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL2)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b110,0b1101,0b0000,0b010): // 2.90: TPIDR_EL3, Thread Pointer / ID Register (EL3)
       {
         static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL3"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL3)"; }
+          unsigned level(unsigned op1) const { return AArch64::GetExceptionLevel(op1); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TPIDR_EL" << level(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL" << level(e.op1) << ")"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.TPIDR[level(op1)]; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.TPIDR[level(op1)] = value; }
         } x; return &x;
       } break;
 
@@ -2587,7 +2589,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     }
   } err;
 
-  err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown CP15 register: ");
+  err.fields(op0, op1, crn, crm, op2, std::cerr << "Unknown system register: ");
   std::cerr << std::endl;
   return &err;
 }

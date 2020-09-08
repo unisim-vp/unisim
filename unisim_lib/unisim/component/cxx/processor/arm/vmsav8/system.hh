@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier Perez (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_SYSTEM_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_SYSTEM_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_SYSTEM_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_SYSTEM_HH__
 
 
 #include <unisim/component/cxx/processor/arm/register_field.hh>
@@ -89,4 +89,4 @@ namespace vmsav8 {
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CP15_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_SYSTEM_HH__
