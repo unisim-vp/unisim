@@ -399,11 +399,13 @@ struct AArch64
     bool has_data() const { return data; }
     uint8_t const* get_data() const { return data; }
     uint8_t const* get_data(uint64_t addr) const { return &data[addr-base]; }
+    void set_data(uint8_t* _data) { data = _data; }
     bool has_udat() const { return data; }
     uint8_t const* get_udat() const { return udat; }
+    void set_udat(uint8_t* _udat) { udat = _udat; }
     uint64_t size() const { return last - base + 1; }
 
-    // void dump(std::ostream&) const;
+    void dump_range(std::ostream&) const;
     // friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
 
 

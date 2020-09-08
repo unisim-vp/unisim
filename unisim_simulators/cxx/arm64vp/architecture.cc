@@ -61,6 +61,12 @@ AArch64::Page::~Page()
   free->free(*this);
 }
 
+void AArch64::Page::dump_range( std::ostream& sink ) const
+{
+  sink << '[' << std::hex << base << ':' << last << std::dec << ']';
+  
+}
+
 void
 AArch64::error_mem_overlap( Page const& a, Page const& b )
 {
