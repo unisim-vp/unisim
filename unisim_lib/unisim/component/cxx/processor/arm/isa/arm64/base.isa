@@ -6436,6 +6436,15 @@ smaddl_xw.disasm = {
     sink << "smaddl\t" << DisasmGZXR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmGZXR(ra);
 };
 
+smaddl_xw.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+
+  S64 op1( S32( cpu.GetGZR(rn) ) ), op2( S32( cpu.GetGZR(rm) ) ), op3( cpu.GetGZR(ra ) ), res( op3 + (op1 * op2) );
+  cpu.SetGZR(rd, U64(res));
+};
+
 op smc( 0b11010100000[11] : imm[16] : 0b00011[5] );
 smc.var format : {char const*} = {"base,576"};
 
@@ -6451,6 +6460,15 @@ smsubl_xw.disasm = {
     sink << "smnegl\t" << DisasmGZXR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
   else
     sink << "smsubl\t" << DisasmGZXR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmGZXR(ra);
+};
+
+smsubl_xw.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+
+  S64 op1( S32( cpu.GetGZR(rn) ) ), op2( S32( cpu.GetGZR(rm) ) ), op3( cpu.GetGZR(ra ) ), res( op3 - (op1 * op2) );
+  cpu.SetGZR(rd, U64(res));
 };
 
 op smulh( 0b10011011010[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );

@@ -438,7 +438,7 @@ struct AArch64
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
-
+  
   void error_mem_overlap( Page const& a, Page const& b );
 
   bool new_page(uint64_t addr, uint64_t size);
@@ -559,6 +559,7 @@ struct AArch64
       void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
       enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
+      void invalidate(bool nis, bool ll, unsigned cond, AArch64& cpu, U64 const& arg);
 
       TLB();
 

@@ -123,8 +123,27 @@ main(int argc, char *argv[])
     struct stat f_stat;
     if (not linux_image.get(f_stat))
       return 1;
-    uint64_t base = 0x80000, size = f_stat.st_size;
+    uint64_t size = f_stat.st_size;
+    // Memory map will be rounded up to page boundary. We round up to
+    // AArch64 ZVA boundary which should always be less than host page
+    // boundary.
     size = (size + 63) & uint64_t(-64);
+    
+    struct 
+    {
+      uint8_t buf[8];
+      uint64_t read(int fd)
+      {
+        uint64_t res = 0;
+        if (::read(fd, &buf[0], sizeof (buf)) != sizeof (buf)) throw *this;
+        for (unsigned idx = sizeof (buf); idx-- > 0;) res = res << 8 | buf[idx];
+        return res;
+      }
+    } le64;
+    lseek(linux_image.fd,8,SEEK_SET);
+    uint64_t base = le64.read(linux_image.fd), kernel_size = le64.read(linux_image.fd);
+    lseek(linux_image.fd,0,SEEK_SET);
+    if (base % 64) { std::cerr << "Bad size: " << std::hex << base << std::endl; return 1; }
     if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
     AArch64::Page page(0,base,base+size-1,0,0,&linux_image);
     linux_image.dump_load( std::cerr, "linux image", page );
@@ -132,6 +151,16 @@ main(int argc, char *argv[])
       return 1;
     arch.mem_map(std::move(page));
     arch.BranchTo(AArch64::U64(base),arch.B_JMP);
+    // If kernel_size is greater than mapped file size, we need to reserve extra space with unitialized data
+    uint64_t xbase = base + size, xlast = base + kernel_size - 1;
+    if (xbase <= xlast)
+      {
+        unsigned xsize = kernel_size-size;
+        auto xudat = new uint8_t[size];
+        std::fill(&xudat[0], &xudat[size], -1);
+        static struct : AArch64::Page::Free { void free (AArch64::Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
+        arch.mem_map(AArch64::Page(0, xbase, xlast, new uint8_t[xsize], xudat, &free));
+      }
   }
 
   {
