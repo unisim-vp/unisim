@@ -36,7 +36,7 @@ namespace Mips
                                   unisim::util::forbint::debug::Target&,
                                   unisim::util::forbint::debug::MemoryFlags&) const = 0;
     /**CONTRACT**/
-    virtual void next_addresses(std::set<unsigned int>&,
+    virtual bool next_addresses(std::set<unsigned int>&,
                                 unisim::util::forbint::contract::MemoryState&,
                                 struct _DomainElementFunctions*) const = 0;
     virtual void interpret(uint32_t addr, uint32_t next_addr,

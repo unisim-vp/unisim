@@ -8,6 +8,15 @@
 
 namespace Mips
 {
+  void flushout() { std::cout.flush(); }
+  const char* print_instr(const Instruction& instr)
+    { std::ostringstream out;
+      instr.disasm(out);
+      static std::string res;
+      res = out.str();
+      return res.c_str();
+    }
+
   Decoder::Decoder()
   {
   }
@@ -122,48 +131,59 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    bool compute_branch_target( uint32_t& address, Interpreter::FCMemoryState& mem,
-          DomainElementFunctions* def) const
-    {
-      Interpreter::ContractComputationResult addr(mem, def);
-      Interpreter::INode::ComputeForward(branch.dest, addr);
-      return addr.res.is_constant(address);
-    }
-
-    void next_addresses(std::set<unsigned int>& addresses,
+    bool next_addresses(std::set<uint32_t>& addresses,
                         Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
-      if (branch.cond.good() or not branch.dest.good())
+      if (not branch.cond.good() and not branch.dest.good())
         {
           addresses.insert(operation->GetAddr() + size);
         }
-      
-      if (branch.dest.good())
+      else if (not branch.cond.good()) // branch.dest.good()
         {
-          uint32_t addr_as_uint32 = 0;
-          if (compute_branch_target(addr_as_uint32, mem, def))
-            addresses.insert(addr_as_uint32);
+          if (auto cnb = branch.dest->AsConstNode())
+            {
+              addresses.insert(cnb->Get(uint32_t()));
+            }
           else
             {
-              /* Should inform that a target wasn't computable in current
-               * memory state.
-               */
+              Interpreter::ContractComputationResult addr(mem, def);
+              Interpreter::INode::ComputeForward(branch.dest, addr);
+              return addr.res.retrieve_constant_values(addresses);
             }
         }
+      else // branch.cond.good()
+        {
+          assert(branch.dest.good());
+          auto cnb = branch.dest->AsConstNode();
+          assert(cnb);
+          uint64_t elseAddress = cnb->Get(uint32_t());
+          uint64_t thenAddress = operation->GetAddr() + 4;
+
+          Interpreter::ContractComputationResult addr(mem, def);
+          Interpreter::INode::ComputeForward(branch.dest, addr);
+          if (addr.res.mayBeDifferentZero())
+             addresses.insert(thenAddress);
+          if (addr.res.mayBeZero())
+             addresses.insert(elseAddress);
+        }
+      return true;
     }
 
     virtual void interpret( uint32_t addr, uint32_t next_addr,
                             Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
       uint32_t addrs[2] = {operation->GetAddr() + size, 0};
-      bool bt_known = false;
-      if (branch.dest.good())
-        bt_known = compute_branch_target(addrs[1], mem, def);
-
-      struct Ouch {};
       
+      struct Ouch {};
       if (branch.cond.good())
         {
+          bool bt_known = false;
+          if (branch.dest.good()) {
+            Interpreter::ContractComputationResult addr(mem, def);
+            Interpreter::INode::ComputeForward(branch.dest, addr);
+            bt_known = addr.res.is_constant(addrs[1]);
+          }
+
           bool cond = false;
           if (bt_known and next_addr == addrs[1]) cond = true;
           else if (        next_addr == addrs[0]) cond = false;
@@ -227,11 +247,11 @@ namespace Mips
             {
               throw Ouch();
             }
-        }      
+        }   
       else if (branch.dest.good())
         {
-          if (not bt_known or next_addr != addrs[1])
-            throw Ouch();
+          // if (not bt_known or next_addr != addrs[1])
+          //   throw Ouch();
         }
       else
         {
@@ -551,6 +571,8 @@ namespace Mips
         op = idecoder.NCDecode(addr + 4, unisim::util::endian::Host2LittleEndian(words[1]));
         op = new DBOp( std::move(insn->operation), op_ptr(op) );
         insn = std::make_unique<FullInstruction>( op_ptr(op), 8 );
+        // std::cout << print_instr(*insn);
+        // flushout();
       }
 
     return insn.release();

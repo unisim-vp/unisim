@@ -306,6 +306,10 @@ struct _DomainElementFunctions {
       DomainMultiBitElement* second, DomainEvaluationEnvironment* env);
   bool (*multibit_is_constant_value)(DomainMultiBitElement domain,
       DomainIntegerConstant* value);
+  bool (*multibit_is_constant_disjunction)(DomainMultiBitElement domain,
+      int* number_of_elements);
+  bool (*multibit_retrieve_constant_values)(DomainMultiBitElement domain,
+      DomainIntegerConstant* values, int number_of_elements);
 
   DomainMultiFloatElement (*multifloat_create_constant)(
       DomainFloatingPointConstant value);
