@@ -786,7 +786,7 @@ namespace Mips
     DebugIterationComputationResult(FDIteration& aiteration)
       : iteration(aiteration) {} 
     DebugIterationComputationResult(const DebugIterationComputationResult& source)
-      : iteration(source.iteration) {}
+      : flags(source.flags), iteration(source.iteration) {}
 
     void clear() { res = FDScalarElement(); flags.clear(); }
     virtual ComputationResult* Mutate() const { return new DebugIterationComputationResult(*this); }
@@ -1050,7 +1050,7 @@ namespace Mips
     ContractComputationResult(FCMemoryState& amemory, DomainElementFunctions* adef)
       : memory(amemory), def(adef) {} 
     ContractComputationResult(const ContractComputationResult& source)
-      : memory(source.memory) {}
+      : memory(source.memory), def(source.def) {}
 
     virtual ComputationResult* Mutate() const override { return new ContractComputationResult(*this); }
     virtual void setBoolResultFromConstant(bool value) override
