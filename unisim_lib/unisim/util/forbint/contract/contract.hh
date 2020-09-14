@@ -164,6 +164,16 @@ public:
       assert(pfFunctions);
       return (*pfFunctions->is_top)(deValue);
     }
+  bool mayBeZero() const
+    {
+      assert(pfFunctions);
+      return (*pfFunctions->query_zero_result)(deValue) & ZRZero;
+    }
+  bool mayBeDifferentZero() const
+    {
+      assert(pfFunctions);
+      return (*pfFunctions->query_zero_result)(deValue) & ZRDifferentZero;
+    }
 
   template <typename T>
   bool is_constant( T& value )
@@ -180,7 +190,7 @@ public:
         }
       case DTInteger:
         {
-          DomainIntegerConstant divalue;
+          DomainIntegerConstant divalue { sizeof(T)*8, std::numeric_limits<T>::is_signed, 0 };
           if (not (*pfFunctions->multibit_is_constant_value)(deValue, &divalue))
             return false;
           if (std::numeric_limits<T>::is_signed != divalue.isSigned)
@@ -199,6 +209,24 @@ public:
       }
     return false;
   }
+  template <typename ContainerType>
+  bool retrieve_constant_values(ContainerType& result)
+    {
+      if (getType() != DTInteger)
+        return false;
+      int numberOfElements = 0;
+      if (not (*pfFunctions->multibit_is_constant_disjunction)(deValue, &numberOfElements))
+        return false;
+      std::vector<DomainIntegerConstant> localResult(numberOfElements,
+          DomainIntegerConstant { sizeof(typename ContainerType::value_type)*8,
+                std::numeric_limits<typename ContainerType::value_type>::is_signed, 0 });
+      if (not (*pfFunctions->multibit_retrieve_constant_values)(deValue, localResult.data(),
+          numberOfElements))
+        return false;
+      for (const auto& res : localResult)
+        result.insert(result.end(), res.integerValue);
+      return true;
+    }
 
   char* write() const;
 };

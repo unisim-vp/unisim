@@ -8,6 +8,15 @@
 
 namespace Mips
 {
+  void flushout() { std::cout.flush(); }
+  const char* print_instr(const Instruction& instr)
+    { std::ostringstream out;
+      instr.disasm(out);
+      static std::string res;
+      res = out.str();
+      return res.c_str();
+    }
+
   Decoder::Decoder()
   {
   }
@@ -122,121 +131,146 @@ namespace Mips
     
     Instruction* clone() const override { return new FullInstruction(*this); }
 
-    bool compute_branch_target( uint32_t& address, Interpreter::FCMemoryState& mem,
-          DomainElementFunctions* def) const
-    {
-      Interpreter::ContractComputationResult addr(mem, def);
-      Interpreter::INode::ComputeForward(branch.dest, addr);
-      return addr.res.is_constant(address);
-    }
-
-    void next_addresses(std::set<unsigned int>& addresses,
+    bool next_addresses(std::set<uint32_t>& addresses,
                         Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
-      if (branch.cond.good() or not branch.dest.good())
+      if (not branch.cond.good() and not branch.dest.good())
         {
           addresses.insert(operation->GetAddr() + size);
         }
-      
-      if (branch.dest.good())
+      else if (not branch.cond.good()) // branch.dest.good()
         {
-          uint32_t addr_as_uint32 = 0;
-          if (compute_branch_target(addr_as_uint32, mem, def))
-            addresses.insert(addr_as_uint32);
+          if (auto cnb = branch.dest->AsConstNode())
+            {
+              addresses.insert(cnb->Get(uint32_t()));
+            }
           else
             {
-              /* Should inform that a target wasn't computable in current
-               * memory state.
-               */
+              Interpreter::ContractComputationResult addr(mem, def);
+              Interpreter::INode::ComputeForward(branch.dest, addr);
+              return addr.res.retrieve_constant_values(addresses);
             }
         }
+      else // branch.cond.good()
+        {
+          assert(branch.dest.good());
+          auto cnb = branch.dest->AsConstNode();
+          assert(cnb);
+          uint64_t elseAddress = cnb->Get(uint32_t());
+          uint64_t thenAddress = operation->GetAddr() + 4;
+
+          Interpreter::ContractComputationResult addr(mem, def);
+          Interpreter::INode::ComputeForward(branch.cond, addr);
+          if (addr.res.mayBeDifferentZero())
+             addresses.insert(thenAddress);
+          if (addr.res.mayBeZero())
+             addresses.insert(elseAddress);
+        }
+      return true;
     }
 
-    virtual void interpret( uint32_t addr, uint32_t next_addr,
+    virtual bool interpret( uint32_t& addr, uint32_t next_addr,
                             Interpreter::FCMemoryState& mem, DomainElementFunctions* def) const override
     {
       uint32_t addrs[2] = {operation->GetAddr() + size, 0};
-      bool bt_known = false;
-      if (branch.dest.good())
-        bt_known = compute_branch_target(addrs[1], mem, def);
-
-      struct Ouch {};
       
+      struct Ouch {};
+      bool result = next_addr == addrs[0];
+      addr = addrs[0];
       if (branch.cond.good())
         {
+          bool bt_known = false, has_cond_true = false, has_cond_false = false;
+          { Interpreter::ContractComputationResult addr2(mem, def);
+            Interpreter::INode::ComputeForward(branch.cond, addr2);
+            has_cond_true = addr2.res.mayBeDifferentZero();
+            has_cond_false = addr2.res.mayBeZero();
+          }
+          if (branch.dest.good()) {
+            Interpreter::ContractComputationResult addr2(mem, def);
+            Interpreter::INode::ComputeForward(branch.dest, addr2);
+            bt_known = addr2.res.is_constant(addrs[1]);
+            if (bt_known && has_cond_false && (!has_cond_true || !result)) {
+               result = next_addr == addrs[1];
+               addr = addrs[1];
+            }
+          }
+
           bool cond = false;
-          if (bt_known and next_addr == addrs[1]) cond = true;
-          else if (        next_addr == addrs[0]) cond = false;
-          else throw Ouch();
+          if (has_cond_true && has_cond_false && bt_known) {
+            if (     next_addr == addrs[1]) cond = true;
+            else if (next_addr == addrs[0]) cond = false;
+            else throw Ouch();
 
-          if (auto comp = branch.cond->AsOpNode())
-            {
-              using unisim::util::symbolic::Op;
+            if (auto comp = branch.cond->AsOpNode())
+              {
+                using unisim::util::symbolic::Op;
 
-              if (comp->SubCount() != 2)
-                throw Ouch();
-              
-              /* Getting compared registers (note 0 is effectively r0
-               * which is a zeroed register)*/
-              unsigned regs[2] = {0,0};
-              for (unsigned alt = 0; alt < 2; ++alt)
-                {
-                  auto const& op = comp->GetSub(alt);
-                  if (auto z = op->AsConstNode())
-                    {
-                      if (z->Get(uint32_t()) != 0) throw Ouch(); /* in mips comparisons, constant is always zero */
-                      regs[alt] = 0;
-                    }
-                  else if (Interpreter::RegRead const* reg = dynamic_cast<Interpreter::RegRead const*>( op.node ))
-                    {
-                      regs[alt] = reg->reg.idx();
-                    }
-                  else
-                    throw Ouch();
-                }
-
-              /* TODO: need to signal constraint on register operands (0 is the zero constant) */
-              switch (comp->op.code)
-                {
-                default:
+                if (comp->SubCount() != 2)
                   throw Ouch();
-                case Op::Teq: /* operands are equals if cond is true */
-                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
-                  break;
-                case Op::Tne: /* operands are not equals if cond is true */
-                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
-                  break;
+                
+                /* Getting compared registers (note 0 is effectively r0
+                 * which is a zeroed register)*/
+                unsigned regs[2] = {0,0};
+                for (unsigned alt = 0; alt < 2; ++alt)
+                  {
+                    auto const& op = comp->GetSub(alt);
+                    if (auto z = op->AsConstNode())
+                      {
+                        if (z->Get(uint32_t()) != 0) throw Ouch(); /* in mips comparisons, constant is always zero */
+                        regs[alt] = 0;
+                      }
+                    else if (Interpreter::RegRead const* reg = dynamic_cast<Interpreter::RegRead const*>( op.node ))
+                      {
+                        regs[alt] = reg->reg.idx();
+                      }
+                    else
+                      throw Ouch();
+                  }
 
-                  /*in the following, one operand should be 0 (most probably the second) */
-                case Op::Tgt: /* operand0 is greater than operand1 (signed) */
-                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
-                  break;
-                case Op::Tge: /* operand0 is greater or equal to operand1 (signed) */
-                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
-                  break;
-                case Op::Tlt: /* operand0 is less than operand1 (signed) */
-                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
-                  break;
-                case Op::Tle: /* operand0 is less or equal to operand1 (signed) */
-                  std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
-                  break;
-                  
-                }
-            }
-          else
-            {
-              throw Ouch();
-            }
-        }      
+                /* TODO: need to signal constraint on register operands (0 is the zero constant) */
+                switch (comp->op.code)
+                  {
+                  default:
+                    throw Ouch();
+                  case Op::Teq: /* operands are equals if cond is true */
+                    std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                    break;
+                  case Op::Tne: /* operands are not equals if cond is true */
+                    std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                    break;
+
+                    /*in the following, one operand should be 0 (most probably the second) */
+                  case Op::Tgt: /* operand0 is greater than operand1 (signed) */
+                    std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                    break;
+                  case Op::Tge: /* operand0 is greater or equal to operand1 (signed) */
+                    std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                    break;
+                  case Op::Tlt: /* operand0 is less than operand1 (signed) */
+                    std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                    break;
+                  case Op::Tle: /* operand0 is less or equal to operand1 (signed) */
+                    std::cout << regs[0] << " ~~ " << regs[1] << cond << std::endl;
+                    break;
+                    
+                  }
+               }
+             else
+               {
+                 throw Ouch();
+               }
+          }
+        }   
       else if (branch.dest.good())
         {
-          if (not bt_known or next_addr != addrs[1])
-            throw Ouch();
+          // if (not bt_known or next_addr != addrs[1])
+          //   throw Ouch();
         }
       else
         {
-          if (next_addr != addrs[0])
-            throw Ouch();
+          // only the last instruction of a sequence reaches next_addr
+          // if (next_addr != addrs[0])
+          //   throw Ouch();
         }
       
       Interpreter::ContractComputationResult computationUnit(mem, def);
@@ -249,6 +283,7 @@ namespace Mips
           { struct NotAnUpdate {}; throw NotAnUpdate(); }
       for (auto const& side_effect : side_effects)
         side_effect->Commit(computationUnit);
+      return result;
     }
 
     void
@@ -551,6 +586,8 @@ namespace Mips
         op = idecoder.NCDecode(addr + 4, unisim::util::endian::Host2LittleEndian(words[1]));
         op = new DBOp( std::move(insn->operation), op_ptr(op) );
         insn = std::make_unique<FullInstruction>( op_ptr(op), 8 );
+        // std::cout << print_instr(*insn);
+        // flushout();
       }
 
     return insn.release();
