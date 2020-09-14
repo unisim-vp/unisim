@@ -210,11 +210,6 @@ main(int argc, char *argv[])
     {
       for (;;)
         {
-          if (arch.next_insn_addr == 0xffffffc010caf514)
-            {
-              std::cerr << "DBG\n";
-              arch.disasm = true;
-            }
           arch.step_instruction();
           tailbuf[insn_counter++%tailsize].assign(arch.current_insn_addr, arch.current_insn_op);
         }

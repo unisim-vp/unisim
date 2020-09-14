@@ -73,6 +73,8 @@ struct AArch64
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>*);
   void UndefinedInstruction();
 
+  void breakdance();
+
   void TODO();
 
   /** Get the value contained by a General-purpose or Stack Register.
@@ -272,7 +274,7 @@ struct AArch64
   memory_write(U64 addr, T src)
   {
     if (addr.ubits) { struct Bad {}; throw Bad(); }
-    
+
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_write, size);
     

@@ -164,6 +164,11 @@ AArch64::step_instruction()
 
       this->next_insn_addr += 4;
 
+      // if (current_insn_addr == 0xffffffc01058cc18)
+      //   {
+      //     breakdance();
+      //     disasm = true;
+      //   }
       if (disasm)
         {
           std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
@@ -2986,3 +2991,8 @@ AArch64::PState::AsSPSR() const
   return spsr;
 }
 
+void
+AArch64::breakdance()
+{
+  std::cerr << "Debug time!\n";
+}

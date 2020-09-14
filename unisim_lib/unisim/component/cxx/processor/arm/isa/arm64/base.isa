@@ -6002,7 +6002,7 @@ rbit_x.execute = {
   U64 res( cpu.GetGZR(rn) );
   uint64_t const masks[] = {0x5555555555555555ull, 0x3333333333333333ull, 0x0f0f0f0f0f0f0f0full, 0x00ff00ff00ff00ffull, 0x0000ffff0000ffffull, 0x00000000ffffffffull};
   
-  for (unsigned i = 0; i < 5; ++i) {
+  for (unsigned i = 0; i < 6; ++i) {
     unsigned shift = (1<<i);
     U64 mask = U64(masks[i]);
     res = ((res >> shift) & mask) | ((res & mask) << shift);
