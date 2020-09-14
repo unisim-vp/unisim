@@ -34,6 +34,7 @@
 
 #include "architecture.hh"
 #include <iostream>
+#include <iomanip>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -92,7 +93,7 @@ int
 main(int argc, char *argv[])
 {
   char const* img_filename = "Image";
-  char const* dt_filename = "device_tree_from_qemu.dtb";
+  char const* dt_filename = "device_tree.dtb";
   // Booting an AArch64 system
   //
   // Docs & Notes: 
@@ -182,9 +183,9 @@ main(int argc, char *argv[])
      * x2 = 0 (reserved for future use)
      * x3 = 0 (reserved for future use)
      */
-    for (unsigned idx = 1; idx < 4; ++idx)
-      arch.SetGSR(idx, AArch64::U64(0xdeadbeefbadfeed0 + idx,-1));
     arch.SetGSR(0, AArch64::U64(base));
+    for (unsigned idx = 1; idx < 4; ++idx)
+      arch.SetGSR(idx, 0/*AArch64::U64(0xdeadbeefbadfeed0 + idx,-1)*/);
   }
 
   
@@ -195,12 +196,45 @@ main(int argc, char *argv[])
 
   std::cerr << "\n*** Run ***" << std::endl;
 
-  for (;;)
-    {
-      arch.step_instruction();
-    }
+  uintptr_t insn_counter = 0;
+  unsigned const tailsize = 1024;
+  struct InstructionInfo
+  {
+    void assign( uint64_t _addr, AArch64::Operation* _op ) { addr = _addr; op = _op; }
+    uint64_t addr;
+    AArch64::Operation* op;
+  };
+  InstructionInfo tailbuf[tailsize];
   
-  std::cerr << "WTF" << std::endl;
+  try
+    {
+      for (;;)
+        {
+          if (arch.next_insn_addr == 0xffffffc010caf514)
+            {
+              std::cerr << "DBG\n";
+              arch.disasm = true;
+            }
+          arch.step_instruction();
+          tailbuf[insn_counter++%tailsize].assign(arch.current_insn_addr, arch.current_insn_op);
+        }
+    }
+  catch (...)
+    {
+      std::cerr << "Executed " << std::dec << insn_counter << " instructions\n";
+      std::cerr << "========\n";
+      for (unsigned idx = 0; idx < tailsize; ++idx)
+        {
+          InstructionInfo const& insn = tailbuf[(insn_counter+idx)%tailsize];
+          std::cerr << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
+          insn.op->disasm( arch, std::cerr );
+          std::cerr << std::endl;
+        }
+
+      throw;
+    }
+
+  std::cerr << "Executed " << std::dec << insn_counter << " instructions: " << std::endl;
   
   return 0;
 }

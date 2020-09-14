@@ -52,6 +52,7 @@ AArch64::AArch64()
   , TPIDR()
   , CPACR()
   , event()
+  , disasm(false)
 {
   std::cout << "Let's go!\n";
 }
@@ -158,14 +159,17 @@ AArch64::step_instruction()
       for (uint8_t *beg = ipb.get(*this, insn_addr), *itr = &beg[4]; --itr >= beg;)
         insn = insn << 8 | *itr;
 
-      /* Decode current PC */
-      unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>* op = decoder.Decode(insn_addr, insn);
+      /* Decode current PC. TODO: should provide physical address for caching purpose */
+      Operation* op = current_insn_op = decoder.Decode(insn_addr, insn);
 
       this->next_insn_addr += 4;
 
-      // std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
-      // op->disasm( *this, std::cerr );
-      // std::cerr << std::endl;
+      if (disasm)
+        {
+          std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
+          op->disasm( *this, std::cerr );
+          std::cerr << std::endl;
+        }
 
       /* Execute instruction */
       asm volatile( "arm64_operation_execute:" );
@@ -200,7 +204,9 @@ AArch64::step_instruction()
 void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>* op)
 {
-  op->disasm(*this, std::cerr << "Undefined instruction : `"); std::cerr << "`.\n";
+  op->disasm(*this, std::cerr << "Undefined instruction : `");
+  std::cerr << "` (" << op->GetName() << ", " << std::hex << op->GetEncoding()
+            << "@" << std::hex << op->GetAddr() << ").\n";
   UndefinedInstruction();
 }
 
@@ -214,7 +220,7 @@ void
 AArch64::TODO()
 {
   //struct Bad {}; throw Bad ();
-  std::cerr << "!TODO!\n";
+  //  std::cerr << "!TODO!\n";
 }
 
 /** CallSupervisor
@@ -245,6 +251,40 @@ AArch64::CallSupervisor( uint32_t imm )
   // we are executing on full system mode
   //  throw SVCException();
   struct Bad {}; throw Bad();
+}
+
+/** CallHypervisor
+ *
+ *  This method is called by HVC instructions to handle software interrupts.
+ * @param imm     the "imm" field of the instruction code
+ */
+void
+AArch64::CallHypervisor( uint32_t imm )
+{
+  struct Bad {};
+  
+  if (imm == 0)
+    {
+      U64 const& arg0 = gpr[0];
+      
+      if (arg0.ubits)
+        throw Bad();
+      
+      switch (arg0.value)
+        {
+        default:
+          throw Bad();
+        case 0x84000000: // PSCI_0_2_FN_VERSION
+          gpr[0] = U64(2); // VERSION=0.2
+          return;
+        case 0x84000006: // PSCI_0_2_FN_MIGRATE_INFO_TYPE:
+          /* Trusted OS is not present */
+          gpr[0] = U64(2); // PSCI_0_2_TOS_MP;
+          return;
+        }
+    }
+
+  throw Bad();
 }
 
 /** Check access permissions for op1-n system registers
@@ -475,7 +515,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
       /*** Data Cache Maintenance ***/
-      
+
     case SYSENCODE(0b01,0b100,0b1000,0b0111,0b100):
       {
         static struct : public TLBISysReg {
@@ -733,7 +773,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { GetSP(cpu, op1) = value; }
         } x; return &x;
       } break;
-      
+
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b001): // 2.1: ACTLR_EL1, Auxiliary Control Register (EL1)
       {
         static struct : public BaseSysReg {
@@ -938,7 +978,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-      
+
     case SYSENCODE(0b11,0b000,0b0101,0b0010,0b000): // 2.24: ESR_EL1, Exception Syndrome Register (EL1)
       {
         static struct : public BaseSysReg {
@@ -2605,7 +2645,7 @@ AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_
       keys[idx] = keys[idx-1];
       indices[idx] = indices[idx-1];
     }
-  
+
   unsigned significant = tlbe.blocksize - 1, global = not tlbe.nG;
   keys[0] = (((vaddr >> 12) << 27) >> 16) | (uint64_t(asid) << 48) | (global << 6) | significant;
   indices[0] = lru_idx;
@@ -2622,7 +2662,7 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
     }
 
   struct Bad {};
-  
+
   uint64_t ubit_issue = 0;
   switch (type)
     {
@@ -2631,7 +2671,7 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
     case 3: ubit_issue = 0x00000fffffffffffull; break;
     }
   if (arg.ubits & ubit_issue) throw Bad {};
-  
+
   uint64_t vakey = (((arg.value << 12) << 15 ) >> 16) | ((arg.value >> 48) << 48) | 1;
 
   for (unsigned idx = 0; idx < kcount; ++idx)
@@ -2641,7 +2681,7 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
 
       if (ll and rsh > 15) /* rsh = blocksize - 1; */
         continue;
-      
+
       if (type == 2 and ((vakey ^ key) >> 48)) // by asid
         continue;
 
@@ -2659,11 +2699,11 @@ AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t va
 {
   unsigned rsh = 0, hit;
   uint64_t key = 0;
-  /* 64-bit-keys: 
+  /* 64-bit-keys:
    * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
    *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
    */
-  
+
   uint64_t vakey = ((vaddr << 15) >> 16) | (uint64_t(asid) << 48) | 1;
 
   for (hit = 0; hit < kcount; ++hit)
@@ -2679,7 +2719,7 @@ AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t va
   // TLB hit
   unsigned idx = indices[hit];
   Entry& entry = entries[idx];
-  
+
   if (not POLICY::DEBUG)
     {
       // MRU sort
@@ -2691,10 +2731,10 @@ AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t va
       keys[0] = key;
       indices[0] = idx;
     }
-  
+
   // Address translation and attributes
   result = entry;
-  
+
   uint64_t himask = uint64_t(-2) << rsh; /* blocksize = rsh + 1; */
   result.pa = (result.pa & himask) | (vaddr & ~himask);
   return true;
@@ -2737,19 +2777,19 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
   uint64_t ttbr;
 
   struct Bad {};
-  
+
   struct Descriptor
   {
-    
+
     Descriptor(AArch64& _cpu)
       : cpu(_cpu)
       , endianness(unisim::component::cxx::processor::arm::sctlr::EE.Get(cpu.el1.SCTLR) ? 0b111 : 0b000)
     {}
-    
+
     AArch64& cpu;
     unsigned endianness;
     enum {size = 8};
-    
+
     uint64_t read(uint64_t paddr)
     {
       uint8_t dbuf[size], ubuf[size];
@@ -2766,7 +2806,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
   // identical.  ARM says that bit 55 is used to determine the value
   // of these hyptothesized identical bits, and thus determine the VA range.
 
-  
+
   if ((vaddr >> 55) & 1)
     {
       /* high VA range */
@@ -2806,10 +2846,10 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
       // TODO: extract tag here ?
       vaddr = (int64_t(vaddr) << 8) >> 8;
     }
-  
+
   // firstblocklevel = first level where a block entry is allowed
   // firstblocklevel = {4K =>1, 64K => 2, 16K => 2} <=> blocks < 2^32
-  
+
   unsigned stride = grainsize - 3, tablesize = 64 - tsz;
   if (tablesize > 48) tablesize = 48;
   if (tablesize < 25) tablesize = 25;
@@ -2829,16 +2869,16 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
   }
   // assert uint64_t((int64_t(vaddr) << tsz) >> tsz) == vaddr
   unsigned direct_bits = walkdepth*stride + grainsize, level;
-  
+
   /* attr_table is NS[1] : ap_table[2] : UX[1] (=!UXN) : PX[1] (=!PXN) */
   unsigned attr_table = 0b11111; // should be 0b11010 for non EL0&1 regimes and 0b10000 should depend on `lookupsecure`
-  
+
   {
     uint64_t walkidx = (vaddr << tsz) >> tsz, walkmask = (1 << stride)-1;
     for (level = 3 - walkdepth; true; ++level, direct_bits -= stride)
       {
         unsigned index = (walkidx >> direct_bits) & walkmask;
-        
+
         desc = descriptor.read(tbladdr + 8*index);
 
         if (not (desc & 1))
@@ -2852,14 +2892,14 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
           }
         else if (level == 3)
           break; /* a page*/
-        
+
         /* a table */
         tbladdr = ((desc >> grainsize) << (grainsize+16)) >> 16;
         attr_table &= ((desc >> 59) ^ 0b00011);
       }
-  }    
+  }
   if (direct_bits > 32) { struct Bad {}; throw Bad(); }
-    
+
   unsigned vaclr = 64 - direct_bits;
   entry.pa = (((desc >> direct_bits) << (direct_bits + 16)) >> 16) | ((vaddr << vaclr) >> vaclr);
   entry.blocksize = direct_bits;
@@ -2889,14 +2929,14 @@ AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t
   // spsr = GetSPSRFromPSTATE();
   U32 spsr = GetSPSRFromPSTATE();
   // ESR[target_el] = ec<5:0>:il:syndrome;
-  
+
   get_el(target_el).ESR = U32()
     | U32((mat == mat_exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
     | U32(1) << 25 // IL
     | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
     | U32(0,0b1111) << 10
     | U32(0,0b1) << 9 // IsExternalAbort(fault)
-    | U32(0,0b1) << 8 // IN {AccType_DC, AccType_IC} 
+    | U32(0,0b1) << 8 // IN {AccType_DC, AccType_IC}
     | U32(s2fs1walk) << 7
     | U32(mat == mat_write) << 6
     | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
@@ -2910,7 +2950,7 @@ AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t
 
   get_el(target_el).SPSR = spsr;
   get_el(target_el).ELR = U64(current_insn_addr);
-  
+
   pstate.D = 1;
   pstate.A = 1;
   pstate.I = 1;
@@ -2924,7 +2964,7 @@ AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t
 
   // BranchTo(VBAR[] + vect_offset, BranchType_EXCEPTION);
   BranchTo( get_el(target_el).VBAR + U64(vect_offset), B_EXC );
-  
+
   EndOfInstruction();
 }
 
@@ -2942,7 +2982,7 @@ AArch64::PState::AsSPSR() const
     | F << 6
     | EL << 2
     | SP << 0;
-  
+
   return spsr;
 }
 

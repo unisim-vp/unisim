@@ -49,10 +49,12 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 taint.cc \
 architecture.cc \
 main.cc \
+debugger.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
 taint.hh \
 architecture.hh \
+debugger.hh \
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\

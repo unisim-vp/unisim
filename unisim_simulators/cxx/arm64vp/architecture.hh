@@ -63,6 +63,10 @@ struct AArch64
   typedef U64 SREG;
 
   enum { ZID=4 };
+
+  typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> Decoder;
+  typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> Operation;
+  
   
   AArch64();
  
@@ -222,6 +226,7 @@ struct AArch64
     return cond.value;
   }  
   void CallSupervisor( uint32_t imm );
+  void CallHypervisor( uint32_t imm );
 
   //=====================================================================
   //=                       Memory access methods                       =
@@ -576,10 +581,11 @@ struct AArch64
   template <class POLICY>
   void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
   
+  /** Architectural state **/
   MMU      mmu;
   Pages    pages;
   IPB      ipb;
-  unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> decoder;
+  Decoder  decoder;
 
   U64      gpr[32];
   U64      sp_el[2];
@@ -587,7 +593,8 @@ struct AArch64
   PState   pstate;
   U8       nzcv;
   uint64_t current_insn_addr, next_insn_addr;
-  /** system registers**/
+  Operation* current_insn_op;
+  
   U64      TPIDR[2]; //<  Thread Pointer / ID Register
   uint32_t CPACR;
 
@@ -602,6 +609,7 @@ struct AArch64
       return true;
     }
   } event;
+  bool disasm;
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */
