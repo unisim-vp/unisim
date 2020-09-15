@@ -34,6 +34,7 @@
 
 #include "architecture.hh"
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -217,13 +218,13 @@ main(int argc, char *argv[])
   catch (...)
     {
       std::cerr << "Executed " << std::dec << insn_counter << " instructions\n";
-      std::cerr << "========\n";
+      std::ofstream tail("tail");
       for (unsigned idx = 0; idx < tailsize; ++idx)
         {
           InstructionInfo const& insn = tailbuf[(insn_counter+idx)%tailsize];
-          std::cerr << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
-          insn.op->disasm( arch, std::cerr );
-          std::cerr << std::endl;
+          tail << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
+          insn.op->disasm( arch, tail );
+          tail << std::endl;
         }
 
       throw;

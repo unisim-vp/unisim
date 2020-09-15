@@ -1,65 +1,77 @@
 #!/bin/bash
 
-SIMPKG=amd64_simtest
-SIMPKG_SRCDIR=cxx/amd64_simtest
+SIMPKG=mpc57sav
+SIMPKG_SRCDIR=cxx/mpc57sav
+SIMPKG_DSTDIR=mpc57sav
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/component/cxx/processor/intel || exit
-import unisim/component/cxx/processor/intel/isa || exit
-import unisim/util/arithmetic || exit
-import unisim/util/endian || exit
+import_genisslib || exit
+
+import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs || exit
+import unisim/component/cxx/processor/powerpc/isa/book_ii || exit
+import unisim/component/cxx/processor/powerpc/isa/book_iii_e || exit
+import unisim/component/cxx/processor/powerpc/isa/book_e || exit
+import unisim/component/cxx/processor/powerpc/isa/book_vle || exit
+import unisim/component/cxx/processor/powerpc/isa/lsp || exit
+import unisim/component/cxx/processor/powerpc/isa/mpu || exit
+
+import unisim/util/likely || exit
 import unisim/util/random || exit
 import unisim/util/symbolic || exit
 
 import libc/inttypes || exit
-import sys/mman || exit
 import std/fstream || exit
-import std/iostream || exit
-import std/vector || exit
-import std/bitset || exit
-import std/set || exit
-import std/memory || exit
-import std/ostream || exit
-import std/cmath || exit
 import std/iosfwd || exit
-import std/cstdlib || exit
-import std/cassert || exit
+import std/iostream || exit
+import std/map || exit
+import std/memory || exit
+import std/set || exit
+import std/sstream || exit
+import std/string || exit
+import std/vector || exit
 
 import m4/ax_cflags_warn_all || exit
 
-copy source header template data
+copy source isa isa_vle header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa) $(files isa_vle)"
+
+UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} $(files header) $(files template)"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
-"
-UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
-UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
-
-UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
-
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
+UNISIM_SIMULATOR_ISA_FILES="\
+top_mpc57.isa \
 "
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 arch.cc \
-testrun.cc
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+${UNISIM_SIMULATOR_ISA_FILES} \
 arch.hh \
-testrun.hh
+testutils.hh \
+"
+
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
+COPYING \
+NEWS \
+ChangeLog \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
+README \
+INSTALL \
+AUTHORS \
 NEWS \
 ChangeLog \
 "
@@ -67,6 +79,10 @@ ChangeLog \
 UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
+done
+
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
@@ -78,7 +94,8 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - amd64_simtest: an amd64/intel64 unit tests generator
+  - mpc57sav: an MPC57 V5 user level simulator
+  - UNISIM GenISSLib (will not be installed): an instruction set simulator generator
 
 See INSTALL for installation instructions.
 EOF
@@ -106,10 +123,35 @@ Installing (optional):
   $ make install
 EOF
 
+output_top_configure_ac <(cat << EOF
+AC_INIT([UNISIM mpc57xx simulator validation tests generator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
+AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_CONFIG_SUBDIRS([genisslib]) 
+AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}]) 
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
+)
+
+output_top_makefile_am <(cat << EOF
+SUBDIRS=genisslib ${SIMPKG_DSTDIR}
+EXTRA_DIST = configure.cross
+EOF
+)
+
+build_top_configure
+
 # Simulator
 
-output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM amd64 simulator validation tests generator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+output_simulator_configure_ac <(cat << EOF
+AC_INIT([UNISIM mpc57xx simulator validation tests generator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -133,6 +175,8 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
+AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
@@ -156,12 +200,25 @@ unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULA
 noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = top_mpc57.cc
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
+
+BUILT_SOURCES=\
+	\$(top_builddir)/top_mpc57.hh\
+	\$(top_builddir)/top_mpc57.cc\
+
+CLEANFILES=\
+	\$(top_builddir)/top_mpc57.hh\
+	\$(top_builddir)/top_mpc57.cc\
+
+\$(top_builddir)/top_mpc57.cc: \$(top_builddir)/top_mpc57.hh
+\$(top_builddir)/top_mpc57.hh: ${UNISIM_SIMULATOR_ISA_FILES} ${UNISIM_LIB_SIMULATOR_ISA_FILES}
+	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_mpc57 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_mpc57.isa
 
 EOF
 )

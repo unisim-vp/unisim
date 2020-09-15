@@ -1,7 +1,7 @@
 #!/bin/bash
-SIMPKG=arm_simtest
-SIMPKG_SRCDIR=cxx/arm_simtest
-SIMPKG_DSTDIR=arm_simtest
+SIMPKG=arm32sav
+SIMPKG_SRCDIR=cxx/arm32sav
+SIMPKG_DSTDIR=arm32sav
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
@@ -97,7 +97,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - arm_simtest: an ARM V5 user level simulator
+  - arm32sav: an ARM V5 user level simulator
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
@@ -126,7 +126,7 @@ Installing (optional):
 EOF
 
 output_top_configure_ac <(cat << EOF
-AC_INIT([UNISIM Arm_Simtest Standalone simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM Arm32sav Standalone simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -153,19 +153,8 @@ build_top_configure_cross
 
 # Simulator
 
-SIM_VERSION_MAJOR=$(printf "${SIMULATOR_VERSION}" | cut -f 1 -d .)
-SIM_VERSION_MINOR=$(printf "${SIMULATOR_VERSION}" | cut -f 2 -d .)
-SIM_VERSION_PATCH=$(printf "${SIMULATOR_VERSION}" | cut -f 3 -d .)
-SIM_VERSION="${SIMULATOR_VERSION}"
-SIM_VERSION_CODENAME="Triumphalis Tarraco"
-SIM_AUTHOR="Yves Lhuillier (yves.lhuillier@cea.fr)"
-SIM_PROGRAM_NAME="UNISIM Arm_Simtest"
-SIM_LICENSE="BSD (See file COPYING)"
-SIM_COPYRIGHT="Copyright (C) 2007-2017, Commissariat a l'Energie Atomique"
-SIM_DESCRIPTION="UNISIM ARM SELF SIMULATOR TEST GENERATION"
-SIM_SCHEMATIC="arm_simtest/fig_schematic.pdf"
 output_simulator_configure_ac <(cat << EOF
-AC_INIT([UNISIM Arm_Simtest C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM Arm32sav C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
