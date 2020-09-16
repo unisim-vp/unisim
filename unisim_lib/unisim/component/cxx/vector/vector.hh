@@ -83,7 +83,7 @@ namespace vector {
           // if destination element is wider than source vector:
           for (unsigned idx = size; idx < elem_size; ++idx)
             buf[idx] = Byte(0u);
-          Byte const* src_end = &buf[std::min(size, final_size)];
+          Byte const* src_end = &buf[size < final_size ? size : final_size];
           for (unsigned idx = 0, end = CONFIG::BYTECOUNT / elem_size; idx < end; ++idx)
             {
               unsigned pos = idx*elem_size;
@@ -115,12 +115,13 @@ namespace vector {
     template <class ELEM>
     ELEM* GetConstStorage( void* storage, ELEM const&, unsigned final_size )
     {
-      return rearrange<ELEM>( storage, std::max(size, final_size) );
+      return rearrange<ELEM>( storage, size > final_size ? size : final_size );
     }
 
     void Truncate(unsigned final_size)
     {
-      size = std::min(size, final_size);
+      if (size > final_size)
+        size = final_size;
     }
     
     static void initial( Byte*, void*, unsigned, bool ) {}

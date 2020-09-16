@@ -207,7 +207,7 @@ AArch64::step_instruction()
 }
 
 void
-AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>* op)
+AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
 {
   op->disasm(*this, std::cerr << "Undefined instruction : `");
   std::cerr << "` (" << op->GetName() << ", " << std::hex << op->GetEncoding()

@@ -502,6 +502,12 @@ CPU::dc_zva(uint64_t addr)
   PhysicalWriteMemory( addr & -(sizeof buffer), buffer, sizeof buffer );
 }
 
+void
+CPU::PrefetchMemory(unsigned op, uint64_t addr)
+{
+  /* TODO: */
+}
+
 /**
  * Virtual method implementation to handle non intrusive reads performed by the inherited
  * cpu to perform external memory accesses.

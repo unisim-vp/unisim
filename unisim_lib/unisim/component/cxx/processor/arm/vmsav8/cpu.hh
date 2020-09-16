@@ -102,6 +102,7 @@ struct CPU
   typedef U64      UREG;
   typedef S64      SREG;
   
+  typedef this_type DisasmState;
   
   /**********************************************************************
    ***                   Constructors / Destructors                   ***
@@ -170,7 +171,7 @@ struct CPU
     
   void StepInstruction();
 
-  void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL>* insn );
+  void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL> const* insn );
   void UndefinedInstruction();
   
   bool Cond( bool cond ) { return cond; }
@@ -323,6 +324,7 @@ struct CPU
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   bool Test( bool cond ) { return cond; }
   void CallSupervisor( uint32_t imm );
+  void CallHypervisor( uint32_t imm );
   
   //=====================================================================
   //=                       Memory access methods                       =

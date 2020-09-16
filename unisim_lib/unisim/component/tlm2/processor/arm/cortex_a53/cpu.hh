@@ -165,6 +165,8 @@ public:
 
   // Cache operation
   void dc_zva(uint64_t addr);
+
+  void PrefetchMemory(unsigned op, uint64_t addr);
 };
 
 } // end of namespace cortex_a53

@@ -316,6 +316,7 @@ struct Processor
   }
   
   void CallSupervisor( uint32_t imm ) { throw 0;  }
+  void CallHypervisor( uint32_t imm ) { throw 0;  }
   
   //   =====================================================================
   //   =                       Memory access methods                       =
@@ -341,6 +342,8 @@ struct Processor
   void ClearExclusiveLocal() { throw 0; }
   void SetExclusiveMonitors( U64, unsigned size ) { throw 0; }
   bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw 0; }
+
+  void PrefetchMemory(unsigned, U64) { throw 0; }
   
   //   =====================================================================
   //   =                         Processor Storage                         =

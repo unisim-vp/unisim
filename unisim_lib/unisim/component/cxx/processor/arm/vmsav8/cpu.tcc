@@ -530,7 +530,7 @@ CPU<CPU_IMPL>::ReadInsn( uint64_t address, isa::arm64::CodeType& insn )
  */
 template <class CPU_IMPL>
 void
-CPU<CPU_IMPL>::UndefinedInstruction( isa::arm64::Operation<CPU_IMPL>* insn )
+CPU<CPU_IMPL>::UndefinedInstruction( isa::arm64::Operation<CPU_IMPL> const* insn )
 {
   std::ostringstream oss;
   insn->disasm( *static_cast<CPU_IMPL*>(this), oss );
@@ -641,6 +641,19 @@ CPU<CPU_IMPL>::CallSupervisor( uint32_t imm )
     // we are executing on full system mode
     throw SVCException();
   }
+}
+
+/** CallHypervisor
+ *
+ *  This method is called by HVC instructions to handle call to hypervisor.
+ * @param imm     the "imm" field of the instruction code
+ */
+template <class CPU_IMPL>
+void
+CPU<CPU_IMPL>::CallHypervisor( uint32_t imm )
+{
+  struct HVCException {};
+  throw HVCException();
 }
 
 /** Check access permissions for op1-n system registers

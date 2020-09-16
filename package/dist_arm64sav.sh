@@ -1,31 +1,31 @@
 #!/bin/bash
 
-SIMPKG=arm64vp
-SIMPKG_SRCDIR=cxx/arm64vp
-SIMPKG_DSTDIR=arm64vp
+SIMPKG=arm64sav
+SIMPKG_SRCDIR=cxx/arm64sav
+SIMPKG_DSTDIR=arm64sav
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
 import unisim/component/cxx/processor/arm/vmsav8 || exit
-import unisim/kernel/config/xml || exit
-import unisim/kernel/config/ini || exit
-import unisim/kernel/config/json || exit
-import unisim/kernel/logger/console || exit
-import unisim/kernel/logger/text_file || exit
-import unisim/kernel/logger/http || exit
-import unisim/kernel/logger/xml_file || exit
-import unisim/kernel/logger/netstream || exit
-import unisim/util/likely || exit
-import unisim/service/trap_handler || exit
-import unisim/service/debug/gdb_server || exit
-import unisim/service/debug/inline_debugger || exit
-import unisim/service/debug/debugger || exit
+import unisim/util/arithmetic || exit
+import unisim/util/endian || exit
+import unisim/util/random || exit
+import unisim/util/symbolic || exit
 
+import libc/inttypes || exit
+import sys/mman || exit
+import std/fstream || exit
 import std/iostream || exit
 import std/vector || exit
-import std/string || exit
-import std/stdexcept || exit
+import std/bitset || exit
+import std/set || exit
+import std/memory || exit
+import std/ostream || exit
+import std/cmath || exit
+import std/iosfwd || exit
+import std/cstdlib || exit
+import std/cassert || exit
 
 import m4/ax_cflags_warn_all || exit
 
@@ -47,16 +47,14 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
-taint.cc \
-architecture.cc \
 main.cc \
-debugger.cc \
+arch.cc \
+testrun.cc
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
-taint.hh \
-architecture.hh \
-debugger.hh \
+arch.hh \
+testrun.hh
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\
@@ -82,7 +80,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 done
 
 for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
+        dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
 # Top level
@@ -93,7 +91,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - Arm64vp: an ARMv8 kernel level simulator (for virtio linux simulation)
+  - arm64sav: an ARMv8 unit tests generator
   - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
 
 See INSTALL for installation instructions.
@@ -110,10 +108,7 @@ Requirements:
   - GNU make
   - GNU autoconf
   - GNU automake
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
+
 
 Building instructions:
   $ ./configure
@@ -152,7 +147,7 @@ build_top_configure_cross
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM Arm64vp simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM ARMv8 simulator validation tests generator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -171,7 +166,6 @@ AM_PROG_CC_C_O
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
-		CXXFLAGS="-Wa,-mbig-obj \${CXXFLAGS}"
 		;;
 	*)
 		;;
@@ -227,4 +221,3 @@ EOF
 build_simulator_configure
 
 echo "Distribution is up-to-date"
-

@@ -62,6 +62,8 @@ struct AArch64
   typedef U64 UREG;
   typedef U64 SREG;
 
+  typedef AArch64 DisasmState;
+  
   enum { ZID=4 };
 
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> Decoder;
@@ -70,7 +72,7 @@ struct AArch64
   
   AArch64();
  
-  void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64>*);
+  void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
 
   void breakdance();
