@@ -42,15 +42,14 @@ namespace util {
 namespace symbolic {
 namespace vector {
 
-  template <typename VUC_IMPL, typename T>
-  struct VUConfig : public unisim::util::symbolic::vector::VUConfig
+  struct VUConfig
   {
     struct Byte
     {
       Byte() : sexp(), span() {}
       Byte( Expr const& _sexp, int _span ) : sexp(_sexp), span(_span) {}
       Byte(unsigned value) : sexp(unisim::util::symbolic::make_const(uint8_t(value))), span(1) {}
-        
+
       void source( Expr const& _sexp, unsigned _span ) { sexp = _sexp; span = _span; }
       void repeat( unsigned dist ) { sexp = Expr(); span = dist; }
 
@@ -60,7 +59,7 @@ namespace vector {
       ExprNode const* get_node() const { return sexp.node; }
       unsigned size() const { if (not sexp.good()) throw 0; return span; }
       Expr const& expr() const { return sexp; }
-        
+
     protected:
       Expr     sexp;
       unsigned span;
@@ -70,7 +69,7 @@ namespace vector {
     {
       VMix( Expr const& _l, Expr const& _r ) : l(_l), r(_r) {}
       virtual unsigned SubCount() const override { return 0; }
-      virtual void Repr( std::ostream& sink ) const override { sink << "VMix( " << l << ", " << r << " )"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
       virtual VMix* Mutate() const override { return new VMix( *this ); }
       virtual ScalarType::id_t GetType() const override { return l->GetType(); }
@@ -81,33 +80,36 @@ namespace vector {
     {
       VTransBase( Byte const& byte, int _rshift ) : Byte( byte ), rshift(_rshift) {}
       virtual unsigned SubCount() const override { return 0; }
-      virtual void Repr( std::ostream& sink ) const override { sink << "VTrans<"  << ScalarType(GetType()).name << ">({" << sexp << "," << span << "}, " << rshift << ")"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<VTransBase const&>(brhs) ); }
       int compare( VTransBase const& rhs ) const
       {
-        if (int delta = int(span) - int(rhs.span)) return delta;
+        if (int delta = int(Byte::span) - int(rhs.span)) return delta;
         return rshift - rhs.rshift;
       }
       int rshift;
     };
-      
+    
     template <typename T>
     struct VTrans : public VTransBase
     {
       VTrans( Byte const& byte, int rshift ) : VTransBase( byte, rshift ) {}
       typedef VTrans<T> this_type;
       virtual this_type* Mutate() const override { return new this_type( *this ); }
-      virtual ScalarType::id_t GetType() const override { return SmartValueTraits<T>::GetType(); }
+      virtual ScalarType::id_t GetType() const override
+      {
+        return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType();
+      }
     };
 
     template <typename T>
     struct TypeInfo
     {
-      enum { bytecount = SmartValueTraits<T>::bytecount };
+      enum { bytecount = unisim::util::symbolic::TypeInfo<typename T::value_type>::BYTECOUNT };
       static void ToBytes( Byte* dst, T& src )
       {
-        dst->source( src.expr, SmartValueTraits<T>::bytecount );
-        for (unsigned idx = 1, end = SmartValueTraits<T>::bytecount; idx < end; ++idx)
+        dst->source( src.expr, bytecount );
+        for (unsigned idx = 1, end = bytecount; idx < end; ++idx)
           dst[idx].repeat(idx);
       }
       static void FromBytes( T& dst, Byte const* byte )
@@ -117,7 +119,7 @@ namespace vector {
             /* leave uninitialized */
             return;
           }
-          
+
         if (int pos = byte->is_repeat())
           {
             Byte const* base = byte - pos;
@@ -125,7 +127,7 @@ namespace vector {
             dst = T(Expr(new VTrans<T>(*base, -pos)));
             return;
           }
-          
+
         if (unsigned src_size = byte->is_source())
           {
             Expr res = new VTrans<T>(*byte, 0);
@@ -158,6 +160,6 @@ namespace vector {
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */
-  
-  
+
+
 #endif // __UNISIM_UTIL_SYMBOLIC_VECTOR_VECTOR_HH__

@@ -106,18 +106,6 @@ ProcessorBase::VRegRead::Repr( std::ostream& sink ) const
 }
 
 void
-ProcessorBase::VUConfigBase::VMix::Repr( std::ostream& sink ) const
-{
-  sink << "VMix( " << l << ", " << r << " )";
-}
-
-void
-ProcessorBase::VUConfigBase::VTransBase::Repr( std::ostream& sink ) const
-{
-  sink << "VTrans<"  << ScalarType(GetType()).name << ">({" << Byte::sexp << "," << Byte::span << "}, " << rshift << ")";
-}
-
-void
 ProcessorBase::VmmIndirectReadBase::Repr( std::ostream& sink ) const
 {
   sink << "VmmIndirectReadRead<" << GetVSize() << ","  << GetVName() << ">(";
