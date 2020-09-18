@@ -578,6 +578,7 @@ namespace symbolic {
   {
     typedef VALUE_TYPE value_type;
     typedef SmartValue<value_type> this_type;
+    static ScalarType::id_t GetType() { return TypeInfo<value_type>::GetType(); }
     
     Expr expr;
     

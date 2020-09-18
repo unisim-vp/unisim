@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <bitset>
 #include <set>
@@ -265,27 +266,16 @@ namespace ut
     //  testcode_t testcode() const { return testcode_t(&text[0]); }
   };
   
-  template <typename T>
-  struct SmartValueTraits
-  {
-    typedef typename unisim::util::symbolic::TypeInfo<typename T::value_type> traits;
-    enum { bytecount = traits::BYTECOUNT };
-    static unisim::util::symbolic::ScalarType::id_t GetType() { return traits::GetType(); }
-  };
-
   struct VmmRegister
   {
+    enum { BYTECOUNT = 32 };
+    struct value_type { char _[BYTECOUNT]; };
     VmmRegister() = default;
     VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
     unisim::util::symbolic::Expr expr;
-  };
-    
-  template <>
-  struct SmartValueTraits<VmmRegister>
-  {
-    enum { bytecount = 32 };
     static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
   };
+    
 
   struct Arch
   {
@@ -845,115 +835,8 @@ namespace ut
 
     struct VUConfig : public unisim::util::symbolic::vector::VUConfig
     {
-      static unsigned const BYTECOUNT = SmartValueTraits<VmmRegister>::bytecount;
+      static unsigned const BYTECOUNT = VmmRegister::BYTECOUNT;
       static unsigned const REGCOUNT = AMD64::VREGCOUNT;
-      struct Byte
-      {
-        Byte() : sexp(), span() {}
-        Byte( Expr const& _sexp, int _span ) : sexp(_sexp), span(_span) {}
-        Byte(unsigned value) : sexp(unisim::util::symbolic::make_const(uint8_t(value))), span(1) {}
-        
-        void source( Expr const& _sexp, unsigned _span ) { sexp = _sexp; span = _span; }
-        void repeat( unsigned dist ) { sexp = Expr(); span = dist; }
-
-        unsigned is_source() const { return sexp.node ? span : 0; }
-        unsigned is_repeat() const { return sexp.node ? 0 : span; }
-        bool     is_none() const   { return not sexp.node and not span; }
-        ExprNode const* get_node() const { return sexp.node; }
-        unsigned size() const { if (not sexp.good()) throw 0; return span; }
-        Expr const& expr() const { return sexp; }
-        
-      protected:
-        Expr     sexp;
-        unsigned span;
-      };
-
-      struct VMix : public ExprNode
-      {
-        VMix( Expr const& _l, Expr const& _r ) : l(_l), r(_r) {}
-        virtual unsigned SubCount() const override { return 0; }
-        virtual void Repr( std::ostream& sink ) const override { sink << "VMix( " << l << ", " << r << " )"; }
-        virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-        virtual VMix* Mutate() const override { return new VMix( *this ); }
-        virtual ScalarType::id_t GetType() const override { return l->GetType(); }
-        Expr l, r;
-      };
-
-      struct VTransBase : public Byte, public ExprNode
-      {
-        VTransBase( Byte const& byte, int _rshift ) : Byte( byte ), rshift(_rshift) {}
-        virtual unsigned SubCount() const override { return 0; }
-        virtual void Repr( std::ostream& sink ) const override { sink << "VTrans<"  << ScalarType(GetType()).name << ">({" << sexp << "," << span << "}, " << rshift << ")"; }
-        virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<VTransBase const&>(brhs) ); }
-        int compare( VTransBase const& rhs ) const
-        {
-          if (int delta = int(span) - int(rhs.span)) return delta;
-          return rshift - rhs.rshift;
-        }
-        int rshift;
-      };
-      
-      template <typename T>
-      struct VTrans : public VTransBase
-      {
-        VTrans( Byte const& byte, int rshift ) : VTransBase( byte, rshift ) {}
-        typedef VTrans<T> this_type;
-        virtual this_type* Mutate() const override { return new this_type( *this ); }
-        virtual ScalarType::id_t GetType() const override { return SmartValueTraits<T>::GetType(); }
-      };
-
-      template <typename T>
-      struct TypeInfo
-      {
-        enum { bytecount = SmartValueTraits<T>::bytecount };
-        static void ToBytes( Byte* dst, T& src )
-        {
-          dst->source( src.expr, SmartValueTraits<T>::bytecount );
-          for (unsigned idx = 1, end = SmartValueTraits<T>::bytecount; idx < end; ++idx)
-            dst[idx].repeat(idx);
-        }
-        static void FromBytes( T& dst, Byte const* byte )
-        {
-          if (byte->is_none())
-            {
-              /* leave uninitialized */
-              return;
-            }
-          
-          if (int pos = byte->is_repeat())
-            {
-              Byte const* base = byte - pos;
-              if (not base->is_source()) throw 0;
-              dst = T(Expr(new VTrans<T>(*base, -pos)));
-              return;
-            }
-          
-          if (unsigned src_size = byte->is_source())
-            {
-              Expr res = new VTrans<T>(*byte, 0);
-              for (unsigned next = src_size, idx = 1; next < bytecount; ++idx)
-                {
-                  // Requested read is a concatenation of multiple source values
-                  for (;idx < next; ++idx)
-                    if (byte[idx].get_node()) throw "corrupted source";
-                  if (ExprNode const* node = byte[idx].get_node())
-                    res = new VMix( new VTrans<T>(byte[idx], int(idx)), res );
-                  else
-                    throw "missing value";
-                  if (unsigned span = byte[idx].is_source())
-                    next = idx + span;
-                  else
-                    throw "corrupted source";
-                }
-              dst = T(res);
-              return;
-            }
-
-          throw "corrupted source";
-        }
-        static void Destroy( T& obj ) { obj.~T(); }
-        static void Allocate( T& obj ) { new (&obj) T(); }
-      };
     };
 
     // struct VRegWrite : public Arch::Update

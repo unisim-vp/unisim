@@ -9,6 +9,7 @@ import unisim/component/cxx/processor/intel/isa || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
 import unisim/util/random || exit
+import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 
 import libc/inttypes || exit

@@ -41,12 +41,12 @@ namespace util {
 namespace symbolic {
 namespace vector {
 
-  void VUConfigBase::VMix::Repr( std::ostream& sink ) const
+  void VUConfig::VMix::Repr( std::ostream& sink ) const
   {
     sink << "VMix( " << l << ", " << r << " )";
   }
   
-  void VUConfigBase::VTransBase::Repr( std::ostream& sink ) const
+  void VUConfig::VTransBase::Repr( std::ostream& sink ) const
   {
     sink << "VTrans<"  << ScalarType(GetType()).name << ">({" << sexp << "," << span << "}, " << rshift << ")";
   }

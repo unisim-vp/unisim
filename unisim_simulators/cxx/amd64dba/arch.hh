@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 
@@ -53,23 +54,13 @@
 
 struct VmmRegister
 {
-  struct value_type {};
+  enum { BYTECOUNT = 32 };
+  struct value_type { char _[BYTECOUNT]; };
   VmmRegister() = default;
   VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
   unisim::util::symbolic::Expr expr;
-  enum { BYTECOUNT = 32 };
+  static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
 };
-
-namespace unisim { namespace util { namespace symbolic {
-  template <> struct TypeInfo<VmmRegister::value_type>
-  struct TypeInfo
-  {
-    static void Repr( std::ostream& sink, VmmRegister::value_type v ) { sink << "VMM()"; }
-    enum { BYTECOUNT = VmmRegister::BYTECOUNT };
-    static unsigned bitsize() { return 8*BYTECOUNT; }
-    static ScalarType::id_t GetType() { return ScalarType::VOID }
-  };
-} } } /* end of namespace unisim::util::symbolic */
 
 struct ProcessorBase
 {

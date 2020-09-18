@@ -96,16 +96,13 @@ namespace vector {
       VTrans( Byte const& byte, int rshift ) : VTransBase( byte, rshift ) {}
       typedef VTrans<T> this_type;
       virtual this_type* Mutate() const override { return new this_type( *this ); }
-      virtual ScalarType::id_t GetType() const override
-      {
-        return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType();
-      }
+      virtual ScalarType::id_t GetType() const override { return T::GetType(); }
     };
 
     template <typename T>
     struct TypeInfo
     {
-      enum { bytecount = unisim::util::symbolic::TypeInfo<typename T::value_type>::BYTECOUNT };
+      enum { bytecount = sizeof (T) };
       static void ToBytes( Byte* dst, T& src )
       {
         dst->source( src.expr, bytecount );

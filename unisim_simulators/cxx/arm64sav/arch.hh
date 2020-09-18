@@ -318,19 +318,10 @@ namespace review
     /**/                           typedef VRWrite<GReg> GRegWrite;
 
     
-    struct VUConfig : public unisim::util::symbolic::vector::VUConfig<VUConfig>
+    struct VUConfig : public unisim::util::symbolic::vector::VUConfig
     {
       static unsigned const BYTECOUNT = 16;
       static unsigned const REGCOUNT = 32;
-      
-      template <typename T>
-      struct
-      {
-        enum { bytecount = SmartValueTraits<T>::bytecount };
-        
-        TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
-      };
-      typedef U8 Byte;
     };
     
     typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
