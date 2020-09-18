@@ -843,7 +843,7 @@ namespace ut
     u32_t mxcsread() { throw ut::Untestable("mxcsr access"); return u32_t(); };
     void mxcswrite( u32_t const& value ) { throw ut::Untestable("mxcsr access"); }
 
-    struct VUConfig
+    struct VUConfig : public unisim::util::symbolic::vector::VUConfig
     {
       static unsigned const BYTECOUNT = SmartValueTraits<VmmRegister>::bytecount;
       static unsigned const REGCOUNT = AMD64::VREGCOUNT;

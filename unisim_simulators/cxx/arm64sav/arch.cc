@@ -32,6 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <arch.hh>
 #include <sstream>
 #include <fstream>
@@ -179,21 +180,17 @@ namespace review
         end = arch.close( reference );
       }
 
-    unsigned grexcl[] = {3,4,5,7,12,13,14,15};
-    for (unsigned idx = 0, end = sizeof grexcl / sizeof grexcl[0]; idx < end; ++idx)
+    for (unsigned reg = 0; reg < 32; ++reg)
       {
-        if (gregs.accessed(grexcl[idx]))
-          {
-            std::ostringstream buf;
-            buf << "reserved register access ("
-                << unisim::component::cxx::processor::intel::DisasmG( unisim::component::cxx::processor::intel::GOq(), grexcl[idx] )
-                << ")";
-            throw ut::Untestable(buf.str());
-          }
+        if (reg < 8 or reg == 18 or reg == 31)
+          continue;
+        std::ostringstream buf;
+        buf << "reserved register access (" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg) << ")";
+        throw review::Untestable(buf.str());
       }
     
     if (has_jump)
-      throw ut::Untestable("has jump");
+      throw review::Untestable("has jump");
     
     if (addrs.size())
       {
@@ -201,7 +198,7 @@ namespace review
         if (span > uint64_t(1024))
           {
             //std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
-            throw ut::Untestable("spread out memory accesses");
+            throw review::Untestable("spread out memory accesses");
           }
         typedef decltype(this->relocs) Relocs;
         
@@ -264,7 +261,7 @@ namespace review
         
         if (relocs.size() == 0)
           {
-            throw ut::Untestable("malformed address");
+            throw review::Untestable("malformed address");
           }
       }
 
@@ -289,134 +286,138 @@ namespace review
       text.write(ptr,4);
     }
     offset += 8;
-    
-    /* Load GP registers */
-    for (unsigned reg = 0; reg < gregs.count(); ++reg)
-      {
-        if (not gregs.accessed(reg))
-          continue;
-        // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
-        struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-        i.rex = 0x48 + 4*(reg >= 8);
-        i.opcode = 0x8b;
-        i.mod = 1;
-        i.reg = reg % 8;
-        i.r_m = 7; /*%rdi*/
-        i.disp = offset + review::Arch::REGSIZE*gregs.index(reg);
-        uint8_t const* ptr = &i.rex;
-        text.write(ptr,4);
-      }
-    offset += review::Arch::REGSIZE*gregs.used();
-    
-    /* Load AVX registers */
-    for (unsigned reg = 0; reg < vregs.count(); ++reg)
-      {
-        if (not vregs.accessed(reg))
-          continue;
-        struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-        // VEX.256.F3.0F.WIG 6F /r
-        i.vex = 0xc5; /* 2bytes VEX */
-        i.pp = 2; /*F3*/
-        i.L = 1; /*256*/
-        i.vvvv = 0b1111;
-        i.R = reg < 8;
-        i.opcode = 0x6f; /*6F*/
-        i.mod = 1;
-        i.reg = reg % 8;
-        i.r_m = 7; /*%rdi*/
-        i.disp = offset + review::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
-        uint8_t const* ptr = &i.vex;
-        text.write(ptr,5);
-      }
-    offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
 
-    if (offset >= 128) throw 0;
+    struct TODO {}; throw TODO ();
+  }// {
+  //   /* Load GP registers */
+  //   for (unsigned reg = 0; reg < gregs.count(); ++reg)
+  //     {
+  //       if (not gregs.accessed(reg))
+  //         continue;
+  //       // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
+  //       struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+  //       i.rex = 0x48 + 4*(reg >= 8);
+  //       i.opcode = 0x8b;
+  //       i.mod = 1;
+  //       i.reg = reg % 8;
+  //       i.r_m = 7; /*%rdi*/
+  //       i.disp = offset + review::Arch::REGSIZE*gregs.index(reg);
+  //       uint8_t const* ptr = &i.rex;
+  //       text.write(ptr,4);
+  //     }
+  //   offset += review::Arch::REGSIZE*gregs.used();
     
-    text.write(memcode.text(),memcode.length);
+  //   /* Load AVX registers */
+  //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
+  //     {
+  //       if (not vregs.accessed(reg))
+  //         continue;
+  //       struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+  //       // VEX.256.F3.0F.WIG 6F /r
+  //       i.vex = 0xc5; /* 2bytes VEX */
+  //       i.pp = 2; /*F3*/
+  //       i.L = 1; /*256*/
+  //       i.vvvv = 0b1111;
+  //       i.R = reg < 8;
+  //       i.opcode = 0x6f; /*6F*/
+  //       i.mod = 1;
+  //       i.reg = reg % 8;
+  //       i.r_m = 7; /*%rdi*/
+  //       i.disp = offset + review::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
+  //       uint8_t const* ptr = &i.vex;
+  //       text.write(ptr,5);
+  //     }
+  //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
 
-    /* Fix RDI to destination zone */
-    {
-      /* REX.W + 83 /0 ib ADD r/m64, imm8 */
-      struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t imm; } i;
-      i.rex = 0x48;
-      i.opcode = 0x83; /* 83 */
-      i.r_m = 7; /* %rdi */
-      i.reg = 0; /* /0 */
-      i.mod = 3; 
-      i.imm = offset; /* ib */
-      uint8_t const* ptr = &i.rex;
-      text.write(ptr,4);
-    }
-    offset = 0;
+  //   if (offset >= 128) throw 0;
     
-    /* Store EFLAGS register */
-    {
-      struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
-      /* 8F /0, POP r/m64 x(%rdi) */
-      i.pushf = 0x9c;
-      i.opcode = 0x8f; /* 8F */
-      i.mod = 1;
-      i.r_o = 0; /* /0 */
-      i.r_m = 7; /* %rdi */
-      i.disp = offset;
-      uint8_t const* ptr = &i.pushf;
-      text.write(ptr,4);
-    }
-    offset += 8;
-    
-    /* Store GP registers */
-    for (unsigned reg = 0; reg < gregs.count(); ++reg)
-      {
-        if (not gregs.accessed(reg))
-          continue;
-        // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
-        struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-        i.rex = 0x48 + 4*(reg >= 8);
-        i.opcode = 0x89;
-        i.mod = 1;
-        i.reg = reg % 8;
-        i.r_m = 7; /*%rdi*/
-        i.disp = offset + review::Arch::REGSIZE*gregs.index(reg);
-        uint8_t const* ptr = &i.rex;
-        text.write(ptr,4);
-      }
-    offset += review::Arch::REGSIZE*gregs.used();
-    
-    /* Store AVX registers */
-    for (unsigned reg = 0; reg < vregs.count(); ++reg)
-      {
-        if (not vregs.accessed(reg))
-          continue;
-        struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-        // VEX.256.F3.0F.WIG 7F /r
-        i.vex = 0xc5; /* 2bytes VEX */
-        i.pp = 2; /*F3*/
-        i.L = 1; /*256*/
-        i.vvvv = 0b1111;
-        i.R = reg < 8;
-        i.opcode = 0x7f; /*7F*/
-        i.mod = 1;
-        i.reg = reg % 8;
-        i.r_m = 7; /*%rdi*/
-        i.disp = offset + review::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
-        uint8_t const* ptr = &i.vex;
-        text.write(ptr,5);
-      }
-    offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
+  //   text.write(memcode.text(),memcode.length);
 
-    text.write((uint8_t const*)"\xc3",1);
-  }
+  //   /* Fix RDI to destination zone */
+  //   {
+  //     /* REX.W + 83 /0 ib ADD r/m64, imm8 */
+  //     struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t imm; } i;
+  //     i.rex = 0x48;
+  //     i.opcode = 0x83; /* 83 */
+  //     i.r_m = 7; /* %rdi */
+  //     i.reg = 0; /* /0 */
+  //     i.mod = 3; 
+  //     i.imm = offset; /* ib */
+  //     uint8_t const* ptr = &i.rex;
+  //     text.write(ptr,4);
+  //   }
+  //   offset = 0;
+    
+  //   /* Store EFLAGS register */
+  //   {
+  //     struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
+  //     /* 8F /0, POP r/m64 x(%rdi) */
+  //     i.pushf = 0x9c;
+  //     i.opcode = 0x8f; /* 8F */
+  //     i.mod = 1;
+  //     i.r_o = 0; /* /0 */
+  //     i.r_m = 7; /* %rdi */
+  //     i.disp = offset;
+  //     uint8_t const* ptr = &i.pushf;
+  //     text.write(ptr,4);
+  //   }
+  //   offset += 8;
+    
+  //   /* Store GP registers */
+  //   for (unsigned reg = 0; reg < gregs.count(); ++reg)
+  //     {
+  //       if (not gregs.accessed(reg))
+  //         continue;
+  //       // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
+  //       struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+  //       i.rex = 0x48 + 4*(reg >= 8);
+  //       i.opcode = 0x89;
+  //       i.mod = 1;
+  //       i.reg = reg % 8;
+  //       i.r_m = 7; /*%rdi*/
+  //       i.disp = offset + review::Arch::REGSIZE*gregs.index(reg);
+  //       uint8_t const* ptr = &i.rex;
+  //       text.write(ptr,4);
+  //     }
+  //   offset += review::Arch::REGSIZE*gregs.used();
+    
+  //   /* Store AVX registers */
+  //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
+  //     {
+  //       if (not vregs.accessed(reg))
+  //         continue;
+  //       struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+  //       // VEX.256.F3.0F.WIG 7F /r
+  //       i.vex = 0xc5; /* 2bytes VEX */
+  //       i.pp = 2; /*F3*/
+  //       i.L = 1; /*256*/
+  //       i.vvvv = 0b1111;
+  //       i.R = reg < 8;
+  //       i.opcode = 0x7f; /*7F*/
+  //       i.mod = 1;
+  //       i.reg = reg % 8;
+  //       i.r_m = 7; /*%rdi*/
+  //       i.disp = offset + review::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
+  //       uint8_t const* ptr = &i.vex;
+  //       text.write(ptr,5);
+  //     }
+  //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
+
+  //   text.write((uint8_t const*)"\xc3",1);
+  // }
 
   uintptr_t
   Interface::workquads() const
   {
-    uintptr_t offset = 0;
-    offset += 8;
-    offset += review::Arch::REGSIZE*gregs.used();
-    offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
-    if (offset % 8) throw "WTF";
-    return offset / 8;
-  }
+    struct TODO {}; throw TODO();
+  }// {
+  //   uintptr_t offset = 0;
+  //   offset += 8;
+  //   offset += review::Arch::REGSIZE*gregs.used();
+  //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
+  //   if (offset % 8) throw "WTF";
+  //   return offset / 8;
+  // }
     
   struct AddrLess
   {
@@ -498,29 +499,14 @@ namespace review
       sink << addr << std::endl;
   }
   
-  bool ut::AMD64::MemCode::get(std::istream& source)
+  void Arch::UndefinedInstruction() { throw review::Untestable("undefined"); }
+  Arch::SysReg const*
+  Arch::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
   {
-    unsigned idx = 0;
-        
-    for (bool nibble = false;;)
-      {
-        char ch;
-        if (not source.get( ch ).good()) return false;
-        if (ch == ' ')     { if (nibble) return false; continue; }
-        if (ch == '\t')    { if (nibble) return false; break; }
-        if (idx >= sizeof(bytes)) throw 0;
-
-        bytes[idx] <<= 4;
-        if      ('0' <= ch and ch <= '9') bytes[idx] |= ch - '0';
-        else if ('a' <= ch and ch <= 'f') bytes[idx] |= ch - 'a' + 10;
-        else return false;
-
-        idx += nibble;
-        nibble = not nibble;
-      }
-      
-    length = idx;
-    return true;
+    throw 
+    return 0;
   }
+
+    
 }
 

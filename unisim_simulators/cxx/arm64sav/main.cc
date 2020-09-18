@@ -34,6 +34,7 @@
 
 #include <arch.hh>
 #include <testrun.hh>
+#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
