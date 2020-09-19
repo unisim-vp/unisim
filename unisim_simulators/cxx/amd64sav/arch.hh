@@ -1024,9 +1024,9 @@ namespace ut
     bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
     {
       // if (not cond.expr.good()) throw std::logic_error( "Not a valid condition" );
-      return Test(bit_t(cond).expr);
+      return concretize(bit_t(cond).expr);
     }
-    bool Test(Expr cond);
+    bool concretize(Expr cond);
     
     void
     step( Operation const& op )

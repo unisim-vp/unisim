@@ -89,6 +89,25 @@ namespace review
       
   }
 
+  Arch::Arch( Interface& iif )
+    // , next_insn_addr(), next_insn_mode(ipjmp)
+    // , ftop(0)
+    : interface(iif)
+    , path(iif.behavior.get())
+    , stores()
+    , gpr()
+    , flags()
+    , current_insn_addr()
+    , next_insn_addr(newRegRead(SPR(SPR::pc)))
+    , vector_views()
+    , vector_data()
+  {
+    for (Flag reg; reg.next();)
+      flags[reg.idx()] = BOOL(newRegRead( reg ));
+    // General & Vector registers on-demand allocation (see *regtouch)
+    gpr[31] = newRegRead(SPR(SPR::sp));
+  }
+
   bool
   Arch::close( Arch const& ref )
   {
@@ -125,8 +144,16 @@ namespace review
     
   }
   
+  void
+  Arch::gregtouch( unsigned reg, bool write )
+  {
+    unsigned idx = interface.gregs.touch(reg,write);
+    if (not gpr[reg].expr.node)
+      gpr[reg].expr = new GRegRead( reg, idx );
+  }
+
   bool
-  Arch::Test(unisim::util::symbolic::Expr cond)
+  Arch::concretize(unisim::util::symbolic::Expr cond)
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
       return cnode->Get( bool() );
@@ -499,14 +526,5 @@ namespace review
       sink << addr << std::endl;
   }
   
-  void Arch::UndefinedInstruction() { throw review::Untestable("undefined"); }
-  Arch::SysReg const*
-  Arch::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
-  {
-    throw 
-    return 0;
-  }
-
-    
 }
 

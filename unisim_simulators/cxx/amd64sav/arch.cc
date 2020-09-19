@@ -405,7 +405,7 @@ namespace ut
   }
   
   bool
-  Arch::Test(unisim::util::symbolic::Expr cond)
+  Arch::concretize(unisim::util::symbolic::Expr cond)
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
       return cnode->Get( bool() );

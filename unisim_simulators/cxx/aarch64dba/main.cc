@@ -348,7 +348,7 @@ struct Processor
   //   =====================================================================
   //   =                         Processor Storage                         =
   //   =====================================================================
-  
+
   struct GPR : public unisim::util::identifier::Identifier<GPR>
   {
     enum Code

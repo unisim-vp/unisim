@@ -200,19 +200,19 @@ namespace test
 
     struct SysReg
     {
-      void dont() const { dont("system"); }
-      void Write(int, int, int, int, int, Arch&, uint64_t) const { dont(); }
-      uint64_t Read(int, int, int, int, int, Arch&) const { dont(); return 0; }
+      void dont() const { Arch::dont("system"); }
+      void Write(int, int, int, int, int, Arch&, U64) const { dont(); }
+      U64 Read(int, int, int, int, int, Arch&) const { dont(); return 0; }
       void DisasmWrite(int, int, int, int, int, int, std::ostream&) const { dont(); }
       void DisasmRead(int, int, int, int, int, int, std::ostream&) const { dont(); }
     };
-    static SysReg const* GetSystemRegister(int, int, int, int, int);
+    static SysReg const* GetSystemRegister(int, int, int, int, int) { dont("system"); return 0; }
     void CheckSystemAccess(int) { dont("system"); }
 
-    uint64_t GetGSR(unsigned id) const { return gpr[id]; }
-    uint64_t GetGZR(unsigned id) const { return (id != 31) ? gpr[id] : 0; }
-    void SetGSR(unsigned id, uint64_t val) { gpr[id] = val; }
-    void SetGZR(unsigned id, uint64_t val) { if (id != 31) gpr[id] = val; }
+    U64 GetGSR(unsigned id) const { return gpr[id]; }
+    U64 GetGZR(unsigned id) const { return (id != 31) ? gpr[id] : 0; }
+    void SetGSR(unsigned id, U64 val) { gpr[id] = val; }
+    void SetGZR(unsigned id, U64 val) { if (id != 31) gpr[id] = val; }
 
     template <typename T>
     T vector_read(unsigned reg, unsigned sub)
@@ -269,39 +269,39 @@ namespace test
     uint8_t GetNZCV() const { return nzcv; }
     uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
 
-    uint64_t GetPC() { return current_insn_addr; }
-    uint64_t GetNPC() { return next_insn_addr; }
+    U64 GetPC() { return current_insn_addr; }
+    U64 GetNPC() { return next_insn_addr; }
 
     enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
-    void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
+    void BranchTo( U64 addr, branch_type_t branch_type ) { next_insn_addr = addr; }
     bool Test( bool cond ) { return cond; }
 
-    void CallSupervisor( uint32_t imm );
-    void CallHypervisor( uint32_t imm );
+    void CallSupervisor( uint32_t imm ) { throw std::runtime_error("system"); }
+    void CallHypervisor( uint32_t imm ) { throw std::runtime_error("system"); }
     
-    template <typename T> T MemReadT(uint64_t addr) { return *reinterpret_cast<T const*>(addr); }
-    uint64_t MemRead64(uint64_t addr) { return MemReadT<uint64_t>(addr); }
-    uint32_t MemRead32(uint64_t addr) { return MemReadT<uint32_t>(addr); }
-    uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
-    uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
+    template <typename T> T MemReadT(U64 addr) { return *reinterpret_cast<T const*>(addr); }
+    U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
+    U32 MemRead32(U64 addr) { return MemReadT<uint32_t>(addr); }
+    U16 MemRead16(U64 addr) { return MemReadT<uint16_t>(addr); }
+    U8  MemRead8 (U64 addr) { return MemReadT<uint8_t> (addr); }
 
-    template <typename T> void MemWriteT(uint64_t addr, T val) { *reinterpret_cast<T*>(addr) = val; }
-    void MemWrite64(uint64_t addr, uint64_t val) { MemWriteT(addr, val); }
-    void MemWrite32(uint64_t addr, uint32_t val) { MemWriteT(addr, val); }
-    void MemWrite16(uint64_t addr, uint16_t val) { MemWriteT(addr, val); }
-    void MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
+    template <typename T> void MemWriteT(U64 addr, T val) { *reinterpret_cast<T*>(addr) = val; }
+    void MemWrite64(U64 addr, U64 val) { MemWriteT(addr, val); }
+    void MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }
+    void MemWrite16(U64 addr, U16 val) { MemWriteT(addr, val); }
+    void MemWrite8 (U64 addr, U8  val) { MemWriteT(addr, val); }
     
-    void     SetExclusiveMonitors( U64 addr, unsigned size );
-    bool     ExclusiveMonitorsPass( U64 addr, unsigned size );
-    void     ClearExclusiveLocal();
-    void     PrefetchMemory( int, uint64_t ) { dont("prefetch"); }
+    void     SetExclusiveMonitors( U64 addr, unsigned size ) { dont("mp"); }
+    bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { dont("mp"); return false; }
+    void     ClearExclusiveLocal() { dont("mp"); }
+    void     PrefetchMemory( int, U64 ) { dont("prefetch"); }
     
     Decoder    decoder;
     Operation* current_instruction;
 
-    uint64_t   gpr[32];
+    U64   gpr[32];
     uint32_t   nzcv;
-    uint64_t   current_insn_addr, next_insn_addr;
+    U64   current_insn_addr, next_insn_addr;
     
     VectorView vector_views[VECTORCOUNT];
     uint8_t    vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];

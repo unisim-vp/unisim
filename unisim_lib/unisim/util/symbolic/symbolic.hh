@@ -62,6 +62,7 @@ namespace symbolic {
   struct ScalarType
   {
     enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    
     static id_t IntegerType( bool is_signed, unsigned bits )
     {
       switch (bits) {

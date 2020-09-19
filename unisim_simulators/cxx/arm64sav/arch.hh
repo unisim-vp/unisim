@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <bitset>
 #include <set>
@@ -46,10 +47,10 @@
 namespace review
 {
   struct Arch;
-  
+
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Arch> Operation;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Arch> Decoder;
-  
+
   using unisim::util::symbolic::SmartValue;
 
   struct Untestable
@@ -79,9 +80,9 @@ namespace review
     }
 
     void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
-    
+
     void simplify();
-    
+
     std::set<Expr>           updates;
   };
 
@@ -92,7 +93,7 @@ namespace review
 
     template <typename F> T Get( F const& f ) const { return (raw >> f.bit) & f.mask(); }
     template <typename F> void Set( F const& f, T v ) { raw &= ~(f.mask() << f.bit); raw |= (v & f.mask()) << f.bit; }
-    
+
     bool access( bool w )
     {
       bool src = Get( Src() ), dst = Get( Dst() );
@@ -160,12 +161,12 @@ namespace review
   struct Interface
   {
     typedef unisim::util::symbolic::Expr Expr;
-    
+
     Interface( Operation const& op, uint32_t code, std::string const& disasm );
 
     void memaccess( Expr const& addr, bool iswrite );
     uintptr_t workquads() const;
-    
+
     uint32_t memcode;
     std::string asmcode;
     OperandMap<uint8_t,32> gregs; /* general purpose registers */
@@ -182,28 +183,29 @@ namespace review
     typedef void (*testcode_t)(uint64_t*);
     //  testcode_t testcode() const { return testcode_t(&text[0]); }
   };
-  
-  template <typename T>
-  struct SmartValueTraits
-  {
-    typedef typename unisim::util::symbolic::TypeInfo<typename T::value_type> traits;
-    enum { bytecount = traits::BYTECOUNT };
-    static unisim::util::symbolic::ScalarType::id_t GetType() { return traits::GetType(); }
-  };
 
-  struct VmmRegister
+  // template <typename T>
+  // struct SmartValueTraits
+  // {
+  //   typedef typename unisim::util::symbolic::TypeInfo<typename T::value_type> traits;
+  //   enum { bytecount = traits::BYTECOUNT };
+  //   static unisim::util::symbolic::ScalarType::id_t GetType() { return traits::GetType(); }
+  // };
+
+  struct NeonRegister
   {
-    VmmRegister() = default;
-    VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
+    enum { BYTECOUNT = 32 };
+    NeonRegister() = default;
+    NeonRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
     unisim::util::symbolic::Expr expr;
   };
-    
-  template <>
-  struct SmartValueTraits<VmmRegister>
-  {
-    enum { bytecount = 32 };
-    static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
-  };
+
+  // template <>
+  // struct SmartValueTraits<NeonRegister>
+  // {
+  //   enum { bytecount = 32 };
+  //   static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
+  // };
 
   struct Arch
   {
@@ -218,16 +220,16 @@ namespace review
     typedef SmartValue<bool>        BOOL;
 
     // typedef u64_t addr_t;
-  
+
     typedef SmartValue<float>       F32;
     typedef SmartValue<double>      F64;
 
     struct DisasmState {};
-    
+
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::ScalarType ScalarType;
-    
+
     void noexec( Operation const& op )
     {
       throw Untestable("Not implemented");
@@ -262,7 +264,7 @@ namespace review
     };
 
     template <typename RID>
-    RegRead<RID>* newRegRead( RID _id ) { return new RegRead<RID>(_id); }
+    Expr newRegRead( RID _id ) { return new RegRead<RID>(_id); }
 
     struct VirtualRegister
     {
@@ -273,14 +275,14 @@ namespace review
         return int(reg) - int(rhs.reg);
       }
     };
-    
+
     struct VRReadBase : public VirtualRegister, public ExprNode
     {
       VRReadBase( unsigned reg,  unsigned idx ) : VirtualRegister(reg, idx), ExprNode() {}
       virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
       virtual unsigned SubCount() const override { return 0; }
     };
-    
+
     template <class T>
     struct VRRead : public VRReadBase
     {
@@ -308,25 +310,115 @@ namespace review
       virtual ExprNode* Mutate() const override { return new this_type(*this); }
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
     };
-    
+
     struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
     struct FReg { static ScalarType::id_t const scalar_type = ScalarType::F64;  static char const* name() { return "FReg"; } };
     struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
-    
+
     typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
 
+    struct SPR : public unisim::util::identifier::Identifier<SPR>
+    {
+      typedef uint64_t register_type;
+      enum Code { pc, sp, end } code;
+      char const* c_str() const
+      {
+        switch (code)
+          {
+          default: break;
+          case pc: return "pc";
+          case sp: return "sp";
+          }
+        return "NA";
+      }
+      SPR() : code(end) {}
+      SPR( Code _code ) : code(_code) {}
+      SPR( char const* _code ) : code(end) { init( _code ); }
+    };
+  
+    // struct GPR : public unisim::util::identifier::Identifier<GPR>
+    // {
+    //   enum Code
+    //     {
+    //      x0,  x1,  x2,  x3,  x4,  x5,  x6,  x7,  x8,  x9,  x10, x11, x12, x13, x14, x15,
+    //      x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30, sp, end
+    //     } code;
+
+    //   char const* c_str() const
+    //   {
+    //     static char const* names[] =
+    //       {
+    //        "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",  "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+    //        "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29", "x30", "sp", "NA"
+    //       };
+    //     return names[int(code)];
+    //   }
+
+    //   GPR() : code(end) {}
+    //   GPR( Code _code ) : code(_code) {}
+    //   GPR( char const* _code ) : code(end) { init( _code ); }
+    // }
+    //      ;
+
+    struct Flag : public unisim::util::identifier::Identifier<Flag>
+    {
+      typedef bool register_type;
+      enum Code { N, Z, C, V, end } code;
+
+      char const* c_str() const
+      {
+        static char const* names[] = {"n", "z", "c", "v", "NA"};
+        return names[int(code)];
+      }
+
+      Flag() : code(end) {}
+      Flag( Code _code ) : code(_code) {}
+      Flag( char const* _code ) : code(end) { init( _code ); }
+    };
+
+    struct Load : public ExprNode
+    {
+      Load( ScalarType::id_t _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
+      virtual Load* Mutate() const override { return new Load( *this ); }
+      virtual void Repr( std::ostream& sink ) const override { sink << "Load" << ScalarType(tp).name << "(" << addr << ")"; }
+      virtual unsigned SubCount() const override { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
+      int compare( Load const& rhs ) const { return int(tp) - int(rhs.tp); }
+      virtual ScalarType::id_t GetType() const { return tp; }
+
+      Expr addr;
+      ScalarType::id_t tp;
+    };
+
+    struct Store : public Update
+    {
+      Store( ScalarType::id_t _tp, Expr const& _addr, Expr const& _value )
+        : addr( _addr ), value( _value ), tp(_tp)
+      {}
+      virtual Store* Mutate() const override { return new Store( *this ); }
+      virtual void Repr( std::ostream& sink ) const override { sink << "Store" << ScalarType(tp).name << "( " << addr << ", " << value <<  " )"; }
+      virtual unsigned SubCount() const override { return 2; }
+      virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
+      int compare( Store const& rhs ) const { return int(tp) - int(rhs.tp); }
+      
+      Expr addr;
+      Expr value;
+      ScalarType::id_t tp;
+    };
+
+    static unsigned const VREGCOUNT = 32;
+    static unsigned const GREGCOUNT = 32;
     
     struct VUConfig : public unisim::util::symbolic::vector::VUConfig
-    {
-      static unsigned const BYTECOUNT = 16;
-      static unsigned const REGCOUNT = 32;
-    };
-    
+    { static unsigned const BYTECOUNT = NeonRegister::BYTECOUNT; };
+
     typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
     struct VectorBrick { char _[sizeof(U8)]; };
-    
+
     struct AddrEval : public unisim::util::symbolic::EvalSpace {};
     struct RelocEval : public unisim::util::symbolic::EvalSpace
     {
@@ -370,35 +462,41 @@ namespace review
       virtual char const* GetRegName() const override { return id.c_str(); };
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
       int compare( this_type const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-      
+
       RID id;
     };
 
     template <typename RID> RegWrite<RID>* newRegWrite( RID _id, Expr const& _value ) { return new RegWrite<RID>(_id, _value); }
-    
+
     Arch( Interface& iif );
 
     static void dont(char const* reason) { throw Untestable(reason); }
-    
+
     void UndefinedInstruction( Operation const* op ) { UndefinedInstruction(); }
     void UndefinedInstruction() { review::Untestable("undefined"); }
 
     struct SysReg
     {
       void dont() const { Arch::dont("system"); }
-      void Write(int, int, int, int, int, Arch&, uint64_t) const { dont(); }
-      uint64_t Read(int, int, int, int, int, Arch&) const { dont(); return 0; }
+      void Write(int, int, int, int, int, Arch&, U64) const { dont(); }
+      U64 Read(int, int, int, int, int, Arch&) const { dont(); return U64(0); }
       void DisasmWrite(int, int, int, int, int, int, std::ostream&) const { dont(); }
       void DisasmRead(int, int, int, int, int, int, std::ostream&) const { dont(); }
     };
-    static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { dont("system"); return 0; }
+    static SysReg const* GetSystemRegister(int, int, int, int, int) { dont("system"); return 0; }
     void CheckSystemAccess(int) { dont("system"); }
+
+    void gregtouch(unsigned id, bool write);
+    U64 gregread(unsigned id) { gregtouch(id, false); return gpr[id]; }
+    void gregwrite(unsigned id, U64 const& value) { gregtouch(id, true); gpr[id] = value; }
     
-    uint64_t GetGSR(unsigned id) const { return gpr[id]; }
-    uint64_t GetGZR(unsigned id) const { return (id != 31) ? gpr[id] : 0; }
-    void SetGSR(unsigned id, uint64_t val) { gpr[id] = val; }
-    void SetGZR(unsigned id, uint64_t val) { if (id != 31) gpr[id] = val; }
-    
+    U64 GetGSR(unsigned id) { return (id != 31) ? gregread(id) : gpr[31]; }
+    U64 GetGZR(unsigned id) { return (id != 31) ? gregread(id) : U64(0); }
+    template <typename T> void SetGSR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
+    { U64 v64(val); if (id != 31) gregwrite(id, v64); else gpr[31] = v64; }
+    template <typename T> void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
+    { U64 v64(val); if (id != 31) gregwrite(id, v64);  }
+
     template <typename T>
     T vector_read(unsigned reg, unsigned sub)
     {
@@ -449,64 +547,87 @@ namespace review
       vector_views[reg].Truncate(bytes);
     }
 
-    void SetNZCV( uint32_t n, uint32_t z, uint32_t c, uint32_t v ) { nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0); }
-    
-    uint8_t GetNZCV() const { return nzcv; }
-    uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
+    void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
+    {
+      flags[3] = N.expr; flags[2] = Z.expr; flags[1] = C.expr; flags[0] = V.expr;
+    }
+    U8   GetNZCV() const
+    {
+      U8 res = U8(BOOL(flags[0]));
+      for (int idx = 1; idx < 4; ++idx)
+        res = res | (U8(BOOL(flags[idx])) << idx );
+      return res;
+    }
+    BOOL GetCarry() const { return BOOL(flags[1]); }
 
-    uint64_t GetPC() { return current_insn_addr; }
-    uint64_t GetNPC() { return next_insn_addr; }
+    U64 GetPC() { return current_insn_addr; }
+    U64 GetNPC() { return next_insn_addr; }
 
     enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
-    void BranchTo(uint64_t addr, branch_type_t branch_type) { next_insn_addr = addr; }
+    void BranchTo(U64 addr, branch_type_t branch_type) { next_insn_addr = addr; }
+    bool concretize( Expr cexp );
+  
     template <typename T>
     bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
     {
-      // if (not cond.expr.good()) throw std::logic_error( "Not a valid condition" );
-      return Test(bit_t(cond).expr);
-    }
-    bool     Test(bool cond) { return cond; }
-             
-    void     CallSupervisor( uint32_t imm );
-    void     CallHypervisor( uint32_t imm );
-    
-    template <typename T> T MemReadT(uint64_t addr) { return *reinterpret_cast<T const*>(addr); }
-    uint64_t MemRead64(uint64_t addr) { return MemReadT<uint64_t>(addr); }
-    uint32_t MemRead32(uint64_t addr) { return MemReadT<uint32_t>(addr); }
-    uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
-    uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
+      if (not cond.expr.good())
+        throw std::logic_error( "Not a valid condition" );
 
-    template <typename T> void MemWriteT(uint64_t addr, T val) { *reinterpret_cast<T*>(addr) = val; }
-    void     MemWrite64(uint64_t addr, uint64_t val) { MemWriteT(addr, val); }
-    void     MemWrite32(uint64_t addr, uint32_t val) { MemWriteT(addr, val); }
-    void     MemWrite16(uint64_t addr, uint16_t val) { MemWriteT(addr, val); }
-    void     MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
-    
-    void     SetExclusiveMonitors( U64 addr, unsigned size );
-    bool     ExclusiveMonitorsPass( U64 addr, unsigned size );
-    void     ClearExclusiveLocal();
-    void     PrefetchMemory( int, uint64_t ) { dont("prefetch"); }
-        
+      return concretize( BOOL(cond).expr );
+    }
+    //bool     Test(bool cond) { return cond; }
+
+    void CallSupervisor( uint32_t imm ) { throw std::runtime_error("system"); }
+    void CallHypervisor( uint32_t imm ) { throw std::runtime_error("system"); }
+
+    template <typename T> T MemReadT( U64 const& addr )
+    {
+      interface.memaccess( addr.expr, false );
+      return T( Expr(new Load( unisim::util::symbolic::TypeInfo<T>::GetType(), addr.expr )) );
+    }
+    U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
+    U32 MemRead32(U64 addr) { return MemReadT<U32>(addr); }
+    U16 MemRead16(U64 addr) { return MemReadT<U16>(addr); }
+    U8  MemRead8 (U64 addr) { return MemReadT<U8> (addr); }
+
+    template <typename T> void MemWriteT(U64 const addr, T data)
+    {
+      interface.memaccess( addr.expr, true );
+      stores.insert( new Store( unisim::util::symbolic::TypeInfo<T>::GetType(), addr.expr, data.expr ) );
+    }
+    void     MemWrite64(U64 addr, U64 val) { MemWriteT(addr, val); }
+    void     MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }
+    void     MemWrite16(U64 addr, U16 val) { MemWriteT(addr, val); }
+    void     MemWrite8 (U64 addr, U8  val) { MemWriteT(addr, val); }
+
+    void     SetExclusiveMonitors( U64 addr, unsigned size ) { dont("mp"); }
+    bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { dont("mp"); return false; }
+    void     ClearExclusiveLocal() { dont("mp"); }
+    void     PrefetchMemory( int, U64 ) { dont("prefetch"); }
+
     bool     close( Arch const& ref );
-    
+
     void
     step( Operation const& op )
     {
-      uint64_t insn_addr = op.GetAddr();
-      current_insn_addr = U64(insn_addr);
-      next_insn_addr = U64(insn_addr+4);
+      U64 insn_addr =  this->current_insn_addr = this->next_insn_addr;
+      
+      this->next_insn_addr += U64(4);
+      
       op.execute( *this );
     }
 
-    Interface&      interface;
-    ActionNode*     path;
-    
-    U64        gpr[32];
-    U32        nzcv;
-    U64        current_insn_addr, next_insn_addr;
-    
-    VectorView   vector_views[VUConfig::REGCOUNT];
-    VectorBrick  vector_data[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
+    Interface&     interface;
+    ActionNode*    path;
+
+    std::set<Expr> stores;
+
+    U64            gpr[GREGCOUNT];
+    BOOL           flags[Flag::end];
+    U64            current_insn_addr, next_insn_addr;
+
+    VectorView     vector_views[VREGCOUNT];
+    VectorBrick    vector_data[VREGCOUNT][VUConfig::BYTECOUNT];
   };
 } // end of namespace review
 

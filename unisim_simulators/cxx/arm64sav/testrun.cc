@@ -137,38 +137,6 @@ namespace test
     UndefinedInstruction();
   }
 
-  Arch::SysReg const*
-  Arch::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
-  {
-    throw std::runtime_error("system"); 
-    return 0;
-  }
-  
-  void Arch::SysReg::dont() const { throw std::runtime_error("system"); }
-  
-  // void Arch::unimplemented()
-  // void Arch::syscall() { throw std::runtime_error("syscall"); }
-  // void Arch::interrupt( int op, int code ) { throw std::runtime_error("interrupt"); }
-
-
-  // void
-  //   Arch::noexec( Arch::Operation const& op )
-  // {
-  //   std::cerr
-  //     << "error: no execute method in `" << typeid(op).name() << "'\n"
-  //     << std::hex << op.address << ":\t";
-  //   op.disasm( std::cerr );
-  //   std::cerr << '\n';
-  //   throw Unimplemented();
-  // }
-  
-  void Arch::SetExclusiveMonitors( U64 addr, unsigned size ) { throw std::runtime_error("mp"); }
-  bool Arch::ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw std::runtime_error("mp"); return false; }
-  void Arch::ClearExclusiveLocal() { throw std::runtime_error("mp"); }
-
-  void Arch::CallSupervisor( uint32_t imm ) { throw std::runtime_error("system"); }
-  void Arch::CallHypervisor( uint32_t imm ) { throw std::runtime_error("system"); }
-
   void Arch::dont( char const* reason ) { throw std::runtime_error(reason); }
   
 } /* end of namespace ut */
