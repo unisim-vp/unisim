@@ -145,7 +145,10 @@ struct Checker
   review::Operation* decode( uint64_t addr, uint32_t code, std::string& disasm )
   {
     std::ostringstream buf;
-    review::Operation* op = isa.NCDecode(addr,code);
+    review::Operation* op = 0;
+    try { op = isa.NCDecode(addr,code); }
+    catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw review::Untestable("misencoded"); }
+      
     review::Arch::DisasmState das;
     op->disasm(das, buf);
     disasm = buf.str();
@@ -171,24 +174,24 @@ struct Checker
   
   Checker() : rnd( 1, 2, 3, 4 ) {}
   
-  void discover( uintptr_t trials, uintptr_t ttl_reset )
+  void discover( uintptr_t count, uintptr_t ttl_reset )
   {
-    uintptr_t ttl = ttl_reset;
-    for (;;)
+    uintptr_t ttl = ttl_reset, trial = 0;
+    while (count)
       {
         for (auto format : isa.GetDecodeTable())
           {
-            if (trials-- == 0 or ttl-- == 0) break;
             uint32_t code = (uint32_t(rnd.Generate()) & ~format.opcode_mask) | format.opcode;
 
-            if ((trials % 1024) == 0)
+            if ((++trial % 1024) == 0)
               {
-                std::cerr << "\r\e[K#" << testdb.size() <<  " (left=" << trials << ")";
+                std::cerr << "\r\e[K#" << testdb.size() <<  " (left=" << count << ")";
                 std::cerr.flush();
               }
 
-            if (test( code ))
-              ttl = ttl_reset;
+            if (((test( code ) and ((ttl = ttl_reset) != 0) and (--count == 0))) or
+                ((--ttl == 0) and ((count = 0) == 0)))
+              break;
           }
       }
     std::cerr << '\n';
@@ -498,7 +501,7 @@ main( int argc, char** argv )
   
   if (updated)
       checker.write_repos( reposname );
-  
+
   checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 
   return 0;

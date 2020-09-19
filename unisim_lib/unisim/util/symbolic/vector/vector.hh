@@ -102,7 +102,7 @@ namespace vector {
     template <typename T>
     struct TypeInfo
     {
-      enum { bytecount = sizeof (T) };
+      enum { bytecount = sizeof (typename T::value_type) };
       static void ToBytes( Byte* dst, T& src )
       {
         dst->source( src.expr, bytecount );

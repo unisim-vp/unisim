@@ -98,50 +98,40 @@ namespace review
     , gpr()
     , flags()
     , current_insn_addr()
-    , next_insn_addr(newRegRead(SPR(SPR::pc)))
+    , next_insn_addr(newRegRead(Arch::PC()))
     , vector_views()
     , vector_data()
   {
     for (Flag reg; reg.next();)
       flags[reg.idx()] = BOOL(newRegRead( reg ));
     // General & Vector registers on-demand allocation (see *regtouch)
-    gpr[31] = newRegRead(SPR(SPR::sp));
+    gpr[31] = newRegRead(SP());
   }
 
   bool
   Arch::close( Arch const& ref )
   {
-    struct TODO {}; throw TODO();
     bool complete = path->close();
 
-    // // Instruction Pointer
-    // path->add_update( new RIPWrite( next_insn_addr, next_insn_mode ) );
-    
-    // // Scalar integer registers
-    // for (unsigned reg = 0; reg < REGCOUNT; ++reg)
-    //   if (eregdiff(reg))
-    //     path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
+    // Scalar integer registers
+    for (unsigned reg = 0; reg < GREGCOUNT; ++reg)
+      if (gpr[reg].expr != ref.gpr[reg].expr)
+        path->add_update( new GRegWrite( reg, interface.gregs.index(reg), gpr[reg].expr ) );
 
-    // // Vector Registers
-    // for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
-    //   if (vmm_diff(reg))
-    //     path->add_update( new VRegWrite( reg, interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
-    
-    // // FPU registers
-    // for (unsigned reg = 0; reg < 8; ++reg)
-    //   if (fpdiff(reg))
-    //     path->add_update( new FRegWrite( reg, interface.fregs.index(reg), fpregs[reg] ) );
+    // Vector Registers
+    for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
+      if (interface.vregs.modified(reg))
+        path->add_update( new VRegWrite( reg, interface.vregs.index(reg), vector_views[reg].GetConstStorage( &vector_data[reg][0], NeonRegister(), VUConfig::BYTECOUNT )->expr ) );
 
-    // // Flags
-    // for (FLAG reg; reg.next();)
-    //   if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])
-    //     path->add_update( newRegWrite( reg, flagvalues[reg.idx()] ) );
+    // Flags
+    for (Flag reg; reg.next();)
+      if (flags[reg.idx()].expr != ref.flags[reg.idx()].expr)
+        path->add_update( newRegWrite( reg, flags[reg.idx()].expr ) );
 
-    // for (Expr const& store : stores)
-    //   path->add_update( store );
+    for (Expr const& store : stores)
+      path->add_update( store );
     
     return complete;
-    
   }
   
   void
@@ -194,7 +184,6 @@ namespace review
     , base_addr()
     , relocs()
     , has_write(false)
-    , has_jump(false)
   {
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
@@ -215,9 +204,6 @@ namespace review
         buf << "reserved register access (" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg) << ")";
         throw review::Untestable(buf.str());
       }
-    
-    if (has_jump)
-      throw review::Untestable("has jump");
     
     if (addrs.size())
       {
@@ -525,6 +511,5 @@ namespace review
     if (addrs.insert(addr).second)
       sink << addr << std::endl;
   }
-  
 }
 

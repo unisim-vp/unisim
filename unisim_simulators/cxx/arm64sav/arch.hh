@@ -176,7 +176,7 @@ namespace review
     std::set<uint64_t,RelCmp> addrs;
     Expr base_addr;
     std::map<unsigned,Expr> relocs;
-    bool has_write, has_jump;
+    bool has_write;
     struct Text { virtual void write(uint8_t const*,unsigned) = 0; virtual ~Text() {} };
     void gencode(Text& text) const;
     //  std::vector<uint8_t> text;
@@ -184,28 +184,15 @@ namespace review
     //  testcode_t testcode() const { return testcode_t(&text[0]); }
   };
 
-  // template <typename T>
-  // struct SmartValueTraits
-  // {
-  //   typedef typename unisim::util::symbolic::TypeInfo<typename T::value_type> traits;
-  //   enum { bytecount = traits::BYTECOUNT };
-  //   static unisim::util::symbolic::ScalarType::id_t GetType() { return traits::GetType(); }
-  // };
-
   struct NeonRegister
   {
-    enum { BYTECOUNT = 32 };
+    enum { BYTECOUNT = 16 };
+    struct value_type { char _[BYTECOUNT]; };
     NeonRegister() = default;
     NeonRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
     unisim::util::symbolic::Expr expr;
+    static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
   };
-
-  // template <>
-  // struct SmartValueTraits<NeonRegister>
-  // {
-  //   enum { bytecount = 32 };
-  //   static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
-  // };
 
   struct Arch
   {
@@ -226,9 +213,13 @@ namespace review
 
     struct DisasmState {};
 
+    enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
+    
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+    typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
     void noexec( Operation const& op )
     {
@@ -259,6 +250,7 @@ namespace review
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
       int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
+      ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
 
       RID id;
     };
@@ -319,48 +311,20 @@ namespace review
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
 
-    struct SPR : public unisim::util::identifier::Identifier<SPR>
+    struct SP {
+      typedef uint64_t register_type;
+      char const* c_str() const { return "sp"; }
+      int cmp( SP const& ) const { return 0; }
+      ConstNodeBase const* eval(EvalSpace const&, ConstNodeBase const**) const { dont("sp-relative addressing"); return 0; }
+    };
+    
+    struct PC
     {
       typedef uint64_t register_type;
-      enum Code { pc, sp, end } code;
-      char const* c_str() const
-      {
-        switch (code)
-          {
-          default: break;
-          case pc: return "pc";
-          case sp: return "sp";
-          }
-        return "NA";
-      }
-      SPR() : code(end) {}
-      SPR( Code _code ) : code(_code) {}
-      SPR( char const* _code ) : code(end) { init( _code ); }
+      char const* c_str() const { return "pc"; }
+      int cmp( PC const& ) const { return 0; }
+      ConstNodeBase const* eval(EvalSpace const&, ConstNodeBase const**) const { dont("pc-relative addressing"); return 0; }
     };
-  
-    // struct GPR : public unisim::util::identifier::Identifier<GPR>
-    // {
-    //   enum Code
-    //     {
-    //      x0,  x1,  x2,  x3,  x4,  x5,  x6,  x7,  x8,  x9,  x10, x11, x12, x13, x14, x15,
-    //      x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30, sp, end
-    //     } code;
-
-    //   char const* c_str() const
-    //   {
-    //     static char const* names[] =
-    //       {
-    //        "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",  "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
-    //        "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29", "x30", "sp", "NA"
-    //       };
-    //     return names[int(code)];
-    //   }
-
-    //   GPR() : code(end) {}
-    //   GPR( Code _code ) : code(_code) {}
-    //   GPR( char const* _code ) : code(end) { init( _code ); }
-    // }
-    //      ;
 
     struct Flag : public unisim::util::identifier::Identifier<Flag>
     {
@@ -372,6 +336,7 @@ namespace review
         static char const* names[] = {"n", "z", "c", "v", "NA"};
         return names[int(code)];
       }
+      ConstNodeBase const* eval(EvalSpace const&, ConstNodeBase const**) const { dont("flag-dependant addressing"); return 0; }
 
       Flag() : code(end) {}
       Flag( Code _code ) : code(_code) {}
@@ -419,8 +384,8 @@ namespace review
     typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
     struct VectorBrick { char _[sizeof(U8)]; };
 
-    struct AddrEval : public unisim::util::symbolic::EvalSpace {};
-    struct RelocEval : public unisim::util::symbolic::EvalSpace
+    struct AddrEval : public EvalSpace {};
+    struct RelocEval : public EvalSpace
     {
       RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
       uint64_t const* regvalues;
@@ -430,8 +395,7 @@ namespace review
     struct GRegRead : public VRRead<GReg>
     {
       GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
+      virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
       {
         if (dynamic_cast<AddrEval const*>( &evs ))
           return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
@@ -473,7 +437,7 @@ namespace review
     static void dont(char const* reason) { throw Untestable(reason); }
 
     void UndefinedInstruction( Operation const* op ) { UndefinedInstruction(); }
-    void UndefinedInstruction() { review::Untestable("undefined"); }
+    void UndefinedInstruction() { dont("undefined"); }
 
     struct SysReg
     {
@@ -497,10 +461,21 @@ namespace review
     template <typename T> void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
     { U64 v64(val); if (id != 31) gregwrite(id, v64);  }
 
+    VectorView& vregtouch(unsigned reg, bool is_write)
+    {
+      unsigned idx = interface.vregs.touch(reg, is_write);
+      VectorView& vv = vector_views[reg];
+      if (vv.transfer == vv.initial)
+        {
+          NeonRegister v( new VRegRead( reg, idx ) );
+          *(vv.GetStorage( &vector_data[reg][0], v, VUConfig::BYTECOUNT )) = v;
+        }
+      return vv;
+    }
     template <typename T>
     T vector_read(unsigned reg, unsigned sub)
     {
-      return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
+      return (vregtouch(reg, false).GetConstStorage(&vector_data[reg][0], T(), VUConfig::BYTECOUNT))[sub];
     }
 
     U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
@@ -515,7 +490,7 @@ namespace review
     template <typename T>
     void vector_write(unsigned reg, unsigned sub, T value )
     {
-      (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
+      (vregtouch(reg, true).GetStorage(&vector_data[reg][0], value, VUConfig::BYTECOUNT))[sub] = value;
     }
 
     void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
@@ -530,7 +505,7 @@ namespace review
     template <typename T>
     void vector_write(unsigned reg, T value )
     {
-      *(vector_views[reg].GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
+      *(vregtouch(reg, true).GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
     }
 
     void SetVU8 ( unsigned reg, U8 value )  { vector_write(reg, value); }
@@ -544,7 +519,7 @@ namespace review
 
     void ClearHighV( unsigned reg, unsigned bytes )
     {
-      vector_views[reg].Truncate(bytes);
+      vregtouch(reg, true).Truncate(bytes);
     }
 
     void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
@@ -563,8 +538,7 @@ namespace review
     U64 GetPC() { return current_insn_addr; }
     U64 GetNPC() { return next_insn_addr; }
 
-    enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
-    void BranchTo(U64 addr, branch_type_t branch_type) { next_insn_addr = addr; }
+    void BranchTo(U64 addr, branch_type_t) { dont("branch"); }
     bool concretize( Expr cexp );
   
     template <typename T>
@@ -583,7 +557,7 @@ namespace review
     template <typename T> T MemReadT( U64 const& addr )
     {
       interface.memaccess( addr.expr, false );
-      return T( Expr(new Load( unisim::util::symbolic::TypeInfo<T>::GetType(), addr.expr )) );
+      return T( Expr(new Load( T::GetType(), addr.expr )) );
     }
     U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
     U32 MemRead32(U64 addr) { return MemReadT<U32>(addr); }
@@ -593,7 +567,7 @@ namespace review
     template <typename T> void MemWriteT(U64 const addr, T data)
     {
       interface.memaccess( addr.expr, true );
-      stores.insert( new Store( unisim::util::symbolic::TypeInfo<T>::GetType(), addr.expr, data.expr ) );
+      stores.insert( new Store( T::GetType(), addr.expr, data.expr ) );
     }
     void     MemWrite64(U64 addr, U64 val) { MemWriteT(addr, val); }
     void     MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }

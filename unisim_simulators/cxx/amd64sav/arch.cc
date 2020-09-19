@@ -447,7 +447,6 @@ namespace ut
     , base_addr()
     , relocs()
     , has_write(false)
-    , has_jump(false)
   {
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
@@ -472,9 +471,6 @@ namespace ut
             throw ut::Untestable(buf.str());
           }
       }
-    
-    if (has_jump)
-      throw ut::Untestable("has jump");
     
     if (addrs.size())
       {
