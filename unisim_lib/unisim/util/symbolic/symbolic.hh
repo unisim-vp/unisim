@@ -313,6 +313,7 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalRotateRight( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateRight for this type" ); }
   uint32_t   EvalRotateRight( uint32_t v, uint8_t shift );
+  uint64_t   EvalRotateRight( uint64_t v, uint8_t shift );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
   uint32_t   EvalRotateLeft( uint32_t v, uint8_t shift );

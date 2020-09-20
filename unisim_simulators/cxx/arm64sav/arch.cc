@@ -200,9 +200,12 @@ namespace review
       {
         if (reg < 8 or reg == 18 or reg == 31)
           continue;
-        std::ostringstream buf;
-        buf << "reserved register access (" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg) << ")";
-        throw review::Untestable(buf.str());
+        if (gregs.accessed(reg))
+          {
+            std::ostringstream buf;
+            buf << "reserved register access (" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg) << ")";
+            throw review::Untestable(buf.str());
+          }
       }
     
     if (addrs.size())

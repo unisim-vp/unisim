@@ -315,7 +315,12 @@ namespace review
       typedef uint64_t register_type;
       char const* c_str() const { return "sp"; }
       int cmp( SP const& ) const { return 0; }
-      ConstNodeBase const* eval(EvalSpace const&, ConstNodeBase const**) const { dont("sp-relative addressing"); return 0; }
+      ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+      {
+        if (dynamic_cast<AddrEval const*>( &evs ))
+          dont("sp-relative addressing");
+        return 0;
+      }
     };
     
     struct PC
@@ -323,7 +328,12 @@ namespace review
       typedef uint64_t register_type;
       char const* c_str() const { return "pc"; }
       int cmp( PC const& ) const { return 0; }
-      ConstNodeBase const* eval(EvalSpace const&, ConstNodeBase const**) const { dont("pc-relative addressing"); return 0; }
+      ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+      {
+        if (dynamic_cast<AddrEval const*>( &evs ))
+          dont("pc-relative addressing");
+        return 0;
+      }
     };
 
     struct Flag : public unisim::util::identifier::Identifier<Flag>
@@ -336,7 +346,12 @@ namespace review
         static char const* names[] = {"n", "z", "c", "v", "NA"};
         return names[int(code)];
       }
-      ConstNodeBase const* eval(EvalSpace const&, ConstNodeBase const**) const { dont("flag-dependant addressing"); return 0; }
+      ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+      {
+        if (dynamic_cast<AddrEval const*>( &evs ))
+          dont("flag-dependant addressing");
+        return 0;
+      }
 
       Flag() : code(end) {}
       Flag( Code _code ) : code(_code) {}
@@ -551,8 +566,8 @@ namespace review
     }
     //bool     Test(bool cond) { return cond; }
 
-    void CallSupervisor( uint32_t imm ) { throw std::runtime_error("system"); }
-    void CallHypervisor( uint32_t imm ) { throw std::runtime_error("system"); }
+    void CallSupervisor( uint32_t imm ) { dont("system"); }
+    void CallHypervisor( uint32_t imm ) { dont("system"); }
 
     template <typename T> T MemReadT( U64 const& addr )
     {

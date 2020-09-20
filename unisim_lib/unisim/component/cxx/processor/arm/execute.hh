@@ -95,10 +95,10 @@ namespace arm {
       U16((          (N xor V)).tt), // lt; signed less than
       U16((not(Z or (N xor V))).tt), // gt; signed greater than
       U16((   (Z or (N xor V))).tt), // le; signed less than or equal
-      U16(                  0xffff),    // al; always
-      U16(                  0x0000),    // <und>; never (illegal)
+      U16(                  0xffff), // al; always
+      U16(                  0xffff), // when allowed, acts as 'al' (15)
     };
-    if (cond >= 15) throw std::logic_error("invalid condition code");
+    if (cond >= 16) throw std::logic_error("invalid condition code");
     U8 nzcv( core.GetNZCV() );
     return core.Test( ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0) );
   }

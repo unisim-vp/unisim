@@ -145,6 +145,7 @@ namespace symbolic {
   uint32_t EvalBitScanForward( uint32_t v ) { return unisim::util::arithmetic::BitScanForward( v ); }
   
   uint32_t EvalRotateRight( uint32_t v, uint8_t s ) { return unisim::util::arithmetic::RotateRight( v, s ); }
+  uint64_t EvalRotateRight( uint64_t v, uint8_t s ) { return unisim::util::arithmetic::RotateRight( v, s ); }
 
   uint32_t EvalRotateLeft( uint32_t v, uint8_t s ) { return unisim::util::arithmetic::RotateLeft( v, s ); }
   

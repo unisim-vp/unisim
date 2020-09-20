@@ -185,7 +185,7 @@ struct Checker
 
             if ((++trial % 1024) == 0)
               {
-                std::cerr << "\r\e[K#" << testdb.size() <<  " (left=" << count << ")";
+                std::cerr << "\r\e[K#" << trial <<  " (total=" << testdb.size() << ", left=" << count << ")";
                 std::cerr.flush();
               }
 
@@ -212,7 +212,7 @@ struct Checker
     std::ofstream sink( reposname );
 
     for (review::Interface const& test : testdb)
-      sink << test.memcode << "\t" << test.asmcode << '\n';
+      sink << std::hex << test.memcode << "\t" << test.asmcode << '\n';
   }
 
   struct FileLoc
@@ -239,6 +239,7 @@ struct Checker
 
         uint32_t code;
         source >> std::hex >> code;
+        { char tab; if (not source.get(tab) or tab != '\t') break; }
         std::string disasm;
         std::getline( source, disasm, '\n' );
         

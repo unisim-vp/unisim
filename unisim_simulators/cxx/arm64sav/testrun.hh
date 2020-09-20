@@ -276,8 +276,8 @@ namespace test
     void BranchTo( U64 addr, branch_type_t branch_type ) { next_insn_addr = addr; }
     bool Test( bool cond ) { return cond; }
 
-    void CallSupervisor( uint32_t imm ) { throw std::runtime_error("system"); }
-    void CallHypervisor( uint32_t imm ) { throw std::runtime_error("system"); }
+    void CallSupervisor( uint32_t imm ) { dont("system"); }
+    void CallHypervisor( uint32_t imm ) { dont("system"); }
     
     template <typename T> T MemReadT(U64 addr) { return *reinterpret_cast<T const*>(addr); }
     U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
