@@ -277,7 +277,7 @@ struct Checker
       struct Text : public review::Interface::Text
       {
         Text() : size() {} uintptr_t size;
-        virtual void write(uint8_t const*, unsigned sz) { size += sz; }
+        void write(uint32_t) override { size += 4; }
         void process( review::Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
       } text;
       
@@ -399,8 +399,10 @@ struct Checker
         struct Text : public review::Interface::Text
         {
           Text(uint8_t* _mem) : mem(_mem), size(0) {}
-          virtual void write(uint8_t const* bytes, unsigned sz)
+          virtual void write(uint32_t insn)
           {
+            uint8_t const* bytes = reinterpret_cast<uint8_t const*>(&insn);
+            unsigned const sz = 4;
             std::copy( bytes, bytes+sz, &mem[size] );
             size += sz;
           }

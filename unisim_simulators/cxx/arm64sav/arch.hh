@@ -177,7 +177,7 @@ namespace review
     Expr base_addr;
     std::map<unsigned,Expr> relocs;
     bool has_write;
-    struct Text { virtual void write(uint8_t const*,unsigned) = 0; virtual ~Text() {} };
+    struct Text { virtual void write(uint32_t) = 0; virtual ~Text() {} };
     void gencode(Text& text) const;
     //  std::vector<uint8_t> text;
     typedef void (*testcode_t)(uint64_t*);

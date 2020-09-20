@@ -54,7 +54,7 @@ namespace test
     {
       int64_t flips = int64_t(generate32()) << 48;
       uint64_t value = 0;
-      for (int idx = 0; idx < 5; ++idx)
+      for (int idx = 0; idx < 6; ++idx)
         {
           value |= generate64();
           value ^= flips >> 63;

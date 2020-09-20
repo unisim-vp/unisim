@@ -198,7 +198,7 @@ namespace review
 
     for (unsigned reg = 0; reg < 32; ++reg)
       {
-        if (reg < 8 or reg == 18 or reg == 31)
+        if (0x0004fefc >> reg & 1)
           continue;
         if (gregs.accessed(reg))
           {
@@ -286,44 +286,41 @@ namespace review
   
   void Interface::gencode(Text& text) const
   {
-    unsigned offset = 0;
-    
-    /* Load EFLAGS register */
+    /* Load NZCV register */
+    text.write( 0xf8400400 | 1 << 12 | 0 << 5 | 1 << 0 ); // ldr x1, [x0], #8
+    text.write( 0xd51b4201 ); // msr NZCV, x1
+    /* Load GP registers */
     {
-      struct { uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; uint8_t popf; } i;
-      /* FF /6, PUSH r/m64 x(%rdi) */
-      i.opcode = 0xff; /* FF */
-      i.mod = 1;
-      i.r_o = 6; /* /6 */
-      i.r_m = 7; /* %rdi */
-      i.disp = offset;
-      i.popf = 0x9d;
-      uint8_t const* ptr = &i.opcode;
-      text.write(ptr,4);
+      unsigned const icount = gregs.used();
+      unsigned iregs[icount];
+      for (unsigned reg = 0; reg < gregs.count(); ++reg)
+        {
+          if (not gregs.accessed(reg)) continue;
+          iregs[gregs.index(reg)] = reg;
+        }
+      unsigned idx = icount;
+      if (idx & 1)
+        { idx -= 1; text.write( 0xf8400400 | 1 << 12 | 0 << 5 | iregs[idx] << 0 ); }
+      while (idx >= 2)
+        { idx -= 2; text.write( 0xa8c00000 | 2 << 15 | iregs[idx+1] << 10 | 0 << 5 | iregs[idx] << 0 ); }
     }
-    offset += 8;
-
     struct TODO {}; throw TODO ();
-  }// {
-  //   /* Load GP registers */
-  //   for (unsigned reg = 0; reg < gregs.count(); ++reg)
-  //     {
-  //       if (not gregs.accessed(reg))
-  //         continue;
-  //       // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
-  //       struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-  //       i.rex = 0x48 + 4*(reg >= 8);
-  //       i.opcode = 0x8b;
-  //       i.mod = 1;
-  //       i.reg = reg % 8;
-  //       i.r_m = 7; /*%rdi*/
-  //       i.disp = offset + review::Arch::REGSIZE*gregs.index(reg);
-  //       uint8_t const* ptr = &i.rex;
-  //       text.write(ptr,4);
-  //     }
-  //   offset += review::Arch::REGSIZE*gregs.used();
-    
-  //   /* Load AVX registers */
+    /* Load Neon registers */
+    // {
+    //   unsigned const icount = vregs.used();
+    //   unsigned iregs[icount];
+    //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
+    //     {
+    //       if (not vregs.accessed(reg)) continue;
+    //       iregs[vregs.index(reg)] = reg;
+    //     }
+    //   unsigned idx = icount;
+    //   if (idx & 1)
+    //     { idx -= 1; text.write( 0xf9400000 | (base+idx) << 10 | 0 << 5 | iregs[--idx] << 0 ); }
+    //   while (idx >= 2)
+    //     { idx -= 2; text.write( 0xa8c00000 | (base+idx) << 15 | iregs[idx+1] << 10 | 0 << 5 | iregs[idx] << 0 ); }
+    //   offset += icount*8;
+    // }
   //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
   //     {
   //       if (not vregs.accessed(reg))
@@ -420,20 +417,21 @@ namespace review
   //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
 
   //   text.write((uint8_t const*)"\xc3",1);
-  // }
+   }
 
   uintptr_t
   Interface::workquads() const
   {
-    struct TODO {}; throw TODO();
-  }// {
-  //   uintptr_t offset = 0;
-  //   offset += 8;
-  //   offset += review::Arch::REGSIZE*gregs.used();
-  //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
-  //   if (offset % 8) throw "WTF";
-  //   return offset / 8;
-  // }
+    uintptr_t const
+      regwsize = 8*gregs.used(),
+      vecwsize = Arch::VUConfig::BYTECOUNT*vregs.used();
+    uintptr_t offset = 0;
+    offset += 8;        // placeholder for ?
+    offset += regwsize; // placeholder for reg values 
+    offset += vecwsize; // placeholder for vec values 
+    if (offset % 8) throw "WTF";
+    return offset / 8;
+  }
     
   struct AddrLess
   {
