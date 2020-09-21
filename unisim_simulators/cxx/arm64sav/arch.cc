@@ -238,11 +238,12 @@ namespace review
           {
             if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(front.node))
               {
+                /* We found a source register. Associate it with its equation. */
                 unsigned target = vr->reg;
                 auto itr = relocs.lower_bound(target);
                 if (itr == relocs.end() or itr->first > target)
                   relocs.emplace_hint(itr, Relocs::value_type( target, back ));
-                else
+                else /* Register appears multiple time in address generation. No can do. */
                   itr->second = Expr();
               }
             else if (unisim::util::symbolic::OpNodeBase const* onb = front->AsOpNode())
@@ -353,7 +354,7 @@ namespace review
       regwsize = 8*gregs.used(),
       vecwsize = Arch::VUConfig::BYTECOUNT*vregs.used();
     uintptr_t offset = 0;
-    offset += 8;        // placeholder for ?
+    offset += 8;        // placeholder for NZCV
     offset += regwsize; // placeholder for reg values 
     offset += vecwsize; // placeholder for vec values 
     if (offset % 8) throw "WTF";

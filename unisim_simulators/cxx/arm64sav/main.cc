@@ -320,19 +320,17 @@ struct Checker
         if (not relval.good()) return 0;
         
         uint64_t value;
-        if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
+        if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(0)], uint64_t(ws)) ))
           { Expr dispose(v); value = v->Get( uint64_t() ); }
         else
           throw "WTF";
 
         return value;
       }
-      static void fixflags( uint64_t& flags ) { flags = (flags & 0xcef) | 2; }
       void patch(uint64_t* ws, uint64_t reloc) const
       {
-        fixflags(ws[data_index(0)]);
         if (relval.good())
-          ws[workquads+1+relreg] = reloc;
+          ws[data_index(relreg)] = reloc;
       }
       void load(uint64_t* ws, Testbed const& testbed) const
       {
@@ -340,8 +338,6 @@ struct Checker
       }
       void check(Testbed const& tb, uint64_t* ref, uint64_t* sim) const
       {
-        fixflags(ref[sink_index(0)]);
-        fixflags(sim[sink_index(0)]);
         for (unsigned idx = 0, end = sink_index(workquads); idx < end; ++idx)
           {
             if (ref[idx] != sim[idx])
@@ -373,9 +369,7 @@ struct Checker
       }
       void run( test::Arch& sim, uint64_t* ws ) const
       {
-        struct TODO {};
-        throw TODO();
-        // sim.run( code, &ws[data_index(0)] ); /* code simulation */
+        sim.run( code, &ws[data_index(0)] ); /* code simulation */
         // sim.flagwrite( test::Arch::FLAG::DF, false ); /*< Fix DF */
       }
       

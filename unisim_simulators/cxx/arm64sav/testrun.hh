@@ -101,7 +101,6 @@ namespace test
           ws[idx] = buffer[rnd_idx];
           rnd_idx = (rnd_idx + 1) % COUNT;
         }
-      
     }
 
     //   bool check( Workspace& ref, Workspace& sim, Arch& arch, fut_t const& fut ) const
