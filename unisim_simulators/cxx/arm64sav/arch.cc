@@ -286,137 +286,64 @@ namespace review
   
   void Interface::gencode(Text& text) const
   {
-    /* Load NZCV register */
-    text.write( 0xf8400400 | 1 << 12 | 0 << 5 | 1 << 0 ); // ldr x1, [x0], #8
-    text.write( 0xd51b4201 ); // msr NZCV, x1
-    /* Load GP registers */
+    /* Setup GP register map (inputs+scratches) */
+    unsigned const gcount = gregs.used()+1;
+    unsigned grmap[gcount];
+    grmap[gcount-1] = 1; // NZCV scratch
+    for (unsigned reg = 0; reg < gregs.count(); ++reg)
+      {
+        if (not gregs.accessed(reg)) continue;
+        grmap[gregs.index(reg)] = reg;
+      }
+    /* Setup Neon register map */
+    unsigned const vcount = vregs.used();
+    unsigned vrmap[vcount];
+    for (unsigned reg = 0; reg < vregs.count(); ++reg)
+      {
+        if (not vregs.accessed(reg)) continue;
+        vrmap[vregs.index(reg)] = reg;
+      }
+    
+    /* Load GP registers and NZCV scratch (x1)*/
     {
-      unsigned const icount = gregs.used();
-      unsigned iregs[icount];
-      for (unsigned reg = 0; reg < gregs.count(); ++reg)
-        {
-          if (not gregs.accessed(reg)) continue;
-          iregs[gregs.index(reg)] = reg;
-        }
-      unsigned idx = icount;
+      unsigned idx = gcount;
       if (idx & 1)
-        { idx -= 1; text.write( 0xf8400400 | 1 << 12 | 0 << 5 | iregs[idx] << 0 ); }
+        { idx -= 1; text.write( 0xf8400400 | 1 << 12 | 0 << 5 | grmap[idx] << 0 ); } // LDR <Xt>, [X0], 8
       while (idx >= 2)
-        { idx -= 2; text.write( 0xa8c00000 | 2 << 15 | iregs[idx+1] << 10 | 0 << 5 | iregs[idx] << 0 ); }
+        { idx -= 2; text.write( 0xa8c00000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); } // LDP <Xt1>, <Xt2>, [X0], 16
     }
-    struct TODO {}; throw TODO ();
+    /* Load NZCV register */
+    text.write( 0xd51b4201 ); // msr NZCV, x1
     /* Load Neon registers */
-    // {
-    //   unsigned const icount = vregs.used();
-    //   unsigned iregs[icount];
-    //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
-    //     {
-    //       if (not vregs.accessed(reg)) continue;
-    //       iregs[vregs.index(reg)] = reg;
-    //     }
-    //   unsigned idx = icount;
-    //   if (idx & 1)
-    //     { idx -= 1; text.write( 0xf9400000 | (base+idx) << 10 | 0 << 5 | iregs[--idx] << 0 ); }
-    //   while (idx >= 2)
-    //     { idx -= 2; text.write( 0xa8c00000 | (base+idx) << 15 | iregs[idx+1] << 10 | 0 << 5 | iregs[idx] << 0 ); }
-    //   offset += icount*8;
-    // }
-  //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
-  //     {
-  //       if (not vregs.accessed(reg))
-  //         continue;
-  //       struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-  //       // VEX.256.F3.0F.WIG 6F /r
-  //       i.vex = 0xc5; /* 2bytes VEX */
-  //       i.pp = 2; /*F3*/
-  //       i.L = 1; /*256*/
-  //       i.vvvv = 0b1111;
-  //       i.R = reg < 8;
-  //       i.opcode = 0x6f; /*6F*/
-  //       i.mod = 1;
-  //       i.reg = reg % 8;
-  //       i.r_m = 7; /*%rdi*/
-  //       i.disp = offset + review::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
-  //       uint8_t const* ptr = &i.vex;
-  //       text.write(ptr,5);
-  //     }
-  //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
-
-  //   if (offset >= 128) throw 0;
-    
-  //   text.write(memcode.text(),memcode.length);
-
-  //   /* Fix RDI to destination zone */
-  //   {
-  //     /* REX.W + 83 /0 ib ADD r/m64, imm8 */
-  //     struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t imm; } i;
-  //     i.rex = 0x48;
-  //     i.opcode = 0x83; /* 83 */
-  //     i.r_m = 7; /* %rdi */
-  //     i.reg = 0; /* /0 */
-  //     i.mod = 3; 
-  //     i.imm = offset; /* ib */
-  //     uint8_t const* ptr = &i.rex;
-  //     text.write(ptr,4);
-  //   }
-  //   offset = 0;
-    
-  //   /* Store EFLAGS register */
-  //   {
-  //     struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
-  //     /* 8F /0, POP r/m64 x(%rdi) */
-  //     i.pushf = 0x9c;
-  //     i.opcode = 0x8f; /* 8F */
-  //     i.mod = 1;
-  //     i.r_o = 0; /* /0 */
-  //     i.r_m = 7; /* %rdi */
-  //     i.disp = offset;
-  //     uint8_t const* ptr = &i.pushf;
-  //     text.write(ptr,4);
-  //   }
-  //   offset += 8;
-    
-  //   /* Store GP registers */
-  //   for (unsigned reg = 0; reg < gregs.count(); ++reg)
-  //     {
-  //       if (not gregs.accessed(reg))
-  //         continue;
-  //       // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
-  //       struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-  //       i.rex = 0x48 + 4*(reg >= 8);
-  //       i.opcode = 0x89;
-  //       i.mod = 1;
-  //       i.reg = reg % 8;
-  //       i.r_m = 7; /*%rdi*/
-  //       i.disp = offset + review::Arch::REGSIZE*gregs.index(reg);
-  //       uint8_t const* ptr = &i.rex;
-  //       text.write(ptr,4);
-  //     }
-  //   offset += review::Arch::REGSIZE*gregs.used();
-    
-  //   /* Store AVX registers */
-  //   for (unsigned reg = 0; reg < vregs.count(); ++reg)
-  //     {
-  //       if (not vregs.accessed(reg))
-  //         continue;
-  //       struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
-  //       // VEX.256.F3.0F.WIG 7F /r
-  //       i.vex = 0xc5; /* 2bytes VEX */
-  //       i.pp = 2; /*F3*/
-  //       i.L = 1; /*256*/
-  //       i.vvvv = 0b1111;
-  //       i.R = reg < 8;
-  //       i.opcode = 0x7f; /*7F*/
-  //       i.mod = 1;
-  //       i.reg = reg % 8;
-  //       i.r_m = 7; /*%rdi*/
-  //       i.disp = offset + review::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
-  //       uint8_t const* ptr = &i.vex;
-  //       text.write(ptr,5);
-  //     }
-  //   offset += review::Arch::VUConfig::BYTECOUNT*vregs.used();
-
-  //   text.write((uint8_t const*)"\xc3",1);
+    {
+      unsigned idx = vcount;
+      if (idx & 1)              
+        { idx -= 1; text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | grmap[idx] << 0 ); } // LDR <Qt>, [X0], 16
+      while (idx >= 2)
+        { idx -= 2; text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); } // LDP <Qt1>, <Qt2>, [X0], 32
+    }
+    /* Execute tested instruction */
+    text.write(memcode);
+    /* Store NZCV register*/
+    text.write( 0xd53b4201 ); // mrs NZCV, x1
+    /* Store GP registers */
+    {
+      unsigned idx = gcount;
+      if (idx & 1)
+        { idx -= 1; text.write( 0xf8000400 | 1 << 12 | 0 << 5 | grmap[idx] << 0 ); } // STR <Xt>, [X0], 8
+      while (idx >= 2)
+        { idx -= 2; text.write( 0xa8800000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); } // STP <Xt1>, <Xt2>, [X0], 16
+    }
+    /* Store Neon registers */
+    {
+      unsigned idx = vcount;
+      if (idx & 1)
+        { idx -= 1; text.write( 0x3c800400 | 16 << 12 | 0 << 5 | vrmap[idx] << 0 ); } // STR <Qt>, [X0], 16
+      while (idx >= 2)
+        { idx -= 2; text.write( 0xac800000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); } // STP <Qt1>, <Qt2>, [X0], 32
+    }
+    // Return
+    text.write( 0xd65f03c0 ); // RET
    }
 
   uintptr_t
