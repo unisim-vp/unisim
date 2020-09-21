@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef ARCH_HH
-#define ARCH_HH
+#ifndef AMD64SAV_ARCH_HH
+#define AMD64SAV_ARCH_HH
 
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
@@ -47,15 +47,15 @@
 #include <memory>
 #include <inttypes.h>
 
-namespace ut
+namespace review
 {
   struct Arch;
   
-  typedef unisim::component::cxx::processor::intel::Operation<ut::Arch> Operation;
+  typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
 
   struct AMD64
   {
-    typedef ut::Operation Operation;
+    typedef review::Operation Operation;
     struct MemCode
     {
       uint8_t     bytes[15];
@@ -467,7 +467,7 @@ namespace ut
 
     int hash();
     
-    u64_t                       tscread() { throw ut::Untestable("hardware"); return u64_t( 0 ); }
+    u64_t                       tscread() { throw Untestable("hardware"); return u64_t( 0 ); }
     
     struct FLAG : public unisim::util::identifier::Identifier<FLAG>
     {
@@ -504,8 +504,8 @@ namespace ut
     bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
     void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
-    u16_t                       segregread( unsigned idx ) { throw ut::Untestable("segment register"); return u16_t(); }
-    void                        segregwrite( unsigned idx, u16_t value ) { throw ut::Untestable("segment register"); }
+    u16_t                       segregread( unsigned idx ) { throw Untestable("segment register"); return u16_t(); }
+    void                        segregwrite( unsigned idx, u16_t value ) { throw Untestable("segment register"); }
 
     typedef std::map<unsigned,unsigned> RegMap;
 
@@ -539,7 +539,7 @@ namespace ut
     ipproc_t                    next_insn_mode;
     
     addr_t                      getnip() { return addr_t(next_insn_addr); }
-    void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp ) { throw ut::Untestable("has jump"); }
+    void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp ) { throw Untestable("has jump"); }
 
     
     template <class T>
@@ -561,7 +561,7 @@ namespace ut
       virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
       {
         if (dynamic_cast<AddrEval const*>( &evs ))
-          throw ut::Untestable("RIP relative addressing");
+          throw Untestable("RIP relative addressing");
         return 0;
       }
     };
@@ -579,9 +579,9 @@ namespace ut
     void                        fnanchk( f64_t value ) {};
 
     int                         fcwreadRC() const { return 0; }
-    u16_t                       fcwread() const { throw ut::Untestable("FCW access"); return u16_t(); }
-    void                        fcwwrite( u16_t value ) { throw ut::Untestable("FCW access"); }
-    void                        finit() { throw ut::Untestable("FCW access"); }
+    u16_t                       fcwread() const { throw Untestable("FCW access"); return u16_t(); }
+    void                        fcwwrite( u16_t value ) { throw Untestable("FCW access"); }
+    void                        finit() { throw Untestable("FCW access"); }
 
     void                        fxam();
 
@@ -590,7 +590,7 @@ namespace ut
       LoadBase( unsigned _bytes, unsigned _segment, Expr const& _addr )
         : addr(_addr), bytes(_bytes), segment(_segment)
       {
-        if (segment >= 4) throw ut::Untestable("FS|GS relative addressing");
+        if (segment >= 4) throw Untestable("FS|GS relative addressing");
       }
       virtual void Repr( std::ostream& sink ) const override { sink << "Load" << (8*bytes) << "(" << (int)segment << "," << addr << ")"; }
       virtual unsigned SubCount() const override { return 1; }
@@ -635,7 +635,7 @@ namespace ut
       Store( unsigned _bytes, unsigned _segment, Expr const& _addr, Expr const& _value )
         : addr( _addr ), value( _value ), bytes(_bytes), segment(_segment)
       {
-        if (segment >= 4) throw ut::Untestable("FS|GS relative addressing");
+        if (segment >= 4) throw Untestable("FS|GS relative addressing");
       }
       virtual Store* Mutate() const override { return new Store( *this ); }
       virtual void Repr( std::ostream& sink ) const override { sink << "Store" << (8*bytes) << "( " << (int)segment << ", " << addr << ", " << value <<  " )"; }
@@ -698,7 +698,7 @@ namespace ut
       virtual char const* GetRegName() const { return "ftop"; }
     };
 
-    u16_t                       ftopread() { throw ut::Untestable("FCW access"); return u16_t(); }
+    u16_t                       ftopread() { throw Untestable("FCW access"); return u16_t(); }
     unsigned                    ftop;
 
     Expr&                       fpaccess(unsigned r, bool w);
@@ -830,8 +830,8 @@ namespace ut
     //   virtual char const* GetRegName() const override { return "mxcsr"; }
     // };
     
-    u32_t mxcsread() { throw ut::Untestable("mxcsr access"); return u32_t(); };
-    void mxcswrite( u32_t const& value ) { throw ut::Untestable("mxcsr access"); }
+    u32_t mxcsread() { throw Untestable("mxcsr access"); return u32_t(); };
+    void mxcswrite( u32_t const& value ) { throw Untestable("mxcsr access"); }
 
     struct VUConfig : public unisim::util::symbolic::vector::VUConfig
     {
@@ -1010,13 +1010,13 @@ namespace ut
     //   fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
     // }
 
-    void    unimplemented()               { throw ut::Untestable("unimplemented"); }
-    void    interrupt( int op, int code ) { throw ut::Untestable("system"); }
-    void    syscall()                     { throw ut::Untestable("system"); }
-    void    cpuid()                       { throw ut::Untestable("hardware"); }
-    void    xgetbv()                      { throw ut::Untestable("hardware"); }
-    void    stop()                        { throw ut::Untestable("hardware"); }
-    void    _DE()                         { throw ut::Untestable("system"); }
+    void    unimplemented()               { throw Untestable("unimplemented"); }
+    void    interrupt( int op, int code ) { throw Untestable("system"); }
+    void    syscall()                     { throw Untestable("system"); }
+    void    cpuid()                       { throw Untestable("hardware"); }
+    void    xgetbv()                      { throw Untestable("hardware"); }
+    void    stop()                        { throw Untestable("hardware"); }
+    void    _DE()                         { throw Untestable("system"); }
     
     // bool Test( bit_t b ) { return false; }
       
@@ -1157,6 +1157,6 @@ namespace ut
   inline Arch::f64_t eval_fprem ( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem", dividend, modulus); }
   inline Arch::f64_t eval_fprem1( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem1", dividend, modulus); }
 
-} // end of namespace ut
+} // end of namespace review
 
-#endif // ARCH_HH
+#endif // AMD64SAV_ARCH_HH

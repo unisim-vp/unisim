@@ -48,7 +48,7 @@ struct FIRoundOp
 template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
 {
   //return FPT( unisim::util::symbolic::Expr( new ut::FIRound<typename FPT::value_type>( src.expr, x87frnd_mode ) ) );
-  return ut::make_weirdop<FPT>( FIRoundOp(x87frnd_mode), src );
+  return review::make_weirdop<FPT>( FIRoundOp(x87frnd_mode), src );
 }
 
 } /* namespace unisim */ } /* namespace component */ } /* namespace cxx */ } /* namespace processor */ } /* namespace intel */
@@ -56,18 +56,18 @@ template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <arch.hh>
 
-namespace ut
+namespace review
 {
   void
   Arch::fxam()
   {
     f64_t value = this->fread( 0 );
-    u8_t fpclass = u8_t( ut::make_weirdop<u8_t>( "fxam", value ) );
+    u8_t fpclass = u8_t( review::make_weirdop<u8_t>( "fxam", value ) );
 
-    flagwrite( FLAG::C0, ut::make_weirdop<bit_t>( "fxam.C0", fpclass ) );
-    flagwrite( FLAG::C1, ut::make_weirdop<bit_t>( "fxam.sign", value ) );
-    flagwrite( FLAG::C2, ut::make_weirdop<bit_t>( "fxam.C2", fpclass ) );
-    flagwrite( FLAG::C3, ut::make_weirdop<bit_t>( "fxam.C3", fpclass ) );
+    flagwrite( FLAG::C0, review::make_weirdop<bit_t>( "fxam.C0", fpclass ) );
+    flagwrite( FLAG::C1, review::make_weirdop<bit_t>( "fxam.sign", value ) );
+    flagwrite( FLAG::C2, review::make_weirdop<bit_t>( "fxam.C2", fpclass ) );
+    flagwrite( FLAG::C3, review::make_weirdop<bit_t>( "fxam.C3", fpclass ) );
   }
   
   void
@@ -155,7 +155,7 @@ namespace ut
   unisim::util::symbolic::Expr&
   Arch::fpaccess( unsigned reg, bool write )
   {
-    throw ut::Untestable("X87");
+    throw Untestable("X87");
     unsigned idx = interface.fregs.touch(reg,write);
     unisim::util::symbolic::Expr& res = fpregs[reg];
     if (not res.node)
@@ -288,14 +288,14 @@ namespace ut
     try
       {
         unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 ); // x86_64
-        unisim::component::cxx::processor::intel::InputCode<ut::Arch> ic( mode, &ct.bytes[0], addr );
+        unisim::component::cxx::processor::intel::InputCode<Arch> ic( mode, &ct.bytes[0], addr );
         Operation* op = getoperation( ic );
         if (not op)
           {
             uint8_t const* oc = ic.opcode();
             unsigned opcode_length = ic.vex() ? 5 - (oc[0] & 1) : oc[0] == 0x0f ? (oc[1] & ~2) == 0x38 ? 4 : 3 : 2;
             ct.length = ic.opcode_offset + opcode_length;
-            throw ut::Untestable("#UD");
+            throw Untestable("#UD");
           }
         ct.length = op->length;
         std::ostringstream buf;
@@ -306,7 +306,7 @@ namespace ut
     catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& perr)
       {
         ct.length = perr.len;
-        throw ut::Untestable("#UD");
+        throw Untestable("#UD");
       }
     return 0;
   }
@@ -450,11 +450,11 @@ namespace ut
   {
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
-    ut::Arch reference( *this );
+    Arch reference( *this );
 
     for (bool end = false; not end;)
       {
-        ut::Arch arch( *this );
+        Arch arch( *this );
         arch.step( op );
         end = arch.close( reference );
       }
@@ -468,7 +468,7 @@ namespace ut
             buf << "reserved register access ("
                 << unisim::component::cxx::processor::intel::DisasmG( unisim::component::cxx::processor::intel::GOq(), grexcl[idx] )
                 << ")";
-            throw ut::Untestable(buf.str());
+            throw Untestable(buf.str());
           }
       }
     
@@ -478,7 +478,7 @@ namespace ut
         if (span > uint64_t(1024))
           {
             //std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
-            throw ut::Untestable("spread out memory accesses");
+            throw Untestable("spread out memory accesses");
           }
         typedef decltype(this->relocs) Relocs;
         
@@ -541,7 +541,7 @@ namespace ut
         
         if (relocs.size() == 0)
           {
-            throw ut::Untestable("malformed address");
+            throw Untestable("malformed address");
           }
       }
 
@@ -579,11 +579,11 @@ namespace ut
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + ut::Arch::REGSIZE*gregs.index(reg);
+        i.disp = offset + Arch::REGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
         text.write(ptr,4);
       }
-    offset += ut::Arch::REGSIZE*gregs.used();
+    offset += Arch::REGSIZE*gregs.used();
     
     /* Load AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
@@ -601,11 +601,11 @@ namespace ut
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + ut::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
+        i.disp = offset + Arch::VUConfig::BYTECOUNT*vregs.index(reg);
         uint8_t const* ptr = &i.vex;
         text.write(ptr,5);
       }
-    offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
+    offset += Arch::VUConfig::BYTECOUNT*vregs.used();
 
     if (offset >= 128) throw 0;
     
@@ -653,11 +653,11 @@ namespace ut
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + ut::Arch::REGSIZE*gregs.index(reg);
+        i.disp = offset + Arch::REGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
         text.write(ptr,4);
       }
-    offset += ut::Arch::REGSIZE*gregs.used();
+    offset += Arch::REGSIZE*gregs.used();
     
     /* Store AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
@@ -675,11 +675,11 @@ namespace ut
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + ut::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
+        i.disp = offset + Arch::VUConfig::BYTECOUNT*vregs.index(reg);
         uint8_t const* ptr = &i.vex;
         text.write(ptr,5);
       }
-    offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
+    offset += Arch::VUConfig::BYTECOUNT*vregs.used();
 
     text.write((uint8_t const*)"\xc3",1);
   }
@@ -689,8 +689,8 @@ namespace ut
   {
     uintptr_t offset = 0;
     offset += 8;
-    offset += ut::Arch::REGSIZE*gregs.used();
-    offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
+    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::VUConfig::BYTECOUNT*vregs.used();
     if (offset % 8) throw "WTF";
     return offset / 8;
   }
@@ -775,7 +775,7 @@ namespace ut
       sink << addr << std::endl;
   }
   
-  bool ut::AMD64::MemCode::get(std::istream& source)
+  bool AMD64::MemCode::get(std::istream& source)
   {
     unsigned idx = 0;
         

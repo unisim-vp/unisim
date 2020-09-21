@@ -46,17 +46,17 @@
 
 struct Checker
 {
-  typedef typename ut::AMD64::MemCode MemCode;
-  typedef typename ut::AMD64::Operation Operation;
+  typedef typename review::AMD64::MemCode MemCode;
+  typedef typename review::AMD64::Operation Operation;
   typedef unisim::util::symbolic::Expr Expr;
   
   struct TestLess
   {
-    bool operator () ( ut::Interface const& a, ut::Interface const& b ) const
+    bool operator () ( review::Interface const& a, review::Interface const& b ) const
     {
       struct Comparator
       {
-        int process( ut::ActionNode const& a, ut::ActionNode const& b ) const
+        int process( review::ActionNode const& a, review::ActionNode const& b ) const
         {
           if (int delta = a.updates.size() - b.updates.size()) return delta;
           auto rci = b.updates.begin();
@@ -95,9 +95,9 @@ struct Checker
               if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
                 return delta;
             }
-          else if (auto vr = dynamic_cast<ut::Arch::VirtualRegister const*>(a.node))
+          else if (auto vr = dynamic_cast<review::Arch::VirtualRegister const*>(a.node))
             {
-              unsigned ai = vr->idx, bi = dynamic_cast<ut::Arch::VirtualRegister const&>(*b.node).idx;
+              unsigned ai = vr->idx, bi = dynamic_cast<review::Arch::VirtualRegister const&>(*b.node).idx;
               if (int delta = int(ai) - int(bi))
                 return delta;
             }
@@ -122,10 +122,10 @@ struct Checker
     
   };
   
-  typedef std::multiset<ut::Interface, TestLess> TestDB;
+  typedef std::multiset<review::Interface, TestLess> TestDB;
   
   unisim::util::random::Random rnd;
-  ut::AMD64 isa;
+  review::AMD64 isa;
   std::set<MemCode> done;
   TestDB testdb;
   std::map<std::string,uintptr_t> stats;
@@ -133,9 +133,9 @@ struct Checker
   bool insert( Operation const& op, MemCode const& code, std::string const& disasm )
   {
     if (done.count(code))
-      throw ut::Untestable("duplicate");
+      throw review::Untestable("duplicate");
     
-    ut::Interface iif(op, code, disasm);
+    review::Interface iif(op, code, disasm);
 
     decltype(testdb.begin()) tstbeg, tstend;
     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
@@ -156,7 +156,7 @@ struct Checker
         std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, trial, disasm ) );
         found = insert( *codeop, trial, disasm );
       }
-    catch (ut::Untestable const& denial)
+    catch (review::Untestable const& denial)
       {
         stats[denial.reason] += 1;
       }
@@ -261,7 +261,7 @@ struct Checker
   {
     std::ofstream sink( reposname );
 
-    for (ut::Interface const& test : testdb)
+    for (review::Interface const& test : testdb)
       sink << test.memcode << "\t" << test.asmcode << '\n';
   }
 
@@ -307,7 +307,7 @@ struct Checker
                 updated = true;
               }
           }
-        catch (ut::Untestable const& denial)
+        catch (review::Untestable const& denial)
           {
             std::cerr << fl << ": behavioral rejection for " << code << disasm << " <" << denial.reason << ">\n";
             updated = true;
@@ -324,14 +324,14 @@ struct Checker
     /* First pass; computing memory requirements */
     uintptr_t textsize, workquads = 0;
     {
-      struct Text : public ut::Interface::Text
+      struct Text : public review::Interface::Text
       {
         Text() : size() {} uintptr_t size;
         virtual void write(uint8_t const*, unsigned sz) { size += sz; }
-        void process( ut::Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
+        void process( review::Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
       } text;
       
-      for (ut::Interface const& test : testdb)
+      for (review::Interface const& test : testdb)
         {
           workquads = std::max( workquads, test.workquads() * (test.relocs.size() ? 3 : 2) );
           text.process( test );
@@ -352,17 +352,17 @@ struct Checker
       void* p; uintptr_t sz;
     } textzone(textsize);
 
-    typedef ut::Testbed<4096> Testbed;
+    typedef test::Testbed<4096> Testbed;
 
     /* Organize test data */
     struct Test
     {
-      typedef ut::Interface::testcode_t testcode_t;
+      typedef review::Interface::testcode_t testcode_t;
       
-      Test(ut::Interface const* _test, testcode_t _code)
+      Test(review::Interface const* _test, testcode_t _code)
         : disasm(_test->asmcode), code(_code), relval(), relreg(), workquads(_test->workquads())
       {}
-      Test(ut::Interface const* _test, testcode_t _code, unsigned _relreg, unisim::util::symbolic::Expr const& _relval)
+      Test(review::Interface const* _test, testcode_t _code, unsigned _relreg, unisim::util::symbolic::Expr const& _relval)
         : disasm(_test->asmcode), code(_code), relval(_relval), relreg(_test->gregs.index(_relreg)), workquads(_test->workquads())
       {}
       uint64_t get_reloc(uint64_t const* ws) const
@@ -370,7 +370,7 @@ struct Checker
         if (not relval.good()) return 0;
         
         uint64_t value;
-        if (auto v = relval.Eval( ut::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
+        if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
           { Expr dispose(v); value = v->Get( uint64_t() ); }
         else
           throw "WTF";
@@ -421,10 +421,10 @@ struct Checker
         code( &ws[data_index(0)] ); /*< native code execution */
         __asm__ volatile( "cld" ); /*< Fix DF */
       }
-      void run( ut::concrete::Arch& sim, uint64_t* ws ) const
+      void run( test::Arch& sim, uint64_t* ws ) const
       {
         sim.run( code, &ws[data_index(0)] ); /* code simulation */
-        sim.flagwrite( ut::concrete::Arch::FLAG::DF, false ); /*< Fix DF */
+        sim.flagwrite( test::Arch::FLAG::DF, false ); /*< Fix DF */
       }
       
     private:
@@ -432,7 +432,7 @@ struct Checker
       uintptr_t sink_index( uintptr_t idx ) const { return workquads + data_index(idx); }
       
       std::string const& disasm;
-      ut::Interface::testcode_t code;
+      review::Interface::testcode_t code;
       Expr relval;
       unsigned relreg, workquads;
     };
@@ -441,10 +441,10 @@ struct Checker
     
     /* 2nd pass; generating tests (data and code)*/
     textsize = 0;
-    for (ut::Interface const& test : testdb)
+    for (review::Interface const& test : testdb)
       {
         /* generating test code */
-        struct Text : public ut::Interface::Text
+        struct Text : public review::Interface::Text
         {
           Text(uint8_t* _mem) : mem(_mem), size(0) {}
           virtual void write(uint8_t const* bytes, unsigned sz)
@@ -452,7 +452,7 @@ struct Checker
             std::copy( bytes, bytes+sz, &mem[size] );
             size += sz;
           }
-          ut::Interface::testcode_t code() const { return (ut::Interface::testcode_t)mem; }
+          review::Interface::testcode_t code() const { return (review::Interface::testcode_t)mem; }
           uint8_t* mem;
           uintptr_t size;
         } text( textzone.chunk(textsize) );
@@ -471,7 +471,7 @@ struct Checker
     /* Now, undergo real tests */
     textzone.activate();
 
-    ut::concrete::Arch amd64;
+    test::Arch amd64;
     
     std::vector<uint64_t> reference(workquads), workspace(workquads);
     for (Testbed testbed(seed);; testbed.next())
