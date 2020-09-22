@@ -37,8 +37,55 @@
 namespace unisim {
 namespace util {
 namespace sav {
+  namespace {
+    struct UpdatesMerger
+    {
+      typedef unisim::util::symbolic::Expr Expr;
+      void operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) { updates.insert( l ); }
+    };
+  }
 
+  void
+  ActionNode::simplify()
+  {
+    // {
+    //   std::set<Expr> nupdates;
+    //   for (std::set<Expr>::const_iterator itr = updates.begin(), end = updates.end(); itr != end; ++itr)
+    //     nupdates.insert( ASExprNode::Simplify( *itr ) );
+    //   std::swap(nupdates, updates);
+    // }
+    
+    if (not cond.good())
+      return;
 
+    //    cond = ASExprNode::Simplify( cond );
+    
+    for (unsigned choice = 0; choice < 2; ++choice)
+      if (ActionNode* next = nexts[choice])
+        next->simplify();
+    
+    factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
+    
+    bool leaf = true;
+    for (unsigned choice = 0; choice < 2; ++choice)
+      if (ActionNode* next = nexts[choice])
+        {
+          if (next->cond.good() or next->updates.size()) leaf = false;
+          else { delete next; nexts[choice] = 0; }
+        }
+    
+    if (leaf)
+      cond = Expr();
+    else if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
+      if (onb->op.code == onb->op.Not)
+        {
+          // If condition begins with a logical not, remove the not and
+          //   swap if then else branches
+          cond = onb->GetSub(0);
+          std::swap( nexts[false], nexts[true] );
+        }
+      
+  }
 
 } /* end of namespace sav */
 } /* end of namespace util */

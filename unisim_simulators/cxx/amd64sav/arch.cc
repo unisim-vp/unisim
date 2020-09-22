@@ -155,7 +155,7 @@ namespace review
   unisim::util::symbolic::Expr&
   Arch::fpaccess( unsigned reg, bool write )
   {
-    throw Untestable("X87");
+    throw unisim::util::sav::Untestable("X87");
     unsigned idx = interface.fregs.touch(reg,write);
     unisim::util::symbolic::Expr& res = fpregs[reg];
     if (not res.node)
@@ -295,7 +295,7 @@ namespace review
             uint8_t const* oc = ic.opcode();
             unsigned opcode_length = ic.vex() ? 5 - (oc[0] & 1) : oc[0] == 0x0f ? (oc[1] & ~2) == 0x38 ? 4 : 3 : 2;
             ct.length = ic.opcode_offset + opcode_length;
-            throw Untestable("#UD");
+            throw unisim::util::sav::Untestable("#UD");
           }
         ct.length = op->length;
         std::ostringstream buf;
@@ -306,7 +306,7 @@ namespace review
     catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& perr)
       {
         ct.length = perr.len;
-        throw Untestable("#UD");
+        throw unisim::util::sav::Untestable("#UD");
       }
     return 0;
   }
@@ -318,56 +318,6 @@ namespace review
   {
     for (FLAG reg; reg.next();)
       flagvalues[reg.idx()] = newRegRead( reg );
-  }
-
-  namespace {
-    struct UpdatesMerger
-    {
-      typedef unisim::util::symbolic::Expr Expr;
-      void operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) { updates.insert( l ); }
-    };
-  }
-  
-  void
-  ActionNode::simplify()
-  {
-    // {
-    //   std::set<Expr> nupdates;
-    //   for (std::set<Expr>::const_iterator itr = updates.begin(), end = updates.end(); itr != end; ++itr)
-    //     nupdates.insert( ASExprNode::Simplify( *itr ) );
-    //   std::swap(nupdates, updates);
-    // }
-    
-    if (not cond.good())
-      return;
-
-    //    cond = ASExprNode::Simplify( cond );
-    
-    for (unsigned choice = 0; choice < 2; ++choice)
-      if (ActionNode* next = nexts[choice])
-        next->simplify();
-    
-    factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
-    
-    bool leaf = true;
-    for (unsigned choice = 0; choice < 2; ++choice)
-      if (ActionNode* next = nexts[choice])
-        {
-          if (next->cond.good() or next->updates.size()) leaf = false;
-          else { delete next; nexts[choice] = 0; }
-        }
-    
-    if (leaf)
-      cond = Expr();
-    else if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
-      if (onb->op.code == onb->op.Not)
-        {
-          // If condition begins with a logical not, remove the not and
-          //   swap if then else branches
-          cond = onb->GetSub(0);
-          std::swap( nexts[false], nexts[true] );
-        }
-      
   }
 
   bool
@@ -443,7 +393,7 @@ namespace review
     , gregs()
     , fregs()
     , vregs()
-    , behavior(std::make_shared<ActionNode>())
+    , behavior(std::make_shared<unisim::util::sav::ActionNode>())
     , base_addr()
     , relocs()
     , has_write(false)
@@ -468,7 +418,7 @@ namespace review
             buf << "reserved register access ("
                 << unisim::component::cxx::processor::intel::DisasmG( unisim::component::cxx::processor::intel::GOq(), grexcl[idx] )
                 << ")";
-            throw Untestable(buf.str());
+            throw unisim::util::sav::Untestable(buf.str());
           }
       }
     
@@ -478,7 +428,7 @@ namespace review
         if (span > uint64_t(1024))
           {
             //std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
-            throw Untestable("spread out memory accesses");
+            throw unisim::util::sav::Untestable("spread out memory accesses");
           }
         typedef decltype(this->relocs) Relocs;
         
@@ -541,7 +491,7 @@ namespace review
         
         if (relocs.size() == 0)
           {
-            throw Untestable("malformed address");
+            throw unisim::util::sav::Untestable("malformed address");
           }
       }
 

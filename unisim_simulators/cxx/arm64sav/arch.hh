@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <bitset>
@@ -53,111 +54,6 @@ namespace review
 
   using unisim::util::symbolic::SmartValue;
 
-  struct Untestable
-  {
-    Untestable(std::string const& _reason) : reason(_reason) {}
-    std::string reason;
-  };
-
-  struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
-  {
-    typedef unisim::util::symbolic::Expr Expr;
-
-    ActionNode() : Conditional<ActionNode>(), updates() {}
-
-    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
-    {
-      for (auto && update : an.updates)
-        sink << update << ";\n";
-      if (not an.cond.node)
-        return sink;
-      sink << "if (" << an.cond << ")\n{\n";
-      if (auto nxt = an.nexts[0]) sink << *nxt;
-      sink << "}\nelse\n{\n";
-      if (auto nxt = an.nexts[1]) sink << *nxt;
-      sink << "}\n";
-      return sink;
-    }
-
-    void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
-
-    void simplify();
-
-    std::set<Expr>           updates;
-  };
-
-  template <typename T>
-  struct Operand
-  {
-    Operand() : raw(0) {}
-
-    template <typename F> T Get( F const& f ) const { return (raw >> f.bit) & f.mask(); }
-    template <typename F> void Set( F const& f, T v ) { raw &= ~(f.mask() << f.bit); raw |= (v & f.mask()) << f.bit; }
-
-    bool access( bool w )
-    {
-      bool src = Get( Src() ), dst = Get( Dst() );
-      Set( Src(), src or not w );
-      Set( Dst(), dst or w );
-      return src or dst;
-    }
-
-    bool is_accessed() const { return Get( Dst() ) | Get( Src() ); }
-    bool is_modified() const { return Get( Dst() ); }
-
-    T get_index() const { return Get( Idx() ); }
-    T set_index( T idx ) { Set( Idx(), idx ); return idx; }
-
-  private:
-    struct Src { unsigned const bit = 0; static T mask() { return T( 1); } };
-    struct Dst { unsigned const bit = 1; static T mask() { return T( 1); } };
-    struct Idx { unsigned const bit = 2; static T mask() { return T(-1); } };
-
-    T raw;
-  };
-
-  template <typename T, unsigned COUNT>
-  struct OperandMap
-  {
-    typedef Operand<T> Op;
-
-    OperandMap() : omap(), allocated() {}
-
-    T touch(unsigned idx, bool w)
-    {
-      if (idx >= COUNT) throw "ouch";
-      Operand<T>& op = omap[idx];
-      if (op.access(w))
-        return op.get_index();
-      return op.set_index( allocated++ );
-    }
-
-    bool modified(unsigned idx) const
-    {
-      if (idx >= COUNT) throw "ouch";
-      return omap[idx].is_modified();
-    }
-
-    bool accessed(unsigned idx) const
-    {
-      if (idx >= COUNT) throw "ouch";
-      return omap[idx].is_accessed();
-    }
-
-    T index(unsigned idx) const
-    {
-      if (idx >= COUNT) throw "ouch";
-      return omap[idx].get_index();
-    }
-
-    unsigned count() const { return COUNT; }
-    unsigned used() const { return allocated; }
-
-  private:
-    Op omap[COUNT];
-    T allocated;
-  };
-
   struct Interface
   {
     typedef unisim::util::symbolic::Expr Expr;
@@ -169,9 +65,9 @@ namespace review
 
     uint32_t memcode;
     std::string asmcode;
-    OperandMap<uint8_t,32> gregs; /* general purpose registers */
-    OperandMap<uint8_t,32> vregs; /* vector registers */
-    std::shared_ptr<ActionNode> behavior;
+    unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
+    unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
+    std::shared_ptr<unisim::util::sav::ActionNode> behavior;
     struct RelCmp { bool operator () (uint64_t l, uint64_t r) const { return int64_t(l - r) < 0; } };
     std::set<uint64_t,RelCmp> addrs;
     Expr base_addr;
@@ -223,7 +119,7 @@ namespace review
 
     void noexec( Operation const& op )
     {
-      throw Untestable("Not implemented");
+      throw unisim::util::sav::Untestable("Not implemented");
     }
 
     struct Update : public ExprNode
@@ -449,7 +345,7 @@ namespace review
 
     Arch( Interface& iif );
 
-    static void dont(char const* reason) { throw Untestable(reason); }
+    static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
 
     void UndefinedInstruction( Operation const* op ) { UndefinedInstruction(); }
     void UndefinedInstruction() { dont("undefined"); }
@@ -607,7 +503,7 @@ namespace review
     }
 
     Interface&     interface;
-    ActionNode*    path;
+    unisim::util::sav::ActionNode*    path;
 
     std::set<Expr> stores;
 

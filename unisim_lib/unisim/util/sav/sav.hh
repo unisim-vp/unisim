@@ -36,13 +36,117 @@
 #define __UNISIM_UTIL_SAV_SAV_HH__
 
 #include <unisim/util/symbolic/symbolic.hh>
+#include <set>
 #include <inttypes.h>
 
 namespace unisim {
 namespace util {
 namespace sav {
 
+  struct Untestable
+  {
+    Untestable(std::string const& _reason) : reason(_reason) {}
+    std::string reason;
+  };
 
+  struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+
+    ActionNode() : Conditional<ActionNode>(), updates() {}
+
+    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
+    {
+      for (auto && update : an.updates)
+        sink << update << ";\n";
+      if (not an.cond.node)
+        return sink;
+      sink << "if (" << an.cond << ")\n{\n";
+      if (auto nxt = an.nexts[0]) sink << *nxt;
+      sink << "}\nelse\n{\n";
+      if (auto nxt = an.nexts[1]) sink << *nxt;
+      sink << "}\n";
+      return sink;
+    }
+
+    void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
+
+    void simplify();
+
+    std::set<Expr>           updates;
+  };
+
+  template <typename T>
+  struct Operand
+  {
+    Operand() : raw(0) {}
+
+    template <typename F> T Get( F const& f ) const { return (raw >> f.bit) & f.mask(); }
+    template <typename F> void Set( F const& f, T v ) { raw &= ~(f.mask() << f.bit); raw |= (v & f.mask()) << f.bit; }
+
+    bool access( bool w )
+    {
+      bool src = Get( Src() ), dst = Get( Dst() );
+      Set( Src(), src or not w );
+      Set( Dst(), dst or w );
+      return src or dst;
+    }
+
+    bool is_accessed() const { return Get( Dst() ) | Get( Src() ); }
+    bool is_modified() const { return Get( Dst() ); }
+
+    T get_index() const { return Get( Idx() ); }
+    T set_index( T idx ) { Set( Idx(), idx ); return idx; }
+
+  private:
+    struct Src { unsigned const bit = 0; static T mask() { return T( 1); } };
+    struct Dst { unsigned const bit = 1; static T mask() { return T( 1); } };
+    struct Idx { unsigned const bit = 2; static T mask() { return T(-1); } };
+
+    T raw;
+  };
+
+  template <typename T, unsigned COUNT>
+  struct OperandMap
+  {
+    typedef Operand<T> Op;
+
+    OperandMap() : omap(), allocated() {}
+
+    T touch(unsigned idx, bool w)
+    {
+      if (idx >= COUNT) throw "ouch";
+      Operand<T>& op = omap[idx];
+      if (op.access(w))
+        return op.get_index();
+      return op.set_index( allocated++ );
+    }
+
+    bool modified(unsigned idx) const
+    {
+      if (idx >= COUNT) throw "ouch";
+      return omap[idx].is_modified();
+    }
+
+    bool accessed(unsigned idx) const
+    {
+      if (idx >= COUNT) throw "ouch";
+      return omap[idx].is_accessed();
+    }
+
+    T index(unsigned idx) const
+    {
+      if (idx >= COUNT) throw "ouch";
+      return omap[idx].get_index();
+    }
+
+    unsigned count() const { return COUNT; }
+    unsigned used() const { return allocated; }
+
+  private:
+    Op omap[COUNT];
+    T allocated;
+  };
 
 } /* end of namespace sav */
 } /* end of namespace util */

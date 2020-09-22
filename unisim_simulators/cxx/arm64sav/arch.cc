@@ -39,56 +39,6 @@
 
 namespace review
 {
-  namespace {
-    struct UpdatesMerger
-    {
-      typedef unisim::util::symbolic::Expr Expr;
-      void operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) { updates.insert( l ); }
-    };
-  }
-  
-  void
-  ActionNode::simplify()
-  {
-    // {
-    //   std::set<Expr> nupdates;
-    //   for (std::set<Expr>::const_iterator itr = updates.begin(), end = updates.end(); itr != end; ++itr)
-    //     nupdates.insert( ASExprNode::Simplify( *itr ) );
-    //   std::swap(nupdates, updates);
-    // }
-    
-    if (not cond.good())
-      return;
-
-    //    cond = ASExprNode::Simplify( cond );
-    
-    for (unsigned choice = 0; choice < 2; ++choice)
-      if (ActionNode* next = nexts[choice])
-        next->simplify();
-    
-    factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
-    
-    bool leaf = true;
-    for (unsigned choice = 0; choice < 2; ++choice)
-      if (ActionNode* next = nexts[choice])
-        {
-          if (next->cond.good() or next->updates.size()) leaf = false;
-          else { delete next; nexts[choice] = 0; }
-        }
-    
-    if (leaf)
-      cond = Expr();
-    else if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
-      if (onb->op.code == onb->op.Not)
-        {
-          // If condition begins with a logical not, remove the not and
-          //   swap if then else branches
-          cond = onb->GetSub(0);
-          std::swap( nexts[false], nexts[true] );
-        }
-      
-  }
-
   Arch::Arch( Interface& iif )
     // , next_insn_addr(), next_insn_mode(ipjmp)
     // , ftop(0)
@@ -180,7 +130,7 @@ namespace review
     , asmcode(disasm)
     , gregs()
     , vregs()
-    , behavior(std::make_shared<ActionNode>())
+    , behavior(std::make_shared<unisim::util::sav::ActionNode>())
     , base_addr()
     , relocs()
     , has_write(false)
@@ -204,7 +154,7 @@ namespace review
           {
             std::ostringstream buf;
             buf << "reserved register access (" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg) << ")";
-            throw review::Untestable(buf.str());
+            throw unisim::util::sav::Untestable(buf.str());
           }
       }
     
@@ -214,7 +164,7 @@ namespace review
         if (span > uint64_t(1024))
           {
             //std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
-            throw review::Untestable("spread out memory accesses");
+            throw unisim::util::sav::Untestable("spread out memory accesses");
           }
         typedef decltype(this->relocs) Relocs;
         
@@ -278,7 +228,7 @@ namespace review
         
         if (relocs.size() == 0)
           {
-            throw review::Untestable("malformed address");
+            throw unisim::util::sav::Untestable("malformed address");
           }
       }
 

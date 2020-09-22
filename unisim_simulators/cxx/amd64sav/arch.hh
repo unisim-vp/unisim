@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <bitset>
@@ -130,111 +131,6 @@ namespace review
   template <typename T> using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
-  struct Untestable
-  {
-    Untestable(std::string const& _reason) : reason(_reason) {}
-    std::string reason;
-  };
-
-  struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
-  {
-    typedef unisim::util::symbolic::Expr Expr;
-
-    ActionNode() : Conditional<ActionNode>(), updates() {}
-
-    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
-    {
-      for (auto && update : an.updates)
-        sink << update << ";\n";
-      if (not an.cond.node)
-        return sink;
-      sink << "if (" << an.cond << ")\n{\n";
-      if (auto nxt = an.nexts[0]) sink << *nxt;
-      sink << "}\nelse\n{\n";
-      if (auto nxt = an.nexts[1]) sink << *nxt;
-      sink << "}\n";
-      return sink;
-    }
-
-    void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
-
-    void simplify();
-
-    std::set<Expr>           updates;
-  };
-
-  template <typename T>
-  struct Operand
-  {
-    Operand() : raw(0) {}
-
-    template <typename F> T Get( F const& f ) const { return (raw >> f.bit) & f.mask(); }
-    template <typename F> void Set( F const& f, T v ) { raw &= ~(f.mask() << f.bit); raw |= (v & f.mask()) << f.bit; }
-
-    bool access( bool w )
-    {
-      bool src = Get( Src() ), dst = Get( Dst() );
-      Set( Src(), src or not w );
-      Set( Dst(), dst or w );
-      return src or dst;
-    }
-
-    bool is_accessed() const { return Get( Dst() ) | Get( Src() ); }
-    bool is_modified() const { return Get( Dst() ); }
-
-    T get_index() const { return Get( Idx() ); }
-    T set_index( T idx ) { Set( Idx(), idx ); return idx; }
-
-  private:
-    struct Src { unsigned const bit = 0; static T mask() { return T( 1); } };
-    struct Dst { unsigned const bit = 1; static T mask() { return T( 1); } };
-    struct Idx { unsigned const bit = 2; static T mask() { return T(-1); } };
-
-    T raw;
-  };
-
-  template <typename T, unsigned COUNT>
-  struct OperandMap
-  {
-    typedef Operand<T> Op;
-
-    OperandMap() : omap(), allocated() {}
-
-    T touch(unsigned idx, bool w)
-    {
-      if (idx >= COUNT) throw "ouch";
-      Operand<T>& op = omap[idx];
-      if (op.access(w))
-        return op.get_index();
-      return op.set_index( allocated++ );
-    }
-
-    bool modified(unsigned idx) const
-    {
-      if (idx >= COUNT) throw "ouch";
-      return omap[idx].is_modified();
-    }
-
-    bool accessed(unsigned idx) const
-    {
-      if (idx >= COUNT) throw "ouch";
-      return omap[idx].is_accessed();
-    }
-
-    T index(unsigned idx) const
-    {
-      if (idx >= COUNT) throw "ouch";
-      return omap[idx].get_index();
-    }
-
-    unsigned count() const { return COUNT; }
-    unsigned used() const { return allocated; }
-
-  private:
-    Op omap[COUNT];
-    T allocated;
-  };
-
   struct Interface
   {
     typedef AMD64::MemCode MemCode;
@@ -247,10 +143,10 @@ namespace review
 
     MemCode memcode;
     std::string asmcode;
-    OperandMap<uint8_t,AMD64::GREGCOUNT> gregs; /* integer (x86) registers */
-    OperandMap<uint8_t,AMD64::FREGCOUNT> fregs; /* floating (x87) registers */
-    OperandMap<uint8_t,AMD64::VREGCOUNT> vregs; /* vector (sse/avx) registers */
-    std::shared_ptr<ActionNode> behavior;
+    unisim::util::sav::OperandMap<uint8_t,AMD64::GREGCOUNT> gregs; /* integer (x86) registers */
+    unisim::util::sav::OperandMap<uint8_t,AMD64::FREGCOUNT> fregs; /* floating (x87) registers */
+    unisim::util::sav::OperandMap<uint8_t,AMD64::VREGCOUNT> vregs; /* vector (sse/avx) registers */
+    std::shared_ptr<unisim::util::sav::ActionNode> behavior;
     struct RelCmp
     {
       bool operator () (uint64_t l, uint64_t r) const { return int64_t(l - r) < 0; }
@@ -321,7 +217,7 @@ namespace review
 
     void noexec( Operation const& op )
     {
-      throw Untestable("Not implemented");
+      throw unisim::util::sav::Untestable("Not implemented");
     }
 
     struct Update : public ExprNode
@@ -331,8 +227,8 @@ namespace review
 
     Arch( Interface& iif );
 
-    Interface&      interface;
-    ActionNode*     path;
+    Interface&                     interface;
+    unisim::util::sav::ActionNode* path;
 
     bool close( Arch const& ref );
 
@@ -467,7 +363,7 @@ namespace review
 
     int hash();
 
-    u64_t                       tscread() { throw Untestable("hardware"); return u64_t( 0 ); }
+    u64_t                       tscread() { throw unisim::util::sav::Untestable("hardware"); return u64_t( 0 ); }
 
     struct FLAG : public unisim::util::identifier::Identifier<FLAG>
     {
@@ -504,8 +400,8 @@ namespace review
     bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
     void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
-    u16_t                       segregread( unsigned idx ) { throw Untestable("segment register"); return u16_t(); }
-    void                        segregwrite( unsigned idx, u16_t value ) { throw Untestable("segment register"); }
+    u16_t                       segregread( unsigned idx ) { throw unisim::util::sav::Untestable("segment register"); return u16_t(); }
+    void                        segregwrite( unsigned idx, u16_t value ) { throw unisim::util::sav::Untestable("segment register"); }
 
     typedef std::map<unsigned,unsigned> RegMap;
 
@@ -539,7 +435,7 @@ namespace review
     ipproc_t                    next_insn_mode;
 
     addr_t                      getnip() { return addr_t(next_insn_addr); }
-    void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp ) { throw Untestable("has jump"); }
+    void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp ) { throw unisim::util::sav::Untestable("has jump"); }
 
 
     template <class T>
@@ -561,7 +457,7 @@ namespace review
       virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
       {
         if (dynamic_cast<AddrEval const*>( &evs ))
-          throw Untestable("RIP relative addressing");
+          throw unisim::util::sav::Untestable("RIP relative addressing");
         return 0;
       }
     };
@@ -579,9 +475,9 @@ namespace review
     void                        fnanchk( f64_t value ) {};
 
     int                         fcwreadRC() const { return 0; }
-    u16_t                       fcwread() const { throw Untestable("FCW access"); return u16_t(); }
-    void                        fcwwrite( u16_t value ) { throw Untestable("FCW access"); }
-    void                        finit() { throw Untestable("FCW access"); }
+    u16_t                       fcwread() const { throw unisim::util::sav::Untestable("FCW access"); return u16_t(); }
+    void                        fcwwrite( u16_t value ) { throw unisim::util::sav::Untestable("FCW access"); }
+    void                        finit() { throw unisim::util::sav::Untestable("FCW access"); }
 
     void                        fxam();
 
@@ -590,7 +486,7 @@ namespace review
       LoadBase( unsigned _bytes, unsigned _segment, Expr const& _addr )
         : addr(_addr), bytes(_bytes), segment(_segment)
       {
-        if (segment >= 4) throw Untestable("FS|GS relative addressing");
+        if (segment >= 4) throw unisim::util::sav::Untestable("FS|GS relative addressing");
       }
       virtual void Repr( std::ostream& sink ) const override { sink << "Load" << (8*bytes) << "(" << (int)segment << "," << addr << ")"; }
       virtual unsigned SubCount() const override { return 1; }
@@ -635,7 +531,7 @@ namespace review
       Store( unsigned _bytes, unsigned _segment, Expr const& _addr, Expr const& _value )
         : addr( _addr ), value( _value ), bytes(_bytes), segment(_segment)
       {
-        if (segment >= 4) throw Untestable("FS|GS relative addressing");
+        if (segment >= 4) throw unisim::util::sav::Untestable("FS|GS relative addressing");
       }
       virtual Store* Mutate() const override { return new Store( *this ); }
       virtual void Repr( std::ostream& sink ) const override { sink << "Store" << (8*bytes) << "( " << (int)segment << ", " << addr << ", " << value <<  " )"; }
@@ -698,7 +594,7 @@ namespace review
       virtual char const* GetRegName() const { return "ftop"; }
     };
 
-    u16_t                       ftopread() { throw Untestable("FCW access"); return u16_t(); }
+    u16_t                       ftopread() { throw unisim::util::sav::Untestable("FCW access"); return u16_t(); }
     unsigned                    ftop;
 
     Expr&                       fpaccess(unsigned r, bool w);
@@ -830,8 +726,8 @@ namespace review
     //   virtual char const* GetRegName() const override { return "mxcsr"; }
     // };
 
-    u32_t mxcsread() { throw Untestable("mxcsr access"); return u32_t(); };
-    void mxcswrite( u32_t const& value ) { throw Untestable("mxcsr access"); }
+    u32_t mxcsread() { throw unisim::util::sav::Untestable("mxcsr access"); return u32_t(); };
+    void mxcswrite( u32_t const& value ) { throw unisim::util::sav::Untestable("mxcsr access"); }
 
     struct VUConfig : public unisim::util::symbolic::vector::VUConfig
     {
@@ -1010,13 +906,13 @@ namespace review
     //   fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
     // }
 
-    void    unimplemented()               { throw Untestable("unimplemented"); }
-    void    interrupt( int op, int code ) { throw Untestable("system"); }
-    void    syscall()                     { throw Untestable("system"); }
-    void    cpuid()                       { throw Untestable("hardware"); }
-    void    xgetbv()                      { throw Untestable("hardware"); }
-    void    stop()                        { throw Untestable("hardware"); }
-    void    _DE()                         { throw Untestable("system"); }
+    void    unimplemented()               { throw unisim::util::sav::Untestable("unimplemented"); }
+    void    interrupt( int op, int code ) { throw unisim::util::sav::Untestable("system"); }
+    void    syscall()                     { throw unisim::util::sav::Untestable("system"); }
+    void    cpuid()                       { throw unisim::util::sav::Untestable("hardware"); }
+    void    xgetbv()                      { throw unisim::util::sav::Untestable("hardware"); }
+    void    stop()                        { throw unisim::util::sav::Untestable("hardware"); }
+    void    _DE()                         { throw unisim::util::sav::Untestable("system"); }
 
     // bool Test( bit_t b ) { return false; }
 

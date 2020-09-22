@@ -55,7 +55,7 @@ struct Checker
     {
       struct Comparator
       {
-        int process( review::ActionNode const& a, review::ActionNode const& b ) const
+        int process( unisim::util::sav::ActionNode const& a, unisim::util::sav::ActionNode const& b ) const
         {
           if (int delta = a.updates.size() - b.updates.size()) return delta;
           auto rci = b.updates.begin();
@@ -147,7 +147,7 @@ struct Checker
     std::ostringstream buf;
     review::Operation* op = 0;
     try { op = isa.NCDecode(addr,code); }
-    catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw review::Untestable("misencoded"); }
+    catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("misencoded"); }
       
     review::Arch::DisasmState das;
     op->disasm(das, buf);
@@ -164,7 +164,7 @@ struct Checker
         std::unique_ptr<review::Operation> codeop = std::unique_ptr<review::Operation>( decode( 0x4000, trial, disasm ) );
         found = insert( *codeop, trial, disasm );
       }
-    catch (review::Untestable const& denial)
+    catch (unisim::util::sav::Untestable const& denial)
       {
         stats[denial.reason] += 1;
       }
@@ -258,7 +258,7 @@ struct Checker
                 updated = true;
               }
           }
-        catch (review::Untestable const& denial)
+        catch (unisim::util::sav::Untestable const& denial)
           {
             std::cerr << fl << ": behavioral rejection for " << code << disasm << " <" << denial.reason << ">\n";
             updated = true;
