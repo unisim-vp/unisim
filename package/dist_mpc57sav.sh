@@ -16,6 +16,7 @@ import unisim/component/cxx/processor/powerpc/isa/book_vle || exit
 import unisim/component/cxx/processor/powerpc/isa/lsp || exit
 import unisim/component/cxx/processor/powerpc/isa/mpu || exit
 
+import unisim/util/sav || exit
 import unisim/util/likely || exit
 import unisim/util/random || exit
 import unisim/util/symbolic || exit

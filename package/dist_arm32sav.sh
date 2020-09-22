@@ -11,6 +11,7 @@ import unisim/component/cxx/processor/arm/isa || exit
 import unisim/component/cxx/processor/arm/isa/arm32 || exit
 import unisim/component/cxx/processor/arm/isa/thumb || exit
 import unisim/component/cxx/processor/arm/isa/thumb2 || exit
+import unisim/util/sav || exit
 import unisim/util/random || exit
 import unisim/util/arithmetic || exit
 import unisim/util/symbolic || exit

@@ -8,6 +8,7 @@ source "$(dirname $0)/dist_common.sh"
 import_genisslib || exit
 
 import unisim/component/cxx/processor/arm/vmsav8 || exit
+import unisim/util/sav || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
 import unisim/util/random || exit

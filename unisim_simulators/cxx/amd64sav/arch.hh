@@ -50,7 +50,7 @@
 namespace review
 {
   struct Arch;
-  
+
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
 
   struct AMD64
@@ -68,7 +68,7 @@ namespace review
       MemCode( char const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
 
       uint8_t const* text() const { return &bytes[0]; }
-      
+
       bool get( std::istream& source );
 
       uint8_t getbyte( unsigned idx, uint8_t _default ) const { return idx < length ? bytes[idx] : _default; }
@@ -89,7 +89,7 @@ namespace review
           }
         if (dcarry == 0)
           return false;
-      
+
         *this = delta;
         return true;
       }
@@ -104,7 +104,7 @@ namespace review
       }
 
       bool operator < ( MemCode const& rhs ) const { return compare( rhs ) < 0; }
-    
+
       friend std::ostream& operator << ( std::ostream& sink, MemCode const& mc )
       {
         for (unsigned idx = 0; idx < mc.length; ++idx)
@@ -117,9 +117,9 @@ namespace review
         return sink;
       }
     };
-  
+
     Operation* decode( uint64_t addr, MemCode& ct, std::string& disasm );
-  
+
     static char const* Name() { return "amd64"; }
 
     enum {VREGCOUNT = 16, GREGCOUNT = 16, FREGCOUNT=8};
@@ -129,7 +129,7 @@ namespace review
 
   template <typename T> using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
-  
+
   struct Untestable
   {
     Untestable(std::string const& _reason) : reason(_reason) {}
@@ -157,9 +157,9 @@ namespace review
     }
 
     void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
-    
+
     void simplify();
-    
+
     std::set<Expr>           updates;
   };
 
@@ -170,7 +170,7 @@ namespace review
 
     template <typename F> T Get( F const& f ) const { return (raw >> f.bit) & f.mask(); }
     template <typename F> void Set( F const& f, T v ) { raw &= ~(f.mask() << f.bit); raw |= (v & f.mask()) << f.bit; }
-    
+
     bool access( bool w )
     {
       bool src = Get( Src() ), dst = Get( Dst() );
@@ -239,12 +239,12 @@ namespace review
   {
     typedef AMD64::MemCode MemCode;
     typedef unisim::util::symbolic::Expr Expr;
-    
+
     Interface( Operation const& op, MemCode const& code, std::string const& disasm );
 
     void memaccess( Expr const& addr, bool iswrite );
     uintptr_t workquads() const;
-    
+
     MemCode memcode;
     std::string asmcode;
     OperandMap<uint8_t,AMD64::GREGCOUNT> gregs; /* integer (x86) registers */
@@ -265,7 +265,7 @@ namespace review
     typedef void (*testcode_t)(uint64_t*);
     //  testcode_t testcode() const { return testcode_t(&text[0]); }
   };
-  
+
   struct VmmRegister
   {
     enum { BYTECOUNT = 32 };
@@ -275,7 +275,7 @@ namespace review
     unisim::util::symbolic::Expr expr;
     static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
   };
-    
+
 
   struct Arch
   {
@@ -290,7 +290,7 @@ namespace review
     typedef SmartValue<bool>        bit_t;
 
     typedef u64_t addr_t;
-  
+
     typedef SmartValue<float>       f32_t;
     typedef SmartValue<double>      f64_t;
     typedef SmartValue<long double> f80_t;
@@ -304,16 +304,16 @@ namespace review
     typedef unisim::component::cxx::processor::intel::SSE SSE;
     typedef unisim::component::cxx::processor::intel::XMM XMM;
     typedef unisim::component::cxx::processor::intel::YMM YMM;
-    
+
     typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
-    
+
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::ScalarType ScalarType;
-    
+
     typedef GOq   GR;
     typedef u64_t gr_type;
-  
+
     struct OpHeader
     {
       OpHeader( uint64_t _address ) : address( _address ) {} uint64_t address;
@@ -333,9 +333,9 @@ namespace review
 
     Interface&      interface;
     ActionNode*     path;
-    
+
     bool close( Arch const& ref );
-    
+
     struct RegReadBase : public unisim::util::symbolic::ExprNode
     {
       virtual char const* GetRegName() const = 0;
@@ -371,14 +371,14 @@ namespace review
         return int(reg) - int(rhs.reg);
       }
     };
-    
+
     struct VRReadBase : public VirtualRegister, public ExprNode
     {
       VRReadBase( unsigned reg,  unsigned idx ) : VirtualRegister(reg, idx), ExprNode() {}
       virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
       virtual unsigned SubCount() const override { return 0; }
     };
-    
+
     template <class T>
     struct VRRead : public VRReadBase
     {
@@ -406,11 +406,11 @@ namespace review
       virtual ExprNode* Mutate() const override { return new this_type(*this); }
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
     };
-    
+
     struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
     struct FReg { static ScalarType::id_t const scalar_type = ScalarType::F64;  static char const* name() { return "FReg"; } };
     struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
-    
+
     typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
@@ -459,21 +459,21 @@ namespace review
       virtual char const* GetRegName() const override { return id.c_str(); };
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
       int compare( this_type const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-      
+
       RID id;
     };
 
     template <typename RID> RegWrite<RID>* newRegWrite( RID _id, Expr const& _value ) { return new RegWrite<RID>(_id, _value); }
 
     int hash();
-    
+
     u64_t                       tscread() { throw Untestable("hardware"); return u64_t( 0 ); }
-    
+
     struct FLAG : public unisim::util::identifier::Identifier<FLAG>
     {
       typedef bool register_type;
       enum Code { CF = 0, PF, AF, ZF, SF, DF, OF, C0, C1, C2, C3, end } code;
-      
+
       char const* c_str() const
       {
         switch (code)
@@ -500,7 +500,7 @@ namespace review
     };
 
     Expr                        flagvalues[FLAG::end];
-    
+
     bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
     void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
@@ -537,11 +537,11 @@ namespace review
     enum ipproc_t { ipjmp, ipcall, ipret };
     Expr                        next_insn_addr;
     ipproc_t                    next_insn_mode;
-    
+
     addr_t                      getnip() { return addr_t(next_insn_addr); }
     void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp ) { throw Untestable("has jump"); }
 
-    
+
     template <class T>
     struct SPRRead : public unisim::util::symbolic::ExprNode
     {
@@ -555,7 +555,7 @@ namespace review
 
     struct RIP { static ScalarType::id_t const scalar_type = ScalarType::U64; static char const* name() { return "RIP"; } };
 
-    struct RIPRead : public SPRRead<RIP> 
+    struct RIPRead : public SPRRead<RIP>
     {
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
       virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
@@ -565,7 +565,7 @@ namespace review
         return 0;
       }
     };
-    
+
     struct RIPWrite : public RegWriteBase
     {
       RIPWrite( Expr const& _value, ipproc_t _hint ) : RegWriteBase( _value ), hint(_hint) {}
@@ -575,7 +575,7 @@ namespace review
       int compare( RIPWrite const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return int(hint) - int(rhs.hint); }
       ipproc_t hint;
     };
-    
+
     void                        fnanchk( f64_t value ) {};
 
     int                         fcwreadRC() const { return 0; }
@@ -601,7 +601,7 @@ namespace review
         if (int delta = int(bytes) - int(rhs.bytes)) return delta;
         return int(segment) - int(rhs.segment);
       }
-      
+
       Expr addr;
       uint8_t bytes, segment;
     };
@@ -614,7 +614,7 @@ namespace review
       virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<dstT>::GetType(); }
     };
-    
+
     // struct FRegWrite : public Update
     // {
     //   FRegWrite( unsigned _idx, Expr const& _value )
@@ -647,14 +647,14 @@ namespace review
         if (int delta = int(bytes) - int(rhs.bytes)) return delta;
         return int(segment) - int(rhs.segment);
       }
-      
+
       Expr addr;
       Expr value;
       uint8_t bytes, segment;
     };
 
     std::set<Expr> stores;
-    
+
     template <typename dstT> Expr PerformLoad( dstT const&, unsigned bytes, unsigned segment, addr_t const& addr )
     {
       interface.memaccess( addr.expr, false );
@@ -681,7 +681,7 @@ namespace review
     {
       PerformStore( OPSIZE/8, seg, addr, val.expr );
     }
-    
+
     struct FTop : public unisim::util::symbolic::ExprNode
     {
       virtual FTop* Mutate() const { return new FTop(*this); }
@@ -703,27 +703,27 @@ namespace review
 
     Expr&                       fpaccess(unsigned r, bool w);
     bool                        fpdiff(unsigned r);
-    
+
     Expr                        fpregs[8];
     void                        fpush( f64_t value ) { ftop = (ftop+8-1) % 8; fpaccess(ftop,true) = value.expr; }
     void                        fwrite( unsigned idx, f64_t value ) { fpaccess((ftop + idx) % 8,true) = value.expr; }
     f64_t                       fpop() { f64_t res( fpaccess(ftop,false) ); ftop = (ftop+1) % 8; return res; }
     f64_t                       fread( unsigned idx ) { return f64_t(fpaccess((ftop + idx) % 8,false)); }
-    
+
     void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { PerformStore(  4, seg, addr, val.expr ); }
     void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { PerformStore(  8, seg, addr, val.expr ); }
     void                        fmemwrite80( unsigned seg, addr_t const& addr, f80_t val ) { PerformStore( 10, seg, addr, val.expr ); }
-    
+
     f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { return f32_t( PerformLoad( (float)0,        4, seg, addr ) ); }
     f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { return f64_t( PerformLoad( (double)0,       8, seg, addr ) ); }
     f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { return f80_t( PerformLoad( (long double)0, 10, seg, addr ) ); }
- 
+
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     regread( unsigned idx )
     {
       typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-      
+
       if (OPSIZE==8)                    return u_type( eregread( idx%4, 1, (idx>>2) & 1 ) );
       if ((OPSIZE==16) or (OPSIZE==32)) return u_type( eregread( idx, OPSIZE/8, 0 ) );
       throw 0;
@@ -738,7 +738,7 @@ namespace review
       if ((OPSIZE==16) or (OPSIZE==32)) return eregwrite( idx, OPSIZE/8, 0, value.expr );
       throw 0;
     }
-    
+
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     pop()
@@ -761,7 +761,7 @@ namespace review
 
     void shrink_stack( addr_t const& offset ) { regwrite( GR(), 4, regread( GR(), 4 ) + offset ); }
     void grow_stack( addr_t const& offset ) { regwrite( GR(), 4, regread( GR(), 4 ) - offset ); }
-    
+
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u
     rmread( GOP const& g, RMOp const& rmop )
@@ -799,14 +799,14 @@ namespace review
       if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
       return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
-    
+
     template <unsigned OPSIZE>
     void
     fpmemwrite( unsigned seg, addr_t const& addr, typename TypeFor<Arch,OPSIZE>::f const& value )
     {
       PerformStore( OPSIZE/8, seg, addr, value.expr );
     }
-    
+
     template <unsigned OPSIZE>
     void
     frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f const& value )
@@ -822,14 +822,14 @@ namespace review
     //   virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
     //   virtual unsigned SubCount() const override { return 0; }
     // };
-    
+
     // struct MXCSRWrite : public RegWriteBase
     // {
     //   MXCSRWrite( Expr const& _value ) : RegWriteBase( _value ) {}
     //   virtual MXCSRWrite* Mutate() const override { return new MXCSRWrite( *this ); }
     //   virtual char const* GetRegName() const override { return "mxcsr"; }
     // };
-    
+
     u32_t mxcsread() { throw Untestable("mxcsr access"); return u32_t(); };
     void mxcswrite( u32_t const& value ) { throw Untestable("mxcsr access"); }
 
@@ -851,12 +851,12 @@ namespace review
     //   Expr value;
     //   unsigned idx;
     // };
-    
+
     struct VmmBrick { char _[sizeof(u8_t)]; };
     typedef unisim::component::cxx::vector::VUnion<VUConfig> VUnion;
     VUnion umms[VUConfig::REGCOUNT];
     VmmBrick vmm_storage[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
-    
+
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
 
@@ -895,7 +895,7 @@ namespace review
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return ELEM(Expr(new VmmIndirectRead<VR, ELEM>( elems, sub.expr )));
     }
-    
+
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
@@ -903,7 +903,7 @@ namespace review
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return elems[sub];
     }
-    
+
     template <class VR, class ELEM>
     void vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
@@ -911,7 +911,7 @@ namespace review
       ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
       elems[sub] = e;
     }
-    
+
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
@@ -925,29 +925,29 @@ namespace review
       if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
       return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
     }
-    
+
     // Integer case
     template <class ELEM> ELEM vmm_memread( unsigned seg, addr_t addr, ELEM const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,ELEM> atpinfo;
       return ELEM(memread<atpinfo::bitsize>(seg,addr));
     }
-  
+
     f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
     f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
     f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
-  
+
     // Integer case
     template <class ELEM> void vmm_memwrite( unsigned seg, addr_t addr, ELEM const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,ELEM> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
-  
+
     void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
-    
+
     // template<unsigned OPSIZE>
     // typename TypeFor<Arch,OPSIZE>::u
     // xmm_uread( unsigned reg, unsigned sub )
@@ -978,7 +978,7 @@ namespace review
     //   if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
     //   return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
     // }
-    
+
     // template <unsigned OPSIZE>
     // typename TypeFor<Arch,OPSIZE>::f
     // xmm_fread( unsigned reg, unsigned sub )
@@ -986,7 +986,7 @@ namespace review
     //   throw 0;
     //   return typename TypeFor<Arch,OPSIZE>::f( 0 );
     // }
-    
+
     // template <unsigned OPSIZE>
     // void
     // xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
@@ -1001,7 +1001,7 @@ namespace review
     //   if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
     //   return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
     // }
-    
+
     // template <unsigned OPSIZE>
     // void
     // xmm_fwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
@@ -1017,9 +1017,9 @@ namespace review
     void    xgetbv()                      { throw Untestable("hardware"); }
     void    stop()                        { throw Untestable("hardware"); }
     void    _DE()                         { throw Untestable("system"); }
-    
+
     // bool Test( bit_t b ) { return false; }
-      
+
     template <typename T>
     bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
     {
@@ -1027,7 +1027,7 @@ namespace review
       return concretize(bit_t(cond).expr);
     }
     bool concretize(Expr cond);
-    
+
     void
     step( Operation const& op )
     {
@@ -1040,24 +1040,24 @@ namespace review
     // uint8_t                            length;
     // bool                               retfalse;
 
-  
+
     // struct Prologue
     // {
     //   struct Error {};
-      
+
     //   typedef std::map<unsigned,uint32_t> Regs;
     //   Prologue( Regs const& _regs, uint32_t _offset, bool _sign, uint8_t _base )
     //     : regs( _regs ), offset( _offset ), sign( _sign ), base( _base )
     //   {}
     //   Regs regs; uint32_t offset; bool sign; uint8_t base;
     // };
-    
+
     // Prologue GetPrologue() const;
-    
+
     // void PCRelPrologue( Prologue const& pc ) const;
-    
+
   };
-  
+
   template <unsigned SUBCOUNT, class OP>
   struct WeirdOpBase : public unisim::util::symbolic::ExprNode
   {
@@ -1077,7 +1077,7 @@ namespace review
     virtual Expr const& GetSub(unsigned idx) const override { if (idx >= SUBCOUNT) return ExprNode::GetSub(idx); return subs[idx]; }
     virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<WeirdOpBase const&>( brhs )); }
     int compare( this_type const& rhs ) const { return strcmp( op, rhs.op ); }
-    
+
     OP op;
     Expr subs[SUBCOUNT];
   };
@@ -1087,7 +1087,7 @@ namespace review
   {
     typedef WeirdOpBase<SUBCOUNT,OP> base_type;
     typedef WeirdOp<T,SUBCOUNT,OP>   this_type;
-    
+
     WeirdOp( OP && name ) : base_type(std::move(name)) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual typename base_type::ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType(); }
@@ -1101,7 +1101,7 @@ namespace review
     x->subs[0] = op1.expr;
     return x;
   }
-  
+
   template <class OUT, class OP, class T1, class T2>
   unisim::util::symbolic::Expr
   make_weirdop( OP && op, T1 const& op1, T2 const& op2 )
@@ -1111,7 +1111,7 @@ namespace review
     x->subs[1] = op2.expr;
     return x;
   }
-  
+
   template <class OUT, class OP, class T1, class T2, class T3>
   unisim::util::symbolic::Expr
   make_weirdop( OP && op, T1 const& op1, T2 const& op2, T3 const& op3 )
@@ -1122,12 +1122,12 @@ namespace review
     x->subs[2] = op3.expr;
     return x;
   }
-  
+
   template <class ARCH, typename INT>
   void eval_div64( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
     if (arch.Test(divisor == INT(0))) arch._DE();
-    
+
     INT nlo = make_weirdop<INT>("div.lo",hi,lo,divisor);
     INT nhi = make_weirdop<INT>("div.hi",hi,lo,divisor);
     lo = nlo;
@@ -1138,22 +1138,22 @@ namespace review
   void eval_mul64( ARCH& arch, INT& hi, INT& lo, INT const& multiplier )
   {
     typedef typename ARCH::bit_t bit_t;
-    
+
     INT   nlo = make_weirdop<INT>("mul.lo",lo,multiplier);
     INT   nhi = make_weirdop<INT>("mul.hi",lo,multiplier);
     lo = nlo;
     hi = nhi;
-    
+
     bit_t ovf = make_weirdop<bit_t>("mul.of",nlo,nhi);
     arch.flagwrite( ARCH::FLAG::OF, ovf );
     arch.flagwrite( ARCH::FLAG::CF, ovf );
   }
-  
+
   inline void eval_div( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
   inline void eval_div( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
   inline void eval_mul( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
   inline void eval_mul( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
-  
+
   inline Arch::f64_t eval_fprem ( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem", dividend, modulus); }
   inline Arch::f64_t eval_fprem1( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem1", dividend, modulus); }
 
