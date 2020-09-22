@@ -394,9 +394,9 @@ namespace review
     , fregs()
     , vregs()
     , behavior(std::make_shared<unisim::util::sav::ActionNode>())
+    , addrs()
     , base_addr()
-    , relocs()
-    , has_write(false)
+    , addressings()
   {
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
@@ -424,75 +424,11 @@ namespace review
     
     if (addrs.size())
       {
-        uint64_t span = (*addrs.rbegin() - *addrs.begin());
-        if (span > uint64_t(1024))
-          {
-            //std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
-            throw unisim::util::sav::Untestable("spread out memory accesses");
-          }
-        typedef decltype(this->relocs) Relocs;
-        
-        struct AG
-        {
-          typedef unisim::util::symbolic::Expr Expr;
+        if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
+          throw unisim::util::sav::Untestable("spread out memory accesses");
 
-          void check(Expr const& front)
-          {
-            if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(front.node))
-              {
-                /* Permanently invalidate relocation */
-                relocs[vr->reg] = Expr();
-                return;
-              }
-            for (unsigned idx = 0, end = front->SubCount(); idx < end; ++idx)
-              check( front->GetSub(idx) );
-          }
-      
-          void process (Expr const& front, Expr const& back)
-          {
-            if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(front.node))
-              {
-                unsigned target = vr->reg;
-                auto itr = relocs.lower_bound(target);
-                if (itr == relocs.end() or itr->first > target)
-                  relocs.emplace_hint(itr, Relocs::value_type( target, back ));
-                else
-                  itr->second = Expr();
-              }
-            else if (unisim::util::symbolic::OpNodeBase const* onb = front->AsOpNode())
-              {
-                if      (onb->op.code == onb->op.Add)
-                  {
-                    process( front->GetSub(0), make_operation( "Sub", back, front->GetSub(1) ) );
-                    process( front->GetSub(1), make_operation( "Sub", back, front->GetSub(0) ) );
-                  }
-                else if (onb->op.code == onb->op.Sub)
-                  {
-                    process( front->GetSub(0), make_operation( "Add", back, front->GetSub(1) ) );
-                    process( front->GetSub(1), make_operation( "Sub", front->GetSub(0), back ) );
-                  }
-                else
-                  check( front );
-              }
-            else
-              check( front );
-          }
-          
-          AG(Relocs& _relocs) : relocs(_relocs) {} Relocs& relocs;
-        } ag(relocs);
-        
-        ag.process( base_addr, new ExpectedAddress() );
-        
-        // Remove the invalid relocations
-        for (Relocs::iterator itr = relocs.begin(), end = relocs.end(); itr != end;)
-          {
-            if (itr->second.good()) ++itr; else itr = relocs.erase(itr);
-          }
-        
-        if (relocs.size() == 0)
-          {
-            throw unisim::util::sav::Untestable("malformed address");
-          }
+        if (not addressings.solve<review::Arch::GRegRead>(base_addr, new ExpectedAddress()))
+          throw unisim::util::sav::Untestable("malformed address");
       }
 
     behavior->simplify();
@@ -635,7 +571,7 @@ namespace review
   }
 
   uintptr_t
-  Interface::workquads() const
+  Interface::workcells() const
   {
     uintptr_t offset = 0;
     offset += 8;
@@ -680,9 +616,9 @@ namespace review
           if (dynamic_cast<unisim::util::symbolic::ConstNodeBase const*>(a.node))
             return 0;
           
-          if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(a.node))
+          if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
             {
-              if (int delta = avi[vr->idx] - bvi[dynamic_cast<Arch::VirtualRegister const&>(*b.node).idx])
+              if (int delta = avi[vr->idx] - bvi[dynamic_cast<unisim::util::sav::VirtualRegister const&>(*b.node).idx])
                 return delta;
             }
          else if (int delta = a.node->cmp( *b.node ))
@@ -708,21 +644,15 @@ namespace review
   void
   Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
   {
-    has_write |= is_write;
-
     uint64_t zaddr;
     if (auto z = addr.Eval( Arch::AddrEval() ))
       { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
     else
       throw "WTF";
     addrs.insert(zaddr);
+
     if (zaddr == *addrs.begin())
       base_addr = addr;
-    
-    static std::ofstream sink( "addresses.txt" );
-    static std::set<unisim::util::symbolic::Expr,AddrLess> addrs;
-    if (addrs.insert(addr).second)
-      sink << addr << std::endl;
   }
   
   bool AMD64::MemCode::get(std::istream& source)

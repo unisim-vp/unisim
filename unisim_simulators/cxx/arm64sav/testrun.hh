@@ -45,122 +45,6 @@
 
 namespace test
 {
-  struct Random : public unisim::util::random::Random
-  {
-    Random() : unisim::util::random::Random(0,0,0,0) {}
-    uint32_t generate32() { return Generate(); }
-    uint64_t generate64() { return (uint64_t(generate32()) << 32) | generate32(); }
-    uint64_t operand()
-    {
-      int64_t flips = int64_t(generate32()) << 48;
-      uint64_t value = 0;
-      for (int idx = 0; idx < 6; ++idx)
-        {
-          value |= generate64();
-          value ^= flips >> 63;
-          flips <<= 1;
-        }
-      return value;
-    }
-  };
-
-  struct TestbedBase
-  {
-    TestbedBase( char const* seed, uint64_t* elems, uintptr_t count );
-
-    void serial( std::ostream& sink, uint64_t* elems, uintptr_t count ) const;
-
-    Random rng;
-    uintptr_t counter;
-  };
-  
-  template <uintptr_t COUNT>
-  struct Testbed : public TestbedBase
-  {
-    Testbed( char const* seed ) : TestbedBase( seed, &buffer[0], COUNT ) {}
-    
-    void serial( std::ostream& sink ) { TestbedBase::serial( sink, &buffer[0], COUNT ); }
-      
-    uintptr_t head(uintptr_t idx=0) const { return (counter+idx) % COUNT; }
-    
-    void next()
-    {
-      buffer[head()] = rng.operand();
-      counter += 1;
-    }
-    template <typename T> typename T::value_type const& select( T const& tests ) { return tests[counter%tests.size()]; }
-    
-    uint64_t buffer[COUNT];
-    
-    void load( uint64_t* ws, unsigned size ) const
-    {
-      if (size >= COUNT) throw 0;
-      unsigned rnd_idx = head();
-      for (unsigned idx = 0; idx < size; ++idx)
-        {
-          ws[idx] = buffer[rnd_idx];
-          rnd_idx = (rnd_idx + 1) % COUNT;
-        }
-    }
-
-    //   bool check( Workspace& ref, Workspace& sim, Arch& arch, fut_t const& fut ) const
-    //   {
-    //     for (unsigned idx = 0; idx < (ref.wordcount-1); ++idx)
-    //       {
-    //         if (ref.data[idx] != sim.data[idx])
-    //           {
-    //             Workspace src;
-    //             load( src );
-    //             return error(idx, src, ref, sim, arch, fut), false;
-    //           }
-    //       }
-    //     return true;
-    //   }
-
-    //   template <uintptr_t N>
-    //   fut_t const& select( fut_t const (&tests)[N] ) const
-    //   {
-    //     return tests[counter%N];
-    //   }
-    
-    // private:
-    // Workspace rnd;
-    // uint64_t counter;
-  
-    // void error( unsigned field, Workspace const& src, Workspace const& ref, Workspace const& sim, Arch& arch, fut_t const& fut ) const
-    // {
-    //   std::cerr << "id: ";
-    //   serial( std::cerr );
-    //   std::cerr << "\n";
-    //   std::cerr << "op: ";
-    //   uint64_t addr = 0;
-    //   for (unsigned idx = 1; idx < 32; ++idx)
-    //     {
-    //       uint32_t* insn = &((uint32_t*)fut.test)[idx];
-    //       if (*insn == fut.insn)
-    //         { addr = (uint64_t)(insn); break; }
-    //     }
-    //   if (not addr) { std::cerr << "<mimic>"; addr = (uint64_t)&fut.insn; }
-    //   arch.DumpInsnInfo( std::cerr, addr );
-    //   std::cerr << std::endl;
-
-    //   for (unsigned idx = 0; idx < src.wordcount; ++idx)
-    //     {
-    //       std::cerr << std::setw(2)  << std::setfill(' ') << std::dec << idx << ": ";
-    //       std::cerr << std::setw(16) << std::setfill(' ') << std::hex << src.data[idx] << " | ";
-    //       char const* sym = (ref.data[idx] == sim.data[idx]) ? " = " : " ~ ";
-    //       std::cerr << std::setw(16) << std::setfill(' ') << std::hex << ref.data[idx] << sym;
-    //       sym = (idx == field) ? " <== " : "     ";
-    //       std::cerr << std::setw(16) << std::setfill(' ') << std::hex << sim.data[idx];
-    //       std::cerr << " (" << FPoint(ref.data[idx]) << ")\n";
-    //       if (idx != field) continue;
-    //       std::cerr << "ref:    " << Hexa(ref.data[idx]) << std::endl;
-    //       std::cerr << "sim:    " << Hexa(sim.data[idx]) << std::endl;
-    //     }
-    // }
-  };
-  
-
   struct Arch
   {
     typedef uint8_t      U8;
@@ -176,24 +60,24 @@ namespace test
     typedef double       F64;
 
     typedef Arch DisasmState;
-    
+
     static unsigned const VECTORCOUNT = 32;
-    
+
     struct VUConfig
     {
       static unsigned const BYTECOUNT = 16;
       template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
       typedef U8 Byte;
     };
-    
+
     typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Arch> Decoder;
     typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Arch> Operation;
     typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
-    
+
     void step_instruction();
     void run(review::Interface::testcode_t testcode, uint64_t* data);
     static void dont(char const*);
-  
+
     void UndefinedInstruction( Operation const* insn );
     void UndefinedInstruction() { dont("undefined"); }
 
@@ -264,7 +148,7 @@ namespace test
     }
 
     void SetNZCV( uint32_t n, uint32_t z, uint32_t c, uint32_t v ) { nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0); }
-    
+
     uint8_t GetNZCV() const { return nzcv; }
     uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
 
@@ -277,7 +161,7 @@ namespace test
 
     void CallSupervisor( uint32_t imm ) { dont("system"); }
     void CallHypervisor( uint32_t imm ) { dont("system"); }
-    
+
     template <typename T> T MemReadT(U64 addr) { return *reinterpret_cast<T const*>(addr); }
     U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
     U32 MemRead32(U64 addr) { return MemReadT<uint32_t>(addr); }
@@ -289,19 +173,19 @@ namespace test
     void MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }
     void MemWrite16(U64 addr, U16 val) { MemWriteT(addr, val); }
     void MemWrite8 (U64 addr, U8  val) { MemWriteT(addr, val); }
-    
+
     void     SetExclusiveMonitors( U64 addr, unsigned size ) { dont("mp"); }
     bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { dont("mp"); return false; }
     void     ClearExclusiveLocal() { dont("mp"); }
     void     PrefetchMemory( int, U64 ) { dont("prefetch"); }
-    
+
     Decoder    decoder;
     Operation* current_instruction;
 
     U64   gpr[32];
     uint32_t   nzcv;
     U64   current_insn_addr, next_insn_addr;
-    
+
     VectorView vector_views[VECTORCOUNT];
     uint8_t    vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
   };

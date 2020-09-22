@@ -36,6 +36,8 @@
 #define __UNISIM_UTIL_SAV_SAV_HH__
 
 #include <unisim/util/symbolic/symbolic.hh>
+#include <unisim/util/random/random.hh>
+#include <map>
 #include <set>
 #include <inttypes.h>
 
@@ -147,6 +149,166 @@ namespace sav {
     Op omap[COUNT];
     T allocated;
   };
+
+  struct VirtualRegister
+  {
+    VirtualRegister( unsigned _reg,  unsigned _idx ) : reg(_reg), idx(_idx) {} unsigned reg, idx;
+    int compare(VirtualRegister const& rhs) const
+    {
+      if (int delta = int(idx) - int(rhs.idx)) return delta;
+      return int(reg) - int(rhs.reg);
+    }
+  };
+  
+  struct Addressings
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef std::map<Expr,Expr> Solutions;
+
+    Addressings() {}
+    
+    template <class AddrSource>
+    bool solve( Expr const& base_addr, Expr const& expected_address )
+    {
+      struct AG
+      {
+        typedef unisim::util::symbolic::Expr Expr;
+
+        void check(Expr const& front)
+        {
+          if (dynamic_cast<AddrSource const*>(front.node))
+            {
+              /* Permanently invalidate solutions */
+              solutions[front] = Expr();
+              return;
+            }
+          for (unsigned idx = 0, end = front->SubCount(); idx < end; ++idx)
+            check( front->GetSub(idx) );
+        }
+      
+        void process (Expr const& front, Expr const& back)
+        {
+          if (dynamic_cast<AddrSource const*>(front.node))
+            {
+              /* We found a potential source. Associate it with its equation. */
+              auto itr = solutions.lower_bound(front);
+              if (itr == solutions.end() or itr->first > front)
+                solutions.emplace_hint(itr, Solutions::value_type( front, back ));
+              else /* Register appears multiple time in address generation. No can do. */
+                itr->second = Expr();
+            }
+          else if (unisim::util::symbolic::OpNodeBase const* onb = front->AsOpNode())
+            {
+              if      (onb->op.code == onb->op.Add)
+                {
+                  process( front->GetSub(0), make_operation( "Sub", back, front->GetSub(1) ) );
+                  process( front->GetSub(1), make_operation( "Sub", back, front->GetSub(0) ) );
+                }
+              else if (onb->op.code == onb->op.Sub)
+                {
+                  process( front->GetSub(0), make_operation( "Add", back, front->GetSub(1) ) );
+                  process( front->GetSub(1), make_operation( "Sub", front->GetSub(0), back ) );
+                }
+              else
+                check( front );
+            }
+          else
+            check( front );
+        }
+          
+        AG(Solutions& _solutions) : solutions(_solutions) {} Solutions& solutions;
+      } ag(solutions);
+        
+      ag.process( base_addr, expected_address );
+        
+      // Remove the invalid solutions
+      for (Solutions::iterator itr = solutions.begin(), end = solutions.end(); itr != end;)
+        {
+          if (itr->second.good()) ++itr; else itr = solutions.erase(itr);
+        }
+
+      return solutions.size() != 0;
+    }
+    
+    Solutions solutions;
+  };
+
+  template <typename T> struct opcfg {};
+  template <> struct opcfg<uint32_t> { typedef int32_t flips_t; enum { logsize=5 }; };
+  template <> struct opcfg<uint64_t> { typedef int64_t flips_t; enum { logsize=6 }; };
+
+  struct Random : public unisim::util::random::Random
+  {
+    Random() : unisim::util::random::Random(0,0,0,0) {}
+    //uint32_t generate32() { return Generate(); }
+    //    uint64_t generate64() { return (uint64_t(generate32()) << 32) | generate32(); }
+    template <typename T>
+    T generate()
+    {
+      T value = 0;
+      for (unsigned idx = sizeof (T) / sizeof (uint32_t); idx > 0; --idx)
+        value = value << 32 | uint32_t(Generate());
+      return value;
+    }
+    template <typename UOP>
+    UOP operand()
+    {
+      typedef typename opcfg<UOP>::flips_t flips_t;
+      enum { logsize = opcfg<UOP>::logsize, flipshift = (1<<logsize) - 1 };
+      
+      flips_t flips = generate<UOP>();
+      UOP value = 0;
+      for (int idx = 0; idx < logsize; ++idx)
+        {
+          value |= generate<UOP>();
+          value ^= flips >> flipshift;
+          flips <<= 1;
+        }
+      return value;
+    }
+  };
+
+  struct TestbedBase
+  {
+    TestbedBase( char const* seed, uint64_t* elems, uintptr_t count );
+
+    void serial( std::ostream& sink, uint64_t* elems, uintptr_t count ) const;
+
+    Random rng;
+    uintptr_t counter;
+  };
+
+  template <typename CELL, uintptr_t COUNT>
+  struct Testbed : public TestbedBase
+  {
+    typedef CELL cell_t;
+    Testbed( char const* seed ) : TestbedBase( seed, &buffer[0], COUNT ) {}
+
+    void serial( std::ostream& sink ) { TestbedBase::serial( sink, &buffer[0], COUNT ); }
+
+    uintptr_t head(uintptr_t idx=0) const { return (counter+idx) % COUNT; }
+
+    void next()
+    {
+      buffer[head()] = rng.operand<cell_t>();
+      counter += 1;
+    }
+    template <typename T> typename T::value_type const& select( T const& tests ) { return tests[counter%tests.size()]; }
+
+    cell_t buffer[COUNT];
+
+    void load( cell_t* ws, unsigned size ) const
+    {
+      if (size >= COUNT) throw 0;
+      unsigned rnd_idx = head();
+      for (unsigned idx = 0; idx < size; ++idx)
+        {
+          ws[idx] = buffer[rnd_idx];
+          rnd_idx = (rnd_idx + 1) % COUNT;
+        }
+    }
+  };
+
 
 } /* end of namespace sav */
 } /* end of namespace util */

@@ -94,9 +94,9 @@ struct Checker
               if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
                 return delta;
             }
-          else if (auto vr = dynamic_cast<review::Arch::VirtualRegister const*>(a.node))
+          else if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
             {
-              unsigned ai = vr->idx, bi = dynamic_cast<review::Arch::VirtualRegister const&>(*b.node).idx;
+              unsigned ai = vr->idx, bi = dynamic_cast<unisim::util::sav::VirtualRegister const&>(*b.node).idx;
               if (int delta = int(ai) - int(bi))
                 return delta;
             }
@@ -272,7 +272,7 @@ struct Checker
   void run_tests(char const* seed)
   {
     /* First pass; computing memory requirements */
-    uintptr_t textsize, workquads = 0;
+    uintptr_t textsize, workcells = 0;
     {
       struct Text : public review::Interface::Text
       {
@@ -283,7 +283,7 @@ struct Checker
       
       for (review::Interface const& test : testdb)
         {
-          workquads = std::max( workquads, test.workquads() * (test.relocs.size() ? 3 : 2) );
+          workcells = std::max( workcells, test.workcells() * (test.usemem() ? 3 : 2) );
           text.process( test );
         }
       
@@ -302,18 +302,21 @@ struct Checker
       void* p; uintptr_t sz;
     } textzone(textsize);
 
-    typedef test::Testbed<4096> Testbed;
+    typedef unisim::util::sav::Testbed<uint64_t,4096> Testbed;
 
     /* Organize test data */
     struct Test
     {
       typedef review::Interface::testcode_t testcode_t;
+      typedef unisim::util::symbolic::Expr Expr;
       
       Test(review::Interface const* _test, testcode_t _code)
-        : disasm(_test->asmcode), code(_code), relval(), relreg(), workquads(_test->workquads())
+        : disasm(_test->asmcode), code(_code), relval(), relreg(), workcells(_test->workcells())
       {}
-      Test(review::Interface const* _test, testcode_t _code, unsigned _relreg, unisim::util::symbolic::Expr const& _relval)
-        : disasm(_test->asmcode), code(_code), relval(_relval), relreg(_test->gregs.index(_relreg)), workquads(_test->workquads())
+      Test(review::Interface const* _test, testcode_t _code, Expr const& _relreg, Expr const& _relval)
+        : disasm(_test->asmcode), code(_code), relval(_relval),
+          relreg(dynamic_cast<review::Arch::GRegRead const*>(_relreg.node)->idx),
+          workcells(_test->workcells())
       {}
       uint64_t get_reloc(uint64_t const* ws) const
       {
@@ -334,11 +337,11 @@ struct Checker
       }
       void load(uint64_t* ws, Testbed const& testbed) const
       {
-        testbed.load(ws, relval.good() ? 2*workquads : workquads );
+        testbed.load(ws, relval.good() ? 2*workcells : workcells );
       }
       void check(Testbed const& tb, uint64_t* ref, uint64_t* sim) const
       {
-        for (unsigned idx = 0, end = sink_index(workquads); idx < end; ++idx)
+        for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             if (ref[idx] != sim[idx])
               error(tb,ref,sim);
@@ -348,7 +351,7 @@ struct Checker
       {
         std::cerr << tb.counter << ": error in " << disasm << '\n';
         std::cerr << "ref | sim\n";
-        for (unsigned idx = 0, end = sink_index(workquads); idx < end; ++idx)
+        for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             uint64_t r = ref[idx], s = sim[idx];
             std::cerr << idx << ": " << std::hex << r;
@@ -374,13 +377,13 @@ struct Checker
       }
       
     private:
-      uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workquads : 0) + idx; }
-      uintptr_t sink_index( uintptr_t idx ) const { return workquads + data_index(idx); }
+      uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workcells : 0) + idx; }
+      uintptr_t sink_index( uintptr_t idx ) const { return workcells + data_index(idx); }
       
       std::string const& disasm;
       review::Interface::testcode_t code;
       Expr relval;
-      unsigned relreg, workquads;
+      unsigned relreg, workcells;
     };
 
     std::vector<Test> tests;
@@ -408,9 +411,9 @@ struct Checker
         textsize = (textsize + text.size + 7) & -8;
 
         /* Fill out test data */
-        if (test.base_addr.good())
-          for (auto const& reloc : test.relocs)
-            tests.push_back( Test(&test, text.code(), reloc.first, reloc.second) );
+        if (test.usemem())
+          for (auto const& solution : test.addressings.solutions)
+            tests.push_back( Test(&test, text.code(), solution.first, solution.second) );
         else
           tests.push_back( Test(&test, text.code()) );
 
@@ -421,7 +424,7 @@ struct Checker
 
     test::Arch arm64;
     
-    std::vector<uint64_t> reference(workquads), workspace(workquads);
+    std::vector<uint64_t> reference(workcells), workspace(workcells);
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);

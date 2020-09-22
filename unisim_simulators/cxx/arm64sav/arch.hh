@@ -57,27 +57,25 @@ namespace review
   struct Interface
   {
     typedef unisim::util::symbolic::Expr Expr;
+    typedef void (*testcode_t)(uint64_t*);
+    struct Text { virtual void write(uint32_t) = 0; virtual ~Text() {} };
 
     Interface( Operation const& op, uint32_t code, std::string const& disasm );
 
     void memaccess( Expr const& addr, bool iswrite );
-    uintptr_t workquads() const;
+    uintptr_t workcells() const;
+    void gencode(Text& text) const;
+    bool usemem() const { return addrs.size(); }
 
     uint32_t memcode;
     std::string asmcode;
     unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
     unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
     std::shared_ptr<unisim::util::sav::ActionNode> behavior;
-    struct RelCmp { bool operator () (uint64_t l, uint64_t r) const { return int64_t(l - r) < 0; } };
+    struct RelCmp { bool operator () (uint64_t l, uint64_t r) const { return int64_t(l-r) < 0; } };
     std::set<uint64_t,RelCmp> addrs;
     Expr base_addr;
-    std::map<unsigned,Expr> relocs;
-    bool has_write;
-    struct Text { virtual void write(uint32_t) = 0; virtual ~Text() {} };
-    void gencode(Text& text) const;
-    //  std::vector<uint8_t> text;
-    typedef void (*testcode_t)(uint64_t*);
-    //  testcode_t testcode() const { return testcode_t(&text[0]); }
+    unisim::util::sav::Addressings addressings;
   };
 
   struct NeonRegister
@@ -154,18 +152,9 @@ namespace review
     template <typename RID>
     Expr newRegRead( RID _id ) { return new RegRead<RID>(_id); }
 
-    struct VirtualRegister
+    struct VRReadBase : public unisim::util::sav::VirtualRegister, public ExprNode
     {
-      VirtualRegister( unsigned _reg,  unsigned _idx ) : reg(_reg), idx(_idx) {} unsigned reg, idx;
-      int compare(VirtualRegister const& rhs) const
-      {
-        if (int delta = int(idx) - int(rhs.idx)) return delta;
-        return int(reg) - int(rhs.reg);
-      }
-    };
-
-    struct VRReadBase : public VirtualRegister, public ExprNode
-    {
+      typedef unisim::util::sav::VirtualRegister VirtualRegister;
       VRReadBase( unsigned reg,  unsigned idx ) : VirtualRegister(reg, idx), ExprNode() {}
       virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
       virtual unsigned SubCount() const override { return 0; }
@@ -181,8 +170,9 @@ namespace review
       virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
     };
 
-    struct VRWriteBase : public VirtualRegister, public Update
+    struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
     {
+      typedef unisim::util::sav::VirtualRegister VirtualRegister;
       VRWriteBase( unsigned reg, unsigned idx, Expr const& _val ) : VirtualRegister(reg, idx), Update(), val(_val) {}
       virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
       virtual unsigned SubCount() const override { return 1; }
@@ -296,6 +286,7 @@ namespace review
     struct VectorBrick { char _[sizeof(U8)]; };
 
     struct AddrEval : public EvalSpace {};
+  
     struct RelocEval : public EvalSpace
     {
       RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}

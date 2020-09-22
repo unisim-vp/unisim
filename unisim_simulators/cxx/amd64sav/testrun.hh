@@ -47,67 +47,7 @@
 namespace test
 {
   template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
-  
-  struct Random : public unisim::util::random::Random
-  {
-    Random() : unisim::util::random::Random(0,0,0,0) {}
-    uint32_t generate32() { return Generate(); }
-    uint64_t generate64() { return (uint64_t(generate32()) << 32) | generate32(); }
-    uint64_t operand()
-    {
-      int64_t flips = int64_t(generate32()) << 48;
-      uint64_t value = 0;
-      for (int idx = 0; idx < 5; ++idx)
-        {
-          value |= generate64();
-          value ^= flips >> 63;
-          flips <<= 1;
-        }
-      return value;
-    }
-  };
 
-  struct TestbedBase
-  {
-    TestbedBase( char const* seed, uint64_t* elems, uintptr_t count );
-
-    void serial( std::ostream& sink, uint64_t* elems, uintptr_t count ) const;
-
-    Random rng;
-    uintptr_t counter;
-  };
-  
-  template <uintptr_t COUNT>
-  struct Testbed : public TestbedBase
-  {
-    Testbed( char const* seed ) : TestbedBase( seed, &buffer[0], COUNT ) {}
-    
-    void serial( std::ostream& sink ) { TestbedBase::serial( sink, &buffer[0], COUNT ); }
-      
-    uintptr_t head(uintptr_t idx=0) const { return (counter+idx) % COUNT; }
-    
-    void next()
-    {
-      buffer[head()] = rng.operand();
-      counter += 1;
-    }
-    template <typename T> typename T::value_type const& select( T const& tests ) { return tests[counter%tests.size()]; }
-    
-    uint64_t buffer[COUNT];
-    
-    void load( uint64_t* ws, unsigned size ) const
-    {
-      if (size >= COUNT) throw 0;
-      unsigned rnd_idx = head();
-      for (unsigned idx = 0; idx < size; ++idx)
-        {
-          ws[idx] = buffer[rnd_idx];
-          rnd_idx = (rnd_idx + 1) % COUNT;
-        }
-      
-    }
-  };
-  
   struct Arch
   {
     typedef uint8_t      u8_t;
@@ -138,7 +78,7 @@ namespace test
     typedef u64_t gr_type;
 
     void run(review::Interface::testcode_t testcode, uint64_t* data);
-  
+
     struct OpHeader
     {
       OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
@@ -158,19 +98,19 @@ namespace test
         //        , do_disasm(false)
         //        , instruction_count(0)
     {}
-    
+
     ~Arch() {}
-    
-  
+
+
     typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
-  
+
     // MEMORY STATE
     // Segment Registers
     void                        segregwrite( unsigned idx, uint16_t value );
     uint16_t                    segregread( unsigned idx );
 
     addr_t segbase( unsigned seg ) { if (seg >= 4) throw 0; return 0; }
-      
+
     template <unsigned OPSIZE>
     void
     memwrite( unsigned _seg, u64_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
@@ -190,7 +130,7 @@ namespace test
       value_type const* ptr = reinterpret_cast<value_type const*>(addr);
       return *ptr;
     }
-  
+
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     pop()
@@ -213,7 +153,7 @@ namespace test
       memwrite<OPSIZE>( unisim::component::cxx::processor::intel::SS, sptr, value );
       regwrite( GR(), 4, sptr );
     }
-  
+
     f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
@@ -236,7 +176,7 @@ namespace test
       uint64_t mantissa = 0;
       for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
       union IEEE754_t { double as_f; uint64_t as_u; } word;
-    
+
       if (exponent != 0x7fff) {
         if (exponent == 0) {
           if (mantissa == 0) return sign ? -0.0 : 0.0;
@@ -262,7 +202,7 @@ namespace test
           word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
         }
       }
-    
+
       else /* (exponent == 0x7fff) */ {
         if (mantissa >> 63) {
           /* IEEE 754 compatible */
@@ -274,7 +214,7 @@ namespace test
           word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
         }
       }
-    
+
       return word.as_f;
     }
 
@@ -341,7 +281,7 @@ namespace test
       for ( uintptr_t idx = 0; idx < 8; ++idx)
         buf[idx] = uint8_t( mantissa >> (idx*8) );
 
-        
+
       addr_t addr = _addr + segbase(_seg);
       memcpy(reinterpret_cast<uint8_t*>(addr), &buf[0], sizeof buf);
     }
@@ -355,7 +295,7 @@ namespace test
       if (OPSIZE==80) return fmemwrite80( seg, addr, value );
       throw 0;
     }
-  
+
     template <unsigned OPSIZE>
     void
     frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
@@ -383,7 +323,7 @@ namespace test
 
       return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
-  
+
     addr_t rip;
 
     enum ipproc_t { ipjmp = 0, ipcall, ipret };
@@ -393,9 +333,9 @@ namespace test
 
     void                        syscall();
     void                        interrupt( int op, int code );
-  
+
     uint64_t u64regs[16]; ///< extended reg
-      
+
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
     {
@@ -449,13 +389,13 @@ namespace test
     { return m_flags[flag]; }
     void                        flagwrite( FLAG::Code flag, bit_t fval )
     { m_flags[flag] = fval; }
-  
+
     // FLOATING POINT STATE
   protected:
     double                      m_fregs[8];
     unsigned                    m_ftop;
     uint16_t                    m_fcw;
-    
+
   public:
     void                        fnanchk( f64_t value ) {};
     unsigned                    ftopread() { return m_ftop; }
@@ -477,9 +417,9 @@ namespace test
       flagwrite( FLAG::C2, 0 );
       flagwrite( FLAG::C3, 0 );
     }
-    
+
     void      fxam();
-    
+
     u16_t
     fcwread()
     {
@@ -494,12 +434,12 @@ namespace test
       //               (0 << 10/*RC*/) |
       //               (0 << 12/*X*/) );
     }
-    
+
     void  fcwwrite( u16_t _value );
-      
+
     u64_t tscread();
-    
-  public: 
+
+  public:
     struct VUConfig
     {
       static unsigned const BYTECOUNT = 32;
@@ -508,7 +448,7 @@ namespace test
     };
 
     unisim::component::cxx::vector::VUnion<VUConfig> umms[16];
-  
+
     uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
     uint32_t mxcsr;
 
@@ -517,7 +457,7 @@ namespace test
 
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
-  
+
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
@@ -525,7 +465,7 @@ namespace test
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return elems[sub];
     }
-  
+
     template <class VR, class ELEM>
     void
     vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
@@ -541,18 +481,18 @@ namespace test
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       return TYPE(memread<atpinfo::bitsize>(seg,addr));
     }
-  
+
     f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
     f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
     f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
-  
+
     // Integer case
     template <class TYPE> void vmm_memwrite( unsigned seg, addr_t addr, TYPE const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
-  
+
     void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
@@ -564,7 +504,7 @@ namespace test
       if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
       return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
-    
+
     template <class VR, class ELEM>
     void
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
@@ -577,7 +517,7 @@ namespace test
     void cpuid();
     void _DE();
     void unimplemented();
-  
+
     typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
     Operation* latest_instruction;
     Operation* fetch();
@@ -596,7 +536,7 @@ namespace test
 
     template <typename T> UInt128 operator << (T lshift) const { UInt128 res(*this); res <<= lshift; return res; }
     template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
-  
+
     template <typename T>
     UInt128& operator <<= (T lshift)
     {
@@ -636,7 +576,7 @@ namespace test
       bits[1] = ~bits[1] + uint64_t(not bits[0]);
       return *this;
     }
-  
+
     explicit operator uint64_t () const { return bits[0]; }
     explicit operator bool () const { return bits[0] or bits[1]; }
 
@@ -649,7 +589,7 @@ namespace test
     SInt128( uint64_t value ) : UInt128( value, 0 ) {}
     SInt128( UInt128 const& value ) : UInt128( value ) {}
     template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
-  
+
     template <typename T>
     UInt128& operator >>= (T rshift)
     {
@@ -660,9 +600,9 @@ namespace test
       bits[1] = int64_t(bits[1]) >> rshift;
       return *this;
     }
-  
+
   };
-    
+
   void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
   void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor );
   void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
