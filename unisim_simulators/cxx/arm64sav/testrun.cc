@@ -86,4 +86,23 @@ namespace test
 
   void Arch::dont( char const* reason ) { throw std::runtime_error(reason); }
   
+  Arch::SysReg const*
+  Arch::GetSystemRegister(int op0, int op1, int crn, int crm, int op2)
+    {
+      // Need to support NZCV ^^
+      if (op0==3 and op1==3 and crn==4 and crm==2 and op2==0)
+        {
+          static struct : public SysReg {
+            void DisasmWrite(int, int, int, int, int, int rt, std::ostream& s) const override
+            { s << "msr\tNZCV, " << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt); }
+            void DisasmRead(int, int, int, int, int, int rt, std::ostream& s) const override
+            { s << "mrs\t" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << ", NZCV"; }
+            U64 Read(int, int, int, int, int, Arch& cpu) const override { return U32(cpu.nzcv << 28); }
+            void Write(int, int, int, int, int, Arch& cpu, U64 value) const override { cpu.nzcv = U32(value) >> 28; }
+          } x; return &x;
+        }
+      else
+        dont("system");
+      return 0;
+    }
 } /* end of namespace ut */

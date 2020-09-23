@@ -83,14 +83,15 @@ namespace test
 
     struct SysReg
     {
+      virtual ~SysReg() {}
+      virtual void Write(int, int, int, int, int, Arch&, U64) const = 0;
+      virtual U64 Read(int, int, int, int, int, Arch&) const = 0;
+      virtual void DisasmWrite(int, int, int, int, int, int, std::ostream&) const = 0;
+      virtual void DisasmRead(int, int, int, int, int, int, std::ostream&) const = 0;
       void dont() const { Arch::dont("system"); }
-      void Write(int, int, int, int, int, Arch&, U64) const { dont(); }
-      U64 Read(int, int, int, int, int, Arch&) const { dont(); return 0; }
-      void DisasmWrite(int, int, int, int, int, int, std::ostream&) const { dont(); }
-      void DisasmRead(int, int, int, int, int, int, std::ostream&) const { dont(); }
     };
-    static SysReg const* GetSystemRegister(int, int, int, int, int) { dont("system"); return 0; }
-    void CheckSystemAccess(int) { dont("system"); }
+    static SysReg const* GetSystemRegister(int op0, int op1, int crn, int crm, int op2);
+    void CheckSystemAccess(int) {}
 
     U64 GetGSR(unsigned id) const { return gpr[id]; }
     U64 GetGZR(unsigned id) const { return (id != 31) ? gpr[id] : 0; }
