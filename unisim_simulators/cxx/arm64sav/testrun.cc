@@ -64,6 +64,7 @@ namespace test
   {
     U64 const magic_return_address = 0xdeadc0dedeadc0deULL;
 
+    SetGZR(0, uint64_t(data));
     uint64_t sim_stack[32];
     SetGSR(31, reinterpret_cast<uint64_t>( &sim_stack[0] ) + sizeof sim_stack);
     SetGZR(30, magic_return_address);
