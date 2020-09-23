@@ -427,7 +427,7 @@ namespace review
         if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
           throw unisim::util::sav::Untestable("spread out memory accesses");
 
-        if (not addressings.solve<review::Arch::GRegRead>(base_addr, new ExpectedAddress()))
+        if (not addressings.solve(base_addr, new ExpectedAddress()))
           throw unisim::util::sav::Untestable("malformed address");
       }
 

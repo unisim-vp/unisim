@@ -294,7 +294,7 @@ namespace review
       uint64_t address;
     };
 
-    struct GRegRead : public VRRead<GReg>
+    struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
     {
       GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
       virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override

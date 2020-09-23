@@ -304,7 +304,7 @@ namespace review
       uint64_t address;
     };
 
-    struct GRegRead : public VRRead<GReg>
+    struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
     {
       GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;

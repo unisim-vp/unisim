@@ -165,70 +165,11 @@ namespace sav {
     typedef unisim::util::symbolic::Expr Expr;
     typedef std::map<Expr,Expr> Solutions;
 
+    struct Source {};
+    
     Addressings() {}
     
-    template <class AddrSource>
-    bool solve( Expr const& base_addr, Expr const& expected_address )
-    {
-      struct AG
-      {
-        typedef unisim::util::symbolic::Expr Expr;
-
-        void check(Expr const& front)
-        {
-          if (dynamic_cast<AddrSource const*>(front.node))
-            {
-              /* Permanently invalidate solutions */
-              solutions[front] = Expr();
-              return;
-            }
-          for (unsigned idx = 0, end = front->SubCount(); idx < end; ++idx)
-            check( front->GetSub(idx) );
-        }
-      
-        void process (Expr const& front, Expr const& back)
-        {
-          if (dynamic_cast<AddrSource const*>(front.node))
-            {
-              /* We found a potential source. Associate it with its equation. */
-              auto itr = solutions.lower_bound(front);
-              if (itr == solutions.end() or itr->first > front)
-                solutions.emplace_hint(itr, Solutions::value_type( front, back ));
-              else /* Register appears multiple time in address generation. No can do. */
-                itr->second = Expr();
-            }
-          else if (unisim::util::symbolic::OpNodeBase const* onb = front->AsOpNode())
-            {
-              if      (onb->op.code == onb->op.Add)
-                {
-                  process( front->GetSub(0), make_operation( "Sub", back, front->GetSub(1) ) );
-                  process( front->GetSub(1), make_operation( "Sub", back, front->GetSub(0) ) );
-                }
-              else if (onb->op.code == onb->op.Sub)
-                {
-                  process( front->GetSub(0), make_operation( "Add", back, front->GetSub(1) ) );
-                  process( front->GetSub(1), make_operation( "Sub", front->GetSub(0), back ) );
-                }
-              else
-                check( front );
-            }
-          else
-            check( front );
-        }
-          
-        AG(Solutions& _solutions) : solutions(_solutions) {} Solutions& solutions;
-      } ag(solutions);
-        
-      ag.process( base_addr, expected_address );
-        
-      // Remove the invalid solutions
-      for (Solutions::iterator itr = solutions.begin(), end = solutions.end(); itr != end;)
-        {
-          if (itr->second.good()) ++itr; else itr = solutions.erase(itr);
-        }
-
-      return solutions.size() != 0;
-    }
+    bool solve( Expr const& base_addr, Expr const& expected_address );
     
     Solutions solutions;
   };
