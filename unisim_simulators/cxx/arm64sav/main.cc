@@ -368,12 +368,10 @@ struct Checker
       void run( uint64_t* ws ) const
       {
         code( &ws[data_index(0)] ); /*< native code execution */
-        __asm__ volatile( "cld" ); /*< Fix DF */
       }
       void run( test::Arch& sim, uint64_t* ws ) const
       {
         sim.run( code, &ws[data_index(0)] ); /* code simulation */
-        // sim.flagwrite( test::Arch::FLAG::DF, false ); /*< Fix DF */
       }
       
     private:
