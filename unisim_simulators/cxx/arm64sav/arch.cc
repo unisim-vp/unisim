@@ -194,7 +194,7 @@ namespace review
     {
       unsigned idx = gcount;
       if (idx & 1)
-        { idx -= 1; text.write( 0xf8400400 | 1 << 12 | 0 << 5 | grmap[idx] << 0 ); } // LDR <Xt>, [X0], 8
+        { idx -= 1; text.write( 0xf8400400 | 8 << 12 | 0 << 5 | grmap[idx] << 0 ); } // LDR <Xt>, [X0], 8
       while (idx >= 2)
         { idx -= 2; text.write( 0xa8c00000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); } // LDP <Xt1>, <Xt2>, [X0], 16
     }
@@ -216,7 +216,7 @@ namespace review
     {
       unsigned idx = gcount;
       if (idx & 1)
-        { idx -= 1; text.write( 0xf8000400 | 1 << 12 | 0 << 5 | grmap[idx] << 0 ); } // STR <Xt>, [X0], 8
+        { idx -= 1; text.write( 0xf8000400 | 8 << 12 | 0 << 5 | grmap[idx] << 0 ); } // STR <Xt>, [X0], 8
       while (idx >= 2)
         { idx -= 2; text.write( 0xa8800000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); } // STP <Xt1>, <Xt2>, [X0], 16
     }
