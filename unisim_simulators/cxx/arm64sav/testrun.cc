@@ -35,6 +35,7 @@
 #include <testrun.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/util/endian/endian.hh>
+#include <iomanip>
 #include <ostream>
 #include <cmath>
 
@@ -76,11 +77,14 @@ namespace test
         step_instruction();
       }
   }
+  
+  namespace { template <unsigned W> struct HEX { friend std::ostream& operator << (std::ostream& os, HEX&&) { return (os << std::hex << std::setfill('0') << std::setw(W)); } }; }
 
   void
   Arch::UndefinedInstruction( Arch::Operation const* insn )
   {
-    insn->disasm(*this,std::cerr << "Exception (Undefined ): ");
+    std::cerr << "Undefined Instruction @" << HEX<16>() << insn->GetAddr() << " (<" << insn->GetName() << ">)\n";
+    insn->disasm(*this,std::cerr << HEX<8>() << insn->GetEncoding() << ":\t");
     std::cerr << std::endl;
     UndefinedInstruction();
   }
