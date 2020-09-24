@@ -32,9 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <arch.hh>
-#include <testrun.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <scanner.hh>
+#include <runner.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
@@ -49,89 +48,15 @@
 struct Checker
 {
   typedef unisim::util::symbolic::Expr Expr;
-  
-  struct TestLess
-  {
-    bool operator () ( review::Interface const& a, review::Interface const& b ) const
-    {
-      struct Comparator
-      {
-        int process( unisim::util::sav::ActionNode const& a, unisim::util::sav::ActionNode const& b ) const
-        {
-          if (int delta = a.updates.size() - b.updates.size()) return delta;
-          auto rci = b.updates.begin();
-          for (Expr const& update : a.updates)
-            { if (int delta = process( update,  *rci )) return delta; ++rci; }
-          
-          if (int delta = process( a.cond, b.cond )) return delta;
-          for (int idx = 0; idx < 2; ++idx)
-            {
-              if     (not a.nexts[idx])
-                { if (b.nexts[idx]) return -1; }
-              else if(b.nexts[idx])
-                { if (int delta = process( *a.nexts[idx], *b.nexts[idx] )) return delta; }
-            }
-          return 0;
-        }
-
-        int process( Expr const& a, Expr const& b ) const
-        {
-          // Do not compare null expressions
-          if (not b.node) return a.node ?  1 : 0;
-          if (not a.node) return b.node ? -1 : 0;
-      
-          /* First compare actual types */
-          const std::type_info* til = &typeid(*a.node);
-          const std::type_info* tir = &typeid(*b.node);
-          if (til < tir) return -1;
-          if (til > tir) return +1;
-        
-          /* Same types, call derived comparator except for Constants (compare popcount)*/
-          typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-          if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
-            {
-              // return 0; /* XXX: temporarily considering all constants equivalent */
-              uint64_t av = an->Get(uint64_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint64_t() );
-              if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
-                return delta;
-            }
-          else if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
-            {
-              unsigned ai = vr->idx, bi = dynamic_cast<unisim::util::sav::VirtualRegister const&>(*b.node).idx;
-              if (int delta = int(ai) - int(bi))
-                return delta;
-            }
-          else if (int delta = a.node->cmp( *b.node ))
-            return delta;
-
-          /* Compare sub operands recursively */
-          unsigned subcount = a.node->SubCount();
-          if (int delta = int(subcount) - int(b.node->SubCount()))
-            return delta;
-          for (unsigned idx = 0; idx < subcount; ++idx)
-            if (int delta = process( a.node->GetSub(idx), b.node->GetSub(idx)))
-              return delta;
-
-          /* equal to us*/
-          return 0;
-        }
-      } comparator;
-
-      return comparator.process( *a.behavior, *b.behavior ) < 0;
-    }
     
-  };
-  
-  typedef std::multiset<review::Interface, TestLess> TestDB;
-  
   unisim::util::random::Random rnd;
-  review::Decoder isa;
+  Scanner::ISA isa;
   TestDB testdb;
   std::map<std::string,uintptr_t> stats;
   
-  bool insert( review::Operation const& op, uint32_t code, std::string const& disasm )
+  bool insert( Scanner::Operation const& op, uint32_t code, std::string const& disasm )
   {
-    review::Interface iif(op, code, disasm);
+    Interface iif(op, code, disasm);
 
     decltype(testdb.begin()) tstbeg, tstend;
     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
@@ -143,26 +68,13 @@ struct Checker
     return true;
   }
 
-  review::Operation* decode( uint64_t addr, uint32_t code, std::string& disasm )
-  {
-    std::ostringstream buf;
-    review::Operation* op = 0;
-    try { op = isa.NCDecode(addr,code); }
-    catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("misencoded"); }
-      
-    review::Arch::DisasmState das;
-    op->disasm(das, buf);
-    disasm = buf.str();
-    return op;
-  }
-
   bool test( uint32_t trial )
   {
     bool found = false;
     try
       {
         std::string disasm;
-        std::unique_ptr<review::Operation> codeop = std::unique_ptr<review::Operation>( decode( 0x4000, trial, disasm ) );
+        std::unique_ptr<Scanner::Operation> codeop = std::unique_ptr<Scanner::Operation>( isa.decode( 0x4000, trial, disasm ) );
         found = insert( *codeop, trial, disasm );
       }
     catch (unisim::util::sav::Untestable const& denial)
@@ -212,7 +124,7 @@ struct Checker
   {
     std::ofstream sink( reposname );
 
-    for (review::Interface const& test : testdb)
+    for (Interface const& test : testdb)
       sink << std::hex << test.memcode << "\t" << test.asmcode << '\n';
   }
 
@@ -247,7 +159,7 @@ struct Checker
         try
           {
             std::string updated_disasm;
-            std::unique_ptr<review::Operation> codeop = std::unique_ptr<review::Operation>( decode( 0x4000, code, updated_disasm ) );
+            std::unique_ptr<Scanner::Operation> codeop = std::unique_ptr<Scanner::Operation>( isa.decode( 0x4000, code, updated_disasm ) );
             if (disasm != updated_disasm)
               {
                 std::cerr << fl << ": warning, assembly code divergence (" << std::hex << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
@@ -275,14 +187,14 @@ struct Checker
     /* First pass; computing memory requirements */
     uintptr_t textsize, workcells = 0;
     {
-      struct Text : public review::Interface::Text
+      struct Text : public Interface::Text
       {
         Text() : size() {} uintptr_t size;
         void write(uint32_t) override { size += 4; }
-        void process( review::Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
+        void process( Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
       } text;
       
-      for (review::Interface const& test : testdb)
+      for (Interface const& test : testdb)
         {
           workcells = std::max( workcells, test.workcells() * (test.usemem() ? 3 : 2) );
           text.process( test );
@@ -308,15 +220,15 @@ struct Checker
     /* Organize test data */
     struct Test
     {
-      typedef review::Interface::testcode_t testcode_t;
+      typedef Interface::testcode_t testcode_t;
       typedef unisim::util::symbolic::Expr Expr;
       
-      Test(review::Interface const& _tif, testcode_t _code)
+      Test(Interface const& _tif, testcode_t _code)
         : tif(_tif), code(_code), relval(), relreg(), workcells(_tif.workcells())
       {}
-      Test(review::Interface const& _tif, testcode_t _code, Expr const& _relreg, Expr const& _relval)
+      Test(Interface const& _tif, testcode_t _code, Expr const& _relreg, Expr const& _relval)
         : tif(_tif), code(_code), relval(_relval),
-          relreg(dynamic_cast<review::Arch::GRegRead const*>(_relreg.node)->idx),
+          relreg(dynamic_cast<Scanner::GRegRead const*>(_relreg.node)->idx),
           workcells(_tif.workcells())
       {}
       uint64_t get_reloc(uint64_t const* ws) const
@@ -324,7 +236,7 @@ struct Checker
         if (not relval.good()) return 0;
         
         uint64_t value;
-        if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(0)], uint64_t(ws)) ))
+        if (auto v = relval.Eval( Scanner::RelocEval(&ws[data_index(0)], uint64_t(ws)) ))
           { Expr dispose(v); value = v->Get( uint64_t() ); }
         else
           throw "WTF";
@@ -370,7 +282,7 @@ struct Checker
       {
         code( &ws[data_index(0)] ); /*< native code execution */
       }
-      void run( test::Arch& sim, uint64_t* ws ) const
+      void run( Runner& sim, uint64_t* ws ) const
       {
         sim.run( code, &ws[data_index(0)] ); /* code simulation */
       }
@@ -393,8 +305,8 @@ struct Checker
         return sink;
       }
 
-      review::Interface const& tif;
-      review::Interface::testcode_t code;
+      Interface const& tif;
+      Interface::testcode_t code;
       Expr relval;
       unsigned relreg, workcells;
     };
@@ -403,10 +315,10 @@ struct Checker
     
     /* 2nd pass; generating tests (data and code)*/
     textsize = 0;
-    for (review::Interface const& test : testdb)
+    for (Interface const& test : testdb)
       {
         /* generating test code */
-        struct Text : public review::Interface::Text
+        struct Text : public Interface::Text
         {
           Text(uint8_t* _mem) : mem(_mem), size(0) {}
           virtual void write(uint32_t insn)
@@ -416,7 +328,7 @@ struct Checker
             std::copy( bytes, bytes+sz, &mem[size] );
             size += sz;
           }
-          review::Interface::testcode_t code() const { return (review::Interface::testcode_t)mem; }
+          Interface::testcode_t code() const { return (Interface::testcode_t)mem; }
           uint8_t* mem;
           uintptr_t size;
         } text( textzone.chunk(textsize) );
@@ -435,7 +347,7 @@ struct Checker
     /* Now, undergo real tests */
     textzone.activate();
 
-    test::Arch arm64;
+    Runner arm64;
     
     std::vector<uint64_t> reference(workcells), workspace(workcells);
     for (Testbed testbed(seed);; testbed.next())

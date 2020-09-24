@@ -50,13 +50,17 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
-arch.cc \
-testrun.cc
+test.cc \
+scanner.cc \
+scanner.ops.cc \
+runner.cc \
+runner.ops.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
-arch.hh \
-testrun.hh
+test.hh \
+scanner.hh \
+runner.hh \
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\
