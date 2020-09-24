@@ -250,7 +250,7 @@ struct Checker
             std::unique_ptr<review::Operation> codeop = std::unique_ptr<review::Operation>( decode( 0x4000, code, updated_disasm ) );
             if (disasm != updated_disasm)
               {
-                std::cerr << fl << ": warning, assembly code divergence (" << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
+                std::cerr << fl << ": warning, assembly code divergence (" << std::hex << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
                 updated = true;
               }
             if (not insert( *codeop, code, updated_disasm ))
