@@ -9855,14 +9855,13 @@ ldp_spo.disasm = {
 ldp_spo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
   cpu.SetVU32(rt,  data0);
   cpu.SetVU32(rt2, data1);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldp_dpo( 0b0110110011[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -9874,14 +9873,13 @@ ldp_dpo.disasm = {
 
 ldp_dpo.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
   cpu.SetVU64(rt,  data0);
   cpu.SetVU64(rt2, data1);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldp_qpo( 0b1010110011[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -9901,9 +9899,8 @@ ldp_sop.disasm = {
 ldp_sop.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
   cpu.SetVU32(rt,  data0);
@@ -9920,9 +9917,8 @@ ldp_dop.disasm = {
 
 ldp_dop.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
   cpu.SetVU64(rt,  data0);
@@ -9947,9 +9943,8 @@ ldp_so.disasm = {
 ldp_so.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
   cpu.SetVU32(rt,  data0);
@@ -9965,9 +9960,8 @@ ldp_do.disasm = {
 
 ldp_do.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
   cpu.SetVU64(rt,  data0);
@@ -10001,12 +9995,11 @@ ldr_bsopost.disasm = {
 ldr_bsopost.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.MemRead8(addr) );
   cpu.SetVU8(rt, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldr_hsopost( 0b01111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -10019,12 +10012,11 @@ ldr_hsopost.disasm = {
 ldr_hsopost.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetVU16(rt, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldr_ssopost( 0b10111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -10037,12 +10029,11 @@ ldr_ssopost.disasm = {
 ldr_ssopost.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetVU32(rt, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldr_dsopost( 0b11111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -10054,12 +10045,11 @@ ldr_dsopost.disasm = {
 
 ldr_dsopost.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetVU64(rt, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldr_qsopost( 0b00111100110[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -10067,6 +10057,16 @@ ldr_qsopost.var format : {char const*} = {"282"};
 
 ldr_qsopost.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+};
+
+ldr_qsopost.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr+U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldr_bsopre( 0b00111100010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -10079,9 +10079,8 @@ ldr_bsopre.disasm = {
 ldr_bsopre.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U8 data( cpu.MemRead8(addr) );
   cpu.SetVU8(rt, data);
   cpu.SetGSR(rn, addr);
@@ -10097,9 +10096,8 @@ ldr_hsopre.disasm = {
 ldr_hsopre.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetVU16(rt, data);
   cpu.SetGSR(rn, addr);
@@ -10115,9 +10113,8 @@ ldr_ssopre.disasm = {
 ldr_ssopre.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetVU32(rt, data);
   cpu.SetGSR(rn, addr);
@@ -10132,9 +10129,8 @@ ldr_dsopre.disasm = {
 
 ldr_dsopre.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetVU64(rt, data);
   cpu.SetGSR(rn, addr);
@@ -10237,9 +10233,8 @@ ldr_slit.disasm = {
 ldr_slit.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetPC() + U64(S64(imm)) );
+  U64 addr( cpu.GetPC() + U64(imm) );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetVU32(rt, data);
 };
@@ -10253,9 +10248,8 @@ ldr_dlit.disasm = {
 
 ldr_dlit.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetPC() + U64(S64(imm)) );
+  U64 addr( cpu.GetPC() + U64(imm) );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetVU64(rt, data);
 };
@@ -10320,7 +10314,7 @@ ldr_bxws.disasm = {
 ldr_bxws.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
-  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U8  U8;
   typedef typename ARCH::U64 U64;
 
   U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
@@ -10336,9 +10330,9 @@ ldr_bxxs.disasm = {
 };
 
 ldr_bxxs.execute = {
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
 
   U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U8 data( cpu.MemRead8(addr) );
@@ -10519,8 +10513,8 @@ ldr_dxws.disasm = {
 };
 
 ldr_dxws.execute = {
-  typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
+  typedef typename ARCH::S32 S32;
   typedef typename ARCH::U64 U64;
 
   U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
@@ -10592,9 +10586,8 @@ ldur_bbo.disasm = {
 ldur_bbo.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U8 data( cpu.MemRead8(addr) );
   cpu.SetVU8(rt, data);
 };
@@ -10609,9 +10602,8 @@ ldur_hbo.disasm = {
 ldur_hbo.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetVU16(rt, data);
 };
@@ -10626,9 +10618,8 @@ ldur_sbo.disasm = {
 ldur_sbo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetVU32(rt, data);
 };
@@ -10642,9 +10633,8 @@ ldur_dbo.disasm = {
 
 ldur_dbo.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetVU64(rt, data);
 };
@@ -18694,13 +18684,12 @@ stp_spo.disasm = {
 stp_spo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
   cpu.MemWrite32( addr + U64(0), data0 );
   cpu.MemWrite32( addr + U64(4), data1 );
-  cpu.SetGSR(rn, addr + U64(S64(imm)));
+  cpu.SetGSR(rn, addr + U64(imm));
 };
 
 op stp_dpo( 0b0110110010[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -18712,13 +18701,12 @@ stp_dpo.disasm = {
 
 stp_dpo.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
   cpu.MemWrite64( addr + U64(0), data0 );
   cpu.MemWrite64( addr + U64(8), data1 );
-  cpu.SetGSR(rn, addr + U64(S64(imm)));
+  cpu.SetGSR(rn, addr + U64(imm));
 };
 
 op stp_qpo( 0b1010110010[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -18738,9 +18726,8 @@ stp_sop.disasm = {
 stp_sop.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
   cpu.MemWrite32( addr + U64(0), data0 );
   cpu.MemWrite32( addr + U64(4), data1 );
@@ -18756,9 +18743,8 @@ stp_dop.disasm = {
 
 stp_dop.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
   cpu.MemWrite64( addr + U64(0), data0 );
   cpu.MemWrite64( addr + U64(8), data1 );
@@ -18782,9 +18768,8 @@ stp_so.disasm = {
 stp_so.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
   cpu.MemWrite32( addr + U64(0), data0 );
   cpu.MemWrite32( addr + U64(4), data1 );
@@ -18799,9 +18784,8 @@ stp_do.disasm = {
 
 stp_do.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
   cpu.MemWrite64( addr + U64(0), data0 );
   cpu.MemWrite64( addr + U64(8), data1 );
@@ -18834,12 +18818,11 @@ str_bsopost.disasm = {
 str_bsopost.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.GetVU8(rt,0) );
   cpu.MemWrite8(addr, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op str_hsopost( 0b01111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -18852,12 +18835,11 @@ str_hsopost.disasm = {
 str_hsopost.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op str_ssopost( 0b10111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -18870,12 +18852,11 @@ str_ssopost.disasm = {
 str_ssopost.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data( cpu.GetVU32(rt,0) );
   cpu.MemWrite32(addr, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op str_dsopost( 0b11111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -18887,12 +18868,11 @@ str_dsopost.disasm = {
 
 str_dsopost.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U64 data( cpu.GetVU64(rt,0) );
   cpu.MemWrite64(addr, data);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op str_qsopost( 0b00111100100[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -18900,6 +18880,16 @@ str_qsopost.var format : {char const*} = {"283"};
 
 str_qsopost.disasm = {
   sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+};
+
+str_qsopost.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op str_bsopre( 0b00111100000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -18912,9 +18902,8 @@ str_bsopre.disasm = {
 str_bsopre.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U8 data( cpu.GetVU8(rt,0) );
   cpu.MemWrite8(addr, data);
   cpu.SetGSR(rn, addr);
@@ -18930,9 +18919,8 @@ str_hsopre.disasm = {
 str_hsopre.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
   cpu.SetGSR(rn, addr);
@@ -18948,9 +18936,8 @@ str_ssopre.disasm = {
 str_ssopre.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data( cpu.GetVU32(rt,0) );
   cpu.MemWrite32(addr, data);
   cpu.SetGSR(rn, addr);
@@ -18965,9 +18952,8 @@ str_dsopre.disasm = {
 
 str_dsopre.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data( cpu.GetVU64(rt,0) );
   cpu.MemWrite64(addr, data);
   cpu.SetGSR(rn, addr);
@@ -19385,9 +19371,8 @@ stur_bbo.disasm = {
 stur_bbo.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U8 data( cpu.GetVU8(rt,0) );
   cpu.MemWrite8(addr, data);
 };
@@ -19402,9 +19387,8 @@ stur_hbo.disasm = {
 stur_hbo.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
 };
@@ -19419,9 +19403,8 @@ stur_sbo.disasm = {
 stur_sbo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U32 data( cpu.GetVU32(rt,0) );
   cpu.MemWrite32(addr, data);
 };
@@ -19435,9 +19418,8 @@ stur_dbo.disasm = {
 
 stur_dbo.execute = {
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data( cpu.GetVU64(rt,0) );
   cpu.MemWrite64(addr, data);
 };
