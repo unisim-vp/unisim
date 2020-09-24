@@ -65,6 +65,7 @@ namespace review
     void memaccess( Expr const& addr, bool iswrite );
     uintptr_t workcells() const;
     void gencode(Text& text) const;
+    void field_name(unsigned idx, std::ostream& sink) const;
     bool usemem() const { return addrs.size(); }
 
     uint32_t memcode;

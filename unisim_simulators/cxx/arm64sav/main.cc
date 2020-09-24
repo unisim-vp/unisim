@@ -38,6 +38,7 @@
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <vector>
 #include <set>
@@ -310,13 +311,13 @@ struct Checker
       typedef review::Interface::testcode_t testcode_t;
       typedef unisim::util::symbolic::Expr Expr;
       
-      Test(review::Interface const* _test, testcode_t _code)
-        : disasm(_test->asmcode), code(_code), relval(), relreg(), workcells(_test->workcells())
+      Test(review::Interface const& _tif, testcode_t _code)
+        : tif(_tif), code(_code), relval(), relreg(), workcells(_tif.workcells())
       {}
-      Test(review::Interface const* _test, testcode_t _code, Expr const& _relreg, Expr const& _relval)
-        : disasm(_test->asmcode), code(_code), relval(_relval),
+      Test(review::Interface const& _tif, testcode_t _code, Expr const& _relreg, Expr const& _relval)
+        : tif(_tif), code(_code), relval(_relval),
           relreg(dynamic_cast<review::Arch::GRegRead const*>(_relreg.node)->idx),
-          workcells(_test->workcells())
+          workcells(_tif.workcells())
       {}
       uint64_t get_reloc(uint64_t const* ws) const
       {
@@ -349,12 +350,12 @@ struct Checker
       }
       void error(Testbed const& tb, uint64_t const* ref, uint64_t const* sim) const
       {
-        std::cerr << tb.counter << ": error in " << disasm << '\n';
+        std::cerr << tb.counter << ": error in " << tif.asmcode << '\n';
         std::cerr << "ref | sim\n";
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             uint64_t r = ref[idx], s = sim[idx];
-            std::cerr << idx << ": " << std::hex << r;
+            field_name(idx, std::cerr) << ": " << std::hex << r;
             if (r != s)
               std::cerr << " <> " << s << '\n';
             else
@@ -363,7 +364,7 @@ struct Checker
         throw 0;
       }
 
-      std::string const& getasm() const { return disasm; }
+      std::string const& getasm() const { return tif.asmcode; }
 
       void run( uint64_t* ws ) const
       {
@@ -377,8 +378,22 @@ struct Checker
     private:
       uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workcells : 0) + idx; }
       uintptr_t sink_index( uintptr_t idx ) const { return workcells + data_index(idx); }
-      
-      std::string const& disasm;
+      std::ostream& field_name(unsigned idx, std::ostream& sink) const
+      {
+        unsigned sub = idx % workcells, part = (idx / workcells) + (relval.good() ? 0 : 1);
+        if (part == 0)
+          {
+            sink << "mem@" << std::right << std::setw(2) << std::dec << (sub*8) << "  ";
+            return sink;
+          }
+        sink << (part == 1 ? " in." : "out.");
+        std::ostringstream buf;
+        tif.field_name( sub, buf );
+        sink << std::left << std::setw(4) << buf.str();
+        return sink;
+      }
+
+      review::Interface const& tif;
       review::Interface::testcode_t code;
       Expr relval;
       unsigned relreg, workcells;
@@ -411,9 +426,9 @@ struct Checker
         /* Fill out test data */
         if (test.usemem())
           for (auto const& solution : test.addressings.solutions)
-            tests.push_back( Test(&test, text.code(), solution.first, solution.second) );
+            tests.push_back( Test(test, text.code(), solution.first, solution.second) );
         else
-          tests.push_back( Test(&test, text.code()) );
+          tests.push_back( Test(test, text.code()) );
 
       }
 
