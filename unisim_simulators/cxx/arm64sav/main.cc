@@ -49,7 +49,6 @@ struct Checker
 {
   typedef unisim::util::symbolic::Expr Expr;
     
-  unisim::util::random::Random rnd;
   Scanner::ISA isa;
   TestDB testdb;
   std::map<std::string,uintptr_t> stats;
@@ -85,10 +84,12 @@ struct Checker
     return found;
   }
   
-  Checker() : rnd( 1, 2, 3, 4 ) {}
+  Checker() {}
   
   void discover( uintptr_t count, uintptr_t ttl_reset )
   {
+    int seed = testdb.size();
+    unisim::util::random::Random rnd(seed,seed,seed,seed);
     uintptr_t ttl = ttl_reset, trial = 0;
     while (count)
       {
