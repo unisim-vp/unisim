@@ -39,28 +39,13 @@
 
 namespace
 {
-  struct ExpectedAddress : public unisim::util::symbolic::ExprNode
-  {
-    ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
-    virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
-    virtual int cmp(ExprNode const& rhs) const override { return 0; }
-    virtual unsigned SubCount() const override { return 0; }
-    virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-    typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-    virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-    {
-      if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
-      return 0;
-    };
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
-  };
+  
 }
 
 Interface::Interface( Operation const& op, uint32_t code, std::string const& disasm )
   : memcode(code)
   , asmcode(disasm)
+  , gilname(op.GetName())
   , gregs()
   , vregs()
   , behavior(std::make_shared<unisim::util::sav::ActionNode>())
@@ -95,7 +80,25 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
     {
       if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
         throw unisim::util::sav::Untestable("spread out memory accesses");
-                
+
+      struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+      {
+        ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+        virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+        virtual int cmp(ExprNode const& rhs) const override { return 0; }
+        virtual unsigned SubCount() const override { return 0; }
+        virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+        typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+        typedef unisim::util::symbolic::ScalarType ScalarType;
+        virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
+        virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
+        {
+          if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
+            return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
+          return 0;
+        };
+      };
+      
       if (not addressings.solve(base_addr, new ExpectedAddress()))
         throw unisim::util::sav::Untestable("malformed address");
     }
@@ -221,6 +224,9 @@ Interface::field_name(unsigned idx, std::ostream& sink) const
 bool
 TestLess::operator () ( Interface const& a, Interface const& b ) const
 {
+  if (int delta = a.gilname.compare( b.gilname ))
+    return delta < 0;
+  
   struct Comparator
   {
     int process( unisim::util::sav::ActionNode const& a, unisim::util::sav::ActionNode const& b ) const

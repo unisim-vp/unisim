@@ -60,7 +60,7 @@ struct Interface
   bool usemem() const { return addrs.size(); }
 
   uint32_t memcode;
-  std::string asmcode;
+  std::string asmcode, gilname;
   unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
   unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
   std::shared_ptr<unisim::util::sav::ActionNode> behavior;
