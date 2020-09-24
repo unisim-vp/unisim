@@ -204,7 +204,7 @@ namespace review
     {
       unsigned idx = vcount;
       if (idx & 1)              
-        { idx -= 1; text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | grmap[idx] << 0 ); } // LDR <Qt>, [X0], 16
+        { idx -= 1; text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | vrmap[idx] << 0 ); } // LDR <Qt>, [X0], 16
       while (idx >= 2)
         { idx -= 2; text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); } // LDP <Qt1>, <Qt2>, [X0], 32
     }
