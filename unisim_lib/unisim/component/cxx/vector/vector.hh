@@ -128,6 +128,14 @@ namespace vector {
 
     VUnion() : transfer( &initial ), size(0) {}
 
+    void Clear( void* storage )
+    {
+      Byte buf[CONFIG::BYTECOUNT];
+      transfer( &buf[0], storage, size, true );
+      size = 0;
+      transfer = &initial;
+    }
+
     transfer_t transfer;
     unsigned   size;
   };

@@ -55,6 +55,13 @@ Scanner::Scanner( Interface& iif )
   gpr[31] = newRegRead(SP());
 }
 
+Scanner::~Scanner()
+{
+  for (unsigned reg = 0; reg < VREGCOUNT; reg++)
+    vector_views[reg].Clear( &vector_data[reg][0] );
+}
+
+
 bool
 Scanner::close( Scanner const& ref )
 {

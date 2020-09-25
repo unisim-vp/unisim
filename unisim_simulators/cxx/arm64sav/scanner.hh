@@ -315,6 +315,7 @@ struct Scanner
   template <typename RID> RegWrite<RID>* newRegWrite( RID _id, Expr const& _value ) { return new RegWrite<RID>(_id, _value); }
 
   Scanner( Interface& iif );
+  ~Scanner();
 
   static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
 
