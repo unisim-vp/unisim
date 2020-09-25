@@ -136,7 +136,7 @@ struct Checker
     
     FileLoc( std::string const& _name ) : name( _name ), line(0) {}
     void newline() { line += 1; }
-    friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
+    friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << std::dec << fl.line << ": "; return sink; }
   };
   
   bool
