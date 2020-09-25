@@ -138,8 +138,8 @@ void Interface::gencode(Text& text) const
   text.write( 0xd51b4201 ); // msr NZCV, x1
   /* Load Neon registers */
   {
-    unsigned idx = vcount;
-    if (vcount % 1)
+    unsigned idx = 0;
+    if (vcount%1)
       text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // LDR <Qt>, [X0], 16
     for (;idx < vcount; idx+=2)
       text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // LDP <Qt1>, <Qt2>, [X0], 32
@@ -158,7 +158,7 @@ void Interface::gencode(Text& text) const
   }
   /* Store Neon registers */
   {
-    unsigned idx = vcount;
+    unsigned idx = 0;
     if (vcount%1)
       text.write( 0x3c800400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // STR <Qt>, [X0], 16
     for (;idx < vcount; idx+=2)
