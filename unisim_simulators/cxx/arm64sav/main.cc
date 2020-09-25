@@ -174,7 +174,7 @@ struct Checker
           }
         catch (unisim::util::sav::Untestable const& denial)
           {
-            std::cerr << fl << ": behavioral rejection for " << code << disasm << " <" << denial.reason << ">\n";
+            std::cerr << fl << ": behavioral rejection for " << std::hex << code << "\t" << disasm << " <" << denial.reason << ">\n";
             updated = true;
             continue;
           }
