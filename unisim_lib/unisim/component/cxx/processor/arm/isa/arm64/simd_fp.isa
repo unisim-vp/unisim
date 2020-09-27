@@ -15509,10 +15509,10 @@ stvms_bno.execute = {
   unsigned elements = (8<<q)>>0;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx%vms.regs)%32, idx/vms.regs));
 };
 
 op stvms_bio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
@@ -15532,10 +15532,10 @@ stvms_bio.execute = {
   unsigned elements = (8<<q)>>0;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
@@ -15557,10 +15557,10 @@ stvms_bro.execute = {
   unsigned elements = (8<<q)>>0;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
@@ -15582,10 +15582,10 @@ stvms_hno.execute = {
   unsigned elements = (8<<q)>>1;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx%vms.regs)%32, idx/vms.regs));
 };
 
 op stvms_hio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15605,10 +15605,10 @@ stvms_hio.execute = {
   unsigned elements = (8<<q)>>1;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
@@ -15630,10 +15630,10 @@ stvms_hro.execute = {
   unsigned elements = (8<<q)>>1;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
@@ -15655,10 +15655,10 @@ stvms_sno.execute = {
   unsigned elements = (8<<q)>>2;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx%vms.regs)%32, idx/vms.regs));
 };
 
 op stvms_sio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15678,10 +15678,10 @@ stvms_sio.execute = {
   unsigned elements = (8<<q)>>2;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
@@ -15703,10 +15703,10 @@ stvms_sro.execute = {
   unsigned elements = (8<<q)>>2;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
@@ -15728,10 +15728,10 @@ stvms_dno.execute = {
   unsigned elements = (8<<q)>>3;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx%vms.regs)%32, idx/vms.regs));
 };
 
 op stvms_dio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15751,10 +15751,10 @@ stvms_dio.execute = {
   unsigned elements = (8<<q)>>3;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
@@ -15776,10 +15776,10 @@ stvms_dro.execute = {
   unsigned elements = (8<<q)>>3;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/vms.regs)%32, idx%vms.regs));
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx%vms.regs)%32, idx/vms.regs));
 
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
@@ -15801,10 +15801,10 @@ ldvms_bno.execute = {
   unsigned elements = (8<<q)>>0;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU8((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead8(addr + U64(1*idx)));
+      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
+      cpu.SetVU8((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead8(addr + U64(1*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
@@ -15826,10 +15826,10 @@ ldvms_bio.execute = {
   unsigned elements = (8<<q)>>0;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU8((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead8(addr + U64(1*idx)));
+      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
+      cpu.SetVU8((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead8(addr + U64(1*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -15853,10 +15853,10 @@ ldvms_bro.execute = {
   unsigned elements = (8<<q)>>0;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU8((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead8(addr + U64(1*idx)));
+      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
+      cpu.SetVU8((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead8(addr + U64(1*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -15880,10 +15880,10 @@ ldvms_hno.execute = {
   unsigned elements = (8<<q)>>1;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU16((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead16(addr + U64(2*idx)));
+      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
+      cpu.SetVU16((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead16(addr + U64(2*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
@@ -15905,10 +15905,10 @@ ldvms_hio.execute = {
   unsigned elements = (8<<q)>>1;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU16((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead16(addr + U64(2*idx)));
+      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
+      cpu.SetVU16((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead16(addr + U64(2*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -15932,10 +15932,10 @@ ldvms_hro.execute = {
   unsigned elements = (8<<q)>>1;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU16((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead16(addr + U64(2*idx)));
+      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
+      cpu.SetVU16((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead16(addr + U64(2*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -15959,10 +15959,10 @@ ldvms_sno.execute = {
   unsigned elements = (8<<q)>>2;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU32((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead32(addr + U64(4*idx)));
+      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
+      cpu.SetVU32((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead32(addr + U64(4*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
@@ -15984,10 +15984,10 @@ ldvms_sio.execute = {
   unsigned elements = (8<<q)>>2;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU32((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead32(addr + U64(4*idx)));
+      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
+      cpu.SetVU32((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead32(addr + U64(4*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -16011,10 +16011,10 @@ ldvms_sro.execute = {
   unsigned elements = (8<<q)>>2;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU32((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead32(addr + U64(4*idx)));
+      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
+      cpu.SetVU32((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead32(addr + U64(4*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -16038,10 +16038,10 @@ ldvms_dno.execute = {
   unsigned elements = (8<<q)>>3;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU64((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead64(addr + U64(8*idx)));
+      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
+      cpu.SetVU64((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead64(addr + U64(8*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
@@ -16063,10 +16063,10 @@ ldvms_dio.execute = {
   unsigned elements = (8<<q)>>3;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU64((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead64(addr + U64(8*idx)));
+      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
+      cpu.SetVU64((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead64(addr + U64(8*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
@@ -16090,10 +16090,10 @@ ldvms_dro.execute = {
   unsigned elements = (8<<q)>>3;
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU64((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead64(addr + U64(8*idx)));
+      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
   else
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
-      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
+      cpu.SetVU64((rt+idx%vms.regs)%32, idx/vms.regs, cpu.MemRead64(addr + U64(8*idx)));
 
   if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 
