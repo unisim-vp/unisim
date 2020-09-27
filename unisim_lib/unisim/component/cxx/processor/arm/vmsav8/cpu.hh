@@ -423,7 +423,7 @@ protected:
   
   uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
   
-private:
+protected:
   virtual void Sync() = 0;
   
   //=====================================================================
@@ -444,12 +444,12 @@ private:
   /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU_IMPL> decoder;
   
-  // Intrusive memory accesses
-  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
-  // Non-intrusive memory accesses
-  virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // // Intrusive memory accesses
+  // virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  // virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // // Non-intrusive memory accesses
+  // virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  // virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
 
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported

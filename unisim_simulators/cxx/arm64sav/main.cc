@@ -263,7 +263,7 @@ struct Checker
       }
       void error(Testbed const& tb, uint64_t const* ref, uint64_t const* sim) const
       {
-        std::cerr << tb.counter << '@' << ((void*)code) << ": error in " << tif.asmcode << '\n';
+        std::cerr << tb.counter << ": " << tif.gilname << '@' << ((void*)code) << ": error in " << tif.asmcode << '\n';
         std::cerr << "ref | sim\n";
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {

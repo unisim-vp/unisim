@@ -152,6 +152,7 @@ private:
   void         Wait( sc_core::sc_event const& evt );
   void         BusSynchronize();
 
+  friend PCPU;
   // Intrusive memory accesses
   virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
   virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );

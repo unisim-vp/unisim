@@ -48,8 +48,8 @@ adc_www.disasm = {
 adc_www.execute = {
   typedef typename ARCH::U32 U32;
   
-  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(cpu.GetCarry());
-  cpu.SetGSR(rd, res);
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(cpu.GetCarry());
+  cpu.SetGZR(rd, res);
 };
 
 op adc_xxx( 0b10011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -62,8 +62,8 @@ adc_xxx.disasm = {
 adc_xxx.execute = {
   typedef typename ARCH::U64 U64;
   
-  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(cpu.GetCarry());
-  cpu.SetGSR(rd, res);
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(cpu.GetCarry());
+  cpu.SetGZR(rd, res);
 };
 
 /*
@@ -89,7 +89,7 @@ adcs_www.execute = {
   typedef typename ARCH::BOOL BOOL;
   
   BOOL carry( cpu.GetCarry() );
-  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(carry);
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(carry);
   cpu.SetGZR(rd, res);
   
   BOOL n = S32(res) < S32(0), z = res == U32(0);
@@ -112,7 +112,7 @@ adcs_xxx.execute = {
   typedef typename ARCH::BOOL BOOL;
   
   BOOL carry( cpu.GetCarry() );
-  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(carry);
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(carry);
   cpu.SetGZR(rd, res);
   
   BOOL n = S64(res) < S64(0), z = res == U64(0);
@@ -3350,14 +3350,13 @@ ldp_wpo.disasm = {
 ldp_wpo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
   cpu.SetGZR(rt,  data0);
   cpu.SetGZR(rt2, data1);
-  cpu.SetGSR(rn, addr + U64(S64(imm)) );
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op ldp_xpo( 0b1010100011[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -6224,8 +6223,8 @@ sbc_www.execute = {
   typedef typename ARCH::BOOL BOOL;
   typedef typename ARCH::U32 U32;
   
-  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not BOOL(cpu.GetCarry()));
-  cpu.SetGSR(rd, res);
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not BOOL(cpu.GetCarry()));
+  cpu.SetGZR(rd, res);
 };
 
 op sbc_xxx( 0b11011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -6242,8 +6241,8 @@ sbc_xxx.execute = {
   typedef typename ARCH::BOOL BOOL;
   typedef typename ARCH::U64 U64;
   
-  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not BOOL(cpu.GetCarry()));
-  cpu.SetGSR(rd, res);
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not BOOL(cpu.GetCarry()));
+  cpu.SetGZR(rd, res);
 };
 
 /*
@@ -6272,8 +6271,8 @@ sbcs_www.execute = {
   typedef typename ARCH::BOOL BOOL;
   
   BOOL borrow( not BOOL(cpu.GetCarry()) );
-  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(borrow);
-  cpu.SetGSR(rd, res);
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(borrow);
+  cpu.SetGZR(rd, res);
   
   BOOL n = S32(res) < S32(0), z = op1 == op2;
   if (cpu.Test(borrow))
@@ -6298,8 +6297,8 @@ sbcs_xxx.execute = {
   typedef typename ARCH::BOOL BOOL;
   
   BOOL borrow( not BOOL(cpu.GetCarry()) );
-  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(borrow);
-  cpu.SetGSR(rd, res);
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(borrow);
+  cpu.SetGZR(rd, res);
   
   BOOL n = S64(res) < S64(0), z = op1 == op2;
   if (cpu.Test(borrow))

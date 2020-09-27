@@ -37,9 +37,13 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 
+#include <unisim/component/cxx/processor/arm/vmsav8/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -240,7 +244,7 @@ CPU<CPU_IMPL>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
   uint8_t* rbuffer = (uint8_t*)buffer;
 
-  return ExternalReadMemory( addr, &rbuffer[0], size );
+  return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, &rbuffer[0], size );
 }
 
 /** Perform a non intrusive write access.
@@ -261,7 +265,7 @@ CPU<CPU_IMPL>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
   uint8_t const* wbuffer = (uint8_t const*)buffer;
 
-  return ExternalWriteMemory( addr, &wbuffer[0], size );
+  return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, &wbuffer[0], size );
 }
 
 /** Disasm an instruction address.
@@ -334,7 +338,7 @@ CPU<CPU_IMPL>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
+      if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
         return false;
     }
 
@@ -359,7 +363,7 @@ CPU<CPU_IMPL>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t si
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+      if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( ef_addr, &wbuffer[index], 1 ))
         return false;
     }
 
@@ -489,7 +493,7 @@ CPU<CPU_IMPL>::IPB::get(CPU<CPU_IMPL>& core, U64 address)
     {
       // No instruction cache present, just request the insn to the
       // memory system.
-      if (not core.PhysicalReadMemory(req_base_address, &bytes[0], LINE_SIZE))
+      if (not static_cast<CPU_IMPL&>(core).PhysicalReadMemory(req_base_address, &bytes[0], LINE_SIZE))
         {
           base_address = -1;
           return 0;
@@ -566,7 +570,7 @@ void
 CPU<CPU_IMPL>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PhysicalReadMemory(addr, buffer, size))
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(addr, buffer, size))
     {
       throw 0;
     }
@@ -586,7 +590,7 @@ void
 CPU<CPU_IMPL>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PhysicalWriteMemory( addr, buffer, size ))
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( addr, buffer, size ))
     {
       throw 0;
     }

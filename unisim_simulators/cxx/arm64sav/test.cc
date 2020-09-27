@@ -129,7 +129,7 @@ void Interface::gencode(Text& text) const
   /* Load GP registers and NZCV scratch (x1)*/
   {
     unsigned idx = 0;
-    if (gcount % 1)
+    if (gcount&1)
       text.write( 0xf8400400 | 8 << 12 | 0 << 5 | grmap[idx++] << 0 ); // LDR <Xt>, [X0], 8
     for (;idx < gcount; idx+=2)
       text.write( 0xa8c00000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); // LDP <Xt1>, <Xt2>, [X0], 16
@@ -139,7 +139,7 @@ void Interface::gencode(Text& text) const
   /* Load Neon registers */
   {
     unsigned idx = 0;
-    if (vcount%1)
+    if (vcount&1)
       text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // LDR <Qt>, [X0], 16
     for (;idx < vcount; idx+=2)
       text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // LDP <Qt1>, <Qt2>, [X0], 32
@@ -151,7 +151,7 @@ void Interface::gencode(Text& text) const
   /* Store GP registers */
   {
     unsigned idx = 0;
-    if (gcount%1)
+    if (gcount&1)
       text.write( 0xf8000400 | 8 << 12 | 0 << 5 | grmap[idx++] << 0 ); // STR <Xt>, [X0], 8
     for (;idx < gcount; idx+=2)
       text.write( 0xa8800000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); // STP <Xt1>, <Xt2>, [X0], 16
@@ -159,7 +159,7 @@ void Interface::gencode(Text& text) const
   /* Store Neon registers */
   {
     unsigned idx = 0;
-    if (vcount%1)
+    if (vcount&1)
       text.write( 0x3c800400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // STR <Qt>, [X0], 16
     for (;idx < vcount; idx+=2)
       text.write( 0xac800000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // STP <Qt1>, <Qt2>, [X0], 32
