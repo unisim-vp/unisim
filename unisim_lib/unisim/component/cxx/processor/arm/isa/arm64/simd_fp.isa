@@ -15498,7 +15498,21 @@ stvms_bno.var vms : {Vms} = {opcode};
 stvms_bno.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvms_bno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>0;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
 };
 
 op stvms_bio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
@@ -15507,7 +15521,23 @@ stvms_bio.var vms : {Vms} = {opcode};
 stvms_bio.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+stvms_bio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>0;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op stvms_bro( 0[1] : q[1] : 0b001100100[9] : rm[5] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
@@ -15516,7 +15546,23 @@ stvms_bro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 stvms_bro.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvms_bro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>0;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op stvms_hno( 0[1] : q[1] : 0b00110000000000[14] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15525,7 +15571,21 @@ stvms_hno.var vms : {Vms} = {opcode};
 stvms_hno.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvms_hno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>1;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
 };
 
 op stvms_hio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15534,7 +15594,23 @@ stvms_hio.var vms : {Vms} = {opcode};
 stvms_hio.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+stvms_hio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>1;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op stvms_hro( 0[1] : q[1] : 0b001100100[9] : rm[5] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15543,7 +15619,23 @@ stvms_hro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 stvms_hro.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvms_hro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>1;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op stvms_sno( 0[1] : q[1] : 0b00110000000000[14] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15552,7 +15644,21 @@ stvms_sno.var vms : {Vms} = {opcode};
 stvms_sno.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvms_sno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>2;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
 };
 
 op stvms_sio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15561,7 +15667,23 @@ stvms_sio.var vms : {Vms} = {opcode};
 stvms_sio.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+stvms_sio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>2;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op stvms_sro( 0[1] : q[1] : 0b001100100[9] : rm[5] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15570,7 +15692,23 @@ stvms_sro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 stvms_sro.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvms_sro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>2;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op stvms_dno( 0[1] : q[1] : 0b00110000000000[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15579,7 +15717,21 @@ stvms_dno.var vms : {Vms} = {opcode};
 stvms_dno.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvms_dno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>3;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
 };
 
 op stvms_dio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15588,7 +15740,23 @@ stvms_dio.var vms : {Vms} = {opcode};
 stvms_dio.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+stvms_dio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>3;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op stvms_dro( 0[1] : q[1] : 0b001100100[9] : rm[5] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15597,7 +15765,23 @@ stvms_dro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 stvms_dro.disasm = {
   sink << "st";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvms_dro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>3;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/vms.regs)%32, idx%vms.regs));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx/elements)%32, idx%elements));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ldvms_bno( 0[1] : q[1] : 0b00110001000000[14] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
@@ -15606,7 +15790,23 @@ ldvms_bno.var vms : {Vms} = {opcode};
 ldvms_bno.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvms_bno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>0;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU8((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead8(addr + U64(1*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
 
 op ldvms_bio( 0[1] : q[1] : 0b00110011011111[14] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
@@ -15615,7 +15815,25 @@ ldvms_bio.var vms : {Vms} = {opcode};
 ldvms_bio.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+ldvms_bio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>0;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU8((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead8(addr + U64(1*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op ldvms_bro( 0[1] : q[1] : 0b001100110[9] : rm[5] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
@@ -15624,7 +15842,25 @@ ldvms_bro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 ldvms_bro.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>0,0) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvms_bro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>0;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU8((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead8(addr + U64(1*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU8((rt+idx/elements)%32, idx%elements, cpu.MemRead8(addr + U64(1*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ldvms_hno( 0[1] : q[1] : 0b00110001000000[14] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15633,7 +15869,23 @@ ldvms_hno.var vms : {Vms} = {opcode};
 ldvms_hno.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvms_hno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>1;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU16((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead16(addr + U64(2*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
 
 op ldvms_hio( 0[1] : q[1] : 0b00110011011111[14] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15642,7 +15894,25 @@ ldvms_hio.var vms : {Vms} = {opcode};
 ldvms_hio.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+ldvms_hio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>1;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU16((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead16(addr + U64(2*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op ldvms_hro( 0[1] : q[1] : 0b001100110[9] : rm[5] : opcode[4] : 0b01[2] : rn[5] : rt[5] );
@@ -15651,7 +15921,25 @@ ldvms_hro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 ldvms_hro.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>1,1) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvms_hro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>1;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU16((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead16(addr + U64(2*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU16((rt+idx/elements)%32, idx%elements, cpu.MemRead16(addr + U64(2*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ldvms_sno( 0[1] : q[1] : 0b00110001000000[14] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15660,7 +15948,23 @@ ldvms_sno.var vms : {Vms} = {opcode};
 ldvms_sno.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvms_sno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>2;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU32((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead32(addr + U64(4*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
 
 op ldvms_sio( 0[1] : q[1] : 0b00110011011111[14] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15669,7 +15973,25 @@ ldvms_sio.var vms : {Vms} = {opcode};
 ldvms_sio.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+ldvms_sio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>2;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU32((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead32(addr + U64(4*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op ldvms_sro( 0[1] : q[1] : 0b001100110[9] : rm[5] : opcode[4] : 0b10[2] : rn[5] : rt[5] );
@@ -15678,7 +16000,25 @@ ldvms_sro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 ldvms_sro.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>2,2) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvms_sro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>2;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU32((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead32(addr + U64(4*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU32((rt+idx/elements)%32, idx%elements, cpu.MemRead32(addr + U64(4*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ldvms_dno( 0[1] : q[1] : 0b00110001000000[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15687,7 +16027,23 @@ ldvms_dno.var vms : {Vms} = {opcode};
 ldvms_dno.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]";
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvms_dno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>3;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU64((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead64(addr + U64(8*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
 };
 
 op ldvms_dio( 0[1] : q[1] : 0b00110011011111[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15696,7 +16052,25 @@ ldvms_dio.var vms : {Vms} = {opcode};
 ldvms_dio.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (8*vms.regs << q);
+};
+
+ldvms_dio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>3;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU64((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead64(addr + U64(8*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + U64(8*vms.regs << q) );
 };
 
 op ldvms_dro( 0[1] : q[1] : 0b001100110[9] : rm[5] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
@@ -15705,6 +16079,24 @@ ldvms_dro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
 ldvms_dro.disasm = {
   sink << "ld";
   sink << (vms.ses ? 1 : int(vms.regs));
-  sink << '	' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+  sink << '\t' << DisasmBunch(rt,vms.regs,(8<<q)>>3,3) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvms_dro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  unsigned elements = (8<<q)>>3;
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU64((rt+idx/vms.regs)%32, idx%vms.regs, cpu.MemRead64(addr + U64(8*idx)));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVU64((rt+idx/elements)%32, idx%elements, cpu.MemRead64(addr + U64(8*idx)));
+
+  if (not q) for (unsigned idx = 0; idx < vms.regs; ++idx) cpu.ClearHighV((rt+idx)%32,8);
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
