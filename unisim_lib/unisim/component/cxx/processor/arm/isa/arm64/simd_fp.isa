@@ -6435,7 +6435,7 @@ ldnp_so.disasm = {
  */
 
 op ldp_spo( 0b0010110011[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_spo.var format : {char const*} = {"65"};
+ldp_spo.var format : {char const*} = {"65"}, reject : {Reject} = {rt == rt2};
 
 ldp_spo.disasm = {
   sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
@@ -6454,7 +6454,7 @@ ldp_spo.execute = {
 };
 
 op ldp_dpo( 0b0110110011[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_dpo.var format : {char const*} = {"43"};
+ldp_dpo.var format : {char const*} = {"43"}, reject : {Reject} = {rt == rt2};
 
 ldp_dpo.disasm = {
   sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
@@ -6472,7 +6472,7 @@ ldp_dpo.execute = {
 };
 
 op ldp_qpo( 0b1010110011[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qpo.var format : {char const*} = {"55"};
+ldp_qpo.var format : {char const*} = {"55"}, reject : {Reject} = {rt == rt2};
 
 ldp_qpo.disasm = {
   sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
@@ -6494,7 +6494,7 @@ ldp_qpo.execute = {
 };
 
 op ldp_sop( 0b0010110111[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_sop.var format : {char const*} = {"63"};
+ldp_sop.var format : {char const*} = {"63"}, reject : {Reject} = {rt == rt2};
 
 ldp_sop.disasm = {
   sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
@@ -6513,7 +6513,7 @@ ldp_sop.execute = {
 };
 
 op ldp_dop( 0b0110110111[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_dop.var format : {char const*} = {"41"};
+ldp_dop.var format : {char const*} = {"41"}, reject : {Reject} = {rt == rt2};
 
 ldp_dop.disasm = {
   sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
@@ -6531,14 +6531,14 @@ ldp_dop.execute = {
 };
 
 op ldp_qop( 0b1010110111[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qop.var format : {char const*} = {"53"};
+ldp_qop.var format : {char const*} = {"53"}, reject : {Reject} = {rt == rt2};
 
 ldp_qop.disasm = {
   sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
 
 op ldp_so( 0b0010110101[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_so.var format : {char const*} = {"60"};
+ldp_so.var format : {char const*} = {"60"}, reject : {Reject} = {rt == rt2};
 
 ldp_so.disasm = {
   sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
@@ -6556,7 +6556,7 @@ ldp_so.execute = {
 };
 
 op ldp_do( 0b0110110101[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_do.var format : {char const*} = {"38"};
+ldp_do.var format : {char const*} = {"38"}, reject : {Reject} = {rt == rt2};
 
 ldp_do.disasm = {
   sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
@@ -6573,7 +6573,7 @@ ldp_do.execute = {
 };
 
 op ldp_qo( 0b1010110101[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qo.var format : {char const*} = {"50"};
+ldp_qo.var format : {char const*} = {"50"}, reject : {Reject} = {rt == rt2};
 
 ldp_qo.disasm = {
   sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
