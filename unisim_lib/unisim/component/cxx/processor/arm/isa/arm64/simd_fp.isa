@@ -682,7 +682,7 @@ cmeq_d_reg.execute = {
   typedef typename ARCH::S64 S64;
 
   for (unsigned e=0; e < 1; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    S64 op1( cpu.GetVS64(rn,e) ), op2( cpu.GetVS64(rm,e) ), res;
     res =  S64(not (op1 == op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
   }
@@ -700,7 +700,7 @@ cmeq_v8b_reg.execute = {
   typedef typename ARCH::S8 S8;
 
   for (unsigned e=0; e < 8; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
     res =  S8(not (op1 == op2)) - S8(1);
     cpu.SetVS8(rd,e,res);
   }
@@ -718,7 +718,7 @@ cmeq_v16b_reg.execute = {
   typedef typename ARCH::S8 S8;
 
   for (unsigned e=0; e < 16; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
     res =  S8(not (op1 == op2)) - S8(1);
     cpu.SetVS8(rd,e,res);
   }
@@ -736,7 +736,7 @@ cmeq_v4h_reg.execute = {
   typedef typename ARCH::S16 S16;
 
   for (unsigned e=0; e < 4; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
     res =  S16(not (op1 == op2)) - S16(1);
     cpu.SetVS16(rd,e,res);
   }
@@ -754,7 +754,7 @@ cmeq_v8h_reg.execute = {
   typedef typename ARCH::S16 S16;
 
   for (unsigned e=0; e < 8; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
     res =  S16(not (op1 == op2)) - S16(1);
     cpu.SetVS16(rd,e,res);
   }
@@ -772,7 +772,7 @@ cmeq_v2s_reg.execute = {
   typedef typename ARCH::S32 S32;
 
   for (unsigned e=0; e < 2; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
     res =  S32(not (op1 == op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
   }
@@ -790,7 +790,7 @@ cmeq_v4s_reg.execute = {
   typedef typename ARCH::S32 S32;
 
   for (unsigned e=0; e < 4; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
     res =  S32(not (op1 == op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
   }
@@ -808,7 +808,7 @@ cmeq_v2d_reg.execute = {
   typedef typename ARCH::S64 S64;
 
   for (unsigned e=0; e < 2; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    S64 op1( cpu.GetVS64(rn,e) ), op2( cpu.GetVS64(rm,e) ), res;
     res =  S64(not (op1 == op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
   }
@@ -991,7 +991,7 @@ cmge_d_reg.execute = {
   typedef typename ARCH::S64 S64;
 
   for (unsigned e=0; e < 1; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    S64 op1( cpu.GetVS64(rn,e) ), op2( cpu.GetVS64(rm,e) ), res;
     res =  S64(not (op1 >= op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
   }
@@ -1009,7 +1009,7 @@ cmge_v8b_reg.execute = {
   typedef typename ARCH::S8 S8;
 
   for (unsigned e=0; e < 8; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
     res =  S8(not (op1 >= op2)) - S8(1);
     cpu.SetVS8(rd,e,res);
   }
@@ -1027,7 +1027,7 @@ cmge_v16b_reg.execute = {
   typedef typename ARCH::S8 S8;
 
   for (unsigned e=0; e < 16; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
     res =  S8(not (op1 >= op2)) - S8(1);
     cpu.SetVS8(rd,e,res);
   }
@@ -1045,7 +1045,7 @@ cmge_v4h_reg.execute = {
   typedef typename ARCH::S16 S16;
 
   for (unsigned e=0; e < 4; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
     res =  S16(not (op1 >= op2)) - S16(1);
     cpu.SetVS16(rd,e,res);
   }
@@ -1063,7 +1063,7 @@ cmge_v8h_reg.execute = {
   typedef typename ARCH::S16 S16;
 
   for (unsigned e=0; e < 8; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
     res =  S16(not (op1 >= op2)) - S16(1);
     cpu.SetVS16(rd,e,res);
   }
@@ -1081,7 +1081,7 @@ cmge_v2s_reg.execute = {
   typedef typename ARCH::S32 S32;
 
   for (unsigned e=0; e < 2; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
     res =  S32(not (op1 >= op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
   }
@@ -1099,7 +1099,7 @@ cmge_v4s_reg.execute = {
   typedef typename ARCH::S32 S32;
 
   for (unsigned e=0; e < 4; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
     res =  S32(not (op1 >= op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
   }
@@ -1117,7 +1117,7 @@ cmge_v2d_reg.execute = {
   typedef typename ARCH::S64 S64;
 
   for (unsigned e=0; e < 2; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    S64 op1( cpu.GetVS64(rn,e) ), op2( cpu.GetVS64(rm,e) ), res;
     res =  S64(not (op1 >= op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
   }
@@ -1302,7 +1302,7 @@ cmgt_d_reg.execute = {
   typedef typename ARCH::S64 S64;
 
   for (unsigned e=0; e < 1; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    S64 op1( cpu.GetVS64(rn,e) ), op2( cpu.GetVS64(rm,e) ), res;
     res =  S64(not (op1 > op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
   }
@@ -1320,7 +1320,7 @@ cmgt_v8b_reg.execute = {
   typedef typename ARCH::S8 S8;
 
   for (unsigned e=0; e < 8; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
     res =  S8(not (op1 > op2)) - S8(1);
     cpu.SetVS8(rd,e,res);
   }
@@ -1338,7 +1338,7 @@ cmgt_v16b_reg.execute = {
   typedef typename ARCH::S8 S8;
 
   for (unsigned e=0; e < 16; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
     res =  S8(not (op1 > op2)) - S8(1);
     cpu.SetVS8(rd,e,res);
   }
@@ -1356,7 +1356,7 @@ cmgt_v4h_reg.execute = {
   typedef typename ARCH::S16 S16;
 
   for (unsigned e=0; e < 4; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
     res =  S16(not (op1 > op2)) - S16(1);
     cpu.SetVS16(rd,e,res);
   }
@@ -1374,7 +1374,7 @@ cmgt_v8h_reg.execute = {
   typedef typename ARCH::S16 S16;
 
   for (unsigned e=0; e < 8; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
     res =  S16(not (op1 > op2)) - S16(1);
     cpu.SetVS16(rd,e,res);
   }
@@ -1392,7 +1392,7 @@ cmgt_v2s_reg.execute = {
   typedef typename ARCH::S32 S32;
 
   for (unsigned e=0; e < 2; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
     res =  S32(not (op1 > op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
   }
@@ -1410,7 +1410,7 @@ cmgt_v4s_reg.execute = {
   typedef typename ARCH::S32 S32;
 
   for (unsigned e=0; e < 4; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
     res =  S32(not (op1 > op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
   }
@@ -1428,7 +1428,7 @@ cmgt_v2d_reg.execute = {
   typedef typename ARCH::S64 S64;
 
   for (unsigned e=0; e < 2; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    S64 op1( cpu.GetVS64(rn,e) ), op2( cpu.GetVS64(rm,e) ), res;
     res =  S64(not (op1 > op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
   }
@@ -1612,7 +1612,7 @@ cmhi_d_reg.execute = {
   typedef typename ARCH::U64 U64;
 
   for (unsigned e=0; e < 1; e += 1) {
-    U64 op1( cpu.GetVU64(rn,e) ), op2( 0 ), res;
+    U64 op1( cpu.GetVU64(rn,e) ), op2( cpu.GetVU64(rm,e) ), res;
     res =  U64(not (op1 > op2)) - U64(1);
     cpu.SetVU64(rd,e,res);
   }
@@ -1630,7 +1630,7 @@ cmhi_v8b_reg.execute = {
   typedef typename ARCH::U8 U8;
 
   for (unsigned e=0; e < 8; e += 1) {
-    U8 op1( cpu.GetVU8(rn,e) ), op2( 0 ), res;
+    U8 op1( cpu.GetVU8(rn,e) ), op2( cpu.GetVU8(rm,e) ), res;
     res =  U8(not (op1 > op2)) - U8(1);
     cpu.SetVU8(rd,e,res);
   }
@@ -1648,7 +1648,7 @@ cmhi_v16b_reg.execute = {
   typedef typename ARCH::U8 U8;
 
   for (unsigned e=0; e < 16; e += 1) {
-    U8 op1( cpu.GetVU8(rn,e) ), op2( 0 ), res;
+    U8 op1( cpu.GetVU8(rn,e) ), op2( cpu.GetVU8(rm,e) ), res;
     res =  U8(not (op1 > op2)) - U8(1);
     cpu.SetVU8(rd,e,res);
   }
@@ -1666,7 +1666,7 @@ cmhi_v4h_reg.execute = {
   typedef typename ARCH::U16 U16;
 
   for (unsigned e=0; e < 4; e += 1) {
-    U16 op1( cpu.GetVU16(rn,e) ), op2( 0 ), res;
+    U16 op1( cpu.GetVU16(rn,e) ), op2( cpu.GetVU16(rm,e) ), res;
     res =  U16(not (op1 > op2)) - U16(1);
     cpu.SetVU16(rd,e,res);
   }
@@ -1684,7 +1684,7 @@ cmhi_v8h_reg.execute = {
   typedef typename ARCH::U16 U16;
 
   for (unsigned e=0; e < 8; e += 1) {
-    U16 op1( cpu.GetVU16(rn,e) ), op2( 0 ), res;
+    U16 op1( cpu.GetVU16(rn,e) ), op2( cpu.GetVU16(rm,e) ), res;
     res =  U16(not (op1 > op2)) - U16(1);
     cpu.SetVU16(rd,e,res);
   }
@@ -1702,7 +1702,7 @@ cmhi_v2s_reg.execute = {
   typedef typename ARCH::U32 U32;
 
   for (unsigned e=0; e < 2; e += 1) {
-    U32 op1( cpu.GetVU32(rn,e) ), op2( 0 ), res;
+    U32 op1( cpu.GetVU32(rn,e) ), op2( cpu.GetVU32(rm,e) ), res;
     res =  U32(not (op1 > op2)) - U32(1);
     cpu.SetVU32(rd,e,res);
   }
@@ -1720,7 +1720,7 @@ cmhi_v4s_reg.execute = {
   typedef typename ARCH::U32 U32;
 
   for (unsigned e=0; e < 4; e += 1) {
-    U32 op1( cpu.GetVU32(rn,e) ), op2( 0 ), res;
+    U32 op1( cpu.GetVU32(rn,e) ), op2( cpu.GetVU32(rm,e) ), res;
     res =  U32(not (op1 > op2)) - U32(1);
     cpu.SetVU32(rd,e,res);
   }
@@ -1738,7 +1738,7 @@ cmhi_v2d_reg.execute = {
   typedef typename ARCH::U64 U64;
 
   for (unsigned e=0; e < 2; e += 1) {
-    U64 op1( cpu.GetVU64(rn,e) ), op2( 0 ), res;
+    U64 op1( cpu.GetVU64(rn,e) ), op2( cpu.GetVU64(rm,e) ), res;
     res =  U64(not (op1 > op2)) - U64(1);
     cpu.SetVU64(rd,e,res);
   }
@@ -1767,7 +1767,7 @@ cmhs_d_reg.execute = {
   typedef typename ARCH::U64 U64;
 
   for (unsigned e=0; e < 1; e += 1) {
-    U64 op1( cpu.GetVU64(rn,e) ), op2( 0 ), res;
+    U64 op1( cpu.GetVU64(rn,e) ), op2( cpu.GetVU64(rm,e) ), res;
     res =  U64(not (op1 >= op2)) - U64(1);
     cpu.SetVU64(rd,e,res);
   }
@@ -1785,7 +1785,7 @@ cmhs_v8b_reg.execute = {
   typedef typename ARCH::U8 U8;
 
   for (unsigned e=0; e < 8; e += 1) {
-    U8 op1( cpu.GetVU8(rn,e) ), op2( 0 ), res;
+    U8 op1( cpu.GetVU8(rn,e) ), op2( cpu.GetVU8(rm,e) ), res;
     res =  U8(not (op1 >= op2)) - U8(1);
     cpu.SetVU8(rd,e,res);
   }
@@ -1803,7 +1803,7 @@ cmhs_v16b_reg.execute = {
   typedef typename ARCH::U8 U8;
 
   for (unsigned e=0; e < 16; e += 1) {
-    U8 op1( cpu.GetVU8(rn,e) ), op2( 0 ), res;
+    U8 op1( cpu.GetVU8(rn,e) ), op2( cpu.GetVU8(rm,e) ), res;
     res =  U8(not (op1 >= op2)) - U8(1);
     cpu.SetVU8(rd,e,res);
   }
@@ -1821,7 +1821,7 @@ cmhs_v4h_reg.execute = {
   typedef typename ARCH::U16 U16;
 
   for (unsigned e=0; e < 4; e += 1) {
-    U16 op1( cpu.GetVU16(rn,e) ), op2( 0 ), res;
+    U16 op1( cpu.GetVU16(rn,e) ), op2( cpu.GetVU16(rm,e) ), res;
     res =  U16(not (op1 >= op2)) - U16(1);
     cpu.SetVU16(rd,e,res);
   }
@@ -1839,7 +1839,7 @@ cmhs_v8h_reg.execute = {
   typedef typename ARCH::U16 U16;
 
   for (unsigned e=0; e < 8; e += 1) {
-    U16 op1( cpu.GetVU16(rn,e) ), op2( 0 ), res;
+    U16 op1( cpu.GetVU16(rn,e) ), op2( cpu.GetVU16(rm,e) ), res;
     res =  U16(not (op1 >= op2)) - U16(1);
     cpu.SetVU16(rd,e,res);
   }
@@ -1857,7 +1857,7 @@ cmhs_v2s_reg.execute = {
   typedef typename ARCH::U32 U32;
 
   for (unsigned e=0; e < 2; e += 1) {
-    U32 op1( cpu.GetVU32(rn,e) ), op2( 0 ), res;
+    U32 op1( cpu.GetVU32(rn,e) ), op2( cpu.GetVU32(rm,e) ), res;
     res =  U32(not (op1 >= op2)) - U32(1);
     cpu.SetVU32(rd,e,res);
   }
@@ -1875,7 +1875,7 @@ cmhs_v4s_reg.execute = {
   typedef typename ARCH::U32 U32;
 
   for (unsigned e=0; e < 4; e += 1) {
-    U32 op1( cpu.GetVU32(rn,e) ), op2( 0 ), res;
+    U32 op1( cpu.GetVU32(rn,e) ), op2( cpu.GetVU32(rm,e) ), res;
     res =  U32(not (op1 >= op2)) - U32(1);
     cpu.SetVU32(rd,e,res);
   }
@@ -1893,7 +1893,7 @@ cmhs_v2d_reg.execute = {
   typedef typename ARCH::U64 U64;
 
   for (unsigned e=0; e < 2; e += 1) {
-    U64 op1( cpu.GetVU64(rn,e) ), op2( 0 ), res;
+    U64 op1( cpu.GetVU64(rn,e) ), op2( cpu.GetVU64(rm,e) ), res;
     res =  U64(not (op1 >= op2)) - U64(1);
     cpu.SetVU64(rd,e,res);
   }

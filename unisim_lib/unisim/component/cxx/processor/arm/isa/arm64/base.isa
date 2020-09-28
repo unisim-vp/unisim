@@ -3294,7 +3294,7 @@ ldaxrh_w.execute = {
  */
 
 op ldnp_wo( 0b0010100001[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldnp_wo.var format : {char const*} = {"base,74"};
+ldnp_wo.var format : {char const*} = {"base,74"}, reject : {Reject} = {rt == rt2};
 
 ldnp_wo.disasm = {
   sink << "ldnp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
@@ -3313,7 +3313,7 @@ ldnp_wo.execute = {
 };
 
 op ldnp_xo( 0b1010100001[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldnp_xo.var format : {char const*} = {"base,93"};
+ldnp_xo.var format : {char const*} = {"base,93"}, reject : {Reject} = {rt == rt2};
 
 ldnp_xo.disasm = {
   sink << "ldnp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";

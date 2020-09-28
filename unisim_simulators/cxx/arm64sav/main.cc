@@ -146,6 +146,7 @@ struct Checker
     FileLoc fl( reposname );
     std::ifstream source( fl.name );
     bool updated = false;
+    std::set<std::string> gilcoverage;
     
     while (source)
       {
@@ -171,6 +172,8 @@ struct Checker
                 std::cerr << fl << ": warning " << code << ", " << disasm << " not inserted\n";
                 updated = true;
               }
+            else
+              gilcoverage.insert(codeop->GetName());
           }
         catch (unisim::util::sav::Untestable const& denial)
           {
@@ -179,6 +182,8 @@ struct Checker
             continue;
           }
       }
+
+    std::cerr << "Instruction coverage: " << gilcoverage.size() << " (genisslib instructions).\n";
     
     return updated;
   }
