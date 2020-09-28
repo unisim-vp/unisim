@@ -194,25 +194,27 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
 void
 Interface::field_name(unsigned idx, std::ostream& sink) const
 {
+  struct Ouch {};
   if (idx < gregs.used())
     {
       for (unsigned reg = 0; ; ++reg)
-        if (gregs.accessed(reg) and idx-- == 0)
+        if (gregs.accessed(reg) and gregs.index(reg) == idx)
           { sink << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg); return; }
+      throw Ouch();
     }
   idx -= gregs.used();
   if (idx < 1)
     { sink << "nzcv"; return; }
-  idx--;
+  idx -= 1;
   if (idx < vregs.used()*2)
     {
-      unsigned sub = idx & 1;
-      idx >>= 1;
+      unsigned sub = idx & 1, vidx = idx >> 1;
       for (unsigned reg = 0; ; ++reg)
-        if (vregs.accessed(reg) and idx-- == 0)
+        if (vregs.accessed(reg) and vregs.index(reg) == vidx)
           { sink << unisim::component::cxx::processor::arm::isa::arm64::DisasmQ(reg) << (sub ? ".hi" : ".lo"); return; }
+      throw Ouch();
     }
-  sink << "?";
+  throw Ouch();
 }
 
 

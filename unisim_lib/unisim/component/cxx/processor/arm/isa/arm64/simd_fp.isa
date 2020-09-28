@@ -12249,7 +12249,7 @@ str_hxxu.execute = {
   typedef typename ARCH::U64 U64;
 
   U64 offset( U64(U64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
-  U16 data( cpu.GetGZR(rt) );
+  U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
 };
 

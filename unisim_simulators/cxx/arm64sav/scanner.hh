@@ -338,10 +338,11 @@ struct Scanner
   void gregwrite(unsigned id, U64 const& value) { gregtouch(id, true); gpr[id] = value; }
 
   U64 GetSP() { dont("SP access"); return U64(); }
+  template <typename T> void SetSP(unisim::util::symbolic::SmartValue<T> const& val) { dont("SP access"); }
   U64 GetGSR(unsigned id) { return (id != 31) ? gregread(id) : GetSP(); }
   U64 GetGZR(unsigned id) { return (id != 31) ? gregread(id) : U64(0); }
   template <typename T> void SetGSR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
-  { U64 v64(val); if (id != 31) gregwrite(id, v64); else gpr[31] = v64; }
+  { U64 v64(val); if (id != 31) gregwrite(id, v64); else SetSP(v64); }
   template <typename T> void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
   { U64 v64(val); if (id != 31) gregwrite(id, v64);  }
 
