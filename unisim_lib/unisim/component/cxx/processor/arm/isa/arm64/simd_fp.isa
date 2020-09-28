@@ -133,9 +133,8 @@ add_v4s.disasm = {
 };
 
 add_v4s.execute = {
-  for (unsigned idx = 0; idx < 2; ++idx)
+  for (unsigned idx = 0; idx < 4; ++idx)
     cpu.SetVU32(rd,idx,cpu.GetVU32(rn,idx) + cpu.GetVU32(rm,idx));
-  cpu.ClearHighV(rd,16);
 };
 
 op add_ddd( 0b01011110111[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
