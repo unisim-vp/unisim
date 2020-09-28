@@ -72,7 +72,7 @@ namespace SSv8 {
         break;
       }
     
-    std::cerr << "Warning AHB PNP access {unit=" << unit << ", reg=" << reg << "}\n";
+    //std::cerr << "Warning AHB PNP access {unit=" << unit << ", reg=" << reg << "}\n";
     setreg(0); return true;
     return false;
   }
@@ -105,7 +105,7 @@ namespace SSv8 {
         break;
       }
     
-    std::cerr << "Warning APB PNP access {unit=" << unit << ", reg=" << reg << "}\n";
+    //std::cerr << "Warning APB PNP access {unit=" << unit << ", reg=" << reg << "}\n";
     setreg(0); return true;
     return false;
   }
