@@ -37,11 +37,6 @@
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <sstream>
 
-namespace
-{
-  
-}
-
 Interface::Interface( Operation const& op, uint32_t code, std::string const& disasm )
   : memcode(code)
   , asmcode(disasm)

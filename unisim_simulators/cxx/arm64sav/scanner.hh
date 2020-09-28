@@ -336,8 +336,9 @@ struct Scanner
   void gregtouch(unsigned id, bool write);
   U64 gregread(unsigned id) { gregtouch(id, false); return gpr[id]; }
   void gregwrite(unsigned id, U64 const& value) { gregtouch(id, true); gpr[id] = value; }
-    
-  U64 GetGSR(unsigned id) { return (id != 31) ? gregread(id) : gpr[31]; }
+
+  U64 GetSP() { dont("SP access"); return U64(); }
+  U64 GetGSR(unsigned id) { return (id != 31) ? gregread(id) : GetSP(); }
   U64 GetGZR(unsigned id) { return (id != 31) ? gregread(id) : U64(0); }
   template <typename T> void SetGSR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
   { U64 v64(val); if (id != 31) gregwrite(id, v64); else gpr[31] = v64; }

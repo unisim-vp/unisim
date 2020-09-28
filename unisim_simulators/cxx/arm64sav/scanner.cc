@@ -52,7 +52,7 @@ Scanner::Scanner( Interface& iif )
   for (Flag reg; reg.next();)
     flags[reg.idx()] = BOOL(newRegRead( reg ));
   // General & Vector registers on-demand allocation (see *regtouch)
-  gpr[31] = newRegRead(SP());
+  //gpr[31] = newRegRead(SP());
 }
 
 Scanner::~Scanner()
