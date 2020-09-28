@@ -33,6 +33,7 @@
  */
  
 #include <hw/pnp.hh>
+#include <iostream>
 
 #define VENDORID( VALUE )  ((VALUE & 0x00ff) << 24)
 #define DEVICEID( VALUE )  ((VALUE & 0x0fff) << 12)
@@ -56,48 +57,56 @@ namespace SSv8 {
   bool
   AHBPNP::getreg( uint32_t _idx ) {
     uint32_t unit = _idx / 8, reg = _idx % 8;
-    switch( unit ) {
-    case 64: // European Space Agency; Leon2 Memory Controller
-      switch( reg ) {
-      case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+    switch (unit)
+      {
+      case 64: // European Space Agency; Leon2 Memory Controller
+        switch( reg ) {
+        case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+        }
+        break;
+      case 65: // Gaisler Research, AHB/APB Bridge
+        switch( reg ) {
+        case 0: setreg( VENDORID( 1 ) | DEVICEID( 6 ) | VERSION( 0 ) | IRQ( 0 ) ); return true;
+        case 4: setreg( ADDR( 0x0800 ) | MASK( 0xfff ) | TYPE( 2 ) ); return true;
+        }
+        break;
       }
-      break;
-    case 65: // Gaisler Research, AHB/APB Bridge
-      switch( reg ) {
-      case 0: setreg( VENDORID( 1 ) | DEVICEID( 6 ) | VERSION( 0 ) | IRQ( 0 ) ); return true;
-      case 4: setreg( ADDR( 0x0800 ) | MASK( 0xfff ) | TYPE( 2 ) ); return true;
-      }
-      break;
-    }
+    
+    std::cerr << "Warning AHB PNP access {unit=" << unit << ", reg=" << reg << "}\n";
+    setreg(0); return true;
     return false;
   }
   
   bool
   APBPNP::getreg( uint32_t _idx ) {
     uint32_t unit = _idx / 2, reg = _idx % 2;
-    switch( unit ) {
-    case 0: // European Space Agency; Leon2 Memory Controller
-      switch( reg ) {
-      case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+    switch (unit)
+      {
+      case 0: // European Space Agency; Leon2 Memory Controller
+        switch( reg ) {
+        case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+        }
+        break;
+      case 1: // Gaisler Research, Generic UART
+        switch( reg ) {
+        case 0: setreg( VENDORID( 1 ) | DEVICEID( 12 ) | VERSION( 1 ) | IRQ( 2 ) ); return true;
+        case 1: setreg( ADDR( 0x0001 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
+        }
+        break;
+      case 2: // Gaisler Research, Multi-processor Interrupt Ctrl.
+        switch( reg ) {
+        case 0: setreg( VENDORID( 1 ) | DEVICEID( 13 ) | VERSION( 3 ) | IRQ( 0 ) ); return true;
+        }
+      case 3: // Gaisler Research, Modular Timer Unit
+        switch( reg ) {
+        case 0: setreg( VENDORID( 1 ) | DEVICEID( 17 ) | VERSION( 0 ) | IRQ( 8 ) ); return true;
+        case 1: setreg( ADDR( 0x0003 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
+        }
+        break;
       }
-      break;
-    case 1: // Gaisler Research, Generic UART
-      switch( reg ) {
-      case 0: setreg( VENDORID( 1 ) | DEVICEID( 12 ) | VERSION( 1 ) | IRQ( 2 ) ); return true;
-      case 1: setreg( ADDR( 0x0001 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
-      }
-      break;
-    case 2: // Gaisler Research, Multi-processor Interrupt Ctrl.
-      switch( reg ) {
-      case 0: setreg( VENDORID( 1 ) | DEVICEID( 13 ) | VERSION( 3 ) | IRQ( 0 ) ); return true;
-      }
-    case 3: // Gaisler Research, Modular Timer Unit
-      switch( reg ) {
-      case 0: setreg( VENDORID( 1 ) | DEVICEID( 17 ) | VERSION( 0 ) | IRQ( 8 ) ); return true;
-      case 1: setreg( ADDR( 0x0003 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
-      }
-      break;
-    }
+    
+    std::cerr << "Warning APB PNP access {unit=" << unit << ", reg=" << reg << "}\n";
+    setreg(0); return true;
     return false;
   }
 };
