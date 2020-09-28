@@ -15712,7 +15712,7 @@ stvms_sro.execute = {
 };
 
 op stvms_dno( 0[1] : q[1] : 0b00110000000000[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
-stvms_dno.var vms : {Vms} = {opcode};
+stvms_dno.var vms : {Vms} = {opcode}, reject : {Reject} = {not (q or vms.ses)};
 
 stvms_dno.disasm = {
   sink << "st";
@@ -15735,7 +15735,7 @@ stvms_dno.execute = {
 };
 
 op stvms_dio( 0[1] : q[1] : 0b00110010011111[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
-stvms_dio.var vms : {Vms} = {opcode};
+stvms_dio.var vms : {Vms} = {opcode}, reject : {Reject} = {not (q or vms.ses)};
 
 stvms_dio.disasm = {
   sink << "st";
@@ -15760,7 +15760,7 @@ stvms_dio.execute = {
 };
 
 op stvms_dro( 0[1] : q[1] : 0b001100100[9] : rm[5] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
-stvms_dro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
+stvms_dro.var vms : {Vms} = {opcode}, reject : {Reject} = {(rm == 31) or (not (q or vms.ses))};
 
 stvms_dro.disasm = {
   sink << "st";
@@ -16022,7 +16022,7 @@ ldvms_sro.execute = {
 };
 
 op ldvms_dno( 0[1] : q[1] : 0b00110001000000[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
-ldvms_dno.var vms : {Vms} = {opcode};
+ldvms_dno.var vms : {Vms} = {opcode}, reject : {Reject} = {not (q or vms.ses)};
 
 ldvms_dno.disasm = {
   sink << "ld";
@@ -16047,7 +16047,7 @@ ldvms_dno.execute = {
 };
 
 op ldvms_dio( 0[1] : q[1] : 0b00110011011111[14] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
-ldvms_dio.var vms : {Vms} = {opcode};
+ldvms_dio.var vms : {Vms} = {opcode}, reject : {Reject} = {not (q or vms.ses)};
 
 ldvms_dio.disasm = {
   sink << "ld";
@@ -16074,7 +16074,7 @@ ldvms_dio.execute = {
 };
 
 op ldvms_dro( 0[1] : q[1] : 0b001100110[9] : rm[5] : opcode[4] : 0b11[2] : rn[5] : rt[5] );
-ldvms_dro.var vms : {Vms} = {opcode}, reject : {Reject} = {rm == 31};
+ldvms_dro.var vms : {Vms} = {opcode}, reject : {Reject} = {(rm == 31) or (not (q or vms.ses))};
 
 ldvms_dro.disasm = {
   sink << "ld";
