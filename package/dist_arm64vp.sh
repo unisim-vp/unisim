@@ -49,6 +49,7 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 UNISIM_SIMULATOR_SOURCE_FILES="\
 taint.cc \
 architecture.cc \
+system.cc \
 main.cc \
 debugger.cc \
 "

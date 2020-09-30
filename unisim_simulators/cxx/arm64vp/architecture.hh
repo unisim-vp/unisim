@@ -221,12 +221,14 @@ struct AArch64
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC };
   void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; throw Bad(); } next_insn_addr = addr.value; }
+  bool concretize();
   bool Test( bool cond ) { return cond; }
   template <typename T>
   bool Test( TaintedValue<T> const& cond )
   {
     if (cond.ubits)
-      { struct Bad {}; throw Bad (); }
+      //  { struct Bad {}; throw Bad(); }
+      return concretize();
     return cond.value;
   }  
   void CallSupervisor( uint32_t imm );
@@ -250,7 +252,11 @@ struct AArch64
     
     uint8_t dbuf[size], ubuf[size];
     if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
-      { struct Bad {}; throw Bad (); }
+      {
+        for (unsigned byte = 0; byte < size; ++byte)
+          if (not access_page(paddr+byte).read(paddr+byte,&dbuf[byte],&ubuf[byte],1))
+            { struct Bad {}; throw Bad (); }
+      }
 
     typedef typename T::value_type value_type;
     typedef typename TX<value_type>::as_mask bits_type;
@@ -292,7 +298,11 @@ struct AArch64
       }
 
     if (modify_page(paddr).write(paddr,&dbuf[0],&ubuf[0],size) != size)
-      { struct Bad {}; throw Bad (); }
+      {
+        for (unsigned byte = 0; byte < size; ++byte)
+          if (not modify_page(paddr+byte).write(paddr+byte,&dbuf[byte],&ubuf[byte],1))
+            { struct Bad {}; throw Bad (); }
+      }
   }
 
   void MemWrite64(U64 addr, U64 val) { memory_write(addr, val); }
