@@ -245,17 +245,26 @@ struct AArch64
   T
   memory_read(U64 addr)
   {
-    if (addr.ubits) { struct Bad {}; throw Bad(); }
+    struct Bad {};
+    if (addr.ubits) throw Bad();
     
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_read, size);
     
     uint8_t dbuf[size], ubuf[size];
-    if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
+    try
       {
-        for (unsigned byte = 0; byte < size; ++byte)
-          if (not access_page(paddr+byte).read(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-            { struct Bad {}; throw Bad (); }
+        if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
+          {
+            for (unsigned byte = 0; byte < size; ++byte)
+              if (not access_page(paddr+byte).read(paddr+byte,&dbuf[byte],&ubuf[byte],1))
+                throw Bad();
+          }
+      }
+    catch (Device const& device)
+      {
+        if (not device.effect->read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
+          throw Bad(); 
       }
 
     typedef typename T::value_type value_type;
@@ -281,7 +290,8 @@ struct AArch64
   void
   memory_write(U64 addr, T src)
   {
-    if (addr.ubits) { struct Bad {}; throw Bad(); }
+    struct Bad {};
+    if (addr.ubits) throw Bad();
 
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_write, size);
@@ -297,11 +307,19 @@ struct AArch64
         ubuf[idx] = ubits & 0xff; ubits >>= 8;
       }
 
-    if (modify_page(paddr).write(paddr,&dbuf[0],&ubuf[0],size) != size)
+    try
       {
-        for (unsigned byte = 0; byte < size; ++byte)
-          if (not modify_page(paddr+byte).write(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-            { struct Bad {}; throw Bad (); }
+        if (modify_page(paddr).write(paddr,&dbuf[0],&ubuf[0],size) != size)
+          {
+            for (unsigned byte = 0; byte < size; ++byte)
+              if (not modify_page(paddr+byte).write(paddr+byte,&dbuf[byte],&ubuf[byte],1))
+                throw Bad();
+          }
+      }
+    catch (Device const& device)
+      {
+        if (not device.effect->write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
+          throw Bad();
       }
   }
 
@@ -352,19 +370,28 @@ struct AArch64
   unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
   Vector vectors[VECTORCOUNT];
 
-  struct Page
+  struct Zone
   {
     uint64_t hi() const { return last; }
 
-    bool operator < (Page const& p) const { return last < p.base; }
-    bool operator > (Page const& p) const { return p.last < base; }
+    // bool operator < (Zone const& p) const { return last < p.base; }
+    // bool operator > (Zone const& p) const { return p.last < base; }
 
     struct Above
     {
       using is_transparent = void;
-      bool operator() (Page const& a, Page const& b) const { return a > b; }
-      bool operator() (Page const& a, uint64_t b) const { return a.base > b; }
+      bool operator() (Zone const& a, Zone const& b) const { return a.base > b.last; }
+      bool operator() (Zone const& a, uint64_t b) const { return a.base > b; }
     };
+
+    Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
+    
+    uint64_t    base;
+    uint64_t    last;
+  };
+  
+  struct Page : public Zone
+  {
     struct Free
     {
       virtual ~Free() {};
@@ -372,10 +399,10 @@ struct AArch64
       static Free nop;
     };
     Page( Free*, uint64_t _base, uint64_t _last, uint8_t* _data, uint8_t* _udat, Free* _free )
-      : base(_base), last(_last), data(_data), udat(_udat), free(_free)
+      : Zone(_base, _last), data(_data), udat(_udat), free(_free)
     {}
     Page( Page&& page )
-      : base(page.base), last(page.last), data(page.data), udat(page.udat), free(page.free)
+      : Zone(page), data(page.data), udat(page.udat), free(page.free)
     {
       page.data = 0;
       page.udat = 0;
@@ -391,13 +418,6 @@ struct AArch64
       std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
       return cnt;
     }
-    // bool write(uint64_t addr, unsigned count, unsigned endianness, uint64_t value) const
-    // {
-    //   uint8_t bytes[8];
-    //   for (unsigned idx = 0; idx < count; ++idx)
-    //     { bytes[idx^endianness] = value; value >>= 8; }
-    //   return write( addr, &bytes[0], count ) == count;
-    // }
     uint64_t read(uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const
     {
       uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
@@ -405,16 +425,6 @@ struct AArch64
       std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
       return cnt;
     }
-    // bool read(uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
-    // {
-    //   uint8_t bytes[8];
-    //   if (read(addr, &bytes[0], count) != count) return false;
-    //   uint64_t res = 0;
-    //   for (unsigned idx = count; idx-- != 0;)
-    //     { res <<= 8; res |= bytes[idx^endianness]; }
-    //   *value = res;
-    //   return true;
-    // }
     bool has_data() const { return data; }
     uint8_t const* get_data() const { return data; }
     uint8_t const* get_data(uint64_t addr) const { return &data[addr-base]; }
@@ -425,12 +435,7 @@ struct AArch64
     uint64_t size() const { return last - base + 1; }
 
     void dump_range(std::ostream&) const;
-    // friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
 
-
-  public:
-    uint64_t    base;
-    uint64_t    last;
   private:
     uint8_t*    data;
     uint8_t*    udat;
@@ -439,20 +444,48 @@ struct AArch64
     void resize(uint64_t last);
   };
 
+  struct Device : public Zone
+  {
+    struct Effect
+    {
+      virtual ~Effect() {};
+      virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const = 0;
+      virtual uint64_t read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const = 0;
+    };
+    
+    Device( uint64_t _base, uint64_t _last, Effect const* _effect )
+      : Zone( _base, _last )
+      , effect( _effect )
+    {}
+
+    Effect const* effect;
+  };
+
   typedef std::set<Page, Page::Above> Pages;
+  typedef std::set<Device, Device::Above> Devices;
 
   Page const& access_page( uint64_t addr )
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->last < addr)
-      { struct Bad {}; throw Bad(); }
+      {
+        auto di = devices.lower_bound(addr);
+        if (di != devices.end() and addr <= di->last)
+          throw *di;
+        struct Bad {}; throw Bad();
+      }
     return *pi;
   }
   Page const& modify_page(uint64_t addr)
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->last < addr)
-      return alloc_page(pi, addr);
+      {
+        auto di = devices.lower_bound(addr);
+        if (di != devices.end() and addr <= di->last)
+          throw *di;
+        return alloc_page(pi, addr);
+      }
     return *pi;
   }
 
@@ -594,10 +627,13 @@ struct AArch64
 
   template <class POLICY>
   void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
+
+  void create_gic(uint64_t base_addr);
   
   /** Architectural state **/
   MMU      mmu;
   Pages    pages;
+  Devices  devices;
   IPB      ipb;
   Decoder  decoder;
 

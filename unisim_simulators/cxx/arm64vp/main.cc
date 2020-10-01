@@ -112,7 +112,8 @@ main(int argc, char *argv[])
   if (device_tree.fd < 0) return 1;
   
   AArch64 arch;
-  
+
+  arch.create_gic(0x48000000);
   
   // SETUP the VirtIO Hypervisor Emulator
   // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );

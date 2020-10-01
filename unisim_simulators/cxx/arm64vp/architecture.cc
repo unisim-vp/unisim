@@ -78,12 +78,12 @@ bool
 AArch64::mem_map(Page&& page)
 {
   auto below = pages.lower_bound(page);
-  if (below != pages.end() and not (*below < page))
+  if (below != pages.end() and not Zone::Above()(page, *below))
     {
       error_mem_overlap(page, *below);
       return false;
     }
-  if (pages.size() and below != pages.begin() and not (page < *std::prev(below)))
+  if (pages.size() and below != pages.begin() and not Zone::Above()(*std::prev(below), page))
     {
       error_mem_overlap(page, *std::prev(below));
       return false;
@@ -594,7 +594,7 @@ AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t
   U32 spsr = GetSPSRFromPSTATE();
   // ESR[target_el] = ec<5:0>:il:syndrome;
 
-  get_el(target_el).ESR = U32()
+  get_el(target_el).ESR = U32(0)
     | U32((mat == mat_exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
     | U32(1) << 25 // IL
     | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
@@ -672,4 +672,71 @@ AArch64::concretize()
     { struct Bad {}; throw Bad (); }
   
   return exceptions[idx++].result;
+}
+
+    // {
+    //   uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+    //   std::copy( &dbuf[0], &dbuf[cnt], &data[start] );
+    //   std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
+    //   return cnt;
+    // }
+    // {
+    //   uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+    //   std::copy( &data[start], &data[start+cnt], &dbuf[0] );
+    //   std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
+    //   return cnt;
+    // }
+
+namespace {
+  template <uint32_t BITS, uint32_t MASK>
+  struct Match {
+    Match( uint32_t value ) : ok( ((value ^ BITS) & MASK) == 0 ), var( value & ~MASK ) {} bool ok; uint32_t var;
+    operator bool () const { return ok; }
+  };
+}
+
+void
+AArch64::create_gic(uint64_t base_addr)
+{
+  static struct GICEffect : public Device::Effect
+  {
+    enum { ITLinesNumber = 2 };
+    bool access(AArch64& arch, uint64_t offset, U32& value, bool write ) const
+    {
+      if (offset == 0x1004)
+        {
+          if (write) return false;
+          value = U32(0)
+            | U32(0,0xffff)      << 16  // Reserved
+            | U32(0,0x1f)        << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
+            | U32(0,1)           << 10  // Indicates whether the GIC implements the Security Extensions
+            | U32(0,3)           <<  8  // Reserved
+            | U32(0)             <<  5  // Indicates the number of implemented CPU interfaces
+            | U32(ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
+          return true;
+        }
+        
+      return false;
+    }
+    virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t size) const override
+    {
+      if (size != 4 or addr % 4) return false;
+      U32 u32(0);
+      for (unsigned idx = 4; idx-- > 0;)
+        { u32.value = u32.value >> 8 | dbuf[idx]; u32.ubits = u32.ubits >> 8 | ubuf[idx]; }
+      return access( arch, addr, u32, true );
+    }
+    virtual uint64_t read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t size) const override
+    {
+      if (size != 4 or addr % 4) return false;
+      U32 u32(0);
+      if (not access( arch, addr, u32, false))
+        return false;
+      for (unsigned idx = 0; idx < 4; ++idx)
+        { dbuf[idx] = u32.value; ubuf[idx] = u32.ubits; u32 >>= 8; }
+      return true;
+    }
+  } gic_effect;
+
+  devices.insert( Device( base_addr, base_addr + 0x1fff, &gic_effect) );
 }
