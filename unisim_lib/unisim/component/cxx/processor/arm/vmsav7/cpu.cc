@@ -1148,12 +1148,12 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
       case DAbort_Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
       case DAbort_Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
       case DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
-      case DAbort_SyncExternalonWalk: fault_status.Set( 0b01100 | (level&2) ); break;
+      case DAbort_SyncExternalOnWalk: fault_status.Set( 0b01100 | (level&2) ); break;
       case DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
-      case DAbort_SyncParityonWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
+      case DAbort_SyncParityOnWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
       case DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
       case DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
-      case DAbort_DebugEvent:         fault_status.Set( 0b00010 ); break;
+      case DAbort_Debug:              fault_status.Set( 0b00010 ); break;
       case DAbort_TLBConflict:        fault_status.Set( 0b10000 ); break;
       case DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
       case DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
@@ -1430,7 +1430,7 @@ CPU::TranslationTableWalk( CPU::TLB::Entry& tlbe, uint32_t mva, mem_acc_type_t m
     if (POLICY::DEBUG) success = ExternalReadMemory( l1descaddr, erd.data(), 4 );
     else               success = PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
     if (not success)
-      DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
+      DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalOnWalk, false, false, false, false, false);
   }
   uint32_t l1desc = erd.Get();
   switch (l1desc&3) {
@@ -1453,7 +1453,7 @@ CPU::TranslationTableWalk( CPU::TLB::Entry& tlbe, uint32_t mva, mem_acc_type_t m
       if (POLICY::DEBUG) success = ExternalReadMemory( l2descaddr, erd.data(), 4 );
       else               success = PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
       if (not success)
-        DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalonWalk, false,false,false,false,false);
+        DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalOnWalk, false,false,false,false,false);
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.

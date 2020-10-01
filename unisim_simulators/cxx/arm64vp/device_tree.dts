@@ -328,20 +328,13 @@
 
 	intc: intc@48000000 {
 		phandle = <0x8001>;
-		reg = <0x00 0x48000000 0x00 0x10000 0x00 0x48010000 0x00 0x10000>;
-		compatible = "arm,cortex-a15-gic";
+		reg = <0x00 0x48001000 0x00 0x1000 0x00 0x48000100 0x00 0x100>;
+		compatible = "arm,cortex-a9-gic";
 		ranges;
-		#size-cells = <0x02>;
-		#address-cells = <0x02>;
+		#size-cells = <2>;
+		#address-cells = <2>;
 		interrupt-controller;
-		#interrupt-cells = <0x03>;
-
-		v2m@48020000 {
-			phandle = <0x8002>;
-			reg = <0x00 0x48020000 0x00 0x1000>;
-			msi-controller;
-			compatible = "arm,gic-v2m-frame";
-		};
+		#interrupt-cells = <3>;
 	};
 /*
 	flash@0 {
