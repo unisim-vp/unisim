@@ -370,16 +370,16 @@ struct MPCore : public MMDevice
   
   static unsigned const ITLinesNumber = 2;
   static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
+  static unsigned const state32_count = (ITLinesNumber+1);
+  static unsigned const icfgr_count = 2*(ITLinesNumber+1);
   uint32_t ICCICR; /* CPU Interface Control Register */
   uint32_t ICCPMR; /* Interrupt Priority Mask Register */
   uint32_t ICDDCR; /* Distributor Control Register */
-  static unsigned const state32_count = (ITLinesNumber+1);
   uint32_t IENABLE[state32_count];
   uint32_t IPENDING[state32_count];
   uint32_t IACTIVE[state32_count];
   uint8_t  IPRIORITYR[ITLinesCount];
   uint8_t  ICDIPTR[ITLinesCount];
-  static unsigned const icfgr_count = 2*(ITLinesNumber+1);
   uint32_t ICDICFR[ITLinesCount/16];
   
   sc_core::sc_event interrupt_line_events[ITLinesCount];

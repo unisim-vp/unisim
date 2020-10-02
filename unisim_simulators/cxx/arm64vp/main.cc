@@ -113,7 +113,7 @@ main(int argc, char *argv[])
   
   AArch64 arch;
 
-  arch.create_gic(0x48000000);
+  arch.map_gic(0x48000000);
   
   // SETUP the VirtIO Hypervisor Emulator
   // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );

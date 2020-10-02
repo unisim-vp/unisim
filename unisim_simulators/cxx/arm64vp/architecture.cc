@@ -38,8 +38,10 @@
 #include <iomanip>
 
 AArch64::AArch64()
-  : mmu()
+  : devices()
+  , gic()
   , pages()
+  , mmu()
   , ipb()
   , decoder()
   , gpr()
@@ -51,7 +53,7 @@ AArch64::AArch64()
   , next_insn_addr()
   , TPIDR()
   , CPACR()
-  , event()
+  // , event()
   , disasm(false)
 {
   std::cout << "Let's go!\n";
@@ -674,53 +676,50 @@ AArch64::concretize()
   return exceptions[idx++].result;
 }
 
-    // {
-    //   uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
-    //   std::copy( &dbuf[0], &dbuf[cnt], &data[start] );
-    //   std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
-    //   return cnt;
-    // }
-    // {
-    //   uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
-    //   std::copy( &data[start], &data[start+cnt], &dbuf[0] );
-    //   std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
-    //   return cnt;
-    // }
-
-namespace {
-  template <uint32_t BITS, uint32_t MASK>
-  struct Match {
-    Match( uint32_t value ) : ok( ((value ^ BITS) & MASK) == 0 ), var( value & ~MASK ) {} bool ok; uint32_t var;
-    operator bool () const { return ok; }
-  };
-}
+AArch64::GIC::GIC()
+  : D_CTLR()
+{}
 
 void
-AArch64::create_gic(uint64_t base_addr)
+AArch64::map_gic(uint64_t base_addr)
 {
   static struct GICEffect : public Device::Effect
   {
-    enum { ITLinesNumber = 2 };
-    bool access(AArch64& arch, uint64_t offset, U32& value, bool write ) const
+    static bool error( char const* msg ) { std::cerr << "GIC error: " << msg << "\n"; return false; }
+    static void access(U32& reg, U32& bus, bool write) { if (write) reg = bus; else bus = reg; }
+    static void access(uint32_t reg, U32& bus, bool write)
+    { if (not write) bus = U32(reg); else if (not bus.ubits) reg = bus.value; else { struct Bad{}; throw Bad(); } }
+    static bool access(AArch64& arch, uint64_t offset, U32& value, bool write )
     {
-      if (offset == 0x1004)
+      if (offset == 0x1000)
+        return access( arch.gic.D_CTLR, value, write ), true;
+      else if (offset == 0x1004)
         {
-          if (write) return false;
+          if (write) return error( "Cannot write GICD_TYPER" );
           value = U32(0)
             | U32(0,0xffff)      << 16  // Reserved
             | U32(0,0x1f)        << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
             | U32(0,1)           << 10  // Indicates whether the GIC implements the Security Extensions
             | U32(0,3)           <<  8  // Reserved
             | U32(0)             <<  5  // Indicates the number of implemented CPU interfaces
-            | U32(ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
+            | U32(arch.gic.ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
           return true;
         }
-        
+      else if (0x1800 <= offset and offset < 0x1c00)
+        {
+          /* The GICD_ITARGETSRs provide an 8-bit CPU targets. Note:
+           * In a uniprocessor implementation, all interrupts target
+           * the one processor, and the GICD_ITARGETSRs are RAZ/WI.
+           */
+          return value = U32(0), true;
+        }
+
+      std::cerr << "Unmapped GIC register @" << std::hex << offset << "\n";
       return false;
     }
     virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t size) const override
     {
-      if (size != 4 or addr % 4) return false;
+      if (size != 4 or addr % 4) return error( "Ill formed request" );
       U32 u32(0);
       for (unsigned idx = 4; idx-- > 0;)
         { u32.value = u32.value >> 8 | dbuf[idx]; u32.ubits = u32.ubits >> 8 | ubuf[idx]; }
@@ -740,3 +739,4 @@ AArch64::create_gic(uint64_t base_addr)
 
   devices.insert( Device( base_addr, base_addr + 0x1fff, &gic_effect) );
 }
+

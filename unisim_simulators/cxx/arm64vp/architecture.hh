@@ -628,12 +628,21 @@ struct AArch64
   template <class POLICY>
   void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
 
-  void create_gic(uint64_t base_addr);
+  struct GIC
+  {
+    enum { ITLinesNumber = 2 };
+    GIC();
+    uint32_t D_CTLR;
+  };
+
+  void map_gic(uint64_t base_addr);
   
   /** Architectural state **/
-  MMU      mmu;
-  Pages    pages;
   Devices  devices;
+  GIC      gic;
+  Pages    pages;
+  
+  MMU      mmu;
   IPB      ipb;
   Decoder  decoder;
 
@@ -648,17 +657,17 @@ struct AArch64
   U64      TPIDR[2]; //<  Thread Pointer / ID Register
   uint32_t CPACR;
 
-  struct Event
-  {
-    enum evt_type { am_i_fujitsu = 0, end } current;
-    Event() : current(am_i_fujitsu) {}
-    bool pop( evt_type evt )
-    {
-      if (evt != current) return false;
-      evt = evt_type(int(evt)+1);
-      return true;
-    }
-  } event;
+  // struct Event
+  // {
+  //   enum evt_type { am_i_fujitsu = 0, end } current;
+  //   Event() : current(am_i_fujitsu) {}
+  //   bool pop( evt_type evt )
+  //   {
+  //     if (evt != current) return false;
+  //     evt = evt_type(int(evt)+1);
+  //     return true;
+  //   }
+  // } event;
   bool disasm;
 };
 
