@@ -744,10 +744,35 @@ AArch64::map_gic(uint64_t base_addr)
     static bool access(AArch64& arch, Request& req)
     {
       uint32_t raz_wi_32(0);
+
+      if (req.addr == 0x100) /* CPU Interface Control Register */
+        return req.access(arch.gic.C_CTLR);
       
-      if (req.addr == 0x1000)
+      if (req.addr == 0x104) /* Interrupt Priority Mask Register */
+        return req.access(arch.gic.C_PMR);
+
+      if (0x1d0 <= req.addr and req.addr < 0x1f0)
+        {
+          /* Active Priorities Registers (secure and not secure) */
+          return req.access(raz_wi_32);
+        }
+
+      if (req.addr == 0x1fc) /* Identification Register, GICC_IIDR */
+        {
+          if (req.write) return error( "Cannot write GICC_IIDR" );
+          U32 reg = U32(0)
+            | U32(0,0xff0)       << 20  // An product identifier (linux wants 0bx..x0000)
+            | U32(2)             << 16  // Architecture version (GICv2)
+            | U32(0,0xf)         << 12  // Revision
+            | U32(0x43b)         <<  0; // The JEP106 identity and continuation code of ARM.
+
+          return req.tainted_access(reg);
+        }
+      
+      if (req.addr == 0x1000) /* Distributor Control Register */
         return req.access( arch.gic.D_CTLR );
-      if (req.addr == 0x1004)
+      
+      if (req.addr == 0x1004) /* Interrupt Controller Type Register */
         {
           if (req.write) return error( "Cannot write GICD_TYPER" );
           U32 reg = U32(0)
@@ -759,8 +784,13 @@ AArch64::map_gic(uint64_t base_addr)
             | U32(arch.gic.ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
           return req.tainted_access(reg);
         }
+      
       if (0x1100 <= req.addr and req.addr < 0x1400)
         {
+          /* The GICD_I[S|C][ENABLER|PENDR|ACTIVER]n registers provide
+           * a [Set-|Clear-][enable|pending|active] bit for each
+           * interrupt supported by the GIC.
+           */
           unsigned idx = (req.addr - 0x1100)/4, cns = idx / 32, rtp = cns / 2;
           idx %= 32; cns %= 2;
           if (32*idx >= arch.gic.ITLinesCount)
@@ -773,6 +803,7 @@ AArch64::map_gic(uint64_t base_addr)
           if (req.write) { if (cns) reg &= ~value; else reg |= value; }
           return true;
         }
+      
       if (0x1400 <= req.addr and req.addr < 0x1800)
         {
           /* The GICD_IPRIORITYRs provide an 8-bit priority field for
@@ -785,6 +816,7 @@ AArch64::map_gic(uint64_t base_addr)
           uint8_t raz_wi(0);
           return req.access(raz_wi);
         }
+      
       if (0x1800 <= req.addr and req.addr < 0x1c00)
         {
           /* The GICD_ITARGETSRs provide an 8-bit CPU targets. Note:
@@ -794,6 +826,7 @@ AArch64::map_gic(uint64_t base_addr)
           uint8_t raz_wi(0);
           return req.access(raz_wi);
         }
+      
       if (0x1c00 <= req.addr and req.addr < 0x1d00)
         {
           /* The GICD_ICFGRs provide a 2-bit Int_config field for each

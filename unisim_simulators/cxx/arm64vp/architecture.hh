@@ -632,6 +632,10 @@ struct AArch64
   {
     enum { ITLinesNumber = 2, ITLinesCount = 32*(ITLinesNumber+1) };
     GIC();
+    // CPU interface
+    uint32_t C_CTLR;
+    uint32_t C_PMR;
+    // Distributor
     uint32_t D_CTLR;
     uint32_t D_IENABLE[ITLinesCount/32];
     uint32_t D_IPENDING[ITLinesCount/32];
