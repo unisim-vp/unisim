@@ -630,9 +630,14 @@ struct AArch64
 
   struct GIC
   {
-    enum { ITLinesNumber = 2 };
+    enum { ITLinesNumber = 2, ITLinesCount = 32*(ITLinesNumber+1) };
     GIC();
     uint32_t D_CTLR;
+    uint32_t D_IENABLE[ITLinesCount/32];
+    uint32_t D_IPENDING[ITLinesCount/32];
+    uint32_t D_IACTIVE[ITLinesCount/32];
+    uint8_t  D_IPRIORITYR[ITLinesCount];
+    uint32_t D_ICFGR[ITLinesCount/16];
   };
 
   void map_gic(uint64_t base_addr);

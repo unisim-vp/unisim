@@ -680,60 +680,147 @@ AArch64::GIC::GIC()
   : D_CTLR()
 {}
 
+namespace
+{
+  struct Request
+  {
+    virtual ~Request() {}
+    virtual void transfer(uint8_t*, uint8_t*, unsigned) = 0;
+    Request(uint64_t _addr, uint8_t _size, bool _write) : addr(_addr), size(_size), write(_write) {}
+    template <class T>
+    bool tainted_access( T& reg )
+    {
+      typedef typename T::value_type value_type;
+      static unsigned const bytecount = sizeof(value_type);
+      if (bytecount > size) return false;
+      uint8_t vbytes[bytecount], ubytes[bytecount];
+      if (not write) for (unsigned idx = 0; idx < bytecount; ++idx) { vbytes[idx] = reg.value >> 8*idx; ubytes[idx] = reg.ubits >> int(8*idx); }
+      transfer(&vbytes[0], &ubytes[0], bytecount);
+      addr += bytecount; size -= bytecount;
+      if (    write) for (unsigned idx = bytecount; idx-- > 0;) { reg.value = reg.value << 8 | vbytes[idx]; reg.ubits = reg.ubits << 8 | ubytes[idx]; }
+      return true;
+    }
+    template <typename T>
+    bool access( T& reg )
+    {
+      struct Undefined {};
+      struct _
+      {
+        typedef T value_type; _(value_type& _v) : value(_v) {}
+        T& value; struct U {
+          U& operator >> (int) { return *this; } U& operator << (int) { return *this; }
+          operator uint8_t() { return 0; } U& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
+        } ubits;
+      } _(reg);
+      try { return tainted_access ( _ ); } catch(Undefined const&) {}
+      return false;
+    }
+    uint64_t addr; uint8_t size; bool write;
+  };
+
+  struct IRequest : public Request
+  {
+    typedef uint8_t const* Src;
+    IRequest(uint64_t _addr, Src _vsrc, Src _usrc, uint8_t _size ) : Request( _addr, _size, true ), vsrc(_vsrc) , usrc(_usrc) {} Src vsrc, usrc;
+    void transfer(uint8_t* vdst, uint8_t* udst, unsigned n) override
+    { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vsrc += n; usrc += n; }
+  };
+  struct ORequest : public Request
+  {
+    typedef uint8_t* Dst;
+    ORequest(uint64_t _addr, Dst _vdst, Dst _udst, uint8_t _size ) : Request( _addr, _size, false ), vdst(_vdst), udst(_udst) {} Dst vdst, udst;
+    void transfer(uint8_t* vsrc, uint8_t* usrc, unsigned n) override
+    { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vdst += n; udst += n; }
+  };
+}
+
 void
 AArch64::map_gic(uint64_t base_addr)
 {
   static struct GICEffect : public Device::Effect
   {
     static bool error( char const* msg ) { std::cerr << "GIC error: " << msg << "\n"; return false; }
-    static void access(U32& reg, U32& bus, bool write) { if (write) reg = bus; else bus = reg; }
-    static void access(uint32_t reg, U32& bus, bool write)
-    { if (not write) bus = U32(reg); else if (not bus.ubits) reg = bus.value; else { struct Bad{}; throw Bad(); } }
-    static bool access(AArch64& arch, uint64_t offset, U32& value, bool write )
+
+    static bool access(AArch64& arch, Request& req)
     {
-      if (offset == 0x1000)
-        return access( arch.gic.D_CTLR, value, write ), true;
-      else if (offset == 0x1004)
+      uint32_t raz_wi_32(0);
+      
+      if (req.addr == 0x1000)
+        return req.access( arch.gic.D_CTLR );
+      if (req.addr == 0x1004)
         {
-          if (write) return error( "Cannot write GICD_TYPER" );
-          value = U32(0)
+          if (req.write) return error( "Cannot write GICD_TYPER" );
+          U32 reg = U32(0)
             | U32(0,0xffff)      << 16  // Reserved
             | U32(0,0x1f)        << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
             | U32(0,1)           << 10  // Indicates whether the GIC implements the Security Extensions
             | U32(0,3)           <<  8  // Reserved
             | U32(0)             <<  5  // Indicates the number of implemented CPU interfaces
             | U32(arch.gic.ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
+          return req.tainted_access(reg);
+        }
+      if (0x1100 <= req.addr and req.addr < 0x1400)
+        {
+          unsigned idx = (req.addr - 0x1100)/4, cns = idx / 32, rtp = cns / 2;
+          idx %= 32; cns %= 2;
+          if (32*idx >= arch.gic.ITLinesCount)
+            return req.access(raz_wi_32);
+          auto iscreg = rtp == 0 ? &AArch64::GIC::D_IENABLE : rtp == 1 ? &AArch64::GIC::D_IPENDING : &AArch64::GIC::D_IACTIVE;
+          uint32_t& reg = (arch.gic.*iscreg)[idx];
+          uint32_t value = reg;
+          if (not req.access(value))
+            return false;
+          if (req.write) { if (cns) reg &= ~value; else reg |= value; }
           return true;
         }
-      else if (0x1800 <= offset and offset < 0x1c00)
+      if (0x1400 <= req.addr and req.addr < 0x1800)
+        {
+          /* The GICD_IPRIORITYRs provide an 8-bit priority field for
+           * each interrupt supported by the GIC. This field stores
+           * the priority of the corresponding interrupt.
+           */
+          unsigned idx = req.addr - 0x1400;
+          if (idx < arch.gic.ITLinesCount)
+            return req.access( arch.gic.D_IPRIORITYR[idx] );
+          uint8_t raz_wi(0);
+          return req.access(raz_wi);
+        }
+      if (0x1800 <= req.addr and req.addr < 0x1c00)
         {
           /* The GICD_ITARGETSRs provide an 8-bit CPU targets. Note:
            * In a uniprocessor implementation, all interrupts target
            * the one processor, and the GICD_ITARGETSRs are RAZ/WI.
            */
-          return value = U32(0), true;
+          uint8_t raz_wi(0);
+          return req.access(raz_wi);
+        }
+      if (0x1c00 <= req.addr and req.addr < 0x1d00)
+        {
+          /* The GICD_ICFGRs provide a 2-bit Int_config field for each
+           * interrupt supported by the GIC.
+           */
+          unsigned idx = (req.addr - 0x1c00)/4;
+          if (16*idx < arch.gic.ITLinesCount)
+            return req.access( arch.gic.D_ICFGR[idx] );
+          return req.access(raz_wi_32);
         }
 
-      std::cerr << "Unmapped GIC register @" << std::hex << offset << "\n";
+      std::cerr << "Unmapped GIC register @" << std::hex << req.addr << "\n";
       return false;
     }
+    
     virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t size) const override
     {
-      if (size != 4 or addr % 4) return error( "Ill formed request" );
-      U32 u32(0);
-      for (unsigned idx = 4; idx-- > 0;)
-        { u32.value = u32.value >> 8 | dbuf[idx]; u32.ubits = u32.ubits >> 8 | ubuf[idx]; }
-      return access( arch, addr, u32, true );
+      IRequest idata(addr, dbuf, ubuf, size);
+      do {} while (idata.size and access(arch, idata));
+      return not idata.size;
     }
+    
     virtual uint64_t read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t size) const override
     {
-      if (size != 4 or addr % 4) return false;
-      U32 u32(0);
-      if (not access( arch, addr, u32, false))
-        return false;
-      for (unsigned idx = 0; idx < 4; ++idx)
-        { dbuf[idx] = u32.value; ubuf[idx] = u32.ubits; u32 >>= 8; }
-      return true;
+      ORequest odata(addr, dbuf, ubuf, size);
+      do {} while (odata.size and access(arch, odata));
+      return not odata.size;
     }
   } gic_effect;
 
