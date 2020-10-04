@@ -198,7 +198,6 @@ main(int argc, char *argv[])
 
   std::cerr << "\n*** Run ***" << std::endl;
 
-  uintptr_t insn_counter = 0;
   unsigned const tailsize = 1024;
   struct InstructionInfo
   {
@@ -213,16 +212,16 @@ main(int argc, char *argv[])
       for (;;)
         {
           arch.step_instruction();
-          tailbuf[insn_counter++%tailsize].assign(arch.current_insn_addr, arch.current_insn_op);
+          tailbuf[arch.insn_counter%tailsize].assign(arch.current_insn_addr, arch.current_insn_op);
         }
     }
   catch (...)
     {
-      std::cerr << "Executed " << std::dec << insn_counter << " instructions\n";
+      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions\n";
       std::ofstream tail("tail");
       for (unsigned idx = 0; idx < tailsize; ++idx)
         {
-          InstructionInfo const& insn = tailbuf[(insn_counter+idx)%tailsize];
+          InstructionInfo const& insn = tailbuf[(arch.insn_counter+idx)%tailsize];
           tail << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
           insn.op->disasm( arch, tail );
           tail << std::endl;
@@ -231,7 +230,7 @@ main(int argc, char *argv[])
       throw;
     }
 
-  std::cerr << "Executed " << std::dec << insn_counter << " instructions: " << std::endl;
+  std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
   
   return 0;
 }

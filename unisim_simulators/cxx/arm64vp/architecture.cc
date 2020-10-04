@@ -51,6 +51,8 @@ AArch64::AArch64()
   , nzcv()
   , current_insn_addr()
   , next_insn_addr()
+  , insn_counter()
+  , current_insn_op()
   , TPIDR()
   , CPACR()
   // , event()
@@ -67,7 +69,6 @@ AArch64::Page::~Page()
 void AArch64::Page::dump_range( std::ostream& sink ) const
 {
   sink << '[' << std::hex << base << ':' << last << std::dec << ']';
-  
 }
 
 void
@@ -191,7 +192,7 @@ AArch64::step_instruction()
       // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
       //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 
-      // instruction_counter++; /* Instruction regularly finished */
+      insn_counter++; /* Instruction regularly finished */
     }
 
   catch (Abort const&)

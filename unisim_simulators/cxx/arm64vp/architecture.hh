@@ -643,12 +643,24 @@ struct AArch64
     uint8_t  D_IPRIORITYR[ITLinesCount];
     uint32_t D_ICFGR[ITLinesCount/16];
   };
-
+  struct Timer
+  {
+    Timer() : KCTL(0), CTL(0), CVAL(0) {}
+    bool tcmp(AArch64& cpu) const { return cpu.get_pcount() > CVAL; }
+    uint64_t ReadCTL(AArch64& cpu) const { return CTL | (tcmp(cpu) << 2); }
+    void WriteCTL(uint64_t v) { CTL = v&3; }
+    uint32_t KCTL; /* Kernel Control */
+    uint8_t   CTL; /* Control */
+    uint64_t CVAL; /* Compare Value*/
+  };
   void map_gic(uint64_t base_addr);
+
+  uint64_t get_pcount() { /*TODO(timer architecture)*/; return insn_counter / 32; }
   
   /** Architectural state **/
   Devices  devices;
   GIC      gic;
+  Timer    vt;
   Pages    pages;
   
   MMU      mmu;
@@ -660,7 +672,7 @@ struct AArch64
   EL       el1;
   PState   pstate;
   U8       nzcv;
-  uint64_t current_insn_addr, next_insn_addr;
+  uint64_t current_insn_addr, next_insn_addr, insn_counter;
   Operation* current_insn_op;
   
   U64      TPIDR[2]; //<  Thread Pointer / ID Register
