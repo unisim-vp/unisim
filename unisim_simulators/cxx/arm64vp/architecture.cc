@@ -58,7 +58,6 @@ AArch64::AArch64()
   // , event()
   , disasm(false)
 {
-  std::cout << "Let's go!\n";
 }
 
 AArch64::Page::~Page()
@@ -164,13 +163,13 @@ AArch64::step_instruction()
 
       /* Decode current PC. TODO: should provide physical address for caching purpose */
       Operation* op = current_insn_op = decoder.Decode(insn_addr, insn);
-
+      
       this->next_insn_addr += 4;
 
-      // if (current_insn_addr == 0xffffffc01058cc18)
+      // if (current_insn_addr == 0xffffffc0109f4040 and gpr[0].value == 0xffffff800e89a00e)
       //   {
       //     breakdance();
-      //     disasm = true;
+      //     //disasm = true;
       //   }
       if (disasm)
         {
@@ -657,11 +656,46 @@ void
 AArch64::breakdance()
 {
   std::cerr << "Debug time!\n";
+  U64 addr = gpr[0];
+
+  std::cerr << std::hex << addr.value << std::dec << '"';
+  for (U8 byte; Test( (byte = MemRead8 (addr)) != U8(0) ); addr += U64(1))
+    {
+      if (byte.ubits)
+        { std::cerr << "\\b"; for (int bit = 8; --bit >=0;) { std::cerr << "01xx"[2*(byte.ubits >> bit & 1) | (byte.value >> bit & 1)]; } }
+      else if (isprint(byte.value))
+        std::cerr << byte.value;
+      else
+        std::cerr << "\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(byte.value) << std::dec;
+    }
+  std::cerr << '"' << "\n";
 }
 
 bool
 AArch64::concretize()
 {
+  if ((current_insn_addr - 0xffffffc0109f406c) < 8)
+    { // <__pi_strlen>:
+      //     ...
+      //     fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
+      //     54ffff00        b.eq    0xffffffc0109f4050
+      unsigned reg0, reg1;
+      bool first = current_insn_addr == 0xffffffc0109f406c;
+      if (first) { reg0 = 3; reg1 = 6; }
+      else       { reg0 = 2; reg1 = 5; }
+      uint64_t bytes = gpr[reg0].value | gpr[reg0].ubits;
+      uint64_t const magic = 0x0101010101010101;
+      bytes = ((bytes - magic) & (~bytes & (magic<<7)));
+      if (bytes)
+        {
+          // Need to patch strlen's internal variable
+          gpr[reg1] = U64(bytes);
+          return false;
+        }
+      if (first)
+        return true;
+    }
+  
   static struct { uint64_t address; bool result; }
   exceptions [] =
     {
@@ -672,7 +706,14 @@ AArch64::concretize()
   uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
 
   if ((idx >= end) or (exceptions[idx].address != current_insn_addr))
-    { struct Bad {}; throw Bad (); }
+    {
+      std::cerr << "Condition depends on unitialized value.\n";
+      DisasmState ds;
+      current_insn_op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
+      std::cerr << "\n";
+      
+      struct Bad {}; throw Bad ();
+    }
   
   return exceptions[idx++].result;
 }

@@ -65,13 +65,15 @@ template <> struct TX<   float> { typedef uint32_t as_mask; };
 template <> struct TX<  double> { typedef uint64_t as_mask; };
 template <> struct TX<    bool> { typedef bool as_mask; };
 
-template <typename DST, typename SRC> struct CastUBits { static typename TX<DST>::as_mask process( typename TX<SRC>::as_mask mask ) { return DST(SRC(mask)); } };
-template <typename SRC> struct CastUBits<float,SRC> { static uint32_t process( typename TX<SRC>::as_mask mask ) { return mask ? -1 : 0; } };
-template <typename SRC> struct CastUBits<double,SRC> { static uint64_t process( typename TX<SRC>::as_mask mask ) { return mask ? -1 : 0; } };
-template <typename DST> struct CastUBits<DST,float> { static typename TX<DST>::as_mask process( uint32_t mask ) { return mask ? -1 : 0; } };
-template <typename DST> struct CastUBits<DST,double> { static typename TX<DST>::as_mask process( uint64_t mask ) { return mask ? -1 : 0; } };
-template <> struct CastUBits<float,float> { static uint32_t process( uint32_t mask ) { return mask; } };
-template <> struct CastUBits<double,double> { static uint64_t process( uint64_t mask ) { return mask; } };
+template <typename DST, typename SRC> struct CastUBits { typedef typename TX<SRC>::as_mask mask_t; static typename TX<DST>::as_mask process( mask_t mask, mask_t bits ) { return DST(SRC(mask)); } };
+template <typename SRC> struct CastUBits<float,SRC> { typedef typename TX<SRC>::as_mask mask_t; static uint32_t process( mask_t mask, mask_t bits ) { return mask ? -1 : 0; } };
+template <typename SRC> struct CastUBits<double,SRC> { typedef typename TX<SRC>::as_mask mask_t; static uint64_t process( mask_t mask, mask_t bits ) { return mask ? -1 : 0; } };
+template <typename SRC> struct CastUBits<bool,SRC> { typedef typename TX<SRC>::as_mask mask_t; static bool process( mask_t mask, mask_t bits ) { return mask and not (~mask & bits); } };
+template <typename DST> struct CastUBits<DST,float> { static typename TX<DST>::as_mask process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };
+template <typename DST> struct CastUBits<DST,double> { static typename TX<DST>::as_mask process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<float,float> { static uint32_t process( uint32_t mask, uint32_t bits ) { return mask; } };
+template <> struct CastUBits<double,double> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask; } };
+template <> struct CastUBits<bool,bool> { static bool process( bool mask, bool bits ) { return mask; } };
 
 template <typename VALUE_TYPE>
 struct TaintedValue
@@ -83,14 +85,16 @@ struct TaintedValue
   value_type value; /* concrete value */
   ubits_type ubits; /* uninitialized bits */
   
+  ubits_type value_as_mask() const { return *reinterpret_cast<ubits_type const*>(&value); }
+  
   TaintedValue() : value(), ubits(-1) {}
 
   TaintedValue(value_type _value, ubits_type _ubits) : value(_value), ubits(_ubits) {}
   explicit TaintedValue( value_type _value ) : value(_value), ubits(0) {}
 
   template <typename SRC_VALUE_TYPE>
-  explicit TaintedValue( TaintedValue<SRC_VALUE_TYPE> const& other )
-    : value(other.value), ubits(CastUBits<VALUE_TYPE, SRC_VALUE_TYPE>::process(other.ubits))
+  explicit TaintedValue( TaintedValue<SRC_VALUE_TYPE> const& src )
+    : value(src.value), ubits(CastUBits<VALUE_TYPE, SRC_VALUE_TYPE>::process(src.ubits, src.value_as_mask()))
   {}
   
   static bool const is_signed = std::numeric_limits<value_type>::is_signed;
@@ -129,8 +133,8 @@ struct TaintedValue
   this_type operator & ( this_type const& other ) const { return this_type( value & other.value, (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits) ); }
   this_type operator | ( this_type const& other ) const { return this_type( value | other.value, (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits) ); }
 
-  TaintedValue<bool> operator == ( this_type const& other ) const { return TaintedValue<bool>( value == other.value, ubits or other.ubits ); }
-  TaintedValue<bool> operator != ( this_type const& other ) const { return TaintedValue<bool>( value != other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator == ( this_type const& r ) const { return TaintedValue<bool>( value == r.value, (ubits | r.ubits) and not (~ubits & ~r.ubits & (value ^ r.value)) ); }
+  TaintedValue<bool> operator != ( this_type const& r ) const { return TaintedValue<bool>( value != r.value, (ubits | r.ubits) and not (~ubits & ~r.ubits & (value ^ r.value)) ); }
   TaintedValue<bool> operator <= ( this_type const& other ) const { return TaintedValue<bool>( value <= other.value, ubits or other.ubits ); }
   TaintedValue<bool> operator >= ( this_type const& other ) const { return TaintedValue<bool>( value >= other.value, ubits or other.ubits ); }
   TaintedValue<bool> operator < ( this_type const& other ) const  { return TaintedValue<bool>( value <  other.value, ubits or other.ubits ); }
@@ -152,12 +156,12 @@ struct TaintedTypeInfo
   enum { bytecount = sizeof (T) };
   static void ToBytes( TaintedValue<uint8_t>* dst, T const& src )
   {
-    typedef typename TX<typename T::value_type>::as_mask bits_type;
+    //typedef typename TX<typename T::value_type>::as_mask bits_type;
+    typedef typename T::ubits_type ubits_type;
 
-    bits_type value = *reinterpret_cast<bits_type const*>(&src.value);
-    bits_type ubits = src.ubits;
+    ubits_type value = src.value_as_mask(), ubits = src.ubits;
     
-    for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
+    for (unsigned idx = 0; idx < sizeof (ubits_type); ++idx)
       {
         dst[idx].value = value & 0xff; value >>= 8;
         dst[idx].ubits = ubits & 0xff; ubits >>= 8;
@@ -166,13 +170,14 @@ struct TaintedTypeInfo
   static void FromBytes( T& dst, TaintedValue<uint8_t> const* src )
   {
     typedef typename T::value_type value_type;
-    typedef typename TX<value_type>::as_mask bits_type;
+    //typedef typename TX<value_type>::as_mask bits_type;
+    typedef typename T::ubits_type ubits_type;
 
-    bits_type value = 0, ubits = 0;
+    ubits_type value = 0, ubits = 0;
     for (unsigned idx = sizeof (T); idx-- > 0;)
       {
-        value <<= 8; value |= bits_type( src[idx].value );
-        ubits <<= 8; ubits |= bits_type( src[idx].ubits );
+        value <<= 8; value |= ubits_type( src[idx].value );
+        ubits <<= 8; ubits |= ubits_type( src[idx].ubits );
       }
     dst.value = *reinterpret_cast<value_type const*>(&value);
     dst.ubits = ubits;

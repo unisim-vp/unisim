@@ -223,14 +223,8 @@ struct AArch64
   void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; throw Bad(); } next_insn_addr = addr.value; }
   bool concretize();
   bool Test( bool cond ) { return cond; }
-  template <typename T>
-  bool Test( TaintedValue<T> const& cond )
-  {
-    if (cond.ubits)
-      //  { struct Bad {}; throw Bad(); }
-      return concretize();
-    return cond.value;
-  }  
+  // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
+  bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(); return cond.value; }  
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
 
@@ -676,6 +670,7 @@ struct AArch64
   Operation* current_insn_op;
   
   U64      TPIDR[2]; //<  Thread Pointer / ID Register
+  U64      TPIDRRO;
   uint32_t CPACR;
 
   // struct Event
