@@ -15489,6 +15489,2613 @@ zip2_v8hv8hv8h.disasm = {
   sink << "zip2\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
 };
 
+op orr_vbvbvb_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+orr_vbvbvb_newy.var format : {char const*} = {"1315"};
+
+orr_vbvbvb_newy.disasm = {
+  if (rn == rm)
+    sink << "mov\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+  else
+    sink << "orr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op abs_vbb_newy( 0b0[1] : q[1] : 0b00111000100000101110[20] : rn[5] : rd[5] );
+abs_vbb_newy.var format : {char const*} = {"2544"};
+
+abs_vbb_newy.disasm = {
+  sink << "abs\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op abs_vhh_newy( 0b0[1] : q[1] : 0b00111001100000101110[20] : rn[5] : rd[5] );
+abs_vhh_newy.var format : {char const*} = {"2459"};
+
+abs_vhh_newy.disasm = {
+  sink << "abs\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op abs_vss_newy( 0b0[1] : q[1] : 0b00111010100000101110[20] : rn[5] : rd[5] );
+abs_vss_newy.var format : {char const*} = {"2410"};
+
+abs_vss_newy.disasm = {
+  sink << "abs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op add_vb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+add_vb_newy.var format : {char const*} = {"1297"};
+
+add_vb_newy.disasm = {
+  sink << "add\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op add_vh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+add_vh_newy.var format : {char const*} = {"1095"};
+
+add_vh_newy.disasm = {
+  sink << "add\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op add_vs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+add_vs_newy.var format : {char const*} = {"1021"};
+
+add_vs_newy.disasm = {
+  sink << "add\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op addp_vb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_vb_newy.var format : {char const*} = {"1298"};
+
+addp_vb_newy.disasm = {
+  sink << "addp\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op addp_vh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_vh_newy.var format : {char const*} = {"1096"};
+
+addp_vh_newy.disasm = {
+  sink << "addp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op addp_vs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_vs_newy.var format : {char const*} = {"1022"};
+
+addp_vs_newy.disasm = {
+  sink << "addp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op addv_bvb_newy( 0b0[1] : q[1] : 0b00111000110001101110[20] : rn[5] : rd[5] );
+addv_bvb_newy.var format : {char const*} = {"2173"};
+
+addv_bvb_newy.disasm = {
+  sink << "addv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op addv_hvh_newy( 0b0[1] : q[1] : 0b00111001110001101110[20] : rn[5] : rd[5] );
+addv_hvh_newy.var format : {char const*} = {"2247"};
+
+addv_hvh_newy.disasm = {
+  sink << "addv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op and_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+and_vbvbvb_newy.var format : {char const*} = {"1299"};
+
+and_vbvbvb_newy.disasm = {
+  sink << "and\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op bic_vbvbvb_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+bic_vbvbvb_newy.var format : {char const*} = {"1300"};
+
+bic_vbvbvb_newy.disasm = {
+  sink << "bic\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op bic_vhi_newy( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
+bic_vhi_newy.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1885"};
+
+bic_vhi_newy.disasm = {
+  sink << "bic\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmI(imm,16);
+};
+
+op bic_vsi_newy( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b101[3] : imm0[5] : rd[5] );
+bic_vsi_newy.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh}, format : {char const*} = {"1786"};
+
+bic_vsi_newy.disasm = {
+  sink << "bic\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmI(imm,16);
+};
+
+op bif_vbvbvb_newy( 0b0[1] : q[1] : 0b101110111[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+bif_vbvbvb_newy.var format : {char const*} = {"1301"};
+
+bif_vbvbvb_newy.disasm = {
+  sink << "bif\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op bit_vbvbvb_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+bit_vbvbvb_newy.var format : {char const*} = {"1302"};
+
+bit_vbvbvb_newy.disasm = {
+  sink << "bit\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op bsl_vbvbvb_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+bsl_vbvbvb_newy.var format : {char const*} = {"1303"};
+
+bsl_vbvbvb_newy.disasm = {
+  sink << "bsl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cls_vbb_newy( 0b0[1] : q[1] : 0b00111000100000010010[20] : rn[5] : rd[5] );
+cls_vbb_newy.var format : {char const*} = {"2545"};
+
+cls_vbb_newy.disasm = {
+  sink << "cls\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op cls_vhh_newy( 0b0[1] : q[1] : 0b00111001100000010010[20] : rn[5] : rd[5] );
+cls_vhh_newy.var format : {char const*} = {"2460"};
+
+cls_vhh_newy.disasm = {
+  sink << "cls\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op cls_vss_newy( 0b0[1] : q[1] : 0b00111010100000010010[20] : rn[5] : rd[5] );
+cls_vss_newy.var format : {char const*} = {"2411"};
+
+cls_vss_newy.disasm = {
+  sink << "cls\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op clz_vbb_newy( 0b0[1] : q[1] : 0b10111000100000010010[20] : rn[5] : rd[5] );
+clz_vbb_newy.var format : {char const*} = {"2546"};
+
+clz_vbb_newy.disasm = {
+  sink << "clz\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op clz_vhh_newy( 0b0[1] : q[1] : 0b10111001100000010010[20] : rn[5] : rd[5] );
+clz_vhh_newy.var format : {char const*} = {"2461"};
+
+clz_vhh_newy.disasm = {
+  sink << "clz\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op clz_vss_newy( 0b0[1] : q[1] : 0b10111010100000010010[20] : rn[5] : rd[5] );
+clz_vss_newy.var format : {char const*} = {"2412"};
+
+clz_vss_newy.disasm = {
+  sink << "clz\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op cmeq_vb_reg_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
+cmeq_vb_reg_newy.var format : {char const*} = {"1304"};
+
+cmeq_vb_reg_newy.disasm = {
+  sink << "cmeq\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cmeq_vb_zero_newy( 0b0[1] : q[1] : 0b00111000100000100110[20] : rn[5] : rd[5] );
+cmeq_vb_zero_newy.var format : {char const*} = {"2558"};
+
+cmeq_vb_zero_newy.disasm = {
+  sink << "cmeq\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+op cmeq_vh_reg_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
+cmeq_vh_reg_newy.var format : {char const*} = {"1097"};
+
+cmeq_vh_reg_newy.disasm = {
+  sink << "cmeq\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op cmeq_vh_zero_newy( 0b0[1] : q[1] : 0b00111001100000100110[20] : rn[5] : rd[5] );
+cmeq_vh_zero_newy.var format : {char const*} = {"2469"};
+
+cmeq_vh_zero_newy.disasm = {
+  sink << "cmeq\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+op cmeq_vs_reg_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
+cmeq_vs_reg_newy.var format : {char const*} = {"1023"};
+
+cmeq_vs_reg_newy.disasm = {
+  sink << "cmeq\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op cmeq_vs_zero_newy( 0b0[1] : q[1] : 0b00111010100000100110[20] : rn[5] : rd[5] );
+cmeq_vs_zero_newy.var format : {char const*} = {"2445"};
+
+cmeq_vs_zero_newy.disasm = {
+  sink << "cmeq\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+op cmge_vb_reg_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
+cmge_vb_reg_newy.var format : {char const*} = {"1305"};
+
+cmge_vb_reg_newy.disasm = {
+  sink << "cmge\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cmge_vb_zero_newy( 0b0[1] : q[1] : 0b10111000100000100010[20] : rn[5] : rd[5] );
+cmge_vb_zero_newy.var format : {char const*} = {"2559"};
+
+cmge_vb_zero_newy.disasm = {
+  sink << "cmge\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+op cmge_vh_reg_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
+cmge_vh_reg_newy.var format : {char const*} = {"1098"};
+
+cmge_vh_reg_newy.disasm = {
+  sink << "cmge\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op cmge_vh_zero_newy( 0b0[1] : q[1] : 0b10111001100000100010[20] : rn[5] : rd[5] );
+cmge_vh_zero_newy.var format : {char const*} = {"2470"};
+
+cmge_vh_zero_newy.disasm = {
+  sink << "cmge\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+op cmge_vs_reg_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
+cmge_vs_reg_newy.var format : {char const*} = {"1024"};
+
+cmge_vs_reg_newy.disasm = {
+  sink << "cmge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op cmge_vs_zero_newy( 0b0[1] : q[1] : 0b10111010100000100010[20] : rn[5] : rd[5] );
+cmge_vs_zero_newy.var format : {char const*} = {"2446"};
+
+cmge_vs_zero_newy.disasm = {
+  sink << "cmge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+op cmgt_vb_reg_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_vb_reg_newy.var format : {char const*} = {"1306"};
+
+cmgt_vb_reg_newy.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cmgt_vb_zero_newy( 0b0[1] : q[1] : 0b00111000100000100010[20] : rn[5] : rd[5] );
+cmgt_vb_zero_newy.var format : {char const*} = {"2560"};
+
+cmgt_vb_zero_newy.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+op cmgt_vh_reg_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_vh_reg_newy.var format : {char const*} = {"1099"};
+
+cmgt_vh_reg_newy.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op cmgt_vh_zero_newy( 0b0[1] : q[1] : 0b00111001100000100010[20] : rn[5] : rd[5] );
+cmgt_vh_zero_newy.var format : {char const*} = {"2471"};
+
+cmgt_vh_zero_newy.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+op cmgt_vs_reg_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_vs_reg_newy.var format : {char const*} = {"1025"};
+
+cmgt_vs_reg_newy.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op cmgt_vs_zero_newy( 0b0[1] : q[1] : 0b00111010100000100010[20] : rn[5] : rd[5] );
+cmgt_vs_zero_newy.var format : {char const*} = {"2447"};
+
+cmgt_vs_zero_newy.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+op cmhi_vb_reg_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmhi_vb_reg_newy.var format : {char const*} = {"1307"};
+
+cmhi_vb_reg_newy.disasm = {
+  sink << "cmhi\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cmhi_vh_reg_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmhi_vh_reg_newy.var format : {char const*} = {"1100"};
+
+cmhi_vh_reg_newy.disasm = {
+  sink << "cmhi\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op cmhi_vs_reg_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmhi_vs_reg_newy.var format : {char const*} = {"1026"};
+
+cmhi_vs_reg_newy.disasm = {
+  sink << "cmhi\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op cmhs_vb_reg_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
+cmhs_vb_reg_newy.var format : {char const*} = {"1308"};
+
+cmhs_vb_reg_newy.disasm = {
+  sink << "cmhs\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cmhs_vh_reg_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
+cmhs_vh_reg_newy.var format : {char const*} = {"1101"};
+
+cmhs_vh_reg_newy.disasm = {
+  sink << "cmhs\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op cmhs_vs_reg_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
+cmhs_vs_reg_newy.var format : {char const*} = {"1027"};
+
+cmhs_vs_reg_newy.disasm = {
+  sink << "cmhs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op cmle_vb_zero_newy( 0b0[1] : q[1] : 0b10111000100000100110[20] : rn[5] : rd[5] );
+cmle_vb_zero_newy.var format : {char const*} = {"2561"};
+
+cmle_vb_zero_newy.disasm = {
+  sink << "cmle\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+op cmle_vh_zero_newy( 0b0[1] : q[1] : 0b10111001100000100110[20] : rn[5] : rd[5] );
+cmle_vh_zero_newy.var format : {char const*} = {"2472"};
+
+cmle_vh_zero_newy.disasm = {
+  sink << "cmle\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+op cmle_vs_zero_newy( 0b0[1] : q[1] : 0b10111010100000100110[20] : rn[5] : rd[5] );
+cmle_vs_zero_newy.var format : {char const*} = {"2448"};
+
+cmle_vs_zero_newy.disasm = {
+  sink << "cmle\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+op cmlt_vb_zero_newy( 0b0[1] : q[1] : 0b00111000100000101010[20] : rn[5] : rd[5] );
+cmlt_vb_zero_newy.var format : {char const*} = {"2562"};
+
+cmlt_vb_zero_newy.disasm = {
+  sink << "cmlt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+op cmlt_vh_zero_newy( 0b0[1] : q[1] : 0b00111001100000101010[20] : rn[5] : rd[5] );
+cmlt_vh_zero_newy.var format : {char const*} = {"2473"};
+
+cmlt_vh_zero_newy.disasm = {
+  sink << "cmlt\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+op cmlt_vs_zero_newy( 0b0[1] : q[1] : 0b00111010100000101010[20] : rn[5] : rd[5] );
+cmlt_vs_zero_newy.var format : {char const*} = {"2449"};
+
+cmlt_vs_zero_newy.disasm = {
+  sink << "cmlt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+op cmtst_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
+cmtst_vbvbvb_newy.var format : {char const*} = {"1309"};
+
+cmtst_vbvbvb_newy.disasm = {
+  sink << "cmtst\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op cmtst_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
+cmtst_vhvhvh_newy.var format : {char const*} = {"1102"};
+
+cmtst_vhvhvh_newy.disasm = {
+  sink << "cmtst\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op cmtst_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
+cmtst_vsvsvs_newy.var format : {char const*} = {"1028"};
+
+cmtst_vsvsvs_newy.disasm = {
+  sink << "cmtst\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op cnt_vbb_newy( 0b0[1] : q[1] : 0b00111000100000010110[20] : rn[5] : rd[5] );
+cnt_vbb_newy.var format : {char const*} = {"2547"};
+
+cnt_vbb_newy.disasm = {
+  sink << "cnt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op dup_vb_newy( 0b0[1] : q[1] : 0b001110000[9] : ?[4] : 0b1000011[7] : rn[5] : rd[5] );
+dup_vb_newy.var format : {char const*} = {"1823"};
+
+dup_vb_newy.disasm = {
+  sink << "dup\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmGZWR(rn);
+};
+
+op dup_vbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
+dup_vbvb_newy.var format : {char const*} = {"1822"};
+
+dup_vbvb_newy.disasm = {
+  sink << "dup\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
+};
+
+op dup_vh_newy( 0b0[1] : q[1] : 0b001110000[9] : ?[3] : 0b10000011[8] : rn[5] : rd[5] );
+dup_vh_newy.var format : {char const*} = {"1925"};
+
+dup_vh_newy.disasm = {
+  sink << "dup\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmGZWR(rn);
+};
+
+op dup_vhvh_newy( 0b0[1] : q[1] : 0b001110000[9] : index[3] : 0b10000001[8] : rn[5] : rd[5] );
+dup_vhvh_newy.var format : {char const*} = {"1924"};
+
+dup_vhvh_newy.disasm = {
+  sink << "dup\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
+};
+
+op dup_vs_newy( 0b0[1] : q[1] : 0b001110000[9] : ?[2] : 0b100000011[9] : rn[5] : rd[5] );
+dup_vs_newy.var format : {char const*} = {"2014"};
+
+dup_vs_newy.disasm = {
+  sink << "dup\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmGZWR(rn);
+};
+
+op dup_vsvs_newy( 0b0[1] : q[1] : 0b001110000[9] : index[2] : 0b100000001[9] : rn[5] : rd[5] );
+dup_vsvs_newy.var format : {char const*} = {"2013"};
+
+dup_vsvs_newy.disasm = {
+  sink << "dup\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
+};
+
+op eor_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+eor_vbvbvb_newy.var format : {char const*} = {"1310"};
+
+eor_vbvbvb_newy.disasm = {
+  sink << "eor\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op ext_vb_newy( 0b0[1] : q[1] : 0b101110000[9] : rm[5] : 0b0[1] : index[4] : 0b0[1] : rn[5] : rd[5] );
+ext_vb_newy.var format : {char const*} = {"374"};
+
+ext_vb_newy.disasm = {
+  sink << "ext\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0) << ", " << DisasmI(index);
+};
+
+op fabd_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
+fabd_vsvsvs_newy.var format : {char const*} = {"1029"};
+
+fabd_vsvsvs_newy.disasm = {
+  sink << "fabd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fabs_vss_newy( 0b0[1] : q[1] : 0b00111010100000111110[20] : rn[5] : rd[5] );
+fabs_vss_newy.var format : {char const*} = {"2413"};
+
+fabs_vss_newy.disasm = {
+  sink << "fabs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op facge_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
+facge_vsvsvs_newy.var format : {char const*} = {"1030"};
+
+facge_vsvsvs_newy.disasm = {
+  sink << "facge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op facgt_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
+facgt_vsvsvs_newy.var format : {char const*} = {"1031"};
+
+facgt_vsvsvs_newy.disasm = {
+  sink << "facgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fadd_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
+fadd_vsvsvs_newy.var format : {char const*} = {"1032"};
+
+fadd_vsvsvs_newy.disasm = {
+  sink << "fadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op faddp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
+faddp_vsvsvs_newy.var format : {char const*} = {"1033"};
+
+faddp_vsvsvs_newy.disasm = {
+  sink << "faddp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fcmeq_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
+fcmeq_vsvsvs_newy.var format : {char const*} = {"1034"};
+
+fcmeq_vsvsvs_newy.disasm = {
+  sink << "fcmeq\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fcmeq_vsz_newy( 0b0[1] : q[1] : 0b00111010100000110110[20] : rn[5] : rd[5] );
+fcmeq_vsz_newy.var format : {char const*} = {"2450"};
+
+fcmeq_vsz_newy.disasm = {
+  sink << "fcmeq\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0.0";
+};
+
+op fcmge_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
+fcmge_vsvsvs_newy.var format : {char const*} = {"1035"};
+
+fcmge_vsvsvs_newy.disasm = {
+  sink << "fcmge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fcmge_vsz_newy( 0b0[1] : q[1] : 0b10111010100000110010[20] : rn[5] : rd[5] );
+fcmge_vsz_newy.var format : {char const*} = {"2451"};
+
+fcmge_vsz_newy.disasm = {
+  sink << "fcmge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0.0";
+};
+
+op fcmgt_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
+fcmgt_vsvsvs_newy.var format : {char const*} = {"1036"};
+
+fcmgt_vsvsvs_newy.disasm = {
+  sink << "fcmgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fcmgt_vsz_newy( 0b0[1] : q[1] : 0b00111010100000110010[20] : rn[5] : rd[5] );
+fcmgt_vsz_newy.var format : {char const*} = {"2452"};
+
+fcmgt_vsz_newy.disasm = {
+  sink << "fcmgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0.0";
+};
+
+op fcmle_vsz_newy( 0b0[1] : q[1] : 0b10111010100000110110[20] : rn[5] : rd[5] );
+fcmle_vsz_newy.var format : {char const*} = {"2453"};
+
+fcmle_vsz_newy.disasm = {
+  sink << "fcmle\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0.0";
+};
+
+op fcmlt_vsz_newy( 0b0[1] : q[1] : 0b00111010100000111010[20] : rn[5] : rd[5] );
+fcmlt_vsz_newy.var format : {char const*} = {"2454"};
+
+fcmlt_vsz_newy.disasm = {
+  sink << "fcmlt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0.0";
+};
+
+op fcvtas_vss_newy( 0b0[1] : q[1] : 0b00111000100001110010[20] : rn[5] : rd[5] );
+fcvtas_vss_newy.var format : {char const*} = {"2414"};
+
+fcvtas_vss_newy.disasm = {
+  sink << "fcvtas\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtau_vss_newy( 0b0[1] : q[1] : 0b10111000100001110010[20] : rn[5] : rd[5] );
+fcvtau_vss_newy.var format : {char const*} = {"2415"};
+
+fcvtau_vss_newy.disasm = {
+  sink << "fcvtau\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtms_vss_newy( 0b0[1] : q[1] : 0b00111000100001101110[20] : rn[5] : rd[5] );
+fcvtms_vss_newy.var format : {char const*} = {"2416"};
+
+fcvtms_vss_newy.disasm = {
+  sink << "fcvtms\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtmu_vss_newy( 0b0[1] : q[1] : 0b10111000100001101110[20] : rn[5] : rd[5] );
+fcvtmu_vss_newy.var format : {char const*} = {"2417"};
+
+fcvtmu_vss_newy.disasm = {
+  sink << "fcvtmu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtns_vss_newy( 0b0[1] : q[1] : 0b00111000100001101010[20] : rn[5] : rd[5] );
+fcvtns_vss_newy.var format : {char const*} = {"2418"};
+
+fcvtns_vss_newy.disasm = {
+  sink << "fcvtns\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtnu_vss_newy( 0b0[1] : q[1] : 0b10111000100001101010[20] : rn[5] : rd[5] );
+fcvtnu_vss_newy.var format : {char const*} = {"2419"};
+
+fcvtnu_vss_newy.disasm = {
+  sink << "fcvtnu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtps_vss_newy( 0b0[1] : q[1] : 0b00111010100001101010[20] : rn[5] : rd[5] );
+fcvtps_vss_newy.var format : {char const*} = {"2420"};
+
+fcvtps_vss_newy.disasm = {
+  sink << "fcvtps\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtpu_vss_newy( 0b0[1] : q[1] : 0b10111010100001101010[20] : rn[5] : rd[5] );
+fcvtpu_vss_newy.var format : {char const*} = {"2421"};
+
+fcvtpu_vss_newy.disasm = {
+  sink << "fcvtpu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtzs_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzs_vssi_newy.var format : {char const*} = {"1003"}, shift : {unsigned} = {32 - lro};
+
+fcvtzs_vssi_newy.disasm = {
+  sink << "fcvtzs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op fcvtzs_vss_newy( 0b0[1] : q[1] : 0b00111010100001101110[20] : rn[5] : rd[5] );
+fcvtzs_vss_newy.var format : {char const*} = {"2422"};
+
+fcvtzs_vss_newy.disasm = {
+  sink << "fcvtzs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fcvtzu_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzu_vssi_newy.var format : {char const*} = {"1004"}, shift : {unsigned} = {32 - lro};
+
+fcvtzu_vssi_newy.disasm = {
+  sink << "fcvtzu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op fcvtzu_vss_newy( 0b0[1] : q[1] : 0b10111010100001101110[20] : rn[5] : rd[5] );
+fcvtzu_vss_newy.var format : {char const*} = {"2423"};
+
+fcvtzu_vss_newy.disasm = {
+  sink << "fcvtzu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fdiv_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
+fdiv_vsvsvs_newy.var format : {char const*} = {"1037"};
+
+fdiv_vsvsvs_newy.disasm = {
+  sink << "fdiv\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmax_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
+fmax_vsvsvs_newy.var format : {char const*} = {"1038"};
+
+fmax_vsvsvs_newy.disasm = {
+  sink << "fmax\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmaxnm_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
+fmaxnm_vsvsvs_newy.var format : {char const*} = {"1039"};
+
+fmaxnm_vsvsvs_newy.disasm = {
+  sink << "fmaxnm\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmaxnmp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
+fmaxnmp_vsvsvs_newy.var format : {char const*} = {"1040"};
+
+fmaxnmp_vsvsvs_newy.disasm = {
+  sink << "fmaxnmp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmaxp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
+fmaxp_vsvsvs_newy.var format : {char const*} = {"1041"};
+
+fmaxp_vsvsvs_newy.disasm = {
+  sink << "fmaxp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmin_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
+fmin_vsvsvs_newy.var format : {char const*} = {"1042"};
+
+fmin_vsvsvs_newy.disasm = {
+  sink << "fmin\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fminnm_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
+fminnm_vsvsvs_newy.var format : {char const*} = {"1043"};
+
+fminnm_vsvsvs_newy.disasm = {
+  sink << "fminnm\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fminnmp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
+fminnmp_vsvsvs_newy.var format : {char const*} = {"1044"};
+
+fminnmp_vsvsvs_newy.disasm = {
+  sink << "fminnmp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fminp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
+fminp_vsvsvs_newy.var format : {char const*} = {"1045"};
+
+fminp_vsvsvs_newy.disasm = {
+  sink << "fminp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmla_vsvsvsi_newy( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b0001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+fmla_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"480"};
+
+fmla_vsvsvsi_newy.disasm = {
+  sink << "fmla\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op fmla_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110011[6] : rn[5] : rd[5] );
+fmla_vsvsvs_newy.var format : {char const*} = {"1046"};
+
+fmla_vsvsvs_newy.disasm = {
+  sink << "fmla\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmls_vsvsvsi_newy( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b0101[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+fmls_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"481"};
+
+fmls_vsvsvsi_newy.disasm = {
+  sink << "fmls\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op fmls_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110011[6] : rn[5] : rd[5] );
+fmls_vsvsvs_newy.var format : {char const*} = {"1047"};
+
+fmls_vsvsvs_newy.disasm = {
+  sink << "fmls\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmov_vsf_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b111101[6] : imm0[5] : rd[5] );
+fmov_vsf_newy.var imm : {FPImm} = {imm1|imm0}, format : {char const*} = {"1967"};
+
+fmov_vsf_newy.disasm = {
+  sink << "fmov\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmF(imm);
+};
+
+op fmul_vsvsvsi_newy( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+fmul_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"482"};
+
+fmul_vsvsvsi_newy.disasm = {
+  sink << "fmul\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op fmul_vsvsvs_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b110111[6] : rn[5] : rd[5] );
+fmul_vsvsvs_newy.var format : {char const*} = {"1048"};
+
+fmul_vsvsvs_newy.disasm = {
+  sink << "fmul\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fmulx_vsvsvsi_newy( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b1001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+fmulx_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"483"};
+
+fmulx_vsvsvsi_newy.disasm = {
+  sink << "fmulx\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op fmulx_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110111[6] : rn[5] : rd[5] );
+fmulx_vsvsvs_newy.var format : {char const*} = {"1049"};
+
+fmulx_vsvsvs_newy.disasm = {
+  sink << "fmulx\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fneg_vss_newy( 0b0[1] : q[1] : 0b10111010100000111110[20] : rn[5] : rd[5] );
+fneg_vss_newy.var format : {char const*} = {"2424"};
+
+fneg_vss_newy.disasm = {
+  sink << "fneg\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frecpe_vss_newy( 0b0[1] : q[1] : 0b00111010100001110110[20] : rn[5] : rd[5] );
+frecpe_vss_newy.var format : {char const*} = {"2425"};
+
+frecpe_vss_newy.disasm = {
+  sink << "frecpe\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frecps_vsvsvs_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
+frecps_vsvsvs_newy.var format : {char const*} = {"1050"};
+
+frecps_vsvsvs_newy.disasm = {
+  sink << "frecps\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op frinta_vss_newy( 0b0[1] : q[1] : 0b10111000100001100010[20] : rn[5] : rd[5] );
+frinta_vss_newy.var format : {char const*} = {"2426"};
+
+frinta_vss_newy.disasm = {
+  sink << "frinta\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frinti_vss_newy( 0b0[1] : q[1] : 0b10111010100001100110[20] : rn[5] : rd[5] );
+frinti_vss_newy.var format : {char const*} = {"2427"};
+
+frinti_vss_newy.disasm = {
+  sink << "frinti\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frintm_vss_newy( 0b0[1] : q[1] : 0b00111000100001100110[20] : rn[5] : rd[5] );
+frintm_vss_newy.var format : {char const*} = {"2428"};
+
+frintm_vss_newy.disasm = {
+  sink << "frintm\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frintn_vss_newy( 0b0[1] : q[1] : 0b00111000100001100010[20] : rn[5] : rd[5] );
+frintn_vss_newy.var format : {char const*} = {"2429"};
+
+frintn_vss_newy.disasm = {
+  sink << "frintn\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frintp_vss_newy( 0b0[1] : q[1] : 0b00111010100001100010[20] : rn[5] : rd[5] );
+frintp_vss_newy.var format : {char const*} = {"2430"};
+
+frintp_vss_newy.disasm = {
+  sink << "frintp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frintx_vss_newy( 0b0[1] : q[1] : 0b10111000100001100110[20] : rn[5] : rd[5] );
+frintx_vss_newy.var format : {char const*} = {"2431"};
+
+frintx_vss_newy.disasm = {
+  sink << "frintx\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frintz_vss_newy( 0b0[1] : q[1] : 0b00111010100001100110[20] : rn[5] : rd[5] );
+frintz_vss_newy.var format : {char const*} = {"2432"};
+
+frintz_vss_newy.disasm = {
+  sink << "frintz\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frsqrte_vss_newy( 0b0[1] : q[1] : 0b10111010100001110110[20] : rn[5] : rd[5] );
+frsqrte_vss_newy.var format : {char const*} = {"2433"};
+
+frsqrte_vss_newy.disasm = {
+  sink << "frsqrte\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op frsqrts_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
+frsqrts_vsvsvs_newy.var format : {char const*} = {"1051"};
+
+frsqrts_vsvsvs_newy.disasm = {
+  sink << "frsqrts\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op fsqrt_vss_newy( 0b0[1] : q[1] : 0b10111010100001111110[20] : rn[5] : rd[5] );
+fsqrt_vss_newy.var format : {char const*} = {"2434"};
+
+fsqrt_vss_newy.disasm = {
+  sink << "fsqrt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op fsub_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
+fsub_vsvsvs_newy.var format : {char const*} = {"1052"};
+
+fsub_vsvsvs_newy.disasm = {
+  sink << "fsub\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op mla_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
+mla_vbvbvb_newy.var format : {char const*} = {"1311"};
+
+mla_vbvbvb_newy.disasm = {
+  sink << "mla\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op mla_vhvhvhi_newy( 0b0[1] : q[1] : 0b10111101[8] : index0[2] : rm[4] : 0b0000[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
+mla_vhvhvhi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"489"};
+
+mla_vhvhvhi_newy.disasm = {
+  sink << "mla\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,0,1) << DisasmSubscript(index);
+};
+
+op mla_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
+mla_vhvhvh_newy.var format : {char const*} = {"1103"};
+
+mla_vhvhvh_newy.disasm = {
+  sink << "mla\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op mla_vsvsvsi_newy( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b0000[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+mla_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"484"};
+
+mla_vsvsvsi_newy.disasm = {
+  sink << "mla\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op mla_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
+mla_vsvsvs_newy.var format : {char const*} = {"1053"};
+
+mla_vsvsvs_newy.disasm = {
+  sink << "mla\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op mls_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
+mls_vbvbvb_newy.var format : {char const*} = {"1312"};
+
+mls_vbvbvb_newy.disasm = {
+  sink << "mls\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op mls_vhvhvhi_newy( 0b0[1] : q[1] : 0b10111101[8] : index0[2] : rm[4] : 0b0100[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
+mls_vhvhvhi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"490"};
+
+mls_vhvhvhi_newy.disasm = {
+  sink << "mls\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,0,1) << DisasmSubscript(index);
+};
+
+op mls_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
+mls_vhvhvh_newy.var format : {char const*} = {"1104"};
+
+mls_vhvhvh_newy.disasm = {
+  sink << "mls\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op mls_vsvsvsi_newy( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b0100[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+mls_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"485"};
+
+mls_vsvsvsi_newy.disasm = {
+  sink << "mls\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op mls_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
+mls_vsvsvs_newy.var format : {char const*} = {"1054"};
+
+mls_vsvsvs_newy.disasm = {
+  sink << "mls\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op movi_vbi_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b111001[6] : imm0[5] : rd[5] );
+movi_vbi_newy.var imm : {uint8_t} = {imm1|imm0}, format : {char const*} = {"1969"};
+
+movi_vbi_newy.disasm = {
+  sink << "movi\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmI(imm,16);
+};
+
+op movi_vhi_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b001[3] : imm0[5] : rd[5] );
+movi_vhi_newy.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1886"};
+
+movi_vhi_newy.disasm = {
+  sink << "movi\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmI(imm,16);
+};
+
+op movi_vsi_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b001[3] : imm0[5] : rd[5] );
+movi_vsi_newy.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh}, format : {char const*} = {"1787"};
+
+movi_vsi_newy.disasm = {
+  sink << "movi\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmI(imm,16);
+};
+
+op movi_vsmsl_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<21> imm1[3] : 0b110[3] : sh[1] : 0b01[2] : shl<16> imm0[5] : rd[5] );
+movi_vsmsl_newy.var imm : {uint32_t} = {(imm1|imm0|0xffff) >> (sh ? 0 : 8)}, format : {char const*} = {"1893"};
+
+movi_vsmsl_newy.disasm = {
+  sink << "movi\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmI(imm,16);
+};
+
+op mul_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+mul_vbvbvb_newy.var format : {char const*} = {"1313"};
+
+mul_vbvbvb_newy.disasm = {
+  sink << "mul\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op mul_vhvhvhi_newy( 0b0[1] : q[1] : 0b00111101[8] : index0[2] : rm[4] : 0b1000[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
+mul_vhvhvhi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"491"};
+
+mul_vhvhvhi_newy.disasm = {
+  sink << "mul\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,0,1) << DisasmSubscript(index);
+};
+
+op mul_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+mul_vhvhvh_newy.var format : {char const*} = {"1105"};
+
+mul_vhvhvh_newy.disasm = {
+  sink << "mul\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op mul_vsvsvsi_newy( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1000[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+mul_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"486"};
+
+mul_vsvsvsi_newy.disasm = {
+  sink << "mul\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op mul_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+mul_vsvsvs_newy.var format : {char const*} = {"1055"};
+
+mul_vsvsvs_newy.disasm = {
+  sink << "mul\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op mvn_vbb_newy( 0b0[1] : q[1] : 0b10111000100000010110[20] : rn[5] : rd[5] );
+mvn_vbb_newy.var format : {char const*} = {"2548"};
+
+mvn_vbb_newy.disasm = {
+  sink << "mvn\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op mvni_vhi_newy( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b001[3] : imm0[5] : rd[5] );
+mvni_vhi_newy.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1887"};
+
+mvni_vhi_newy.disasm = {
+  sink << "mvni\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmI(imm,16);
+};
+
+op mvni_vsi_newy( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b001[3] : imm0[5] : rd[5] );
+mvni_vsi_newy.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh}, format : {char const*} = {"1788"};
+
+mvni_vsi_newy.disasm = {
+  sink << "mvni\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmI(imm,16);
+};
+
+op mvni_vsmsl_newy( 0b0[1] : q[1] : 0b10111100000[11] : shl<21> imm1[3] : 0b110[3] : sh[1] : 0b01[2] : shl<16> imm0[5] : rd[5] );
+mvni_vsmsl_newy.var imm : {uint32_t} = {(imm1|imm0|0xffff) >> (sh ? 0 : 8)}, format : {char const*} = {"1894"};
+
+mvni_vsmsl_newy.disasm = {
+  sink << "mvni\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmI(imm,16);
+};
+
+op neg_vbb_newy( 0b0[1] : q[1] : 0b10111000100000101110[20] : rn[5] : rd[5] );
+neg_vbb_newy.var format : {char const*} = {"2549"};
+
+neg_vbb_newy.disasm = {
+  sink << "neg\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op neg_vhh_newy( 0b0[1] : q[1] : 0b10111001100000101110[20] : rn[5] : rd[5] );
+neg_vhh_newy.var format : {char const*} = {"2462"};
+
+neg_vhh_newy.disasm = {
+  sink << "neg\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op neg_vss_newy( 0b0[1] : q[1] : 0b10111010100000101110[20] : rn[5] : rd[5] );
+neg_vss_newy.var format : {char const*} = {"2435"};
+
+neg_vss_newy.disasm = {
+  sink << "neg\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op orn_vbvbvb_newy( 0b0[1] : q[1] : 0b001110111[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+orn_vbvbvb_newy.var format : {char const*} = {"1314"};
+
+orn_vbvbvb_newy.disasm = {
+  sink << "orn\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op orr_vhi_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
+orr_vhi_newy.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1888"};
+
+orr_vhi_newy.disasm = {
+  sink << "orr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmI(imm,16);
+};
+
+op orr_vsi_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b101[3] : imm0[5] : rd[5] );
+orr_vsi_newy.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh}, format : {char const*} = {"1789"};
+
+orr_vsi_newy.disasm = {
+  sink << "orr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmI(imm,16);
+};
+
+op pmul_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+pmul_vbvbvb_newy.var format : {char const*} = {"1316"};
+
+pmul_vbvbvb_newy.disasm = {
+  sink << "pmul\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op rbit_vbb_newy( 0b0[1] : q[1] : 0b10111001100000010110[20] : rn[5] : rd[5] );
+rbit_vbb_newy.var format : {char const*} = {"2550"};
+
+rbit_vbb_newy.disasm = {
+  sink << "rbit\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op rev16_vbb_newy( 0b0[1] : q[1] : 0b00111000100000000110[20] : rn[5] : rd[5] );
+rev16_vbb_newy.var format : {char const*} = {"2551"};
+
+rev16_vbb_newy.disasm = {
+  sink << "rev16\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op rev32_vbb_newy( 0b0[1] : q[1] : 0b10111000100000000010[20] : rn[5] : rd[5] );
+rev32_vbb_newy.var format : {char const*} = {"2552"};
+
+rev32_vbb_newy.disasm = {
+  sink << "rev32\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op rev32_vhh_newy( 0b0[1] : q[1] : 0b10111001100000000010[20] : rn[5] : rd[5] );
+rev32_vhh_newy.var format : {char const*} = {"2463"};
+
+rev32_vhh_newy.disasm = {
+  sink << "rev32\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op rev64_vbb_newy( 0b0[1] : q[1] : 0b00111000100000000010[20] : rn[5] : rd[5] );
+rev64_vbb_newy.var format : {char const*} = {"2553"};
+
+rev64_vbb_newy.disasm = {
+  sink << "rev64\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op rev64_vhh_newy( 0b0[1] : q[1] : 0b00111001100000000010[20] : rn[5] : rd[5] );
+rev64_vhh_newy.var format : {char const*} = {"2464"};
+
+rev64_vhh_newy.disasm = {
+  sink << "rev64\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op rev64_vss_newy( 0b0[1] : q[1] : 0b00111010100000000010[20] : rn[5] : rd[5] );
+rev64_vss_newy.var format : {char const*} = {"2436"};
+
+rev64_vss_newy.disasm = {
+  sink << "rev64\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op saba_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
+saba_vbvbvb_newy.var format : {char const*} = {"1317"};
+
+saba_vbvbvb_newy.disasm = {
+  sink << "saba\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op saba_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
+saba_vhvhvh_newy.var format : {char const*} = {"1106"};
+
+saba_vhvhvh_newy.disasm = {
+  sink << "saba\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op saba_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
+saba_vsvsvs_newy.var format : {char const*} = {"1056"};
+
+saba_vsvsvs_newy.disasm = {
+  sink << "saba\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sabd_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011101[6] : rn[5] : rd[5] );
+sabd_vbvbvb_newy.var format : {char const*} = {"1318"};
+
+sabd_vbvbvb_newy.disasm = {
+  sink << "sabd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sabd_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b011101[6] : rn[5] : rd[5] );
+sabd_vhvhvh_newy.var format : {char const*} = {"1107"};
+
+sabd_vhvhvh_newy.disasm = {
+  sink << "sabd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sabd_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b011101[6] : rn[5] : rd[5] );
+sabd_vsvsvs_newy.var format : {char const*} = {"1057"};
+
+sabd_vsvsvs_newy.disasm = {
+  sink << "sabd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sadalp_vhb_newy( 0b0[1] : q[1] : 0b00111000100000011010[20] : rn[5] : rd[5] );
+sadalp_vhb_newy.var format : {char const*} = {"2479"};
+
+sadalp_vhb_newy.disasm = {
+  sink << "sadalp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op sadalp_vsh_newy( 0b0[1] : q[1] : 0b00111001100000011010[20] : rn[5] : rd[5] );
+sadalp_vsh_newy.var format : {char const*} = {"2455"};
+
+sadalp_vsh_newy.disasm = {
+  sink << "sadalp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op sadalp_vds_newy( 0b0[1] : q[1] : 0b00111010100000011010[20] : rn[5] : rd[5] );
+sadalp_vds_newy.var format : {char const*} = {"2352"};
+
+sadalp_vds_newy.disasm = {
+  sink << "sadalp\t" << DisasmTV(rd,1<<q,3) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op saddlp_vhb_newy( 0b0[1] : q[1] : 0b00111000100000001010[20] : rn[5] : rd[5] );
+saddlp_vhb_newy.var format : {char const*} = {"2480"};
+
+saddlp_vhb_newy.disasm = {
+  sink << "saddlp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op saddlp_vsh_newy( 0b0[1] : q[1] : 0b00111001100000001010[20] : rn[5] : rd[5] );
+saddlp_vsh_newy.var format : {char const*} = {"2456"};
+
+saddlp_vsh_newy.disasm = {
+  sink << "saddlp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op saddlp_vds_newy( 0b0[1] : q[1] : 0b00111010100000001010[20] : rn[5] : rd[5] );
+saddlp_vds_newy.var format : {char const*} = {"2353"};
+
+saddlp_vds_newy.disasm = {
+  sink << "saddlp\t" << DisasmTV(rd,1<<q,3) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op saddlv_hvb_newy( 0b0[1] : q[1] : 0b00111000110000001110[20] : rn[5] : rd[5] );
+saddlv_hvb_newy.var format : {char const*} = {"2252"};
+
+saddlv_hvb_newy.disasm = {
+  sink << "saddlv\t" << DisasmH(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op saddlv_svh_newy( 0b0[1] : q[1] : 0b00111001110000001110[20] : rn[5] : rd[5] );
+saddlv_svh_newy.var format : {char const*} = {"2306"};
+
+saddlv_svh_newy.disasm = {
+  sink << "saddlv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op scvtf_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b111001[6] : rn[5] : rd[5] );
+scvtf_vssi_newy.var format : {char const*} = {"1005"}, shift : {unsigned} = {32 - lro};
+
+scvtf_vssi_newy.disasm = {
+  sink << "scvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op scvtf_vss_newy( 0b0[1] : q[1] : 0b00111000100001110110[20] : rn[5] : rd[5] );
+scvtf_vss_newy.var format : {char const*} = {"2437"};
+
+scvtf_vss_newy.disasm = {
+  sink << "scvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op shadd_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
+shadd_vbvbvb_newy.var format : {char const*} = {"1319"};
+
+shadd_vbvbvb_newy.disasm = {
+  sink << "shadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op shadd_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
+shadd_vhvhvh_newy.var format : {char const*} = {"1108"};
+
+shadd_vhvhvh_newy.disasm = {
+  sink << "shadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op shadd_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
+shadd_vsvsvs_newy.var format : {char const*} = {"1058"};
+
+shadd_vsvsvs_newy.disasm = {
+  sink << "shadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op shl_vbbi_newy( 0b0[1] : q[1] : 0b00111100001[11] : imm[3] : 0b010101[6] : rn[5] : rd[5] );
+shl_vbbi_newy.var format : {char const*} = {"1970"};
+
+shl_vbbi_newy.disasm = {
+  sink << "shl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(imm);
+};
+
+op shl_vhhi_newy( 0b0[1] : q[1] : 0b0011110001[10] : imm[4] : 0b010101[6] : rn[5] : rd[5] );
+shl_vhhi_newy.var format : {char const*} = {"1837"};
+
+shl_vhhi_newy.disasm = {
+  sink << "shl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(imm);
+};
+
+op shl_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : imm[5] : 0b010101[6] : rn[5] : rd[5] );
+shl_vssi_newy.var format : {char const*} = {"1006"};
+
+shl_vssi_newy.disasm = {
+  sink << "shl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(imm);
+};
+
+op shsub_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
+shsub_vbvbvb_newy.var format : {char const*} = {"1320"};
+
+shsub_vbvbvb_newy.disasm = {
+  sink << "shsub\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op shsub_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
+shsub_vhvhvh_newy.var format : {char const*} = {"1109"};
+
+shsub_vhvhvh_newy.disasm = {
+  sink << "shsub\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op shsub_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
+shsub_vsvsvs_newy.var format : {char const*} = {"1059"};
+
+shsub_vsvsvs_newy.disasm = {
+  sink << "shsub\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sli_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : imm[3] : 0b010101[6] : rn[5] : rd[5] );
+sli_vbbi_newy.var format : {char const*} = {"1971"};
+
+sli_vbbi_newy.disasm = {
+  sink << "sli\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(imm);
+};
+
+op sli_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : imm[4] : 0b010101[6] : rn[5] : rd[5] );
+sli_vhhi_newy.var format : {char const*} = {"1838"};
+
+sli_vhhi_newy.disasm = {
+  sink << "sli\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(imm);
+};
+
+op sli_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : imm[5] : 0b010101[6] : rn[5] : rd[5] );
+sli_vssi_newy.var format : {char const*} = {"1007"};
+
+sli_vssi_newy.disasm = {
+  sink << "sli\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(imm);
+};
+
+op smax_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
+smax_vbvbvb_newy.var format : {char const*} = {"1321"};
+
+smax_vbvbvb_newy.disasm = {
+  sink << "smax\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op smax_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
+smax_vhvhvh_newy.var format : {char const*} = {"1110"};
+
+smax_vhvhvh_newy.disasm = {
+  sink << "smax\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op smax_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
+smax_vsvsvs_newy.var format : {char const*} = {"1060"};
+
+smax_vsvsvs_newy.disasm = {
+  sink << "smax\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op smaxp_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
+smaxp_vbvbvb_newy.var format : {char const*} = {"1322"};
+
+smaxp_vbvbvb_newy.disasm = {
+  sink << "smaxp\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op smaxp_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
+smaxp_vhvhvh_newy.var format : {char const*} = {"1111"};
+
+smaxp_vhvhvh_newy.disasm = {
+  sink << "smaxp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op smaxp_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
+smaxp_vsvsvs_newy.var format : {char const*} = {"1061"};
+
+smaxp_vsvsvs_newy.disasm = {
+  sink << "smaxp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op smaxv_bvb_newy( 0b0[1] : q[1] : 0b00111000110000101010[20] : rn[5] : rd[5] );
+smaxv_bvb_newy.var format : {char const*} = {"2174"};
+
+smaxv_bvb_newy.disasm = {
+  sink << "smaxv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op smaxv_hvh_newy( 0b0[1] : q[1] : 0b00111001110000101010[20] : rn[5] : rd[5] );
+smaxv_hvh_newy.var format : {char const*} = {"2248"};
+
+smaxv_hvh_newy.disasm = {
+  sink << "smaxv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op smin_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
+smin_vbvbvb_newy.var format : {char const*} = {"1323"};
+
+smin_vbvbvb_newy.disasm = {
+  sink << "smin\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op smin_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
+smin_vhvhvh_newy.var format : {char const*} = {"1112"};
+
+smin_vhvhvh_newy.disasm = {
+  sink << "smin\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op smin_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
+smin_vsvsvs_newy.var format : {char const*} = {"1062"};
+
+smin_vsvsvs_newy.disasm = {
+  sink << "smin\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sminp_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+sminp_vbvbvb_newy.var format : {char const*} = {"1324"};
+
+sminp_vbvbvb_newy.disasm = {
+  sink << "sminp\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sminp_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+sminp_vhvhvh_newy.var format : {char const*} = {"1113"};
+
+sminp_vhvhvh_newy.disasm = {
+  sink << "sminp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sminp_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+sminp_vsvsvs_newy.var format : {char const*} = {"1063"};
+
+sminp_vsvsvs_newy.disasm = {
+  sink << "sminp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sminv_bvb_newy( 0b0[1] : q[1] : 0b00111000110001101010[20] : rn[5] : rd[5] );
+sminv_bvb_newy.var format : {char const*} = {"2175"};
+
+sminv_bvb_newy.disasm = {
+  sink << "sminv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op sminv_hvh_newy( 0b0[1] : q[1] : 0b00111001110001101010[20] : rn[5] : rd[5] );
+sminv_hvh_newy.var format : {char const*} = {"2249"};
+
+sminv_hvh_newy.disasm = {
+  sink << "sminv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op sqabs_vbb_newy( 0b0[1] : q[1] : 0b00111000100000011110[20] : rn[5] : rd[5] );
+sqabs_vbb_newy.var format : {char const*} = {"2554"};
+
+sqabs_vbb_newy.disasm = {
+  sink << "sqabs\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op sqabs_vhh_newy( 0b0[1] : q[1] : 0b00111001100000011110[20] : rn[5] : rd[5] );
+sqabs_vhh_newy.var format : {char const*} = {"2465"};
+
+sqabs_vhh_newy.disasm = {
+  sink << "sqabs\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op sqabs_vss_newy( 0b0[1] : q[1] : 0b00111010100000011110[20] : rn[5] : rd[5] );
+sqabs_vss_newy.var format : {char const*} = {"2438"};
+
+sqabs_vss_newy.disasm = {
+  sink << "sqabs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op sqadd_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+sqadd_vbvbvb_newy.var format : {char const*} = {"1325"};
+
+sqadd_vbvbvb_newy.disasm = {
+  sink << "sqadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sqadd_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+sqadd_vhvhvh_newy.var format : {char const*} = {"1114"};
+
+sqadd_vhvhvh_newy.disasm = {
+  sink << "sqadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sqadd_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+sqadd_vsvsvs_newy.var format : {char const*} = {"1064"};
+
+sqadd_vsvsvs_newy.disasm = {
+  sink << "sqadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sqdmulh_vhvhvhi_newy( 0b0[1] : q[1] : 0b00111101[8] : index0[2] : rm[4] : 0b1100[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
+sqdmulh_vhvhvhi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"492"};
+
+sqdmulh_vhvhvhi_newy.disasm = {
+  sink << "sqdmulh\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,0,1) << DisasmSubscript(index);
+};
+
+op sqdmulh_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
+sqdmulh_vhvhvh_newy.var format : {char const*} = {"1115"};
+
+sqdmulh_vhvhvh_newy.disasm = {
+  sink << "sqdmulh\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sqdmulh_vsvsvsi_newy( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1100[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+sqdmulh_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"487"};
+
+sqdmulh_vsvsvsi_newy.disasm = {
+  sink << "sqdmulh\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op sqdmulh_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
+sqdmulh_vsvsvs_newy.var format : {char const*} = {"1065"};
+
+sqdmulh_vsvsvs_newy.disasm = {
+  sink << "sqdmulh\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sqneg_vbb_newy( 0b0[1] : q[1] : 0b10111000100000011110[20] : rn[5] : rd[5] );
+sqneg_vbb_newy.var format : {char const*} = {"2555"};
+
+sqneg_vbb_newy.disasm = {
+  sink << "sqneg\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op sqneg_vhh_newy( 0b0[1] : q[1] : 0b10111001100000011110[20] : rn[5] : rd[5] );
+sqneg_vhh_newy.var format : {char const*} = {"2466"};
+
+sqneg_vhh_newy.disasm = {
+  sink << "sqneg\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op sqneg_vss_newy( 0b0[1] : q[1] : 0b10111010100000011110[20] : rn[5] : rd[5] );
+sqneg_vss_newy.var format : {char const*} = {"2439"};
+
+sqneg_vss_newy.disasm = {
+  sink << "sqneg\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op sqrdmulh_vhvhvhi_newy( 0b0[1] : q[1] : 0b00111101[8] : index0[2] : rm[4] : 0b1101[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
+sqrdmulh_vhvhvhi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"493"};
+
+sqrdmulh_vhvhvhi_newy.disasm = {
+  sink << "sqrdmulh\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,0,1) << DisasmSubscript(index);
+};
+
+op sqrdmulh_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
+sqrdmulh_vhvhvh_newy.var format : {char const*} = {"1116"};
+
+sqrdmulh_vhvhvh_newy.disasm = {
+  sink << "sqrdmulh\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sqrdmulh_vsvsvsi_newy( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1101[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
+sqrdmulh_vsvsvsi_newy.var index : {unsigned} = {index1|index0}, format : {char const*} = {"488"};
+
+sqrdmulh_vsvsvsi_newy.disasm = {
+  sink << "sqrdmulh\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
+};
+
+op sqrdmulh_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
+sqrdmulh_vsvsvs_newy.var format : {char const*} = {"1066"};
+
+sqrdmulh_vsvsvs_newy.disasm = {
+  sink << "sqrdmulh\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sqrshl_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
+sqrshl_vbvbvb_newy.var format : {char const*} = {"1326"};
+
+sqrshl_vbvbvb_newy.disasm = {
+  sink << "sqrshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sqrshl_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
+sqrshl_vhvhvh_newy.var format : {char const*} = {"1117"};
+
+sqrshl_vhvhvh_newy.disasm = {
+  sink << "sqrshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sqrshl_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
+sqrshl_vsvsvs_newy.var format : {char const*} = {"1067"};
+
+sqrshl_vsvsvs_newy.disasm = {
+  sink << "sqrshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sqshl_vbbi_newy( 0b0[1] : q[1] : 0b00111100001[11] : imm[3] : 0b011101[6] : rn[5] : rd[5] );
+sqshl_vbbi_newy.var format : {char const*} = {"1972"};
+
+sqshl_vbbi_newy.disasm = {
+  sink << "sqshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(imm);
+};
+
+op sqshl_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
+sqshl_vbvbvb_newy.var format : {char const*} = {"1327"};
+
+sqshl_vbvbvb_newy.disasm = {
+  sink << "sqshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sqshl_vhhi_newy( 0b0[1] : q[1] : 0b0011110001[10] : imm[4] : 0b011101[6] : rn[5] : rd[5] );
+sqshl_vhhi_newy.var format : {char const*} = {"1839"};
+
+sqshl_vhhi_newy.disasm = {
+  sink << "sqshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(imm);
+};
+
+op sqshl_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
+sqshl_vhvhvh_newy.var format : {char const*} = {"1118"};
+
+sqshl_vhvhvh_newy.disasm = {
+  sink << "sqshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sqshl_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : imm[5] : 0b011101[6] : rn[5] : rd[5] );
+sqshl_vssi_newy.var format : {char const*} = {"1008"};
+
+sqshl_vssi_newy.disasm = {
+  sink << "sqshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(imm);
+};
+
+op sqshl_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
+sqshl_vsvsvs_newy.var format : {char const*} = {"1068"};
+
+sqshl_vsvsvs_newy.disasm = {
+  sink << "sqshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sqshlu_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : imm[3] : 0b011001[6] : rn[5] : rd[5] );
+sqshlu_vbbi_newy.var format : {char const*} = {"1973"};
+
+sqshlu_vbbi_newy.disasm = {
+  sink << "sqshlu\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(imm);
+};
+
+op sqshlu_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : imm[4] : 0b011001[6] : rn[5] : rd[5] );
+sqshlu_vhhi_newy.var format : {char const*} = {"1840"};
+
+sqshlu_vhhi_newy.disasm = {
+  sink << "sqshlu\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(imm);
+};
+
+op sqshlu_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : imm[5] : 0b011001[6] : rn[5] : rd[5] );
+sqshlu_vssi_newy.var format : {char const*} = {"1009"};
+
+sqshlu_vssi_newy.disasm = {
+  sink << "sqshlu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(imm);
+};
+
+op sqsub_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
+sqsub_vbvbvb_newy.var format : {char const*} = {"1328"};
+
+sqsub_vbvbvb_newy.disasm = {
+  sink << "sqsub\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sqsub_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
+sqsub_vhvhvh_newy.var format : {char const*} = {"1119"};
+
+sqsub_vhvhvh_newy.disasm = {
+  sink << "sqsub\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sqsub_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
+sqsub_vsvsvs_newy.var format : {char const*} = {"1069"};
+
+sqsub_vsvsvs_newy.disasm = {
+  sink << "sqsub\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op srhadd_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b000101[6] : rn[5] : rd[5] );
+srhadd_vbvbvb_newy.var format : {char const*} = {"1329"};
+
+srhadd_vbvbvb_newy.disasm = {
+  sink << "srhadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op srhadd_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b000101[6] : rn[5] : rd[5] );
+srhadd_vhvhvh_newy.var format : {char const*} = {"1120"};
+
+srhadd_vhvhvh_newy.disasm = {
+  sink << "srhadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op srhadd_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b000101[6] : rn[5] : rd[5] );
+srhadd_vsvsvs_newy.var format : {char const*} = {"1070"};
+
+srhadd_vsvsvs_newy.disasm = {
+  sink << "srhadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sri_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b010001[6] : rn[5] : rd[5] );
+sri_vbbi_newy.var format : {char const*} = {"1974"}, shift : {unsigned} = {8 - lro};
+
+sri_vbbi_newy.disasm = {
+  sink << "sri\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op sri_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b010001[6] : rn[5] : rd[5] );
+sri_vhhi_newy.var format : {char const*} = {"1841"}, shift : {unsigned} = {16 - lro};
+
+sri_vhhi_newy.disasm = {
+  sink << "sri\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op sri_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b010001[6] : rn[5] : rd[5] );
+sri_vssi_newy.var format : {char const*} = {"1010"}, shift : {unsigned} = {32 - lro};
+
+sri_vssi_newy.disasm = {
+  sink << "sri\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op srshl_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
+srshl_vbvbvb_newy.var format : {char const*} = {"1330"};
+
+srshl_vbvbvb_newy.disasm = {
+  sink << "srshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op srshl_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
+srshl_vhvhvh_newy.var format : {char const*} = {"1121"};
+
+srshl_vhvhvh_newy.disasm = {
+  sink << "srshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op srshl_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
+srshl_vsvsvs_newy.var format : {char const*} = {"1071"};
+
+srshl_vsvsvs_newy.disasm = {
+  sink << "srshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op srshr_vbbi_newy( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b001001[6] : rn[5] : rd[5] );
+srshr_vbbi_newy.var format : {char const*} = {"1975"}, shift : {unsigned} = {8 - lro};
+
+srshr_vbbi_newy.disasm = {
+  sink << "srshr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op srshr_vhhi_newy( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b001001[6] : rn[5] : rd[5] );
+srshr_vhhi_newy.var format : {char const*} = {"1842"}, shift : {unsigned} = {16 - lro};
+
+srshr_vhhi_newy.disasm = {
+  sink << "srshr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op srshr_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b001001[6] : rn[5] : rd[5] );
+srshr_vssi_newy.var format : {char const*} = {"1011"}, shift : {unsigned} = {32 - lro};
+
+srshr_vssi_newy.disasm = {
+  sink << "srshr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op srsra_vbbi_newy( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b001101[6] : rn[5] : rd[5] );
+srsra_vbbi_newy.var format : {char const*} = {"1976"}, shift : {unsigned} = {8 - lro};
+
+srsra_vbbi_newy.disasm = {
+  sink << "srsra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op srsra_vhhi_newy( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b001101[6] : rn[5] : rd[5] );
+srsra_vhhi_newy.var format : {char const*} = {"1843"}, shift : {unsigned} = {16 - lro};
+
+srsra_vhhi_newy.disasm = {
+  sink << "srsra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op srsra_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b001101[6] : rn[5] : rd[5] );
+srsra_vssi_newy.var format : {char const*} = {"1012"}, shift : {unsigned} = {32 - lro};
+
+srsra_vssi_newy.disasm = {
+  sink << "srsra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op sshl_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+sshl_vbvbvb_newy.var format : {char const*} = {"1331"};
+
+sshl_vbvbvb_newy.disasm = {
+  sink << "sshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sshl_vhvhvh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+sshl_vhvhvh_newy.var format : {char const*} = {"1122"};
+
+sshl_vhvhvh_newy.disasm = {
+  sink << "sshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sshl_vsvsvs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+sshl_vsvsvs_newy.var format : {char const*} = {"1072"};
+
+sshl_vsvsvs_newy.disasm = {
+  sink << "sshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op sshr_vbbi_newy( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b000001[6] : rn[5] : rd[5] );
+sshr_vbbi_newy.var format : {char const*} = {"1977"}, shift : {unsigned} = {8 - lro};
+
+sshr_vbbi_newy.disasm = {
+  sink << "sshr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op sshr_vhhi_newy( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b000001[6] : rn[5] : rd[5] );
+sshr_vhhi_newy.var format : {char const*} = {"1844"}, shift : {unsigned} = {16 - lro};
+
+sshr_vhhi_newy.disasm = {
+  sink << "sshr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op sshr_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b000001[6] : rn[5] : rd[5] );
+sshr_vssi_newy.var format : {char const*} = {"1013"}, shift : {unsigned} = {32 - lro};
+
+sshr_vssi_newy.disasm = {
+  sink << "sshr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op ssra_vbbi_newy( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b000101[6] : rn[5] : rd[5] );
+ssra_vbbi_newy.var format : {char const*} = {"1978"}, shift : {unsigned} = {8 - lro};
+
+ssra_vbbi_newy.disasm = {
+  sink << "ssra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op ssra_vhhi_newy( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b000101[6] : rn[5] : rd[5] );
+ssra_vhhi_newy.var format : {char const*} = {"1845"}, shift : {unsigned} = {16 - lro};
+
+ssra_vhhi_newy.disasm = {
+  sink << "ssra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op ssra_vssi_newy( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b000101[6] : rn[5] : rd[5] );
+ssra_vssi_newy.var format : {char const*} = {"1014"}, shift : {unsigned} = {32 - lro};
+
+ssra_vssi_newy.disasm = {
+  sink << "ssra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op sub_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+sub_vbvbvb_newy.var format : {char const*} = {"1332"};
+
+sub_vbvbvb_newy.disasm = {
+  sink << "sub\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op sub_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+sub_vhvhvh_newy.var format : {char const*} = {"1123"};
+
+sub_vhvhvh_newy.disasm = {
+  sink << "sub\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op sub_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+sub_vsvsvs_newy.var format : {char const*} = {"1073"};
+
+sub_vsvsvs_newy.disasm = {
+  sink << "sub\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op suqadd_vbb_newy( 0b0[1] : q[1] : 0b00111000100000001110[20] : rn[5] : rd[5] );
+suqadd_vbb_newy.var format : {char const*} = {"2556"};
+
+suqadd_vbb_newy.disasm = {
+  sink << "suqadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op suqadd_vhh_newy( 0b0[1] : q[1] : 0b00111001100000001110[20] : rn[5] : rd[5] );
+suqadd_vhh_newy.var format : {char const*} = {"2467"};
+
+suqadd_vhh_newy.disasm = {
+  sink << "suqadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op suqadd_vss_newy( 0b0[1] : q[1] : 0b00111010100000001110[20] : rn[5] : rd[5] );
+suqadd_vss_newy.var format : {char const*} = {"2440"};
+
+suqadd_vss_newy.disasm = {
+  sink << "suqadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op tbl_vb1_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
+tbl_vb1_newy.var format : {char const*} = {"1364"};
+
+tbl_vb1_newy.disasm = {
+  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,1,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbl_vb2_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001000[6] : rn[5] : rd[5] );
+tbl_vb2_newy.var format : {char const*} = {"1362"};
+
+tbl_vb2_newy.disasm = {
+  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,2,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbl_vb3_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
+tbl_vb3_newy.var format : {char const*} = {"1360"};
+
+tbl_vb3_newy.disasm = {
+  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,3,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbl_vb4_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011000[6] : rn[5] : rd[5] );
+tbl_vb4_newy.var format : {char const*} = {"1358"};
+
+tbl_vb4_newy.disasm = {
+  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,4,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbx_vb1_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b000100[6] : rn[5] : rd[5] );
+tbx_vb1_newy.var format : {char const*} = {"1365"};
+
+tbx_vb1_newy.disasm = {
+  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,1,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbx_vb2_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001100[6] : rn[5] : rd[5] );
+tbx_vb2_newy.var format : {char const*} = {"1363"};
+
+tbx_vb2_newy.disasm = {
+  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,2,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbx_vb3_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b010100[6] : rn[5] : rd[5] );
+tbx_vb3_newy.var format : {char const*} = {"1361"};
+
+tbx_vb3_newy.disasm = {
+  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,3,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op tbx_vb4_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011100[6] : rn[5] : rd[5] );
+tbx_vb4_newy.var format : {char const*} = {"1359"};
+
+tbx_vb4_newy.disasm = {
+  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,4,16,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op trn1_vbvbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
+trn1_vbvbvb_newy.var format : {char const*} = {"1333"};
+
+trn1_vbvbvb_newy.disasm = {
+  sink << "trn1\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op trn1_vhvhvh_newy( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
+trn1_vhvhvh_newy.var format : {char const*} = {"1124"};
+
+trn1_vhvhvh_newy.disasm = {
+  sink << "trn1\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op trn1_vsvsvs_newy( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
+trn1_vsvsvs_newy.var format : {char const*} = {"1074"};
+
+trn1_vsvsvs_newy.disasm = {
+  sink << "trn1\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op trn2_vbvbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
+trn2_vbvbvb_newy.var format : {char const*} = {"1334"};
+
+trn2_vbvbvb_newy.disasm = {
+  sink << "trn2\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op trn2_vhvhvh_newy( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
+trn2_vhvhvh_newy.var format : {char const*} = {"1125"};
+
+trn2_vhvhvh_newy.disasm = {
+  sink << "trn2\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op trn2_vsvsvs_newy( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
+trn2_vsvsvs_newy.var format : {char const*} = {"1075"};
+
+trn2_vsvsvs_newy.disasm = {
+  sink << "trn2\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uaba_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
+uaba_vbvbvb_newy.var format : {char const*} = {"1335"};
+
+uaba_vbvbvb_newy.disasm = {
+  sink << "uaba\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uaba_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
+uaba_vhvhvh_newy.var format : {char const*} = {"1126"};
+
+uaba_vhvhvh_newy.disasm = {
+  sink << "uaba\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uaba_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
+uaba_vsvsvs_newy.var format : {char const*} = {"1076"};
+
+uaba_vsvsvs_newy.disasm = {
+  sink << "uaba\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uabd_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b011101[6] : rn[5] : rd[5] );
+uabd_vbvbvb_newy.var format : {char const*} = {"1336"};
+
+uabd_vbvbvb_newy.disasm = {
+  sink << "uabd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uabd_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b011101[6] : rn[5] : rd[5] );
+uabd_vhvhvh_newy.var format : {char const*} = {"1127"};
+
+uabd_vhvhvh_newy.disasm = {
+  sink << "uabd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uabd_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b011101[6] : rn[5] : rd[5] );
+uabd_vsvsvs_newy.var format : {char const*} = {"1077"};
+
+uabd_vsvsvs_newy.disasm = {
+  sink << "uabd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uadalp_vhb_newy( 0b0[1] : q[1] : 0b10111000100000011010[20] : rn[5] : rd[5] );
+uadalp_vhb_newy.var format : {char const*} = {"2481"};
+
+uadalp_vhb_newy.disasm = {
+  sink << "uadalp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op uadalp_vsh_newy( 0b0[1] : q[1] : 0b10111001100000011010[20] : rn[5] : rd[5] );
+uadalp_vsh_newy.var format : {char const*} = {"2457"};
+
+uadalp_vsh_newy.disasm = {
+  sink << "uadalp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op uadalp_vds_newy( 0b0[1] : q[1] : 0b10111010100000011010[20] : rn[5] : rd[5] );
+uadalp_vds_newy.var format : {char const*} = {"2354"};
+
+uadalp_vds_newy.disasm = {
+  sink << "uadalp\t" << DisasmTV(rd,1<<q,3) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op uaddlp_vhb_newy( 0b0[1] : q[1] : 0b10111000100000001010[20] : rn[5] : rd[5] );
+uaddlp_vhb_newy.var format : {char const*} = {"2482"};
+
+uaddlp_vhb_newy.disasm = {
+  sink << "uaddlp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op uaddlp_vsh_newy( 0b0[1] : q[1] : 0b10111001100000001010[20] : rn[5] : rd[5] );
+uaddlp_vsh_newy.var format : {char const*} = {"2458"};
+
+uaddlp_vsh_newy.disasm = {
+  sink << "uaddlp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op uaddlp_vds_newy( 0b0[1] : q[1] : 0b10111010100000001010[20] : rn[5] : rd[5] );
+uaddlp_vds_newy.var format : {char const*} = {"2355"};
+
+uaddlp_vds_newy.disasm = {
+  sink << "uaddlp\t" << DisasmTV(rd,1<<q,3) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op uaddlv_hvb_newy( 0b0[1] : q[1] : 0b10111000110000001110[20] : rn[5] : rd[5] );
+uaddlv_hvb_newy.var format : {char const*} = {"2253"};
+
+uaddlv_hvb_newy.disasm = {
+  sink << "uaddlv\t" << DisasmH(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op uaddlv_svh_newy( 0b0[1] : q[1] : 0b10111001110000001110[20] : rn[5] : rd[5] );
+uaddlv_svh_newy.var format : {char const*} = {"2307"};
+
+uaddlv_svh_newy.disasm = {
+  sink << "uaddlv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op ucvtf_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b111001[6] : rn[5] : rd[5] );
+ucvtf_vssi_newy.var format : {char const*} = {"1015"}, shift : {unsigned} = {32 - lro};
+
+ucvtf_vssi_newy.disasm = {
+  sink << "ucvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op ucvtf_vss_newy( 0b0[1] : q[1] : 0b10111000100001110110[20] : rn[5] : rd[5] );
+ucvtf_vss_newy.var format : {char const*} = {"2441"};
+
+ucvtf_vss_newy.disasm = {
+  sink << "ucvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op uhadd_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
+uhadd_vbvbvb_newy.var format : {char const*} = {"1337"};
+
+uhadd_vbvbvb_newy.disasm = {
+  sink << "uhadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uhadd_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
+uhadd_vhvhvh_newy.var format : {char const*} = {"1128"};
+
+uhadd_vhvhvh_newy.disasm = {
+  sink << "uhadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uhadd_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
+uhadd_vsvsvs_newy.var format : {char const*} = {"1078"};
+
+uhadd_vsvsvs_newy.disasm = {
+  sink << "uhadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uhsub_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
+uhsub_vbvbvb_newy.var format : {char const*} = {"1338"};
+
+uhsub_vbvbvb_newy.disasm = {
+  sink << "uhsub\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uhsub_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
+uhsub_vhvhvh_newy.var format : {char const*} = {"1129"};
+
+uhsub_vhvhvh_newy.disasm = {
+  sink << "uhsub\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uhsub_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
+uhsub_vsvsvs_newy.var format : {char const*} = {"1079"};
+
+uhsub_vsvsvs_newy.disasm = {
+  sink << "uhsub\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op umax_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
+umax_vbvbvb_newy.var format : {char const*} = {"1339"};
+
+umax_vbvbvb_newy.disasm = {
+  sink << "umax\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op umax_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
+umax_vhvhvh_newy.var format : {char const*} = {"1130"};
+
+umax_vhvhvh_newy.disasm = {
+  sink << "umax\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op umax_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
+umax_vsvsvs_newy.var format : {char const*} = {"1080"};
+
+umax_vsvsvs_newy.disasm = {
+  sink << "umax\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op umaxp_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
+umaxp_vbvbvb_newy.var format : {char const*} = {"1340"};
+
+umaxp_vbvbvb_newy.disasm = {
+  sink << "umaxp\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op umaxp_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
+umaxp_vhvhvh_newy.var format : {char const*} = {"1131"};
+
+umaxp_vhvhvh_newy.disasm = {
+  sink << "umaxp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op umaxp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
+umaxp_vsvsvs_newy.var format : {char const*} = {"1081"};
+
+umaxp_vsvsvs_newy.disasm = {
+  sink << "umaxp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op umaxv_bvb_newy( 0b0[1] : q[1] : 0b10111000110000101010[20] : rn[5] : rd[5] );
+umaxv_bvb_newy.var format : {char const*} = {"2176"};
+
+umaxv_bvb_newy.disasm = {
+  sink << "umaxv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op umaxv_hvh_newy( 0b0[1] : q[1] : 0b10111001110000101010[20] : rn[5] : rd[5] );
+umaxv_hvh_newy.var format : {char const*} = {"2250"};
+
+umaxv_hvh_newy.disasm = {
+  sink << "umaxv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op umin_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
+umin_vbvbvb_newy.var format : {char const*} = {"1341"};
+
+umin_vbvbvb_newy.disasm = {
+  sink << "umin\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op umin_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
+umin_vhvhvh_newy.var format : {char const*} = {"1132"};
+
+umin_vhvhvh_newy.disasm = {
+  sink << "umin\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op umin_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
+umin_vsvsvs_newy.var format : {char const*} = {"1082"};
+
+umin_vsvsvs_newy.disasm = {
+  sink << "umin\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uminp_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+uminp_vbvbvb_newy.var format : {char const*} = {"1342"};
+
+uminp_vbvbvb_newy.disasm = {
+  sink << "uminp\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uminp_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+uminp_vhvhvh_newy.var format : {char const*} = {"1133"};
+
+uminp_vhvhvh_newy.disasm = {
+  sink << "uminp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uminp_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+uminp_vsvsvs_newy.var format : {char const*} = {"1083"};
+
+uminp_vsvsvs_newy.disasm = {
+  sink << "uminp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uminv_bvb_newy( 0b0[1] : q[1] : 0b10111000110001101010[20] : rn[5] : rd[5] );
+uminv_bvb_newy.var format : {char const*} = {"2177"};
+
+uminv_bvb_newy.disasm = {
+  sink << "uminv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op uminv_hvh_newy( 0b0[1] : q[1] : 0b10111001110001101010[20] : rn[5] : rd[5] );
+uminv_hvh_newy.var format : {char const*} = {"2251"};
+
+uminv_hvh_newy.disasm = {
+  sink << "uminv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op uqadd_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+uqadd_vbvbvb_newy.var format : {char const*} = {"1343"};
+
+uqadd_vbvbvb_newy.disasm = {
+  sink << "uqadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uqadd_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+uqadd_vhvhvh_newy.var format : {char const*} = {"1134"};
+
+uqadd_vhvhvh_newy.disasm = {
+  sink << "uqadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uqadd_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+uqadd_vsvsvs_newy.var format : {char const*} = {"1084"};
+
+uqadd_vsvsvs_newy.disasm = {
+  sink << "uqadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uqrshl_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
+uqrshl_vbvbvb_newy.var format : {char const*} = {"1344"};
+
+uqrshl_vbvbvb_newy.disasm = {
+  sink << "uqrshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uqrshl_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
+uqrshl_vhvhvh_newy.var format : {char const*} = {"1135"};
+
+uqrshl_vhvhvh_newy.disasm = {
+  sink << "uqrshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uqrshl_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
+uqrshl_vsvsvs_newy.var format : {char const*} = {"1085"};
+
+uqrshl_vsvsvs_newy.disasm = {
+  sink << "uqrshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uqshl_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : imm[3] : 0b011101[6] : rn[5] : rd[5] );
+uqshl_vbbi_newy.var format : {char const*} = {"1979"};
+
+uqshl_vbbi_newy.disasm = {
+  sink << "uqshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(imm);
+};
+
+op uqshl_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
+uqshl_vbvbvb_newy.var format : {char const*} = {"1345"};
+
+uqshl_vbvbvb_newy.disasm = {
+  sink << "uqshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uqshl_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : imm[4] : 0b011101[6] : rn[5] : rd[5] );
+uqshl_vhhi_newy.var format : {char const*} = {"1846"};
+
+uqshl_vhhi_newy.disasm = {
+  sink << "uqshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(imm);
+};
+
+op uqshl_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
+uqshl_vhvhvh_newy.var format : {char const*} = {"1136"};
+
+uqshl_vhvhvh_newy.disasm = {
+  sink << "uqshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uqshl_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : imm[5] : 0b011101[6] : rn[5] : rd[5] );
+uqshl_vssi_newy.var format : {char const*} = {"1016"};
+
+uqshl_vssi_newy.disasm = {
+  sink << "uqshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(imm);
+};
+
+op uqshl_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
+uqshl_vsvsvs_newy.var format : {char const*} = {"1086"};
+
+uqshl_vsvsvs_newy.disasm = {
+  sink << "uqshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uqsub_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
+uqsub_vbvbvb_newy.var format : {char const*} = {"1346"};
+
+uqsub_vbvbvb_newy.disasm = {
+  sink << "uqsub\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uqsub_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
+uqsub_vhvhvh_newy.var format : {char const*} = {"1137"};
+
+uqsub_vhvhvh_newy.disasm = {
+  sink << "uqsub\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uqsub_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
+uqsub_vsvsvs_newy.var format : {char const*} = {"1087"};
+
+uqsub_vsvsvs_newy.disasm = {
+  sink << "uqsub\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op urecpe_vss_newy( 0b0[1] : q[1] : 0b00111010100001110010[20] : rn[5] : rd[5] );
+urecpe_vss_newy.var format : {char const*} = {"2442"};
+
+urecpe_vss_newy.disasm = {
+  sink << "urecpe\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op urhadd_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b000101[6] : rn[5] : rd[5] );
+urhadd_vbvbvb_newy.var format : {char const*} = {"1347"};
+
+urhadd_vbvbvb_newy.disasm = {
+  sink << "urhadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op urhadd_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b000101[6] : rn[5] : rd[5] );
+urhadd_vhvhvh_newy.var format : {char const*} = {"1138"};
+
+urhadd_vhvhvh_newy.disasm = {
+  sink << "urhadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op urhadd_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b000101[6] : rn[5] : rd[5] );
+urhadd_vsvsvs_newy.var format : {char const*} = {"1088"};
+
+urhadd_vsvsvs_newy.disasm = {
+  sink << "urhadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op urshl_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
+urshl_vbvbvb_newy.var format : {char const*} = {"1348"};
+
+urshl_vbvbvb_newy.disasm = {
+  sink << "urshl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op urshl_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
+urshl_vhvhvh_newy.var format : {char const*} = {"1139"};
+
+urshl_vhvhvh_newy.disasm = {
+  sink << "urshl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op urshl_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
+urshl_vsvsvs_newy.var format : {char const*} = {"1089"};
+
+urshl_vsvsvs_newy.disasm = {
+  sink << "urshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op urshr_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b001001[6] : rn[5] : rd[5] );
+urshr_vbbi_newy.var format : {char const*} = {"1980"}, shift : {unsigned} = {8 - lro};
+
+urshr_vbbi_newy.disasm = {
+  sink << "urshr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op urshr_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b001001[6] : rn[5] : rd[5] );
+urshr_vhhi_newy.var format : {char const*} = {"1847"}, shift : {unsigned} = {16 - lro};
+
+urshr_vhhi_newy.disasm = {
+  sink << "urshr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op urshr_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b001001[6] : rn[5] : rd[5] );
+urshr_vssi_newy.var format : {char const*} = {"1017"}, shift : {unsigned} = {32 - lro};
+
+urshr_vssi_newy.disasm = {
+  sink << "urshr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op ursqrte_vss_newy( 0b0[1] : q[1] : 0b10111010100001110010[20] : rn[5] : rd[5] );
+ursqrte_vss_newy.var format : {char const*} = {"2443"};
+
+ursqrte_vss_newy.disasm = {
+  sink << "ursqrte\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op ursra_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b001101[6] : rn[5] : rd[5] );
+ursra_vbbi_newy.var format : {char const*} = {"1981"}, shift : {unsigned} = {8 - lro};
+
+ursra_vbbi_newy.disasm = {
+  sink << "ursra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op ursra_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b001101[6] : rn[5] : rd[5] );
+ursra_vhhi_newy.var format : {char const*} = {"1848"}, shift : {unsigned} = {16 - lro};
+
+ursra_vhhi_newy.disasm = {
+  sink << "ursra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op ursra_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b001101[6] : rn[5] : rd[5] );
+ursra_vssi_newy.var format : {char const*} = {"1018"}, shift : {unsigned} = {32 - lro};
+
+ursra_vssi_newy.disasm = {
+  sink << "ursra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op ushl_vbvbvb_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+ushl_vbvbvb_newy.var format : {char const*} = {"1349"};
+
+ushl_vbvbvb_newy.disasm = {
+  sink << "ushl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op ushl_vhvhvh_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+ushl_vhvhvh_newy.var format : {char const*} = {"1140"};
+
+ushl_vhvhvh_newy.disasm = {
+  sink << "ushl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op ushl_vsvsvs_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+ushl_vsvsvs_newy.var format : {char const*} = {"1090"};
+
+ushl_vsvsvs_newy.disasm = {
+  sink << "ushl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op ushr_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b000001[6] : rn[5] : rd[5] );
+ushr_vbbi_newy.var format : {char const*} = {"1982"}, shift : {unsigned} = {8 - lro};
+
+ushr_vbbi_newy.disasm = {
+  sink << "ushr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op ushr_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b000001[6] : rn[5] : rd[5] );
+ushr_vhhi_newy.var format : {char const*} = {"1849"}, shift : {unsigned} = {16 - lro};
+
+ushr_vhhi_newy.disasm = {
+  sink << "ushr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op ushr_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b000001[6] : rn[5] : rd[5] );
+ushr_vssi_newy.var format : {char const*} = {"1019"}, shift : {unsigned} = {32 - lro};
+
+ushr_vssi_newy.disasm = {
+  sink << "ushr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op usqadd_vbb_newy( 0b0[1] : q[1] : 0b10111000100000001110[20] : rn[5] : rd[5] );
+usqadd_vbb_newy.var format : {char const*} = {"2557"};
+
+usqadd_vbb_newy.disasm = {
+  sink << "usqadd\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+op usqadd_vhh_newy( 0b0[1] : q[1] : 0b10111001100000001110[20] : rn[5] : rd[5] );
+usqadd_vhh_newy.var format : {char const*} = {"2468"};
+
+usqadd_vhh_newy.disasm = {
+  sink << "usqadd\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+op usqadd_vss_newy( 0b0[1] : q[1] : 0b10111010100000001110[20] : rn[5] : rd[5] );
+usqadd_vss_newy.var format : {char const*} = {"2444"};
+
+usqadd_vss_newy.disasm = {
+  sink << "usqadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op usra_vbbi_newy( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b000101[6] : rn[5] : rd[5] );
+usra_vbbi_newy.var format : {char const*} = {"1983"}, shift : {unsigned} = {8 - lro};
+
+usra_vbbi_newy.disasm = {
+  sink << "usra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+};
+
+op usra_vhhi_newy( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b000101[6] : rn[5] : rd[5] );
+usra_vhhi_newy.var format : {char const*} = {"1850"}, shift : {unsigned} = {16 - lro};
+
+usra_vhhi_newy.disasm = {
+  sink << "usra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+};
+
+op usra_vssi_newy( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b000101[6] : rn[5] : rd[5] );
+usra_vssi_newy.var format : {char const*} = {"1020"}, shift : {unsigned} = {32 - lro};
+
+usra_vssi_newy.disasm = {
+  sink << "usra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op uzp1_vbvbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b000110[6] : rn[5] : rd[5] );
+uzp1_vbvbvb_newy.var format : {char const*} = {"1350"};
+
+uzp1_vbvbvb_newy.disasm = {
+  sink << "uzp1\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uzp1_vhvhvh_newy( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b000110[6] : rn[5] : rd[5] );
+uzp1_vhvhvh_newy.var format : {char const*} = {"1141"};
+
+uzp1_vhvhvh_newy.disasm = {
+  sink << "uzp1\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op uzp1_vsvsvs_newy( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b000110[6] : rn[5] : rd[5] );
+uzp1_vsvsvs_newy.var format : {char const*} = {"1091"};
+
+uzp1_vsvsvs_newy.disasm = {
+  sink << "uzp1\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op uzp2_vbvbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b010110[6] : rn[5] : rd[5] );
+uzp2_vbvbvb_newy.var format : {char const*} = {"1351"};
+
+uzp2_vbvbvb_newy.disasm = {
+  sink << "uzp2\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op uzp2_vsvsvs_newy( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b010110[6] : rn[5] : rd[5] );
+uzp2_vsvsvs_newy.var format : {char const*} = {"1092"};
+
+uzp2_vsvsvs_newy.disasm = {
+  sink << "uzp2\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op zip1_vbvbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
+zip1_vbvbvb_newy.var format : {char const*} = {"1352"};
+
+zip1_vbvbvb_newy.disasm = {
+  sink << "zip1\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op zip1_vhvhvh_newy( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
+zip1_vhvhvh_newy.var format : {char const*} = {"1143"};
+
+zip1_vhvhvh_newy.disasm = {
+  sink << "zip1\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op zip1_vsvsvs_newy( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
+zip1_vsvsvs_newy.var format : {char const*} = {"1093"};
+
+zip1_vsvsvs_newy.disasm = {
+  sink << "zip1\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+op zip2_vbvbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
+zip2_vbvbvb_newy.var format : {char const*} = {"1353"};
+
+zip2_vbvbvb_newy.disasm = {
+  sink << "zip2\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+op zip2_vhvhvh_newy( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
+zip2_vhvhvh_newy.var format : {char const*} = {"1144"};
+
+zip2_vhvhvh_newy.disasm = {
+  sink << "zip2\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+op zip2_vsvsvs_newy( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
+zip2_vsvsvs_newy.var format : {char const*} = {"1094"};
+
+zip2_vsvsvs_newy.disasm = {
+  sink << "zip2\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
 /*** Load/Store multiple structures ***/
 
 op stvms_bno( 0[1] : q[1] : 0b00110000000000[14] : opcode[4] : 0b00[2] : rn[5] : rt[5] );
