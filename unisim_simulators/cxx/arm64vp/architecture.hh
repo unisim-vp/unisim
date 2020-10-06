@@ -511,14 +511,15 @@ struct AArch64
     unsigned IL :  1;
     unsigned EL :  2;
     unsigned SP :  1;
-    PState() : D(), A(), I(), F(), SS(), IL(), EL(1), SP(1) {}
-
+    PState() : D(1), A(1), I(1), F(1), SS(0), IL(0), EL(1), SP(1) {}
+    
     U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
     U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
-    void SetDAIF(U64 const& xt)
+    void SetDAIF(AArch64& cpu, U64 const& xt)
     {
       if (xt.ubits) { struct Bad {}; throw Bad(); }
       D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
+      cpu.gic.step(cpu);
     }
 
     uint32_t AsSPSR() const;
@@ -626,6 +627,7 @@ struct AArch64
   {
     enum { ITLinesNumber = 2, ITLinesCount = 32*(ITLinesNumber+1) };
     GIC();
+    void step(AArch64& cpu);
     // CPU interface
     uint32_t C_CTLR;
     uint32_t C_PMR;
@@ -637,19 +639,33 @@ struct AArch64
     uint8_t  D_IPRIORITYR[ITLinesCount];
     uint32_t D_ICFGR[ITLinesCount/16];
   };
-  struct Timer
-  {
-    Timer() : KCTL(0), CTL(0), CVAL(0) {}
-    bool tcmp(AArch64& cpu) const { return cpu.get_pcount() > CVAL; }
-    uint64_t ReadCTL(AArch64& cpu) const { return CTL | (tcmp(cpu) << 2); }
-    void WriteCTL(uint64_t v) { CTL = v&3; }
-    uint32_t KCTL; /* Kernel Control */
-    uint8_t   CTL; /* Control */
-    uint64_t CVAL; /* Compare Value*/
-  };
   void map_gic(uint64_t base_addr);
 
-  uint64_t get_pcount() { /*TODO(timer architecture)*/; return insn_counter / 32; }
+  struct Timer
+  {
+    Timer() : kctl(0), ctl(0), cval(0) {}
+    uint64_t get_cntfrq() const { return 33600000; }
+    uint64_t get_ipt() const { return 32; }
+    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_counter / get_ipt(); }
+    uint64_t read_ctl(AArch64& cpu) const { return ctl | ((read_tval(cpu) <= 0) << 2); }
+    void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; step(cpu); }
+    void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; step(cpu); }
+    void write_cval(AArch64& cpu, uint64_t v) { cval = v; step(cpu); }
+    int32_t read_tval(AArch64& cpu) const { return cval - get_pcount(cpu); }
+    void write_tval(AArch64& cpu, uint64_t v) { cval = get_pcount(cpu) + int32_t(v); step(cpu); }
+    void step(AArch64& cpu);
+    uint32_t kctl; /* Kernel Control */
+    uint8_t   ctl; /* Control */
+    uint64_t cval; /* Compare Value*/
+  };
+
+  struct Event
+  {
+    virtual ~Event() {}
+    virtual void process(AArch64& cpu) = 0;
+  };
+
+  void notify( uint64_t date, Event const* evt ) { struct TODO {}; throw TODO(); }
   
   /** Architectural state **/
   Devices  devices;

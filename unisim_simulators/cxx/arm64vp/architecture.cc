@@ -902,3 +902,26 @@ AArch64::map_gic(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0x1fff, &gic_effect) );
 }
 
+void
+AArch64::Timer::step(AArch64& cpu)
+{
+  int32_t delay = read_tval(cpu);
+
+  if (delay > 0)
+    {
+      static struct : public AArch64::Event { void process(AArch64& cpu) { cpu.vt.step(cpu); } } evt;
+      cpu.notify( delay * get_ipt(), &evt );
+      return;
+    }
+
+  if (ctl % 4 != 3)
+    { return; /* timer interrupt disabled */ }
+  
+  struct TODO {}; throw TODO();
+}
+
+void
+AArch64::GIC::step(AArch64& cpu)
+{
+  struct TODO {}; throw TODO();
+}

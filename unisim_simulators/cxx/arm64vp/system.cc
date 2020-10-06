@@ -530,7 +530,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "DAIF"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Interrupt Mask Bits"; }
           U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.pstate.GetDAIF(); }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.pstate.SetDAIF(value); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.pstate.SetDAIF(cpu,value); }
         } x; return &x;
       } break;
 
@@ -1885,7 +1885,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTFRQ_EL0"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Frequency register"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override { return U64(33600000); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override { return U64(cpu.vt.get_cntfrq()); }
         } x; return &x;
       } break;
 
@@ -1926,9 +1926,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTKCTL_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Kernel Control register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.KCTL); }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.kctl); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.KCTL = value.value & 0x203ff; }
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_kctl( cpu, value.value ); }
         } x; return &x;
       } break;
 
@@ -1993,9 +1993,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CTL_EL0"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Virtual Timer Control register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.ReadCTL(cpu)); }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.read_ctl(cpu)); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.WriteCTL(value.value); }
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_ctl(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2004,9 +2004,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CVAL_EL0"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Virtual Timer CompareValue register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.CVAL); }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.cval); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.CVAL = value.value; }
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_cval(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2015,9 +2015,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_TVAL_EL0"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Virtual Timer TimerValue register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(uint32_t(cpu.vt.CVAL-cpu.get_pcount())); }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(uint32_t(cpu.vt.read_tval(cpu))); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.CVAL = cpu.get_pcount() + int32_t(value.value); }
+          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_tval(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2032,7 +2032,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
              * value minus the virtual offset visible in CNTVOFF_EL2.
              * If EL2 not implemented, the offset is fixed as 0.
              */
-            return U64(cpu.get_pcount());
+            return U64(cpu.vt.get_pcount(cpu));
           }
         } x; return &x;
       } break;
@@ -2481,6 +2481,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             cpu.pstate.A &= ~crm >> 2;
             cpu.pstate.I &= ~crm >> 1;
             cpu.pstate.F &= ~crm >> 0;
+            cpu.gic.step(cpu);
           }
         } x; return &x;
       } break;
