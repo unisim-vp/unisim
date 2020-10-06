@@ -54,10 +54,12 @@ namespace CLex
         ObjectOpening, ObjectClosing,
         ArrayOpening, ArrayClosing,
         GroupOpening, GroupClosing,
-        StringQuotes, Number, Name,
+        StringQuotes, SingleQuote, Number, Name,
         Comma, Colon, Assign, Star, Dot,
         Less, More,
         SemiColon, QuestionMark,
+        Arobase, Dollar, Slash,
+        ControlChar,
         EoF
       };
 
@@ -82,8 +84,8 @@ namespace CLex
     Loc loc() const { return Loc(*this); }
     std::ostream& loc( std::ostream& ) const;
 
-    struct Sink { virtual bool append( char ch ) = 0; virtual ~Sink() {} };
-    
+    struct Sink { virtual bool append( char ch ) = 0; virtual ~Sink() {}; void put(Scanner& s, bool (Scanner::*m)(Sink&)) { (s.*m)(*this); } };
+
     bool get_name( Sink& );
     
     bool get_number( Sink& );

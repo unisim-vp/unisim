@@ -50,6 +50,7 @@ namespace CLex
       case GroupOpening: return "GroupOpening";
       case GroupClosing: return "GroupClosing";
       case StringQuotes: return "StringQuotes";
+      case SingleQuote: return "SingleQuote";
       case Number: return "Number";
       case Name: return "Name";
       case Comma: return "Comma";
@@ -61,6 +62,10 @@ namespace CLex
       case QuestionMark: return "QuestionMark";
       case Less: return "Less";
       case More: return "More";
+      case Arobase: return "Arobase";
+      case Dollar: return "Dollar";
+      case Slash: return "Slash";
+      case ControlChar: return "ControlChar";
       case EoF: return "EoF";
       }
     return "???";
@@ -107,6 +112,7 @@ namespace CLex
       {
       default:     throw syntax_error();
       case '"':    return StringQuotes;
+      case '\'':   return SingleQuote;
       case '{':    return ObjectOpening;
       case '}':    return ObjectClosing;
       case '[':    return ArrayOpening;
@@ -115,7 +121,6 @@ namespace CLex
       case ')':    return GroupClosing;
       case ',':    return Comma;
       case ':':    return Colon;
-      case '-':    return Number;
       case '_':    return Name;
       case '=':    return Assign;
       case '*':    return Star;
@@ -124,6 +129,10 @@ namespace CLex
       case '>':    return More;
       case ';':    return SemiColon;
       case '?':    return QuestionMark;
+      case '@':    return Arobase;
+      case '$':    return Dollar;
+      case '-': case '+': case '%':  case '/': case '&': case '^': case '~': case '|': case '!': case '`':
+        return ControlChar;
       }
     return EoF;
   }
@@ -146,7 +155,9 @@ namespace CLex
               {
               case '*': for (;;) { if (getchar() != '*') continue; do {} while (getchar() == '*'); if (lch == '/') break; } break;
               case '/': do {} while (getchar() != '\n'); break;
-              default: throw syntax_error();
+              default:
+                putback = true;
+                return lnext = Slash;
               }
             break;
           }
@@ -286,12 +297,17 @@ namespace CLex
   bool
   Scanner::get_string(Sink& s)
   {
-    for (bool cont = true; cont;)
+    char end = lnext == SingleQuote ? '\'' : '"';
+    
+    for (;;)
       {
         switch (getchar())
           {
           default: if (not s.append(lch)) return false; break;
-          case '"': cont = false; break;
+          case '\'': case '"':
+            if (lch == end) return true;
+            if (not s.append(lch)) return false;
+            break;
           case '\n': std::cerr << loc() << "error: unexpected end of line\n"; throw 0;
           case '\\':
             switch (getchar())
@@ -300,6 +316,7 @@ namespace CLex
               case '"': case '\\': if (not s.append(lch)) return false; break;
               case '\n': break;
               case 'n': if (not s.append('\n')) return false; break;
+              case 't': if (not s.append('\t')) return false; break;
               }
             break;
           }

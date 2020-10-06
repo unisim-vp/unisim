@@ -44,7 +44,7 @@ SDClass::qd_namespace() const {
 }
 
 SDInstance::SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc const& _fileloc )
-  : m_symbol( _symbol ), m_template_scheme( _template_scheme ), m_sdclass( _sdclass ), m_fileloc( _fileloc )
+  : symbol( _symbol ), template_scheme( _template_scheme ), sdclass( _sdclass ), fileloc( _fileloc )
 {}
 
 SDInstance::~SDInstance() {}

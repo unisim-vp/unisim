@@ -73,7 +73,7 @@ void AArch64::Page::dump_range( std::ostream& sink ) const
 void
 AArch64::error_mem_overlap( Page const& a, Page const& b )
 {
-  struct TODO {}; throw TODO();
+  //  struct TODO {}; throw TODO();
 }
 
 bool
@@ -917,11 +917,11 @@ AArch64::Timer::step(AArch64& cpu)
   if (ctl % 4 != 3)
     { return; /* timer interrupt disabled */ }
   
-  struct TODO {}; throw TODO();
+  //  struct TODO {}; throw TODO();
 }
 
 void
 AArch64::GIC::step(AArch64& cpu)
 {
-  struct TODO {}; throw TODO();
+  //struct TODO {}; throw TODO();
 }

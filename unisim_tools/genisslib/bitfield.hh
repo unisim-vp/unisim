@@ -47,12 +47,14 @@ struct BitField : virtual ReferenceCounter
   virtual uint64_t      mask() const { throw InternalError; return 0; };
   
   virtual BitField*     clone() const = 0;
+  virtual int           cmp( BitField const& ) const = 0;
   virtual void          fills( std::ostream& _sink ) const = 0;
   
   virtual uintptr_t     sizes() const = 0;
   virtual void          sizes( unsigned int* _sizes ) const = 0;
   virtual unsigned int  minsize() const = 0;
   virtual unsigned int  maxsize() const = 0;
+  static int            cmp( BitField const&, BitField const& );
 };
 
 std::ostream&
@@ -65,12 +67,13 @@ struct FixedSizeBitField : public BitField
   FixedSizeBitField( unsigned int _size ) : size( _size ) {}
   virtual ~FixedSizeBitField() {}
 
-  uint64_t              mask() const { return (0xffffffffffffffffULL >> (64-size)); }
+  uint64_t              mask() const override { return (0xffffffffffffffffULL >> (64-size)); }
   
-  uintptr_t             sizes() const { return 1; }
-  void                  sizes( unsigned int* _sizes ) const { _sizes[0] = size; }
-  unsigned int          minsize() const { return size; }
-  unsigned int          maxsize() const { return size; }
+  int                   compare(FixedSizeBitField const& rhs) const { return int(size) - int(rhs.size); }
+  uintptr_t             sizes() const override { return 1; }
+  void                  sizes( unsigned int* _sizes ) const override { _sizes[0] = size; }
+  unsigned int          minsize() const override { return size; }
+  unsigned int          maxsize() const override { return size; }
 };
 
 
@@ -88,11 +91,17 @@ struct OpcodeBitField : public FixedSizeBitField
   OpcodeBitField( unsigned int _size, unsigned int _value );
   OpcodeBitField( OpcodeBitField const& _src );
   
-  bool                  hasopcode() const { return true; }
-  uint64_t              bits() const { return value; };
+  bool                  hasopcode() const override { return true; }
+  uint64_t              bits() const override { return value; };
   
-  OpcodeBitField*       clone() const { return new OpcodeBitField( *this ); }
-  void                  fills( std::ostream& _sink ) const;
+  int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<OpcodeBitField const&>(rhs)); }
+  int                   compare(OpcodeBitField const& rhs) const
+  {
+    if (int delta = FixedSizeBitField::compare(rhs)) return delta;
+    return value > rhs.value ? 1 : value < rhs.value ? -1 : 0;
+  }
+  OpcodeBitField*       clone() const override { return new OpcodeBitField( *this ); }
+  void                  fills( std::ostream& _sink ) const override;
 };
 
 /**
@@ -116,9 +125,18 @@ struct OperandBitField : public FixedSizeBitField
   unsigned int          dstsize() const;
   
   ConstStr              getsymbol() const { return symbol; };
-  
-  OperandBitField*      clone() const { return new OperandBitField( *this ); }
-  void                  fills( std::ostream& _sink ) const;
+
+  int                   cmp( BitField const& rhs ) const override { return compare( dynamic_cast<OperandBitField const&>(rhs) ); }
+  int                   compare( OperandBitField const& rhs ) const
+  {
+    if (int delta = FixedSizeBitField::compare(rhs)) return delta;
+    if (int delta = symbol.cmp(rhs.symbol)) return delta;
+    if (int delta = shift - rhs.shift) return delta;
+    if (int delta = size_modifier - rhs.size_modifier) return delta;
+    return sext - rhs.sext;
+  }
+  OperandBitField*      clone() const override { return new OperandBitField( *this ); }
+  void                  fills( std::ostream& _sink ) const override;
 };
 
 /**
@@ -133,9 +151,10 @@ struct UnusedBitField : public FixedSizeBitField
 {
   UnusedBitField( unsigned int _size );
   UnusedBitField( UnusedBitField const& _src );
-  
-  UnusedBitField*       clone() const { return new UnusedBitField( *this ); }
-  void                  fills( std::ostream& _sink ) const;
+
+  int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<FixedSizeBitField const&>(rhs)); }
+  UnusedBitField*       clone() const override { return new UnusedBitField( *this ); }
+  void                  fills( std::ostream& _sink ) const override;
 };
 
 /**
@@ -153,14 +172,16 @@ struct SeparatorBitField : public BitField
   
   SeparatorBitField( bool _rewind );
   SeparatorBitField( SeparatorBitField const& _src );
-  
-  SeparatorBitField*    clone() const { return new SeparatorBitField( *this ); }
-  void                  fills( std::ostream& _sink ) const;
 
-  uintptr_t             sizes() const { return 1; }
-  void                  sizes( unsigned int* _sizes ) const { _sizes[0] = 0; }
-  unsigned int          minsize() const { return 0; }
-  unsigned int          maxsize() const { return 0; }
+  int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<SeparatorBitField const&>(rhs)); }
+  int                   compare(SeparatorBitField const& rhs) const { return rewind - rhs.rewind; }
+  SeparatorBitField*    clone() const override { return new SeparatorBitField( *this ); }
+  void                  fills( std::ostream& _sink ) const override;
+
+  uintptr_t             sizes() const override { return 1; }
+  void                  sizes( unsigned int* _sizes ) const override { _sizes[0] = 0; }
+  unsigned int          minsize() const override { return 0; }
+  unsigned int          maxsize() const override { return 0; }
 };
 
 /**
@@ -176,20 +197,26 @@ struct SeparatorBitField : public BitField
 struct SubOpBitField : public BitField
 {
   ConstStr              symbol;
-  SDInstance const*   sdinstance;
+  SDInstance const*     sdinstance;
   
   SubOpBitField( ConstStr _symbol, SDInstance const* _sdinstance );
   SubOpBitField( SubOpBitField const& _src );
 
   ConstStr              getsymbol() const { return symbol; };
   
-  SubOpBitField*        clone() const { return new SubOpBitField( *this ); }
-  void                  fills( std::ostream& _sink ) const;
+  int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<SubOpBitField const&>(rhs)); }
+  int                   compare(SubOpBitField const& rhs) const
+  {
+    if (int delta = symbol.cmp(rhs.symbol)) return delta;
+    return sdinstance > rhs.sdinstance ? 1 : sdinstance < rhs.sdinstance ? -1 : 0;
+  }
+  SubOpBitField*        clone() const override { return new SubOpBitField( *this ); }
+  void                  fills( std::ostream& _sink ) const override;
   
-  uintptr_t             sizes() const;
-  void                  sizes( unsigned int* _sizes ) const;
-  unsigned int          minsize() const;
-  unsigned int          maxsize() const;
+  uintptr_t             sizes() const override;
+  void                  sizes( unsigned int* _sizes ) const override;
+  unsigned int          minsize() const override;
+  unsigned int          maxsize() const override;
 };
 
 /**
@@ -222,11 +249,20 @@ struct SpOperandBitField : public FixedSizeBitField
   
   ConstStr              getsymbol() const { return symbol; };
 
-  bool                  hasopcode() const { return true; }
-  uint64_t              bits() const { return value; };
+  bool                  hasopcode() const override { return true; }
+  uint64_t              bits() const override { return value; };
   
-  SpOperandBitField*    clone() const { return new SpOperandBitField( *this ); }
-  void                  fills( std::ostream& _sink ) const { throw InternalError; }
+  int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<SpOperandBitField const&>(rhs)); }
+  int                   compare(SpOperandBitField const& rhs) const
+  {
+    if (int delta = symbol.cmp(rhs.symbol)) return delta;
+    if (int delta = shift - rhs.shift) return delta;
+    if (int delta = size_modifier - rhs.size_modifier) return delta;
+    if (int delta = sext - rhs.sext) return delta;
+    return value > rhs.value ? 1 : value < rhs.value ? -1 : 0;
+  }
+  SpOperandBitField*    clone() const override { return new SpOperandBitField( *this ); }
+  void                  fills( std::ostream& _sink ) const override { throw InternalError; }
 };
 
 #endif // __BITFIELD_HH__

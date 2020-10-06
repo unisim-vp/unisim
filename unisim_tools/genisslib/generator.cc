@@ -810,8 +810,8 @@ Generator::isa_operations_decl( Product& _product ) const
         else if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &**bf ))
           {
             SDInstance const* sdinstance = sobf->sdinstance;
-            SDClass const* sdclass = sdinstance->m_sdclass;
-            SourceCode const* tpscheme =  sdinstance->m_template_scheme;
+            SDClass const* sdclass = sdinstance->sdclass;
+            SourceCode const* tpscheme =  sdinstance->template_scheme;
         
             _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
             if (tpscheme)

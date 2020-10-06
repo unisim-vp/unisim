@@ -49,11 +49,11 @@ abs_v8b8b.disasm = {
   sink << "abs\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op abs_v8hv8h( 0b0100111001100000101110[22] : rn[5] : rd[5] );
-abs_v8hv8h.var format : {char const*} = {"2577"};
+op abs_v8h8h( 0b0100111001100000101110[22] : rn[5] : rd[5] );
+abs_v8h8h.var format : {char const*} = {"2577"};
 
-abs_v8hv8h.disasm = {
-  sink << "abs\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+abs_v8h8h.disasm = {
+  sink << "abs\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 /*******************************************************************
@@ -614,11 +614,11 @@ cls_v8b8b.disasm = {
   sink << "cls\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op cls_v8hv8h( 0b0100111001100000010010[22] : rn[5] : rd[5] );
-cls_v8hv8h.var format : {char const*} = {"2578"};
+op cls_v8h8h( 0b0100111001100000010010[22] : rn[5] : rd[5] );
+cls_v8h8h.var format : {char const*} = {"2578"};
 
-cls_v8hv8h.disasm = {
-  sink << "cls\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+cls_v8h8h.disasm = {
+  sink << "cls\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op clz_v16b16b( 0b0110111000100000010010[22] : rn[5] : rd[5] );
@@ -656,11 +656,11 @@ clz_v8b8b.disasm = {
   sink << "clz\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op clz_v8hv8h( 0b0110111001100000010010[22] : rn[5] : rd[5] );
-clz_v8hv8h.var format : {char const*} = {"2579"};
+op clz_v8h8h( 0b0110111001100000010010[22] : rn[5] : rd[5] );
+clz_v8h8h.var format : {char const*} = {"2579"};
 
-clz_v8hv8h.disasm = {
-  sink << "clz\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+clz_v8h8h.disasm = {
+  sink << "clz\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 /*******************************************************************
@@ -2472,7 +2472,7 @@ ext_v16b.disasm = {
   sink << "ext\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0) << ", " << DisasmI(index);
 };
 
-op ext_v8b( 0b00101110000[11] : rm[5] : 0b00[2] : index[3] : 0b0[1] : rn[5] : rd[5] );
+op ext_v8b( 0b00101110000[11] : rm[5] : 0b0[1] : index[4] : 0b0[1] : rn[5] : rd[5] );
 ext_v8b.var format : {char const*} = {"374"};
 
 ext_v8b.disasm = {
@@ -7748,11 +7748,11 @@ neg_v8b8b.disasm = {
   sink << "neg\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op neg_v8hv8h( 0b0110111001100000101110[22] : rn[5] : rd[5] );
-neg_v8hv8h.var format : {char const*} = {"2580"};
+op neg_v8h8h( 0b0110111001100000101110[22] : rn[5] : rd[5] );
+neg_v8h8h.var format : {char const*} = {"2580"};
 
-neg_v8hv8h.disasm = {
-  sink << "neg\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+neg_v8h8h.disasm = {
+  sink << "neg\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 /*******************************************************************
@@ -7993,11 +7993,11 @@ rev32_v8b8b.disasm = {
   sink << "rev32\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op rev32_v8hv8h( 0b0110111001100000000010[22] : rn[5] : rd[5] );
-rev32_v8hv8h.var format : {char const*} = {"2581"};
+op rev32_v8h8h( 0b0110111001100000000010[22] : rn[5] : rd[5] );
+rev32_v8h8h.var format : {char const*} = {"2581"};
 
-rev32_v8hv8h.disasm = {
-  sink << "rev32\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+rev32_v8h8h.disasm = {
+  sink << "rev32\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op rev64_v16b16b( 0b0100111000100000000010[22] : rn[5] : rd[5] );
@@ -8035,11 +8035,11 @@ rev64_v8b8b.disasm = {
   sink << "rev64\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op rev64_v8hv8h( 0b0100111001100000000010[22] : rn[5] : rd[5] );
-rev64_v8hv8h.var format : {char const*} = {"2582"};
+op rev64_v8h8h( 0b0100111001100000000010[22] : rn[5] : rd[5] );
+rev64_v8h8h.var format : {char const*} = {"2582"};
 
-rev64_v8hv8h.disasm = {
-  sink << "rev64\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+rev64_v8h8h.disasm = {
+  sink << "rev64\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op rshrn2_v16b8hi( 0b0100111100001[13] : lro[3] : 0b100011[6] : rn[5] : rd[5] );
@@ -8830,7 +8830,7 @@ op shll_v8h8b( 0b0010111000100001001110[22] : rn[5] : rd[5] );
 shll_v8h8b.var format : {char const*} = {"2576"};
 
 shll_v8h8b.disasm = {
-  sink << "shll\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,0) << ", #8";
+  sink << "shll\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,0) << ", #8";
 };
 
 op shrn2_v16b8hi( 0b0100111100001[13] : lro[3] : 0b100001[6] : rn[5] : rd[5] );
@@ -9571,11 +9571,11 @@ sqabs_v8b8b.disasm = {
   sink << "sqabs\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op sqabs_v8hv8h( 0b0100111001100000011110[22] : rn[5] : rd[5] );
-sqabs_v8hv8h.var format : {char const*} = {"2583"};
+op sqabs_v8h8h( 0b0100111001100000011110[22] : rn[5] : rd[5] );
+sqabs_v8h8h.var format : {char const*} = {"2583"};
 
-sqabs_v8hv8h.disasm = {
-  sink << "sqabs\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+sqabs_v8h8h.disasm = {
+  sink << "sqabs\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op sqadd_bbb( 0b01011110001[11] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
@@ -10061,11 +10061,11 @@ sqneg_v8b8b.disasm = {
   sink << "sqneg\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op sqneg_v8hv8h( 0b0110111001100000011110[22] : rn[5] : rd[5] );
-sqneg_v8hv8h.var format : {char const*} = {"2584"};
+op sqneg_v8h8h( 0b0110111001100000011110[22] : rn[5] : rd[5] );
+sqneg_v8h8h.var format : {char const*} = {"2584"};
 
-sqneg_v8hv8h.disasm = {
-  sink << "sqneg\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+sqneg_v8h8h.disasm = {
+  sink << "sqneg\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op sqrdmulh_hhh( 0b01111110011[11] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
@@ -12698,11 +12698,11 @@ suqadd_v8b8b.disasm = {
   sink << "suqadd\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op suqadd_v8hv8h( 0b0100111001100000001110[22] : rn[5] : rd[5] );
-suqadd_v8hv8h.var format : {char const*} = {"2585"};
+op suqadd_v8h8h( 0b0100111001100000001110[22] : rn[5] : rd[5] );
+suqadd_v8h8h.var format : {char const*} = {"2585"};
 
-suqadd_v8hv8h.disasm = {
-  sink << "suqadd\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+suqadd_v8h8h.disasm = {
+  sink << "suqadd\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op st1_sbi( 0b0[1] : shl<3> index1[1] : 0b00110100000000000[17] : index0[3] : rn[5] : rt[5] );
@@ -15118,11 +15118,11 @@ usqadd_v8b8b.disasm = {
   sink << "usqadd\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0);
 };
 
-op usqadd_v8hv8h( 0b0110111001100000001110[22] : rn[5] : rd[5] );
-usqadd_v8hv8h.var format : {char const*} = {"2586"};
+op usqadd_v8h8h( 0b0110111001100000001110[22] : rn[5] : rd[5] );
+usqadd_v8h8h.var format : {char const*} = {"2586"};
 
-usqadd_v8hv8h.disasm = {
-  sink << "usqadd\t" << DisasmTV(rd,8,1) <<  ", " << DisasmTV(rn,8,1);
+usqadd_v8h8h.disasm = {
+  sink << "usqadd\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1);
 };
 
 op usra_ddi( 0b0111111101[10] : lro[6] : 0b000101[6] : rn[5] : rd[5] );

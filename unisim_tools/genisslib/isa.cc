@@ -412,7 +412,7 @@ SDInstance const*
 Isa::sdinstance( ConstStr _symbol ) const
 {
   for (Vector<SDInstance>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi) {
-    if( (**sdi).m_symbol == _symbol ) return *sdi;
+    if( (**sdi).symbol == _symbol ) return *sdi;
   }
   return 0;
 }
