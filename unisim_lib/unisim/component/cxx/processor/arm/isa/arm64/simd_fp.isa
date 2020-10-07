@@ -174,6 +174,16 @@ aesmc_v16b16b.disasm = {
  * Bitwise AND (vector)
  */
 
+/*
+ * end of AND (vector)
+ *******************************************************************/
+
+/*******************************************************************
+ * BIC (vector, immediate)
+ *
+ * Bitwise bit clear (vector, immediate)
+ */
+
 op cmeq_d_reg( 0b01111110111[11] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
 cmeq_d_reg.var format : {char const*} = {"708"};
 
@@ -9376,11 +9386,23 @@ add_vb_newy.disasm = {
   sink << "add\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+add_vb_newy.execute = {
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) + cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op add_vh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
 add_vh_newy.var format : {char const*} = {"1095"};
 
 add_vh_newy.disasm = {
   sink << "add\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+add_vh_newy.execute = {
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd,idx,cpu.GetVU16(rn,idx) + cpu.GetVU16(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op add_vs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -9390,11 +9412,30 @@ add_vs_newy.disasm = {
   sink << "add\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
+add_vs_newy.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd,idx,cpu.GetVU32(rn,idx) + cpu.GetVU32(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op addp_vb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
 addp_vb_newy.var format : {char const*} = {"1298"};
 
 addp_vb_newy.disasm = {
   sink << "addp\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+addp_vb_newy.execute = {
+  unsigned elements=8<<q;
+  typename ARCH::U8 res[elements];
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[e/2+0] = cpu.GetVU8(rn,e) + cpu.GetVU8(rn,e+1);
+      res[e/2+4] = cpu.GetVU8(rm,e) + cpu.GetVU8(rm,e+1);
+    }
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU8(rd,e,res[e]);
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op addp_vh_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
@@ -9404,11 +9445,35 @@ addp_vh_newy.disasm = {
   sink << "addp\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
 };
 
+addp_vh_newy.execute = {
+  unsigned elements = 4<<q;                        
+  typename ARCH::U16 res[elements];
+  for (unsigned e=0; e < elements; e += 2) {
+    res[e/2+0] = cpu.GetVU16(rn,e) + cpu.GetVU16(rn,e+1);
+    res[e/2+2] = cpu.GetVU16(rm,e) + cpu.GetVU16(rm,e+1);
+  }
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU16(rd,e,res[e]);
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op addp_vs_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
 addp_vs_newy.var format : {char const*} = {"1022"};
 
 addp_vs_newy.disasm = {
   sink << "addp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+addp_vs_newy.execute = {
+  unsigned elements = 2<<q;
+  typename ARCH::U32 res[elements];
+  for (unsigned e=0; e < elements; e += 2) {
+    res[e/2+0] = cpu.GetVU32(rn,e) + cpu.GetVU32(rn,e+1);
+    res[e/2+1] = cpu.GetVU32(rm,e) + cpu.GetVU32(rm,e+1);
+  }
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU32(rd,e,res[e]);
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op addv_bvb_newy( 0b0[1] : q[1] : 0b00111000110001101110[20] : rn[5] : rd[5] );
@@ -9432,11 +9497,23 @@ and_vbvbvb_newy.disasm = {
   sink << "and\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+and_vbvbvb_newy.execute = {
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) & cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op bic_vbvbvb_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 bic_vbvbvb_newy.var format : {char const*} = {"1300"};
 
 bic_vbvbvb_newy.disasm = {
   sink << "bic\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+bic_vbvbvb_newy.execute = {
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) & ~cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op bic_vhi_newy( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
@@ -9523,11 +9600,35 @@ cmeq_vb_reg_newy.disasm = {
   sink << "cmeq\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+cmeq_vb_reg_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end = 8<<q; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
+      res =  S8(not (op1 == op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmeq_vb_zero_newy( 0b0[1] : q[1] : 0b00111000100000100110[20] : rn[5] : rd[5] );
 cmeq_vb_zero_newy.var format : {char const*} = {"2558"};
 
 cmeq_vb_zero_newy.disasm = {
   sink << "cmeq\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+cmeq_vb_zero_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+      res =  S8(not (op1 == op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmeq_vh_reg_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
@@ -9537,11 +9638,35 @@ cmeq_vh_reg_newy.disasm = {
   sink << "cmeq\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
 };
 
+cmeq_vh_reg_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
+      res =  S16(not (op1 == op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmeq_vh_zero_newy( 0b0[1] : q[1] : 0b00111001100000100110[20] : rn[5] : rd[5] );
 cmeq_vh_zero_newy.var format : {char const*} = {"2469"};
 
 cmeq_vh_zero_newy.disasm = {
   sink << "cmeq\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+cmeq_vh_zero_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+      res =  S16(not (op1 == op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmeq_vs_reg_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
@@ -9551,11 +9676,35 @@ cmeq_vs_reg_newy.disasm = {
   sink << "cmeq\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
+cmeq_vs_reg_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
+      res =  S32(not (op1 == op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmeq_vs_zero_newy( 0b0[1] : q[1] : 0b00111010100000100110[20] : rn[5] : rd[5] );
 cmeq_vs_zero_newy.var format : {char const*} = {"2445"};
 
 cmeq_vs_zero_newy.disasm = {
   sink << "cmeq\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+cmeq_vs_zero_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+      res =  S32(not (op1 == op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmge_vb_reg_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
