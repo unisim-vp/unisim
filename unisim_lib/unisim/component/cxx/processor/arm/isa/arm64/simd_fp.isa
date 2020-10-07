@@ -9358,6 +9358,12 @@ orr_vbvbvb_newy.disasm = {
     sink << "orr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+orr_vbvbvb_newy.execute = {
+  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) | cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op abs_vbb_newy( 0b0[1] : q[1] : 0b00111000100000101110[20] : rn[5] : rd[5] );
 abs_vbb_newy.var format : {char const*} = {"2544"};
 
@@ -9714,11 +9720,35 @@ cmge_vb_reg_newy.disasm = {
   sink << "cmge\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+cmge_vb_reg_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=q<<8; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
+      res =  S8(not (op1 >= op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmge_vb_zero_newy( 0b0[1] : q[1] : 0b10111000100000100010[20] : rn[5] : rd[5] );
 cmge_vb_zero_newy.var format : {char const*} = {"2559"};
 
 cmge_vb_zero_newy.disasm = {
   sink << "cmge\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+cmge_vb_zero_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+      res =  S8(not (op1 >= op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmge_vh_reg_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
@@ -9728,11 +9758,35 @@ cmge_vh_reg_newy.disasm = {
   sink << "cmge\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
 };
 
+cmge_vh_reg_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
+      res =  S16(not (op1 >= op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmge_vh_zero_newy( 0b0[1] : q[1] : 0b10111001100000100010[20] : rn[5] : rd[5] );
 cmge_vh_zero_newy.var format : {char const*} = {"2470"};
 
 cmge_vh_zero_newy.disasm = {
   sink << "cmge\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+cmge_vh_zero_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+      res =  S16(not (op1 >= op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmge_vs_reg_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
@@ -9742,11 +9796,35 @@ cmge_vs_reg_newy.disasm = {
   sink << "cmge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
+cmge_vs_reg_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
+      res =  S32(not (op1 >= op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmge_vs_zero_newy( 0b0[1] : q[1] : 0b10111010100000100010[20] : rn[5] : rd[5] );
 cmge_vs_zero_newy.var format : {char const*} = {"2446"};
 
 cmge_vs_zero_newy.disasm = {
   sink << "cmge\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+cmge_vs_zero_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+      res =  S32(not (op1 >= op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmgt_vb_reg_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
@@ -9756,11 +9834,35 @@ cmgt_vb_reg_newy.disasm = {
   sink << "cmgt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+cmgt_vb_reg_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
+      res =  S8(not (op1 > op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmgt_vb_zero_newy( 0b0[1] : q[1] : 0b00111000100000100010[20] : rn[5] : rd[5] );
 cmgt_vb_zero_newy.var format : {char const*} = {"2560"};
 
 cmgt_vb_zero_newy.disasm = {
   sink << "cmgt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+cmgt_vb_zero_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+      res =  S8(not (op1 > op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmgt_vh_reg_newy( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
@@ -9770,11 +9872,35 @@ cmgt_vh_reg_newy.disasm = {
   sink << "cmgt\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
 };
 
+cmgt_vh_reg_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( cpu.GetVS16(rm,e) ), res;
+      res =  S16(not (op1 > op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmgt_vh_zero_newy( 0b0[1] : q[1] : 0b00111001100000100010[20] : rn[5] : rd[5] );
 cmgt_vh_zero_newy.var format : {char const*} = {"2471"};
 
 cmgt_vh_zero_newy.disasm = {
   sink << "cmgt\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+cmgt_vh_zero_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+      res =  S16(not (op1 > op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmgt_vs_reg_newy( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
@@ -9784,11 +9910,35 @@ cmgt_vs_reg_newy.disasm = {
   sink << "cmgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
+cmgt_vs_reg_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( cpu.GetVS32(rm,e) ), res;
+      res =  S32(not (op1 > op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmgt_vs_zero_newy( 0b0[1] : q[1] : 0b00111010100000100010[20] : rn[5] : rd[5] );
 cmgt_vs_zero_newy.var format : {char const*} = {"2447"};
 
 cmgt_vs_zero_newy.disasm = {
   sink << "cmgt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+cmgt_vs_zero_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+      res =  S32(not (op1 > op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmhi_vb_reg_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
@@ -9798,11 +9948,35 @@ cmhi_vb_reg_newy.disasm = {
   sink << "cmhi\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+cmhi_vb_reg_newy.execute = {
+  typedef typename ARCH::U8 U8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      U8 op1( cpu.GetVU8(rn,e) ), op2( cpu.GetVU8(rm,e) ), res;
+      res =  U8(not (op1 > op2)) - U8(1);
+      cpu.SetVU8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmhi_vh_reg_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
 cmhi_vh_reg_newy.var format : {char const*} = {"1100"};
 
 cmhi_vh_reg_newy.disasm = {
   sink << "cmhi\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
+};
+
+cmhi_vh_reg_newy.execute = {
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      U16 op1( cpu.GetVU16(rn,e) ), op2( cpu.GetVU16(rm,e) ), res;
+      res =  U16(not (op1 > op2)) - U16(1);
+      cpu.SetVU16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmhi_vs_reg_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
@@ -9812,11 +9986,35 @@ cmhi_vs_reg_newy.disasm = {
   sink << "cmhi\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
+cmhi_vs_reg_newy.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      U32 op1( cpu.GetVU32(rn,e) ), op2( cpu.GetVU32(rm,e) ), res;
+      res =  U32(not (op1 > op2)) - U32(1);
+      cpu.SetVU32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmhs_vb_reg_newy( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
 cmhs_vb_reg_newy.var format : {char const*} = {"1308"};
 
 cmhs_vb_reg_newy.disasm = {
   sink << "cmhs\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+cmhs_vb_reg_newy.execute = {
+  typedef typename ARCH::U8 U8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      U8 op1( cpu.GetVU8(rn,e) ), op2( cpu.GetVU8(rm,e) ), res;
+      res =  U8(not (op1 >= op2)) - U8(1);
+      cpu.SetVU8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmhs_vh_reg_newy( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
@@ -9826,11 +10024,35 @@ cmhs_vh_reg_newy.disasm = {
   sink << "cmhs\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmTV(rm,4<<q,1);
 };
 
+cmhs_vh_reg_newy.execute = {
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      U16 op1( cpu.GetVU16(rn,e) ), op2( cpu.GetVU16(rm,e) ), res;
+      res =  U16(not (op1 >= op2)) - U16(1);
+      cpu.SetVU16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmhs_vs_reg_newy( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
 cmhs_vs_reg_newy.var format : {char const*} = {"1027"};
 
 cmhs_vs_reg_newy.disasm = {
   sink << "cmhs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
+};
+
+cmhs_vs_reg_newy.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      U32 op1( cpu.GetVU32(rn,e) ), op2( cpu.GetVU32(rm,e) ), res;
+      res =  U32(not (op1 >= op2)) - U32(1);
+      cpu.SetVU32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmle_vb_zero_newy( 0b0[1] : q[1] : 0b10111000100000100110[20] : rn[5] : rd[5] );
@@ -9840,11 +10062,35 @@ cmle_vb_zero_newy.disasm = {
   sink << "cmle\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
 };
 
+cmle_vb_zero_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=q<<8; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+      res =  S8(not (op1 <= op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmle_vh_zero_newy( 0b0[1] : q[1] : 0b10111001100000100110[20] : rn[5] : rd[5] );
 cmle_vh_zero_newy.var format : {char const*} = {"2472"};
 
 cmle_vh_zero_newy.disasm = {
   sink << "cmle\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
+};
+
+cmle_vh_zero_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+      res =  S16(not (op1 <= op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmle_vs_zero_newy( 0b0[1] : q[1] : 0b10111010100000100110[20] : rn[5] : rd[5] );
@@ -9854,11 +10100,35 @@ cmle_vs_zero_newy.disasm = {
   sink << "cmle\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
 };
 
+cmle_vs_zero_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+      res =  S32(not (op1 <= op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmlt_vb_zero_newy( 0b0[1] : q[1] : 0b00111000100000101010[20] : rn[5] : rd[5] );
 cmlt_vb_zero_newy.var format : {char const*} = {"2562"};
 
 cmlt_vb_zero_newy.disasm = {
   sink << "cmlt\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", #0";
+};
+
+cmlt_vb_zero_newy.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
+    {
+      S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+      res =  S8(not (op1 < op2)) - S8(1);
+      cpu.SetVS8(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmlt_vh_zero_newy( 0b0[1] : q[1] : 0b00111001100000101010[20] : rn[5] : rd[5] );
@@ -9868,11 +10138,35 @@ cmlt_vh_zero_newy.disasm = {
   sink << "cmlt\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", #0";
 };
 
+cmlt_vh_zero_newy.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0, end=4<<q; e < end; e += 1)
+    {
+      S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+      res =  S16(not (op1 < op2)) - S16(1);
+      cpu.SetVS16(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op cmlt_vs_zero_newy( 0b0[1] : q[1] : 0b00111010100000101010[20] : rn[5] : rd[5] );
 cmlt_vs_zero_newy.var format : {char const*} = {"2449"};
 
 cmlt_vs_zero_newy.disasm = {
   sink << "cmlt\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", #0";
+};
+
+cmlt_vs_zero_newy.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+      res =  S32(not (op1 < op2)) - S32(1);
+      cpu.SetVS32(rd,e,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op cmtst_vbvbvb_newy( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
@@ -9910,6 +10204,13 @@ dup_vb_newy.disasm = {
   sink << "dup\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmGZWR(rn);
 };
 
+dup_vb_newy.execute = {
+  typename ARCH::U8 element( cpu.GetGZR(rn) );
+  for (unsigned e=0, end=8<<q; e < end; ++e)
+    cpu.SetVU8(rd,e,element);
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op dup_vbvb_newy( 0b0[1] : q[1] : 0b001110000[9] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
 dup_vbvb_newy.var format : {char const*} = {"1822"};
 
@@ -9924,6 +10225,13 @@ dup_vh_newy.disasm = {
   sink << "dup\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmGZWR(rn);
 };
 
+dup_vh_newy.execute = {
+  typename ARCH::U16 element( cpu.GetGZR(rn) );
+  for (unsigned e=0, end=4<<q; e < end; ++e)
+    cpu.SetVU16(rd,e,element);
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op dup_vhvh_newy( 0b0[1] : q[1] : 0b001110000[9] : index[3] : 0b10000001[8] : rn[5] : rd[5] );
 dup_vhvh_newy.var format : {char const*} = {"1924"};
 
@@ -9936,6 +10244,13 @@ dup_vs_newy.var format : {char const*} = {"2014"};
 
 dup_vs_newy.disasm = {
   sink << "dup\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmGZWR(rn);
+};
+
+dup_vs_newy.execute = {
+  typename ARCH::U32 element( cpu.GetGZR(rn) );
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd,e,element);
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op dup_vsvs_newy( 0b0[1] : q[1] : 0b001110000[9] : index[2] : 0b100000001[9] : rn[5] : rd[5] );
@@ -10552,6 +10867,12 @@ orn_vbvbvb_newy.var format : {char const*} = {"1314"};
 
 orn_vbvbvb_newy.disasm = {
   sink << "orn\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+orn_vbvbvb_newy.execute = {
+  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) | ~cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op orr_vhi_newy( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
