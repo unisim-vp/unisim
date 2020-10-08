@@ -8761,8 +8761,8 @@ addp_vb_newy.execute = {
   typename ARCH::U8 res[elements];
   for (unsigned e=0; e < elements; e += 2)
     {
-      res[e/2+0] = cpu.GetVU8(rn,e) + cpu.GetVU8(rn,e+1);
-      res[e/2+4] = cpu.GetVU8(rm,e) + cpu.GetVU8(rm,e+1);
+      res[       (0+e)/2] = cpu.GetVU8(rn,e) + cpu.GetVU8(rn,e+1);
+      res[(elements+e)/2] = cpu.GetVU8(rm,e) + cpu.GetVU8(rm,e+1);
     }
   for (unsigned e=0; e < elements; e += 1)
     cpu.SetVU8(rd,e,res[e]);
@@ -8780,8 +8780,8 @@ addp_vh_newy.execute = {
   unsigned elements = 4<<q;                        
   typename ARCH::U16 res[elements];
   for (unsigned e=0; e < elements; e += 2) {
-    res[e/2+0] = cpu.GetVU16(rn,e) + cpu.GetVU16(rn,e+1);
-    res[e/2+2] = cpu.GetVU16(rm,e) + cpu.GetVU16(rm,e+1);
+    res[       (0+e)/2] = cpu.GetVU16(rn,e) + cpu.GetVU16(rn,e+1);
+    res[(elements+e)/2] = cpu.GetVU16(rm,e) + cpu.GetVU16(rm,e+1);
   }
   for (unsigned e=0; e < elements; e += 1)
     cpu.SetVU16(rd,e,res[e]);
@@ -8799,8 +8799,8 @@ addp_vs_newy.execute = {
   unsigned elements = 2<<q;
   typename ARCH::U32 res[elements];
   for (unsigned e=0; e < elements; e += 2) {
-    res[e/2+0] = cpu.GetVU32(rn,e) + cpu.GetVU32(rn,e+1);
-    res[e/2+1] = cpu.GetVU32(rm,e) + cpu.GetVU32(rm,e+1);
+    res[       (0+e)/2] = cpu.GetVU32(rn,e) + cpu.GetVU32(rn,e+1);
+    res[(elements+e)/2] = cpu.GetVU32(rm,e) + cpu.GetVU32(rm,e+1);
   }
   for (unsigned e=0; e < elements; e += 1)
     cpu.SetVU32(rd,e,res[e]);
