@@ -9048,7 +9048,7 @@ cmge_vb_reg_newy.disasm = {
 cmge_vb_reg_newy.execute = {
   typedef typename ARCH::S8 S8;
 
-  for (unsigned e=0, end=q<<8; e < end; e += 1)
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
     {
       S8 op1( cpu.GetVS8(rn,e) ), op2( cpu.GetVS8(rm,e) ), res;
       res =  S8(not (op1 >= op2)) - S8(1);
@@ -9390,7 +9390,7 @@ cmle_vb_zero_newy.disasm = {
 cmle_vb_zero_newy.execute = {
   typedef typename ARCH::S8 S8;
 
-  for (unsigned e=0, end=q<<8; e < end; e += 1)
+  for (unsigned e=0, end=8<<q; e < end; e += 1)
     {
       S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
       res =  S8(not (op1 <= op2)) - S8(1);
