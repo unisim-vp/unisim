@@ -12351,3 +12351,419 @@ ldvms_dro.execute = {
 };
 
 /***/
+op stvsl_bno( 0[1] : index1[1] : 0b00110100[8] : regs0[1] : 0b00000[5] : 0b00[2] : regs1[1] : index0[3] : rn[5] : rt[5] );
+stvsl_bno.var index : {unsigned} = {index1<<3|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_bno.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,0) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvsl_bno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx)%32, index));
+};
+
+op stvsl_bio( 0[1] : index1[1] : 0b00110110[8] : regs0[1] : 0b11111[5] : 0b00[2] : regs1[1] : index0[3] : rn[5] : rt[5] );
+stvsl_bio.var index : {unsigned} = {index1<<3|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_bio.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,0) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 0);
+};
+
+stvsl_bio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + U64(regs << 0) );
+};
+
+op stvsl_bro( 0[1] : index1[1] : 0b00110110[8] : regs0[1] : rm[5] : 0b00[2] : regs1[1] : index0[3] : rn[5] : rt[5] );
+stvsl_bro.var reject : {Reject} = {rm == 31}, index : {unsigned} = {index1<<3|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_bro.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,0) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvsl_bro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite8(addr + U64(1*idx), cpu.GetVU8((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op stvsl_hno( 0[1] : index1[1] : 0b00110100[8] : regs0[1] : 0b00000[5] : 0b01[2] : regs1[1] : index0[2] : 0[1] : rn[5] : rt[5] );
+stvsl_hno.var index : {unsigned} = {index1<<2|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_hno.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,1) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvsl_hno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx)%32, index));
+};
+
+op stvsl_hio( 0[1] : index1[1] : 0b00110110[8] : regs0[1] : 0b11111[5] : 0b01[2] : regs1[1] : index0[2] : 0[1] : rn[5] : rt[5] );
+stvsl_hio.var index : {unsigned} = {index1<<2|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_hio.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,1) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 1);
+};
+
+stvsl_hio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + U64(regs << 1) );
+};
+
+op stvsl_hro( 0[1] : index1[1] : 0b00110110[8] : regs0[1] : rm[5] : 0b01[2] : regs1[1] : index0[2] : 0[1] : rn[5] : rt[5] );
+stvsl_hro.var reject : {Reject} = {rm == 31}, index : {unsigned} = {index1<<2|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_hro.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,1) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvsl_hro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite16(addr + U64(2*idx), cpu.GetVU16((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op stvsl_sno( 0[1] : index1[1] : 0b00110100[8] : regs0[1] : 0b00000[5] : 0b10[2] : regs1[1] : index0[1] : 0[2] : rn[5] : rt[5] );
+stvsl_sno.var index : {unsigned} = {index1<<1|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_sno.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,2) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvsl_sno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx)%32, index));
+};
+
+op stvsl_sio( 0[1] : index1[1] : 0b00110110[8] : regs0[1] : 0b11111[5] : 0b10[2] : regs1[1] : index0[1] : 0[2] : rn[5] : rt[5] );
+stvsl_sio.var index : {unsigned} = {index1<<1|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_sio.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,2) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 2);
+};
+
+stvsl_sio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + U64(regs << 2) );
+};
+
+op stvsl_sro( 0[1] : index1[1] : 0b00110110[8] : regs0[1] : rm[5] : 0b10[2] : regs1[1] : index0[1] : 0[2] : rn[5] : rt[5] );
+stvsl_sro.var reject : {Reject} = {rm == 31}, index : {unsigned} = {index1<<1|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_sro.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,2) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvsl_sro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite32(addr + U64(4*idx), cpu.GetVU32((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op stvsl_dno( 0[1] : index[1] : 0b00110100[8] : regs0[1] : 0b00000[5] : 0b10[2] : regs1[1] : 1[3] : rn[5] : rt[5] );
+stvsl_dno.var regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_dno.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stvsl_dno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx)%32, index));
+};
+
+op stvsl_dio( 0[1] : index[1] : 0b00110110[8] : regs0[1] : 0b11111[5] : 0b10[2] : regs1[1] : 1[3] : rn[5] : rt[5] );
+stvsl_dio.var regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_dio.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 3);
+};
+
+stvsl_dio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + U64(regs << 3) );
+};
+
+op stvsl_dro( 0[1] : index[1] : 0b00110110[8] : regs0[1] : rm[5] : 0b10[2] : regs1[1] : 1[3] : rn[5] : rt[5] );
+stvsl_dro.var reject : {Reject} = {rm == 31}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+stvsl_dro.disasm = {
+  sink << "st" << regs << '\t' << DisasmBunch(rt,regs,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+stvsl_dro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.MemWrite64(addr + U64(8*idx), cpu.GetVU64((rt+idx)%32, index));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op ldvsl_bno( 0[1] : index1[1] : 0b00110101[8] : regs0[1] : 0b00000[5] : 0b00[2] : regs1[1] : index0[3] : rn[5] : rt[5] );
+ldvsl_bno.var index : {unsigned} = {index1<<3|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_bno.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,0) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvsl_bno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU8((rt+idx)%32, index, cpu.MemRead8(addr + U64(1*idx)));
+};
+
+op ldvsl_bio( 0[1] : index1[1] : 0b00110111[8] : regs0[1] : 0b11111[5] : 0b00[2] : regs1[1] : index0[3] : rn[5] : rt[5] );
+ldvsl_bio.var index : {unsigned} = {index1<<3|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_bio.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,0) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 0);
+};
+
+ldvsl_bio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU8((rt+idx)%32, index, cpu.MemRead8(addr + U64(1*idx)));
+
+  cpu.SetGSR(rn, addr + U64(regs << 0) );
+};
+
+op ldvsl_bro( 0[1] : index1[1] : 0b00110111[8] : regs0[1] : rm[5] : 0b00[2] : regs1[1] : index0[3] : rn[5] : rt[5] );
+ldvsl_bro.var reject : {Reject} = {rm == 31}, index : {unsigned} = {index1<<3|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_bro.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,0) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvsl_bro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU8((rt+idx)%32, index, cpu.MemRead8(addr + U64(1*idx)));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op ldvsl_hno( 0[1] : index1[1] : 0b00110101[8] : regs0[1] : 0b00000[5] : 0b01[2] : regs1[1] : index0[2] : 0[1] : rn[5] : rt[5] );
+ldvsl_hno.var index : {unsigned} = {index1<<2|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_hno.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,1) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvsl_hno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU16((rt+idx)%32, index, cpu.MemRead16(addr + U64(2*idx)));
+};
+
+op ldvsl_hio( 0[1] : index1[1] : 0b00110111[8] : regs0[1] : 0b11111[5] : 0b01[2] : regs1[1] : index0[2] : 0[1] : rn[5] : rt[5] );
+ldvsl_hio.var index : {unsigned} = {index1<<2|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_hio.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,1) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 1);
+};
+
+ldvsl_hio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU16((rt+idx)%32, index, cpu.MemRead16(addr + U64(2*idx)));
+
+  cpu.SetGSR(rn, addr + U64(regs << 1) );
+};
+
+op ldvsl_hro( 0[1] : index1[1] : 0b00110111[8] : regs0[1] : rm[5] : 0b01[2] : regs1[1] : index0[2] : 0[1] : rn[5] : rt[5] );
+ldvsl_hro.var reject : {Reject} = {rm == 31}, index : {unsigned} = {index1<<2|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_hro.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,1) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvsl_hro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU16((rt+idx)%32, index, cpu.MemRead16(addr + U64(2*idx)));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op ldvsl_sno( 0[1] : index1[1] : 0b00110101[8] : regs0[1] : 0b00000[5] : 0b10[2] : regs1[1] : index0[1] : 0[2] : rn[5] : rt[5] );
+ldvsl_sno.var index : {unsigned} = {index1<<1|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_sno.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,2) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvsl_sno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU32((rt+idx)%32, index, cpu.MemRead32(addr + U64(4*idx)));
+};
+
+op ldvsl_sio( 0[1] : index1[1] : 0b00110111[8] : regs0[1] : 0b11111[5] : 0b10[2] : regs1[1] : index0[1] : 0[2] : rn[5] : rt[5] );
+ldvsl_sio.var index : {unsigned} = {index1<<1|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_sio.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,2) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 2);
+};
+
+ldvsl_sio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU32((rt+idx)%32, index, cpu.MemRead32(addr + U64(4*idx)));
+
+  cpu.SetGSR(rn, addr + U64(regs << 2) );
+};
+
+op ldvsl_sro( 0[1] : index1[1] : 0b00110111[8] : regs0[1] : rm[5] : 0b10[2] : regs1[1] : index0[1] : 0[2] : rn[5] : rt[5] );
+ldvsl_sro.var reject : {Reject} = {rm == 31}, index : {unsigned} = {index1<<1|index0}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_sro.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,2) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvsl_sro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU32((rt+idx)%32, index, cpu.MemRead32(addr + U64(4*idx)));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
+op ldvsl_dno( 0[1] : index[1] : 0b00110101[8] : regs0[1] : 0b00000[5] : 0b10[2] : regs1[1] : 1[3] : rn[5] : rt[5] );
+ldvsl_dno.var regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_dno.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldvsl_dno.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU64((rt+idx)%32, index, cpu.MemRead64(addr + U64(8*idx)));
+};
+
+op ldvsl_dio( 0[1] : index[1] : 0b00110111[8] : regs0[1] : 0b11111[5] : 0b10[2] : regs1[1] : 1[3] : rn[5] : rt[5] );
+ldvsl_dio.var regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_dio.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", #" << (regs << 3);
+};
+
+ldvsl_dio.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU64((rt+idx)%32, index, cpu.MemRead64(addr + U64(8*idx)));
+
+  cpu.SetGSR(rn, addr + U64(regs << 3) );
+};
+
+op ldvsl_dro( 0[1] : index[1] : 0b00110111[8] : regs0[1] : rm[5] : 0b10[2] : regs1[1] : 1[3] : rn[5] : rt[5] );
+ldvsl_dro.var reject : {Reject} = {rm == 31}, regs : {unsigned} = {(regs1<<1|regs0)+1}
+
+ldvsl_dro.disasm = {
+  sink << "ld" << regs << '\t' << DisasmBunch(rt,regs,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "]" << ", " << DisasmGZXR(rm);
+};
+
+ldvsl_dro.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+    for (unsigned idx = 0, end = regs; idx < end; ++idx)
+      cpu.SetVU64((rt+idx)%32, index, cpu.MemRead64(addr + U64(8*idx)));
+
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
