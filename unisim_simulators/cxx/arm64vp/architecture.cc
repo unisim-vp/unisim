@@ -52,7 +52,8 @@ AArch64::AArch64()
   , current_insn_addr()
   , next_insn_addr()
   , insn_counter()
-  , current_insn_op()
+  , insn_timer()
+  , last_insns()
   , TPIDR()
   , CPACR()
   // , event()
@@ -73,7 +74,7 @@ void AArch64::Page::dump_range( std::ostream& sink ) const
 void
 AArch64::error_mem_overlap( Page const& a, Page const& b )
 {
-  //  struct TODO {}; throw TODO();
+  struct TODO {}; throw TODO();
 }
 
 bool
@@ -133,14 +134,20 @@ AArch64::IPB::get(AArch64& core, uint64_t vaddr)
     {
       uint8_t ubuf[LINE_SIZE];
       if (core.access_page(address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
-        { struct Bad {}; throw Bad(); }
+        { struct Bad {}; raise( Bad() ); }
       if (not std::all_of( &ubuf[0], &ubuf[LINE_SIZE], [](unsigned char const byte) { return byte == 0; } ))
-        { struct Bad {}; throw Bad(); }
+        { struct Bad {}; raise( Bad() ); }
       base_address = req_base_address;
     }
 
   return &bytes[idx];
 }
+
+AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
+{
+  return last_insns[(insn_counter + histsize + idx) % histsize];
+}
+
 
 void
 AArch64::step_instruction()
@@ -149,6 +156,7 @@ AArch64::step_instruction()
   uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
 
   //if (insn_addr == halt_on_addr) { Stop(0); return; }
+  insn_timer += 1;
 
   try
     {
@@ -162,11 +170,12 @@ AArch64::step_instruction()
         insn = insn << 8 | *itr;
 
       /* Decode current PC. TODO: should provide physical address for caching purpose */
-      Operation* op = current_insn_op = decoder.Decode(insn_addr, insn);
+      Operation* op = decoder.Decode(insn_addr, insn);
+      last_insns[insn_counter % histsize].assign(insn_addr, op);
       
       this->next_insn_addr += 4;
 
-      // if (current_insn_addr == 0xffffffc0109f4040 and gpr[0].value == 0xffffff800e89a00e)
+      // if (current_insn_addr == 0xffffffc010164778)
       //   {
       //     breakdance();
       //     //disasm = true;
@@ -199,13 +208,7 @@ AArch64::step_instruction()
       /* Instruction aborted, proceed to next */
       //   if (unlikely(trap_reporting_import))
       //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
-    }
-  
-  catch (std::exception const& exc)
-    {
-      std::cerr << "Unimplemented exception <" << exc.what() << "> @pc=" << std::hex << current_insn_addr << std::dec << std::endl;
-      throw exc;
-    }
+    }  
 }
 
 void
@@ -257,7 +260,7 @@ AArch64::CallSupervisor( uint32_t imm )
 
   // we are executing on full system mode
   //  throw SVCException();
-  struct Bad {}; throw Bad();
+  struct Bad {}; raise( Bad() );
 }
 
 /** CallHypervisor
@@ -275,12 +278,12 @@ AArch64::CallHypervisor( uint32_t imm )
       U64 const& arg0 = gpr[0];
       
       if (arg0.ubits)
-        throw Bad();
+        raise( Bad() );
       
       switch (arg0.value)
         {
         default:
-          throw Bad();
+          raise( Bad() );
         case 0x84000000: // PSCI_0_2_FN_VERSION
           gpr[0] = U64(2); // VERSION=0.2
           return;
@@ -291,7 +294,7 @@ AArch64::CallHypervisor( uint32_t imm )
         }
     }
 
-  throw Bad();
+  raise( Bad() );
 }
 
 AArch64::MMU::TLB::TLB()
@@ -459,10 +462,10 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
     uint64_t read(uint64_t paddr)
     {
       uint8_t dbuf[size], ubuf[size];
-      if (cpu.access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) throw Bad();
+      if (cpu.access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
       uint64_t value = 0;
       for (unsigned idx = size; idx-- > 0;)
-      { if (ubuf[idx]) throw Bad(); value = (value << 8) | dbuf[idx ^ endianness]; }
+      { if (ubuf[idx]) raise( Bad() ); value = (value << 8) | dbuf[idx ^ endianness]; }
       return value;
     }
   } descriptor(*this);
@@ -505,7 +508,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
     }
 
   if (epd)
-    { struct Bad {}; throw Bad(); }
+    raise( Bad() );
 
   if (tbi)
     {
@@ -553,7 +556,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         if (not (desc & 2))
           {
             /*illegal at page grain*/
-            if (level == 3) { struct Bad {}; throw Bad(); }
+            if (level == 3) raise( Bad() );
             break; /* a block */
           }
         else if (level == 3)
@@ -564,7 +567,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         attr_table &= ((desc >> 59) ^ 0b00011);
       }
   }
-  if (direct_bits > 32) { struct Bad {}; throw Bad(); }
+  if (direct_bits > 32) raise( Bad() );
 
   unsigned vaclr = 64 - direct_bits;
   entry.pa = (((desc >> direct_bits) << (direct_bits + 16)) >> 16) | ((vaddr << vaclr) >> vaclr);
@@ -581,21 +584,76 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
 }
 
 void
-AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
+AArch64::TakeException(unsigned target_el, unsigned vect_offset)
 {
-  unsigned const target_el = 1;
-
-  unsigned vect_offset = 0x0;
   if (target_el > pstate.EL)
     vect_offset += 0x400; /* + 0x600 if lower uses AArch32 */
   else if (pstate.SP)
     vect_offset += 0x200;
 
+  U32 spsr = GetPSRFromPSTATE();
 
-  // spsr = GetSPSRFromPSTATE();
-  U32 spsr = GetSPSRFromPSTATE();
+  pstate.EL = target_el;
+  SetPStateSP(1);
+
+  get_el(target_el).SPSR = spsr;
+  get_el(target_el).ELR = U64(current_insn_addr);
+
+  pstate.SS = 0;
+  pstate.IL = 0;
+
+  pstate.D = 1;
+  pstate.A = 1;
+  pstate.I = 1;
+  pstate.F = 1;
+
+  // BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
+  BranchTo( (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset), B_EXC );
+}
+
+void
+AArch64::SetPSTATEFromPSR(U32 spsr)
+{
+  struct Bad {};
+  nzcv = U8(spsr >> 28);
+  spsr = (spsr << 4) >> 4;
+  if (spsr.ubits) raise( Bad() );
+  uint32_t psr = spsr.value;
+  
+  if (psr & 0x10) raise( Bad() ); /* No AArch32 */
+  /* spsr checks causing an "Illegal return" */
+  if ((psr >> 2 & 3) > pstate.EL) raise( Bad() );
+  if (psr & 2) raise( Bad() );
+  
+  // Return an SPSR value which represents thebits(32) spsr = Zeros();
+  pstate.IL = psr >> 21;
+  pstate.SS = psr >> 20;
+  /* AArch64*/
+  pstate.D = psr >> 9;
+  pstate.A = psr >> 8;
+  pstate.I = psr >> 7;
+  pstate.F = psr >> 6;
+  pstate.EL = psr >> 2;
+  pstate.SP = psr >> 0;
+}
+
+
+void
+AArch64::ExceptionReturn()
+{
+  U32 spsr = get_el(pstate.EL).SPSR;
+  U64 elr = get_el(pstate.EL).ELR;
+  SetPSTATEFromPSR(spsr);
+  //  ClearExclusiveLocal();
+  // SendEventLocal();
+
+  BranchTo(elr, B_ERET);
+}
+
+void
+AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
+{
   // ESR[target_el] = ec<5:0>:il:syndrome;
-
   get_el(target_el).ESR = U32(0)
     | U32((mat == mat_exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
     | U32(1) << 25 // IL
@@ -610,28 +668,20 @@ AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t
   get_el(target_el).FAR = U64(va);
   //     if target_el == EL2 && exception.ipavalid then
   //     HPFAR_EL2<39:4> = exception.ipaddress<47:12>;
+}
 
-  pstate.EL = target_el;
-  SetPStateSP(1);
-
-  get_el(target_el).SPSR = spsr;
-  get_el(target_el).ELR = U64(current_insn_addr);
-
-  pstate.D = 1;
-  pstate.A = 1;
-  pstate.I = 1;
-  pstate.F = 1;
-
-  {
-    U32 nRW(1);
-    nRW &= spsr >> 4;
-    if ((nRW.ubits | nRW.value) & 1) { struct NoAArch32 {}; throw NoAArch32(); }
-  }
-
-  // BranchTo(VBAR[] + vect_offset, BranchType_EXCEPTION);
-  BranchTo( get_el(target_el).VBAR + U64(vect_offset), B_EXC );
-
+void
+AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
+{
+  ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
+  TakeException(1, 0x0);
   EndOfInstruction();
+}
+
+void
+AArch64::TakePhysicalIRQException()
+{
+  TakeException(1, 0x80);
 }
 
 uint32_t
@@ -656,19 +706,19 @@ void
 AArch64::breakdance()
 {
   std::cerr << "Debug time!\n";
-  U64 addr = gpr[0];
+  // U64 addr = gpr[0];
 
-  std::cerr << std::hex << addr.value << std::dec << '"';
-  for (U8 byte; Test( (byte = MemRead8 (addr)) != U8(0) ); addr += U64(1))
-    {
-      if (byte.ubits)
-        { std::cerr << "\\b"; for (int bit = 8; --bit >=0;) { std::cerr << "01xx"[2*(byte.ubits >> bit & 1) | (byte.value >> bit & 1)]; } }
-      else if (isprint(byte.value))
-        std::cerr << byte.value;
-      else
-        std::cerr << "\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(byte.value) << std::dec;
-    }
-  std::cerr << '"' << "\n";
+  // std::cerr << std::hex << addr.value << std::dec << '"';
+  // for (U8 byte; Test( (byte = MemRead8 (addr)) != U8(0) ); addr += U64(1))
+  //   {
+  //     if (byte.ubits)
+  //       { std::cerr << "\\b"; for (int bit = 8; --bit >=0;) { std::cerr << "01xx"[2*(byte.ubits >> bit & 1) | (byte.value >> bit & 1)]; } }
+  //     else if (isprint(byte.value))
+  //       std::cerr << byte.value;
+  //     else
+  //       std::cerr << "\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(byte.value) << std::dec;
+  //   }
+  // std::cerr << '"' << "\n";
 }
 
 bool
@@ -695,7 +745,7 @@ AArch64::concretize()
       if (first)
         return true;
     }
-  
+
   static struct { uint64_t address; bool result; }
   exceptions [] =
     {
@@ -709,18 +759,51 @@ AArch64::concretize()
     {
       std::cerr << "Condition depends on unitialized value.\n";
       DisasmState ds;
-      current_insn_op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
+      last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
       std::cerr << "\n";
-      
+
       struct Bad {}; throw Bad ();
     }
-  
+
   return exceptions[idx++].result;
 }
 
 AArch64::GIC::GIC()
   : D_CTLR()
 {}
+
+unsigned
+AArch64::GIC::ScanPendingInterruptsFor( uint8_t required, uint8_t enough ) const
+{
+  unsigned hppi = 1023;
+
+  if ((C_CTLR & D_CTLR & 1) == 0)
+    return hppi;
+
+  // Preemption not supported
+  for (unsigned word = 0; word < ITLinesCount/32; ++word)
+    if (D_IACTIVE[word])
+      return hppi;
+
+  for (unsigned word = 0; word < ITLinesCount/32; ++word)
+    {
+      uint32_t valid = D_IPENDING[word] & D_IENABLE[word];
+      for (;valid; valid = (valid-1) & valid)
+        {
+          unsigned int_id = word*32 + unisim::util::arithmetic::BitScanForward(valid);
+          uint8_t priority = D_IPRIORITYR[int_id];
+          if (priority < enough)
+            return int_id;
+          if (priority < required)
+            {
+              hppi = int_id;
+              required = priority;
+            }
+        }
+    }
+
+  return hppi;
+}
 
 namespace
 {
@@ -789,10 +872,38 @@ AArch64::map_gic(uint64_t base_addr)
 
       if (req.addr == 0x100) /* CPU Interface Control Register */
         return req.access(arch.gic.C_CTLR);
-      
+
       if (req.addr == 0x104) /* Interrupt Priority Mask Register */
         return req.access(arch.gic.C_PMR);
 
+      if (req.addr == 0x10c) /* Interrupt Acknowledge Register */
+        {
+          if (req.write) return error( "Cannot write GICC_IAR" );
+
+          unsigned int_id = arch.gic.HighestPriorityPendingInterrupt();
+
+          arch.gic.ack_interrupt(int_id);
+
+          U32 reg = U32(0)
+            | U32(0,0x7ffff)     << 13  // Reserved
+            | U32(0,0x7)         << 10  // CPUID
+            | U32(int_id)        <<  0; // An product identifier (linux wants 0bx..x0000)
+
+          return req.tainted_access(reg);
+        }
+
+      if (req.addr == 0x110) /* End of Interrupt Register */
+        {
+          if (not req.write) return error( "Cannot read GICC_EOIR" );
+          U32 reg;
+          if (not req.tainted_access(reg))
+            return false;
+          unsigned int_id = 0xffff;
+          { U32 field = reg & U32(0x3ff); if (field.ubits) { struct Bad {}; raise( Bad() ); }; int_id = field.value; }
+          arch.gic.eoi_interrupt(int_id);
+          return true;
+        }
+      
       if (0x1d0 <= req.addr and req.addr < 0x1f0)
         {
           /* Active Priorities Registers (secure and not secure) */
@@ -810,10 +921,10 @@ AArch64::map_gic(uint64_t base_addr)
 
           return req.tainted_access(reg);
         }
-      
+
       if (req.addr == 0x1000) /* Distributor Control Register */
         return req.access( arch.gic.D_CTLR );
-      
+
       if (req.addr == 0x1004) /* Interrupt Controller Type Register */
         {
           if (req.write) return error( "Cannot write GICD_TYPER" );
@@ -826,7 +937,7 @@ AArch64::map_gic(uint64_t base_addr)
             | U32(arch.gic.ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
           return req.tainted_access(reg);
         }
-      
+
       if (0x1100 <= req.addr and req.addr < 0x1400)
         {
           /* The GICD_I[S|C][ENABLER|PENDR|ACTIVER]n registers provide
@@ -845,7 +956,7 @@ AArch64::map_gic(uint64_t base_addr)
           if (req.write) { if (cns) reg &= ~value; else reg |= value; }
           return true;
         }
-      
+
       if (0x1400 <= req.addr and req.addr < 0x1800)
         {
           /* The GICD_IPRIORITYRs provide an 8-bit priority field for
@@ -858,7 +969,7 @@ AArch64::map_gic(uint64_t base_addr)
           uint8_t raz_wi(0);
           return req.access(raz_wi);
         }
-      
+
       if (0x1800 <= req.addr and req.addr < 0x1c00)
         {
           /* The GICD_ITARGETSRs provide an 8-bit CPU targets. Note:
@@ -868,7 +979,7 @@ AArch64::map_gic(uint64_t base_addr)
           uint8_t raz_wi(0);
           return req.access(raz_wi);
         }
-      
+
       if (0x1c00 <= req.addr and req.addr < 0x1d00)
         {
           /* The GICD_ICFGRs provide a 2-bit Int_config field for each
@@ -883,14 +994,14 @@ AArch64::map_gic(uint64_t base_addr)
       std::cerr << "Unmapped GIC register @" << std::hex << req.addr << "\n";
       return false;
     }
-    
+
     virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t size) const override
     {
       IRequest idata(addr, dbuf, ubuf, size);
       do {} while (idata.size and access(arch, idata));
       return not idata.size;
     }
-    
+
     virtual uint64_t read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t size) const override
     {
       ORequest odata(addr, dbuf, ubuf, size);
@@ -902,26 +1013,107 @@ AArch64::map_gic(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0x1fff, &gic_effect) );
 }
 
-void
-AArch64::Timer::step(AArch64& cpu)
+bool
+AArch64::Timer::activated() const
 {
-  int32_t delay = read_tval(cpu);
-
-  if (delay > 0)
-    {
-      static struct : public AArch64::Event { void process(AArch64& cpu) { cpu.vt.step(cpu); } } evt;
-      cpu.notify( delay * get_ipt(), &evt );
-      return;
-    }
-
-  if (ctl % 4 != 3)
-    { return; /* timer interrupt disabled */ }
-  
-  //  struct TODO {}; throw TODO();
+  /* Timer enabled and interruption not masked */
+  return ctl % 4 == 1;
 }
 
 void
-AArch64::GIC::step(AArch64& cpu)
+AArch64::handle_vtimer()
 {
-  //struct TODO {}; throw TODO();
+  if (not vt.activated())
+    return;
+  if (vt.read_tval(*this) > 0)
+    return vt.program(*this); /* Condition not met */
+
+  gic.set_interrupt(27);
+  gic.program(*this);
+}
+
+
+void
+AArch64::Timer::program(AArch64& cpu)
+{
+  if (not activated())
+    return;
+
+  int32_t delay = read_tval(cpu);
+  if (delay < 1) delay = 1;
+
+  cpu.notify( delay * cpu.get_ipt(), &AArch64::handle_vtimer );
+}
+
+bool
+AArch64::has_irqs() const
+{
+  if (pstate.I)
+    return false; /* IRQs masked */
+  return gic.HasPendingInterrupt();
+}
+
+void
+AArch64::handle_irqs()
+{
+  if (not has_irqs())
+    return;
+
+  TakePhysicalIRQException();
+}
+
+void
+AArch64::GIC::program(AArch64& cpu)
+{
+  if (not cpu.has_irqs())
+    return;
+
+  cpu.notify(1, &AArch64::handle_irqs);
+}
+
+void
+AArch64::reload_next_event()
+{
+  if (next_events.size())
+    next_event = next_events.begin()->first;
+  else
+    next_event = insn_timer + 0x100000;
+}
+
+void
+AArch64::run()
+{
+  for (;;)
+    {
+      for (auto evt = next_events.begin(), end = next_events.end(); evt != end and evt->first <= insn_timer;)
+        {
+          auto method = evt->second;
+          evt = next_events.erase(evt);
+          (this->*method)();
+        }
+      step_instruction();
+    }
+}
+
+void
+AArch64::wfi()
+{
+  struct Bad {};
+
+  /* Check for pending interrupts regardless of pstate.{D,A,I,F} */
+  if (gic.HasPendingInterrupt())
+    return; /* CPU has at least one pending interrupt, job's done */
+
+  if (next_events.size() == 0)
+    throw Bad ();
+
+  /* advance to next event and notify back to check progress*/
+  insn_timer = next_events.begin()->first;
+  notify( 0, &AArch64::wfi );
+}
+
+void
+raise_breakpoint()
+{
+  std::cerr << "Raise BP\n";
 }

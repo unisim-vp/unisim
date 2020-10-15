@@ -157,20 +157,48 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
-      /*** Hint instructions ***/
+      /***  Architectural hints instructions ***/
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b001 ):
+      {
+        static struct : public BaseSysReg
+        {
+          char const* description() const { return "Yield"; }
+          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "yield<bad-read>\t; " << description(); }
+          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "yield\t; " << description(); }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
+          { /* Don't know what to do here */ cpu.TODO(); }
+        } x; return &x;
+      }
+
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b010 ):
+      {
+        static struct : public BaseSysReg
+        {
+          char const* description() const { return "Wait For Event"; }
+          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfe<bad-read>\t; " << description(); }
+          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfe\t; " << description(); }
+        } x; return &x;
+      }
+
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b011 ):
+      {
+        static struct : public BaseSysReg
+        {
+          char const* description() const { return "Wait For Interrupt"; }
+          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfi<bad-read>\t; " << description(); }
+          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfi\t; " << description(); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64) const override { cpu.notify(1,&AArch64::wfi); }
+        } x; return &x;
+      }
+
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0010, 0b100 ):
       {
-        static struct : public SysReg
+        static struct : public BaseSysReg
         {
           char const* description() const { return "Consumption of Speculative Data Barrier"; }
           void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "csdb (read error)\t; " << description(); }
           void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "csdb\t; " << description(); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64&, U64) const override { /* No OoO nor speculative execution, nothing to do */ }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          {
-            DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr); std::cerr << "` (" << description() << ").\n";
-            cpu.UndefinedInstruction(); return U64();
-          }
         } x; return &x;
       } break;
 
@@ -539,16 +567,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE(0b11,0b110,0b0100,0b0001,0b000): // SP_EL2, Stack Pointer (EL2)
       {
         static struct : public BaseSysReg {
-          unsigned level(unsigned op1) const { return AArch64::GetExceptionLevel(op1) - 1; }
           U64& GetSP(AArch64& cpu, unsigned op1) const
           {
-            unsigned lvl = level(op1);
+            unsigned lvl = GetExceptionLevel(op1) - 1;
             if (cpu.pstate.SP == 0 and lvl == 0)
               cpu.UndefinedInstruction();
             return cpu.sp_el[lvl];
           }
-          void Name(Encoding e, std::ostream& sink) const override { sink << "SP_EL" << level(e.op1); }
-          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Stack Pointer (EL" << level(e.op1) << ")"; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SP_EL" << (GetExceptionLevel(e.op1)-1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Stack Pointer (EL" << (GetExceptionLevel(e.op1)-1) << ")"; }
           U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return GetSP(cpu, op1); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { GetSP(cpu, op1) = value; }
         } x; return &x;
@@ -762,50 +789,26 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b0101,0b0010,0b000): // 2.24: ESR_EL1, Exception Syndrome Register (EL1)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "ESR_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL1)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b100,0b0101,0b0010,0b000): // 2.25: ESR_EL2, Exception Syndrome Register (EL2)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "ESR_EL2"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL2)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b110,0b0101,0b0010,0b000): // 2.26: ESR_EL3, Exception Syndrome Register (EL3)
       {
         static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "ESR_EL3"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL3)"; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ESR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).ESR); }
+          void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).ESR = U32(value); }
         } x; return &x;
       } break;
 
     case SYSENCODE(0b11,0b000,0b0110,0b0000,0b000): // 2.27: FAR_EL1, Fault Address Register (EL1)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "FAR_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Fault Address Register (EL1)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b100,0b0110,0b0000,0b000): // 2.28: FAR_EL2, Fault Address Register (EL2)
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "FAR_EL2"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Fault Address Register (EL2)"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b110,0b0110,0b0000,0b000): // 2.29: FAR_EL3, Fault Address Register (EL3)
       {
         static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "FAR_EL3"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Fault Address Register (EL3)"; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "FAR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return cpu.get_el(GetExceptionLevel(op1)).FAR; }
+          void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).FAR = value; }
         } x; return &x;
       } break;
 
@@ -931,11 +934,11 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(0)                << 32 | // RES0
               U64(0b0000)           << 28 | // TGran4, Support for 4 Kbyte memory translation granule size
               U64(0b0000)           << 24 | // TGran64, Support for 64 Kbyte memory translation granule size
-              U64(0b0000)           << 20 | // TGran16, Support for 16 Kbyte memory translation granule size
+              U64(0b0001)           << 20 | // TGran16, Support for 16 Kbyte memory translation granule size
               U64(0b0000)           << 16 | // BigEndEL0, Mixed-endian configuration support
               U64(0b0000)           << 12 | // SNSMem, Secure versus Non-secure Memory distinction
               U64(0b0000)           <<  8 | // BigEnd, Mixed-endian configuration support
-              U64(0,0b1111)         <<  4 | // ASIDBits, Number of ASID bits
+              U64(0b0010)           <<  4 | // ASIDBits, Number of ASID bits
               U64(0b0101)           <<  0;  // PARange, Physical Address range supported
           }
         } x; return &x;
@@ -1338,13 +1341,13 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE(0b11,0b110,0b0001,0b0000,0b000): // 2.81: SCTLR_EL3, System Control Register (EL3)
       {
         static struct : public BaseSysReg {
-          void Name(Encoding e, std::ostream& sink) const override { sink << "SCTLR_EL" << AArch64::GetExceptionLevel(e.op1); }
-          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "System Control Register (EL" << AArch64::GetExceptionLevel(e.op1) << ")"; }
-          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(cpu.GetExceptionLevel(op1)).SCTLR); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCTLR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "System Control Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).SCTLR); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
           {
             if (value.ubits) { struct Bad {}; throw Bad(); }
-            cpu.get_el(cpu.GetExceptionLevel(op1)).SetSCTLR(cpu, value.value);
+            cpu.get_el(GetExceptionLevel(op1)).SetSCTLR(cpu, value.value);
           }
         } x; return &x;
       } break;
@@ -1401,11 +1404,10 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE(0b11,0b110,0b1101,0b0000,0b010): // 2.90: TPIDR_EL3, Thread Pointer / ID Register (EL3)
       {
         static struct : public BaseSysReg {
-          unsigned level(unsigned op1) const { return AArch64::GetExceptionLevel(op1); }
-          void Name(Encoding e, std::ostream& sink) const override { sink << "TPIDR_EL" << level(e.op1); }
-          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL" << level(e.op1) << ")"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.TPIDR[level(op1)]; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.TPIDR[level(op1)] = value; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TPIDR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Thread Pointer / ID Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.TPIDR[GetExceptionLevel(op1)]; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.TPIDR[GetExceptionLevel(op1)] = value; }
         } x; return &x;
       } break;
 
@@ -1463,16 +1465,39 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0100,0b0000,0b000): // SPSR_EL1
+    case SYSENCODE(0b11,0b100,0b0100,0b0000,0b000): // SPSR_EL2
+    case SYSENCODE(0b11,0b110,0b0100,0b0000,0b000): // SPSR_EL3
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SPSR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).SPSR); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).SPSR = U32(value); }
+        } x; return &x;
+      } break;
+      
+    case SYSENCODE(0b11,0b000,0b0100,0b0000,0b001): // ELR_EL1
+    case SYSENCODE(0b11,0b100,0b0100,0b0000,0b001): // ELR_EL2
+    case SYSENCODE(0b11,0b110,0b0100,0b0000,0b001): // ELR_EL3
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ELR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.get_el(GetExceptionLevel(op1)).ELR; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).ELR = value; }
+        } x; return &x;
+      } break;
+    
     case SYSENCODE(0b11,0b000,0b1100,0b0000,0b000): // 2.96: VBAR_EL1, Vector Base Address Register (EL1)
     case SYSENCODE(0b11,0b100,0b1100,0b0000,0b000): // 2.97: VBAR_EL2, Vector Base Address Register (EL2)
     case SYSENCODE(0b11,0b110,0b1100,0b0000,0b000): // 2.98: VBAR_EL3, Vector Base Address Register (EL3)
       {
         static struct : public BaseSysReg {
-          unsigned level(unsigned op1) const { return AArch64::GetExceptionLevel(op1); }
-          void Name(Encoding e, std::ostream& sink) const override { sink << "VBAR_EL" << level(e.op1); }
-          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL" << level(e.op1) << ")"; }
-          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.get_el(level(op1)).VBAR; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.get_el(level(op1)).VBAR = value; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VBAR_EL" << GetExceptionLevel(e.op1); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Vector Base Address Register (EL" << GetExceptionLevel(e.op1) << ")"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.get_el(GetExceptionLevel(op1)).VBAR; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).VBAR = value; }
         } x; return &x;
       } break;
 
@@ -2481,7 +2506,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             cpu.pstate.A &= ~crm >> 2;
             cpu.pstate.I &= ~crm >> 1;
             cpu.pstate.F &= ~crm >> 0;
-            cpu.gic.step(cpu);
+            cpu.gic.program(cpu);
           }
         } x; return &x;
       } break;

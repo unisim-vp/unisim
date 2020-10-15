@@ -198,39 +198,25 @@ main(int argc, char *argv[])
 
   std::cerr << "\n*** Run ***" << std::endl;
 
-  unsigned const tailsize = 1024;
-  struct InstructionInfo
-  {
-    void assign( uint64_t _addr, AArch64::Operation* _op ) { addr = _addr; op = _op; }
-    uint64_t addr;
-    AArch64::Operation* op;
-  };
-  InstructionInfo tailbuf[tailsize];
-  
   try
     {
-      for (;;)
-        {
-          arch.step_instruction();
-          tailbuf[arch.insn_counter%tailsize].assign(arch.current_insn_addr, arch.current_insn_op);
-        }
+      arch.run();
+      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
     }
   catch (...)
     {
-      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions\n";
+      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
       std::ofstream tail("tail");
-      for (unsigned idx = 0; idx < tailsize; ++idx)
+      for (unsigned idx = 1; idx <= arch.histsize; ++idx)
         {
-          InstructionInfo const& insn = tailbuf[(arch.insn_counter+idx)%tailsize];
+          auto const& insn = arch.last_insn(idx);
           tail << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
           insn.op->disasm( arch, tail );
           tail << std::endl;
         }
-
       throw;
     }
 
-  std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
   
   return 0;
 }

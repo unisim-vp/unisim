@@ -43,8 +43,13 @@
 #include <unisim/component/cxx/vector/vector.hh>
 #include <iosfwd>
 #include <set>
+#include <map>
 #include <algorithm>
 #include <inttypes.h>
+
+void raise_breakpoint();
+
+template <typename E> void raise( E const& e ) { raise_breakpoint(); throw e; }
 
 struct AArch64
 {
@@ -69,12 +74,21 @@ struct AArch64
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> Operation;
   
+  struct InstructionInfo
+  {
+    void assign( uint64_t _addr, AArch64::Operation* _op ) { addr = _addr; op = _op; }
+    uint64_t addr;
+    Operation* op;
+  };
+  
+  typedef void (AArch64::*event_handler_t)();
   
   AArch64();
  
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
 
+  InstructionInfo const& last_insn(int idx) const; 
   void breakdance();
 
   void TODO();
@@ -204,6 +218,7 @@ struct AArch64
   /** Manage System Registers **/
   struct SysReg
   {
+    static unsigned GetExceptionLevel( uint8_t op1 ) { switch (op1) { case 0: case 1: case 2: return 1; case 4: return 2; case 6: return 3; } return 0; }
     virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const = 0;
     virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const = 0;
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
@@ -211,7 +226,6 @@ struct AArch64
   };
   
   static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  static unsigned      GetExceptionLevel( uint8_t op1 ) { switch (op1) { case 0: case 1: case 2: return 1; case 4: return 2; case 6: return 3; } return 0; }
   void                 CheckSystemAccess( uint8_t op1 );
   
   //=====================================================================
@@ -219,7 +233,7 @@ struct AArch64
   //=====================================================================
   
   /** Set the next Program Counter */
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC };
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET };
   void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; throw Bad(); } next_insn_addr = addr.value; }
   bool concretize();
   bool Test( bool cond ) { return cond; }
@@ -240,7 +254,7 @@ struct AArch64
   memory_read(U64 addr)
   {
     struct Bad {};
-    if (addr.ubits) throw Bad();
+    if (addr.ubits) raise( Bad() );
     
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_read, size);
@@ -252,13 +266,13 @@ struct AArch64
           {
             for (unsigned byte = 0; byte < size; ++byte)
               if (not access_page(paddr+byte).read(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-                throw Bad();
+                raise( Bad() );
           }
       }
     catch (Device const& device)
       {
         if (not device.effect->read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          throw Bad(); 
+          raise( Bad() ); 
       }
 
     typedef typename T::value_type value_type;
@@ -285,7 +299,7 @@ struct AArch64
   memory_write(U64 addr, T src)
   {
     struct Bad {};
-    if (addr.ubits) throw Bad();
+    if (addr.ubits) raise( Bad() );
 
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_write, size);
@@ -307,13 +321,13 @@ struct AArch64
           {
             for (unsigned byte = 0; byte < size; ++byte)
               if (not modify_page(paddr+byte).write(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-                throw Bad();
+                raise( Bad() );
           }
       }
     catch (Device const& device)
       {
         if (not device.effect->write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          throw Bad();
+          raise( Bad() );
       }
   }
 
@@ -331,7 +345,7 @@ struct AArch64
 
   void     SetExclusiveMonitors( U64 addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { /*TODO: MP support*/ return true; }
-  void     ClearExclusiveLocal() {}
+  void     ClearExclusiveLocal() { /*TODO: MP support*/ }
 
   //=====================================================================
   //=                            Exceptions                             =
@@ -347,6 +361,12 @@ struct AArch64
    * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
    */
   void DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
+  void TakePhysicalIRQException();
+  
+  void TakeException(unsigned target_el, unsigned vect_offset);
+  void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
+
+  void ExceptionReturn();
   
   /**********************************************************************
    ***                       Architectural state                      ***
@@ -466,7 +486,7 @@ struct AArch64
         auto di = devices.lower_bound(addr);
         if (di != devices.end() and addr <= di->last)
           throw *di;
-        struct Bad {}; throw Bad();
+        struct Bad {}; raise( Bad() );
       }
     return *pi;
   }
@@ -491,6 +511,7 @@ struct AArch64
   bool mem_map(Page&& page);
 
   void step_instruction();
+  void run();
 
   struct IPB
   {
@@ -517,9 +538,9 @@ struct AArch64
     U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
     void SetDAIF(AArch64& cpu, U64 const& xt)
     {
-      if (xt.ubits) { struct Bad {}; throw Bad(); }
+      if (xt.ubits) { struct Bad {}; raise( Bad() ); }
       D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
-      cpu.gic.step(cpu);
+      cpu.gic.program(cpu);
     }
 
     uint32_t AsSPSR() const;
@@ -532,7 +553,8 @@ struct AArch64
     gpr[31] = pstate.selsp(*this);
   }
 
-  U32 GetSPSRFromPSTATE() { return U32(nzcv) << 28 | U32(pstate.AsSPSR()); }
+  U32 GetPSRFromPSTATE() { return U32(nzcv) << 28 | U32(pstate.AsSPSR()); }
+  void SetPSTATEFromPSR(U32 spsr);
 
   struct EL
   {
@@ -627,7 +649,15 @@ struct AArch64
   {
     enum { ITLinesNumber = 2, ITLinesCount = 32*(ITLinesNumber+1) };
     GIC();
-    void step(AArch64& cpu);
+
+    bool activated(AArch64& cpu) const;
+    void program(AArch64& cpu);
+    unsigned HighestPriorityPendingInterrupt() const { return ScanPendingInterruptsFor( C_PMR, 0 ); }
+    bool HasPendingInterrupt() const { return ScanPendingInterruptsFor( C_PMR, C_PMR ) < ITLinesCount; }
+    unsigned ScanPendingInterruptsFor( uint8_t required, uint8_t enough ) const;
+    void set_interrupt(unsigned idx) { uint32_t word = idx/32, bit = (1ul << (idx%32)); D_IPENDING[word] |=  bit; }
+    void ack_interrupt(unsigned idx) { uint32_t word = idx/32, bit = (1ul << (idx%32)); D_IPENDING[word] &= ~bit; D_IACTIVE[word] |= bit; }
+    void eoi_interrupt(unsigned idx) { uint32_t word = idx/32, bit = (1ul << (idx%32)); D_IACTIVE [word] &= ~bit; }
     // CPU interface
     uint32_t C_CTLR;
     uint32_t C_PMR;
@@ -640,34 +670,43 @@ struct AArch64
     uint32_t D_ICFGR[ITLinesCount/16];
   };
   void map_gic(uint64_t base_addr);
+  bool has_irqs() const;
+  void handle_irqs();
+  void wfi();
 
   struct Timer
   {
     Timer() : kctl(0), ctl(0), cval(0) {}
+    bool activated() const;
+    void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
-    uint64_t get_ipt() const { return 32; }
-    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_counter / get_ipt(); }
+    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / cpu.get_ipt(); }
     uint64_t read_ctl(AArch64& cpu) const { return ctl | ((read_tval(cpu) <= 0) << 2); }
-    void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; step(cpu); }
-    void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; step(cpu); }
-    void write_cval(AArch64& cpu, uint64_t v) { cval = v; step(cpu); }
+    void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; program(cpu); }
+    void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; program(cpu); }
+    void write_cval(AArch64& cpu, uint64_t v) { cval = v; program(cpu); }
     int32_t read_tval(AArch64& cpu) const { return cval - get_pcount(cpu); }
-    void write_tval(AArch64& cpu, uint64_t v) { cval = get_pcount(cpu) + int32_t(v); step(cpu); }
-    void step(AArch64& cpu);
+    void write_tval(AArch64& cpu, uint64_t v) { cval = get_pcount(cpu) + int32_t(v); program(cpu); }
     uint32_t kctl; /* Kernel Control */
     uint8_t   ctl; /* Control */
     uint64_t cval; /* Compare Value*/
   };
-
-  struct Event
+  void handle_vtimer();
+  uint64_t get_ipt() const { return 32; }
+  
+  typedef std::multimap<uint64_t, event_handler_t> Events;
+  void notify( uint64_t delay, event_handler_t method )
   {
-    virtual ~Event() {}
-    virtual void process(AArch64& cpu) = 0;
-  };
-
-  void notify( uint64_t date, Event const* evt ) { struct TODO {}; throw TODO(); }
+    next_events.emplace(std::piecewise_construct, std::forward_as_tuple( insn_timer+delay ), std::forward_as_tuple( method ));
+    // reload_next_event();
+  }
+  void reload_next_event();
   
   /** Architectural state **/
+private:
+  Events   next_events;
+  uint64_t next_event;
+public:
   Devices  devices;
   GIC      gic;
   Timer    vt;
@@ -682,24 +721,15 @@ struct AArch64
   EL       el1;
   PState   pstate;
   U8       nzcv;
-  uint64_t current_insn_addr, next_insn_addr, insn_counter;
-  Operation* current_insn_op;
+  uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer;
+  
+  static unsigned const histsize = 1024;
+  InstructionInfo last_insns[histsize];
   
   U64      TPIDR[2]; //<  Thread Pointer / ID Register
   U64      TPIDRRO;
   uint32_t CPACR;
 
-  // struct Event
-  // {
-  //   enum evt_type { am_i_fujitsu = 0, end } current;
-  //   Event() : current(am_i_fujitsu) {}
-  //   bool pop( evt_type evt )
-  //   {
-  //     if (evt != current) return false;
-  //     evt = evt_type(int(evt)+1);
-  //     return true;
-  //   }
-  // } event;
   bool disasm;
 };
 
