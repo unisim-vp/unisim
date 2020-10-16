@@ -164,6 +164,7 @@ main(int argc, char *argv[])
         static struct : AArch64::Page::Free { void free (AArch64::Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
         arch.mem_map(AArch64::Page(0, xbase, xlast, new uint8_t[xsize], xudat, &free));
       }
+    arch.MemDump64(base);
   }
 
   {

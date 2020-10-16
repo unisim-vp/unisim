@@ -87,7 +87,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
     {
-      std::cerr << "System register undefined write `";
+      std::cerr << std::hex << cpu.current_insn_addr << ": System register undefined write in `" << std::dec;
       DisasmWrite(op0, op1, crn, crm, op2, 0b11111, std::cerr);
       std::cerr << "`.\n";
       cpu.UndefinedInstruction();
@@ -95,7 +95,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
     {
-      std::cerr << "System register undefined read in `";
+      std::cerr << std::hex << cpu.current_insn_addr << ": System register undefined read in `" << std::dec;
       DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr);
       std::cerr << "`.\n";
       cpu.UndefinedInstruction();
@@ -234,7 +234,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Invalidate instruction cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; throw Bad (); }
+            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             cpu.ipb.base_address = -1; /* systematic invalidation is cheaper than va translation ;-) */
           }
         } x; return &x;
@@ -248,12 +248,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Zero data cache by address"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; throw Bad (); }
+            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             unsigned const zsize = 4 << cpu.ZID;
             uint64_t paddr = cpu.translate_address(addr.value, mat_write, zsize);
             uint8_t buffer[zsize] = {0};
             if (cpu.modify_page(paddr).write(paddr & -zsize, &buffer[0], &buffer[0], zsize) != zsize)
-              { struct Bad {}; throw Bad (); }
+              { struct Bad {}; raise( Bad () ); }
           }
         } x; return &x;
       } break;
@@ -285,7 +285,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Clean data cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; throw Bad (); }
+            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             // No caches, so normally nothing to do...
           }
         } x; return &x;
@@ -304,7 +304,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; throw Bad (); }
+            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             // No caches, so normally nothing to do...
           }
         } x; return &x;
@@ -317,7 +317,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Clean and Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; throw Bad (); }
+            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             // No caches, so normally nothing to do...
           }
         } x; return &x;
@@ -716,7 +716,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override
           { sink << prefix << "Architectural Feature Access Control Register"; }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.CPACR = value.value; }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.CPACR = value.value; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           { return U64(cpu.CPACR); }
         } x; return &x;
@@ -895,20 +895,20 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           {
             return
               U64(0b0001)         << 60 | // Indicates support for Random Number instructions
-              U64(0,0b1111)       << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
-              U64(0,0b1111)       << 52 | // Indicates support for flag manipulation instructions
-              U64(0,0b1111)       << 48 | // Indicates support for FMLAL and FMLSL instructions
-              U64(0,0b1111)       << 44 | // Indicates support for Dot Product instructions
-              U64(0,0b1111)       << 40 | // Indicates support for SM4 instructions
-              U64(0,0b1111)       << 36 | // Indicates support for SM3 instructions
-              U64(0,0b1111)       << 32 | // Indicates support for SHA3 instructions
-              U64(0,0b1111)       << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
+              U64(0b0010)         << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
+              U64(0b0010)         << 52 | // Indicates support for flag manipulation instructions
+              U64(0b0000)         << 48 | // Indicates support for FMLAL and FMLSL instructions
+              U64(0b0000)         << 44 | // Indicates support for Dot Product instructions
+              U64(0b0000)         << 40 | // Indicates support for SM4 instructions
+              U64(0b0000)         << 36 | // Indicates support for SM3 instructions
+              U64(0b0000)         << 32 | // Indicates support for SHA3 instructions
+              U64(0b0001)         << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
               U64(0,0b1111)       << 24 | // Reserved, RES0.
               U64(0b0010)         << 20 | // Indicates support for Atomic instructions
               U64(0b0001)         << 16 | // Indicates support for CRC32 instructions
-              U64(0,0b1111)       << 12 | // Indicates support for SHA2 instructions
-              U64(0,0b1111)       <<  8 | // Indicates support for SHA1 instructions
-              U64(0,0b1111)       <<  4 | // Indicates support for AES instructions
+              U64(0b0000)         << 12 | // Indicates support for SHA2 instructions (TODO)
+              U64(0b0000)         <<  8 | // Indicates support for SHA1 instructions (TODO)
+              U64(0b0000)         <<  4 | // Indicates support for AES instructions (TODO)
               U64(0,0b1111)       <<  0;  // Reserved, RES0.
           }
         } x; return &x;
@@ -1020,24 +1020,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b100): // 2.44: ID_AA64ZFR1_EL1, 
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b100): // 2.44: ID_AA64ZFR0_EL1, 
       {
         static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64PFR1_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "AArch64 Processor Feature Register 1"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          {
-            return
-              U64(0,0b1111)         << 60 | // Reserved, RES0
-              U64(0,0b1111)         << 56 | // Indicates support for SVE FP64 double-precision floating-point matrix multiplication instructions
-              U64(0,0b1111)         << 52 | // Indicates support for the SVE FP32 single-precision floating-point matrix multiplication instruction
-              U64(0,0b1111)         << 48 | // Reserved, RES0
-              U64(0,0b1111)           << 44 | // Indicates support for SVE Int8 matrix multiplication instructions
-              U64(0,0xfffff)        << 24 | // Reserved, RES0
-              U64(0,0b1111)         << 20 | // Indicates support for SVE BFloat16 instructions
-              U64(0,0xffff)         <<  4 | // Reserved, RES0
-              U64(0,0b1111)         <<  0;  // Scalable Vector Extension instruction set version
-          }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ZFR0_EL1"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "AArch64 SVE Processor Feature Register"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
 
@@ -1175,7 +1163,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Memory Attribute Indirection Register (EL1)"; }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.mmu.MAIR_EL1 = value.value; }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.mmu.MAIR_EL1 = value.value; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           { return U64(cpu.mmu.MAIR_EL1); }
         } x; return &x;
@@ -1346,7 +1334,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).SCTLR); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
           {
-            if (value.ubits) { struct Bad {}; throw Bad(); }
+            if (value.ubits) { struct Bad {}; raise( Bad() ); }
             cpu.get_el(GetExceptionLevel(op1)).SetSCTLR(cpu, value.value);
           }
         } x; return &x;
@@ -1360,7 +1348,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TCR_EL1); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
           {
-            if (value.ubits) { struct Bad {}; throw Bad (); }
+            if (value.ubits) { struct Bad {}; raise( Bad () ); }
             cpu.mmu.TCR_EL1 = value.value;
           }
         } x; return &x;
@@ -1429,7 +1417,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TTBR0_EL1); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
           {
-            if (value.ubits) { struct Bad {}; throw Bad (); }
+            if (value.ubits) { struct Bad {}; raise( Bad () ); }
             cpu.mmu.TTBR0_EL1 = value.value;
           }
         } x; return &x;
@@ -1459,7 +1447,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TTBR1_EL1); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
           {
-            if (value.ubits) { struct Bad {}; throw Bad (); }
+            if (value.ubits) { struct Bad {}; raise( Bad () ); }
             cpu.mmu.TTBR1_EL1 = value.value;
           }
         } x; return &x;
@@ -1699,7 +1687,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "MDSCR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Monitor Debug System Control Register"; }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.TODO(); }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.TODO(); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           { return U64(); }
         } x; return &x;
@@ -1710,6 +1698,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "OSDLR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "OS Double Lock Register"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
 
@@ -1742,6 +1732,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "OSLAR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "OS Lock Access Register"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
 
@@ -1953,7 +1945,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Kernel Control register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.kctl); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_kctl( cpu, value.value ); }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_kctl( cpu, value.value ); }
         } x; return &x;
       } break;
 
@@ -2020,7 +2012,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Virtual Timer Control register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.read_ctl(cpu)); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_ctl(cpu, value.value); }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_ctl(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2031,7 +2023,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Virtual Timer CompareValue register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.cval); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_cval(cpu, value.value); }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_cval(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2042,7 +2034,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Counter-timer Virtual Timer TimerValue register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(uint32_t(cpu.vt.read_tval(cpu))); }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; throw Bad (); } cpu.vt.write_tval(cpu, value.value); }
+          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_tval(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2530,13 +2522,13 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     }
     virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
     {
-      fields(op0, op1, crn, crm, op2, std::cerr << "Unimplemented. Cannot write ");
+      fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_insn_addr << ": unimplemented, cannot write " << std::dec);
       std::cerr << std::endl;
       throw 0; // cpu.UnpredictableInsnBehaviour();
     }
     virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
     {
-      fields(op0, op1, crn, crm, op2, std::cerr << "Unimplemented. Cannot read ");
+      fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_insn_addr << ": unimplemented, cannot read " << std::dec);
       std::cerr << std::endl;
       throw 0; // cpu.UnpredictableInsnBehaviour();
       return U64();

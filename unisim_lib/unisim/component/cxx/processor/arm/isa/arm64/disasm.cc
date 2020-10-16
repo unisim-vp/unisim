@@ -67,6 +67,20 @@ namespace arm64 {
     sink << "#" << float( imm );
   }
 
+  void
+  DisasmMemoryRI::operator () ( std::ostream& sink ) const
+  {
+    char const* sep = 0;
+    char const* end = 0;
+    switch (am)
+      {
+      default:   sep =  ","; end = "]";  break;
+      case 0b01: sep = "],"; end =  "";  break;
+      case 0b11: sep =  ","; end = "]!"; break;
+      }
+    sink << "[" << DisasmGSXR(rn) << sep << DisasmI(imm) << end;
+  }
+
 } // end of namespace arm64
 } // end of namespace isa
 } // end of namespace arm

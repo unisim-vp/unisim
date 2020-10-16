@@ -2659,81 +2659,67 @@ fsub_v2dv2dv2d.disasm = {
   sink << "fsub\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
-op ldnp_do( 0b0110110001[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldnp_do.var format : {char const*} = {"37"};
-
-ldnp_do.disasm = {
-  sink << "ldnp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-op ldnp_qo( 0b1010110001[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldnp_qo.var format : {char const*} = {"49"};
-
-ldnp_qo.disasm = {
-  sink << "ldnp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-op ldnp_so( 0b0010110001[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldnp_so.var format : {char const*} = {"59"};
-
-ldnp_so.disasm = {
-  sink << "ldnp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
 /*******************************************************************
  * LDP (SIMD&FP)
  *
  * Load pair of SIMD&FP registers
  */
 
-op ldp_spo( 0b0010110011[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_spo.var format : {char const*} = {"65"}, reject : {Reject} = {rt == rt2};
+op ldp_so( 0b0010110[7] : am[2] : 1[1] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_so.var reject : {Reject} = {am == 2 or rt == rt2};
 
-ldp_spo.disasm = {
-  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+ldp_so.disasm = {
+  sink << "ld" << (am ? "" : "n") << "p\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-ldp_spo.execute = {
+ldp_so.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
   cpu.SetVU32(rt,  data0);
   cpu.SetVU32(rt2, data1);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
-op ldp_dpo( 0b0110110011[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_dpo.var format : {char const*} = {"43"}, reject : {Reject} = {rt == rt2};
+op ldp_do( 0b0110110[7] : am[2] : 1[1] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_do.var reject : {Reject} = {am == 2 and rt == rt2};
 
-ldp_dpo.disasm = {
-  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+ldp_do.disasm = {
+  sink << "ld" << (am ? "" : "n") << "p\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-ldp_dpo.execute = {
+ldp_do.execute = {
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
   cpu.SetVU64(rt,  data0);
   cpu.SetVU64(rt2, data1);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
-op ldp_qpo( 0b1010110011[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qpo.var format : {char const*} = {"55"}, reject : {Reject} = {rt == rt2};
+op ldp_qo( 0b1010110[7] : am[2] : 1[1] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_qo.var reject : {Reject} = {am == 2 or rt == rt2};
 
-ldp_qpo.disasm = {
-  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+ldp_qo.disasm = {
+  sink << "ld" << (am ? "" : "n") << "p\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-ldp_qpo.execute = {
+ldp_qo.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U64 data0( cpu.MemRead64( addr + U64( 0) ) ),
       data1( cpu.MemRead64( addr + U64( 8) ) ),
       data2( cpu.MemRead64( addr + U64(16) ) ),
@@ -2742,93 +2728,8 @@ ldp_qpo.execute = {
   cpu.SetVU64(rt,  1, data1);
   cpu.SetVU64(rt2, 0, data2);
   cpu.SetVU64(rt2, 1, data3);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op ldp_sop( 0b0010110111[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_sop.var format : {char const*} = {"63"}, reject : {Reject} = {rt == rt2};
-
-ldp_sop.disasm = {
-  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-ldp_sop.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data0( cpu.MemRead32( addr + U64(0) ) ),
-      data1( cpu.MemRead32( addr + U64(4) ) );
-  cpu.SetVU32(rt,  data0);
-  cpu.SetVU32(rt2, data1);
-  cpu.SetGSR(rn, addr);
-};
-
-op ldp_dop( 0b0110110111[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_dop.var format : {char const*} = {"41"}, reject : {Reject} = {rt == rt2};
-
-ldp_dop.disasm = {
-  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-ldp_dop.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data0( cpu.MemRead64( addr + U64(0) ) ),
-      data1( cpu.MemRead64( addr + U64(8) ) );
-  cpu.SetVU64(rt,  data0);
-  cpu.SetVU64(rt2, data1);
-  cpu.SetGSR(rn, addr);
-};
-
-op ldp_qop( 0b1010110111[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qop.var format : {char const*} = {"53"}, reject : {Reject} = {rt == rt2};
-
-ldp_qop.disasm = {
-  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-op ldp_so( 0b0010110101[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_so.var format : {char const*} = {"60"}, reject : {Reject} = {rt == rt2};
-
-ldp_so.disasm = {
-  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-ldp_so.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data0( cpu.MemRead32( addr + U64(0) ) ),
-      data1( cpu.MemRead32( addr + U64(4) ) );
-  cpu.SetVU32(rt,  data0);
-  cpu.SetVU32(rt2, data1);
-};
-
-op ldp_do( 0b0110110101[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_do.var format : {char const*} = {"38"}, reject : {Reject} = {rt == rt2};
-
-ldp_do.disasm = {
-  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-ldp_do.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data0( cpu.MemRead64( addr + U64(0) ) ),
-      data1( cpu.MemRead64( addr + U64(8) ) );
-  cpu.SetVU64(rt,  data0);
-  cpu.SetVU64(rt2, data1);
-};
-
-op ldp_qo( 0b1010110101[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qo.var format : {char const*} = {"50"}, reject : {Reject} = {rt == rt2};
-
-ldp_qo.disasm = {
-  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 /*
@@ -2841,162 +2742,23 @@ ldp_qo.disasm = {
  * Load SIMD&FP register (immediate offset)
  */
 
-op ldr_bsopost( 0b00111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-ldr_bsopost.var format : {char const*} = {"263"};
+op ldr_bxi( 0b00111100010[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+ldr_bxi.var reject : {Reject} = {am == 2};
 
-ldr_bsopost.disasm = {
-  sink << "ldr\t" << DisasmB(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+ldr_bxi.disasm = {
+  sink << "ld" << (am ? "" : "u") << "r\t" << DisasmB(rt) << ", " << DisasmMemoryRI(rn, imm, am);
 };
 
-ldr_bsopost.execute = {
+ldr_bxi.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U8 data( cpu.MemRead8(addr) );
   cpu.SetVU8(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op ldr_hsopost( 0b01111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-ldr_hsopost.var format : {char const*} = {"276"};
-
-ldr_hsopost.disasm = {
-  sink << "ldr\t" << DisasmH(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-ldr_hsopost.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U16 data( cpu.MemRead16(addr) );
-  cpu.SetVU16(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op ldr_ssopost( 0b10111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-ldr_ssopost.var format : {char const*} = {"289"};
-
-ldr_ssopost.disasm = {
-  sink << "ldr\t" << DisasmS(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-ldr_ssopost.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U32 data( cpu.MemRead32(addr) );
-  cpu.SetVU32(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op ldr_dsopost( 0b11111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-ldr_dsopost.var format : {char const*} = {"270"};
-
-ldr_dsopost.disasm = {
-  sink << "ldr\t" << DisasmD(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-ldr_dsopost.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U64 data( cpu.MemRead64(addr) );
-  cpu.SetVU64(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op ldr_qsopost( 0b00111100110[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-ldr_qsopost.var format : {char const*} = {"282"};
-
-ldr_qsopost.disasm = {
-  sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-ldr_qsopost.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr+U64(8)) );
-  cpu.SetVU64(rt, 0, data0);
-  cpu.SetVU64(rt, 1, data1);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op ldr_bsopre( 0b00111100010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-ldr_bsopre.var format : {char const*} = {"261"};
-
-ldr_bsopre.disasm = {
-  sink << "ldr\t" << DisasmB(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-ldr_bsopre.execute = {
-  typedef typename ARCH::U8 U8;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U8 data( cpu.MemRead8(addr) );
-  cpu.SetVU8(rt, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op ldr_hsopre( 0b01111100010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-ldr_hsopre.var format : {char const*} = {"274"};
-
-ldr_hsopre.disasm = {
-  sink << "ldr\t" << DisasmH(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-ldr_hsopre.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U16 data( cpu.MemRead16(addr) );
-  cpu.SetVU16(rt, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op ldr_ssopre( 0b10111100010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-ldr_ssopre.var format : {char const*} = {"287"};
-
-ldr_ssopre.disasm = {
-  sink << "ldr\t" << DisasmS(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-ldr_ssopre.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data( cpu.MemRead32(addr) );
-  cpu.SetVU32(rt, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op ldr_dsopre( 0b11111100010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-ldr_dsopre.var format : {char const*} = {"268"};
-
-ldr_dsopre.disasm = {
-  sink << "ldr\t" << DisasmD(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-ldr_dsopre.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data( cpu.MemRead64(addr) );
-  cpu.SetVU64(rt, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op ldr_qsopre( 0b00111100110[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-ldr_qsopre.var format : {char const*} = {"280"};
-
-ldr_qsopre.disasm = {
-  sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 op ldr_buo( 0b0011110101[10] : imm[12] : rn[5] : rt[5] );
@@ -3015,6 +2777,25 @@ ldr_buo.execute = {
   cpu.SetVU8(rt, data);
 };
 
+op ldr_hxi( 0b01111100010[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+ldr_hxi.var reject : {Reject} = {am == 2};
+
+ldr_hxi.disasm = {
+  sink << "ld" << (am ? "" : "u") << "r\t" << DisasmH(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+ldr_hxi.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U16 data( cpu.MemRead16(addr) );
+  cpu.SetVU16(rt, data);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
+};
+
 op ldr_huo( 0b0111110101[10] : shl<1> imm[12] : rn[5] : rt[5] );
 ldr_huo.var format : {char const*} = {"47"};
 
@@ -3029,6 +2810,25 @@ ldr_huo.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetVU16(rt, data);
+};
+
+op ldr_sxi( 0b10111100010[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+ldr_sxi.var reject : {Reject} = {am == 2};
+
+ldr_sxi.disasm = {
+  sink << "ld" << (am ? "" : "u") << "r\t" << DisasmS(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+ldr_sxi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U32 data( cpu.MemRead32(addr) );
+  cpu.SetVU32(rt, data);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 op ldr_suo( 0b1011110101[10] : shl<2> imm[12] : rn[5] : rt[5] );
@@ -3047,6 +2847,24 @@ ldr_suo.execute = {
   cpu.SetVU32(rt, data);
 };
 
+op ldr_dxi( 0b11111100010[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+ldr_dxi.var reject : {Reject} = {am == 2};
+
+ldr_dxi.disasm = {
+  sink << "ld" << (am ? "" : "u") << "r\t" << DisasmD(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+ldr_dxi.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U64 data( cpu.MemRead64(addr) );
+  cpu.SetVU64(rt, data);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
+};
+
 op ldr_duo( 0b1111110101[10] : shl<3> imm[12] : rn[5] : rt[5] );
 ldr_duo.var format : {char const*} = {"45"};
 
@@ -3062,11 +2880,40 @@ ldr_duo.execute = {
   cpu.SetVU64(rt, data);
 };
 
+op ldr_qxi( 0b00111100110[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+ldr_qxi.var reject : {Reject} = {am == 2};
+
+ldr_qxi.disasm = {
+  sink << "ld" << (am ? "" : "u") << "r\t" << DisasmQ(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+ldr_qxi.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr+U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
+};
+
 op ldr_quo( 0b0011110111[10] : shl<4> imm[12] : rn[5] : rt[5] );
 ldr_quo.var format : {char const*} = {"57"};
 
 ldr_quo.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+ldr_quo.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr+U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
 };
 
 /*
@@ -3431,76 +3278,6 @@ ldr_qxxs.disasm = {
  *
  * Load SIMD&FP register (unscaled offset)
  */
-
-op ldur_bbo( 0b00111100010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-ldur_bbo.var format : {char const*} = {"259"};
-
-ldur_bbo.disasm = {
-  sink << "ldr\t" << DisasmB(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-ldur_bbo.execute = {
-  typedef typename ARCH::U8 U8;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U8 data( cpu.MemRead8(addr) );
-  cpu.SetVU8(rt, data);
-};
-
-op ldur_hbo( 0b01111100010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-ldur_hbo.var format : {char const*} = {"272"};
-
-ldur_hbo.disasm = {
-  sink << "ldr\t" << DisasmH(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-ldur_hbo.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U16 data( cpu.MemRead16(addr) );
-  cpu.SetVU16(rt, data);
-};
-
-op ldur_sbo( 0b10111100010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-ldur_sbo.var format : {char const*} = {"285"};
-
-ldur_sbo.disasm = {
-  sink << "ldr\t" << DisasmS(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-ldur_sbo.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data( cpu.MemRead32(addr) );
-  cpu.SetVU32(rt, data);
-};
-
-op ldur_dbo( 0b11111100010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-ldur_dbo.var format : {char const*} = {"266"};
-
-ldur_dbo.disasm = {
-  sink << "ldr\t" << DisasmD(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-ldur_dbo.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data( cpu.MemRead64(addr) );
-  cpu.SetVU64(rt, data);
-};
-
-op ldur_qbo( 0b00111100110[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-ldur_qbo.var format : {char const*} = {"278"};
-
-ldur_qbo.disasm = {
-  sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
 
 /*
  * end of LDUR (SIMD&FP)
@@ -5747,79 +5524,63 @@ ssubw_v8hv8hv8b.disasm = {
   sink << "ssubw\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,0);
 };
 
-op stnp_do( 0b0110110000[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stnp_do.var format : {char const*} = {"39"};
-
-stnp_do.disasm = {
-  sink << "stnp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-op stnp_qo( 0b1010110000[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stnp_qo.var format : {char const*} = {"51"};
-
-stnp_qo.disasm = {
-  sink << "stnp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-op stnp_so( 0b0010110000[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stnp_so.var format : {char const*} = {"61"};
-
-stnp_so.disasm = {
-  sink << "stnp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
 /*******************************************************************
  * STP (SIMD&FP)
  *
  * Store pair of SIMD&FP registers
  */
 
-op stp_spo( 0b0010110010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_spo.var format : {char const*} = {"66"};
+op stp_so( 0b0010110[7] : am[2] : 0[1] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_so.var reject : {Reject} = {am == 2};
 
-stp_spo.disasm = {
-  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_so.disasm = {
+  sink << "st" << (am ? "" : "n") << "p\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-stp_spo.execute = {
+stp_so.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
   cpu.MemWrite32( addr + U64(0), data0 );
   cpu.MemWrite32( addr + U64(4), data1 );
-  cpu.SetGSR(rn, addr + U64(imm));
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
-op stp_dpo( 0b0110110010[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_dpo.var format : {char const*} = {"44"};
+op stp_do( 0b0110110[7] : am[2] : 0[1] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_do.var reject : {Reject} = {am == 2};
 
-stp_dpo.disasm = {
-  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_do.disasm = {
+  sink << "st" << (am ? "" : "n") << "p\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-stp_dpo.execute = {
+stp_do.execute = {
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
   cpu.MemWrite64( addr + U64(0), data0 );
   cpu.MemWrite64( addr + U64(8), data1 );
-  cpu.SetGSR(rn, addr + U64(imm));
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
-op stp_qpo( 0b1010110010[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_qpo.var format : {char const*} = {"56"};
+op stp_qo( 0b1010110[7] : am[2] : 0[1] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_qo.var reject : {Reject} = {am == 2};
 
-stp_qpo.disasm = {
-  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_qo.disasm = {
+  sink << "st" << (am ? "" : "n") << "p\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-stp_qpo.execute = {
+stp_qo.execute = {
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U64 data0( cpu.GetVU64(rt,0) ),
       data1( cpu.GetVU64(rt,1) ),
       data2( cpu.GetVU64(rt2,0) ),
@@ -5828,89 +5589,8 @@ stp_qpo.execute = {
   cpu.MemWrite64( addr + U64( 8), data1 );
   cpu.MemWrite64( addr + U64(16), data2 );
   cpu.MemWrite64( addr + U64(24), data3 );
-  cpu.SetGSR(rn, addr + U64(imm));
-};
-
-op stp_sop( 0b0010110110[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_sop.var format : {char const*} = {"64"};
-
-stp_sop.disasm = {
-  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-stp_sop.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
-  cpu.MemWrite32( addr + U64(0), data0 );
-  cpu.MemWrite32( addr + U64(4), data1 );
-  cpu.SetGSR(rn, addr);
-};
-
-op stp_dop( 0b0110110110[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_dop.var format : {char const*} = {"42"};
-
-stp_dop.disasm = {
-  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-stp_dop.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
-  cpu.MemWrite64( addr + U64(0), data0 );
-  cpu.MemWrite64( addr + U64(8), data1 );
-  cpu.SetGSR(rn, addr);
-};
-
-op stp_qop( 0b1010110110[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_qop.var format : {char const*} = {"54"};
-
-stp_qop.disasm = {
-  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-op stp_so( 0b0010110100[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_so.var format : {char const*} = {"62"};
-
-stp_so.disasm = {
-  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-stp_so.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
-  cpu.MemWrite32( addr + U64(0), data0 );
-  cpu.MemWrite32( addr + U64(4), data1 );
-};
-
-op stp_do( 0b0110110100[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_do.var format : {char const*} = {"40"};
-
-stp_do.disasm = {
-  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-stp_do.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
-  cpu.MemWrite64( addr + U64(0), data0 );
-  cpu.MemWrite64( addr + U64(8), data1 );
-};
-
-op stp_qo( 0b1010110100[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_qo.var format : {char const*} = {"52"};
-
-stp_qo.disasm = {
-  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 /*
@@ -5923,162 +5603,23 @@ stp_qo.disasm = {
  * Store SIMD&FP register (immediate offset)
  */
 
-op str_bsopost( 0b00111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-str_bsopost.var format : {char const*} = {"264"};
+op str_bxi( 0b00111100000[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+str_bxi.var reject : {Reject} = {am == 2};
 
-str_bsopost.disasm = {
-  sink << "str\t" << DisasmB(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+str_bxi.disasm = {
+  sink << "st" << (am ? "" : "u") << "r\t" << DisasmB(rt) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
-str_bsopost.execute = {
+str_bxi.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
   U8 data( cpu.GetVU8(rt,0) );
   cpu.MemWrite8(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op str_hsopost( 0b01111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-str_hsopost.var format : {char const*} = {"277"};
-
-str_hsopost.disasm = {
-  sink << "str\t" << DisasmH(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-str_hsopost.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U16 data( cpu.GetVU16(rt,0) );
-  cpu.MemWrite16(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op str_ssopost( 0b10111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-str_ssopost.var format : {char const*} = {"290"};
-
-str_ssopost.disasm = {
-  sink << "str\t" << DisasmS(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-str_ssopost.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U32 data( cpu.GetVU32(rt,0) );
-  cpu.MemWrite32(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op str_dsopost( 0b11111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-str_dsopost.var format : {char const*} = {"271"};
-
-str_dsopost.disasm = {
-  sink << "str\t" << DisasmD(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-str_dsopost.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U64 data( cpu.GetVU64(rt,0) );
-  cpu.MemWrite64(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op str_qsopost( 0b00111100100[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
-str_qsopost.var format : {char const*} = {"283"};
-
-str_qsopost.disasm = {
-  sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-str_qsopost.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) );
-  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
-  cpu.MemWrite64(addr + U64(0), data0);
-  cpu.MemWrite64(addr + U64(8), data1);
-  cpu.SetGSR(rn, addr + U64(imm) );
-};
-
-op str_bsopre( 0b00111100000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-str_bsopre.var format : {char const*} = {"262"};
-
-str_bsopre.disasm = {
-  sink << "str\t" << DisasmB(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-str_bsopre.execute = {
-  typedef typename ARCH::U8 U8;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U8 data( cpu.GetVU8(rt,0) );
-  cpu.MemWrite8(addr, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op str_hsopre( 0b01111100000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-str_hsopre.var format : {char const*} = {"275"};
-
-str_hsopre.disasm = {
-  sink << "str\t" << DisasmH(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-str_hsopre.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U16 data( cpu.GetVU16(rt,0) );
-  cpu.MemWrite16(addr, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op str_ssopre( 0b10111100000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-str_ssopre.var format : {char const*} = {"288"};
-
-str_ssopre.disasm = {
-  sink << "str\t" << DisasmS(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-str_ssopre.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data( cpu.GetVU32(rt,0) );
-  cpu.MemWrite32(addr, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op str_dsopre( 0b11111100000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-str_dsopre.var format : {char const*} = {"269"};
-
-str_dsopre.disasm = {
-  sink << "str\t" << DisasmD(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-str_dsopre.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data( cpu.GetVU64(rt,0) );
-  cpu.MemWrite64(addr, data);
-  cpu.SetGSR(rn, addr);
-};
-
-op str_qsopre( 0b00111100100[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
-str_qsopre.var format : {char const*} = {"281"};
-
-str_qsopre.disasm = {
-  sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 op str_buo( 0b0011110100[10] : imm[12] : rn[5] : rt[5] );
@@ -6097,6 +5638,25 @@ str_buo.execute = {
   cpu.MemWrite8(addr, data);
 };
 
+op str_hxi( 0b01111100000[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+str_hxi.var reject : {Reject} = {am == 2};
+
+str_hxi.disasm = {
+  sink << "st" << (am ? "" : "u") << "r\t" << DisasmH(rt) << ", " << DisasmMemoryRI(rn,imm,am);
+};
+
+str_hxi.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U16 data( cpu.GetVU16(rt,0) );
+  cpu.MemWrite16(addr, data);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
+};
+
 op str_huo( 0b0111110100[10] : shl<1> imm[12] : rn[5] : rt[5] );
 str_huo.var format : {char const*} = {"48"};
 
@@ -6111,6 +5671,25 @@ str_huo.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
+};
+
+op str_sxi( 0b10111100000[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+str_sxi.var reject : {Reject} = {am == 2};
+
+str_sxi.disasm = {
+  sink << "st" << (am ? "" : "u") << "r\t" << DisasmS(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+str_sxi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U32 data( cpu.GetVU32(rt,0) );
+  cpu.MemWrite32(addr, data);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 op str_suo( 0b1011110100[10] : shl<2> imm[12] : rn[5] : rt[5] );
@@ -6129,6 +5708,24 @@ str_suo.execute = {
   cpu.MemWrite32(addr, data);
 };
 
+op str_dxi( 0b11111100000[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+str_dxi.var reject : {Reject} = {am == 2};
+
+str_dxi.disasm = {
+  sink << "st" << (am ? "" : "u") << "r\t" << DisasmD(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+str_dxi.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U64 data( cpu.GetVU64(rt,0) );
+  cpu.MemWrite64(addr, data);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
+};
+
 op str_duo( 0b1111110100[10] : shl<3> imm[12] : rn[5] : rt[5] );
 str_duo.var format : {char const*} = {"46"};
 
@@ -6142,6 +5739,26 @@ str_duo.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U64 data( cpu.GetVU64(rt,0) );
   cpu.MemWrite64(addr, data);
+};
+
+op str_qxi( 0b00111100100[11] : sext imm[9] : am[2] : rn[5] : rt[5] );
+str_qxi.var reject : {Reject} = {am == 2};
+
+str_qxi.disasm = {
+  sink << "st" << (am ? "" : "u") << "r\t" << DisasmQ(rt) << ", " << DisasmMemoryRI(rn, imm, am);
+};
+
+str_qxi.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
+  addr = (am == 1 ? addr : oaddr);
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
+  if (am & 1)
+    cpu.SetGSR(rn, oaddr);
 };
 
 op str_quo( 0b0011110110[10] : shl<4> imm[12] : rn[5] : rt[5] );
@@ -6475,76 +6092,6 @@ str_qxxs.disasm = {
  *
  * Store SIMD&FP register (unscaled offset)
  */
-
-op stur_bbo( 0b00111100000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-stur_bbo.var format : {char const*} = {"260"};
-
-stur_bbo.disasm = {
-  sink << "str\t" << DisasmB(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-stur_bbo.execute = {
-  typedef typename ARCH::U8 U8;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U8 data( cpu.GetVU8(rt,0) );
-  cpu.MemWrite8(addr, data);
-};
-
-op stur_hbo( 0b01111100000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-stur_hbo.var format : {char const*} = {"273"};
-
-stur_hbo.disasm = {
-  sink << "str\t" << DisasmH(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-stur_hbo.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U16 data( cpu.GetVU16(rt,0) );
-  cpu.MemWrite16(addr, data);
-};
-
-op stur_sbo( 0b10111100000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-stur_sbo.var format : {char const*} = {"286"};
-
-stur_sbo.disasm = {
-  sink << "str\t" << DisasmS(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-stur_sbo.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U32 data( cpu.GetVU32(rt,0) );
-  cpu.MemWrite32(addr, data);
-};
-
-op stur_dbo( 0b11111100000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-stur_dbo.var format : {char const*} = {"267"};
-
-stur_dbo.disasm = {
-  sink << "str\t" << DisasmD(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-stur_dbo.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 addr( cpu.GetGSR(rn) + U64(imm) );
-  U64 data( cpu.GetVU64(rt,0) );
-  cpu.MemWrite64(addr, data);
-};
-
-op stur_qbo( 0b00111100100[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
-stur_qbo.var format : {char const*} = {"279"};
-
-stur_qbo.disasm = {
-  sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
 
 /*
  * end of STUR (SIMD&FP)
@@ -8802,6 +8349,12 @@ eor_vbvbvb.var format : {char const*} = {"1310"};
 
 eor_vbvbvb.disasm = {
   sink << "eor\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
+};
+
+eor_vbvbvb.execute = {
+  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) ^ cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op ext_vb( 0b0[1] : q[1] : 0b101110000[9] : rm[5] : 0b0[1] : index[4] : 0b0[1] : rn[5] : rd[5] );

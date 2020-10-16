@@ -56,7 +56,7 @@ AArch64::AArch64()
   , last_insns()
   , TPIDR()
   , CPACR()
-  // , event()
+  , bdaddr(0)
   , disasm(false)
 {
 }
@@ -175,11 +175,11 @@ AArch64::step_instruction()
       
       this->next_insn_addr += 4;
 
-      // if (current_insn_addr == 0xffffffc010164778)
-      //   {
-      //     breakdance();
-      //     //disasm = true;
-      //   }
+      if (current_insn_addr == bdaddr)
+        {
+          breakdance();
+          // disasm = true;
+        }
       if (disasm)
         {
           std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
@@ -223,13 +223,13 @@ AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64
 void
 AArch64::UndefinedInstruction()
 {
-  struct Bad {}; throw Bad ();
+  struct Bad {}; raise( Bad() );
 }
 
 void
 AArch64::TODO()
 {
-  //struct Bad {}; throw Bad ();
+  //struct Bad {}; raise( Bad() );
   //  std::cerr << "!TODO!\n";
 }
 
@@ -339,7 +339,7 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
     case 2: ubit_issue = 0xffff000000000000ull; break;
     case 3: ubit_issue = 0x00000fffffffffffull; break;
     }
-  if (arg.ubits & ubit_issue) throw Bad {};
+  if (arg.ubits & ubit_issue) raise( Bad() );
 
   uint64_t vakey = (((arg.value << 12) << 15 ) >> 16) | ((arg.value >> 48) << 48) | 1;
 
@@ -746,6 +746,23 @@ AArch64::concretize()
         return true;
     }
 
+  if (current_insn_addr == 0xffffffc01028a6e8)
+    {
+      gpr[2].ubits = 0;
+      gpr[3].ubits = 0;
+      gpr[5].ubits = 0;
+      nzcv.ubits = 0;
+      return gpr[2].value == 0;
+    }
+
+  if ((current_insn_addr | 0x380)  == 0xffffffc01008238c)
+    {
+      /* we're forced to lose x0 undefined bits... */
+      gpr[31].ubits = 0;
+      gpr[0].ubits = 0;
+      return gpr[0].value >> 14 & 1;
+    }
+
   static struct { uint64_t address; bool result; }
   exceptions [] =
     {
@@ -762,7 +779,7 @@ AArch64::concretize()
       last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
       std::cerr << "\n";
 
-      struct Bad {}; throw Bad ();
+      struct Bad {}; raise( Bad() );
     }
 
   return exceptions[idx++].result;
@@ -1105,7 +1122,7 @@ AArch64::wfi()
     return; /* CPU has at least one pending interrupt, job's done */
 
   if (next_events.size() == 0)
-    throw Bad ();
+    raise( Bad() );
 
   /* advance to next event and notify back to check progress*/
   insn_timer = next_events.begin()->first;
@@ -1116,4 +1133,35 @@ void
 raise_breakpoint()
 {
   std::cerr << "Raise BP\n";
+}
+
+void
+AArch64::MemDump64(uint64_t addr)
+{
+  unsigned const size = 8;
+  addr &= -8;
+  uint64_t paddr = translate_address(addr, mat_read, 8);
+  
+  uint8_t dbuf[size], ubuf[size];
+
+  unsigned vsize = access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size);
+
+  std::cerr << std::hex << addr << ":\t" << std::dec;
+  for (unsigned byte = size; byte-- > 0;)
+    {
+      std::cerr << ' ';
+      if (byte >= vsize) { std::cerr << "  "; continue; }
+      uint8_t dbyte = dbuf[byte];
+      for (unsigned nibble = 0; nibble < 2; ++nibble)
+        std::cerr << "0123456789abcdef"[uint8_t(dbyte << 4*nibble) >> 4];
+    }
+
+  std::cerr << "\t(0b";
+  for (unsigned byte = vsize; byte-- > 0;)
+    {
+      uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
+      for (unsigned bit = 8; bit-- > 0;)
+        std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
+    }
+  std::cerr << ")\n";
 }

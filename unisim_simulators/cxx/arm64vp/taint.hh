@@ -86,7 +86,7 @@ struct TaintedValue
   ubits_type ubits; /* uninitialized bits */
   
   ubits_type value_as_mask() const { return *reinterpret_cast<ubits_type const*>(&value); }
-  
+    
   TaintedValue() : value(), ubits(-1) {}
 
   TaintedValue(value_type _value, ubits_type _ubits) : value(_value), ubits(_ubits) {}
@@ -100,15 +100,15 @@ struct TaintedValue
   static bool const is_signed = std::numeric_limits<value_type>::is_signed;
 
   template <typename SHT> this_type operator << (SHT sh) const { return this_type(value << sh, ubits << sh); }
-  template <typename SHT> this_type operator >> (SHT sh) const { return this_type(value >> sh, ubits >> sh); }
+  template <typename SHT> this_type operator >> (SHT sh) const { return this_type(value >> sh, value_type(ubits) >> sh); }
   
   template <typename SHT> this_type& operator <<= (SHT sh) { value <<= sh; ubits <<= sh; return *this; }
-  template <typename SHT> this_type& operator >>= (SHT sh) { value >>= sh; ubits >>= sh; return *this; }
+  template <typename SHT> this_type& operator >>= (SHT sh) { value >>= sh; ubits = value_type(ubits) >> sh; return *this; }
 
   template <typename SHT> this_type operator << (TaintedValue<SHT> const& sh) const
   { return this_type(value << sh.value, sh.ubits ? -1 : (ubits << sh.value) ); }
   template <typename SHT> this_type operator >> (TaintedValue<SHT> const& sh) const
-  { return this_type(value >> sh.value, sh.ubits ? -1 : (ubits >> sh.value) ); }
+  { return this_type(value >> sh.value, sh.ubits ? -1 : (value_type(ubits) >> sh.value) ); }
 
   this_type operator - () const { return this_type( -value, ubits ? -1 : 0 ); }
   this_type operator ~ () const { return this_type( ~value, ubits ); }

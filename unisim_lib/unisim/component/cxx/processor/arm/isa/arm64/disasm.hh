@@ -263,6 +263,15 @@ namespace arm64 {
       sink << "[" << std::dec << idx << "]";
     }
   };
+
+  struct DisasmMemoryRI : public DisasmObject
+  {
+    DisasmMemoryRI( unsigned _rn, uint32_t _imm, unsigned _am ) : imm(_imm), rn(_rn), am(_am) {}
+    void operator() ( std::ostream& sink ) const;
+    uint64_t imm;
+    unsigned rn, am;
+  };
+  
   
 } // end of namespace arm64
 } // end of namespace isa

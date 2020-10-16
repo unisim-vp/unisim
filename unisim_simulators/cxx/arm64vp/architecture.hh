@@ -234,7 +234,7 @@ struct AArch64
   
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET };
-  void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; throw Bad(); } next_insn_addr = addr.value; }
+  void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; raise( Bad() ); } next_insn_addr = addr.value; }
   bool concretize();
   bool Test( bool cond ) { return cond; }
   // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
@@ -287,6 +287,7 @@ struct AArch64
     return T(*reinterpret_cast<value_type const*>(&value), ubits);
   }
 
+  void MemDump64(uint64_t addr);
   U64 MemRead64(U64 addr) { return memory_read<U64>(addr); }
   U32 MemRead32(U64 addr) { return memory_read<U32>(addr); }
   U16 MemRead16(U64 addr) { return memory_read<U16>(addr); }
@@ -730,7 +731,8 @@ public:
   U64      TPIDRRO;
   uint32_t CPACR;
 
-  bool disasm;
+  uint64_t bdaddr;
+  bool     disasm;
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */
