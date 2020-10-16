@@ -3281,7 +3281,7 @@ ldaxrh_w.execute = {
  */
 
 op ldp_w( 0b0010100[7] : am[2] : 1[1] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_w.var reject : {Reject} = {(rt == rt2) or ((am & 1) and (rt == rn or rt2 == rn) and rn != 31)};
+ldp_w.var reject : {Reject} = {(rt == rt2) or (am & 1 and (rt == rn or rt2 == rn) and rn != 31)};
 
 ldp_w.disasm = {
   sink << "ld" << (am ? "" : "n") << "p\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
@@ -3303,7 +3303,7 @@ ldp_w.execute = {
 };
 
 op ldp_x( 0b1010100[7] : am[2] : 1[1] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_x.var reject : {Reject} = {(rt == rt2) or ((am & 1) and (rt == rn or rt2 == rn) and rn != 31)};
+ldp_x.var reject : {Reject} = {(rt == rt2) or (am & 1 and (rt == rn or rt2 == rn) and rn != 31)};
 
 ldp_x.disasm = {
   sink << "ld" << (am ? "" : "n") << "p\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
@@ -3334,7 +3334,7 @@ ldp_x.execute = {
  */
 
 op ldpsw_xxi( 0b0110100[7] : am[2] : 1[1] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldpsw_xxi.var reject : {Reject} = {(rt == rt2) or (am == 0) or ((am & 1) and (rt == rn or rt2 == rn) and rn != 31)};
+ldpsw_xxi.var reject : {Reject} = {(rt == rt2) or (am == 0) or (am & 1 and (rt == rn or rt2 == rn) and rn != 31)};
 
 ldpsw_xxi.disasm = {
   sink << "ldpsw\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
@@ -6218,6 +6218,7 @@ stp_w.disasm = {
 };
 
 stp_w.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
@@ -6238,6 +6239,7 @@ stp_x.disasm = {
 };
 
 stp_x.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U64 U64;
   
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
@@ -6305,7 +6307,7 @@ str_xxi.execute = {
   typedef typename ARCH::U64 U64;
   
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
-  addr = (am ? addr : oaddr);
+  addr = (am == 1 ? addr : oaddr);
   U64 data( cpu.GetGZR(rt) );
   cpu.MemWrite64(addr, data);
   if (am & 1)

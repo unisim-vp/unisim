@@ -2666,7 +2666,7 @@ fsub_v2dv2dv2d.disasm = {
  */
 
 op ldp_so( 0b0010110[7] : am[2] : 1[1] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_so.var reject : {Reject} = {am == 2 or rt == rt2};
+ldp_so.var reject : {Reject} = {rt == rt2};
 
 ldp_so.disasm = {
   sink << "ld" << (am ? "" : "n") << "p\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
@@ -2688,13 +2688,14 @@ ldp_so.execute = {
 };
 
 op ldp_do( 0b0110110[7] : am[2] : 1[1] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_do.var reject : {Reject} = {am == 2 and rt == rt2};
+ldp_do.var reject : {Reject} = {rt == rt2};
 
 ldp_do.disasm = {
   sink << "ld" << (am ? "" : "n") << "p\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
 ldp_do.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U64 U64;
   
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
@@ -2708,7 +2709,7 @@ ldp_do.execute = {
 };
 
 op ldp_qo( 0b1010110[7] : am[2] : 1[1] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qo.var reject : {Reject} = {am == 2 or rt == rt2};
+ldp_qo.var reject : {Reject} = {rt == rt2};
 
 ldp_qo.disasm = {
   sink << "ld" << (am ? "" : "n") << "p\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
@@ -3271,16 +3272,6 @@ ldr_qxxs.disasm = {
 
 /*
  * end of LDR (register, SIMD&FP)
- *******************************************************************/
-
-/*******************************************************************
- * LDUR (SIMD&FP)
- *
- * Load SIMD&FP register (unscaled offset)
- */
-
-/*
- * end of LDUR (SIMD&FP)
  *******************************************************************/
 
 op mov_bvb( 0b01011110000[11] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
@@ -5531,13 +5522,13 @@ ssubw_v8hv8hv8b.disasm = {
  */
 
 op stp_so( 0b0010110[7] : am[2] : 0[1] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_so.var reject : {Reject} = {am == 2};
 
 stp_so.disasm = {
   sink << "st" << (am ? "" : "n") << "p\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
 stp_so.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
@@ -5551,13 +5542,13 @@ stp_so.execute = {
 };
 
 op stp_do( 0b0110110[7] : am[2] : 0[1] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_do.var reject : {Reject} = {am == 2};
 
 stp_do.disasm = {
   sink << "st" << (am ? "" : "n") << "p\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
 stp_do.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U64 U64;
   
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
@@ -5570,13 +5561,13 @@ stp_do.execute = {
 };
 
 op stp_qo( 0b1010110[7] : am[2] : 0[1] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_qo.var reject : {Reject} = {am == 2};
 
 stp_qo.disasm = {
   sink << "st" << (am ? "" : "n") << "p\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", " << DisasmMemoryRI(rn,imm,am);
 };
 
 stp_qo.execute = {
+  /* TODO: catch Non-temporal hint (am == 0) */
   typedef typename ARCH::U64 U64;
   
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
@@ -6085,16 +6076,6 @@ str_qxxs.disasm = {
 
 /*
  * end of STR (register, SIMD&FP)
- *******************************************************************/
-
-/*******************************************************************
- * STUR (SIMD&FP)
- *
- * Store SIMD&FP register (unscaled offset)
- */
-
-/*
- * end of STUR (SIMD&FP)
  *******************************************************************/
 
 op sub_ddd( 0b01111110111[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );

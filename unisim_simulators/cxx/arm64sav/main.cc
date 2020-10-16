@@ -169,7 +169,7 @@ struct Checker
               }
             if (not insert( *codeop, code, updated_disasm ))
               {
-                std::cerr << fl << ": warning " << code << ", " << disasm << " not inserted\n";
+                std::cerr << fl << ": warning " << std::hex << code << std::dec << ", " << disasm << " not inserted\n";
                 updated = true;
               }
             else

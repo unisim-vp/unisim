@@ -438,6 +438,7 @@ struct Scanner
 
   void CallSupervisor( uint32_t imm ) { dont("system"); }
   void CallHypervisor( uint32_t imm ) { dont("system"); }
+  void ExceptionReturn() { dont("system"); }
 
   template <typename T> T MemReadT( U64 const& addr )
   {

@@ -163,6 +163,7 @@ struct Runner
 
   void CallSupervisor( uint32_t imm ) { dont("system"); }
   void CallHypervisor( uint32_t imm ) { dont("system"); }
+  void ExceptionReturn() { dont("system"); }
 
   template <typename T> T MemReadT(U64 addr) { return *reinterpret_cast<T const*>(addr); }
   U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
