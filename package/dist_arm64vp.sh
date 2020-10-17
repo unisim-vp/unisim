@@ -50,6 +50,7 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 taint.cc \
 architecture.cc \
 system.cc \
+instruction.cc \
 main.cc \
 debugger.cc \
 "

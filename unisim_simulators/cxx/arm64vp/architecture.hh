@@ -84,7 +84,7 @@ struct AArch64
   typedef void (AArch64::*event_handler_t)();
   
   AArch64();
- 
+  
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
 
@@ -271,7 +271,7 @@ struct AArch64
       }
     catch (Device const& device)
       {
-        if (not device.effect->read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
+        if (not device.read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
           raise( Bad() ); 
       }
 
@@ -327,7 +327,7 @@ struct AArch64
       }
     catch (Device const& device)
       {
-        if (not device.effect->write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
+        if (not device.write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
           raise( Bad() );
       }
   }
@@ -461,18 +461,26 @@ struct AArch64
 
   struct Device : public Zone
   {
-    struct Effect
-    {
-      virtual ~Effect() {};
-      virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const = 0;
-      virtual uint64_t read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const = 0;
-    };
+    struct Effect;
     
     Device( uint64_t _base, uint64_t _last, Effect const* _effect )
       : Zone( _base, _last )
       , effect( _effect )
     {}
+    
+    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const;
+    bool read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const;
 
+    struct Request;
+    
+    struct Effect
+    {
+      virtual ~Effect() {};
+      virtual bool access(AArch64& arch, Request& req) const = 0;
+      virtual void get_name(std::ostream& sink) const = 0;
+      bool error( char const* msg ) const;
+    };
+    
     Effect const* effect;
   };
 
@@ -512,6 +520,8 @@ struct AArch64
   bool mem_map(Page&& page);
 
   void step_instruction();
+  Operation* fetch_and_decode(uint64_t insn_addr);
+  
   void run();
 
   struct IPB
@@ -674,6 +684,9 @@ struct AArch64
   bool has_irqs() const;
   void handle_irqs();
   void wfi();
+
+  void map_apbclk(uint64_t base_addr);
+  void map_uart(uint64_t base_addr);
 
   struct Timer
   {

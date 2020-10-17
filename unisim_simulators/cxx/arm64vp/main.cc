@@ -114,6 +114,8 @@ main(int argc, char *argv[])
   AArch64 arch;
 
   arch.map_gic(0x48000000);
+  arch.map_uart(0x49000000);
+  arch.map_apbclk(0x49010000);
   
   // SETUP the VirtIO Hypervisor Emulator
   // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );

@@ -33,7 +33,7 @@
  */
 
 #include <architecture.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
 
@@ -160,18 +160,7 @@ AArch64::step_instruction()
 
   try
     {
-      // Instruction Fetch Decode and Execution (may generate exceptions
-      // known as synchronous aborts since their occurences are a direct
-      // consequence of the instruction execution).
-
-      // Fetch
-      unisim::component::cxx::processor::arm::isa::arm64::CodeType insn = 0;
-      for (uint8_t *beg = ipb.get(*this, insn_addr), *itr = &beg[4]; --itr >= beg;)
-        insn = insn << 8 | *itr;
-
-      /* Decode current PC. TODO: should provide physical address for caching purpose */
-      Operation* op = decoder.Decode(insn_addr, insn);
-      last_insns[insn_counter % histsize].assign(insn_addr, op);
+      Operation* op = fetch_and_decode(insn_addr);
       
       this->next_insn_addr += 4;
 
@@ -182,7 +171,7 @@ AArch64::step_instruction()
         }
       if (disasm)
         {
-          std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
+          std::cerr << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
           op->disasm( *this, std::cerr );
           std::cerr << std::endl;
         }
@@ -763,6 +752,14 @@ AArch64::concretize()
       return gpr[0].value >> 14 & 1;
     }
 
+  if (current_insn_addr == 0xffffffc0109f3f20)
+    {
+      gpr[2].ubits = 0;
+      gpr[3].ubits = 0;
+      gpr[6].ubits = 0;
+      return gpr[6].value == 0;
+    }
+
   static struct { uint64_t address; bool result; }
   exceptions [] =
     {
@@ -822,58 +819,163 @@ AArch64::GIC::ScanPendingInterruptsFor( uint8_t required, uint8_t enough ) const
   return hppi;
 }
 
-namespace
+struct AArch64::Device::Request
 {
-  struct Request
+  virtual ~Request() {}
+  virtual void transfer(uint8_t*, uint8_t*, unsigned) = 0;
+  Request(uint64_t _addr, uint8_t _size, bool _write) : addr(_addr), size(_size), write(_write) {}
+  template <class T>
+  bool tainted_access( T& reg )
   {
-    virtual ~Request() {}
-    virtual void transfer(uint8_t*, uint8_t*, unsigned) = 0;
-    Request(uint64_t _addr, uint8_t _size, bool _write) : addr(_addr), size(_size), write(_write) {}
-    template <class T>
-    bool tainted_access( T& reg )
+    typedef typename T::value_type value_type;
+    static unsigned const bytecount = sizeof(value_type);
+    if (bytecount > size) return false;
+    uint8_t vbytes[bytecount], ubytes[bytecount];
+    if (not write) for (unsigned idx = 0; idx < bytecount; ++idx) { vbytes[idx] = reg.value >> 8*idx; ubytes[idx] = reg.ubits >> int(8*idx); }
+    transfer(&vbytes[0], &ubytes[0], bytecount);
+    addr += bytecount; size -= bytecount;
+    if (    write) for (unsigned idx = bytecount; idx-- > 0;) { reg.value = reg.value << 8 | vbytes[idx]; reg.ubits = reg.ubits << 8 | ubytes[idx]; }
+    return true;
+  }
+  template <typename T>
+  bool access( T& reg )
+  {
+    struct Undefined {};
+    struct _
     {
-      typedef typename T::value_type value_type;
-      static unsigned const bytecount = sizeof(value_type);
-      if (bytecount > size) return false;
-      uint8_t vbytes[bytecount], ubytes[bytecount];
-      if (not write) for (unsigned idx = 0; idx < bytecount; ++idx) { vbytes[idx] = reg.value >> 8*idx; ubytes[idx] = reg.ubits >> int(8*idx); }
-      transfer(&vbytes[0], &ubytes[0], bytecount);
-      addr += bytecount; size -= bytecount;
-      if (    write) for (unsigned idx = bytecount; idx-- > 0;) { reg.value = reg.value << 8 | vbytes[idx]; reg.ubits = reg.ubits << 8 | ubytes[idx]; }
-      return true;
-    }
-    template <typename T>
-    bool access( T& reg )
-    {
-      struct Undefined {};
-      struct _
-      {
-        typedef T value_type; _(value_type& _v) : value(_v) {}
-        T& value; struct U {
-          U& operator >> (int) { return *this; } U& operator << (int) { return *this; }
-          operator uint8_t() { return 0; } U& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
-        } ubits;
-      } _(reg);
-      try { return tainted_access ( _ ); } catch(Undefined const&) {}
-      return false;
-    }
-    uint64_t addr; uint8_t size; bool write;
-  };
+      typedef T value_type; _(value_type& _v) : value(_v) {}
+      T& value; struct U {
+        U& operator >> (int) { return *this; } U& operator << (int) { return *this; }
+        operator uint8_t() { return 0; } U& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
+      } ubits;
+    } _(reg);
+    try { return tainted_access ( _ ); } catch(Undefined const&) {}
+    return false;
+  }
+  void location(std::ostream& sink)
+  {
+    uint64_t last = addr + size - 1;
+    sink << std::hex << addr << ".." << last;
+  }
+  uint64_t addr; uint8_t size; bool write;
+};
 
+bool
+AArch64::Device::write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t size) const
+{
   struct IRequest : public Request
   {
     typedef uint8_t const* Src;
     IRequest(uint64_t _addr, Src _vsrc, Src _usrc, uint8_t _size ) : Request( _addr, _size, true ), vsrc(_vsrc) , usrc(_usrc) {} Src vsrc, usrc;
     void transfer(uint8_t* vdst, uint8_t* udst, unsigned n) override
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vsrc += n; usrc += n; }
-  };
+  } idata(addr, dbuf, ubuf, size);
+  
+  do {} while (idata.size and effect->access(arch, idata));
+
+  if (not idata.size)
+    return true;
+  
+  effect->get_name(std::cerr << "Unmapped ");
+  idata.location(std::cerr << " register write @" );
+  std::cerr << '\n';
+  return false;
+}
+
+bool
+AArch64::Device::read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t size) const
+{
   struct ORequest : public Request
   {
     typedef uint8_t* Dst;
     ORequest(uint64_t _addr, Dst _vdst, Dst _udst, uint8_t _size ) : Request( _addr, _size, false ), vdst(_vdst), udst(_udst) {} Dst vdst, udst;
     void transfer(uint8_t* vsrc, uint8_t* usrc, unsigned n) override
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vdst += n; udst += n; }
-  };
+  } odata(addr, dbuf, ubuf, size);
+  
+  do {} while (odata.size and effect->access(arch, odata));
+
+  if (not odata.size)
+    return true;
+
+  effect->get_name(std::cerr << "Unmapped ");
+  odata.location( std::cerr << " register read @" );
+  std::cerr << '\n';
+  return false;
+}
+
+bool
+AArch64::Device::Effect::error( char const* msg ) const
+{
+  this->get_name(std::cerr);
+  std::cerr << " error: " << msg << "\n";
+  return false;
+}
+
+void
+AArch64::map_apbclk(uint64_t base_addr)
+{
+  static struct RTCEffect : public Device::Effect
+  {
+    virtual void get_name(std::ostream& sink) const override { sink << "Real Time Clock (PL031)"; }
+
+    virtual bool access(AArch64& arch, Device::Request& req) const override
+    {
+      if ((req.addr & -16) == 0xfe0)
+        {
+          if (req.write) return error( "Cannot write RTCPeriphID" );
+          U32 value(0x00041031,0xfff00000);
+          U8 byte = (req.addr & 3) ? U8(8) : U8(value >> (req.addr >> 2 & 3));
+          return req.tainted_access(byte);
+        }
+
+      if ((req.addr & -16) == 0xff0)
+        {
+          if (req.write) return error( "Cannot write RTCPCellID" );
+          
+          uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> (req.addr >> 2 & 3));
+          return req.access(byte);
+        }
+
+      return false;
+    }
+
+  } apbclk_effect;
+
+  devices.insert( Device( base_addr, base_addr + 0xfff, &apbclk_effect) );
+}
+
+void
+AArch64::map_uart(uint64_t base_addr)
+{
+  static struct UARTEffect : public Device::Effect
+  {
+    virtual void get_name(std::ostream& sink) const override { sink << "UART (PL011)"; }
+
+    virtual bool access(AArch64& arch, Device::Request& req) const override
+    {
+      if ((req.addr & -16) == 0xfe0)
+        {
+          if (req.write) return error( "Cannot write UARTPeriphID" );
+          U32 value(0x00041011,0xfff00000);
+          U8 byte = (req.addr & 3) ? U8(8) : U8(value >> (req.addr >> 2 & 3));
+          return req.tainted_access(byte);
+        }
+
+      if ((req.addr & -16) == 0xff0)
+        {
+          if (req.write) return error( "Cannot write UARTPCellID" );
+          
+          uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> (req.addr >> 2 & 3));
+          return req.access(byte);
+        }
+
+      return false;
+    }
+
+  } uart_effect;
+
+  devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect) );
 }
 
 void
@@ -881,9 +983,9 @@ AArch64::map_gic(uint64_t base_addr)
 {
   static struct GICEffect : public Device::Effect
   {
-    static bool error( char const* msg ) { std::cerr << "GIC error: " << msg << "\n"; return false; }
+    virtual void get_name(std::ostream& sink) const override { sink << "GIC"; }
 
-    static bool access(AArch64& arch, Request& req)
+    virtual bool access(AArch64& arch, Device::Request& req) const override
     {
       uint32_t raz_wi_32(0);
 
@@ -923,6 +1025,7 @@ AArch64::map_gic(uint64_t base_addr)
       
       if (0x1d0 <= req.addr and req.addr < 0x1f0)
         {
+          if (req.addr & 3) return false;
           /* Active Priorities Registers (secure and not secure) */
           return req.access(raz_wi_32);
         }
@@ -961,6 +1064,7 @@ AArch64::map_gic(uint64_t base_addr)
            * a [Set-|Clear-][enable|pending|active] bit for each
            * interrupt supported by the GIC.
            */
+          if (req.addr % 4) return false;
           unsigned idx = (req.addr - 0x1100)/4, cns = idx / 32, rtp = cns / 2;
           idx %= 32; cns %= 2;
           if (32*idx >= arch.gic.ITLinesCount)
@@ -1007,23 +1111,7 @@ AArch64::map_gic(uint64_t base_addr)
             return req.access( arch.gic.D_ICFGR[idx] );
           return req.access(raz_wi_32);
         }
-
-      std::cerr << "Unmapped GIC register @" << std::hex << req.addr << "\n";
       return false;
-    }
-
-    virtual    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t size) const override
-    {
-      IRequest idata(addr, dbuf, ubuf, size);
-      do {} while (idata.size and access(arch, idata));
-      return not idata.size;
-    }
-
-    virtual uint64_t read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t size) const override
-    {
-      ORequest odata(addr, dbuf, ubuf, size);
-      do {} while (odata.size and access(arch, odata));
-      return not odata.size;
     }
   } gic_effect;
 
@@ -1151,9 +1239,9 @@ AArch64::MemDump64(uint64_t addr)
     {
       std::cerr << ' ';
       if (byte >= vsize) { std::cerr << "  "; continue; }
-      uint8_t dbyte = dbuf[byte];
-      for (unsigned nibble = 0; nibble < 2; ++nibble)
-        std::cerr << "0123456789abcdef"[uint8_t(dbyte << 4*nibble) >> 4];
+      uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
+      for (unsigned nibble = 2; nibble-- > 0;)
+        std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
     }
 
   std::cerr << "\t(0b";

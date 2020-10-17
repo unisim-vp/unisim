@@ -1529,22 +1529,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b101): // 3.2: DBGBCR<n>_EL1, Debug Breakpoint Control Registers, n = 0 - 15
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "DBGBCR<n>_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Breakpoint Control Registers, n = 0 - 15"; }
-        } x; return &x;
-      } break;
-
-    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b100): // 3.3: DBGBVR<n>_EL1, Debug Breakpoint Value Registers, n = 0 - 15
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "DBGBVR<n>_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Breakpoint Value Registers, n = 0 - 15"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b10,0b000,0b0111,0b1001,0b110): // 3.4: DBGCLAIMCLR_EL1, Debug Claim Tag Clear register
       {
         static struct : public BaseSysReg {
@@ -1606,22 +1590,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "DBGVCR32_EL2"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Vector Catch Register"; }
-        } x; return &x;
-      } break;
-
-    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b111): // 3.11: DBGWCR<n>_EL1, Debug Watchpoint Control Registers, n = 0 - 15
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "DBGWCR<n>_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Watchpoint Control Registers, n = 0 - 15"; }
-        } x; return &x;
-      } break;
-
-    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b110): // 3.12: DBGWVR<n>_EL1, Debug Watchpoint Value Registers, n = 0 - 15
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "DBGWVR<n>_EL1"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Watchpoint Value Registers, n = 0 - 15"; }
         } x; return &x;
       } break;
 
@@ -1806,22 +1774,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "PMCR_EL0"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performance Monitors Control Register"; }
-        } x; return &x;
-      } break;
-
-    case SYSENCODE(0b11,0b011,0b1110,0b1000,0b000): // 4.8: PMEVCNTR<n>_EL0, Performance Monitors Event Count Registers, n = 0 - 30
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "PMEVCNTR<n>_EL0"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performance Monitors Event Count Registers, n = 0 - 30"; }
-        } x; return &x;
-      } break;
-
-    case SYSENCODE(0b11,0b011,0b1110,0b1100,0b000): // 4.9: PMEVTYPER<n>_EL0, Performance Monitors Event Type Registers, n = 0 - 30
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "PMEVTYPER<n>_EL0"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performance Monitors Event Type Registers, n = 0 - 30"; }
         } x; return &x;
       } break;
 
@@ -2398,14 +2350,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-    case SYSENCODE(0b11,0b100,0b1100,0b1100,0b000): // 6.43: ICH_LR<n>_EL2, Interrupt Controller List Registers, n = 0 - 15
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_LR<n>_EL2"; }
-          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Interrupt Controller List Registers, n = 0 - 15"; }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b010): // 6.44: ICH_MISR_EL2, Interrupt Controller Maintenance Interrupt State Register
       {
         static struct : public BaseSysReg {
@@ -2502,6 +2446,78 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
+      
+    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b101): // 3.2: DBGBCR<n>_EL1, Debug Breakpoint Control Registers, n = 0 - 15
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DBGBCR" << std::dec << int(e.crm) << "_EL1"; }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Breakpoint Control Register #" << std::dec << int(e.crm); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b100): // 3.3: DBGBVR<n>_EL1, Debug Breakpoint Value Registers, n = 0 - 15
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DBGBVR" << std::dec << int(e.crm) << "_EL1"; }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Breakpoint Value Register #" << std::dec << int(e.crm); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b111): // 3.11: DBGWCR<n>_EL1, Debug Watchpoint Control Registers, n = 0 - 15
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DBGWCR" << std::dec << int(e.crm) << "_EL1"; }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Watchpoint Control Register#" << std::dec << int(e.crm); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b000,0b0000,0b0000,0b110): // 3.12: DBGWVR<n>_EL1, Debug Watchpoint Value Registers, n = 0 - 15
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DBGWVR" << std::dec << int(e.crm) << "_EL1"; }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Debug Watchpoint Value Register#" << std::dec << int(e.crm); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
+        } x; return &x;
+      } break;
+
+    }
+
+  if (SYSENCODE(op0, op1, crn, crm&-2, 0) == SYSENCODE(0b11,0b100,0b1100,0b1100,0b000))
+    { // 6.43: ICH_LR<n>_EL2, Interrupt Controller List Registers, n = 0 - 15
+      {
+        static struct : public BaseSysReg {
+          static int GetIdx(Encoding e) { return (e.crm << 3 & 0x8) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ICH_LR" << std::dec << GetIdx(e) << "_EL2"; }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Interrupt Controller List Register #" << std::dec << GetIdx(e); }
+        } x; return &x;
+      }
+    }
+
+  if (SYSENCODE(op0, op1, crn, crm&8, 0) == SYSENCODE(0b11,0b011,0b1110,0b1000,0b000))
+    {
+      if (crm & 4) // 4.9: PMEVTYPER<n>_EL0, Performance Monitors Event Type Registers, n = 0 - 30
+        {
+          static struct : public BaseSysReg {
+            static int GetIdx(Encoding e) { return (e.crm << 3 & 0x18) | e.op2; }
+            void Name(Encoding e, std::ostream& sink) const override { sink << "PMEVTYPER" << std::dec << GetIdx(e) << "_EL0"; }
+            void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performance Monitors Event Type Register #" << std::dec << GetIdx(e); }
+          } x; return &x;
+        }
+      else         // 4.8: PMEVCNTR<n>_EL0, Performance Monitors Event Count Registers, n = 0 - 30
+        {
+          static struct : public BaseSysReg {
+            static int GetIdx(Encoding e) { return (e.crm << 3 & 0x18) | e.op2; }
+            void Name(Encoding e, std::ostream& sink) const override { sink << "PMEVCNTR" << std::dec << GetIdx(e) << "_EL0"; }
+            void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performance Monitors Event Count Register #" << std::dec << GetIdx(e); }
+          } x; return &x;
+        }
     }
 
   static struct UnknownSysReg : public BaseSysReg

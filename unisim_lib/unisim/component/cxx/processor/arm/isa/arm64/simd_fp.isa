@@ -8828,6 +8828,14 @@ movi_vbi.disasm = {
   sink << "movi\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmI(imm,16);
 };
 
+movi_vbi.execute = {
+  typedef typename ARCH::U8 U8;
+                    
+  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,U8(imm));
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op movi_vhi( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b001[3] : imm0[5] : rd[5] );
 movi_vhi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1886"};
 
