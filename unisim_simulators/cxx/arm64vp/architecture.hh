@@ -569,9 +569,10 @@ struct AArch64
 
   struct EL
   {
-    EL() : VBAR(0) {}
+    EL() : SPSR(), ESR(), ELR(), VBAR(), PAR(), FAR(), SCTLR() {}
     U32 SPSR, ESR;
-    U64 ELR, FAR, VBAR;
+    U64 ELR, VBAR;
+    uint64_t PAR, FAR;
     uint32_t SCTLR;
     void SetSCTLR(AArch64& cpu, uint32_t value)
     {

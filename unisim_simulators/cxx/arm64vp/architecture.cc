@@ -654,7 +654,7 @@ AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::
     | U32(mat == mat_write) << 6
     | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
   // FAR[target_el] = exception.vaddress;
-  get_el(target_el).FAR = U64(va);
+  get_el(target_el).FAR = va;
   //     if target_el == EL2 && exception.ipavalid then
   //     HPFAR_EL2<39:4> = exception.ipaddress<47:12>;
 }
@@ -758,6 +758,12 @@ AArch64::concretize()
       gpr[3].ubits = 0;
       gpr[6].ubits = 0;
       return gpr[6].value == 0;
+    }
+
+  if (current_insn_addr == 0xffffffc010628f50)
+    {
+      gpr[3].ubits = 0;
+      return false;
     }
 
   static struct { uint64_t address; bool result; }
@@ -924,8 +930,8 @@ AArch64::map_apbclk(uint64_t base_addr)
       if ((req.addr & -16) == 0xfe0)
         {
           if (req.write) return error( "Cannot write RTCPeriphID" );
-          U32 value(0x00041031,0xfff00000);
-          U8 byte = (req.addr & 3) ? U8(8) : U8(value >> (req.addr >> 2 & 3));
+          U32 value(0x00341031);
+          U8 byte = (req.addr & 3) ? U8(0) : U8(value >> 8*(req.addr >> 2 & 3));
           return req.tainted_access(byte);
         }
 
@@ -933,7 +939,7 @@ AArch64::map_apbclk(uint64_t base_addr)
         {
           if (req.write) return error( "Cannot write RTCPCellID" );
           
-          uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> (req.addr >> 2 & 3));
+          uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
         }
 
@@ -957,8 +963,8 @@ AArch64::map_uart(uint64_t base_addr)
       if ((req.addr & -16) == 0xfe0)
         {
           if (req.write) return error( "Cannot write UARTPeriphID" );
-          U32 value(0x00041011,0xfff00000);
-          U8 byte = (req.addr & 3) ? U8(8) : U8(value >> (req.addr >> 2 & 3));
+          U32 value(0x00341011);
+          U8 byte = (req.addr & 3) ? U8(0) : U8(value >> 8*(req.addr >> 2 & 3));
           return req.tainted_access(byte);
         }
 
@@ -966,7 +972,7 @@ AArch64::map_uart(uint64_t base_addr)
         {
           if (req.write) return error( "Cannot write UARTPCellID" );
           
-          uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> (req.addr >> 2 & 3));
+          uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
         }
 

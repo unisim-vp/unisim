@@ -2889,6 +2889,7 @@ ldr_qxi.disasm = {
 };
 
 ldr_qxi.execute = {
+  /* XXX: handling of quad vector */
   typedef typename ARCH::U64 U64;
   
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
@@ -2965,6 +2966,16 @@ ldr_qlit.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
+ldr_qlit.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetPC() + U64(imm) );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr + U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
+}
+
 /*
  * end of LDR (literal, SIMD&FP)
  *******************************************************************/
@@ -3017,11 +3028,10 @@ ldr_bxws.disasm = {
 
 ldr_bxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U8  U8;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U8 data( cpu.MemRead8(addr) );
   cpu.SetVU8(rt, data);
 };
@@ -3038,7 +3048,7 @@ ldr_bxxs.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U8 data( cpu.MemRead8(addr) );
   cpu.SetVU8(rt, data);
 };
@@ -3085,11 +3095,10 @@ ldr_hxws.disasm = {
 
 ldr_hxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetVU16(rt, data);
 };
@@ -3106,7 +3115,7 @@ ldr_hxxs.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetVU16(rt, data);
 };
@@ -3152,11 +3161,10 @@ ldr_sxws.disasm = {
 
 ldr_sxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetVU32(rt, data);
 };
@@ -3173,7 +3181,7 @@ ldr_sxxs.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetVU32(rt, data);
 };
@@ -3217,11 +3225,10 @@ ldr_dxws.disasm = {
 };
 
 ldr_dxws.execute = {
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetVU64(rt, data);
 };
@@ -3237,7 +3244,7 @@ ldr_dxxs.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetVU64(rt, data);
 };
@@ -3249,11 +3256,32 @@ ldr_qxwu.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",uxtw" << DisasmINZ(" ", shift) << "]";
 };
 
+ldr_qxwu.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(U32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr + U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
+};
+
 op ldr_qxxu( 0b00111100111[11] : rm[5] : 0b011[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldr_qxxu.var format : {char const*} = {"771"}, shift : {uint8_t} = {s*4};
 
 ldr_qxxu.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+ldr_qxxu.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(U64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr + U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
 };
 
 op ldr_qxws( 0b00111100111[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3263,11 +3291,33 @@ ldr_qxws.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
+ldr_qxws.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr + U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
+};
+
 op ldr_qxxs( 0b00111100111[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldr_qxxs.var shift : {uint8_t} = {s*4}, format : {char const*} = {"607"};
 
 ldr_qxxs.disasm = {
   sink << "ldr\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
+};
+
+ldr_qxxs.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.MemRead64(addr) ), data1( cpu.MemRead64(addr + U64(8)) );
+  cpu.SetVU64(rt, 0, data0);
+  cpu.SetVU64(rt, 1, data1);
 };
 
 /*
@@ -3907,20 +3957,6 @@ sha256su1_v4sv4sv4s.var format : {char const*} = {"1238"};
 
 sha256su1_v4sv4sv4s.disasm = {
   sink << "sha256su1\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,4,2) << ", " << DisasmTV(rm,4,2);
-};
-
-op shl_ddi( 0b0101111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
-shl_ddi.var format : {char const*} = {"538"};
-
-shl_ddi.disasm = {
-  sink << "shl\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op shl_v2d2di( 0b0100111101[10] : imm[6] : 0b010101[6] : rn[5] : rd[5] );
-shl_v2d2di.var format : {char const*} = {"556"};
-
-shl_v2d2di.disasm = {
-  sink << "shl\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(imm);
 };
 
 op shll2_v2d4s( 0b0110111010100001001110[22] : rn[5] : rd[5] );
@@ -5326,25 +5362,11 @@ srshr_ddi.disasm = {
   sink << "srshr\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
 };
 
-op srshr_v2d2di( 0b0100111101[10] : lro[6] : 0b001001[6] : rn[5] : rd[5] );
-srshr_v2d2di.var format : {char const*} = {"561"}, shift : {unsigned} = {64 - lro};
-
-srshr_v2d2di.disasm = {
-  sink << "srshr\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
-};
-
 op srsra_ddi( 0b0101111101[10] : lro[6] : 0b001101[6] : rn[5] : rd[5] );
 srsra_ddi.var format : {char const*} = {"544"}, shift : {unsigned} = {64 - lro};
 
 srsra_ddi.disasm = {
   sink << "srsra\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op srsra_v2d2di( 0b0100111101[10] : lro[6] : 0b001101[6] : rn[5] : rd[5] );
-srsra_v2d2di.var format : {char const*} = {"562"}, shift : {unsigned} = {64 - lro};
-
-srsra_v2d2di.disasm = {
-  sink << "srsra\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
 };
 
 op sshl_ddd( 0b01011110111[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
@@ -5410,25 +5432,11 @@ sshr_ddi.disasm = {
   sink << "sshr\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
 };
 
-op sshr_v2d2di( 0b0100111101[10] : lro[6] : 0b000001[6] : rn[5] : rd[5] );
-sshr_v2d2di.var format : {char const*} = {"563"}, shift : {unsigned} = {64 - lro};
-
-sshr_v2d2di.disasm = {
-  sink << "sshr\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
-};
-
 op ssra_ddi( 0b0101111101[10] : lro[6] : 0b000101[6] : rn[5] : rd[5] );
 ssra_ddi.var format : {char const*} = {"546"}, shift : {unsigned} = {64 - lro};
 
 ssra_ddi.disasm = {
   sink << "ssra\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op ssra_v2d2di( 0b0100111101[10] : lro[6] : 0b000101[6] : rn[5] : rd[5] );
-ssra_v2d2di.var format : {char const*} = {"564"}, shift : {unsigned} = {64 - lro};
-
-ssra_v2d2di.disasm = {
-  sink << "ssra\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
 };
 
 op ssubl2_v2dv4sv4s( 0b01001110101[11] : rm[5] : 0b001000[6] : rn[5] : rd[5] );
@@ -5821,11 +5829,10 @@ str_bxws.disasm = {
 
 str_bxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U8 U8;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U8 data( cpu.GetVU8(rt,0) );
   cpu.MemWrite8(addr, data);
 };
@@ -5842,7 +5849,7 @@ str_bxxs.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U8 U8;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U8 data( cpu.GetVU8(rt,0) );
   cpu.MemWrite8(addr, data);
 };
@@ -5889,11 +5896,10 @@ str_hxws.disasm = {
 
 str_hxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
 };
@@ -5910,7 +5916,7 @@ str_hxxs.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U16 data( cpu.GetVU16(rt,0) );
   cpu.MemWrite16(addr, data);
 };
@@ -5956,11 +5962,10 @@ str_sxws.disasm = {
 
 str_sxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U32 data( cpu.GetVU32(rt,0) );
   cpu.MemWrite32(addr, data);
 };
@@ -5977,7 +5982,7 @@ str_sxxs.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U32 data( cpu.GetVU32(rt,0) );
   cpu.MemWrite32(addr, data);
 };
@@ -6022,10 +6027,9 @@ str_dxws.disasm = {
 
 str_dxws.execute = {
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U64 data( cpu.GetVU64(rt,0) );
   cpu.MemWrite64(addr, data);
 };
@@ -6041,7 +6045,7 @@ str_dxxs.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U64 U64;
 
-  U64 offset( S64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
   U64 data( cpu.GetVU64(rt,0) );
   cpu.MemWrite64(addr, data);
 };
@@ -6053,11 +6057,32 @@ str_qxwu.disasm = {
   sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",uxtw" << DisasmINZ(" ", shift) << "]";
 };
 
+str_qxwu.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 offset( U64(U32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
+};
+
 op str_qxxu( 0b00111100101[11] : rm[5] : 0b011[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 str_qxxu.var format : {char const*} = {"772"}, shift : {uint8_t} = {s*4};
 
 str_qxxu.disasm = {
   sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+str_qxxu.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(U64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
 };
 
 op str_qxws( 0b00111100101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -6067,11 +6092,33 @@ str_qxws.disasm = {
   sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
+str_qxws.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(S32(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
+};
+
 op str_qxxs( 0b00111100101[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 str_qxxs.var shift : {uint8_t} = {s*4}, format : {char const*} = {"608"};
 
 str_qxxs.disasm = {
   sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
+};
+
+str_qxxs.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+
+  U64 offset( U64(S64(cpu.GetGZR(rm))) << shift ), addr( cpu.GetGSR(rn) + offset );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
 };
 
 /*
@@ -7119,25 +7166,11 @@ urshr_ddi.disasm = {
   sink << "urshr\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
 };
 
-op urshr_v2d2di( 0b0110111101[10] : lro[6] : 0b001001[6] : rn[5] : rd[5] );
-urshr_v2d2di.var format : {char const*} = {"567"}, shift : {unsigned} = {64 - lro};
-
-urshr_v2d2di.disasm = {
-  sink << "urshr\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
-};
-
 op ursra_ddi( 0b0111111101[10] : lro[6] : 0b001101[6] : rn[5] : rd[5] );
 ursra_ddi.var format : {char const*} = {"550"}, shift : {unsigned} = {64 - lro};
 
 ursra_ddi.disasm = {
   sink << "ursra\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op ursra_v2d2di( 0b0110111101[10] : lro[6] : 0b001101[6] : rn[5] : rd[5] );
-ursra_v2d2di.var format : {char const*} = {"568"}, shift : {unsigned} = {64 - lro};
-
-ursra_v2d2di.disasm = {
-  sink << "ursra\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
 };
 
 op ushl_ddd( 0b01111110111[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
@@ -7203,13 +7236,6 @@ ushr_ddi.disasm = {
   sink << "ushr\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
 };
 
-op ushr_v2d2di( 0b0110111101[10] : lro[6] : 0b000001[6] : rn[5] : rd[5] );
-ushr_v2d2di.var format : {char const*} = {"569"}, shift : {unsigned} = {64 - lro};
-
-ushr_v2d2di.disasm = {
-  sink << "ushr\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
-};
-
 op usqadd_bb( 0b0111111000100000001110[22] : rn[5] : rd[5] );
 usqadd_bb.var format : {char const*} = {"2164"};
 
@@ -7250,13 +7276,6 @@ usra_ddi.var format : {char const*} = {"552"}, shift : {unsigned} = {64 - lro};
 
 usra_ddi.disasm = {
   sink << "usra\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op usra_v2d2di( 0b0110111101[10] : lro[6] : 0b000101[6] : rn[5] : rd[5] );
-usra_v2d2di.var format : {char const*} = {"570"}, shift : {unsigned} = {64 - lro};
-
-usra_v2d2di.disasm = {
-  sink << "usra\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
 };
 
 op usubl2_v2dv4sv4s( 0b01101110101[11] : rm[5] : 0b001000[6] : rn[5] : rd[5] );
@@ -8975,6 +8994,19 @@ pmul_vbvbvb.disasm = {
   sink << "pmul\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
+pmul_vbvbvb.execute = {
+  typedef typename ARCH::U8 U8;
+  
+  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+    {
+      U8 op1(cpu.GetVU8(rn,idx)), op2(cpu.GetVU8(rm,idx)), res(0);
+      for (unsigned bit = 0; bit < 8; ++bit)
+        res = res ^ (op2*(op1 & U8(1<<bit)));
+      cpu.SetVU8(rd,idx,res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op rbit_vbb( 0b0[1] : q[1] : 0b10111001100000010110[20] : rn[5] : rd[5] );
 rbit_vbb.var format : {char const*} = {"2550"};
 
@@ -9158,17 +9190,27 @@ shadd_vsvsvs.disasm = {
 };
 
 op shl_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : imm[3] : 0b010101[6] : rn[5] : rd[5] );
-shl_vbbi.var format : {char const*} = {"1970"};
 
 shl_vbbi.disasm = {
   sink << "shl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(imm);
 };
 
+shl_vbbi.execute = {
+  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) << imm);
+  cpu.ClearHighV(rd,8<<q);
+};
+
 op shl_vhhi( 0b0[1] : q[1] : 0b0011110001[10] : imm[4] : 0b010101[6] : rn[5] : rd[5] );
-shl_vhhi.var format : {char const*} = {"1837"};
 
 shl_vhhi.disasm = {
   sink << "shl\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(imm);
+};
+
+shl_vhhi.execute = {
+  for (unsigned idx = 0, end=4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd,idx,cpu.GetVU16(rn,idx) << imm);
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op shl_vssi( 0b0[1] : q[1] : 0b001111001[9] : imm[5] : 0b010101[6] : rn[5] : rd[5] );
@@ -9176,6 +9218,31 @@ shl_vssi.var format : {char const*} = {"1006"};
 
 shl_vssi.disasm = {
   sink << "shl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(imm);
+};
+
+shl_vssi.execute = {
+  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd,idx,cpu.GetVU32(rn,idx) << imm);
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op shl_v2d2di( 0b0100111101[10] : imm[6] : 0b010101[6] : rn[5] : rd[5] );
+shl_v2d2di.var format : {char const*} = {"556"};
+
+shl_v2d2di.disasm = {
+  sink << "shl\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(imm);
+};
+
+shl_v2d2di.execute = {
+  for (unsigned idx = 0, end=2; idx < end; ++idx)
+    cpu.SetVU64(rd,idx,cpu.GetVU64(rn,idx) << imm);
+};
+
+op shl_ddi( 0b0101111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
+shl_ddi.var format : {char const*} = {"538"};
+
+shl_ddi.disasm = {
+  sink << "shl\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
 };
 
 op shsub_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
@@ -9619,48 +9686,6 @@ srshl_vsvsvs.disasm = {
   sink << "srshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
-op srshr_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b001001[6] : rn[5] : rd[5] );
-srshr_vbbi.var format : {char const*} = {"1975"}, shift : {unsigned} = {8 - lro};
-
-srshr_vbbi.disasm = {
-  sink << "srshr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
-};
-
-op srshr_vhhi( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b001001[6] : rn[5] : rd[5] );
-srshr_vhhi.var format : {char const*} = {"1842"}, shift : {unsigned} = {16 - lro};
-
-srshr_vhhi.disasm = {
-  sink << "srshr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
-};
-
-op srshr_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b001001[6] : rn[5] : rd[5] );
-srshr_vssi.var format : {char const*} = {"1011"}, shift : {unsigned} = {32 - lro};
-
-srshr_vssi.disasm = {
-  sink << "srshr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
-};
-
-op srsra_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b001101[6] : rn[5] : rd[5] );
-srsra_vbbi.var format : {char const*} = {"1976"}, shift : {unsigned} = {8 - lro};
-
-srsra_vbbi.disasm = {
-  sink << "srsra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
-};
-
-op srsra_vhhi( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b001101[6] : rn[5] : rd[5] );
-srsra_vhhi.var format : {char const*} = {"1843"}, shift : {unsigned} = {16 - lro};
-
-srsra_vhhi.disasm = {
-  sink << "srsra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
-};
-
-op srsra_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b001101[6] : rn[5] : rd[5] );
-srsra_vssi.var format : {char const*} = {"1012"}, shift : {unsigned} = {32 - lro};
-
-srsra_vssi.disasm = {
-  sink << "srsra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
-};
-
 op sshl_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
 sshl_vbvbvb.var format : {char const*} = {"1331"};
 
@@ -9682,46 +9707,92 @@ sshl_vsvsvs.disasm = {
   sink << "sshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
-op sshr_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b000001[6] : rn[5] : rd[5] );
-sshr_vbbi.var format : {char const*} = {"1977"}, shift : {unsigned} = {8 - lro};
+op  sshr_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b00[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+sshr_vbbi.var round : {uint8_t} = {uint8_t(sm >> 1 << 7) >> lro}, shift : {unsigned} = {8 - lro};
 
 sshr_vbbi.disasm = {
-  sink << "sshr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+  sink << (sm&2?"sr":"s") << (sm&1?"sra\t":"shr\t") << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
 };
 
-op sshr_vhhi( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b000001[6] : rn[5] : rd[5] );
-sshr_vhhi.var format : {char const*} = {"1844"}, shift : {unsigned} = {16 - lro};
+sshr_vbbi.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 res( (S16(S8(cpu.GetVU8(rn,idx))) + S16(round)) >> shift );
+      if (sm & 1)
+        res += cpu.GetVU8(rd,idx);
+      cpu.SetVU8(rd,idx, res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op sshr_vhhi( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b00[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+sshr_vhhi.var round : {uint16_t} = {uint16_t(sm >> 1 << 15) >> lro}, shift : {unsigned} = {16 - lro};
 
 sshr_vhhi.disasm = {
-  sink << "sshr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+  sink << (sm&2?"sr":"s") << (sm&1?"sra\t":"shr\t") << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
 };
 
-op sshr_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b000001[6] : rn[5] : rd[5] );
-sshr_vssi.var format : {char const*} = {"1013"}, shift : {unsigned} = {32 - lro};
+sshr_vhhi.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 res( (S32(S16(cpu.GetVU16(rn,idx))) + S32(round)) >> shift );
+      if (sm & 1)
+        res += cpu.GetVU16(rd,idx);
+      cpu.SetVU16(rd,idx, res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op sshr_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b00[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+sshr_vssi.var round : {uint32_t} = {uint32_t(sm >> 1 << 31) >> lro}, shift : {unsigned} = {32 - lro};
 
 sshr_vssi.disasm = {
-  sink << "sshr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+  sink << (sm&2?"sr":"s") << (sm&1?"sra\t":"shr\t") << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
 };
 
-op ssra_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b000101[6] : rn[5] : rd[5] );
-ssra_vbbi.var format : {char const*} = {"1978"}, shift : {unsigned} = {8 - lro};
+sshr_vssi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
 
-ssra_vbbi.disasm = {
-  sink << "ssra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 res( (S64(S32(cpu.GetVU32(rn,idx))) + S64(round)) >> shift );
+      if (sm & 1)
+        res += cpu.GetVU32(rd,idx);
+      cpu.SetVU32(rd,idx, res);
+    }
+  cpu.ClearHighV(rd,8<<q);
 };
 
-op ssra_vhhi( 0b0[1] : q[1] : 0b0011110001[10] : lro[4] : 0b000101[6] : rn[5] : rd[5] );
-ssra_vhhi.var format : {char const*} = {"1845"}, shift : {unsigned} = {16 - lro};
+op sshr_v2d2di( 0b0100111101[10] : lro[6] : 0b00[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+sshr_v2d2di.var round : {uint64_t} = {uint64_t(uint64_t(sm) >> 1 << 63) >> lro}, shift0 : {uint8_t} = {(64-lro)>>1}, shift1 : {uint8_t} = {32-(lro>>1)};
 
-ssra_vhhi.disasm = {
-  sink << "ssra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
+sshr_v2d2di.disasm = {
+  sink << (sm&2?"sr":"s") << (sm&1?"sra\t":"shr\t") << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(64-lro);
 };
 
-op ssra_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b000101[6] : rn[5] : rd[5] );
-ssra_vssi.var format : {char const*} = {"1014"}, shift : {unsigned} = {32 - lro};
+sshr_v2d2di.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
 
-ssra_vssi.disasm = {
-  sink << "ssra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      /* the weird, decomposed, computation is here to accomodate 64 right-shifts */
+      S64 op( cpu.GetVU64(rn,idx) ), rb(op & S64(round));
+      U64 res( ((op >> shift1) + (rb >> (shift1-1))) >> shift0 );
+      if (sm & 1)
+        res += cpu.GetVU64(rd,idx);
+      cpu.SetVU64(rd,idx, res);
+    }
 };
 
 op sub_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -10284,53 +10355,11 @@ urshl_vsvsvs.disasm = {
   sink << "urshl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
-op urshr_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b001001[6] : rn[5] : rd[5] );
-urshr_vbbi.var format : {char const*} = {"1980"}, shift : {unsigned} = {8 - lro};
-
-urshr_vbbi.disasm = {
-  sink << "urshr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
-};
-
-op urshr_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b001001[6] : rn[5] : rd[5] );
-urshr_vhhi.var format : {char const*} = {"1847"}, shift : {unsigned} = {16 - lro};
-
-urshr_vhhi.disasm = {
-  sink << "urshr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
-};
-
-op urshr_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b001001[6] : rn[5] : rd[5] );
-urshr_vssi.var format : {char const*} = {"1017"}, shift : {unsigned} = {32 - lro};
-
-urshr_vssi.disasm = {
-  sink << "urshr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
-};
-
 op ursqrte_vss( 0b0[1] : q[1] : 0b10111010100001110010[20] : rn[5] : rd[5] );
 ursqrte_vss.var format : {char const*} = {"2443"};
 
 ursqrte_vss.disasm = {
   sink << "ursqrte\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
-};
-
-op ursra_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b001101[6] : rn[5] : rd[5] );
-ursra_vbbi.var format : {char const*} = {"1981"}, shift : {unsigned} = {8 - lro};
-
-ursra_vbbi.disasm = {
-  sink << "ursra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
-};
-
-op ursra_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b001101[6] : rn[5] : rd[5] );
-ursra_vhhi.var format : {char const*} = {"1848"}, shift : {unsigned} = {16 - lro};
-
-ursra_vhhi.disasm = {
-  sink << "ursra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
-};
-
-op ursra_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b001101[6] : rn[5] : rd[5] );
-ursra_vssi.var format : {char const*} = {"1018"}, shift : {unsigned} = {32 - lro};
-
-ursra_vssi.disasm = {
-  sink << "ursra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
 };
 
 op ushl_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
@@ -10354,25 +10383,87 @@ ushl_vsvsvs.disasm = {
   sink << "ushl\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
-op ushr_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b000001[6] : rn[5] : rd[5] );
-ushr_vbbi.var format : {char const*} = {"1982"}, shift : {unsigned} = {8 - lro};
+op ushr_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+ushr_vbbi.var round : {uint8_t} = {uint8_t(sm >> 1 << 7) >> lro}, shift : {unsigned} = {8 - lro};
 
 ushr_vbbi.disasm = {
-  sink << "ushr\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
+  sink << (sm&2?"ur":"u") << (sm&1?"sra\t":"shr\t") << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
 };
 
-op ushr_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b000001[6] : rn[5] : rd[5] );
-ushr_vhhi.var format : {char const*} = {"1849"}, shift : {unsigned} = {16 - lro};
+ushr_vbbi.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 res( (U16(cpu.GetVU8(rn,idx)) + U16(round)) >> shift );
+      if (sm & 1)
+        res += cpu.GetVU8(rd,idx);
+      cpu.SetVU8(rd,idx, res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op ushr_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+ushr_vhhi.var round : {uint16_t} = {uint16_t(sm >> 1 << 15) >> lro}, shift : {unsigned} = {16 - lro};
 
 ushr_vhhi.disasm = {
   sink << "ushr\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
 };
 
-op ushr_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b000001[6] : rn[5] : rd[5] );
-ushr_vssi.var format : {char const*} = {"1019"}, shift : {unsigned} = {32 - lro};
+ushr_vhhi.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 res( (U32(cpu.GetVU16(rn,idx)) + U32(round)) >> shift );
+      if (sm & 1)
+        res += cpu.GetVU16(rd,idx);
+      cpu.SetVU16(rd,idx, res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op ushr_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+ushr_vssi.var round : {uint32_t} = {uint32_t(sm >> 1 << 31) >> lro}, shift : {unsigned} = {32 - lro};
 
 ushr_vssi.disasm = {
   sink << "ushr\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+ushr_vssi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 res( (U64(cpu.GetVU32(rn,idx)) + U64(round)) >> shift );
+      if (sm & 1)
+        res += cpu.GetVU32(rd,idx);
+      cpu.SetVU32(rd,idx, res);
+    }
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op ushr_v2d2di( 0b0110111101[10] : lro[6] : 0[2] : sm[2] : 1[2] : rn[5] : rd[5] );
+ushr_v2d2di.var round : {uint64_t} = {uint64_t(uint64_t(sm) >> 1 << 63) >> lro}, shift0 : {uint8_t} = {(64-lro)>>1}, shift1 : {uint8_t} = {32-(lro>>1)};
+
+ushr_v2d2di.disasm = {
+  sink << "ushr\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(64-lro);
+};
+
+ushr_v2d2di.execute = {
+  typedef typename ARCH::U64 U64;
+
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      /* the weird, decomposed, computation is here to accomodate 64 right-shifts */
+      U64 op( cpu.GetVU64(rn,idx) ), rb(op & U64(round)), res( ((op >> shift1) + (rb >> (shift1-1))) >> shift0 );
+      if (sm & 1)
+        res += cpu.GetVU64(rd,idx);
+      cpu.SetVU64(rd,idx, res);
+    }
 };
 
 op usqadd_vbb( 0b0[1] : q[1] : 0b10111000100000001110[20] : rn[5] : rd[5] );
@@ -10394,27 +10485,6 @@ usqadd_vss.var format : {char const*} = {"2444"};
 
 usqadd_vss.disasm = {
   sink << "usqadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
-};
-
-op usra_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0b000101[6] : rn[5] : rd[5] );
-usra_vbbi.var format : {char const*} = {"1983"}, shift : {unsigned} = {8 - lro};
-
-usra_vbbi.disasm = {
-  sink << "usra\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmI(shift);
-};
-
-op usra_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : lro[4] : 0b000101[6] : rn[5] : rd[5] );
-usra_vhhi.var format : {char const*} = {"1850"}, shift : {unsigned} = {16 - lro};
-
-usra_vhhi.disasm = {
-  sink << "usra\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,4<<q,1) << ", " << DisasmI(shift);
-};
-
-op usra_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b000101[6] : rn[5] : rd[5] );
-usra_vssi.var format : {char const*} = {"1020"}, shift : {unsigned} = {32 - lro};
-
-usra_vssi.disasm = {
-  sink << "usra\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
 };
 
 op uzp1_vbvbvb( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b000110[6] : rn[5] : rd[5] );

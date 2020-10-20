@@ -132,6 +132,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     }
   };
 
+  struct ATSysReg : public BaseSysReg
+  {
+    virtual char const* ReadOperation() const override { return "at<bad-read>"; }
+    virtual char const* WriteOperation() const override { return "at"; }
+  };
+
   struct PStateSysReg : public BaseSysReg
   {
     char const* ReadOperation() const { return "mrs<bad-read>"; }
@@ -551,6 +557,114 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
+      
+      /*** Adress translations ***/
+      
+    case SYSENCODE(0b01,0b100,0b0111,0b1000,0b110):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s12e0r"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 12 address translation, with permissions as if reading from EL0"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b100,0b0111,0b1000,0b111):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s12e0w"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 12 address translation, with permissions as if writing from EL0"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b100,0b0111,0b1000,0b100):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s12e1r"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 12 address translation, with permissions as if reading from EL1"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b100,0b0111,0b1000,0b101):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s12e1w"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 12 address translation, with permissions as if writing from EL1"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b000,0b0111,0b1000,0b010):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s1e0r"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 1 address translation, with permissions as if reading from EL0"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b000,0b0111,0b1000,0b011):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s1e0w"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 1 address translation, with permissions as if writing from EL0"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b000,0b0111,0b1000,0b000):
+    case SYSENCODE(0b01,0b000,0b0111,0b1000,0b001):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "s1e1" << (e.op2 ? 'w' : 'r'); }
+          void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Stage 1 address translation, as if " << (e.op2 ? "writing to" : "reading from") << " EL1"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t op2, AArch64& cpu, U64 addr) const override
+          {
+            if (addr.ubits) { struct Bad {}; raise( Bad() ); }
+            cpu.el1.PAR = cpu.translate_address(addr.value, op2 ? mat_write : mat_read, 1);
+          }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b01,0b100,0b0111,0b1000,0b000):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s1e2r"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 1 address translation, with permissions as if reading from EL2"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b100,0b0111,0b1000,0b001):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s1e2w"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 1 address translation, with permissions as if writing from EL2"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b110,0b0111,0b1000,0b000):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s1e3r"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 1 address translation, with permissions as if reading from EL3"; }
+        } x; return &x;
+      } break;
+
+
+    case SYSENCODE(0b01,0b110,0b0111,0b1000,0b001):
+      {
+        static struct : public ATSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "s1e3w"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Performs stage 1 address translation, with permissions as if writing from EL3"; }
+        } x; return &x;
+      } break;
+
+      
+      /* ===== */
 
     case SYSENCODE(0b11,0b011,0b0100,0b0010,0b001): // DAIF, Interrupt Mask Bits
       {
@@ -807,8 +921,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "FAR_EL" << GetExceptionLevel(e.op1); }
           void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
-          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return cpu.get_el(GetExceptionLevel(op1)).FAR; }
-          void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).FAR = value; }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).FAR); }
         } x; return &x;
       } break;
 
@@ -1256,6 +1369,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "PAR_EL1"; }
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Physical Address Register"; }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).PAR); }
         } x; return &x;
       } break;
 
@@ -2540,13 +2654,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     {
       fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_insn_addr << ": unimplemented, cannot write " << std::dec);
       std::cerr << std::endl;
-      throw 0; // cpu.UnpredictableInsnBehaviour();
+      struct Bad {};
+      throw Bad(); // cpu.UnpredictableInsnBehaviour();
     }
     virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
     {
       fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_insn_addr << ": unimplemented, cannot read " << std::dec);
       std::cerr << std::endl;
-      throw 0; // cpu.UnpredictableInsnBehaviour();
+      struct Bad {};
+      throw Bad(); // cpu.UnpredictableInsnBehaviour();
       return U64();
     }
   } err;
