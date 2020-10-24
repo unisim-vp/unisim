@@ -929,15 +929,16 @@ AArch64::map_apbclk(uint64_t base_addr)
     {
       if ((req.addr & -16) == 0xfe0)
         {
-          if (req.write) return error( "Cannot write RTCPeriphID" );
-          U32 value(0x00341031);
-          U8 byte = (req.addr & 3) ? U8(0) : U8(value >> 8*(req.addr >> 2 & 3));
-          return req.tainted_access(byte);
+          if (req.write) return error( "Cannot write PeriphID" );
+          /* ARM PrimeCell (R) Real Time Clock (PL031) Revision: r1p3 */
+          uint32_t value(0x00041031);
+          uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
+          return req.access(byte);
         }
 
       if ((req.addr & -16) == 0xff0)
         {
-          if (req.write) return error( "Cannot write RTCPCellID" );
+          if (req.write) return error( "Cannot write PCellID" );
           
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
@@ -960,17 +961,47 @@ AArch64::map_uart(uint64_t base_addr)
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      if (req.addr == 0x38)
+        {
+          if (not req.access(arch.uart.IMSC)) return false;
+          arch.uart.program(arch);
+          return true;
+        }
+
+      if (req.addr == 0x3c)
+        {
+          if (req.write) return error( "Cannot write Raw Interrupt Status Register" );
+          return req.access(arch.uart.RIS);
+        }
+
+      if (req.addr == 0x40)
+        {
+          if (req.write) return error( "Cannot write Masked Interrupt Status Register" );
+          uint16_t mis = arch.uart.RIS & ~arch.uart.IMSC;
+          return req.access(mis);
+        }
+
+      if (req.addr == 0x44)
+        {
+          if (not req.write) return error( "Cannot read Interrupt Clear Register" );
+          uint16_t icr;
+          if (not req.access(icr)) return false;
+          arch.uart.RIS &= ~icr;
+          return true;
+        }
+      
       if ((req.addr & -16) == 0xfe0)
         {
-          if (req.write) return error( "Cannot write UARTPeriphID" );
-          U32 value(0x00341011);
-          U8 byte = (req.addr & 3) ? U8(0) : U8(value >> 8*(req.addr >> 2 & 3));
-          return req.tainted_access(byte);
+          if (req.write) return error( "Cannot write PeriphID" );
+          /* ARM PrimeCell (R) UART (PL011) Revision: r1p5 */
+          uint32_t value(0x00341011);
+          uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
+          return req.access(byte);
         }
 
       if ((req.addr & -16) == 0xff0)
         {
-          if (req.write) return error( "Cannot write UARTPCellID" );
+          if (req.write) return error( "Cannot write PCellID" );
           
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
@@ -985,11 +1016,22 @@ AArch64::map_uart(uint64_t base_addr)
 }
 
 void
+AArch64::UART::program(AArch64& arch)
+{
+  if (not (RIS | ~IMSC))
+    return;
+
+  arch.gic.set_interrupt(27);
+  arch.gic.program(arch);
+}
+
+
+void
 AArch64::map_gic(uint64_t base_addr)
 {
   static struct GICEffect : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "GIC"; }
+    virtual void get_name(std::ostream& sink) const override { sink << "Generic Interrupt Controller (GICv2)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {

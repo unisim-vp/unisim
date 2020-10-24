@@ -687,6 +687,12 @@ struct AArch64
   void wfi();
 
   void map_apbclk(uint64_t base_addr);
+  struct UART
+  {
+    UART() : IMSC(0), RIS(0) {}
+    uint16_t IMSC, RIS;
+    void program(AArch64& arch);
+  };
   void map_uart(uint64_t base_addr);
 
   struct Timer
@@ -724,6 +730,7 @@ private:
 public:
   Devices  devices;
   GIC      gic;
+  UART     uart;
   Timer    vt;
   Pages    pages;
   
