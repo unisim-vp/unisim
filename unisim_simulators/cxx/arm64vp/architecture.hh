@@ -61,34 +61,34 @@ struct AArch64
   typedef TaintedValue< int16_t> S16;
   typedef TaintedValue< int32_t> S32;
   typedef TaintedValue< int64_t> S64;
-  
+
   typedef TaintedValue<  bool  > BOOL;
 
   typedef U64 UREG;
   typedef U64 SREG;
 
   typedef AArch64 DisasmState;
-  
+
   enum { ZID=4 };
 
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> Operation;
-  
+
   struct InstructionInfo
   {
     void assign( uint64_t _addr, AArch64::Operation* _op ) { addr = _addr; op = _op; }
     uint64_t addr;
     Operation* op;
   };
-  
+
   typedef void (AArch64::*event_handler_t)();
-  
+
   AArch64();
-  
+
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
 
-  InstructionInfo const& last_insn(int idx) const; 
+  InstructionInfo const& last_insn(int idx) const;
   void breakdance();
 
   void TODO();
@@ -134,9 +134,9 @@ struct AArch64
   {
     if (id != 31) gpr[id] = U64( val );
   }
-  
+
   //====================================================================
-  //=                 Special  Registers access methods                 
+  //=                 Special  Registers access methods
   //====================================================================
 
   template <typename T>
@@ -205,13 +205,13 @@ struct AArch64
   {
     nzcv = (U8(n) << 3) | (U8(z) << 2) | (U8(c) << 1) | (U8(v) << 0);
   }
-  
+
   U8 GetNZCV() const { return nzcv; }
   U8 GetCarry() const { return (nzcv >> 1) & U8(1); }
-  
+
   /** Get the current Program Counter */
   U64 GetPC() { return U64(current_insn_addr); }
-  
+
   /** Get the next Program Counter */
   U64 GetNPC() { return U64(next_insn_addr); }
 
@@ -224,28 +224,28 @@ struct AArch64
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
     virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
   };
-  
+
   static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   void                 CheckSystemAccess( uint8_t op1 );
-  
+
   //=====================================================================
   //=                      Control Transfer methods                     =
   //=====================================================================
-  
+
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET };
   void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; raise( Bad() ); } next_insn_addr = addr.value; }
   bool concretize();
   bool Test( bool cond ) { return cond; }
   // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
-  bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(); return cond.value; }  
+  bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(); return cond.value; }
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
 
   //=====================================================================
   //=                       Memory access methods                       =
   //=====================================================================
-  
+
   enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
   uint64_t translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size);
 
@@ -255,10 +255,10 @@ struct AArch64
   {
     struct Bad {};
     if (addr.ubits) raise( Bad() );
-    
+
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_read, size);
-    
+
     uint8_t dbuf[size], ubuf[size];
     try
       {
@@ -272,7 +272,7 @@ struct AArch64
     catch (Device const& device)
       {
         if (not device.read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          raise( Bad() ); 
+          raise( Bad() );
       }
 
     typedef typename T::value_type value_type;
@@ -304,7 +304,7 @@ struct AArch64
 
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_write, size);
-    
+
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
     bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
@@ -344,9 +344,21 @@ struct AArch64
     // No caches, nothing to do
   };
 
-  void     SetExclusiveMonitors( U64 addr, unsigned size ) { /*TODO: MP support*/ }
-  bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { /*TODO: MP support*/ return true; }
-  void     ClearExclusiveLocal() { /*TODO: MP support*/ }
+  void     SetExclusiveMonitors( U64 addr, unsigned size );
+  bool     ExclusiveMonitorsPass( U64 addr, unsigned size );
+  void     ClearExclusiveLocal(); /* TODO: handle global monitors */
+
+  struct ExcMon
+  {
+    ExcMon() : addr(), size(), valid(false) {}
+    void set(uint64_t _addr, unsigned _size) { valid = true; addr = _addr; size = _size; }
+    bool pass(uint64_t _addr, unsigned _size) { return valid and size >= _size and (_addr & -size) == addr; }
+    void clear() { valid = false; }
+
+    uint64_t addr;
+    uint8_t size;
+    bool    valid;
+  };
 
   //=====================================================================
   //=                            Exceptions                             =
@@ -363,12 +375,12 @@ struct AArch64
    */
   void DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
   void TakePhysicalIRQException();
-  
-  void TakeException(unsigned target_el, unsigned vect_offset);
+
+  void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
   void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
 
   void ExceptionReturn();
-  
+
   /**********************************************************************
    ***                       Architectural state                      ***
    **********************************************************************/
@@ -400,11 +412,11 @@ struct AArch64
     };
 
     Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
-    
+
     uint64_t    base;
     uint64_t    last;
   };
-  
+
   struct Page : public Zone
   {
     struct Free
@@ -462,17 +474,17 @@ struct AArch64
   struct Device : public Zone
   {
     struct Effect;
-    
+
     Device( uint64_t _base, uint64_t _last, Effect const* _effect )
       : Zone( _base, _last )
       , effect( _effect )
     {}
-    
+
     bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const;
     bool read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const;
 
     struct Request;
-    
+
     struct Effect
     {
       virtual ~Effect() {};
@@ -480,7 +492,7 @@ struct AArch64
       virtual void get_name(std::ostream& sink) const = 0;
       bool error( char const* msg ) const;
     };
-    
+
     Effect const* effect;
   };
 
@@ -513,7 +525,7 @@ struct AArch64
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
-  
+
   void error_mem_overlap( Page const& a, Page const& b );
 
   bool new_page(uint64_t addr, uint64_t size);
@@ -521,7 +533,7 @@ struct AArch64
 
   void step_instruction();
   Operation* fetch_and_decode(uint64_t insn_addr);
-  
+
   void run();
 
   struct IPB
@@ -544,7 +556,7 @@ struct AArch64
     unsigned EL :  2;
     unsigned SP :  1;
     PState() : D(1), A(1), I(1), F(1), SS(0), IL(0), EL(1), SP(1) {}
-    
+
     U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
     U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
     void SetDAIF(AArch64& cpu, U64 const& xt)
@@ -595,7 +607,7 @@ struct AArch64
     {
       return (unisim::component::cxx::processor::arm::vmsav8::tcr::A1.Get(TCR_EL1) ? TTBR1_EL1 : TTBR0_EL1) >> 48;
     }
-    
+
     // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
     // uint32_t ttbcr; /*< Translation Table Base Control Register */
     // uint32_t ttbr0; /*< Translation Table Base Register 0 */
@@ -625,7 +637,7 @@ struct AArch64
         uint32_t nG         : 1;  // 16
         uint32_t level      : 2;  // 18
         uint32_t blocksize  : 6;  // 24
-        
+
         // uint32_t   asid     : 8;
         // Permissions perms,
         // bit nG,
@@ -635,7 +647,7 @@ struct AArch64
         // integer blocksize,
         // AddressDescriptor addrdesc
       };
-    
+
       template <class POLICY>  bool GetTranslation( Entry& tlbe, uint64_t vaddr, unsigned asid );
       void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
@@ -644,7 +656,7 @@ struct AArch64
 
       TLB();
 
-      /* 64-bit-keys: 
+      /* 64-bit-keys:
        * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
        *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
        */
@@ -689,10 +701,13 @@ struct AArch64
   void map_apbclk(uint64_t base_addr);
   struct UART
   {
-    UART() : IMSC(0), RIS(0) {}
-    uint16_t IMSC, RIS;
-    void program(AArch64& arch);
+    UART() : tx_count(), IBRD(0), FBRD(0), LCR(0), CR(0x0300), IMSC(0), RIS(0) {}
+    unsigned tx_count;
+    uint16_t IBRD, FBRD, LCR, CR, IMSC, RIS;
+    void txpush(AArch64& arch, char ch);
+    bool txpop();
   };
+  void uart_tx();
   void map_uart(uint64_t base_addr);
 
   struct Timer
@@ -714,7 +729,7 @@ struct AArch64
   };
   void handle_vtimer();
   uint64_t get_ipt() const { return 32; }
-  
+
   typedef std::multimap<uint64_t, event_handler_t> Events;
   void notify( uint64_t delay, event_handler_t method )
   {
@@ -722,7 +737,7 @@ struct AArch64
     // reload_next_event();
   }
   void reload_next_event();
-  
+
   /** Architectural state **/
 private:
   Events   next_events;
@@ -732,8 +747,10 @@ public:
   GIC      gic;
   UART     uart;
   Timer    vt;
+
   Pages    pages;
-  
+  ExcMon   excmon;
+
   MMU      mmu;
   IPB      ipb;
   Decoder  decoder;
@@ -744,10 +761,10 @@ public:
   PState   pstate;
   U8       nzcv;
   uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer;
-  
+
   static unsigned const histsize = 1024;
   InstructionInfo last_insns[histsize];
-  
+
   U64      TPIDR[2]; //<  Thread Pointer / ID Register
   U64      TPIDRRO;
   uint32_t CPACR;

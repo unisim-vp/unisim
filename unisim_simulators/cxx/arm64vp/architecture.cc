@@ -40,7 +40,10 @@
 AArch64::AArch64()
   : devices()
   , gic()
+  , uart()
+  , vt()
   , pages()
+  , excmon()
   , mmu()
   , ipb()
   , decoder()
@@ -161,7 +164,7 @@ AArch64::step_instruction()
   try
     {
       Operation* op = fetch_and_decode(insn_addr);
-      
+
       this->next_insn_addr += 4;
 
       if (current_insn_addr == bdaddr)
@@ -197,7 +200,7 @@ AArch64::step_instruction()
       /* Instruction aborted, proceed to next */
       //   if (unlikely(trap_reporting_import))
       //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
-    }  
+    }
 }
 
 void
@@ -261,14 +264,14 @@ void
 AArch64::CallHypervisor( uint32_t imm )
 {
   struct Bad {};
-  
+
   if (imm == 0)
     {
       U64 const& arg0 = gpr[0];
-      
+
       if (arg0.ubits)
         raise( Bad() );
-      
+
       switch (arg0.value)
         {
         default:
@@ -573,8 +576,12 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
 }
 
 void
-AArch64::TakeException(unsigned target_el, unsigned vect_offset)
+AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return)
 {
+  // std::cerr << "Taking Exception to EL" << target_el << " from EL" << pstate.EL
+  //           << " with vect_offset=0x" << std::hex << vect_offset
+  //           << " at " << std::dec << insn_counter << '/' << insn_timer << "\n";
+
   if (target_el > pstate.EL)
     vect_offset += 0x400; /* + 0x600 if lower uses AArch32 */
   else if (pstate.SP)
@@ -586,7 +593,7 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset)
   SetPStateSP(1);
 
   get_el(target_el).SPSR = spsr;
-  get_el(target_el).ELR = U64(current_insn_addr);
+  get_el(target_el).ELR = U64(preferred_exception_return);
 
   pstate.SS = 0;
   pstate.IL = 0;
@@ -608,12 +615,12 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
   spsr = (spsr << 4) >> 4;
   if (spsr.ubits) raise( Bad() );
   uint32_t psr = spsr.value;
-  
+
   if (psr & 0x10) raise( Bad() ); /* No AArch32 */
   /* spsr checks causing an "Illegal return" */
   if ((psr >> 2 & 3) > pstate.EL) raise( Bad() );
   if (psr & 2) raise( Bad() );
-  
+
   // Return an SPSR value which represents thebits(32) spsr = Zeros();
   pstate.IL = psr >> 21;
   pstate.SS = psr >> 20;
@@ -663,14 +670,14 @@ void
 AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
 {
   ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
-  TakeException(1, 0x0);
+  TakeException(1, 0x0, current_insn_addr);
   EndOfInstruction();
 }
 
 void
 AArch64::TakePhysicalIRQException()
 {
-  TakeException(1, 0x80);
+  TakeException(1, 0x80, next_insn_addr);
 }
 
 uint32_t
@@ -876,12 +883,12 @@ AArch64::Device::write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_
     void transfer(uint8_t* vdst, uint8_t* udst, unsigned n) override
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vsrc += n; usrc += n; }
   } idata(addr, dbuf, ubuf, size);
-  
+
   do {} while (idata.size and effect->access(arch, idata));
 
   if (not idata.size)
     return true;
-  
+
   effect->get_name(std::cerr << "Unmapped ");
   idata.location(std::cerr << " register write @" );
   std::cerr << '\n';
@@ -898,7 +905,7 @@ AArch64::Device::read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf
     void transfer(uint8_t* vsrc, uint8_t* usrc, unsigned n) override
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vdst += n; udst += n; }
   } odata(addr, dbuf, ubuf, size);
-  
+
   do {} while (odata.size and effect->access(arch, odata));
 
   if (not odata.size)
@@ -939,7 +946,7 @@ AArch64::map_apbclk(uint64_t base_addr)
       if ((req.addr & -16) == 0xff0)
         {
           if (req.write) return error( "Cannot write PCellID" );
-          
+
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
         }
@@ -953,6 +960,14 @@ AArch64::map_apbclk(uint64_t base_addr)
 }
 
 void
+AArch64::uart_tx()
+{
+  if (not uart.txpop()) return;
+  gic.set_interrupt(33);
+  gic.program(*this);
+}
+
+void
 AArch64::map_uart(uint64_t base_addr)
 {
   static struct UARTEffect : public Device::Effect
@@ -961,10 +976,32 @@ AArch64::map_uart(uint64_t base_addr)
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      if ((req.addr & -4) == 0x0)
+        {
+          if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
+          if (req.write)
+            {
+              uint8_t ch;
+              if (not req.access( ch )) return false;
+              arch.uart.txpush( arch, ch );
+              return true;
+            }
+          return error( "sorry" );
+        }
+      if (req.addr == 0x18)
+        {
+          if (req.write) return error( "Cannot write Flag Register" );
+          uint16_t flags = 0x90;
+          return req.access(flags);
+        }
+      if (req.addr == 0x24) return req.access(arch.uart.IBRD);
+      if (req.addr == 0x28) return req.access(arch.uart.FBRD);
+      if (req.addr == 0x2c) return req.access(arch.uart.LCR);
+      if (req.addr == 0x30) return req.access(arch.uart.CR);
+
       if (req.addr == 0x38)
         {
           if (not req.access(arch.uart.IMSC)) return false;
-          arch.uart.program(arch);
           return true;
         }
 
@@ -989,7 +1026,7 @@ AArch64::map_uart(uint64_t base_addr)
           arch.uart.RIS &= ~icr;
           return true;
         }
-      
+
       if ((req.addr & -16) == 0xfe0)
         {
           if (req.write) return error( "Cannot write PeriphID" );
@@ -1002,7 +1039,7 @@ AArch64::map_uart(uint64_t base_addr)
       if ((req.addr & -16) == 0xff0)
         {
           if (req.write) return error( "Cannot write PCellID" );
-          
+
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
         }
@@ -1016,15 +1053,25 @@ AArch64::map_uart(uint64_t base_addr)
 }
 
 void
-AArch64::UART::program(AArch64& arch)
+AArch64::UART::txpush(AArch64& arch, char ch)
 {
-  if (not (RIS | ~IMSC))
-    return;
-
-  arch.gic.set_interrupt(27);
-  arch.gic.program(arch);
+  tx_count += 1;
+  std::cout << ch;
+  std::cout.flush();
+  uint64_t const insns_per_char = 84000;
+  arch.notify( insns_per_char, &AArch64::uart_tx );
 }
 
+bool
+AArch64::UART::txpop()
+{
+  struct Bad {};
+  if (tx_count == 0) raise( Bad() );
+  if (--tx_count != 16) return false;
+  uint16_t const TXINTR = 0x10;
+  RIS |= TXINTR;
+  return TXINTR & ~IMSC;
+}
 
 void
 AArch64::map_gic(uint64_t base_addr)
@@ -1070,7 +1117,7 @@ AArch64::map_gic(uint64_t base_addr)
           arch.gic.eoi_interrupt(int_id);
           return true;
         }
-      
+
       if (0x1d0 <= req.addr and req.addr < 0x1f0)
         {
           if (req.addr & 3) return false;
@@ -1238,12 +1285,14 @@ AArch64::run()
 {
   for (;;)
     {
+      /* asynchronous events handling */
       for (auto evt = next_events.begin(), end = next_events.end(); evt != end and evt->first <= insn_timer;)
         {
           auto method = evt->second;
           evt = next_events.erase(evt);
           (this->*method)();
         }
+
       step_instruction();
     }
 }
@@ -1277,7 +1326,7 @@ AArch64::MemDump64(uint64_t addr)
   unsigned const size = 8;
   addr &= -8;
   uint64_t paddr = translate_address(addr, mat_read, 8);
-  
+
   uint8_t dbuf[size], ubuf[size];
 
   unsigned vsize = access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size);
@@ -1300,4 +1349,35 @@ AArch64::MemDump64(uint64_t addr)
         std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
     }
   std::cerr << ")\n";
+}
+
+void
+AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
+{
+  struct Bad {};
+  if (addr.ubits) raise( Bad() );
+  if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
+  uint64_t paddr = translate_address(addr.value, mat_read, size);
+
+  excmon.set(paddr, size);
+}
+
+bool
+AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
+{
+  struct Bad {};
+  if (addr.ubits) raise( Bad() );
+  if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
+  uint64_t paddr = translate_address(addr.value, mat_write, size);
+  bool passed = excmon.pass( paddr, size );
+  excmon.clear();
+  return passed;
+}
+
+
+
+void
+AArch64::ClearExclusiveLocal()
+{
+  excmon.clear();
 }
