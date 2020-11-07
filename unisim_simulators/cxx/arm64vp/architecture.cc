@@ -153,57 +153,6 @@ AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
 
 
 void
-AArch64::step_instruction()
-{
-  /* Instruction boundary next_insn_addr becomes current_insn_addr */
-  uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
-
-  //if (insn_addr == halt_on_addr) { Stop(0); return; }
-  insn_timer += 1;
-
-  try
-    {
-      Operation* op = fetch_and_decode(insn_addr);
-
-      this->next_insn_addr += 4;
-
-      if (current_insn_addr == bdaddr)
-        {
-          breakdance();
-          // disasm = true;
-        }
-      if (disasm)
-        {
-          std::cerr << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
-          op->disasm( *this, std::cerr );
-          std::cerr << std::endl;
-        }
-
-      /* Execute instruction */
-      asm volatile( "arm64_operation_execute:" );
-      op->execute( *this );
-
-      // uint64_t newspval = GetGSR(31);
-
-      // if (newspval != oldspval) {
-      //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
-      // }
-
-      // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-      //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
-
-      insn_counter++; /* Instruction regularly finished */
-    }
-
-  catch (Abort const&)
-    {
-      /* Instruction aborted, proceed to next */
-      //   if (unlikely(trap_reporting_import))
-      //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
-    }
-}
-
-void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
 {
   op->disasm(*this, std::cerr << "Undefined instruction : `");
@@ -605,6 +554,7 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
 
   // BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
   BranchTo( (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset), B_EXC );
+  EndOfInstruction();
 }
 
 void
@@ -671,13 +621,12 @@ AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t
 {
   ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
   TakeException(1, 0x0, current_insn_addr);
-  EndOfInstruction();
 }
 
 void
 AArch64::TakePhysicalIRQException()
 {
-  TakeException(1, 0x80, next_insn_addr);
+  TakeException(1, 0x80, current_insn_addr);
 }
 
 uint32_t
@@ -1285,15 +1234,61 @@ AArch64::run()
 {
   for (;;)
     {
-      /* asynchronous events handling */
-      for (auto evt = next_events.begin(), end = next_events.end(); evt != end and evt->first <= insn_timer;)
+      insn_timer += 1;
+      
+      /* Instruction boundary next_insn_addr becomes current_insn_addr */
+      uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+
+      //if (insn_addr == halt_on_addr) { Stop(0); return; }
+
+      try
         {
-          auto method = evt->second;
-          evt = next_events.erase(evt);
-          (this->*method)();
+          /* Handle asynchronous events */
+          for (auto evt = next_events.begin(), end = next_events.end(); evt != end and evt->first <= insn_timer;)
+            {
+              auto method = evt->second;
+              evt = next_events.erase(evt);
+              (this->*method)();
+            }
+
+          Operation* op = fetch_and_decode(insn_addr);
+
+          this->next_insn_addr += 4;
+
+          if (current_insn_addr == bdaddr)
+            {
+              breakdance();
+              // disasm = true;
+            }
+          if (disasm)
+            {
+              std::cerr << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
+              op->disasm( *this, std::cerr );
+              std::cerr << std::endl;
+            }
+
+          /* Execute instruction */
+          asm volatile( "arm64_operation_execute:" );
+          op->execute( *this );
+
+          // uint64_t newspval = GetGSR(31);
+
+          // if (newspval != oldspval) {
+          //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
+          // }
+
+          // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+          //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
+
+          insn_counter++; /* Instruction regularly finished */
         }
 
-      step_instruction();
+      catch (Abort const&)
+        {
+          /* Instruction aborted, proceed to next */
+          //   if (unlikely(trap_reporting_import))
+          //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+        }
     }
 }
 
@@ -1374,10 +1369,16 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
   return passed;
 }
 
-
-
 void
 AArch64::ClearExclusiveLocal()
 {
   excmon.clear();
 }
+
+void
+AArch64::page_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size)
+{
+  std::cerr << std::hex << current_insn_addr << "error during " << operation << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
+  struct Bad {}; raise(Bad());
+}
+

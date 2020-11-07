@@ -45,7 +45,7 @@ namespace SSv8 {
     GaislerSystem( t_Arch_t& _arch )
       : m_arch( _arch ) {}
     
-    void load( char const* _imgpath );
+    void load( int argc, char** argv );
     
     enum Exception_t { OpenError, ImageError };
     

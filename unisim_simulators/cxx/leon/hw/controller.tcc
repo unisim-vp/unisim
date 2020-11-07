@@ -58,37 +58,44 @@ namespace SSv8 {
     m_lastoperation->disasm( _sink, m_arch.m_pc );
     _sink << endl;
   }
+
+  template <class t_Arch_t>
+  void
+  Controller<t_Arch_t>::take_trap()
+  {
+    //    this->dumptrap( Trace::chan( m_disasm ? "cpu" : "trap") );
+    if( m_arch.et() == 0 ) {
+      Trace::chan( m_disasm ? "cpu" : "trap" ) << "! Fatal Error\n" << endl;
+      m_arch.m_execute_mode = false;
+      return;
+    }
+    m_arch.tt() = m_arch.m_trap.m_traptype;
+    m_arch.m_trap.clear();
+      
+    m_arch.et() = 0;
+    m_arch.ps() = m_arch.s();
+    m_arch.s() = 1;
+    m_arch.rotate( -1 );
+    if( not m_arch.m_annul ) {
+      m_arch.m_gpr[17] = m_arch.m_pc;
+      m_arch.m_gpr[18] = m_arch.m_npc;
+    } else {
+      m_arch.m_gpr[17] = m_arch.m_npc;
+      m_arch.m_gpr[18] = m_arch.m_npc + 4;
+      m_arch.m_annul = false;
+    }
+    m_arch.m_pc = m_arch.m_tbr;
+    m_arch.m_npc = m_arch.m_pc + 4;
+    m_arch.m_nnpc = m_arch.m_pc + 8;
+  }
   
   template <class t_Arch_t>
   void
-  Controller<t_Arch_t>::step() {
+  Controller<t_Arch_t>::step()
+  {
     // Handling traps
-    if( m_arch.m_trap ) {
-      this->dumptrap( Trace::chan( m_disasm ? "cpu" : "trap") );
-      if( m_arch.et() == 0 ) {
-        Trace::chan( m_disasm ? "cpu" : "trap" ) << "! Fatal Error\n" << endl;
-        m_arch.m_execute_mode = false;
-        return;
-      }
-      m_arch.tt() = m_arch.m_trap.m_traptype;
-      m_arch.m_trap.clear();
-      
-      m_arch.et() = 0;
-      m_arch.ps() = m_arch.s();
-      m_arch.s() = 1;
-      m_arch.rotate( -1 );
-      if( not m_arch.m_annul ) {
-        m_arch.m_gpr[17] = m_arch.m_pc;
-        m_arch.m_gpr[18] = m_arch.m_npc;
-      } else {
-        m_arch.m_gpr[17] = m_arch.m_npc;
-        m_arch.m_gpr[18] = m_arch.m_npc + 4;
-        m_arch.m_annul = false;
-      }
-      m_arch.m_pc = m_arch.m_tbr;
-      m_arch.m_npc = m_arch.m_pc + 4;
-      m_arch.m_nnpc = m_arch.m_pc + 8;
-    }
+    if (m_arch.m_trap)
+      this->take_trap();
     
     // Fetch
     // XXX: I-Cache (our responsibility)?

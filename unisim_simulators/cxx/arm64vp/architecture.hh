@@ -248,6 +248,7 @@ struct AArch64
 
   enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
   uint64_t translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size);
+  void page_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
 
   template <typename T>
   T
@@ -273,6 +274,10 @@ struct AArch64
       {
         if (not device.read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
           raise( Bad() );
+      }
+    catch (PageFault const&)
+      {
+        page_fault("read", addr.value, paddr, size);
       }
 
     typedef typename T::value_type value_type;
@@ -496,9 +501,11 @@ struct AArch64
     Effect const* effect;
   };
 
+
   typedef std::set<Page, Page::Above> Pages;
   typedef std::set<Device, Device::Above> Devices;
 
+  struct PageFault {};
   Page const& access_page( uint64_t addr )
   {
     auto pi = pages.lower_bound(addr);
@@ -507,7 +514,7 @@ struct AArch64
         auto di = devices.lower_bound(addr);
         if (di != devices.end() and addr <= di->last)
           throw *di;
-        struct Bad {}; raise( Bad() );
+        throw PageFault();
       }
     return *pi;
   }

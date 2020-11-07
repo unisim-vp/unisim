@@ -69,7 +69,7 @@ main( int argc, char *argv[] ) {
   
   SSv8::GaislerSystem<Star::Arch> grsystem( arch );
   
-  grsystem.load( argv[aidx] );
+  grsystem.load( argc - aidx, &argv[aidx] );
   
   uint32_t startdisasm = 0, exitpoint = 0;
   int64_t maxinsts = -1;

@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2020,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2019-2020,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,32 +31,30 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-#ifndef SSV8_HW_CONTROLLER_HH
-#define SSV8_HW_CONTROLLER_HH
 
-#include <inttypes.h>
-#include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
+#include <architecture.hh>
+#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <iostream>
+#include <iomanip>
 
-namespace SSv8 {
-  
-  template <class t_Arch_t>
-  struct Controller : public SSv8::Decoder<t_Arch_t> {
-    t_Arch_t                    m_arch;
-    
-    bool                        m_disasm;
-    Operation<t_Arch_t>*        m_lastoperation;
-    uint32_t                    m_lastpc;
-    //uint8_t const*              m_laststorage;
-    
-    Controller();
-    void                        Fetch( void *_buffer, uint32_t _addr, uint32_t _size );
-    void                        step();
+template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
 
-    void                        take_trap();
-    void                        dumptrap( std::ostream& _sink );
-  };
+AArch64::Operation*
+AArch64::fetch_and_decode(uint64_t insn_addr)
+{
+  // Instruction Fetch Decode and Execution (may generate exceptions
+  // known as synchronous aborts since their occurences are a direct
+  // consequence of the instruction execution).
 
-} // end of namespace SSv8
+  // Fetch
+  unisim::component::cxx::processor::arm::isa::arm64::CodeType insn = 0;
+  for (uint8_t *beg = ipb.get(*this, insn_addr), *itr = &beg[4]; --itr >= beg;)
+    insn = insn << 8 | *itr;
 
-#endif // SSV8_HW_CONTROLLER_HH
+  /* Decode current PC. TODO: should provide physical address for caching purpose */
+  Operation* op = decoder.Decode(insn_addr, insn);
+  last_insns[insn_counter % histsize].assign(insn_addr, op);
+
+  return op;
+}
