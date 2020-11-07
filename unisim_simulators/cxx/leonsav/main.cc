@@ -36,7 +36,7 @@
 // #include <runner.hh>
 // #include <unisim/util/random/random.hh>
 // #include <fstream>
-// #include <iostream>
+#include <iostream>
 // #include <iomanip>
 // #include <sstream>
 // #include <vector>

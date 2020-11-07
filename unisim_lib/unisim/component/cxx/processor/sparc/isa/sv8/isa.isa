@@ -39,7 +39,7 @@ set fields_order descending;
 
 template <{class} {t_Arch_t}>
 
-namespace SSv8
+namespace unisim::component::cxx::processor::sparc::isa::sv8
 
 decl {
 #include <iosfwd>

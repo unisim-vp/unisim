@@ -23,10 +23,10 @@ copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_SV8_FILES="$(files isa)"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa)"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
-${UNISIM_LIB_SIMULATOR_ISA_SV8_FILES} \
+${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 $(files header) \
 $(files template) \
 "
@@ -197,7 +197,7 @@ CLEANFILES=\
 	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc\
 
 \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc: \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh
-\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh: ${UNISIM_LIB_SIMULATOR_ISA_SV8_FILES}
+\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/sparc/isa/sv8/isa.isa
 
 EOF

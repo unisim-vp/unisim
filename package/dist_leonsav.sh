@@ -91,7 +91,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - leonsav: an ARMv8 unit tests generator
+  - leonsav: an Leon3 unit tests generator
   - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
 
 See INSTALL for installation instructions.
@@ -147,7 +147,7 @@ build_top_configure_cross
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM ARMv8 simulator validation tests generator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM Leon3 simulator validation tests generator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -204,16 +204,16 @@ dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc\
 
 CLEANFILES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc\
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_leon -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/leon \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/leon/leon.isa
+\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc: \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh
+\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/sparc/isa/sv8/isa.isa
 
 EOF
 )
