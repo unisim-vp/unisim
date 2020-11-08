@@ -55,7 +55,7 @@ namespace sav {
   {
     typedef unisim::util::symbolic::Expr Expr;
 
-    ActionNode() : Conditional<ActionNode>(), updates() {}
+    ActionNode() : unisim::util::symbolic::Conditional<ActionNode>(), updates() {}
 
     friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
     {

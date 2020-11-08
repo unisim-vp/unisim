@@ -42,8 +42,16 @@
 #include <unisim/component/cxx/processor/sparc/asi.hh>
 #include <inttypes.h>
 
-namespace Star {
-  struct BitField_t {
+namespace Star
+{
+  template <unsigned SIZE> struct TypeFor {};
+  template <> struct TypeFor<8> { typedef uint8_t U; };
+  template <> struct TypeFor<16> { typedef uint16_t U; };
+  template <> struct TypeFor<32> { typedef uint32_t U; };
+  template <> struct TypeFor<64> { typedef uint64_t U; };
+    
+  struct BitField_t
+  {
     uint32_t&           m_value;
     uint32_t            m_shift;
     uint32_t            m_bitcount;
@@ -65,7 +73,13 @@ namespace Star {
     }
   };
   
-  struct Arch {
+  struct Arch
+  {
+    typedef uint8_t U8;
+    typedef uint16_t U16;
+    typedef uint32_t U32;
+    typedef uint64_t U64;
+    
     // Processor State
     bool                          m_execute_mode;
     bool                          m_annul;
@@ -119,6 +133,7 @@ namespace Star {
     Arch();
     ~Arch();
 
+    void                          step();
     void                          pc( uint32_t _pc ) { m_pc = _pc; m_npc = _pc + 4; m_nnpc = _pc + 8; };
     void                          hwtrap( SSv8::Trap_t::TrapType_t  _trap );
     void                          swtrap( uint32_t _idx );
@@ -286,7 +301,43 @@ namespace Star {
       return true;
     }
 
+    template <unsigned SIZE>
+    typename TypeFor<SIZE>::U
+    MemRead(SSv8::ASI_t asi, uint32_t addr)
+    {
+      if (address & (SIZE-1)) { cpu.hwtrap( SSv8::Trap_t::mem_address_not_aligned ); return; }
+      uint8_t storage[SIZE];
+      if (not read( asi, addr, SIZE, storage ))
+        {
+          hwtrap( Trap_t::data_access_exception );
+          throw AbortInstruction();
+        }
+      typedef typename TypeFor<SIZE>::U U;
+      U res(0);
+      for (unsigned idx = 0; idx < SIZE; ++idx)
+        res = (res << 8) | U(storage[idx]);
+      return res;
+    }
+
     void                          memcpy( uint32_t _addr, uint8_t const* _buffer, uint32_t _size );
+
+    void UndefinedIstruction( Operation& op )
+    {
+      op.disasm( std::cerr << "Unknown instruction:", m_pc );
+      std::cerr << std::endl;
+      struct Bad {}; throw Bad();
+    }
+
+    struct AbortInstruction {};
+
+    void WithPrivilege()
+    {
+      if (cpu.super())
+        return;
+      cpu.hwtrap( Trap_t::privileged_instruction );
+      throw AbortInstruction();
+    }
+    
   };
 } // end of namespace Star
 

@@ -36,11 +36,13 @@
 #define LEONSAV_REVIEW_HH
 
 #include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
+#define override
 #include <unisim/util/sav/sav.hh>
+#undef override
 #include <unisim/util/symbolic/symbolic.hh>
 #include <string>
 #include <memory>
-#include <inttypes.h>
+#include <stdint.h>
 
 struct Scanner;
 

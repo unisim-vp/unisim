@@ -193,7 +193,8 @@ namespace Star {
   }
   
   void
-  Arch::add( SSv8::Peripheral& _peripheral ) {
+  Arch::add( SSv8::Peripheral& _peripheral )
+  {
     SSv8::Peripheral* ins = &(_peripheral);
     if( m_peripheralcount % 8 == 0 ) {
       SSv8::Peripheral** nperipherals = new SSv8::Peripheral* [(m_peripheralcount+8)];
@@ -215,5 +216,46 @@ namespace Star {
     }
     m_peripherals[m_peripheralcount++] = ins;
   }
+
+  void
+  Arch::step()
+  {
+    // Fetch
+    // XXX: I-Cache (our responsibility)?
+    uint8_t insn_bytes[4];
+    uint32_t arch_pc = this->m_pc;
+    if (not this->read( this->insn_asi(), arch_pc, 4, insn_bytes ))
+      {
+        this->hwtrap( Trap_t::instruction_access_exception );
+        return;
+      }
+    
+    m_lastpc = arch_pc;
+    
+    // Decode
+    CodeType ci = insn_bytes[0] << 24 | insn_bytes[1] << 16 | insn_bytes[2] <<  8 | insn_bytes[3] <<  0;
+    Operation* operation = m_lastoperation = this->Decode( arch_pc, ci );
+    
+    this->m_gpr[0] = 0;
+    if( m_disasm ) {
+      Trace::chan("cpu") << "0x" << hex << arch_pc << " (0x" << hex << operation->GetEncoding() << "): ";
+      operation->disasm( Trace::chan("cpu"), arch_pc );
+    }
+    if( not this->m_annul ) {
+      if( m_disasm ) Trace::chan("cpu") << endl;
+      asm volatile( "operation_execute:" );
+      operation->execute( m_arch );
+      ++ this->m_instcount;
+      if( this->m_trap ) return;
+    } else {
+      if( m_disasm ) Trace::chan("cpu") << " *annulled*" << endl;
+      this->m_annul = false;
+    }
+    // Handling Program Counter
+    this->m_pc = this->m_npc;
+    this->m_npc = this->m_nnpc;
+    this->m_nnpc += 4;
+  }
+
 
 } // end of namespace ASV8

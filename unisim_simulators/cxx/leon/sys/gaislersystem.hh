@@ -37,12 +37,14 @@
 
 #include <inttypes.h>
 
-namespace SSv8 {
-  template <class t_Arch_t>
-  struct GaislerSystem {
-    t_Arch_t&                    m_arch;
+namespace SSv8
+{
+  template <class ARCH>
+  struct GaislerSystem
+  {
+    ARCH&                    m_arch;
     
-    GaislerSystem( t_Arch_t& _arch )
+    GaislerSystem( ARCH& _arch )
       : m_arch( _arch ) {}
     
     void load( int argc, char** argv );

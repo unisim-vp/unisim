@@ -44,9 +44,9 @@
 
 namespace SSv8 {
   
-  template <class t_Arch_t>
+  template <class ARCH>
   void
-  GaislerSystem<t_Arch_t>::load( int argc, char** argv )
+  GaislerSystem<ARCH>::load( int argc, char** argv )
   {
     char const* _imgpath = argv[0];
     // Loading image

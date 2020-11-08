@@ -38,16 +38,18 @@
 #include <inttypes.h>
 #include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
 
-namespace SSv8 {
-  
-  template <class t_Arch_t>
-  struct Controller : public SSv8::Decoder<t_Arch_t> {
-    t_Arch_t                    m_arch;
-    
+namespace SSv8
+{
+  template <class ARCH>
+  struct Controller : public unisim::component::cxx::processor::sparc::isa::sv8::Decoder<ARCH>
+  {
+    typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<ARCH> Operation;
+    ARCH                        m_arch;
+                           
     bool                        m_disasm;
-    Operation<t_Arch_t>*        m_lastoperation;
+    Operation*                  m_lastoperation;
     uint32_t                    m_lastpc;
-    //uint8_t const*              m_laststorage;
+    //uint8_t const*            m_laststorage;
     
     Controller();
     void                        Fetch( void *_buffer, uint32_t _addr, uint32_t _size );

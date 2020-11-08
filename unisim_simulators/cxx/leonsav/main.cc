@@ -381,9 +381,16 @@
 //   }
 // };
 
-// int
-// main( int argc, char** argv )
-// {
+int
+main( int argc, char** argv )
+{
+  std::cout << "Let's go!\n";
+  int idx = 0;
+  for (std::string line; std::getline(std::cin, line).good();)
+    {
+      std::cout << ++idx << ": " << line << std::endl;
+    }
+  return 0;
 //   if (argc != 2)
 //     {
 //       std::cerr << "Wrong number of argument.\n";
@@ -436,11 +443,4 @@
 //   checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 
 //   return 0;
-// }
-
-int
-main()
-{
-  std::cout << "Let's go!\n";
-  return 0;
 }

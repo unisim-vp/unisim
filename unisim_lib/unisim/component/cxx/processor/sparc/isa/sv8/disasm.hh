@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2020,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2019-2020,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,14 +31,44 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-#ifndef SSV8_FWD_HH
-#define SSV8_FWD_HH
 
-namespace SSv8 {
-  template <class ARCH> struct Controller;
+/**************************************************************/
+/* Disassembling methods                                      */
+/**************************************************************/
 
-  struct Peripheral;
-};
-#endif // SSV8_FWD_HH
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_SPARC_ISA_SV8_DISASM_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_SPARC_ISA_SV8_DISASM_HH__
 
+#include <iostream>
+#include <inttypes.h>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace sparc {
+namespace isa {
+namespace sv8 {
+
+  struct DisasmObject
+  {
+    virtual void operator() ( std::ostream& sink ) const = 0;
+    virtual ~DisasmObject() {};
+    friend std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
+  };
+  
+  struct DisasmGPR : public DisasmObject
+  {
+    DisasmGPR( unsigned _rid ) : rid(_rid) {} unsigned rid;
+    void operator () ( std::ostream& sink ) const { sink << "%r" << std::dec << rid; }
+  };
+  
+} // end of namespace sv8
+} // end of namespace isa
+} // end of namespace sparc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_SPARC_ISA_SV8_DISASM_HH__ */

@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2020,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2019-2020,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,14 +31,32 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-#ifndef SSV8_FWD_HH
-#define SSV8_FWD_HH
 
-namespace SSv8 {
-  template <class ARCH> struct Controller;
+#include <inttypes.h>
+#include <iostream>
+#include <sstream>
 
-  struct Peripheral;
-};
-#endif // SSV8_FWD_HH
+#include <unisim/component/cxx/processor/sparc/isa/sv8/disasm.hh>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace sparc {
+namespace isa {
+namespace sv8 {
+
+  std::ostream&
+  operator << ( std::ostream& sink, DisasmObject const& dobj )
+  {
+    dobj( sink );
+    return sink;
+  }
+
+} // end of namespace sv8
+} // end of namespace isa
+} // end of namespace sparc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

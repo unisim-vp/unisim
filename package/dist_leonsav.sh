@@ -17,7 +17,6 @@ import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic || exit
 
 import libc/inttypes || exit
-import sys/mman || exit
 import std/fstream || exit
 import std/iostream || exit
 import std/vector || exit
