@@ -386,8 +386,9 @@ main( int argc, char** argv )
 {
   std::cout << "Let's go!\n";
   int idx = 0;
-  for (std::string line; std::getline(std::cin, line).good();)
+  for (std::string line; std::getline(std::cin, line).good() and line.size();)
     {
+      
       std::cout << ++idx << ": " << line << std::endl;
     }
   return 0;
