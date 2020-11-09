@@ -8,6 +8,7 @@ unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa/arm64
 unisim/component/cxx/vector
 unisim/kernel/logger
+unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/linux_os

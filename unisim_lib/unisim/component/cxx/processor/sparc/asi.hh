@@ -35,14 +35,30 @@
 #ifndef SSV8_HW_ASI_HH
 #define SSV8_HW_ASI_HH
 
-namespace SSv8 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace sparc {
+
   // AddressSpaceIdentifier
-  enum ASI_t {
-    user_instruction       = 0x8,
-    supervisor_instruction = 0x9,
-    user_data              = 0xa,
-    supervisor_data        = 0xb
+  struct ASI
+  {
+    enum Code
+      {
+       user_instruction       = 0x8,
+       supervisor_instruction = 0x9,
+       user_data              = 0xa,
+       supervisor_data        = 0xb
+      } code;
+    
+    ASI(Code _code) : code(_code) {}
   };
-};
+
+} // end of namespace sparc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 #endif // SSV8_HW_ASI_HH

@@ -62,6 +62,18 @@ namespace sv8 {
     DisasmGPR( unsigned _rid ) : rid(_rid) {} unsigned rid;
     void operator () ( std::ostream& sink ) const { sink << "%r" << std::dec << rid; }
   };
+
+  struct DisasmRIAddress : public DisasmObject
+  {
+    DisasmRIAddress( unsigned _rid, int _offset ) : rid(_rid), offset(_offset) {} unsigned rid; int offset;
+    void operator () ( std::ostream& sink ) const;
+  };
+  
+  struct DisasmRRAddress : public DisasmObject
+  {
+    DisasmRRAddress( unsigned _rs1, unsigned _rs2 ) : rs1(_rs1), rs2(_rs2) {} unsigned rs1; unsigned rs2;
+    void operator () ( std::ostream& sink ) const;
+  };
   
 } // end of namespace sv8
 } // end of namespace isa

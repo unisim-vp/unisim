@@ -42,27 +42,29 @@ namespace SSv8 {
   {}
   
   bool
-  Console::read( uint32_t _addr, uint32_t _size, uint8_t* _value ) {
-    if( (_addr & 0xfffffff0) != 0x80000100 or _size != 4 ) return false;
-    uint32_t reg = (_addr / 4) % 4;
-    if( reg == 1 ) {
-      static const uint8_t status_ready[4] = {0,0,0,5};
-      bytes_copy( _value, status_ready, 4 );
-      return true;
-    }
-    // Not implemented
+  Console::read( uint32_t addr, uint32_t size, uint8_t* value )
+  {
+    if (addr == 0x80000104 and size == 4)
+      {
+        static const uint8_t status_ready[4] = {0,0,0,5};
+        bytes_copy( value, status_ready, 4 );
+        return true;
+      }
+
+    std::cerr << "Console: unimplemented read @" << std::hex << addr << ":" << size << std::endl;
     return false;
   }
 
   bool
-  Console::write( uint32_t _addr, uint32_t _size, uint8_t const* _value ) {
-    if( (_addr & 0xfffffff0) != 0x80000100 or _size != 4 ) return false;
-    uint32_t reg = (_addr / 4) % 4;
-    if( reg == 0 ) {
-      std::cout << char( _value[3] );
-      return true;
-    }
-    // Not implemented
+  Console::write( uint32_t addr, uint32_t size, uint8_t const* value )
+  {
+    if (addr == 0x80000100 and size == 4)
+      {
+        std::cout << char( value[3] );
+        return true;
+      }
+    
+    std::cerr << "Console: unimplemented Write @" << std::hex << addr << ":" << size << std::endl;
     return true;
   };
 };

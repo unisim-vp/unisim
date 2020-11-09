@@ -37,8 +37,14 @@
 
 #include <inttypes.h>
 
-namespace SSv8 {
-  struct Trap_t {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace sparc {
+
+  struct Trap_t
+  {
     char const* m_name;
     uint8_t     m_priority;
     uint8_t     m_traptype;
@@ -90,6 +96,11 @@ namespace SSv8 {
     
     static Trap_t s_hardware[];
   };
-}
+
+} // end of namespace sparc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 #endif // SSV8_HW_TRAP_HPP

@@ -41,8 +41,11 @@
 #include <fwd.hh>
 #include <iosfwd>
 
-namespace SSv8 {
-  struct PNP : public SSv8::Peripheral {
+namespace SSv8
+{
+
+  struct PNP : public SSv8::Peripheral
+  {
     /* Plug 'n Play Controller */
     uint8_t*                    m_word;
     
@@ -50,7 +53,8 @@ namespace SSv8 {
     virtual ~PNP() {};
       
 
-    bool                        read( uint32_t _addr, uint32_t _size, uint8_t* _value ) {
+    bool                        read( uint32_t _addr, uint32_t _size, uint8_t* _value )
+    {
       m_word = _value;
       if( _size > 4 or not getreg( (_addr - m_faddr) / 4 ) ) return false;
       return true;
@@ -61,13 +65,15 @@ namespace SSv8 {
     virtual bool                getreg( uint32_t _idx ) = 0;
   };
 
-  struct AHBPNP : public PNP {
+  struct AHBPNP : public PNP
+  {
     AHBPNP() : PNP( 0xfffff000, 0xffffffff ) {}
     
     bool                        getreg( uint32_t _idx );
   };
   
-  struct APBPNP : public PNP {
+  struct APBPNP : public PNP
+  {
     APBPNP() : PNP( 0x800ff000, 0x800fffff ) {}
     
     bool                        getreg( uint32_t _idx );

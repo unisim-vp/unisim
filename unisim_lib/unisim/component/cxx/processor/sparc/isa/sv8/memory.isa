@@ -34,875 +34,634 @@
 
 /* Load Integer Instructions */
 
-op ldsb( 0b11[2]:rd[5]:0[1]:a[1]:0b1001[4]:rs1[5]:0[1]:asi[8]:rs2[5] )
+op ldsb( 0b11[2]:rd[5]:0[1]:a[1]:0b1001[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldsb.disasm = {
-  os << "ldsb" << (a ? "a" : "") << " [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-  if (a)
-    sink << "0x" << std::hex << asi;
-  os << ", " << PrintGPR(rd);
-}
+  sink << "ldsb" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 ldsb.execute = {
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::U32 U32;
-  
-  cpu.m_gpr[rd] = U32(S8(cpu.MemRead<8>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2])));
-}
 
-op ldsbi( 0b11[2]:rd[5]:0b001001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  
+  cpu.m_gpr[rd] = U32(cpu.MemRead(S8(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+};
+
+op ldsbi( 0b11[2]:rd[5]:0b001001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldsbi.disasm = {
-  if( simm13 >= 0 ) os << "ldsb [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "ldsb [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
+  sink << "ldsb [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
 ldsbi.execute = {
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(S8(cpu.MemRead<8>(cpu.rqasi(), cpu.m_gpr[rs1] + simm13)));
-}
+  cpu.m_gpr[rd] = U32(cpu.MemRead(S8(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+};
 
-op ldsh( 0b11[2]:rd[5]:0b001010[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op ldsh ( 0b11[2]:rd[5]:0[1]:a[1]:0b1010[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldsh.disasm = {
-  os << "ldsh [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR(rd);
-}
+  sink << "ldsh" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 ldsh.execute = {
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U32 U32;
-  
-  cpu.m_gpr[rd] = U32(S16(cpu.MemRead<16>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2])));
-}
 
-op ldshi( 0b11[2]:rd[5]:0b001010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  cpu.m_gpr[rd] = U32(cpu.MemRead(S16(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+};
+
+op ldshi( 0b11[2]:rd[5]:0b001010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldshi.disasm = {
-  if( simm13 >= 0 ) os << "ldsh [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "ldsh [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
+  sink << "ldsh [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
 ldshi.execute = {
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(S16(cpu.MemRead<16>(cpu.rqasi(), cpu.m_gpr[rs1] + simm13)));
-}
+  cpu.m_gpr[rd] = U32(cpu.MemRead(S16(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+};
 
-op ldub( 0b11[2]:rd[5]:0b000001[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op ldub ( 0b11[2]:rd[5]:0[1]:a[1]:0b0001[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldub.disasm = {
-  os << "ldub [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR(rd);
-}
+  sink << "ldub" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 ldub.execute = {
+  typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead<8>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
-}
+  if (a)
+    cpu.WithPrivilege();
+  cpu.m_gpr[rd] = U32(cpu.MemRead(U8(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+};
 
-op ldubi( 0b11[2]:rd[5]:0b000001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op ldubi( 0b11[2]:rd[5]:0b000001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldubi.disasm = {
-  if( simm13 >= 0 ) os << "ldub [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "ldub [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
+  sink << "ldub [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
 ldubi.execute = {
+  typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead<8>(cpu.rqasi(), cpu.m_gpr[rs1] + simm13));
-}
+  cpu.m_gpr[rd] = U32(cpu.MemRead(U8(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+};
 
-op lduh( 0b11[2]:rd[5]:0b000010[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op lduh ( 0b11[2]:rd[5]:0[1]:a[1]:0b0010[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 lduh.disasm = {
-  os << "lduh [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR(rd);
-}
+  sink << "lduh" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 lduh.execute = {
+  typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
-  
-  cpu.m_gpr[rd] = U32(cpu.MemRead<16>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
-}
 
-op lduhi( 0b11[2]:rd[5]:0b000010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  cpu.m_gpr[rd] = U32(cpu.MemRead(U16(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+};
+
+op lduhi( 0b11[2]:rd[5]:0b000010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 lduhi.disasm = {
-  if( simm13 >= 0 ) os << "lduh [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "lduh [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
+  sink << "lduh [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
 lduhi.execute = {
+  typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead<16>(cpu.rqasi(), cpu.m_gpr[rs1] + simm13));
-}
+  cpu.m_gpr[rd] = U32(cpu.MemRead(U16(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+};
 
-op ld( 0b11[2]:rd[5]:0b000000[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op ld( 0b11[2]:rd[5]:0[1]:a[1]:0b0000[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ld.disasm = {
-  os << "ld [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR(rd);
-}
+  sink << "ld" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 ld.execute = {
-  cpu.m_gpr[rd] = cpu.MemRead<32>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
-}
-
-op ldi( 0b11[2]:rd[5]:0b000000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
-
-ldi.disasm = {
-  if( simm13 >= 0 ) os << "ld [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "ld [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
-
-ldi.execute = {
-  cpu.m_gpr[rd] = cpu.MemRead<32>(cpu.rqasi(), cpu.m_gpr[rs1] + simm13);
-}
-
-op ldd( 0b11[2]:rd[5]:0b000011[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
-
-ldd.disasm = {
-  os << "ldd [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR()(rd & 0x1e);
-}
-
-ldd.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 value = cpu.MemRead<64>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
-  cpu.m_gpr[rd & -2 | 0] = U32(value >> 32);
-  cpu.m_gpr[rd & -2 | 1] = U32(value >> 0);
-}
-
-op lddi( 0b11[2]:rd[5]:0b000011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
-
-lddi.disasm = {
-  if( simm13 >= 0 ) os << "ldd [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR()(rd & 0x1e);
-  else              os << "ldd [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR()(rd & 0x1e);
-}
-
-lddi.execute = {
-  typedef typename ARCH::U64 U64;
-  
-  U64 value = cpu.MemRead<64>(cpu.rqasi(), cpu.m_gpr[rs1] + simm13);
-  cpu.m_gpr[rd & -2 | 0] = U32(value >> 32);
-  cpu.m_gpr[rd & -2 | 1] = U32(value >> 0);
-}
-
-op ldsba( 0b11[2]:rd[5]:0b011001[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-ldsba.disasm = {
-  os << "ldsba [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
-
-ldsba.execute = {
-  cpu.WithPrivilege();
-
-  typedef typename ARCH::S8 S8;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(S8(cpu.MemRead<8>(cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2])));
-}
+  if (a)
+    cpu.WithPrivilege();
+  cpu.m_gpr[rd] = cpu.MemRead(U32(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+};
 
-op ldsha( 0b11[2]:rd[5]:0b011010[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
+op ldi( 0b11[2]:rd[5]:0b000000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
-ldsha.disasm = {
-  os << "ldsha [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
+ldi.disasm = {
+  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
-ldsha.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x1 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[2];
-  if( not cpu.read( SSv8::ASI_t( asi ), address, 2, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = (((int32_t)( (int8_t)( storage[0] ) )) << 8) | (int32_t)( storage[1] );
-}
+ldi.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  cpu.m_gpr[rd] = cpu.MemRead(U32(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+};
 
-op lduba( 0b11[2]:rd[5]:0b010001[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
+op ldd ( 0b11[2]:rd[5]:0[1]:a[1]:0b0011[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
-lduba.disasm = {
-  os << "lduba [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
+ldd.disasm = {
+  sink << "ldd" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd & -2);
+};
 
-lduba.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint8_t storage[1];
-  if( not cpu.read( SSv8::ASI_t( asi ), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], 1, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage[0];
-}
+ldd.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  if (a)
+    cpu.WithPrivilege();
+  U64 value = cpu.MemRead(U64(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+  cpu.m_gpr[(rd & -2) | 0] = U32(value >> 32);
+  cpu.m_gpr[(rd & -2) | 1] = U32(value >> 0);
+};
 
-op lduha( 0b11[2]:rd[5]:0b010010[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
+op lddi( 0b11[2]:rd[5]:0b000011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
-lduha.disasm = {
-  os << "lduha [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
+lddi.disasm = {
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd & -2);
+};
 
-lduha.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x1 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[2];
-  if( not cpu.read( SSv8::ASI_t( asi ), address, 2, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage[0] << 8 | storage[1] << 0;
-}
-
-op lda( 0b11[2]:rd[5]:0b010000[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-lda.disasm = {
-  os << "lda [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
-
-lda.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  if( not cpu.read( SSv8::ASI_t( asi ), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage[0] << 24 | storage[1] << 16 | storage[2] <<  8 | storage[3] <<  0;
-}
-
-op ldda( 0b11[2]:rd[5]:0b010011[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-ldda.disasm = {
-  os << "ldda [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR()(rd & 0x1e);
-}
-
-ldda.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  if( not cpu.read( SSv8::ASI_t( asi ), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[(rd & 0x1e)|0] = storage[0] << 24 | storage[1] << 16 | storage[2] <<  8 | storage[3] <<  0;
-  cpu.m_gpr[(rd & 0x1e)|1] = storage[4] << 24 | storage[5] << 16 | storage[6] <<  8 | storage[7] <<  0;
-}
+lddi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 value = cpu.MemRead(U64(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+  cpu.m_gpr[(rd & -2) | 0] = U32(value >> 32);
+  cpu.m_gpr[(rd & -2) | 1] = U32(value >> 0);
+};
 
 /* Load Floating-point Instructions */
 
-op ldf( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op ldf( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 ldf.disasm = {
-  os << "ld [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], %f" << rd;
-}
+  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], %f" << rd;
+};
 
 ldf.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  if( not cpu.read( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_fprawbank.load32( storage, rd );
-}
+  typedef typename ARCH::F32 F32;
 
-op ldfi( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  cpu.m_fp32[rd] = cpu.FMemRead(F32(), cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+};
+
+op ldfi( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldfi.disasm = {
-  if( simm13 >= 0 ) os << "ld [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], %f" << rd;
-  else              os << "ld [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], %f" << rd;
-}
+  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], %f" << rd;
+};
 
 ldfi.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  if( not cpu.read( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_fprawbank.load32( storage, rd );
-}
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::U32 U32;
+                
+  cpu.m_fp32[rd] = cpu.FMemRead(F32(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+};
 
-op lddf( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op lddf( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 lddf.disasm = {
-  os << "ldd [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], %f" << (rd & 0x1e);
-}
+  sink << "ldd [" << DisasmRRAddress(rs1, rs2) << "], %f" << (rd & -2);
+};
 
 lddf.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  if( not cpu.read( cpu.rqasi(), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_fprawbank.load64( storage, rd & 0x1e );
-}
+  typedef typename ARCH::F64 F64;
 
-op lddfi( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  cpu.m_fp64[rd & -2] = cpu.FMemRead(F64(), cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+};
+
+op lddfi( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 lddfi.disasm = {
-  if( simm13 >= 0 ) os << "ldd [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], %f" << (rd & 0x1e);
-  else              os << "ldd [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], %f" << (rd & 0x1e);
-}
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], %f" << (rd & -2);
+};
 
 lddfi.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  if( not cpu.read( cpu.rqasi(), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_fprawbank.load64( storage, rd & 0x1e );
-}
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::F64 F64;
+                
+  cpu.m_fp64[rd & -2] = cpu.FMemRead(F64(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+};
 
-op ldfsr( 0b11[2]:rd[5]:0b100001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op ldfsr( 0b11[2]:rd[5]:0b100001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 ldfsr.disasm = {
-  os << "ld [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], %fsr";
-}
+  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], %fsr";
+};
 
 ldfsr.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  if( not cpu.read( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_fsr = storage[0] << 24 | storage[1] << 16 | storage[2] <<  8 | storage[3] <<  0;
-}
+  typedef typename ARCH::U32 U32;
 
-op ldfsri( 0b11[2]:rd[5]:0b100001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  cpu.m_fsr = cpu.MemRead(U32(), cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+};
+
+op ldfsri( 0b11[2]:rd[5]:0b100001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldfsri.disasm = {
-  if( simm13 >= 0 ) os << "ldd [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], %fsr";
-  else              os << "ldd [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], %fsr";
-}
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], %fsr";
+};
 
 ldfsri.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  if( not cpu.read( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_fsr = storage[0] << 24 | storage[1] << 16 | storage[2] <<  8 | storage[3] <<  0;
-}
+  typedef typename ARCH::U32 U32;
+                
+  cpu.m_fsr = cpu.MemRead(U32(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+};
 
 /* Load Coprocessor Instructions */
 
-op ldc( 0b11[2]:rd[5]:0b110000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op ldc( 0b11[2]:rd[5]:0b110000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 ldc.disasm = {
-  os << "ld [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], %c" << rd;
-}
+  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], %c" << rd;
+};
 
-op ldci( 0b11[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op ldci( 0b11[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldci.disasm = {
-  if( simm13 >= 0 ) os << "ld [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], %c" << rd;
-  else              os << "ld [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], %c" << rd;
-}
+  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], %c" << rd;
+};
 
-op lddc( 0b11[2]:rd[5]:0b110011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op lddc( 0b11[2]:rd[5]:0b110011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 lddc.disasm = {
-  os << "ldd [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], %c" << (rd & 0x1e);
-}
+  sink << "ldd [" << DisasmRRAddress(rs1, rs2) << "], %c" << (rd & -2);
+};
 
-op lddci( 0b11[2]:rd[5]:0b110011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op lddci( 0b11[2]:rd[5]:0b110011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 lddci.disasm = {
-  if( simm13 >= 0 ) os << "ldd [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], %c" << (rd & 0x1e);
-  else              os << "ldd [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], %c" << (rd & 0x1e);
-}
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], %c" << (rd & -2);
+};
 
-op ldcsr( 0b11[2]:rd[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op ldcsr( 0b11[2]:rd[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 ldcsr.disasm = {
-  os << "ld [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], %csr";
-}
+  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], %csr";
+};
 
-op ldcsri( 0b11[2]:rd[5]:0b110001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op ldcsri( 0b11[2]:rd[5]:0b110001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldcsri.disasm = {
-  if( simm13 >= 0 ) os << "ldd [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], %csr";
-  else              os << "ldd [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], %csr";
-}
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], %csr";
+};
 
 /* Store Integer Instructions */
 
-op stb( 0b11[2]:rd[5]:0b000101[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op stb( 0b11[2]:rd[5]:0[1]:a[1]:0b0101[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 stb.disasm = {
-  os << "stb " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "stb" << (a ? "a" : "") << " " << DisasmGPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << hex << asi;
+};
 
 stb.execute = {
-  uint8_t storage[1];
-  storage[0] = cpu.m_gpr[rd];
-  if( not cpu.write( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], 1, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U8 U8;
 
-op stbi( 0b11[2]:rd[5]:0b000101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], U8(cpu.m_gpr[rd]) );
+};
+
+op stbi( 0b11[2]:rd[5]:0b000101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stbi.disasm = {
-  if( simm13 >= 0 ) os << "stb " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "stb " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "stb " << DisasmGPR(rd) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 stbi.execute = {
-  uint8_t storage[1];
-  storage[0] = cpu.m_gpr[rd];
-  if( not cpu.write( cpu.rqasi(), cpu.m_gpr[rs1] + simm13, 1, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
 
-op sth( 0b11[2]:rd[5]:0b000110[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), U8(cpu.m_gpr[rd]) );
+};
+
+op sth ( 0b11[2]:rd[5]:0[1]:a[1]:0b0110[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 sth.disasm = {
-  os << "sth " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "sth" << (a ? "a" : "") << " " << DisasmGPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << hex << asi;
+};
 
 sth.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x1 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[2];
-  uint32_t data = cpu.m_gpr[rd];
-  storage[0] = data >> 8; storage[1] = data >> 0;
-  if( not cpu.write( cpu.rqasi(), address, 2, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U16 U16;
 
-op sthi( 0b11[2]:rd[5]:0b000110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], U16(cpu.m_gpr[rd]) );
+};
+
+op sthi( 0b11[2]:rd[5]:0b000110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 sthi.disasm = {
-  if( simm13 >= 0 ) os << "sth " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "sth " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "sth " << DisasmGPR(rd) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 sthi.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x1 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[2];
-  uint32_t data = cpu.m_gpr[rd];
-  storage[0] = data >> 8; storage[1] = data >> 0;
-  if( not cpu.write( cpu.rqasi(), address, 2, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
 
-op st( 0b11[2]:rd[5]:0b000100[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), U16(cpu.m_gpr[rd]) );
+};
+
+op st( 0b11[2]:rd[5]:0[1]:a[1]:0b0100[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 st.disasm = {
-  os << "st " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st" << (a ? "a" : "") << " " << DisasmGPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << hex << asi;
+};
 
 st.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  uint32_t data = cpu.m_gpr[rd];
-  storage[0] = data >> 24; storage[1] = data >> 16; storage[2] = data >>  8; storage[3] = data >>  0;
-  if( not cpu.write( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  if (a)
+    cpu.WithPrivilege();
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_gpr[rd] );
+};
 
-op sti( 0b11[2]:rd[5]:0b000100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op sti( 0b11[2]:rd[5]:0b000100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 sti.disasm = {
-  if( simm13 >= 0 ) os << "st " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st " << DisasmGPR(rd) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 sti.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  uint32_t data = cpu.m_gpr[rd];
-  storage[0] = data >> 24; storage[1] = data >> 16; storage[2] = data >>  8; storage[3] = data >>  0;
-  if( not cpu.write( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U32 U32;
+  
+  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_gpr[rd] );
+};
 
-op std( 0b11[2]:rd[5]:0b000111[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op std( 0b11[2]:rd[5]:0[1]:a[1]:0b0111[4]:rs1[5]:0b0[1]:asi[8]:rs2[5] );
 
 std.disasm = {
-  os << "std " << PrintGPR()(rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "std" << (a ? "a" : "") << " " << DisasmGPR(rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << hex << asi;
+};
 
 std.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  uint32_t data0 = cpu.m_gpr[(rd & 0x1e)|0], data1 = cpu.m_gpr[(rd & 0x1e)|1];
-  storage[0] = data0 >> 24; storage[1] = data0 >> 16; storage[2] = data0 >>  8; storage[3] = data0 >>  0;
-  storage[4] = data1 >> 24; storage[5] = data1 >> 16; storage[6] = data1 >>  8; storage[7] = data1 >>  0;
-  if( not cpu.write( cpu.rqasi(), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U64 U64;
+  
+  if (a)
+    cpu.WithPrivilege();
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2],
+                    U64(cpu.m_gpr[(rd & -2) | 0]) << 32 | U64(cpu.m_gpr[(rd & -2) | 1]) << 0 );
+};
 
-op stdi( 0b11[2]:rd[5]:0b000111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stdi( 0b11[2]:rd[5]:0b000111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdi.disasm = {
-  if( simm13 >= 0 ) os << "std " << PrintGPR()(rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "std " << PrintGPR()(rd & 0x1e) << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "std " << DisasmGPR(rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 stdi.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  uint32_t data0 = cpu.m_gpr[(rd & 0x1e)|0], data1 = cpu.m_gpr[(rd & 0x1e)|1];
-  storage[0] = data0 >> 24; storage[1] = data0 >> 16; storage[2] = data0 >>  8; storage[3] = data0 >>  0;
-  storage[4] = data1 >> 24; storage[5] = data1 >> 16; storage[6] = data1 >>  8; storage[7] = data1 >>  0;
-  if( not cpu.write( cpu.rqasi(), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
-
-op stba( 0b11[2]:rd[5]:0b010101[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-stba.disasm = {
-  os << "stba " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi;
-}
-
-stba.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint8_t storage[1];
-  storage[0] = cpu.m_gpr[rd];
-  if( not cpu.write( SSv8::ASI_t( asi ), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], 1, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
-
-op stha( 0b11[2]:rd[5]:0b010110[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-stha.disasm = {
-  os << "stha " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi;
-}
-
-stha.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x1 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[2];
-  uint32_t data = cpu.m_gpr[rd];
-  storage[0] = data >> 8; storage[1] = data >> 0;
-  if( not cpu.write( SSv8::ASI_t( asi ), address, 2, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
-
-op sta( 0b11[2]:rd[5]:0b010100[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-sta.disasm = {
-  os << "sta " << PrintGPR(rd) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi;
-}
-
-sta.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  uint32_t data = cpu.m_gpr[rd];
-  storage[0] = data >> 24; storage[1] = data >> 16; storage[2] = data >>  8; storage[3] = data >>  0;
-  if( not cpu.write( SSv8::ASI_t( asi ), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
-
-op stda( 0b11[2]:rd[5]:0b010111[6]:rs1[5]:0[1]:asi[8]:rs2[5] )
-
-stda.disasm = {
-  os << "stda " << PrintGPR()(rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi;
-}
-
-stda.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  uint32_t data0 = cpu.m_gpr[(rd & 0x1e)|0], data1 = cpu.m_gpr[(rd & 0x1e)|1];
-  storage[0] = data0 >> 24; storage[1] = data0 >> 16; storage[2] = data0 >>  8; storage[3] = data0 >>  0;
-  storage[4] = data1 >> 24; storage[5] = data1 >> 16; storage[6] = data1 >>  8; storage[7] = data1 >>  0;
-  if( not cpu.write( SSv8::ASI_t( asi ), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13),
+                    U64(cpu.m_gpr[(rd & -2) | 0]) << 32 | U64(cpu.m_gpr[(rd & -2) | 1]) << 0 );
+};
 
 /* Store Floating-point Instructions */
 
-op stf( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op stf( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stf.disasm = {
-  os << "st %f" << rd << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st %f" << rd << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
 stf.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  cpu.m_fprawbank.store32( rd, storage );
-  if( not cpu.write( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_fp32[rd] );
+};
 
-op stfi( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stfi( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stfi.disasm = {
-  if( simm13 >= 0 ) os << "st %f" << rd << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st %f" << rd << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st %f" << rd << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 stfi.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  cpu.m_fprawbank.store32( rd, storage );
-  if( not cpu.write( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U32 U32;
 
-op stdf( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_fp32[rd] );
+};
+
+op stdf( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stdf.disasm = {
-  os << "std %f" << (rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "std %f" << (rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
 stdf.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  cpu.m_fprawbank.store64( rd & 0x1e, storage );
-  if( not cpu.write( cpu.rqasi(), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_fp64[rd] );
+};
 
-op stdfi( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stdfi( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdfi.disasm = {
-  if( simm13 >= 0 ) os << "std %f" << (rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "std %f" << (rd & 0x1e) << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "std %f" << (rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 stdfi.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x7 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[8];
-  cpu.m_fprawbank.store64( rd & 0x1e, storage );
-  if( not cpu.write( cpu.rqasi(), address, 8, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U32 U32;
 
-op stfsr( 0b11[2]:rd[5]:0b100101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_fp64[rd] );
+};
+
+op stfsr( 0b11[2]:rd[5]:0b100101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stfsr.disasm = {
-  os << "st %fsr, [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st %fsr, [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
 stfsr.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  uint32_t data = cpu.m_fsr;
-  storage[0] = data >> 24; storage[1] = data >> 16; storage[2] = data >>  8; storage[3] = data >>  0;
-  if( not cpu.write( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_fsr );
+};
 
-op stfsri( 0b11[2]:rd[5]:0b100101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stfsri( 0b11[2]:rd[5]:0b100101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stfsri.disasm = {
-  if( simm13 >= 0 ) os << "st %fsr, [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st %fsr, [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st %fsr, [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 stfsri.execute = {
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( address & 0x3 ) { cpu.hwtrap( Trap_t::mem_address_not_aligned ); return; }
-  uint8_t storage[4];
-  uint32_t data = cpu.m_fsr;
-  storage[0] = data >> 24; storage[1] = data >> 16; storage[2] = data >>  8; storage[3] = data >>  0;
-  if( not cpu.write( cpu.rqasi(), address, 4, storage ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-}
+  typedef typename ARCH::U32 U32;
 
-op stdfq( 0b11[2]:rd[5]:0b100110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_fsr );
+};
+
+op stdfq( 0b11[2]:rd[5]:0b100110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stdfq.disasm = {
-  os << "st %fq, [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st %fq, [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
-op stdfqi( 0b11[2]:rd[5]:0b100110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stdfqi( 0b11[2]:rd[5]:0b100110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdfqi.disasm = {
-  if( simm13 >= 0 ) os << "st %fq, [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st %fq, [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st %fq, [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 /* Store Coprocessor Instructions */
 
-op stc( 0b11[2]:rd[5]:0b110100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op stc( 0b11[2]:rd[5]:0b110100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stc.disasm = {
-  os << "st %c" << rd << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st %c" << rd << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
-op stci( 0b11[2]:rd[5]:0b110100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stci( 0b11[2]:rd[5]:0b110100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stci.disasm = {
-  if( simm13 >= 0 ) os << "st %c" << rd << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st %c" << rd << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st %c" << rd << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
-op stdc( 0b11[2]:rd[5]:0b110111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op stdc( 0b11[2]:rd[5]:0b110111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stdc.disasm = {
-  os << "std %c" << (rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "std %c" << (rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
-op stdci( 0b11[2]:rd[5]:0b110111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stdci( 0b11[2]:rd[5]:0b110111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdci.disasm = {
-  if( simm13 >= 0 ) os << "std %c" << (rd & 0x1e) << ", [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "std %c" << (rd & 0x1e) << ", [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "std %c" << (rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
-op stcsr( 0b11[2]:rd[5]:0b110101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op stcsr( 0b11[2]:rd[5]:0b110101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stcsr.disasm = {
-  os << "st %csr, [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st %csr, [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
-op stcsri( 0b11[2]:rd[5]:0b110101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stcsri( 0b11[2]:rd[5]:0b110101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stcsri.disasm = {
-  if( simm13 >= 0 ) os << "st %csr, [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st %csr, [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st %csr, [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
-op stdcq( 0b11[2]:rd[5]:0b110110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op stdcq( 0b11[2]:rd[5]:0b110110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stdcq.disasm = {
-  os << "st %cq, [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]";
-}
+  sink << "st %cq, [" << DisasmRRAddress(rs1, rs2) << "]";
+};
 
-op stdcqi( 0b11[2]:rd[5]:0b110110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op stdcqi( 0b11[2]:rd[5]:0b110110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdcqi.disasm = {
-  if( simm13 >= 0 ) os << "st %cq, [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "]";
-  else              os << "st %cq, [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "]";
-}
+  sink << "st %cq, [" << DisasmRIAddress(rs1, simm13) << "]";
+};
 
 /* Atomic Load-Store Unsigned Byte Instructions */
 
-op ldstub( 0b11[2]:rd[5]:0b001101[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op ldstub ( 0b11[2]:rd[5]:0[1]:a[1]:0b1101[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldstub.disasm = {
-  os << "ldstub [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR(rd);
-}
+  sink << "ldstub" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 ldstub.execute = {
-  uint8_t storage[1];
-  uint8_t magic = 0xff;
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( not cpu.read( cpu.rqasi(), address, 1, storage ) or
-      not cpu.write( cpu.rqasi(), address, 1, &magic ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage[0];
-}
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
 
-op ldstubi( 0b11[2]:rd[5]:0b001101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  U32 address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
+  U8 res = cpu.MemRead(U8(), a ? ASI::Code(asi) : cpu.rqasi(), address );
+  cpu.MemWrite( cpu.rqasi(), address, U8(0xff) );
+  
+  cpu.m_gpr[rd] = U32(res);
+};
+
+op ldstubi( 0b11[2]:rd[5]:0b001101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldstubi.disasm = {
-  if( simm13 >= 0 ) os << "ldstub [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "ldstub [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
+  sink << "ldstub [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
 ldstubi.execute = {
-  uint8_t storage[1];
-  uint8_t magic = 0xff;
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( not cpu.read( cpu.rqasi(), address, 1, storage ) or
-      not cpu.write( cpu.rqasi(), address, 1, &magic ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage[0];
-}
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
 
-op ldstuba( 0b11[2]:rd[5]:0b011101[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
-
-ldstuba.disasm = {
-  os << "ldstuba [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
-
-ldstuba.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint8_t storage[1];
-  uint8_t magic = 0xff;
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( not cpu.read( SSv8::ASI_t( asi ), address, 1, storage ) or
-      not cpu.write( SSv8::ASI_t( asi ), address, 1, &magic ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage[0];
-}
+  U32 address = cpu.m_gpr[rs1] + U32(simm13);
+  U8 res = cpu.MemRead(U8(), cpu.rqasi(), address );
+  cpu.MemWrite( cpu.rqasi(), address, U8(0xff) );
+  
+  cpu.m_gpr[rd] = U32(res);
+};
 
 /* SWAP Register with Memory Instruction */
 
-op swap( 0b11[2]:rd[5]:0b001111[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
+op swap ( 0b11[2]:rd[5]:0[1]:a[1]:0b1111[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 swap.disasm = {
-  os << "swap [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "], " << PrintGPR(rd);
-}
+  sink << "swap" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
+  if (a) sink << "0x" << std::hex << asi;
+  sink << ", " << DisasmGPR(rd);
+};
 
 swap.execute = {
-  uint8_t storage_i[4];
-  uint8_t storage_o[4];
-  uint32_t reg = cpu.m_gpr[rd];
-  storage_o[0] = reg >> 24; storage_o[1] = reg >> 16; storage_o[2] = reg >>  8; storage_o[3] = reg >>  0;
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( not cpu.read( cpu.rqasi(), address, 4, storage_i ) or
-      not cpu.write( cpu.rqasi(), address, 4, storage_o ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage_i[0] << 24 | storage_i[1] << 16 | storage_i[2] << 8 | storage_i[3] << 0;
-}
+  typedef typename ARCH::U32 U32;
 
-op swapi( 0b11[2]:rd[5]:0b001111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+  if (a)
+    cpu.WithPrivilege();
+  U32 address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
+  ASI wasi = a ? ASI::Code(asi) : cpu.rqasi();
+  U32 res = cpu.MemRead(U32(), wasi, address );
+  cpu.MemWrite( wasi, address, cpu.m_gpr[rd] );
+  cpu.m_gpr[rd] = res;
+};
+
+op swapi( 0b11[2]:rd[5]:0b001111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 swapi.disasm = {
-  if( simm13 >= 0 ) os << "swap [" << PrintGPR(rs1) << " + " << "0x" << hex << simm13 << "], " << PrintGPR(rd);
-  else              os << "swap [" << PrintGPR(rs1) << " - " << "0x" << hex << -simm13 << "], " << PrintGPR(rd);
-}
+  sink << "swap [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmGPR(rd);
+};
 
 swapi.execute = {
-  uint8_t storage_i[4];
-  uint8_t storage_o[4];
-  uint32_t reg = cpu.m_gpr[rd];
-  storage_o[0] = reg >> 24; storage_o[1] = reg >> 16; storage_o[2] = reg >>  8; storage_o[3] = reg >>  0;
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if( not cpu.read( cpu.rqasi(), address, 4, storage_i ) or
-      not cpu.write( cpu.rqasi(), address, 4, storage_o ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage_i[0] << 24 | storage_i[1] << 16 | storage_i[2] << 8 | storage_i[3] << 0;
-}
+  typedef typename ARCH::U32 U32;
 
-op swapa( 0b11[2]:rd[5]:0b011111[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
-
-swapa.disasm = {
-  os << "swapa [" << PrintGPR(rs1) << " + " << PrintGPR(rs2) << "]" << "0x" << hex << asi << ", " << PrintGPR(rd);
-}
-
-swapa.execute = {
-  if( not cpu.super() ) { cpu.hwtrap( Trap_t::privileged_instruction ); return; }
-  uint8_t storage_i[4];
-  uint8_t storage_o[4];
-  uint32_t reg = cpu.m_gpr[rd];
-  storage_o[0] = reg >> 24; storage_o[1] = reg >> 16; storage_o[2] = reg >>  8; storage_o[3] = reg >>  0;
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if( not cpu.read( SSv8::ASI_t( asi ), address, 4, storage_i ) or
-      not cpu.write( SSv8::ASI_t( asi ), address, 4, storage_o ) )
-    { cpu.hwtrap( Trap_t::data_access_exception ); return; }
-  cpu.m_gpr[rd] = storage_i[0] << 24 | storage_i[1] << 16 | storage_i[2] << 8 | storage_i[3] << 0;
-}
+  U32 address = cpu.m_gpr[rs1] + U32(simm13);
+  U32 res = cpu.MemRead(U32(), cpu.rqasi(), address );
+  cpu.MemWrite( cpu.rqasi(), address, cpu.m_gpr[rd] );
+  cpu.m_gpr[rd] = res;
+};
 
 /* Flush Instruction Memory */
 
-op flush( 0b10[2]:?[5]:0b111011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op flush( 0b10[2]:?[5]:0b111011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 flush.disasm = {
-  os << "flush " << PrintGPR(rs1) << " + " << PrintGPR(rs2);
-}
+  sink << "flush " << DisasmRRAddress(rs1, rs2);
+};
 
-op flushi( 0b10[2]:?[5]:0b111011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op flushi( 0b10[2]:?[5]:0b111011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 flushi.disasm = {
-  if( simm13 >= 0 ) os << "flush " << PrintGPR(rs1) << " + " << "0x" << hex << simm13;
-  else              os << "flush " << PrintGPR(rs1) << " - " << "0x" << hex << -simm13;
-}
+  sink << "flush " << DisasmRIAddress(rs1, simm13);
+};
 

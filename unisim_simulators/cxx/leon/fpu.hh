@@ -51,7 +51,8 @@ namespace Star {
     virtual uint32_t        words() = 0;
   };
   
-  struct FPRawBank {
+  struct FPRawBank
+  {
     uint8_t                 m_storage[128];
     int                     m_bankscount;
     FPBank**                m_banks;
@@ -100,7 +101,8 @@ namespace Star {
       m_banks[m_bankscount++] = _bank;
     }
     
-    void                    load32( uint8_t const* _storage, int _idx ) {
+    void                    load32( uint8_t const* _storage, int _idx )
+    {
       uint32_t const* src = (uint32_t const*)( _storage );
       uint32_t*       dst = (uint32_t*)( &m_storage[_idx*4] );
       *dst = *src;
@@ -136,7 +138,8 @@ namespace Star {
   // way, we can reinterpret IEEE.754 as uint32_t and use portable
   // shift operations.
 
-  struct FP32Bank : public FPBank {
+  struct FP32Bank : public FPBank
+  {
     static uint32_t const   s_words = 1;
     float                   m_regs[32/s_words];
     FPRawBank&              m_rawbank;
@@ -157,7 +160,7 @@ namespace Star {
     float&                  operator[]( uint32_t _idx ) {
       uint32_t regmask = ((1 << s_words)-1) << _idx;
       _idx /= s_words;
-      if( m_dirtymask & regmask ) {
+      if (m_dirtymask & regmask) {
         uint8_t* storage = m_rawbank.get( s_words, _idx );
         uint32_t uword = 
           (uint32_t( storage[0] ) << 24) |

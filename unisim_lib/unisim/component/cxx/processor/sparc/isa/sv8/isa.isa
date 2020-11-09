@@ -56,12 +56,12 @@ impl {
 using namespace std;
 }
 
-action {void} execute( {ARCH&} {cpu} ) {
-  cpu.UndefinedInstruction(this);
+action {void} execute( {ARCH&} {cpu} ) const {
+  cpu.UndefinedInstruction(*this);
 }
 
-action {void} disasm( {std::ostream&} {os}, {uint32_t} {pc} ) {
-  os << "?";
+action {void} disasm( {std::ostream&} {sink}, {uint32_t} {pc} ) const {
+  sink << "?";
 }
 
 include "unisim/component/cxx/processor/sparc/isa/sv8/memory.isa"

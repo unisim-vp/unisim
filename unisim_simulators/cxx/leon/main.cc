@@ -45,7 +45,6 @@
 #include <arch.hh>
 #include <options.hh>
 
-using namespace std;
 using SSv8::Trace;
 using SSv8::CFmt;
 
@@ -64,8 +63,7 @@ main( int argc, char *argv[] ) {
     }
   }
   
-  SSv8::Controller<Star::Arch> sparcv8;
-  Star::Arch& arch = sparcv8.m_arch;
+  Star::Arch arch;
   
   SSv8::GaislerSystem<Star::Arch> grsystem( arch );
   
@@ -116,18 +114,20 @@ main( int argc, char *argv[] ) {
   //   arch.memcpy( img_base_addr, text, size );
   // }
   
-  while( arch.m_execute_mode ) {
-    if( arch.m_pc == startdisasm ) {
-      asm volatile( "start_disasm:" );
-      sparcv8.m_disasm = true;
+  while( arch.m_execute_mode )
+    {
+      if( arch.m_pc == startdisasm )
+        {
+          asm volatile( "start_disasm:" );
+          arch.disasm = true;
+        }
+      // Some stop conditions
+      if( arch.m_pc == exitpoint )
+        { Trace::chan("main") << "[Stop] exitpoint." << endl; break; }
+      if( arch.m_instcount == maxinsts )
+        { Trace::chan("main") << "[Stop] instruction max." << endl; break; }
+      arch.step();
     }
-    // Some stop conditions
-    if( arch.m_pc == exitpoint )
-      { Trace::chan("main") << "[Stop] exitpoint." << endl; break; }
-    if( arch.m_instcount == maxinsts )
-      { Trace::chan("main") << "[Stop] instruction max." << endl; break; }
-    sparcv8.step();
-  }
   
   Trace::chan("main") << CFmt( "%-24s%lld\n", "Executed instructions:", arch.m_instcount );
 

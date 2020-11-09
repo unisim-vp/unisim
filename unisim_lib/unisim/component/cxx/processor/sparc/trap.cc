@@ -34,7 +34,12 @@
 
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 
-namespace SSv8 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace sparc {
+
   Trap_t Trap_t::s_hardware[] = {
     { "data_store_error",             2, 0x2B },
     { "instruction_access_MMU_miss",  2, 0x3C },
@@ -75,4 +80,9 @@ namespace SSv8 {
     { "interrupt_level_1",           31, 0x11 }
   };
   
-}
+
+} // end of namespace sparc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

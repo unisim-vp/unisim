@@ -38,8 +38,10 @@
 #include <fpu.hh>
 #include <fwd.hh>
 #include <hw/peripheral.hh>
+#include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 #include <unisim/component/cxx/processor/sparc/asi.hh>
+#include <iosfwd>
 #include <inttypes.h>
 
 namespace Star
@@ -47,8 +49,21 @@ namespace Star
   template <unsigned SIZE> struct TypeFor {};
   template <> struct TypeFor<8> { typedef uint8_t U; };
   template <> struct TypeFor<16> { typedef uint16_t U; };
-  template <> struct TypeFor<32> { typedef uint32_t U; };
-  template <> struct TypeFor<64> { typedef uint64_t U; };
+  template <> struct TypeFor<32> { typedef uint32_t U; typedef float F; };
+  template <> struct TypeFor<64> { typedef uint64_t U; typedef double F; };
+
+  template <typename T> struct TypeInfo {};
+  template <> struct TypeInfo<uint8_t> { enum {is_signed=0, byte_count=1, bit_count=8}; };
+  template <> struct TypeInfo<uint16_t> { enum {is_signed=0, byte_count=2, bit_count=16}; };
+  template <> struct TypeInfo<uint32_t> { enum {is_signed=0, byte_count=4, bit_count=32}; };
+  template <> struct TypeInfo<uint64_t> { enum {is_signed=0, byte_count=8, bit_count=64}; };
+  template <> struct TypeInfo<int8_t> { enum {is_signed=1, byte_count=1, bit_count=8}; };
+  template <> struct TypeInfo<int16_t> { enum {is_signed=1, byte_count=2, bit_count=16}; };
+  template <> struct TypeInfo<int32_t> { enum {is_signed=1, byte_count=4, bit_count=32}; };
+  template <> struct TypeInfo<int64_t> { enum {is_signed=1, byte_count=8, bit_count=64}; };
+
+  template <> struct TypeInfo<float> { typedef uint32_t as_bits; };
+  template <> struct TypeInfo<double> { typedef uint64_t as_bits; };
     
   struct BitField_t
   {
@@ -79,11 +94,20 @@ namespace Star
     typedef uint16_t U16;
     typedef uint32_t U32;
     typedef uint64_t U64;
+    typedef int8_t S8;
+    typedef int16_t S16;
+    typedef int32_t S32;
+    typedef int64_t S64;
+    typedef float F32;
+    typedef double F64;
+    
+    typedef unisim::component::cxx::processor::sparc::Trap_t Trap_t;
+    typedef unisim::component::cxx::processor::sparc::ASI ASI;
     
     // Processor State
     bool                          m_execute_mode;
     bool                          m_annul;
-    SSv8::Trap_t                  m_trap;
+    Trap_t                        m_trap;
     uint32_t                      m_tbr;
     uint32_t                      m_psr;
     uint32_t                      m_pc;
@@ -107,6 +131,13 @@ namespace Star
     FP128Bank                     m_fp128;
     FPIntBank                     m_fpint;
 
+    // Decoder
+    typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Arch> Decoder;
+    typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Arch> Operation;
+    Decoder                       decoder;
+    Operation*                    lastoperation;
+    bool                          disasm;
+    
     // Memory system
     struct Page {
       static uint32_t const       s_bits = 12;
@@ -135,11 +166,13 @@ namespace Star
 
     void                          step();
     void                          pc( uint32_t _pc ) { m_pc = _pc; m_npc = _pc + 4; m_nnpc = _pc + 8; };
-    void                          hwtrap( SSv8::Trap_t::TrapType_t  _trap );
+    void                          abort( Trap_t::TrapType_t  _trap );
     void                          swtrap( uint32_t _idx );
     uint32_t                      nwindows() { return s_nwindows; }
     void                          jmp( uint32_t _nnpc, uint32_t _pcreg );
-    
+    void                          dumptrap( std::ostream& _sink );
+    void                          take_trap();
+
     // PSR access functions
     BitField_t                    impl()  { return BitField_t( m_psr, 28, 4 ); }
     BitField_t                    ver()   { return BitField_t( m_psr, 24, 4 ); }
@@ -157,8 +190,8 @@ namespace Star
     BitField_t                    cwp()   { return BitField_t( m_psr,  0, 5 ); }
     // + read only functions
     bool                          super() { return (m_psr & (1ul << 7)); }
-    SSv8::ASI_t                   rqasi() { return (m_psr & (1ul << 7)) ? SSv8::supervisor_data : SSv8::user_data; }
-    SSv8::ASI_t                   insn_asi() { return (m_psr & (1ul << 7)) ? SSv8::supervisor_instruction : SSv8::user_instruction; }
+    ASI                           rqasi() const { return (m_psr & (1ul << 7)) ? ASI::supervisor_data : ASI::user_data; }
+    ASI                           insn_asi() { return (m_psr & (1ul << 7)) ? ASI::supervisor_instruction : ASI::user_instruction; }
     // common conditions
     bool                          condcs()  { return (0xaaaa/*0b1010101010101010*/ >> ((m_psr >> 20) & 15)) & 1; } //  C
     bool                          condcc()  { return (0x5555/*0b0101010101010101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~C
@@ -226,10 +259,11 @@ namespace Star
     SSv8::Peripheral*             peripheral( uint32_t addr );
     void                          add( SSv8::Peripheral& _peripheral );
     
-    void                          uninitialized_data( SSv8::ASI_t _asi, uint32_t _addr, uint32_t _size );
+    void                          uninitialized_data( ASI _asi, uint32_t _addr, uint32_t _size );
     
-    bool                          read( SSv8::ASI_t _asi, uint32_t _addr, uint32_t _size, uint8_t* _value ) {
-      m_asi_accesses[_asi&0xff] ++;
+    bool                          read( ASI _asi, uint32_t _addr, uint32_t _size, uint8_t* _value )
+    {
+      m_asi_accesses[_asi.code&0xff] ++;
       if( (_addr % _size) or _size > (1 << Page::s_bits) ) return false;
       uint32_t pageidx = _addr >> Page::s_bits;
       uint32_t pageaddr = pageidx << Page::s_bits;
@@ -263,8 +297,9 @@ namespace Star
       return true;
     }
     
-    bool                          write( SSv8::ASI_t _asi, uint32_t _addr, uint32_t _size, uint8_t const* _value ) {
-      m_asi_accesses[_asi&0xff] ++;
+    bool                          write( ASI _asi, uint32_t _addr, uint32_t _size, uint8_t const* _value )
+    {
+      m_asi_accesses[_asi.code&0xff] ++;
       if( (_addr % _size) or _size > (1 << Page::s_bits) ) return false;
       uint32_t pageidx = _addr >> Page::s_bits;
       uint32_t pageaddr = pageidx << Page::s_bits;
@@ -301,41 +336,72 @@ namespace Star
       return true;
     }
 
-    template <unsigned SIZE>
-    typename TypeFor<SIZE>::U
-    MemRead(SSv8::ASI_t asi, uint32_t addr)
+    template <typename U>
+    U
+    MemRead(U const&, ASI asi, uint32_t addr)
     {
-      if (address & (SIZE-1)) { cpu.hwtrap( SSv8::Trap_t::mem_address_not_aligned ); return; }
-      uint8_t storage[SIZE];
-      if (not read( asi, addr, SIZE, storage ))
-        {
-          hwtrap( Trap_t::data_access_exception );
-          throw AbortInstruction();
-        }
-      typedef typename TypeFor<SIZE>::U U;
+      unsigned const bytecount = TypeInfo<U>::byte_count;
+      
+      if (addr & (bytecount-1))
+        abort( Trap_t::mem_address_not_aligned );
+      
+      uint8_t storage[bytecount];
+      if (not read( asi, addr, bytecount, &storage[0] ))
+        abort( (asi.code == asi.user_instruction or asi.code == asi.supervisor_instruction) ?
+               Trap_t::instruction_access_exception : Trap_t::data_access_exception );
+      
       U res(0);
-      for (unsigned idx = 0; idx < SIZE; ++idx)
+      for (unsigned idx = 0; idx < bytecount; ++idx)
         res = (res << 8) | U(storage[idx]);
       return res;
     }
 
-    void                          memcpy( uint32_t _addr, uint8_t const* _buffer, uint32_t _size );
-
-    void UndefinedIstruction( Operation& op )
+    template <typename U>
+    void
+    MemWrite(ASI asi, uint32_t addr, U value)
     {
-      op.disasm( std::cerr << "Unknown instruction:", m_pc );
-      std::cerr << std::endl;
-      struct Bad {}; throw Bad();
+      unsigned const bytecount = TypeInfo<U>::byte_count;
+      
+      if (addr & (bytecount-1))
+        abort( Trap_t::mem_address_not_aligned );
+      
+      uint8_t storage[bytecount];
+      for (unsigned idx = bytecount; idx-- > 0;)
+        { storage[idx] = uint8_t( value ); value >>= 8; }
+      
+      if (not write( asi, addr, bytecount, &storage[0] ))
+        abort( Trap_t::data_access_exception );
     }
+    
+    // Hopefully native float type is IEEE.754 and its memory
+    // endianess is consistent with that of native uint32_t. This
+    // way, we can reinterpret IEEE.754 as uint32_t and use portable
+    // shift operations.
+    template <typename T>
+    T
+    FMemRead(T const&, ASI asi, uint32_t addr)
+    {
+      typename TypeInfo<T>::as_bits res = MemRead(res, asi, addr);
+      return *reinterpret_cast<T*>(&res);
+    }
+    
+    template <typename T>
+    void
+    FMemWrite(ASI asi, uint32_t addr, T const& val)
+    {
+      MemWrite(asi, addr, *reinterpret_cast<typename TypeInfo<T>::as_bits const*>(&val));
+    }
+    
+    void memcpy( uint32_t _addr, uint8_t const* _buffer, uint32_t _size );
+
+    void UndefinedInstruction( Operation const& op );
 
     struct AbortInstruction {};
 
     void WithPrivilege()
     {
-      if (cpu.super())
-        return;
-      cpu.hwtrap( Trap_t::privileged_instruction );
-      throw AbortInstruction();
+      if (not super())
+        abort( Trap_t::privileged_instruction );
     }
     
   };

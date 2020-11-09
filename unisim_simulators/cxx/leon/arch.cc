@@ -34,7 +34,9 @@
  
 #include <arch.hh>
 #include <hw/peripheral.hh>
+#include <utils/trace.hh>
 #include <utils/cfmt.hh>
+#include <unisim/component/cxx/processor/sparc/isa_sv8.tcc>
 #include <cstring>
 #include <iostream>
 
@@ -42,11 +44,12 @@ using SSv8::CFmt;
 
 namespace Star {
   Arch::Arch()
-    : m_execute_mode( true ), m_annul( false ),
-      m_tbr( 0 ), m_psr( 0 ), m_pc( 0 ), m_npc( 0 ), m_nnpc( 0 ), m_instcount( 0 ),
-      m_wim( 0xffffffff ), m_y( 0 ),
-      m_fp32( m_fprawbank ), m_fp64( m_fprawbank ), m_fp128( m_fprawbank ), m_fpint( m_fprawbank ),
-      m_peripheralcount( 0 ), m_peripherals( 0 )
+    : m_execute_mode( true ), m_annul( false )
+    , m_tbr( 0 ), m_psr( 0 ), m_pc( 0 ), m_npc( 0 ), m_nnpc( 0 ), m_instcount( 0 )
+    , m_wim( 0xffffffff ), m_y( 0 )
+    , m_fp32( m_fprawbank ), m_fp64( m_fprawbank ), m_fp128( m_fprawbank ), m_fpint( m_fprawbank )
+    , decoder(), lastoperation( 0 ), disasm(false)
+    , m_peripheralcount( 0 ), m_peripherals( 0 )
   {
     for( uint32_t idx = 0; idx < (1<<s_bits); ++idx )
       m_pages[idx] = 0;
@@ -62,22 +65,28 @@ namespace Star {
   }
   
   void
-  Arch::hwtrap( SSv8::Trap_t::TrapType_t  _traptype ) {
-    SSv8::Trap_t const& trap = SSv8::Trap_t::s_hardware[_traptype];
+  Arch::abort( Trap_t::TrapType_t  _traptype )
+  {
+    Trap_t const& trap = Trap_t::s_hardware[_traptype];
     if( m_trap.m_name and trap.m_priority > m_trap.m_priority ) return;
     m_trap = trap;
+
+    throw AbortInstruction();
   }
   
   void
-  Arch::swtrap( uint32_t _idx ) {
-    SSv8::Trap_t const& trap = SSv8::Trap_t::s_hardware[SSv8::Trap_t::trap_instruction];
+  Arch::swtrap( uint32_t id )
+  {
+    Trap_t const& trap = Trap_t::s_hardware[Trap_t::trap_instruction];
     if( m_trap.m_name and trap.m_priority > m_trap.m_priority ) return;
     m_trap = trap;
-    m_trap.m_traptype = _idx | 0x80;
-    if( _idx == 0 ) {
-      /* Halting execution (Gaisler specific) */;
-      m_execute_mode = false;
-    }
+    m_trap.m_traptype = id | 0x80;
+    
+    if (id == 0)
+      {
+        /* Halting execution (Gaisler specific) */;
+        m_execute_mode = false;
+      }
   }
   
   void
@@ -100,42 +109,44 @@ namespace Star {
   }
   
   uint32_t
-  Arch::rdasr( uint32_t _idx ) {
-    switch( _idx & 0x1f ) {
-    case 17:
-      return
-        (((0 /* IDX */)  & 0x0f) << 28) |
-        (((0 /* DWT */)  & 0x01) << 14) |
-        (((0 /* SVT */)  & 0x01) << 13) |
-        (((0 /* LD */)   & 0x01) << 12) |
-        (((1 /* FPU */)  & 0x03) << 10) |
-        (((0 /* MAC */)  & 0x01) <<  9) |
-        (((1 /* V8 */)   & 0x01) <<  8) |
-        (((0 /* NWP */)  & 0x07) <<  4) |
-        (((s_nwindows-1) & 0x1f) <<  0);
-      break;
-    default:
-      hwtrap( SSv8::Trap_t::illegal_instruction );
-      break;
-    }
+  Arch::rdasr( uint32_t id ) {
+    switch (id & 0x1f)
+      {
+      case 17: return
+          (((0 /* IDX */)  & 0x0f) << 28) |
+          (((0 /* DWT */)  & 0x01) << 14) |
+          (((0 /* SVT */)  & 0x01) << 13) |
+          (((0 /* LD */)   & 0x01) << 12) |
+          (((1 /* FPU */)  & 0x03) << 10) |
+          (((0 /* MAC */)  & 0x01) <<  9) |
+          (((1 /* V8 */)   & 0x01) <<  8) |
+          (((0 /* NWP */)  & 0x07) <<  4) |
+          (((s_nwindows-1) & 0x1f) <<  0);
+
+      default: abort( Trap_t::illegal_instruction );
+      }
     return 0;
   }
   
   void
-  Arch::wrasr( uint32_t _idx, uint32_t _value ) {
-    switch( _idx & 0x1f ) {
-    case 17:
-      if( ((_value >> 14) & 0x01) == 1 ) { hwtrap( SSv8::Trap_t::illegal_instruction ); return; }
-      break;
-    default:
-      hwtrap( SSv8::Trap_t::illegal_instruction );
-      break;
+  Arch::wrasr( uint32_t id, uint32_t _value ) {
+    switch (id & 0x1f)
+      {
+      case 17:
+        if( ((_value >> 14) & 0x01) == 1 )
+          abort( Trap_t::illegal_instruction );
+        break;
+      default:
+        abort( Trap_t::illegal_instruction );
     }
   }
 
   void
-  Arch::uninitialized_data( SSv8::ASI_t _asi, uint32_t _addr, uint32_t _size ) {
-    std::cerr << CFmt( "Use of uninitialized data: [%#x]%#x, %d\n", _asi, _addr, _size );
+  Arch::uninitialized_data( ASI asi, uint32_t addr, uint32_t size )
+  {
+    std::cerr << CFmt( "Use of uninitialized data: [%#x]%#x, %d\n", addr, asi.code, size );
+    lastoperation->disasm( std::cerr << "  Instruction @" << std::hex << this->m_pc << ": ", this->m_pc );
+    std::cerr << std::endl;
   }
 
   void
@@ -220,42 +231,97 @@ namespace Star {
   void
   Arch::step()
   {
-    // Fetch
-    // XXX: I-Cache (our responsibility)?
-    uint8_t insn_bytes[4];
-    uint32_t arch_pc = this->m_pc;
-    if (not this->read( this->insn_asi(), arch_pc, 4, insn_bytes ))
+    // Handling traps
+    if (m_trap)
+      this->take_trap();
+
+    try
       {
-        this->hwtrap( Trap_t::instruction_access_exception );
+        // Fetch
+        // XXX: I-Cache (our responsibility)?
+        uint32_t arch_pc = this->m_pc;
+        unisim::component::cxx::processor::sparc::isa::sv8::CodeType ci = MemRead(uint32_t(), insn_asi(), arch_pc);
+        
+        // Decode
+        Operation* operation = lastoperation = this->decoder.Decode( arch_pc, ci );
+    
+        if (disasm)
+          {
+            SSv8::Trace::chan("cpu") << "0x" << std::hex << arch_pc << " (0x" << std::hex << operation->GetEncoding() << "): ";
+            operation->disasm( SSv8::Trace::chan("cpu"), arch_pc );
+          }
+        
+        this->m_gpr[0] = 0;
+        if (not this->m_annul)
+          {
+            if (disasm) SSv8::Trace::chan("cpu") << std::endl;
+            asm volatile( "operation_execute:" );
+            operation->execute( *this );
+            if (m_trap) { throw AbortInstruction(); }
+            ++m_instcount;
+          }
+        else
+          {
+            if (disasm) SSv8::Trace::chan("cpu") << " *annulled*" << std::endl;
+            this->m_annul = false;
+          }
+        // Handling Program Counter
+        this->m_pc = this->m_npc;
+        this->m_npc = this->m_nnpc;
+        this->m_nnpc += 4;
+      }
+    catch (AbortInstruction const&)
+      {}
+  }
+
+  void
+  Arch::UndefinedInstruction( Operation const& op )
+  {
+    op.disasm( std::cerr << "Unknown instruction:", m_pc );
+    std::cerr << std::endl;
+    struct TODO {}; throw TODO ();
+  }
+
+  void
+  Arch::dumptrap( std::ostream& _sink )
+  {
+    _sink << "! Trap " << this->m_trap.m_name << " (" << std::hex << uint32_t( this->m_trap.m_traptype ) << ")\n";
+    _sink << "  Instruction @" << std::hex << this->m_pc << ": ";
+    lastoperation->disasm( _sink, this->m_pc );
+    _sink << std::endl;
+  }
+
+  void
+  Arch::take_trap()
+  {
+    //    this->dumptrap( SSv8::Trace::chan( m_disasm ? "cpu" : "trap") );
+    
+    if (et() == 0)
+      {
+        SSv8::Trace::chan( disasm ? "cpu" : "trap" ) << "! Fatal Error\n" << std::endl;
+        m_execute_mode = false;
         return;
       }
     
-    m_lastpc = arch_pc;
-    
-    // Decode
-    CodeType ci = insn_bytes[0] << 24 | insn_bytes[1] << 16 | insn_bytes[2] <<  8 | insn_bytes[3] <<  0;
-    Operation* operation = m_lastoperation = this->Decode( arch_pc, ci );
-    
-    this->m_gpr[0] = 0;
-    if( m_disasm ) {
-      Trace::chan("cpu") << "0x" << hex << arch_pc << " (0x" << hex << operation->GetEncoding() << "): ";
-      operation->disasm( Trace::chan("cpu"), arch_pc );
-    }
-    if( not this->m_annul ) {
-      if( m_disasm ) Trace::chan("cpu") << endl;
-      asm volatile( "operation_execute:" );
-      operation->execute( m_arch );
-      ++ this->m_instcount;
-      if( this->m_trap ) return;
+    tt() = m_trap.m_traptype;
+    m_trap.clear();
+      
+    et() = 0;
+    ps() = s();
+    s() = 1;
+    rotate( -1 );
+    if( not m_annul ) {
+      m_gpr[17] = m_pc;
+      m_gpr[18] = m_npc;
     } else {
-      if( m_disasm ) Trace::chan("cpu") << " *annulled*" << endl;
-      this->m_annul = false;
+      m_gpr[17] = m_npc;
+      m_gpr[18] = m_npc + 4;
+      m_annul = false;
     }
-    // Handling Program Counter
-    this->m_pc = this->m_npc;
-    this->m_npc = this->m_nnpc;
-    this->m_nnpc += 4;
+    m_pc = m_tbr;
+    m_npc = m_pc + 4;
+    m_nnpc = m_pc + 8;
   }
-
-
+  
 } // end of namespace ASV8
+

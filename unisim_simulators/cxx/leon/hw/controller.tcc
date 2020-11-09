@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-/* SSv8::Controller templated methods (-*- C++ -*-) */
+/* SSv8::ControllerX templated methods (-*- C++ -*-) */
 #ifndef SPARCISS_HW_CONTROLLER_TCC
 #define SPARCISS_HW_CONTROLLER_TCC
 
@@ -43,72 +43,16 @@
 
 namespace SSv8 {
   template <class ARCH>
-  Controller<ARCH>::Controller()
-    : m_disasm( false ), m_lastoperation( 0 ), m_lastpc( 0 )
-  {
-    m_arch.m_trap.clear();
-    // memset( m_gpr, 0, sizeof( m_gpr ) );
-  }
+  ControllerX<ARCH>::ControllerX()
+    : m_arch()
+  {}
 
   template <class ARCH>
   void
-  Controller<ARCH>::dumptrap( ostream& _sink ) {
-    _sink << "! Trap " << m_arch.m_trap.m_name << " (" << hex << uint32_t( m_arch.m_trap.m_traptype ) << ")\n";
-    _sink << "  Instruction @" << hex << m_arch.m_pc << ": ";
-    m_lastoperation->disasm( _sink, m_arch.m_pc );
-    _sink << endl;
-  }
-
-  template <class ARCH>
-  void
-  Controller<ARCH>::take_trap()
+  ControllerX<ARCH>::step()
   {
-    //    this->dumptrap( Trace::chan( m_disasm ? "cpu" : "trap") );
-    if( m_arch.et() == 0 ) {
-      Trace::chan( m_disasm ? "cpu" : "trap" ) << "! Fatal Error\n" << endl;
-      m_arch.m_execute_mode = false;
-      return;
-    }
-    m_arch.tt() = m_arch.m_trap.m_traptype;
-    m_arch.m_trap.clear();
-      
-    m_arch.et() = 0;
-    m_arch.ps() = m_arch.s();
-    m_arch.s() = 1;
-    m_arch.rotate( -1 );
-    if( not m_arch.m_annul ) {
-      m_arch.m_gpr[17] = m_arch.m_pc;
-      m_arch.m_gpr[18] = m_arch.m_npc;
-    } else {
-      m_arch.m_gpr[17] = m_arch.m_npc;
-      m_arch.m_gpr[18] = m_arch.m_npc + 4;
-      m_arch.m_annul = false;
-    }
-    m_arch.m_pc = m_arch.m_tbr;
-    m_arch.m_npc = m_arch.m_pc + 4;
-    m_arch.m_nnpc = m_arch.m_pc + 8;
   }
   
-  template <class ARCH>
-  void
-  Controller<ARCH>::step()
-  {
-    // Handling traps
-    if (m_arch.m_trap)
-      this->take_trap();
-
-    m_arch.step()
-    
-  }
-  
-  template <class ARCH>
-  void
-  Controller<ARCH>::Fetch( void *_buffer, uint32_t _addr, uint32_t _size ) {
-//     uint8_t const* storage = m_arch.read( m_arch.super() ? SSv8::supervisor_instruction : SSv8::user_instruction, m_arch.m_pc, 4 );
-//     if( not storage )
-//       m_arch.hwtrap( Trap_t::instruction_access_exception );
-//     *((uint32_t*)_buffer) = *((uint32_t*)storage);
-  }
 }; // end of namespace SSv8
 
 #endif // SPARCISS_HW_CONTROLLER_TCC

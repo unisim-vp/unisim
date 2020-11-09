@@ -37,8 +37,6 @@
 #include <cstdlib>
 #include <cstring>
 
-using namespace std;
-
 namespace Star {
   Option Options::table[Option::optionscount] = {
     {"startdisasm",  0, "instruction address where to start disassembly."},
@@ -74,7 +72,7 @@ namespace Star {
   Options::byname( char const* _name ) {
     for( int idx = 0; idx < Option::optionscount; ++idx )
       if( not strcmp( _name, table[idx].m_name ) ) return table[idx];
-    cerr << "No such option: " << _name << endl;
+    std::cerr << "No such option: " << _name << std::endl;
     throw Options::Error;
   }
 
@@ -91,7 +89,7 @@ namespace Star {
       for( char const* ptr = table[idx].m_name; *ptr; ptr++, count++ ) _sink << *ptr;
       for( char const* ptr = "  ";              *ptr; ptr++, count++ ) _sink << *ptr;
       for( ; count < ralign; count++ ) _sink << ' ';
-      _sink << table[idx].m_description << endl;
+      _sink << table[idx].m_description << std::endl;
     }
     
     return _sink;

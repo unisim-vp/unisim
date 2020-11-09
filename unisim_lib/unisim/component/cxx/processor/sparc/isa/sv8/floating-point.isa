@@ -39,29 +39,29 @@
 op fitos( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011000100[9]:rs2[5] )
 
 fitos.disasm = {
-  os << "fitos %f" << rs2 << ", %f" << rd;
+  sink << "fitos %f" << rs2 << ", %f" << rd;
 }
 
 fitos.execute = {
-  int32_t src = sparcv8.m_fpint[rs2];
-  sparcv8.m_fp32[rd] = float( src );
+  int32_t src = cpu.m_fpint[rs2];
+  cpu.m_fp32[rd] = float( src );
 }
 
 op fitod( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001000[9]:rs2[5] )
 
 fitod.disasm = {
-  os << "fitod %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
+  sink << "fitod %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
 }
 
 fitod.execute = {
-  int32_t src = sparcv8.m_fpint[rs2];
-  sparcv8.m_fp64[rd & 0x1e] = double( src );
+  int32_t src = cpu.m_fpint[rs2];
+  cpu.m_fp64[rd & 0x1e] = double( src );
 }
 
 op fitoq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001100[9]:rs2[5] )
 
 fitoq.disasm = {
-  os << "fitoq %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fitoq %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 /* Convert Floating-point to Integer Instructions */
@@ -69,29 +69,29 @@ fitoq.disasm = {
 op fstoi( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011010001[9]:rs2[5] )
 
 fstoi.disasm = {
-  os << "fstoi %f" << rs2 << ", %f" << rd;
+  sink << "fstoi %f" << rs2 << ", %f" << rd;
 }
 
 fstoi.execute = {
-  float src = sparcv8.m_fp32[rs2];
-  sparcv8.m_fpint[rd] = int32_t( src );
+  float src = cpu.m_fp32[rs2];
+  cpu.m_fpint[rd] = int32_t( src );
 }
 
 op fdtoi( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011010010[9]:rs2[5] )
 
 fdtoi.disasm = {
-  os << "fdtoi %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
+  sink << "fdtoi %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
 }
 
 fdtoi.execute = {
-  double src = sparcv8.m_fp64[rs2 & 0x1e];
-  sparcv8.m_fpint[rd] = int32_t( src );
+  double src = cpu.m_fp64[rs2 & 0x1e];
+  cpu.m_fpint[rd] = int32_t( src );
 }
 
 op fqtoi( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011010011[9]:rs2[5] )
 
 fqtoi.disasm = {
-  os << "fqtoi %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fqtoi %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 /* Convert Between Floating-point Formats Instructions */
@@ -99,47 +99,47 @@ fqtoi.disasm = {
 op fstod( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001001[9]:rs2[5] )
 
 fstod.disasm = {
-  os << "fstod %f" << rs2 << ", %f" << (rd & 0x1e);
+  sink << "fstod %f" << rs2 << ", %f" << (rd & 0x1e);
 }
 
 fstod.execute = {
-  float src = sparcv8.m_fp32[rs2];
-  sparcv8.m_fp64[rd & 0x1e] = double( src );
+  float src = cpu.m_fp32[rs2];
+  cpu.m_fp64[rd & 0x1e] = double( src );
 }
 
 op fstoq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001101[9]:rs2[5] )
 
 fstoq.disasm = {
-  os << "fstoq %f" << rs2 << ", %f" << (rd & 0x1c);
+  sink << "fstoq %f" << rs2 << ", %f" << (rd & 0x1c);
 }
 
 op fdtos( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011000110[9]:rs2[5] )
 
 fdtos.disasm = {
-  os << "fdtos %f" << (rs2 & 0x1e) << ", %f" << rd;
+  sink << "fdtos %f" << (rs2 & 0x1e) << ", %f" << rd;
 }
 
 fdtos.execute = {
-  double src = sparcv8.m_fp64[rs2 & 0x1e];
-  sparcv8.m_fp32[rd] = float( src );
+  double src = cpu.m_fp64[rs2 & 0x1e];
+  cpu.m_fp32[rd] = float( src );
 }
 
 op fdtoq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001110[9]:rs2[5] )
 
 fdtoq.disasm = {
-  os << "fdtoq %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1c);
+  sink << "fdtoq %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1c);
 }
 
 op fqtos( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011000111[9]:rs2[5] )
 
 fqtos.disasm = {
-  os << "fqtos %f" << (rs2 & 0x1c) << ", %f" << rd;
+  sink << "fqtos %f" << (rs2 & 0x1c) << ", %f" << rd;
 }
 
 op fqtod( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001011[9]:rs2[5] )
 
 fqtod.disasm = {
-  os << "fqtod %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1e);
+  sink << "fqtod %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1e);
 }
 
 /* Floating-point Move Instructions */
@@ -147,31 +147,31 @@ fqtod.disasm = {
 op fmovs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000000001[9]:rs2[5] )
 
 fmovs.disasm = {
-  os << "fmovs %f" << rs2 << ", %f" << rd;
+  sink << "fmovs %f" << rs2 << ", %f" << rd;
 }
 
 fmovs.execute = {
-  sparcv8.m_fp32[rd] = sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = cpu.m_fp32[rs2];
 }
 
 op fnegs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000000101[9]:rs2[5] )
 
 fnegs.disasm = {
-  os << "fnegs %f" << rs2 << ", %f" << rd;
+  sink << "fnegs %f" << rs2 << ", %f" << rd;
 }
 
 fnegs.execute = {
-  sparcv8.m_fp32[rd] = -sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = -cpu.m_fp32[rs2];
 }
 
 op fabss( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000001001[9]:rs2[5] )
 
 fabss.disasm = {
-  os << "fabss %f" << rs2 << ", %f" << rd;
+  sink << "fabss %f" << rs2 << ", %f" << rd;
 }
 
 fabss.execute = {
-  sparcv8.m_fp32[rd] = (sparcv8.m_fp32[rs2] >= 0) ? sparcv8.m_fp32[rs2] : -sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = (cpu.m_fp32[rs2] >= 0) ? cpu.m_fp32[rs2] : -cpu.m_fp32[rs2];
 }
 
 /* Floating-point Square Root Instructions */
@@ -179,19 +179,19 @@ fabss.execute = {
 op fsqrts( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000101001[9]:rs2[5] )
 
 fsqrts.disasm = {
-  os << "fsqrts %f" << rs2 << ", %f" << rd;
+  sink << "fsqrts %f" << rs2 << ", %f" << rd;
 }
 
 op fsqrtd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000101010[9]:rs2[5] )
 
 fsqrtd.disasm = {
-  os << "fsqrtd %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
+  sink << "fsqrtd %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
 }
 
 op fsqrtq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000101011[9]:rs2[5] )
 
 fsqrtq.disasm = {
-  os << "fsqrtq %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsqrtq %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 /* Floating-point Add and Substract Instructions */
@@ -199,53 +199,53 @@ fsqrtq.disasm = {
 op fadds( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000001[9]:rs2[5] )
 
 fadds.disasm = {
-  os << "fadds %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fadds %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 fadds.execute = {
-  sparcv8.m_fp32[rd] = sparcv8.m_fp32[rs1] + sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = cpu.m_fp32[rs1] + cpu.m_fp32[rs2];
 }
 
 op faddd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000010[9]:rs2[5] )
 
 faddd.disasm = {
-  os << "faddd %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "faddd %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 faddd.execute = {
-  sparcv8.m_fp64[rd & 0x1e] = sparcv8.m_fp64[rs1 & 0x1e] + sparcv8.m_fp64[rs2 & 0x1e];
+  cpu.m_fp64[rd & 0x1e] = cpu.m_fp64[rs1 & 0x1e] + cpu.m_fp64[rs2 & 0x1e];
 }
 
 op faddq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000011[9]:rs2[5] )
 
 faddq.disasm = {
-  os << "faddq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "faddq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 op fsubs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000101[9]:rs2[5] )
 
 fsubs.disasm = {
-  os << "fsubs %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsubs %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 fsubs.execute = {
-  sparcv8.m_fp32[rd] = sparcv8.m_fp32[rs1] - sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = cpu.m_fp32[rs1] - cpu.m_fp32[rs2];
 }
 
 op fsubd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000110[9]:rs2[5] )
 
 fsubd.disasm = {
-  os << "fsubd %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsubd %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 fsubd.execute = {
-  sparcv8.m_fp64[rd & 0x1e] = sparcv8.m_fp64[rs1 & 0x1e] - sparcv8.m_fp64[rs2 & 0x1e];
+  cpu.m_fp64[rd & 0x1e] = cpu.m_fp64[rs1 & 0x1e] - cpu.m_fp64[rs2 & 0x1e];
 }
 
 op fsubq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000111[9]:rs2[5] )
 
 fsubq.disasm = {
-  os << "fsubq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsubq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 /* Floating-point Multiply and Divide Instructions */
@@ -253,70 +253,70 @@ fsubq.disasm = {
 op fmuls( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001001[9]:rs2[5] )
 
 fmuls.disasm = {
-  os << "fmuls %f" << rs1 << ", %f" << rs2 << ", %f" << rd;
+  sink << "fmuls %f" << rs1 << ", %f" << rs2 << ", %f" << rd;
 }
 
 fmuls.execute = {
-  sparcv8.m_fp32[rd] = sparcv8.m_fp32[rs1] * sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = cpu.m_fp32[rs1] * cpu.m_fp32[rs2];
 }
 
 op fmuld( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001010[9]:rs2[5] )
 
 fmuld.disasm = {
-  os << "fmuld %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
+  sink << "fmuld %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
 }
 
 fmuld.execute = {
-  sparcv8.m_fp64[rd & 0x1e] = sparcv8.m_fp64[rs1 & 0x1e] * sparcv8.m_fp64[rs2 & 0x1e];
+  cpu.m_fp64[rd & 0x1e] = cpu.m_fp64[rs1 & 0x1e] * cpu.m_fp64[rs2 & 0x1e];
 }
 
 op fmulq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001011[9]:rs2[5] )
 
 fmulq.disasm = {
-  os << "fmulq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fmulq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 op fsmuld( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001101001[9]:rs2[5] )
 
 fsmuld.disasm = {
-  os << "fsmuld %f" << rs1 << ", %f" << rs2 << ", %f" << (rd & 0x1e);
+  sink << "fsmuld %f" << rs1 << ", %f" << rs2 << ", %f" << (rd & 0x1e);
 }
 
 fsmuld.execute = {
-  float op1 = sparcv8.m_fp32[rs1], op2 = sparcv8.m_fp32[rs2];
-  sparcv8.m_fp64[rd & 0x1e] = double( op1 ) * double( op2 );
+  float op1 = cpu.m_fp32[rs1], op2 = cpu.m_fp32[rs2];
+  cpu.m_fp64[rd & 0x1e] = double( op1 ) * double( op2 );
 }
 
 op fdmulq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001101110[9]:rs2[5] )
 
 fdmulq.disasm = {
-  os << "fdmulq %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1c);
+  sink << "fdmulq %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1c);
 }
 
 op fdivs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001101[9]:rs2[5] )
 
 fdivs.disasm = {
-  os << "fdivs %f" << rs1 << ", %f" << rs2 << ", %f" << rd;
+  sink << "fdivs %f" << rs1 << ", %f" << rs2 << ", %f" << rd;
 }
 
 fdivs.execute = {
-  sparcv8.m_fp32[rd] = sparcv8.m_fp32[rs1] / sparcv8.m_fp32[rs2];
+  cpu.m_fp32[rd] = cpu.m_fp32[rs1] / cpu.m_fp32[rs2];
 }
 
 op fdivd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001110[9]:rs2[5] )
 
 fdivd.disasm = {
-  os << "fdivd %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
+  sink << "fdivd %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e) << ", %f" << (rd & 0x1e);
 }
 
 fdivd.execute = {
-  sparcv8.m_fp64[rd & 0x1e] = sparcv8.m_fp64[rs1 & 0x1e] / sparcv8.m_fp64[rs2 & 0x1e];
+  cpu.m_fp64[rd & 0x1e] = cpu.m_fp64[rs1 & 0x1e] / cpu.m_fp64[rs2 & 0x1e];
 }
 
 op fdivq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001111[9]:rs2[5] )
 
 fdivq.disasm = {
-  os << "fdivq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fdivq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
 }
 
 /* Floating-point Compare Instructions */
@@ -324,59 +324,62 @@ fdivq.disasm = {
 op fcmps( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010001[9]:rs2[5] )
 
 fcmps.disasm = {
-  os << "fcmps %f" << rs1 << ", %f" << rs2;
+  sink << "fcmps %f" << rs1 << ", %f" << rs2;
 }
 
 fcmps.execute = {
-  float a = sparcv8.m_fp32[rs1], b = sparcv8.m_fp32[rs2];
-  sparcv8.fcc() = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
+  float a = cpu.m_fp32[rs1], b = cpu.m_fp32[rs2];
+  cpu.fcc() = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
 }
 
 op fcmpd( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010010[9]:rs2[5] )
 
 fcmpd.disasm = {
-  os << "fcmpd %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e);
+  sink << "fcmpd %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e);
 }
 
 fcmpd.execute = {
-  double a = sparcv8.m_fp32[rs1], b = sparcv8.m_fp32[rs2];
-  sparcv8.fcc() = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
+  double a = cpu.m_fp32[rs1], b = cpu.m_fp32[rs2];
+  cpu.fcc() = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
 }
 
 op fcmpq( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010011[9]:rs2[5] )
 
 fcmpq.disasm = {
-  os << "fcmpq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c);
+  sink << "fcmpq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c);
 }
 
 op fcmpes( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010101[9]:rs2[5] )
 
 fcmpes.disasm = {
-  os << "fcmpes %f" << rs1 << ", %f" << rs2;
+  sink << "fcmpes %f" << rs1 << ", %f" << rs2;
 }
 
 fcmpes.execute = {
-  float a = sparcv8.m_fp32[rs1], b = sparcv8.m_fp32[rs2];
+  float a = cpu.m_fp32[rs1], b = cpu.m_fp32[rs2];
   uint32_t code = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
-  if( code == 3 ) { sparcv8.hwtrap( Trap_t::fp_exception ); return; }
-  sparcv8.fcc() = code;
+
+  if (code == 3)
+    cpu.abort( Trap_t::fp_exception );
+  
+  cpu.fcc() = code;
 }
 
 op fcmped( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010110[9]:rs2[5] )
 
 fcmped.disasm = {
-  os << "fcmped %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e);
+  sink << "fcmped %f" << (rs1 & 0x1e) << ", %f" << (rs2 & 0x1e);
 }
 
 fcmped.execute = {
-  double a = sparcv8.m_fp32[rs1], b = sparcv8.m_fp32[rs2];
+  double a = cpu.m_fp32[rs1], b = cpu.m_fp32[rs2];
   uint32_t code = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
-  if( code == 3 ) { sparcv8.hwtrap( Trap_t::fp_exception ); return; }
-  sparcv8.fcc() = code;
+  if (code == 3) cpu.abort( Trap_t::fp_exception );
+  cpu.fcc() = code;
 }
 
 op fcmpeq( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010111[9]:rs2[5] )
 
 fcmpeq.disasm = {
-  os << "fcmpeq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c);
+  sink << "fcmpeq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c);
 }

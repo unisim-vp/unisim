@@ -53,6 +53,16 @@ namespace sv8 {
     return sink;
   }
 
+  void DisasmRIAddress::operator () ( std::ostream& sink ) const
+  {
+    sink << DisasmGPR(rid) << (offset < 0 ? " - " : " + ") << std::hex << offset;
+  }
+  
+  void DisasmRRAddress::operator () ( std::ostream& sink ) const
+  {
+    sink << DisasmGPR(rs1) << " + " << DisasmGPR(rs2);
+  }
+  
 } // end of namespace sv8
 } // end of namespace isa
 } // end of namespace sparc

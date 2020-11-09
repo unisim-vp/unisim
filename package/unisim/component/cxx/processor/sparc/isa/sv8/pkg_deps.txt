@@ -2,4 +2,5 @@ libc/inttypes
 std/cstdlib
 std/iosfwd
 std/iostream
+std/sstream
 unisim/component/cxx/processor/sparc
