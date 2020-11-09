@@ -71,6 +71,10 @@ namespace SSv8
         switch (reg)
           {
           case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+          default:
+            std::cerr << "Warning: unimplemented AHB.PNP.entry.reg["<< reg<<"] for Leon2 Memory Controller.\n";
+            setreg( 0 );
+            return true;
           }
         break;
         
@@ -79,6 +83,10 @@ namespace SSv8
           {
           case 0: setreg( VENDORID( 1 ) | DEVICEID( 6 ) | VERSION( 0 ) | IRQ( 0 ) ); return true;
           case 4: setreg( ADDR( 0x0800 ) | MASK( 0xfff ) | TYPE( 2 ) ); return true;
+          default:
+            std::cerr << "Warning: unimplemented AHB.PNP.entry.reg["<< reg<<"] for AHB/APB Bridge.\n";
+            setreg( 0 );
+            return true;
           }
         break;
       }
@@ -101,6 +109,10 @@ namespace SSv8
         switch (reg)
           {
           case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+          default:
+            std::cerr << "Warning: unimplemented APB.PNP.entry.reg["<< reg<<"] for Leon2 Memory Controller.\n";
+            setreg( 0 );
+            return true;
           }
         break;
         
@@ -109,6 +121,10 @@ namespace SSv8
           {
           case 0: setreg( VENDORID( 1 ) | DEVICEID( 12 ) | VERSION( 1 ) | IRQ( 2 ) ); return true;
           case 1: setreg( ADDR( 0x0001 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
+          default:
+            std::cerr << "Warning: unimplemented APB.PNP.entry.reg["<< reg<<"] for Generic UART.\n";
+            setreg( 0 );
+            return true;
           }
         break;
         

@@ -33,34 +33,60 @@
  */
  
 #include <hw/console.hh>
+#include <utils/beaccess.hh>
 #include <iostream>
 #include <cstring>
 
 namespace SSv8 {
   Console::Console()
-    : Peripheral( 0x80000100, 0x8000010f )
+    : Peripheral( 0x80000100, 0x8000010f ), ctrl(0)
   {}
   
+  /*
+   * uart { data:32, status:32, control:32, scaler:32 }
+   *
+   * Data register allow to read/write from/to console (big endian, 8-bits).
+   * 
+   */
+
   bool
   Console::read( uint32_t addr, uint32_t size, uint8_t* value )
   {
-    if (addr == 0x80000104 and size == 4)
+    if (addr == 0x80000100 and size == 4) // data register
       {
+        char ch;
+        if (not std::cin.get(ch)) { struct Bad {}; throw Bad (); }
+        *((uint32_t*)value) = 0;
+        value[3] = ch;
+        return true;
+      }
+    if (addr == 0x80000104 and size == 4) // status register
+      {
+        // bit 2: fifo empty
+        // bit 9: fifo full
         static const uint8_t status_ready[4] = {0,0,0,5};
-        bytes_copy( value, status_ready, 4 );
+        std::copy(&status_ready[0], &status_ready[4], value);
+        return true;
+      }
+    if (addr == 0x80000108 and size == 4) // control register
+      {
+        SSv8::be_write( value, ctrl );
         return true;
       }
 
     std::cerr << "Console: unimplemented read @" << std::hex << addr << ":" << size << std::endl;
     return false;
   }
-
   bool
   Console::write( uint32_t addr, uint32_t size, uint8_t const* value )
   {
-    if (addr == 0x80000100 and size == 4)
+    if (addr == 0x80000100 and size == 4) // data register
       {
         std::cout << char( value[3] );
+        return true;
+      }
+    if (addr == 0x80000108 and size == 4) // control register
+      {
         return true;
       }
     

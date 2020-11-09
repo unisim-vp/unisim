@@ -145,7 +145,7 @@ namespace Star {
   Arch::uninitialized_data( ASI asi, uint32_t addr, uint32_t size )
   {
     std::cerr << CFmt( "Use of uninitialized data: [%#x]%#x, %d\n", addr, asi.code, size );
-    lastoperation->disasm( std::cerr << "  Instruction @" << std::hex << this->m_pc << ": ", this->m_pc );
+    lastoperation->disasm( std::cerr << "  Instruction at " << std::hex << this->m_pc << ": ", this->m_pc );
     std::cerr << std::endl;
   }
 
@@ -185,21 +185,26 @@ namespace Star {
   }
 
   SSv8::Peripheral*
-  Arch::peripheral( uint32_t _addr ) {
+  Arch::peripheral( uint32_t _addr )
+  {
     int first = 0, last = m_peripheralcount - 1;
-    if( _addr < m_peripherals[first]->m_faddr or _addr > m_peripherals[last]->m_laddr )
+    if (_addr < m_peripherals[first]->m_faddr or _addr > m_peripherals[last]->m_laddr)
       return 0;
-    if( _addr <= m_peripherals[first]->m_laddr )
+    
+    if (_addr <= m_peripherals[first]->m_laddr)
       return m_peripherals[first];
-    if( _addr >= m_peripherals[last]->m_faddr )
+    
+    if (_addr >= m_peripherals[last]->m_faddr)
       return m_peripherals[last];
     
-    while( (last - first) > 1  ) { /* at least one item in between */
-      int mid = (last+first)/2;
-      if( _addr < m_peripherals[mid]->m_faddr ) { last = mid; continue; }
-      if( _addr > m_peripherals[mid]->m_laddr ) { first = mid; continue; }
-      return m_peripherals[mid];
-    }
+    while( (last - first) > 1)
+      { /* at least one item in between */
+        int mid = (last+first)/2;
+        if (_addr < m_peripherals[mid]->m_faddr) { last = mid; continue; }
+        if (_addr > m_peripherals[mid]->m_laddr) { first = mid; continue; }
+        return m_peripherals[mid];
+      }
+    
     return 0;
   }
   
@@ -207,24 +212,29 @@ namespace Star {
   Arch::add( SSv8::Peripheral& _peripheral )
   {
     SSv8::Peripheral* ins = &(_peripheral);
-    if( m_peripheralcount % 8 == 0 ) {
-      SSv8::Peripheral** nperipherals = new SSv8::Peripheral* [(m_peripheralcount+8)];
-      for( int idx = 0; idx < m_peripheralcount; idx += 1 ) nperipherals[idx] = m_peripherals[idx];
-      delete [] m_peripherals;
-      m_peripherals = nperipherals;
-    }
-    for( int idx = 0; idx < m_peripheralcount; idx += 1 ) {
-      if( m_peripherals[idx]->m_laddr < ins->m_faddr ) continue;
-      if( m_peripherals[idx]->m_faddr > ins->m_laddr ) {
-        SSv8::Peripheral* tmp = m_peripherals[idx];
-        m_peripherals[idx] = ins;
-        ins = tmp;
-      } else {
-        std::cerr << CFmt( "Ranges overlap: [%#x,%#x] !! [%#x,%#x]\n",
-                           m_peripherals[idx]->m_faddr, m_peripherals[idx]->m_laddr, ins->m_faddr, ins->m_laddr );
-        throw SSv8::Peripheral::RangeError;
+    if (m_peripheralcount % 8 == 0)
+      {
+        SSv8::Peripheral** nperipherals = new SSv8::Peripheral* [(m_peripheralcount+8)];
+        for( int idx = 0; idx < m_peripheralcount; idx += 1 ) nperipherals[idx] = m_peripherals[idx];
+        delete [] m_peripherals;
+        m_peripherals = nperipherals;
       }
-    }
+    
+    for (int idx = 0; idx < m_peripheralcount; idx += 1)
+      {
+        if (m_peripherals[idx]->m_laddr < ins->m_faddr) continue;
+        if (m_peripherals[idx]->m_faddr > ins->m_laddr)
+          {
+            SSv8::Peripheral* tmp = m_peripherals[idx];
+            m_peripherals[idx] = ins;
+            ins = tmp;
+          }
+        else
+          {
+            std::cerr << CFmt( "Ranges overlap: [%#x,%#x] !! [%#x,%#x]\n", m_peripherals[idx]->m_faddr, m_peripherals[idx]->m_laddr, ins->m_faddr, ins->m_laddr );
+            throw SSv8::Peripheral::RangeError();
+          }
+      }
     m_peripherals[m_peripheralcount++] = ins;
   }
 
