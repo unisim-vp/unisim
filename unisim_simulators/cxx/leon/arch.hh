@@ -88,18 +88,19 @@ namespace Star
     }
   };
   
-  struct Arch
+  struct Arch : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<Arch>
   {
-    typedef uint8_t U8;
+    typedef uint8_t  U8;
     typedef uint16_t U16;
     typedef uint32_t U32;
     typedef uint64_t U64;
-    typedef int8_t S8;
-    typedef int16_t S16;
-    typedef int32_t S32;
-    typedef int64_t S64;
-    typedef float F32;
-    typedef double F64;
+    typedef int8_t   S8;
+    typedef int16_t  S16;
+    typedef int32_t  S32;
+    typedef int64_t  S64;
+    typedef float    F32;
+    typedef double   F64;
+    typedef bool     BOOL;
     
     typedef unisim::component::cxx::processor::sparc::Trap_t Trap_t;
     typedef unisim::component::cxx::processor::sparc::ASI ASI;
@@ -196,43 +197,60 @@ namespace Star
     ASI                           rqasi() const { return (m_psr & (1ul << 7)) ? ASI::supervisor_data : ASI::user_data; }
     ASI                           insn_asi() { return (m_psr & (1ul << 7)) ? ASI::supervisor_instruction : ASI::user_instruction; }
     // common conditions
-    bool                          TestCondition(unsigned cond)
+    // bool                          TestCondition(unsigned cond)
+    // {
+    //   switch (cond)
+    //     {
+    //     case 0b0000: return false;     // never()
+    //     case 0b0001: return conde();   // equal
+    //     case 0b0010: return condle();  // less or equal
+    //     case 0b0011: return condl();   // less
+    //     case 0b0100: return condleu(); // less or equal unsigned
+    //     case 0b0101: return condcs();  // carry set
+    //     case 0b0110: return condneg(); // negative
+    //     case 0b0111: return condvs();  // overflow set
+    //     case 0b1000: return true;      // always
+    //     case 0b1001: return condne();  // not equal
+    //     case 0b1010: return condg();   // greater
+    //     case 0b1011: return condge();  // greater or equal
+    //     case 0b1100: return condgu();  // greater unsigned
+    //     case 0b1101: return condcc();  // carry clear
+    //     case 0b1110: return condpos(); // positive
+    //     case 0b1111: return condvc();  // overflow clear
+    //     }
+    //   return false;
+    // }
+    struct Conditions
     {
-      switch (cond)
-        {
-        case 0b0000: return false;     // never()
-        case 0b0001: return conde();   // equal
-        case 0b0010: return condle();  // less or equal
-        case 0b0011: return condl();   // less
-        case 0b0100: return condleu(); // less or equal unsigned
-        case 0b0101: return condcs();  // carry set
-        case 0b0110: return condneg(); // negative
-        case 0b0111: return condvs();  // overflow set
-        case 0b1000: return true;      // always
-        case 0b1001: return condne();  // not equal
-        case 0b1010: return condg();   // greater
-        case 0b1011: return condge();  // greater or equal
-        case 0b1100: return condgu();  // greater unsigned
-        case 0b1101: return condcc();  // carry clear
-        case 0b1110: return condpos(); // positive
-        case 0b1111: return condvc();  // overflow clear
-        }
-      return false;
-    }
-    bool                          condcs()  { return (0xaaaa/*0b1010101010101010*/ >> ((m_psr >> 20) & 15)) & 1; } //  C
-    bool                          condcc()  { return (0x5555/*0b0101010101010101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~C
-    bool                          condvs()  { return (0xcccc/*0b1100110011001100*/ >> ((m_psr >> 20) & 15)) & 1; } //  V
-    bool                          condvc()  { return (0x3333/*0b0011001100110011*/ >> ((m_psr >> 20) & 15)) & 1; } // ~V
-    bool                          conde()   { return (0xf0f0/*0b1111000011110000*/ >> ((m_psr >> 20) & 15)) & 1; } //  Z
-    bool                          condne()  { return (0x0f0f/*0b0000111100001111*/ >> ((m_psr >> 20) & 15)) & 1; } // ~Z
-    bool                          condneg() { return (0xff00/*0b1111111100000000*/ >> ((m_psr >> 20) & 15)) & 1; } //  N
-    bool                          condpos() { return (0x00ff/*0b0000000011111111*/ >> ((m_psr >> 20) & 15)) & 1; } // ~N
-    bool                          condle()  { return (0xf3fc/*0b1111001111111100*/ >> ((m_psr >> 20) & 15)) & 1; } //  (Z | (N ^ V))
-    bool                          condg()   { return (0x0c03/*0b0000110000000011*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(Z | (N ^ V))
-    bool                          condl()   { return (0x33cc/*0b0011001111001100*/ >> ((m_psr >> 20) & 15)) & 1; } //  (N ^ V)
-    bool                          condge()  { return (0xcc33/*0b1100110000110011*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(N ^ V)
-    bool                          condleu() { return (0xfafa/*0b1111101011111010*/ >> ((m_psr >> 20) & 15)) & 1; } //  (C | Z)
-    bool                          condgu()  { return (0x0505/*0b0000010100000101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(C | Z)
+      template <unsigned BIT> using Bit = util::truth_table::InBit<uint16_t,BIT>;
+      
+      Bit<3> N() const { return Bit<3>(); }
+      Bit<2> Z() const { return Bit<2>(); }
+      Bit<1> V() const { return Bit<1>(); }
+      Bit<0> C() const { return Bit<0>(); }
+
+      Conditions(Arch& _arch) : arch(_arch) {} Arch& arch;
+
+      template <class TT> bool Eval( TT const& tt ) { unsigned nzcv = (m_psr >> 20) & 15; return (tt.tt >> nzcv) & 1; }
+    };
+    // core.Test( ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0) );
+    
+    
+    
+    // bool                          condcs()  { return (0xaaaa/*0b1010101010101010*/ >> ((m_psr >> 20) & 15)) & 1; } //  C
+    // bool                          condcc()  { return (0x5555/*0b0101010101010101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~C
+    // bool                          condvs()  { return (0xcccc/*0b1100110011001100*/ >> ((m_psr >> 20) & 15)) & 1; } //  V
+    // bool                          condvc()  { return (0x3333/*0b0011001100110011*/ >> ((m_psr >> 20) & 15)) & 1; } // ~V
+    // bool                          conde()   { return (0xf0f0/*0b1111000011110000*/ >> ((m_psr >> 20) & 15)) & 1; } //  Z
+    // bool                          condne()  { return (0x0f0f/*0b0000111100001111*/ >> ((m_psr >> 20) & 15)) & 1; } // ~Z
+    // bool                          condneg() { return (0xff00/*0b1111111100000000*/ >> ((m_psr >> 20) & 15)) & 1; } //  N
+    // bool                          condpos() { return (0x00ff/*0b0000000011111111*/ >> ((m_psr >> 20) & 15)) & 1; } // ~N
+    // bool                          condle()  { return (0xf3fc/*0b1111001111111100*/ >> ((m_psr >> 20) & 15)) & 1; } //  (Z | (N ^ V))
+    // bool                          condg()   { return (0x0c03/*0b0000110000000011*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(Z | (N ^ V))
+    // bool                          condl()   { return (0x33cc/*0b0011001111001100*/ >> ((m_psr >> 20) & 15)) & 1; } //  (N ^ V)
+    // bool                          condge()  { return (0xcc33/*0b1100110000110011*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(N ^ V)
+    // bool                          condleu() { return (0xfafa/*0b1111101011111010*/ >> ((m_psr >> 20) & 15)) & 1; } //  (C | Z)
+    // bool                          condgu()  { return (0x0505/*0b0000010100000101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(C | Z)
     
     // + write only functions
     void                          modicc( uint32_t _mask, uint32_t _n, uint32_t _z, uint32_t _v, uint32_t _c ) {
@@ -265,43 +283,35 @@ namespace Star
     BitField_t                    aexc()  { return BitField_t( m_fsr,  5, 5 ); }
     BitField_t                    cexc()  { return BitField_t( m_fsr,  0, 5 ); }
     // + read only functions
-    bool TestFCondition(unsigned cond)
+    struct FConditions
     {
-      switch (cond)
-        {
-        case 0b0000: return "n";   // Never
-        case 0b0001: return "ne";  // Not equal
-        case 0b0010: return "lg";  // Less or Greater
-        case 0b0011: return "ul";  // Unordered or Less 
-        case 0b0100: return "l";   // Less
-        case 0b0101: return "ug";  // Unordered or Greater
-        case 0b0110: return "g";   // Greater
-        case 0b0111: return "u";   // Unordered
-        case 0b1000: return "a";   // Always
-        case 0b1001: return "e";   // Equal
-        case 0b1010: return "ue";  // Unordered or Equal
-        case 0b1011: return "ge";  // Greater or Equal
-        case 0b1100: return "uge"; // Unordered or Greater or Equal
-        case 0b1101: return "le";  // Less or Equal
-        case 0b1110: return "ule"; // Unordered or Less or Equal
-        case 0b1111: return "o";   // Ordered
-        }
-      return false;
-    }
-    bool                          fconde()   { return (0x1/*0b0001*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondl()   { return (0x2/*0b0010*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondle()  { return (0x3/*0b0011*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondg()   { return (0x4/*0b0100*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondge()  { return (0x5/*0b0101*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondlg()  { return (0x6/*0b0110*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondo()   { return (0x7/*0b0111*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondu()   { return (0x8/*0b1000*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondue()  { return (0x9/*0b1001*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondul()  { return (0xa/*0b1010*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondule() { return (0xb/*0b1011*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondug()  { return (0xc/*0b1100*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fconduge() { return (0xd/*0b1101*/ >> ((m_fsr >> 10) & 3)) & 1; }
-    bool                          fcondne()  { return (0xe/*0b1110*/ >> ((m_fsr >> 10) & 3)) & 1; }
+      template <unsigned BIT> using Bit = util::truth_table::InBit<uint16_t,BIT>;
+      
+      auto E() const { return not Bit<1>() and not Bit<0>(); }
+      auto L() const { return not Bit<1>() and     Bit<0>(); }
+      auto G() const { return     Bit<1>() and not Bit<0>(); }
+      auto U() const { return     Bit<1>() and     Bit<0>(); }
+
+      FConditions(Scanner& _scanner) : scanner(_scanner) {}
+      FConditions(Arch& _arch) : arch(_arch) {} Arch& arch;
+
+      template <class TT> bool Eval( TT const& tt ) { unsigned fcc = (m_fsr >> 10) & 3; return (tt.tt >> fcc) & 1; }
+    };
+
+    // bool                          fconde()   { return (0x1/*0b0001*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondl()   { return (0x2/*0b0010*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondle()  { return (0x3/*0b0011*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondg()   { return (0x4/*0b0100*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondge()  { return (0x5/*0b0101*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondlg()  { return (0x6/*0b0110*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondo()   { return (0x7/*0b0111*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondu()   { return (0x8/*0b1000*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondue()  { return (0x9/*0b1001*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondul()  { return (0xa/*0b1010*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondule() { return (0xb/*0b1011*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondug()  { return (0xc/*0b1100*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fconduge() { return (0xd/*0b1101*/ >> ((m_fsr >> 10) & 3)) & 1; }
+    // bool                          fcondne()  { return (0xe/*0b1110*/ >> ((m_fsr >> 10) & 3)) & 1; }
     
     Page*                         getpage( uint32_t _addr );
     

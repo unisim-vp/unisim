@@ -37,6 +37,7 @@
 
 #include <test.hh>
 #include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
+#include <unisim/component/cxx/processor/sparc/isa/sv8/arch.hh>
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 #include <unisim/component/cxx/processor/sparc/asi.hh>
 // #include <unisim/component/cxx/vector/vector.hh>
@@ -48,7 +49,7 @@
 // #include <memory>
 #include <inttypes.h>
 
-struct Scanner
+struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<Scanner>
 {
   template <typename T> using SmartValue = unisim::util::symbolic::SmartValue<T>;
     
@@ -281,6 +282,32 @@ struct Scanner
   /*** Architectural state ***/
   /***************************/
 
+  struct Conditions
+  {
+    Conditions(Scanner& _scanner) : scanner(_scanner) {}
+    bool Eval( BOOL&& res ) const { return scanner.Test(res); }
+    BOOL F() const { return BOOL(false); }
+    BOOL T() const { return BOOL(true); }
+    BOOL N() const { return scanner.flags[3]; }
+    BOOL Z() const { return scanner.flags[2]; }
+    BOOL V() const { return scanner.flags[1]; }
+    BOOL C() const { return scanner.flags[0]; }
+    Scanner& scanner;
+  };
+
+  struct FConditions
+  {
+    FConditions(Scanner& _scanner) : scanner(_scanner) {}
+    bool Eval( BOOL&& res ) const { return scanner.Test(res); }
+    BOOL F() const { return BOOL(false); }
+    BOOL T() const { return BOOL(true); }
+    BOOL E() const { dont("floating-point"); return BOOL(false); }
+    BOOL G() const { dont("floating-point"); return BOOL(false); }
+    BOOL L() const { dont("floating-point"); return BOOL(false); }
+    BOOL U() const { dont("floating-point"); return BOOL(false); }
+    Scanner& scanner;
+  };
+
   void UndefinedInstruction( Operation const& op ) { UndefinedInstruction(); }
   void UndefinedInstruction() { dont("undefined"); }
 
@@ -313,8 +340,11 @@ struct Scanner
 
   void SetF32( unsigned id, F32 const& value ) { dont("floating-point"); }
   void SetF64( unsigned id, F64 const& value ) { dont("floating-point"); }
+  void SetS32( unsigned id, S32 const& value ) { dont("floating-point"); }
   F32  GetF32( unsigned id ) { dont("floating-point"); return F32(); }
   F64  GetF64( unsigned id ) { dont("floating-point"); return F64(); }
+  S32  GetS32( unsigned id ) { dont("floating-point"); return S32(); }
+  void SetFCC( BOOL const& l, BOOL const& g ) { dont("floating-point"); }
   U32  GetFSR() { dont("floating-point"); return U32(); }
   void SetFSR( U32 const& ) { dont("floating-point"); }
 
@@ -351,9 +381,6 @@ struct Scanner
   U32 GetPC() { return pc; }
   void DelayBranch(U32 target) { dont("branch"); }
   void SetAnnul(bool annul) { dont("branch"); }
-
-  bool TestCondition(unsigned cond);
-  bool TestFCondition(unsigned cond);
 
   bool asr_perm(unsigned) { return false; }
   U32 rdasr(unsigned) { dont("asr"); return U32(); }

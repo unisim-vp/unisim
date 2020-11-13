@@ -65,7 +65,7 @@ namespace sv8 {
     sink << DisasmGPR(rs1) << " + " << DisasmGPR(rs2);
   }
 
-  void DisasmCondition::operator () ( std::ostream& sink ) const
+  void DisasmFCondition::operator () ( std::ostream& sink ) const
   {
     sink << cond_name(cond);
   }

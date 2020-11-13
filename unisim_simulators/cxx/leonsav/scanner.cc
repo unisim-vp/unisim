@@ -69,13 +69,13 @@ Scanner::~Scanner()
 //   return complete;
 // }
   
-// void
-// Scanner::gregtouch( unsigned reg, bool write )
-// {
-//   unsigned idx = interface.gregs.touch(reg,write);
-//   if (not gpr[reg].expr.node)
-//     gpr[reg].expr = new GRegRead( reg, idx );
-// }
+void
+Scanner::gregtouch( unsigned reg, bool write )
+{
+  unsigned idx = interface.gregs.touch(reg,write);
+  if (not gprs[reg].expr.node)
+    gprs[reg].expr = new GRegRead( reg, idx );
+}
 
 bool
 Scanner::concretize(unisim::util::symbolic::Expr cond)

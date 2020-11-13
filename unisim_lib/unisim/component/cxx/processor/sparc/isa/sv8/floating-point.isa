@@ -39,29 +39,35 @@
 op fitos( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011000100[9]:rs2[5] )
 
 fitos.disasm = {
-  sink << "fitos %f" << rs2 << ", %f" << rd;
+  sink << "fitos " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fitos.execute = {
-  S32 src = cpu.m_fpint[rs2];
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S32 S32;
+  
+  S32 src = cpu.GetS32(rs2);
   cpu.SetF32(rd, F32( src ));
 }
 
 op fitod( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001000[9]:rs2[5] )
 
 fitod.disasm = {
-  sink << "fitod %f" << (rs2 & -2) << ", %f" << (rd & -2);
+  sink << "fitod " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 fitod.execute = {
-  S32 src = cpu.m_fpint[rs2];
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S32 S32;
+  
+  S32 src = cpu.GetS32(rs2);
   cpu.SetF64(rd & -2, F64( src ));
 }
 
 op fitoq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001100[9]:rs2[5] )
 
 fitoq.disasm = {
-  sink << "fitoq %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fitoq " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 /* Convert Floating-point to Integer Instructions */
@@ -69,29 +75,35 @@ fitoq.disasm = {
 op fstoi( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011010001[9]:rs2[5] )
 
 fstoi.disasm = {
-  sink << "fstoi %f" << rs2 << ", %f" << rd;
+  sink << "fstoi " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fstoi.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S32 S32;
+
   F32 src = cpu.GetF32(rs2);
-  cpu.m_fpint[rd] = S32( src );
+  cpu.SetS32( rd, S32( src ) );
 }
 
 op fdtoi( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011010010[9]:rs2[5] )
 
 fdtoi.disasm = {
-  sink << "fdtoi %f" << (rs2 & -2) << ", %f" << (rd & -2);
+  sink << "fdtoi " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 fdtoi.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S32 S32;
+
   F64 src = cpu.GetF64(rs2 & -2);
-  cpu.m_fpint[rd] = S32( src );
+  cpu.SetS32( rd, S32( src ) );
 }
 
 op fqtoi( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011010011[9]:rs2[5] )
 
 fqtoi.disasm = {
-  sink << "fqtoi %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fqtoi " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 /* Convert Between Floating-point Formats Instructions */
@@ -99,10 +111,13 @@ fqtoi.disasm = {
 op fstod( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001001[9]:rs2[5] )
 
 fstod.disasm = {
-  sink << "fstod %f" << rs2 << ", %f" << (rd & -2);
+  sink << "fstod " << DisasmFPR(rs2) << ", " << DisasmFPR(rd & -2);
 }
 
 fstod.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::F64 F64;
+
   F32 src = cpu.GetF32(rs2);
   cpu.SetF64(rd & -2, F64( src ));
 }
@@ -110,16 +125,19 @@ fstod.execute = {
 op fstoq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001101[9]:rs2[5] )
 
 fstoq.disasm = {
-  sink << "fstoq %f" << rs2 << ", %f" << (rd & 0x1c);
+  sink << "fstoq " << DisasmFPR(rs2) << ", " << DisasmFPR(rd & -4);
 }
 
 op fdtos( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011000110[9]:rs2[5] )
 
 fdtos.disasm = {
-  sink << "fdtos %f" << (rs2 & -2) << ", %f" << rd;
+  sink << "fdtos " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd);
 }
 
 fdtos.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::F64 F64;
+
   F64 src = cpu.GetF64(rs2 & -2);
   cpu.SetF32(rd, F32( src ));
 }
@@ -127,19 +145,19 @@ fdtos.execute = {
 op fdtoq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001110[9]:rs2[5] )
 
 fdtoq.disasm = {
-  sink << "fdtoq %f" << (rs2 & -2) << ", %f" << (rd & 0x1c);
+  sink << "fdtoq " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -4);
 }
 
 op fqtos( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011000111[9]:rs2[5] )
 
 fqtos.disasm = {
-  sink << "fqtos %f" << (rs2 & 0x1c) << ", %f" << rd;
+  sink << "fqtos " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd);
 }
 
 op fqtod( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b011001011[9]:rs2[5] )
 
 fqtod.disasm = {
-  sink << "fqtod %f" << (rs2 & 0x1c) << ", %f" << (rd & -2);
+  sink << "fqtod " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -2);
 }
 
 /* Floating-point Move Instructions */
@@ -147,7 +165,7 @@ fqtod.disasm = {
 op fmovs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000000001[9]:rs2[5] )
 
 fmovs.disasm = {
-  sink << "fmovs %f" << rs2 << ", %f" << rd;
+  sink << "fmovs " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fmovs.execute = {
@@ -157,7 +175,7 @@ fmovs.execute = {
 op fnegs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000000101[9]:rs2[5] )
 
 fnegs.disasm = {
-  sink << "fnegs %f" << rs2 << ", %f" << rd;
+  sink << "fnegs " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fnegs.execute = {
@@ -167,11 +185,13 @@ fnegs.execute = {
 op fabss( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000001001[9]:rs2[5] )
 
 fabss.disasm = {
-  sink << "fabss %f" << rs2 << ", %f" << rd;
+  sink << "fabss " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fabss.execute = {
-  cpu.SetF32(rd, (cpu.GetF32(rs2) >= 0) ? cpu.GetF32(rs2) : -cpu.GetF32(rs2));
+  typedef typename ARCH::F32 F32;
+
+  cpu.SetF32(rd, cpu.Test(cpu.GetF32(rs2) >= F32(0)) ? cpu.GetF32(rs2) : -cpu.GetF32(rs2));
 }
 
 /* Floating-point Square Root Instructions */
@@ -179,19 +199,19 @@ fabss.execute = {
 op fsqrts( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000101001[9]:rs2[5] )
 
 fsqrts.disasm = {
-  sink << "fsqrts %f" << rs2 << ", %f" << rd;
+  sink << "fsqrts " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 op fsqrtd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000101010[9]:rs2[5] )
 
 fsqrtd.disasm = {
-  sink << "fsqrtd %f" << (rs2 & -2) << ", %f" << (rd & -2);
+  sink << "fsqrtd " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 op fsqrtq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b000101011[9]:rs2[5] )
 
 fsqrtq.disasm = {
-  sink << "fsqrtq %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsqrtq " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 /* Floating-point Add and Substract Instructions */
@@ -199,7 +219,7 @@ fsqrtq.disasm = {
 op fadds( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000001[9]:rs2[5] )
 
 fadds.disasm = {
-  sink << "fadds %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fadds " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 fadds.execute = {
@@ -209,7 +229,7 @@ fadds.execute = {
 op faddd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000010[9]:rs2[5] )
 
 faddd.disasm = {
-  sink << "faddd %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "faddd " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 faddd.execute = {
@@ -219,13 +239,13 @@ faddd.execute = {
 op faddq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000011[9]:rs2[5] )
 
 faddq.disasm = {
-  sink << "faddq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "faddq " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 op fsubs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000101[9]:rs2[5] )
 
 fsubs.disasm = {
-  sink << "fsubs %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsubs " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 fsubs.execute = {
@@ -235,7 +255,7 @@ fsubs.execute = {
 op fsubd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000110[9]:rs2[5] )
 
 fsubd.disasm = {
-  sink << "fsubd %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsubd " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 fsubd.execute = {
@@ -245,7 +265,7 @@ fsubd.execute = {
 op fsubq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001000111[9]:rs2[5] )
 
 fsubq.disasm = {
-  sink << "fsubq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fsubq " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 /* Floating-point Multiply and Divide Instructions */
@@ -253,7 +273,7 @@ fsubq.disasm = {
 op fmuls( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001001[9]:rs2[5] )
 
 fmuls.disasm = {
-  sink << "fmuls %f" << rs1 << ", %f" << rs2 << ", %f" << rd;
+  sink << "fmuls " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fmuls.execute = {
@@ -263,7 +283,7 @@ fmuls.execute = {
 op fmuld( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001010[9]:rs2[5] )
 
 fmuld.disasm = {
-  sink << "fmuld %f" << (rs1 & -2) << ", %f" << (rs2 & -2) << ", %f" << (rd & -2);
+  sink << "fmuld " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 fmuld.execute = {
@@ -273,16 +293,19 @@ fmuld.execute = {
 op fmulq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001011[9]:rs2[5] )
 
 fmulq.disasm = {
-  sink << "fmulq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fmulq " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 op fsmuld( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001101001[9]:rs2[5] )
 
 fsmuld.disasm = {
-  sink << "fsmuld %f" << rs1 << ", %f" << rs2 << ", %f" << (rd & -2);
+  sink << "fsmuld " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2) << ", " << DisasmFPR(rd & -2);
 }
 
 fsmuld.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::F64 F64;
+
   F32 op1 = cpu.GetF32(rs1), op2 = cpu.GetF32(rs2);
   cpu.SetF64(rd & -2, F64( op1 ) * F64( op2 ));
 }
@@ -290,13 +313,13 @@ fsmuld.execute = {
 op fdmulq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001101110[9]:rs2[5] )
 
 fdmulq.disasm = {
-  sink << "fdmulq %f" << (rs1 & -2) << ", %f" << (rs2 & -2) << ", %f" << (rd & 0x1c);
+  sink << "fdmulq " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -4);
 }
 
 op fdivs( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001101[9]:rs2[5] )
 
 fdivs.disasm = {
-  sink << "fdivs %f" << rs1 << ", %f" << rs2 << ", %f" << rd;
+  sink << "fdivs " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2) << ", " << DisasmFPR(rd);
 }
 
 fdivs.execute = {
@@ -306,7 +329,7 @@ fdivs.execute = {
 op fdivd( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001110[9]:rs2[5] )
 
 fdivd.disasm = {
-  sink << "fdivd %f" << (rs1 & -2) << ", %f" << (rs2 & -2) << ", %f" << (rd & -2);
+  sink << "fdivd " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2) << ", " << DisasmFPR(rd & -2);
 }
 
 fdivd.execute = {
@@ -316,7 +339,7 @@ fdivd.execute = {
 op fdivq( 0b10[2]:rd[5]:0b110100[6]:rs1[5]:0b001001111[9]:rs2[5] )
 
 fdivq.disasm = {
-  sink << "fdivq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c) << ", %f" << (rd & 0x1c);
+  sink << "fdivq " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4) << ", " << DisasmFPR(rd & -4);
 }
 
 /* Floating-point Compare Instructions */
@@ -324,62 +347,79 @@ fdivq.disasm = {
 op fcmps( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010001[9]:rs2[5] )
 
 fcmps.disasm = {
-  sink << "fcmps %f" << rs1 << ", %f" << rs2;
+  sink << "fcmps " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2);
 }
 
 fcmps.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::BOOL BOOL;
+
   F32 a = cpu.GetF32(rs1), b = cpu.GetF32(rs2);
-  cpu.fcc() = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
+  BOOL le = a <= b, ge = a >= b;
+  cpu.SetFCC(not le, not ge);
 }
 
 op fcmpd( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010010[9]:rs2[5] )
 
 fcmpd.disasm = {
-  sink << "fcmpd %f" << (rs1 & -2) << ", %f" << (rs2 & -2);
+  sink << "fcmpd " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2);
 }
 
 fcmpd.execute = {
-  F64 a = cpu.GetF32(rs1), b = cpu.GetF32(rs2);
-  cpu.fcc() = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::BOOL BOOL;
+
+  F64 a = cpu.GetF64(rs1), b = cpu.GetF64(rs2);
+  BOOL le = a <= b, ge = a >= b;
+  cpu.SetFCC(not le, not ge);
 }
 
 op fcmpq( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010011[9]:rs2[5] )
 
 fcmpq.disasm = {
-  sink << "fcmpq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c);
+  sink << "fcmpq " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4);
 }
 
 op fcmpes( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010101[9]:rs2[5] )
 
 fcmpes.disasm = {
-  sink << "fcmpes %f" << rs1 << ", %f" << rs2;
+  sink << "fcmpes " << DisasmFPR(rs1) << ", " << DisasmFPR(rs2);
 }
 
 fcmpes.execute = {
-  F32 a = cpu.GetF32(rs1), b = cpu.GetF32(rs2);
-  U32 code = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::BOOL BOOL;
 
-  if (code == 3)
-    cpu.abort( Trap_t::fp_exception );
+  F32 a = cpu.GetF32(rs1), b = cpu.GetF32(rs2);
+  BOOL le = a <= b, ge = a >= b;
+
+  if (cpu.Test(not le and not ge))
+    cpu.Abort( Trap_t::fp_exception );
   
-  cpu.fcc() = code;
+  cpu.SetFCC(not le, not ge);
 }
 
 op fcmped( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010110[9]:rs2[5] )
 
 fcmped.disasm = {
-  sink << "fcmped %f" << (rs1 & -2) << ", %f" << (rs2 & -2);
+  sink << "fcmped " << DisasmFPR(rs1 & -2) << ", " << DisasmFPR(rs2 & -2);
 }
 
 fcmped.execute = {
-  F64 a = cpu.GetF32(rs1), b = cpu.GetF32(rs2);
-  U32 code = ((a <= b ? 0 : 2) | (a >= b ? 0 : 1));
-  if (code == 3) cpu.abort( Trap_t::fp_exception );
-  cpu.fcc() = code;
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::BOOL BOOL;
+
+  F64 a = cpu.GetF64(rs1), b = cpu.GetF64(rs2);
+  BOOL le = a <= b, ge = a >= b;
+
+  if (cpu.Test(not le and not ge))
+    cpu.Abort( Trap_t::fp_exception );
+  
+  cpu.SetFCC(not le, not ge);
 }
 
 op fcmpeq( 0b10[2]:rd[5]:0b110101[6]:rs1[5]:0b001010111[9]:rs2[5] )
 
 fcmpeq.disasm = {
-  sink << "fcmpeq %f" << (rs1 & 0x1c) << ", %f" << (rs2 & 0x1c);
+  sink << "fcmpeq " << DisasmFPR(rs1 & -4) << ", " << DisasmFPR(rs2 & -4);
 }
