@@ -38,7 +38,7 @@ op sethi( 0b00[2]:rd[5]:0b100[3]:shl<10> imm22[22] );
 
 sethi.disasm = {
   if( rd == 0 and imm22 == 0 ) sink << "nop";
-  else sink << "sethi %hi(" << /*XXX:%#010x*/ "0x" << hex << imm22 << "), %r" << rd;
+  else sink << "sethi %hi(" << /*XXX:%#010x*/ "0x" << hex << imm22 << "), " << DisasmGPR(rd);
 };
 
 sethi.execute = {
@@ -52,7 +52,7 @@ sethi.execute = {
 op and_( 0b10[2]:rd[5]:0b000001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 and_.disasm = {
-  sink << "and %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "and " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 and_.execute = {
@@ -62,7 +62,7 @@ and_.execute = {
 op andi( 0b10[2]:rd[5]:0b000001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 andi.disasm = {
-  sink << "and %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "and " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 andi.execute = {
@@ -74,7 +74,7 @@ andi.execute = {
 op andcc( 0b10[2]:rd[5]:0b010001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 andcc.disasm = {
-  sink << "andcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "andcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 andcc.execute = {
@@ -90,7 +90,7 @@ andcc.execute = {
 op andcci( 0b10[2]:rd[5]:0b010001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 andcci.disasm = {
-  sink << "andcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "andcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 andcci.execute = {
@@ -106,7 +106,7 @@ andcci.execute = {
 op andn( 0b10[2]:rd[5]:0b000101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 andn.disasm = {
-  sink << "andn %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "andn " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 andn.execute = {
@@ -116,7 +116,7 @@ andn.execute = {
 op andni( 0b10[2]:rd[5]:0b000101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 andni.disasm = {
-  sink << "andn %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "andn " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 andni.execute = {
@@ -128,7 +128,7 @@ andni.execute = {
 op andncc( 0b10[2]:rd[5]:0b010101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 andncc.disasm = {
-  sink << "andncc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "andncc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 andncc.execute = {
@@ -144,7 +144,7 @@ andncc.execute = {
 op andncci( 0b10[2]:rd[5]:0b010101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 andncci.disasm = {
-  sink << "andncc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "andncc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 andncci.execute = {
@@ -160,7 +160,7 @@ andncci.execute = {
 op or_( 0b10[2]:rd[5]:0b000010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 or_.disasm = {
-  sink << "or %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "or " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 or_.execute = {
@@ -170,7 +170,7 @@ or_.execute = {
 op ori( 0b10[2]:rd[5]:0b000010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ori.disasm = {
-  sink << "or %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "or " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 ori.execute = {
@@ -183,9 +183,9 @@ op orcc( 0b10[2]:rd[5]:0b010010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 orcc.disasm = {
   if (rd == 0) {
-    sink << "tst %r" << rs1 << ", %r" << rs2;
+    sink << "tst " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2);
   } else {
-    sink << "orcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+    sink << "orcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
   }
 };
 
@@ -203,9 +203,9 @@ op orcci( 0b10[2]:rd[5]:0b010010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 orcci.disasm = {
   if (rd == 0) {
-    sink << "tst %r" << rs1 << ", " << simm13;
+    sink << "tst " << DisasmGPR(rs1) << ", " << simm13;
   } else {
-    sink << "orcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+    sink << "orcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
   }
 };
 
@@ -222,7 +222,7 @@ orcci.execute = {
 op orn( 0b10[2]:rd[5]:0b000110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 orn.disasm = {
-  sink << "orn %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "orn " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 orn.execute = {
@@ -232,7 +232,7 @@ orn.execute = {
 op orni( 0b10[2]:rd[5]:0b000110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 orni.disasm = {
-  sink << "orn %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "orn " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 orni.execute = {
@@ -244,7 +244,7 @@ orni.execute = {
 op orncc( 0b10[2]:rd[5]:0b010110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 orncc.disasm = {
-  sink << "orncc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "orncc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 orncc.execute = {
@@ -260,7 +260,7 @@ orncc.execute = {
 op orncci( 0b10[2]:rd[5]:0b010110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 orncci.disasm = {
-  sink << "orncc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "orncc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 orncci.execute = {
@@ -276,7 +276,7 @@ orncci.execute = {
 op xor_( 0b10[2]:rd[5]:0b000011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 xor_.disasm = {
-  sink << "xor %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "xor " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 xor_.execute = {
@@ -286,7 +286,7 @@ xor_.execute = {
 op xori( 0b10[2]:rd[5]:0b000011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 xori.disasm = {
-  sink << "xor %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "xor " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 xori.execute = {
@@ -298,7 +298,7 @@ xori.execute = {
 op xorcc( 0b10[2]:rd[5]:0b010011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 xorcc.disasm = {
-  sink << "xorcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "xorcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 xorcc.execute = {
@@ -314,7 +314,7 @@ xorcc.execute = {
 op xorcci( 0b10[2]:rd[5]:0b010011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 xorcci.disasm = {
-  sink << "xorcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "xorcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 xorcci.execute = {
@@ -330,7 +330,7 @@ xorcci.execute = {
 op xnor( 0b10[2]:rd[5]:0b000111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 xnor.disasm = {
-  sink << "xnor %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "xnor " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 xnor.execute = {
@@ -340,7 +340,7 @@ xnor.execute = {
 op xnori( 0b10[2]:rd[5]:0b000111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 xnori.disasm = {
-  sink << "xnor %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "xnor " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 xnori.execute = {
@@ -352,7 +352,7 @@ xnori.execute = {
 op xnorcc( 0b10[2]:rd[5]:0b010111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 xnorcc.disasm = {
-  sink << "xnorcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "xnorcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 xnorcc.execute = {
@@ -368,7 +368,7 @@ xnorcc.execute = {
 op xnorcci( 0b10[2]:rd[5]:0b010111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 xnorcci.disasm = {
-  sink << "xnorcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "xnorcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 xnorcci.execute = {
@@ -386,7 +386,7 @@ xnorcci.execute = {
 op sll( 0b10[2]:rd[5]:0b100101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 sll.disasm = {
-  sink << "sll %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "sll " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 
@@ -399,7 +399,7 @@ sll.execute = {
 op slli( 0b10[2]:rd[5]:0b100101[6]:rs1[5]:0b1[1]:?[8]:shcnt[5] );
 
 slli.disasm = {
-  sink << "sll %r" << rs1 << ", " << shcnt << ", %r" << rd;
+  sink << "sll " << DisasmGPR(rs1) << ", " << shcnt << ", " << DisasmGPR(rd);
 };
 
 slli.execute = {
@@ -409,7 +409,7 @@ slli.execute = {
 op srl( 0b10[2]:rd[5]:0b100110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 srl.disasm = {
-  sink << "srl %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "srl " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 srl.execute = {
@@ -421,7 +421,7 @@ srl.execute = {
 op srli( 0b10[2]:rd[5]:0b100110[6]:rs1[5]:0b1[1]:?[8]:shcnt[5] );
 
 srli.disasm = {
-  sink << "srl %r" << rs1 << ", " << shcnt << ", %r" << rd;
+  sink << "srl " << DisasmGPR(rs1) << ", " << shcnt << ", " << DisasmGPR(rd);
 };
 
 srli.execute = {
@@ -431,7 +431,7 @@ srli.execute = {
 op sra( 0b10[2]:rd[5]:0b100111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 sra.disasm = {
-  sink << "sra %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "sra " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 sra.execute = {
@@ -444,7 +444,7 @@ sra.execute = {
 op srai( 0b10[2]:rd[5]:0b100111[6]:rs1[5]:0b1[1]:?[8]:shcnt[5] );
 
 srai.disasm = {
-  sink << "sra %r" << rs1 << ", " << shcnt << ", %r" << rd;
+  sink << "sra " << DisasmGPR(rs1) << ", " << shcnt << ", " << DisasmGPR(rd);
 };
 
 srai.execute = {
@@ -459,7 +459,7 @@ srai.execute = {
 op add( 0b10[2]:rd[5]:0b000000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 add.disasm = {
-  sink << "add %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "add " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 add.execute = {
@@ -469,7 +469,7 @@ add.execute = {
 op addi( 0b10[2]:rd[5]:0b000000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 addi.disasm = {
-  sink << "add %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "add " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 addi.execute = {
@@ -481,7 +481,7 @@ addi.execute = {
 op addcc( 0b10[2]:rd[5]:0b010000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 addcc.disasm = {
-  sink << "addcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "addcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 addcc.execute = {
@@ -498,7 +498,7 @@ addcc.execute = {
 op addcci( 0b10[2]:rd[5]:0b010000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 addcci.disasm = {
-  sink << "addcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "addcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 addcci.execute = {
@@ -515,7 +515,7 @@ addcci.execute = {
 op addx( 0b10[2]:rd[5]:0b001000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 addx.disasm = {
-  sink << "addx %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "addx " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 addx.execute = {
@@ -527,7 +527,7 @@ addx.execute = {
 op addxi( 0b10[2]:rd[5]:0b001000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 addxi.disasm = {
-  sink << "addx %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "addx " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 addxi.execute = {
@@ -539,7 +539,7 @@ addxi.execute = {
 op addxcc( 0b10[2]:rd[5]:0b011000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 addxcc.disasm = {
-  sink << "addxcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "addxcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 addxcc.execute = {
@@ -562,7 +562,7 @@ addxcc.execute = {
 op addxcci( 0b10[2]:rd[5]:0b011000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 addxcci.disasm = {
-  sink << "addxcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "addxcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 addxcci.execute = {
@@ -587,7 +587,7 @@ addxcci.execute = {
 op taddcc( 0b10[2]:rd[5]:0b100000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 taddcc.disasm = {
-  sink << "taddcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "taddcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 taddcc.execute = {
@@ -607,7 +607,7 @@ taddcc.execute = {
 op taddcci( 0b10[2]:rd[5]:0b100000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 taddcci.disasm = {
-  sink << "taddcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "taddcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 taddcci.execute = {
@@ -627,7 +627,7 @@ taddcci.execute = {
 op taddcctv( 0b10[2]:rd[5]:0b100010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 taddcctv.disasm = {
-  sink << "taddcctv %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "taddcctv " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 taddcctv.execute = {
@@ -649,7 +649,7 @@ taddcctv.execute = {
 op taddcctvi( 0b10[2]:rd[5]:0b100010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 taddcctvi.disasm = {
-  sink << "taddcctv %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "taddcctv " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 taddcctvi.execute = {
@@ -673,7 +673,7 @@ taddcctvi.execute = {
 op sub( 0b10[2]:rd[5]:0b000100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 sub.disasm = {
-  sink << "sub %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "sub " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 sub.execute = {
@@ -683,7 +683,7 @@ sub.execute = {
 op subi( 0b10[2]:rd[5]:0b000100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 subi.disasm = {
-  sink << "sub %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "sub " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 subi.execute = {
@@ -696,9 +696,9 @@ op subcc( 0b10[2]:rd[5]:0b010100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 subcc.disasm = {
   if (rd == 0) {
-    sink << "cmp %r" << rs1 << ", %r" << rs2;
+    sink << "cmp " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2);
   } else {
-    sink << "subcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+    sink << "subcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
   }
 };
 
@@ -718,9 +718,9 @@ op subcci( 0b10[2]:rd[5]:0b010100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 subcci.disasm = {
   if (rd == 0) {
-    sink << "cmp %r" << rs1 << ", " << simm13;
+    sink << "cmp " << DisasmGPR(rs1) << ", " << simm13;
   } else {
-    sink << "subcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+    sink << "subcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
   }
 };
 
@@ -739,7 +739,7 @@ subcci.execute = {
 op subx( 0b10[2]:rd[5]:0b001100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 subx.disasm = {
-  sink << "subx %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "subx " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 subx.execute = {
@@ -751,7 +751,7 @@ subx.execute = {
 op subxi( 0b10[2]:rd[5]:0b001100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 subxi.disasm = {
-  sink << "subx %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "subx " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 subxi.execute = {
@@ -763,7 +763,7 @@ subxi.execute = {
 op subxcc( 0b10[2]:rd[5]:0b011100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 subxcc.disasm = {
-  sink << "subxcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "subxcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 subxcc.execute = {
@@ -786,7 +786,7 @@ subxcc.execute = {
 op subxcci( 0b10[2]:rd[5]:0b011100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 subxcci.disasm = {
-  sink << "subxcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "subxcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 subxcci.execute = {
@@ -811,7 +811,7 @@ subxcci.execute = {
 op tsubcc( 0b10[2]:rd[5]:0b100001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 tsubcc.disasm = {
-  sink << "tsubcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "tsubcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 tsubcc.execute = {
@@ -831,7 +831,7 @@ tsubcc.execute = {
 op tsubcci( 0b10[2]:rd[5]:0b100001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 tsubcci.disasm = {
-  sink << "tsubcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "tsubcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 tsubcci.execute = {
@@ -851,7 +851,7 @@ tsubcci.execute = {
 op tsubcctv( 0b10[2]:rd[5]:0b100011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 tsubcctv.disasm = {
-  sink << "tsubcctv %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "tsubcctv " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 tsubcctv.execute = {
@@ -873,7 +873,7 @@ tsubcctv.execute = {
 op tsubcctvi( 0b10[2]:rd[5]:0b100011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 tsubcctvi.disasm = {
-  sink << "tsubcctv %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "tsubcctv " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 tsubcctvi.execute = {
@@ -897,7 +897,7 @@ tsubcctvi.execute = {
 op mulscc( 0b10[2]:rd[5]:0b100100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 mulscc.disasm = {
-  sink << "mulscc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "mulscc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 mulscc.execute = {
@@ -919,7 +919,7 @@ mulscc.execute = {
 op mulscci( 0b10[2]:rd[5]:0b100100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 mulscci.disasm = {
-  sink << "mulscc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "mulscc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 mulscci.execute = {
@@ -943,7 +943,7 @@ mulscci.execute = {
 op umul( 0b10[2]:rd[5]:0b001010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 umul.disasm = {
-  sink << "umul %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "umul " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 umul.execute = {
@@ -958,7 +958,7 @@ umul.execute = {
 op umuli( 0b10[2]:rd[5]:0b001010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 umuli.disasm = {
-  sink << "umul %r" << rs1 << ", " << uint32_t( simm13 ) << ", %r" << rd;
+  sink << "umul " << DisasmGPR(rs1) << ", " << uint32_t( simm13 ) << ", " << DisasmGPR(rd);
 };
 
 umuli.execute = {
@@ -973,7 +973,7 @@ umuli.execute = {
 op smul( 0b10[2]:rd[5]:0b001011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 smul.disasm = {
-  sink << "smul %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "smul " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 smul.execute = {
@@ -990,7 +990,7 @@ smul.execute = {
 op smuli( 0b10[2]:rd[5]:0b001011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 smuli.disasm = {
-  sink << "smul %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "smul " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 smuli.execute = {
@@ -1007,7 +1007,7 @@ smuli.execute = {
 op umulcc( 0b10[2]:rd[5]:0b011010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 umulcc.disasm = {
-  sink << "umulcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "umulcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 umulcc.execute = {
@@ -1027,7 +1027,7 @@ umulcc.execute = {
 op umulcci( 0b10[2]:rd[5]:0b011010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 umulcci.disasm = {
-  sink << "umulcc %r" << rs1 << ", " << uint32_t( simm13 ) << ", %r" << rd;
+  sink << "umulcc " << DisasmGPR(rs1) << ", " << uint32_t( simm13 ) << ", " << DisasmGPR(rd);
 };
 
 umulcci.execute = {
@@ -1047,7 +1047,7 @@ umulcci.execute = {
 op smulcc( 0b10[2]:rd[5]:0b011011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 smulcc.disasm = {
-  sink << "smulcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "smulcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 smulcc.execute = {
@@ -1067,7 +1067,7 @@ smulcc.execute = {
 op smulcci( 0b10[2]:rd[5]:0b011011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 smulcci.disasm = {
-  sink << "smulcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "smulcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 smulcci.execute = {
@@ -1089,7 +1089,7 @@ smulcci.execute = {
 op udiv( 0b10[2]:rd[5]:0b001110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 udiv.disasm = {
-  sink << "udiv %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "udiv " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 udiv.execute = {
@@ -1106,7 +1106,7 @@ udiv.execute = {
 op udivi( 0b10[2]:rd[5]:0b001110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 udivi.disasm = {
-  sink << "udiv %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "udiv " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 udivi.execute = {
@@ -1123,7 +1123,7 @@ udivi.execute = {
 op sdiv( 0b10[2]:rd[5]:0b001111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 sdiv.disasm = {
-  sink << "sdiv %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "sdiv " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 sdiv.execute = {
@@ -1143,7 +1143,7 @@ sdiv.execute = {
 op sdivi( 0b10[2]:rd[5]:0b001111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 sdivi.disasm = {
-  sink << "sdiv %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "sdiv " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 sdivi.execute = {
@@ -1162,7 +1162,7 @@ sdivi.execute = {
 op udivcc( 0b10[2]:rd[5]:0b011110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 udivcc.disasm = {
-  sink << "udivcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "udivcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 udivcc.execute = {
@@ -1185,7 +1185,7 @@ udivcc.execute = {
 op udivcci( 0b10[2]:rd[5]:0b011110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 udivcci.disasm = {
-  sink << "udivcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "udivcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 udivcci.execute = {
@@ -1208,7 +1208,7 @@ udivcci.execute = {
 op sdivcc( 0b10[2]:rd[5]:0b011111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 sdivcc.disasm = {
-  sink << "sdivcc %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "sdivcc " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 };
 
 sdivcc.execute = {
@@ -1232,7 +1232,7 @@ sdivcc.execute = {
 op sdivcci( 0b10[2]:rd[5]:0b011111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 sdivcci.disasm = {
-  sink << "sdivcc %r" << rs1 << ", " << simm13 << ", %r" << rd;
+  sink << "sdivcc " << DisasmGPR(rs1) << ", " << simm13 << ", " << DisasmGPR(rd);
 };
 
 sdivcci.execute = {
