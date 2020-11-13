@@ -65,7 +65,7 @@ namespace Star {
   }
   
   void
-  Arch::abort( Trap_t::TrapType_t  _traptype )
+  Arch::Abort( Trap_t::TrapType_t  _traptype )
   {
     Trap_t const& trap = Trap_t::s_hardware[_traptype];
     if( m_trap.m_name and trap.m_priority > m_trap.m_priority ) return;
@@ -75,7 +75,7 @@ namespace Star {
   }
   
   void
-  Arch::swtrap( uint32_t id )
+  Arch::SWTrap( uint32_t id )
   {
     Trap_t const& trap = Trap_t::s_hardware[Trap_t::trap_instruction];
     if( m_trap.m_name and trap.m_priority > m_trap.m_priority ) return;
@@ -90,7 +90,8 @@ namespace Star {
   }
   
   void
-  Arch::rotate( int32_t _off ) {
+  Arch::RotateWindow( int32_t _off )
+  {
     // Export GPRs
     std::memcpy( &(m_wgpr[(cwp() % s_nwindows)*16]),     &(m_gpr[8]),  16*sizeof( uint32_t ) );
     std::memcpy( &(m_wgpr[((cwp()+1) % s_nwindows)*16]), &(m_gpr[24]),  8*sizeof( uint32_t ) );
@@ -124,7 +125,7 @@ namespace Star {
           (((0 /* NWP */)  & 0x07) <<  4) |
           (((s_nwindows-1) & 0x1f) <<  0);
 
-      default: abort( Trap_t::illegal_instruction );
+      default: Abort( Trap_t::illegal_instruction );
       }
     return 0;
   }
@@ -135,10 +136,10 @@ namespace Star {
       {
       case 17:
         if( ((_value >> 14) & 0x01) == 1 )
-          abort( Trap_t::illegal_instruction );
+          Abort( Trap_t::illegal_instruction );
         break;
       default:
-        abort( Trap_t::illegal_instruction );
+        Abort( Trap_t::illegal_instruction );
     }
   }
 
@@ -320,7 +321,7 @@ namespace Star {
     et() = 0;
     ps() = s();
     s() = 1;
-    rotate( -1 );
+    RotateWindow( -1 );
     if( not m_annul ) {
       m_gpr[17] = m_pc;
       m_gpr[18] = m_npc;

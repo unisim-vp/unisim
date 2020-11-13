@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2020,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -73,6 +73,20 @@ namespace truth_table {
 
   template <typename TT, unsigned Tbit> struct InBit<TT, Tbit, 1> { static TT const tt = 0; };
 
+  template <typename TT, bool CONST>
+  struct Always
+  {
+    typedef Always<TT, CONST> this_type;
+    typedef TT tt_type;
+
+    static tt_type const tt = tt_type(CONST ? -1 : 0);
+
+    template <typename RT> LUT<TT,TT(tt&RT::tt)> operator and ( RT const& ) const { return LUT<TT,TT(tt&RT::tt)>(); }
+    template <typename RT> LUT<TT,TT(tt|RT::tt)> operator  or ( RT const& ) const { return LUT<TT,TT(tt|RT::tt)>(); }
+    template <typename RT> LUT<TT,TT(tt^RT::tt)> operator xor ( RT const& ) const { return LUT<TT,TT(tt^RT::tt)>(); }
+    LUT<TT,TT(~tt)> operator ! () const { return LUT<TT,TT(~tt)>(); }
+  };
+  
 } // end of namespace truth_table
 } // end of namespace util
 } // end of namespace unisim

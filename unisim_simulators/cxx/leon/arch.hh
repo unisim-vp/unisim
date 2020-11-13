@@ -38,9 +38,11 @@
 #include <fpu.hh>
 #include <fwd.hh>
 #include <hw/peripheral.hh>
+#include <unisim/component/cxx/processor/sparc/isa/sv8/arch.hh>
 #include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 #include <unisim/component/cxx/processor/sparc/asi.hh>
+#include <unisim/util/truth_table/truth_table.hh>
 #include <iosfwd>
 #include <inttypes.h>
 
@@ -105,42 +107,13 @@ namespace Star
     typedef unisim::component::cxx::processor::sparc::Trap_t Trap_t;
     typedef unisim::component::cxx::processor::sparc::ASI ASI;
     
-    // Processor State
-    bool                          m_execute_mode;
-    bool                          m_annul;
-    Trap_t                        m_trap;
-    uint32_t                      m_tbr;
-    uint32_t                      m_psr;
-    uint32_t                      m_pc;
-    uint32_t                      m_npc;
-    uint32_t                      m_nnpc;
-    int64_t                       m_instcount;
-    
-    // Integer Registers
-    static
-    uint32_t const                s_nwindows = 8;
-    uint32_t                      m_gpr[32]; // Current window
-    uint32_t                      m_wgpr[s_nwindows*16]; // Windowed regs
-    uint32_t                      m_wim;
-    uint32_t                      m_y;
-    
-    // Floating Point Registers
-    uint32_t                      m_fsr;
-    FPRawBank                     m_fprawbank;
-    FP32Bank                      m_fp32;
-    FP64Bank                      m_fp64;
-    FP128Bank                     m_fp128;
-    FPIntBank                     m_fpint;
-
     // Decoder
     typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Arch> Decoder;
     typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Arch> Operation;
-    Decoder                       decoder;
-    Operation*                    lastoperation;
-    bool                          disasm;
-    
+
     // Memory system
-    struct Page {
+    struct Page
+    {
       static uint32_t const       s_bits = 12;
       
       Page*                       m_next;
@@ -152,30 +125,60 @@ namespace Star
       ~Page() { delete m_next; }
     };
     
-    static uint32_t const         s_bits = 12;
-    Page*                         m_pages[1<<s_bits];
-    
-    // Peripherals
-    int                           m_peripheralcount;
-    SSv8::Peripheral**            m_peripherals;
-    
-    // Memory stats
-    int64_t                       m_asi_accesses[256];
-    
     Arch();
     ~Arch();
 
     void                          step();
     void                          pc( uint32_t _pc ) { m_pc = _pc; m_npc = _pc + 4; m_nnpc = _pc + 8; };
+    void                          dumptrap( std::ostream& _sink );
+    void                          take_trap();
+
+    /* General-Purpose registers */
+    uint32_t                      GetGPR(unsigned id) { return m_gpr[id]; }
+    void                          SetGPR(unsigned id, uint32_t value) { if (id) m_gpr[id] = value; }
+    /* Special-Purpose Register */
+    uint32_t                      GetY() { return m_y; }
+    void                          SetY(uint32_t value) { m_y = value; }
+    uint32_t                      GetWIM() { return m_wim; }
+    void                          SetWIM(uint32_t value) { m_wim = value; }
+    uint32_t                      GetTBR() { return m_tbr; }
+    void                          SetTBR(uint32_t value) { m_tbr = value; }
+    
+    
+    /* Floating-Point registers */
+    F32                           GetF32(unsigned id) { return m_fp32[id]; }
+    void                          SetF32(unsigned id, F32 value) { m_fp32[id] = value; }
+    F64                           GetF64(unsigned id) { return m_fp64[id]; }
+    void                          SetF64(unsigned id, F64 value) { m_fp64[id] = value; }
+    S32                           GetS32(unsigned id) { return m_fpint[id]; }
+    void                          SetS32(unsigned id, S32 value) { m_fp32[id] = value; }
+
+    U32                           GetFSR() { return m_fsr; }
+    void                          SetFSR(U32 value) { m_fsr = value; }
+
+    /* Flags */
+    bool                          GetCarry() { return (m_psr >> 20) & 1; }
+    bool                          GetN() { return (m_psr >> 23) & 1; }
+    bool                          GetV() { return (m_psr >> 21) & 1; }
+    bool                          GetET() { return et(); }
+    void                          SetET(bool _et) { et() = _et; }
+    void                          SetS(bool _s) { s() = _s; }
+    bool                          GetPS() { return ps(); }
+    uint32_t                      GetPSR() { return m_psr; }
+    void                          SetPSR(uint32_t _psr) { m_psr = _psr; }
+    /* FP Flags */
+    void                          SetFCC(bool nle, bool nge) { fcc() = nle*2 | nge*1; }
+
+    /* Control */
+    void                          DelayBranch( uint32_t _target ) { m_nnpc = _target; }
+    uint32_t                      GetPC() { return m_pc; }
     void                          StopFetch() { m_execute_mode = false; }
     void                          SetAnnul( bool _annul ) { m_annul = _annul; }
     
-    void                          abort( Trap_t::TrapType_t  _trap );
-    void                          swtrap( uint32_t _idx );
+    void                          Abort( Trap_t::TrapType_t  _trap );
+    void                          SWTrap( uint32_t _idx );
     uint32_t                      nwindows() { return s_nwindows; }
     //    void                          jmp( uint32_t _nnpc, uint32_t _pcreg );
-    void                          dumptrap( std::ostream& _sink );
-    void                          take_trap();
 
     // PSR access functions
     BitField_t                    impl()  { return BitField_t( m_psr, 28, 4 ); }
@@ -193,9 +196,11 @@ namespace Star
     BitField_t                    et()    { return BitField_t( m_psr,  5, 1 ); }
     BitField_t                    cwp()   { return BitField_t( m_psr,  0, 5 ); }
     // + read only functions
-    bool                          super() { return (m_psr & (1ul << 7)); }
+    bool                          IsSuper() { return (m_psr & (1ul << 7)); }
     ASI                           rqasi() const { return (m_psr & (1ul << 7)) ? ASI::supervisor_data : ASI::user_data; }
     ASI                           insn_asi() { return (m_psr & (1ul << 7)) ? ASI::supervisor_instruction : ASI::user_instruction; }
+
+    bool                          Test(bool cond) { return cond; }
     // common conditions
     // bool                          TestCondition(unsigned cond)
     // {
@@ -222,16 +227,19 @@ namespace Star
     // }
     struct Conditions
     {
-      template <unsigned BIT> using Bit = util::truth_table::InBit<uint16_t,BIT>;
+      template <unsigned BIT> using Bit = unisim::util::truth_table::InBit<uint16_t,BIT>;
+      template <unsigned CST> using All = unisim::util::truth_table::Always<uint16_t,CST>;
       
-      Bit<3> N() const { return Bit<3>(); }
-      Bit<2> Z() const { return Bit<2>(); }
-      Bit<1> V() const { return Bit<1>(); }
-      Bit<0> C() const { return Bit<0>(); }
+      auto N() const { return Bit<3>(); }
+      auto Z() const { return Bit<2>(); }
+      auto V() const { return Bit<1>(); }
+      auto C() const { return Bit<0>(); }
+      auto F() const { return All<false>(); }
+      auto T() const { return All<true>(); }
 
       Conditions(Arch& _arch) : arch(_arch) {} Arch& arch;
 
-      template <class TT> bool Eval( TT const& tt ) { unsigned nzcv = (m_psr >> 20) & 15; return (tt.tt >> nzcv) & 1; }
+      template <class TT> bool Eval( TT const& tt ) { unsigned nzcv = (arch.m_psr >> 20) & 15; return (tt.tt >> nzcv) & 1; }
     };
     // core.Test( ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0) );
     
@@ -253,9 +261,10 @@ namespace Star
     // bool                          condgu()  { return (0x0505/*0b0000010100000101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~(C | Z)
     
     // + write only functions
-    void                          modicc( uint32_t _mask, uint32_t _n, uint32_t _z, uint32_t _v, uint32_t _c ) {
-      m_psr &= ~(_mask << 20); // clearing modified bits
-      m_psr |= (((_n << 3) | (_z << 2) | (_v << 1) | (_c << 0)) & _mask) << 20; // applying modification
+    void                          SetNZVC(uint32_t _n, uint32_t _z, uint32_t _v, uint32_t _c)
+    {
+      m_psr &= ~(0xf << 20); // clearing modified bits
+      m_psr |= (((_n << 3) | (_z << 2) | (_v << 1) | (_c << 0)) & 0xf) << 20; // applying modification
     }
     
     // TBR access functions
@@ -264,11 +273,11 @@ namespace Star
     BitField_t                    zero()  { return BitField_t( m_tbr, 0, 4 ); }
     
     // Register window access functions
-    void                          rotate( int32_t _off );
-    bool                          invalidwindow( int32_t _off ) { return ((m_wim >> (uint32_t(cwp() + s_nwindows + _off) % s_nwindows)) & 1) != 0; }
+    void                          RotateWindow( int32_t _off );
+    bool                          InvalidWindow( int32_t _off ) { return ((m_wim >> (uint32_t(cwp() + s_nwindows + _off) % s_nwindows)) & 1) != 0; }
     
     // Ancillary state registers (ASR) access functions
-    bool                          asr_perm( uint32_t _idx ) { return super(); }
+    bool                          asr_perm( uint32_t _idx ) { return IsSuper(); }
     uint32_t                      rdasr( uint32_t _idx );
     void                          wrasr( uint32_t _idx, uint32_t _value );
     
@@ -285,17 +294,19 @@ namespace Star
     // + read only functions
     struct FConditions
     {
-      template <unsigned BIT> using Bit = util::truth_table::InBit<uint16_t,BIT>;
+      template <unsigned BIT> using Bit = unisim::util::truth_table::InBit<uint16_t,BIT>;
+      template <unsigned CST> using All = unisim::util::truth_table::Always<uint16_t,CST>;
       
       auto E() const { return not Bit<1>() and not Bit<0>(); }
       auto L() const { return not Bit<1>() and     Bit<0>(); }
       auto G() const { return     Bit<1>() and not Bit<0>(); }
       auto U() const { return     Bit<1>() and     Bit<0>(); }
+      auto F() const { return                  All<false>(); }
+      auto T() const { return                  All <true>(); }
 
-      FConditions(Scanner& _scanner) : scanner(_scanner) {}
       FConditions(Arch& _arch) : arch(_arch) {} Arch& arch;
 
-      template <class TT> bool Eval( TT const& tt ) { unsigned fcc = (m_fsr >> 10) & 3; return (tt.tt >> fcc) & 1; }
+      template <class TT> bool Eval( TT const& tt ) { unsigned fcc = (arch.m_fsr >> 10) & 3; return (tt.tt >> fcc) & 1; }
     };
 
     // bool                          fconde()   { return (0x1/*0b0001*/ >> ((m_fsr >> 10) & 3)) & 1; }
@@ -402,11 +413,11 @@ namespace Star
       unsigned const bytecount = TypeInfo<U>::byte_count;
       
       if (addr & (bytecount-1))
-        abort( Trap_t::mem_address_not_aligned );
+        Abort( Trap_t::mem_address_not_aligned );
       
       uint8_t storage[bytecount];
       if (not read( asi, addr, bytecount, &storage[0] ))
-        abort( (asi.code == asi.user_instruction or asi.code == asi.supervisor_instruction) ?
+        Abort( (asi.code == asi.user_instruction or asi.code == asi.supervisor_instruction) ?
                Trap_t::instruction_access_exception : Trap_t::data_access_exception );
       
       U res(0);
@@ -422,14 +433,14 @@ namespace Star
       unsigned const bytecount = TypeInfo<U>::byte_count;
       
       if (addr & (bytecount-1))
-        abort( Trap_t::mem_address_not_aligned );
+        Abort( Trap_t::mem_address_not_aligned );
       
       uint8_t storage[bytecount];
       for (unsigned idx = bytecount; idx-- > 0;)
         { storage[idx] = uint8_t( value ); value >>= 8; }
       
       if (not write( asi, addr, bytecount, &storage[0] ))
-        abort( Trap_t::data_access_exception );
+        Abort( Trap_t::data_access_exception );
     }
     
     // Hopefully native float type is IEEE.754 and its memory
@@ -459,10 +470,50 @@ namespace Star
 
     void WithPrivilege()
     {
-      if (not super())
-        abort( Trap_t::privileged_instruction );
+      if (not IsSuper())
+        Abort( Trap_t::privileged_instruction );
     }
     
+    // Processor State
+    bool                          m_execute_mode;
+    bool                          m_annul;
+    Trap_t                        m_trap;
+    uint32_t                      m_tbr;
+    uint32_t                      m_psr;
+    uint32_t                      m_pc;
+    uint32_t                      m_npc;
+    uint32_t                      m_nnpc;
+    int64_t                       m_instcount;
+    
+    // Integer Registers
+    static
+    uint32_t const                s_nwindows = 8;
+    uint32_t                      m_gpr[32]; // Current window
+    uint32_t                      m_wgpr[s_nwindows*16]; // Windowed regs
+    uint32_t                      m_wim;
+    uint32_t                      m_y;
+    
+    // Floating Point Registers
+    uint32_t                      m_fsr;
+    FPRawBank                     m_fprawbank;
+    FP32Bank                      m_fp32;
+    FP64Bank                      m_fp64;
+    FP128Bank                     m_fp128;
+    FPIntBank                     m_fpint;
+
+    Decoder                       decoder;
+    Operation*                    lastoperation;
+    bool                          disasm;
+    
+    static uint32_t const         s_bits = 12;
+    Page*                         m_pages[1<<s_bits];
+    
+    // Peripherals
+    int                           m_peripheralcount;
+    SSv8::Peripheral**            m_peripherals;
+    
+    // Memory stats
+    int64_t                       m_asi_accesses[256];
   };
 } // end of namespace Star
 
