@@ -32,46 +32,58 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef LEONSAV_REVIEW_HH
-#define LEONSAV_REVIEW_HH
+#include <scanner.hh>
 
-#include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
-#include <unisim/util/sav/sav.hh>
-#include <unisim/util/symbolic/symbolic.hh>
-#include <string>
-#include <memory>
-#include <stdint.h>
-
-struct Scanner;
-
-struct Interface
+Scanner::Scanner( Interface& iif )
+  : interface(iif)
 {
-  typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Scanner> Operation;
-  typedef unisim::util::symbolic::Expr Expr;
-  typedef void (*testcode_t)(uint64_t*);
-  struct Text { virtual void write(uint32_t) = 0; virtual ~Text() {} };
+}
 
-  Interface( Operation const& op, uint32_t code, std::string const& disasm );
+Scanner::~Scanner()
+{
+}
 
-  void memaccess( Expr const& addr, bool iswrite );
-  uintptr_t workcells() const;
-  void gencode(Text& text) const;
-  void field_name(unsigned idx, std::ostream& sink) const;
-  bool usemem() const { return addrs.size(); }
+// bool
+// Scanner::close( Scanner const& ref )
+// {
+//   bool complete = path->close();
 
-  uint32_t memcode;
-  std::string asmcode, gilname;
-  unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
-  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
-  std::shared_ptr<unisim::util::sav::ActionNode> behavior;
-  struct RelCmp { bool operator () (uint64_t l, uint64_t r) const { return int64_t(l-r) < 0; } };
-  std::set<uint64_t,RelCmp> addrs;
-  Expr base_addr;
-  unisim::util::sav::Addressings addressings;
-};
+//   // Scalar integer registers
+//   for (unsigned reg = 0; reg < GREGCOUNT; ++reg)
+//     if (gpr[reg].expr != ref.gpr[reg].expr)
+//       path->add_update( new GRegWrite( reg, interface.gregs.index(reg), gpr[reg].expr ) );
 
-struct TestLess { bool operator () ( Interface const& a, Interface const& b ) const; };
+//   // Vector Registers
+//   for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
+//     if (interface.vregs.modified(reg))
+//       path->add_update( new VRegWrite( reg, interface.vregs.index(reg), vector_views[reg].GetConstStorage( &vector_data[reg][0], NeonRegister(), VUConfig::BYTECOUNT )->expr ) );
+
+//   // Flags
+//   for (Flag reg; reg.next();)
+//     if (flags[reg.idx()].expr != ref.flags[reg.idx()].expr)
+//       path->add_update( newRegWrite( reg, flags[reg.idx()].expr ) );
+
+//   for (Expr const& store : stores)
+//     path->add_update( store );
+    
+//   return complete;
+// }
   
-typedef std::multiset<Interface, TestLess> TestDB;
+// void
+// Scanner::gregtouch( unsigned reg, bool write )
+// {
+//   unsigned idx = interface.gregs.touch(reg,write);
+//   if (not gpr[reg].expr.node)
+//     gpr[reg].expr = new GRegRead( reg, idx );
+// }
 
-#endif // LEONSAV_TEST_HH
+bool
+Scanner::concretize(unisim::util::symbolic::Expr cond)
+{
+  if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
+    return cnode->Get( bool() );
+
+  bool predicate = path->proceed( cond );
+  path = path->next( predicate );
+  return predicate;
+}

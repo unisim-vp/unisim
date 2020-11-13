@@ -37,473 +37,120 @@
 op save( 0b10[2]:rd[5]:0b111100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
 
 save.disasm = {
-  sink << "save %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "save " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 }
 
 save.execute = {
-  if (cpu.invalidwindow( -1 ))
-    cpu.abort( Trap_t::window_overflow );
-  
-  uint32_t result = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  cpu.rotate( -1 );
-  cpu.m_gpr[rd] = result;
+  typedef typename ARCH::U32 U32;
+
+  if (cpu.InvalidWindow( -1 ))
+    cpu.Abort( Trap_t::window_overflow );
+
+  U32 result = cpu.GetGPR(rs1) + cpu.GetGPR(rs2);
+  cpu.RotateWindow( -1 );
+  cpu.SetGPR(rd, result);
 }
 
 op savei( 0b10[2]:rd[5]:0b111100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
 
 savei.disasm = {
-  if( simm13 >= 0 ) sink << "save %r" << rs1 << ", " << "0x" << hex << simm13 << ", %r" << rd;
-  else              sink << "save %r" << rs1 << ", -" << "0x" << hex << -simm13 << ", %r" << rd;
+  sink << "save " << DisasmRIAddress(rs1, simm13) << ", " << DisasmGPR(rd);
 }
 
 savei.execute = {
-  if (cpu.invalidwindow( -1 ))
-    cpu.abort( Trap_t::window_overflow );
+  typedef typename ARCH::U32 U32;
+
+  if (cpu.InvalidWindow( -1 ))
+    cpu.Abort( Trap_t::window_overflow );
   
-  uint32_t result = cpu.m_gpr[rs1] + simm13;
-  cpu.rotate( -1 );
-  cpu.m_gpr[rd] = result;
+  U32 result = cpu.GetGPR(rs1) + U32(simm13);
+  cpu.RotateWindow( -1 );
+  cpu.SetGPR(rd, result);
 }
 
 op restore( 0b10[2]:rd[5]:0b111101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
 
 restore.disasm = {
-  sink << "restore %r" << rs1 << ", %r" << rs2 << ", %r" << rd;
+  sink << "restore " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 }
 
 restore.execute = {
-  if (cpu.invalidwindow( +1 ))
-    cpu.abort( Trap_t::window_underflow );
+  typedef typename ARCH::U32 U32;
+
+  if (cpu.InvalidWindow( +1 ))
+    cpu.Abort( Trap_t::window_underflow );
   
-  uint32_t result = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  cpu.rotate( +1 );
-  cpu.m_gpr[rd] = result;
+  U32 result = cpu.GetGPR(rs1) + cpu.GetGPR(rs2);
+  cpu.RotateWindow( +1 );
+  cpu.SetGPR(rd, result);
 }
 
 op restorei( 0b10[2]:rd[5]:0b111101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
 
 restorei.disasm = {
-  if( simm13 >= 0 ) sink << "restore %r" << rs1 << ", " << "0x" << hex << simm13 << ", %r" << rd;
-  else              sink << "restore %r" << rs1 << ", -" << "0x" << hex << -simm13 << ", %r" << rd;
+  if( simm13 >= 0 ) sink << "restore " << DisasmGPR(rs1) << ", " << "0x" << hex << simm13 << ", " << DisasmGPR(rd);
+  else              sink << "restore " << DisasmGPR(rs1) << ", -" << "0x" << hex << -simm13 << ", " << DisasmGPR(rd);
 }
 
 restorei.execute = {
-  if (cpu.invalidwindow( +1 ))
-    cpu.abort( Trap_t::window_underflow );
+  typedef typename ARCH::U32 U32;
+
+  if (cpu.InvalidWindow( +1 ))
+    cpu.Abort( Trap_t::window_underflow );
   
-  uint32_t result = cpu.m_gpr[rs1] + simm13;
-  cpu.rotate( +1 );
-  cpu.m_gpr[rd] = result;
+  U32 result = cpu.GetGPR(rs1) + U32(simm13);
+  cpu.RotateWindow( +1 );
+  cpu.SetGPR(rd, result);
 }
 
 /* Branch on Integer Condition Codes Instructions */
 
-op ba( 0b00[2]:annul[1]:0b1000[4]:0b010[3]:shl<2> sext<32> disp22[22] )
+op ba( 0b00[2]:annul[1]:0b1000[4]:0b010[3]:shl<2> sext disp22[22] )
 
 ba.disasm = {
-  sink << "ba" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
+  sink << "ba" << (annul ? ",a " : " ") << "0x" << std::hex << pc + disp22;
+};
 
 ba.execute = {
-  cpu.m_nnpc = cpu.m_pc + disp22;
-  cpu.m_annul = annul;
-}
+  cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
+  cpu.SetAnnul(annul);
+};
 
-op bn( 0b00[2]:annul[1]:0b0000[4]:0b010[3]:shl<2> sext<32> disp22[22] )
+op bc( 0b00[2]:annul[1]:cond[4]:0b010[3]:shl<2> sext<32> disp22[22] );
 
-bn.disasm = {
-  sink << "bn" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
+bc.disasm = {
+  sink << "b" << DisasmCondition(cond) << (annul ? ",a " : " ") << "0x" << std::hex << (this->GetAddr() + disp22);
+};
 
-bn.execute = {
-  cpu.m_annul = annul;
-}
-
-op bne( 0b00[2]:annul[1]:0b1001[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bne.disasm = {
-  sink << "bne" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bne.execute = {
-  if( cpu.condne() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
+bc.execute = {
+  if (cpu.TestCondition(cond))
+    cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
   else
-  { cpu.m_annul = annul; }
-}
-
-op be( 0b00[2]:annul[1]:0b0001[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-be.disasm = {
-  sink << "be" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-be.execute = {
-  if( cpu.conde() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bg( 0b00[2]:annul[1]:0b1010[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bg.disasm = {
-  sink << "bg" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bg.execute = {
-  if( cpu.condg() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op ble( 0b00[2]:annul[1]:0b0010[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-ble.disasm = {
-  sink << "ble" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-ble.execute = {
-  if( cpu.condle() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bge( 0b00[2]:annul[1]:0b1011[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bge.disasm = {
-  sink << "bge" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bge.execute = {
-  if( cpu.condge() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bl( 0b00[2]:annul[1]:0b0011[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bl.disasm = {
-  sink << "bl" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bl.execute = {
-  if( cpu.condl() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bgu( 0b00[2]:annul[1]:0b1100[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bgu.disasm = {
-  sink << "bgu" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bgu.execute = {
-  if( cpu.condgu() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bleu( 0b00[2]:annul[1]:0b0100[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bleu.disasm = {
-  sink << "bleu" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bleu.execute = {
-  if( cpu.condleu() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bcc( 0b00[2]:annul[1]:0b1101[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bcc.disasm = {
-  sink << "bcc" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bcc.execute = {
-  if( cpu.condcc() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bcs( 0b00[2]:annul[1]:0b0101[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bcs.disasm = {
-  sink << "bcs" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bcs.execute = {
-  if( cpu.condcs() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bpos( 0b00[2]:annul[1]:0b1110[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bpos.disasm = {
-  sink << "bpos" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bpos.execute = {
-  if( cpu.condpos() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bneg( 0b00[2]:annul[1]:0b0110[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bneg.disasm = {
-  sink << "bneg" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bneg.execute = {
-  if( cpu.condneg() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bvc( 0b00[2]:annul[1]:0b1111[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bvc.disasm = {
-  sink << "bvc" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bvc.execute = {
-  if( cpu.condvc() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op bvs( 0b00[2]:annul[1]:0b0111[4]:0b010[3]:shl<2> sext<32> disp22[22] )
-
-bvs.disasm = {
-  sink << "bvs" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-bvs.execute = {
-  if( cpu.condvs() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
+    cpu.SetAnnul(annul);
+};
 
 /* Branch on Floating-point Condition Codes Instructions */
 
-op fba( 0b00[2]:annul[1]:0b1000[4]:0b110[3]:shl<2> sext<32> disp22[22] )
+op fba( 0b00[2]:annul[1]:0b1000[4]:0b110[3]:shl<2> sext<32> disp22[22] );
 
 fba.disasm = {
   sink << "fba" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
+};
 
 fba.execute = {
-  cpu.m_nnpc = cpu.m_pc + disp22;
-  cpu.m_annul = annul;
-}
+  cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
+  cpu.SetAnnul(annul);
+};
+  
+op fbc(   0b00[2]:annul[1]:cond[4]:0b110[3]:shl<2> sext<32> disp22[22] );
 
-op fbn( 0b00[2]:annul[1]:0b0000[4]:0b110[3]:shl<2> sext<32> disp22[22] )
+fbc.disasm = { sink << "fb" << DisasmFCondition(cond) << (annul ? ",a " : " ") << "0x" << hex << pc + disp22; };
 
-fbn.disasm = {
-  sink << "fbn" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbn.execute = {
-  cpu.m_annul = annul;
-}
-
-op fbu( 0b00[2]:annul[1]:0b0111[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbu.disasm = {
-  sink << "fbu" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbu.execute = {
-  if( cpu.fcondu() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
+fbc.execute = {
+  if (cpu.TestFCondition(cond))
+    cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
   else
-  { cpu.m_annul = annul; }
-}
-
-op fbg( 0b00[2]:annul[1]:0b0110[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbg.disasm = {
-  sink << "fbg" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbg.execute = {
-  if( cpu.fcondg() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbug( 0b00[2]:annul[1]:0b0101[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbug.disasm = {
-  sink << "fbug" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbug.execute = {
-  if( cpu.fcondug() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbl( 0b00[2]:annul[1]:0b0100[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbl.disasm = {
-  sink << "fbl" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbl.execute = {
-  if( cpu.fcondl() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbul( 0b00[2]:annul[1]:0b0011[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbul.disasm = {
-  sink << "fbul" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbul.execute = {
-  if( cpu.fcondul() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fblg( 0b00[2]:annul[1]:0b0010[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fblg.disasm = {
-  sink << "fblg" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fblg.execute = {
-  if( cpu.fcondlg() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbne( 0b00[2]:annul[1]:0b0001[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbne.disasm = {
-  sink << "fbne" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbne.execute = {
-  if( cpu.fcondne() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbe( 0b00[2]:annul[1]:0b1001[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbe.disasm = {
-  sink << "fbe" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbe.execute = {
-  if( cpu.fconde() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbue( 0b00[2]:annul[1]:0b1010[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbue.disasm = {
-  sink << "fbue" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbue.execute = {
-  if( cpu.fcondue() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbge( 0b00[2]:annul[1]:0b1011[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbge.disasm = {
-  sink << "fbge" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbge.execute = {
-  if( cpu.fcondge() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbuge( 0b00[2]:annul[1]:0b1100[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbuge.disasm = {
-  sink << "fbuge" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbuge.execute = {
-  if( cpu.fconduge() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fble( 0b00[2]:annul[1]:0b1101[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fble.disasm = {
-  sink << "fble" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fble.execute = {
-  if( cpu.fcondle() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbule( 0b00[2]:annul[1]:0b1110[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbule.disasm = {
-  sink << "fbule" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbule.execute = {
-  if( cpu.fcondule() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
-}
-
-op fbo( 0b00[2]:annul[1]:0b1111[4]:0b110[3]:shl<2> sext<32> disp22[22] )
-
-fbo.disasm = {
-  sink << "fbo" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
-}
-
-fbo.execute = {
-  if( cpu.fcondo() )
-  { cpu.m_nnpc = cpu.m_pc + disp22; }
-  else
-  { cpu.m_annul = annul; }
+    cpu.SetAnnul(annul);
 }
 
 /* Branch on Coprocessor Condition Codes Instructions */
@@ -606,15 +253,17 @@ cb012.disasm = {
 
 /* Call and Link Instructions */
 
-op call( 0b01[2]:disp30[30] )
+op call( 0b01[2]:shl<2> disp30[30] );
 
 call.disasm = {
-  sink << "call " << "0x" << hex << 4*disp30;
-}
+  sink << "call " << "0x" << std::hex << disp30;
+};
 
 call.execute = {
-  uint32_t address = cpu.m_pc + 4*disp30;
-  cpu.jmp( address, 15 );
+  typedef typename ARCH::U32 U32;
+
+  cpu.DelayBranch( cpu.GetPC() + U32(disp30) );
+  cpu.SetGPR(15, cpu.GetPC());
 }
 
 /* Jump and Link Instructions */
@@ -622,22 +271,26 @@ call.execute = {
 op jmpl( 0b10[2]:rd[5]:0b111000[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
 
 jmpl.disasm = {
-  sink << "jmpl %r" << rs1 << " + %r" << rs2 << ", %r" << rd;
+  sink << "jmpl " << DisasmGPR(rs1) << " + " << DisasmGPR(rs2) << ", " << DisasmGPR(rd);
 }
 
 jmpl.execute = {
-  cpu.jmp( cpu.m_gpr[rs1] + cpu.m_gpr[rs2], rd );
+  cpu.DelayBranch( cpu.GetGPR(rs1) + cpu.GetGPR(rs2) );
+  
+  cpu.SetGPR(rd, cpu.GetPC());
 }
 
 op jmpli( 0b10[2]:rd[5]:0b111000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
 
 jmpli.disasm = {
-  if( simm13 >= 0 ) sink << "jmpl %r" << rs1 << " + " << "0x" << hex << simm13 << ", %r" << rd;
-  else              sink << "jmpl %r" << rs1 << " - " << "0x" << hex << -simm13 << ", %r" << rd;
+  sink << "jmpl " << DisasmRIAddress(rs1, simm13) << ", " << DisasmGPR(rd);
 }
 
 jmpli.execute = {
-  cpu.jmp( cpu.m_gpr[rs1] + simm13, rd );
+  typedef typename ARCH::U32 U32;
+
+  cpu.DelayBranch(cpu.GetGPR(rs1) + U32(simm13));
+  cpu.SetGPR(rd, cpu.GetPC());
 }
 
 /* Return from Trap Instructions */
@@ -645,72 +298,71 @@ jmpli.execute = {
 op rett( 0b10[2]:?[5]:0b111001[6]:rs1[5]:0b0[1]:asi[8]:rs2[5] )
 
 rett.disasm = {
-  sink << "rett %r" << rs1 << " + %r" << rs2;
+  sink << "rett " << DisasmGPR(rs1) << " + " << DisasmGPR(rs2);
 }
 
 rett.execute = {
-  if (cpu.et())
-    cpu.abort( cpu.super() ? Trap_t::illegal_instruction : Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  if (not cpu.IsSuper())
+    cpu.Abort( Trap_t::privileged_instruction );
   
-  if (not cpu.super())
+  if (cpu.Test(cpu.GetET()))
+    cpu.Abort( Trap_t::illegal_instruction );
+  
+  if (cpu.InvalidWindow( +1 ))
     {
-     cpu.m_execute_mode = 0;
-     cpu.abort( Trap_t::privileged_instruction );
+      cpu.StopFetch();
+      cpu.Abort( Trap_t::window_underflow );
     }
   
-  if (cpu.invalidwindow( +1 ))
+  U32 address = cpu.GetGPR(rs1) + cpu.GetGPR(rs2);
+  if (cpu.Test(address & U32(0x3)))
     {
-     cpu.m_execute_mode = 0;
-     cpu.abort( Trap_t::window_underflow );
+      cpu.StopFetch();
+      cpu.Abort( Trap_t::mem_address_not_aligned );
     }
   
-  uint32_t address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
-  if (address & 0x3)
-    {
-      cpu.m_execute_mode = 0;
-      cpu.abort( Trap_t::mem_address_not_aligned );
-    }
-  
-  cpu.et() = 1;
-  cpu.m_nnpc = address;
-  cpu.rotate( +1 );
-  cpu.s() = uint32_t( cpu.ps() );
+  cpu.SetET( BOOL(true) );
+  cpu.DelayBranch( address );
+  cpu.RotateWindow( +1 );
+  cpu.SetS( cpu.GetPS() );
 }
 
 op retti( 0b10[2]:?[5]:0b111001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
 
 retti.disasm = {
-  if( simm13 >= 0 ) sink << "rett %r" << rs1 << " + " << "0x" << hex << simm13;
-  else              sink << "rett %r" << rs1 << " - " << "0x" << hex << -simm13;
+  sink << "rett " << DisasmRIAddress(rs1, simm13);
 }
 
 retti.execute = {
-  if (cpu.et())
-    cpu.abort( cpu.super() ? Trap_t::illegal_instruction : Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  if (not cpu.IsSuper())
+    cpu.Abort( Trap_t::privileged_instruction );
   
-  if (not cpu.super())
+  if (cpu.Test(cpu.GetET()))
+    cpu.Abort( Trap_t::illegal_instruction );
+  
+  if (cpu.InvalidWindow( +1 ))
     {
-     cpu.m_execute_mode = 0;
-     cpu.abort( Trap_t::privileged_instruction );
+      cpu.StopFetch();
+      cpu.Abort( Trap_t::window_underflow );
     }
   
-  if (cpu.invalidwindow( +1 ))
+  U32 address = cpu.GetGPR(rs1) + U32(simm13);
+  if (cpu.Test(address & U32(0x3)))
     {
-     cpu.m_execute_mode = 0;
-     cpu.abort( Trap_t::window_underflow );
+      cpu.StopFetch();
+      cpu.Abort( Trap_t::mem_address_not_aligned );
     }
   
-  uint32_t address = cpu.m_gpr[rs1] + simm13;
-  if (address & 0x3)
-    {
-      cpu.m_execute_mode = 0;
-      cpu.abort( Trap_t::mem_address_not_aligned );
-    }
-  
-  cpu.et() = 1;
-  cpu.m_nnpc = address;
-  cpu.rotate( +1 );
-  cpu.s() = uint32_t( cpu.ps() );
+  cpu.SetET( BOOL(true) );
+  cpu.DelayBranch( address );
+  cpu.RotateWindow( +1 );
+  cpu.SetS( cpu.GetPS() );
 }
 
 /* Trap on Integer Condition Codes Instructions */
@@ -718,318 +370,46 @@ retti.execute = {
 op ta( 0b10[2]:?[1]:0b1000[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
 
 ta.disasm = {
-  sink << "ta %r" << rs1 << " + %r" << rs2;
+  sink << "ta " << DisasmGPR(rs1) << " + " << DisasmGPR(rs2);
 }
 
 ta.execute = {
-  cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
+  cpu.SWTrap( cpu.GetGPR(rs1) + cpu.GetGPR(rs2) );
 }
 
 op tai( 0b10[2]:?[1]:0b1000[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
 
 tai.disasm = {
-  sink << "ta %r" << rs1 << " + " << "0x" << hex << imm7;
+  sink << "ta " << DisasmGPR(rs1) << " + " << "0x" << hex << imm7;
 }
 
 tai.execute = {
-  cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
+  typedef typename ARCH::U32 U32;
+
+  cpu.SWTrap( cpu.GetGPR(rs1) + U32(imm7) );
+};
+
+op tc( 0b10[2]:?[1]:cond[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
+
+tc.disasm = {
+  sink << "t" << DisasmCondition(cond) << " " << DisasmGPR(rs1) << " + " << DisasmGPR(rs2);
+};
+
+tc.execute = {
+  if (cpu.TestCondition(cond))
+    cpu.SWTrap( cpu.GetGPR(rs1) + cpu.GetGPR(rs2) );
+};
+
+op tci( 0b10[2]:?[1]:cond[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
+
+tci.disasm = {
+  sink << "t" << DisasmCondition(cond) << " " << DisasmGPR(rs1) << " + " << "0x" << hex << imm7;
 }
 
-op tn( 0b10[2]:?[1]:0b0000[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tn.disasm = {
-  sink << "tn %r" << rs1 << " + %r" << rs2;
-}
-
-tn.execute = {
-}
-
-op tni( 0b10[2]:?[1]:0b0000[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tni.disasm = {
-  sink << "tn %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tni.execute = {
-}
-
-op tne( 0b10[2]:?[1]:0b1001[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tne.disasm = {
-  sink << "tne %r" << rs1 << " + %r" << rs2;
-}
-
-tne.execute = {
-  if( cpu.condne() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tnei( 0b10[2]:?[1]:0b1001[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tnei.disasm = {
-  sink << "tne %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tnei.execute = {
-  if( cpu.condne() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op te( 0b10[2]:?[1]:0b0001[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-te.disasm = {
-  sink << "te %r" << rs1 << " + %r" << rs2;
-}
-
-te.execute = {
-  if( cpu.conde() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tei( 0b10[2]:?[1]:0b0001[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tei.disasm = {
-  sink << "te %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tei.execute = {
-  if( cpu.conde() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tg( 0b10[2]:?[1]:0b1010[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tg.disasm = {
-  sink << "tg %r" << rs1 << " + %r" << rs2;
-}
-
-tg.execute = {
-  if( cpu.condg() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tgi( 0b10[2]:?[1]:0b1010[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tgi.disasm = {
-  sink << "tg %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tgi.execute = {
-  if( cpu.condg() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tle( 0b10[2]:?[1]:0b0010[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tle.disasm = {
-  sink << "tle %r" << rs1 << " + %r" << rs2;
-}
-
-tle.execute = {
-  if( cpu.condle() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tlei( 0b10[2]:?[1]:0b0010[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tlei.disasm = {
-  sink << "tle %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tlei.execute = {
-  if( cpu.condle() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tge( 0b10[2]:?[1]:0b1011[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tge.disasm = {
-  sink << "tge %r" << rs1 << " + %r" << rs2;
-}
-
-tge.execute = {
-  if( cpu.condge() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tgei( 0b10[2]:?[1]:0b1011[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tgei.disasm = {
-  sink << "tge %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tgei.execute = {
-  if( cpu.condge() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tl( 0b10[2]:?[1]:0b0011[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tl.disasm = {
-  sink << "tl %r" << rs1 << " + %r" << rs2;
-}
-
-tl.execute = {
-  if( cpu.condl() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tli( 0b10[2]:?[1]:0b0011[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tli.disasm = {
-  sink << "tl %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tli.execute = {
-  if( cpu.condl() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tgu( 0b10[2]:?[1]:0b1100[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tgu.disasm = {
-  sink << "tgu %r" << rs1 << " + %r" << rs2;
-}
-
-tgu.execute = {
-  if( cpu.condgu() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tgui( 0b10[2]:?[1]:0b1100[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tgui.disasm = {
-  sink << "tgu %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tgui.execute = {
-  if( cpu.condgu() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tleu( 0b10[2]:?[1]:0b0100[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tleu.disasm = {
-  sink << "tleu %r" << rs1 << " + %r" << rs2;
-}
-
-tleu.execute = {
-  if( cpu.condleu() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tleui( 0b10[2]:?[1]:0b0100[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tleui.disasm = {
-  sink << "tleu %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tleui.execute = {
-  if( cpu.condleu() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tcc( 0b10[2]:?[1]:0b1101[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tcc.disasm = {
-  sink << "tcc %r" << rs1 << " + %r" << rs2;
-}
-
-tcc.execute = {
-  if( cpu.condcc() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tcci( 0b10[2]:?[1]:0b1101[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tcci.disasm = {
-  sink << "tcc %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tcci.execute = {
-  if( cpu.condcc() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tcs( 0b10[2]:?[1]:0b0101[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tcs.disasm = {
-  sink << "tcs %r" << rs1 << " + %r" << rs2;
-}
-
-tcs.execute = {
-  if( cpu.condcs() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tcsi( 0b10[2]:?[1]:0b0101[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tcsi.disasm = {
-  sink << "tcs %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tcsi.execute = {
-  if( cpu.condcs() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tpos( 0b10[2]:?[1]:0b1110[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tpos.disasm = {
-  sink << "tpos %r" << rs1 << " + %r" << rs2;
-}
-
-tpos.execute = {
-  if( cpu.condpos() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tposi( 0b10[2]:?[1]:0b1110[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tposi.disasm = {
-  sink << "tpos %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tposi.execute = {
-  if( cpu.condpos() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tneg( 0b10[2]:?[1]:0b0110[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tneg.disasm = {
-  sink << "tneg %r" << rs1 << " + %r" << rs2;
-}
-
-tneg.execute = {
-  if( cpu.condneg() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tnegi( 0b10[2]:?[1]:0b0110[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tnegi.disasm = {
-  sink << "tneg %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tnegi.execute = {
-  if( cpu.condneg() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tvc( 0b10[2]:?[1]:0b1111[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tvc.disasm = {
-  sink << "tvc %r" << rs1 << " + %r" << rs2;
-}
-
-tvc.execute = {
-  if( cpu.condvc() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tvci( 0b10[2]:?[1]:0b1111[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tvci.disasm = {
-  sink << "tvc %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tvci.execute = {
-  if( cpu.condvc() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
-}
-
-op tvs( 0b10[2]:?[1]:0b0111[4]:0b111010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
-
-tvs.disasm = {
-  sink << "tvs %r" << rs1 << " + %r" << rs2;
-}
-
-tvs.execute = {
-  if( cpu.condvs() ) cpu.swtrap( cpu.m_gpr[rs1] + cpu.m_gpr[rs2] );
-}
-
-op tvsi( 0b10[2]:?[1]:0b0111[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
-
-tvsi.disasm = {
-  sink << "tvs %r" << rs1 << " + " << "0x" << hex << imm7;
-}
-
-tvsi.execute = {
-  if( cpu.condvs() ) cpu.swtrap( cpu.m_gpr[rs1] + imm7 );
+tci.execute = {
+  typedef typename ARCH::U32 U32;
+
+  if (cpu.TestCondition(cond))
+    cpu.SWTrap( cpu.GetGPR(rs1) + U32(imm7) );
 }
 

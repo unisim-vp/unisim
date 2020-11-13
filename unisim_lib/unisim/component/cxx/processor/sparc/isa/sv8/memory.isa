@@ -46,10 +46,10 @@ ldsb.execute = {
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::U32 U32;
 
-  if (a)
-    cpu.WithPrivilege();
+  if (a and not cpu.IsSuper())
+    cpu.Abort( Trap_t::privileged_instruction );
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead(S8(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+  cpu.SetGPR(rd, U32(cpu.MemRead(S8(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2))));
 };
 
 op ldsbi( 0b11[2]:rd[5]:0b001001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -62,7 +62,7 @@ ldsbi.execute = {
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead(S8(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+  cpu.SetGPR(rd, U32(cpu.MemRead(S8(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13))));
 };
 
 op ldsh ( 0b11[2]:rd[5]:0[1]:a[1]:0b1010[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -77,9 +77,9 @@ ldsh.execute = {
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U32 U32;
 
-  if (a)
-    cpu.WithPrivilege();
-  cpu.m_gpr[rd] = U32(cpu.MemRead(S16(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.SetGPR(rd, U32(cpu.MemRead(S16(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2))));
 };
 
 op ldshi( 0b11[2]:rd[5]:0b001010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -92,7 +92,7 @@ ldshi.execute = {
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead(S16(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+  cpu.SetGPR(rd, U32(cpu.MemRead(S16(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13))));
 };
 
 op ldub ( 0b11[2]:rd[5]:0[1]:a[1]:0b0001[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -107,9 +107,9 @@ ldub.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
   
-  if (a)
-    cpu.WithPrivilege();
-  cpu.m_gpr[rd] = U32(cpu.MemRead(U8(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.SetGPR(rd, U32(cpu.MemRead(U8(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2))));
 };
 
 op ldubi( 0b11[2]:rd[5]:0b000001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -122,7 +122,7 @@ ldubi.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead(U8(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+  cpu.SetGPR(rd, U32(cpu.MemRead(U8(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13))));
 };
 
 op lduh ( 0b11[2]:rd[5]:0[1]:a[1]:0b0010[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -137,9 +137,9 @@ lduh.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
 
-  if (a)
-    cpu.WithPrivilege();
-  cpu.m_gpr[rd] = U32(cpu.MemRead(U16(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]));
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.SetGPR(rd, U32(cpu.MemRead(U16(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2))));
 };
 
 op lduhi( 0b11[2]:rd[5]:0b000010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -152,7 +152,7 @@ lduhi.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = U32(cpu.MemRead(U16(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13)));
+  cpu.SetGPR(rd, U32(cpu.MemRead(U16(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13))));
 };
 
 op ld( 0b11[2]:rd[5]:0[1]:a[1]:0b0000[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -166,9 +166,9 @@ ld.disasm = {
 ld.execute = {
   typedef typename ARCH::U32 U32;
   
-  if (a)
-    cpu.WithPrivilege();
-  cpu.m_gpr[rd] = cpu.MemRead(U32(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.SetGPR(rd, cpu.MemRead(U32(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2)));
 };
 
 op ldi( 0b11[2]:rd[5]:0b000000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -180,7 +180,7 @@ ldi.disasm = {
 ldi.execute = {
   typedef typename ARCH::U32 U32;
   
-  cpu.m_gpr[rd] = cpu.MemRead(U32(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+  cpu.SetGPR(rd, cpu.MemRead(U32(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13)));
 };
 
 op ldd ( 0b11[2]:rd[5]:0[1]:a[1]:0b0011[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -195,11 +195,11 @@ ldd.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
-  if (a)
-    cpu.WithPrivilege();
-  U64 value = cpu.MemRead(U64(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
-  cpu.m_gpr[(rd & -2) | 0] = U32(value >> 32);
-  cpu.m_gpr[(rd & -2) | 1] = U32(value >> 0);
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  U64 value = cpu.MemRead(U64(), a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2));
+  cpu.SetGPR((rd & -2) | 0, U32(value >> 32));
+  cpu.SetGPR((rd & -2) | 1, U32(value >> 0));
 };
 
 op lddi( 0b11[2]:rd[5]:0b000011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -212,9 +212,9 @@ lddi.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
-  U64 value = cpu.MemRead(U64(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
-  cpu.m_gpr[(rd & -2) | 0] = U32(value >> 32);
-  cpu.m_gpr[(rd & -2) | 1] = U32(value >> 0);
+  U64 value = cpu.MemRead(U64(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13));
+  cpu.SetGPR((rd & -2) | 0, U32(value >> 32));
+  cpu.SetGPR((rd & -2) | 1, U32(value >> 0));
 };
 
 /* Load Floating-point Instructions */
@@ -228,7 +228,7 @@ ldf.disasm = {
 ldf.execute = {
   typedef typename ARCH::F32 F32;
 
-  cpu.m_fp32[rd] = cpu.FMemRead(F32(), cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+  cpu.SetF32(rd, cpu.FMemRead(F32(), cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2)));
 };
 
 op ldfi( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -241,7 +241,7 @@ ldfi.execute = {
   typedef typename ARCH::F32 F32;
   typedef typename ARCH::U32 U32;
                 
-  cpu.m_fp32[rd] = cpu.FMemRead(F32(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+  cpu.SetF32(rd, cpu.FMemRead(F32(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13)));
 };
 
 op lddf( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -253,7 +253,7 @@ lddf.disasm = {
 lddf.execute = {
   typedef typename ARCH::F64 F64;
 
-  cpu.m_fp64[rd & -2] = cpu.FMemRead(F64(), cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+  cpu.SetF64(rd & -2, cpu.FMemRead(F64(), cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2)));
 };
 
 op lddfi( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -266,7 +266,7 @@ lddfi.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::F64 F64;
                 
-  cpu.m_fp64[rd & -2] = cpu.FMemRead(F64(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+  cpu.SetF64(rd & -2, cpu.FMemRead(F64(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13)));
 };
 
 op ldfsr( 0b11[2]:rd[5]:0b100001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -278,7 +278,7 @@ ldfsr.disasm = {
 ldfsr.execute = {
   typedef typename ARCH::U32 U32;
 
-  cpu.m_fsr = cpu.MemRead(U32(), cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2]);
+  cpu.SetFSR( cpu.MemRead(U32(), cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2)) );
 };
 
 op ldfsri( 0b11[2]:rd[5]:0b100001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -290,7 +290,7 @@ ldfsri.disasm = {
 ldfsri.execute = {
   typedef typename ARCH::U32 U32;
                 
-  cpu.m_fsr = cpu.MemRead(U32(), cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13));
+  cpu.SetFSR( cpu.MemRead(U32(), cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13)) );
 };
 
 /* Load Coprocessor Instructions */
@@ -343,9 +343,9 @@ stb.disasm = {
 stb.execute = {
   typedef typename ARCH::U8 U8;
 
-  if (a)
-    cpu.WithPrivilege();
-  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], U8(cpu.m_gpr[rd]) );
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2), U8(cpu.GetGPR(rd)) );
 };
 
 op stbi( 0b11[2]:rd[5]:0b000101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -358,7 +358,7 @@ stbi.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
 
-  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), U8(cpu.m_gpr[rd]) );
+  cpu.MemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13), U8(cpu.GetGPR(rd)) );
 };
 
 op sth ( 0b11[2]:rd[5]:0[1]:a[1]:0b0110[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -371,9 +371,9 @@ sth.disasm = {
 sth.execute = {
   typedef typename ARCH::U16 U16;
 
-  if (a)
-    cpu.WithPrivilege();
-  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], U16(cpu.m_gpr[rd]) );
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2), U16(cpu.GetGPR(rd)) );
 };
 
 op sthi( 0b11[2]:rd[5]:0b000110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -386,7 +386,7 @@ sthi.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
 
-  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), U16(cpu.m_gpr[rd]) );
+  cpu.MemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13), U16(cpu.GetGPR(rd)) );
 };
 
 op st( 0b11[2]:rd[5]:0[1]:a[1]:0b0100[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
@@ -397,9 +397,9 @@ st.disasm = {
 };
 
 st.execute = {
-  if (a)
-    cpu.WithPrivilege();
-  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_gpr[rd] );
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2), cpu.GetGPR(rd) );
 };
 
 op sti( 0b11[2]:rd[5]:0b000100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -411,7 +411,7 @@ sti.disasm = {
 sti.execute = {
   typedef typename ARCH::U32 U32;
   
-  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_gpr[rd] );
+  cpu.MemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13), cpu.GetGPR(rd) );
 };
 
 op std( 0b11[2]:rd[5]:0[1]:a[1]:0b0111[4]:rs1[5]:0b0[1]:asi[8]:rs2[5] );
@@ -424,10 +424,10 @@ std.disasm = {
 std.execute = {
   typedef typename ARCH::U64 U64;
   
-  if (a)
-    cpu.WithPrivilege();
-  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2],
-                    U64(cpu.m_gpr[(rd & -2) | 0]) << 32 | U64(cpu.m_gpr[(rd & -2) | 1]) << 0 );
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  cpu.MemWrite( a ? ASI::Code(asi) : cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2),
+                    U64(cpu.GetGPR((rd & -2) | 0)) << 32 | U64(cpu.GetGPR((rd & -2) | 1)) << 0 );
 };
 
 op stdi( 0b11[2]:rd[5]:0b000111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -440,8 +440,8 @@ stdi.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
-  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13),
-                    U64(cpu.m_gpr[(rd & -2) | 0]) << 32 | U64(cpu.m_gpr[(rd & -2) | 1]) << 0 );
+  cpu.MemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13),
+                    U64(cpu.GetGPR((rd & -2) | 0)) << 32 | U64(cpu.GetGPR((rd & -2) | 1)) << 0 );
 };
 
 /* Store Floating-point Instructions */
@@ -453,7 +453,7 @@ stf.disasm = {
 };
 
 stf.execute = {
-  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_fp32[rd] );
+  cpu.FMemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2), cpu.GetF32(rd) );
 };
 
 op stfi( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -465,7 +465,7 @@ stfi.disasm = {
 stfi.execute = {
   typedef typename ARCH::U32 U32;
 
-  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_fp32[rd] );
+  cpu.FMemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13), cpu.GetF32(rd) );
 };
 
 op stdf( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -475,7 +475,7 @@ stdf.disasm = {
 };
 
 stdf.execute = {
-  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_fp64[rd] );
+  cpu.FMemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2), cpu.GetF64(rd) );
 };
 
 op stdfi( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -487,7 +487,7 @@ stdfi.disasm = {
 stdfi.execute = {
   typedef typename ARCH::U32 U32;
 
-  cpu.FMemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_fp64[rd] );
+  cpu.FMemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13), cpu.GetF64(rd) );
 };
 
 op stfsr( 0b11[2]:rd[5]:0b100101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -497,7 +497,7 @@ stfsr.disasm = {
 };
 
 stfsr.execute = {
-  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + cpu.m_gpr[rs2], cpu.m_fsr );
+  cpu.MemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + cpu.GetGPR(rs2), cpu.GetFSR() );
 };
 
 op stfsri( 0b11[2]:rd[5]:0b100101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -509,7 +509,7 @@ stfsri.disasm = {
 stfsri.execute = {
   typedef typename ARCH::U32 U32;
 
-  cpu.MemWrite( cpu.rqasi(), cpu.m_gpr[rs1] + U32(simm13), cpu.m_fsr );
+  cpu.MemWrite( cpu.rqasi(), cpu.GetGPR(rs1) + U32(simm13), cpu.GetFSR() );
 };
 
 op stdfq( 0b11[2]:rd[5]:0b100110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -588,13 +588,13 @@ ldstub.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
 
-  if (a)
-    cpu.WithPrivilege();
-  U32 address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  U32 address = cpu.GetGPR(rs1) + cpu.GetGPR(rs2);
   U8 res = cpu.MemRead(U8(), a ? ASI::Code(asi) : cpu.rqasi(), address );
   cpu.MemWrite( cpu.rqasi(), address, U8(0xff) );
   
-  cpu.m_gpr[rd] = U32(res);
+  cpu.SetGPR(rd, U32(res));
 };
 
 op ldstubi( 0b11[2]:rd[5]:0b001101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -607,11 +607,11 @@ ldstubi.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
 
-  U32 address = cpu.m_gpr[rs1] + U32(simm13);
+  U32 address = cpu.GetGPR(rs1) + U32(simm13);
   U8 res = cpu.MemRead(U8(), cpu.rqasi(), address );
   cpu.MemWrite( cpu.rqasi(), address, U8(0xff) );
   
-  cpu.m_gpr[rd] = U32(res);
+  cpu.SetGPR(rd, U32(res));
 };
 
 /* SWAP Register with Memory Instruction */
@@ -627,13 +627,13 @@ swap.disasm = {
 swap.execute = {
   typedef typename ARCH::U32 U32;
 
-  if (a)
-    cpu.WithPrivilege();
-  U32 address = cpu.m_gpr[rs1] + cpu.m_gpr[rs2];
+  if (a and not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+  U32 address = cpu.GetGPR(rs1) + cpu.GetGPR(rs2);
   ASI wasi = a ? ASI::Code(asi) : cpu.rqasi();
   U32 res = cpu.MemRead(U32(), wasi, address );
-  cpu.MemWrite( wasi, address, cpu.m_gpr[rd] );
-  cpu.m_gpr[rd] = res;
+  cpu.MemWrite( wasi, address, cpu.GetGPR(rd) );
+  cpu.SetGPR(rd, res);
 };
 
 op swapi( 0b11[2]:rd[5]:0b001111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -645,10 +645,10 @@ swapi.disasm = {
 swapi.execute = {
   typedef typename ARCH::U32 U32;
 
-  U32 address = cpu.m_gpr[rs1] + U32(simm13);
+  U32 address = cpu.GetGPR(rs1) + U32(simm13);
   U32 res = cpu.MemRead(U32(), cpu.rqasi(), address );
-  cpu.MemWrite( cpu.rqasi(), address, cpu.m_gpr[rd] );
-  cpu.m_gpr[rd] = res;
+  cpu.MemWrite( cpu.rqasi(), address, cpu.GetGPR(rd) );
+  cpu.SetGPR(rd, res);
 };
 
 /* Flush Instruction Memory */

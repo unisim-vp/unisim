@@ -166,10 +166,13 @@ namespace Star
 
     void                          step();
     void                          pc( uint32_t _pc ) { m_pc = _pc; m_npc = _pc + 4; m_nnpc = _pc + 8; };
+    void                          StopFetch() { m_execute_mode = false; }
+    void                          SetAnnul( bool _annul ) { m_annul = _annul; }
+    
     void                          abort( Trap_t::TrapType_t  _trap );
     void                          swtrap( uint32_t _idx );
     uint32_t                      nwindows() { return s_nwindows; }
-    void                          jmp( uint32_t _nnpc, uint32_t _pcreg );
+    //    void                          jmp( uint32_t _nnpc, uint32_t _pcreg );
     void                          dumptrap( std::ostream& _sink );
     void                          take_trap();
 
@@ -193,6 +196,29 @@ namespace Star
     ASI                           rqasi() const { return (m_psr & (1ul << 7)) ? ASI::supervisor_data : ASI::user_data; }
     ASI                           insn_asi() { return (m_psr & (1ul << 7)) ? ASI::supervisor_instruction : ASI::user_instruction; }
     // common conditions
+    bool                          TestCondition(unsigned cond)
+    {
+      switch (cond)
+        {
+        case 0b0000: return false;     // never()
+        case 0b0001: return conde();   // equal
+        case 0b0010: return condle();  // less or equal
+        case 0b0011: return condl();   // less
+        case 0b0100: return condleu(); // less or equal unsigned
+        case 0b0101: return condcs();  // carry set
+        case 0b0110: return condneg(); // negative
+        case 0b0111: return condvs();  // overflow set
+        case 0b1000: return true;      // always
+        case 0b1001: return condne();  // not equal
+        case 0b1010: return condg();   // greater
+        case 0b1011: return condge();  // greater or equal
+        case 0b1100: return condgu();  // greater unsigned
+        case 0b1101: return condcc();  // carry clear
+        case 0b1110: return condpos(); // positive
+        case 0b1111: return condvc();  // overflow clear
+        }
+      return false;
+    }
     bool                          condcs()  { return (0xaaaa/*0b1010101010101010*/ >> ((m_psr >> 20) & 15)) & 1; } //  C
     bool                          condcc()  { return (0x5555/*0b0101010101010101*/ >> ((m_psr >> 20) & 15)) & 1; } // ~C
     bool                          condvs()  { return (0xcccc/*0b1100110011001100*/ >> ((m_psr >> 20) & 15)) & 1; } //  V
@@ -239,6 +265,29 @@ namespace Star
     BitField_t                    aexc()  { return BitField_t( m_fsr,  5, 5 ); }
     BitField_t                    cexc()  { return BitField_t( m_fsr,  0, 5 ); }
     // + read only functions
+    bool TestFCondition(unsigned cond)
+    {
+      switch (cond)
+        {
+        case 0b0000: return "n";   // Never
+        case 0b0001: return "ne";  // Not equal
+        case 0b0010: return "lg";  // Less or Greater
+        case 0b0011: return "ul";  // Unordered or Less 
+        case 0b0100: return "l";   // Less
+        case 0b0101: return "ug";  // Unordered or Greater
+        case 0b0110: return "g";   // Greater
+        case 0b0111: return "u";   // Unordered
+        case 0b1000: return "a";   // Always
+        case 0b1001: return "e";   // Equal
+        case 0b1010: return "ue";  // Unordered or Equal
+        case 0b1011: return "ge";  // Greater or Equal
+        case 0b1100: return "uge"; // Unordered or Greater or Equal
+        case 0b1101: return "le";  // Less or Equal
+        case 0b1110: return "ule"; // Unordered or Less or Equal
+        case 0b1111: return "o";   // Ordered
+        }
+      return false;
+    }
     bool                          fconde()   { return (0x1/*0b0001*/ >> ((m_fsr >> 10) & 3)) & 1; }
     bool                          fcondl()   { return (0x2/*0b0010*/ >> ((m_fsr >> 10) & 3)) & 1; }
     bool                          fcondle()  { return (0x3/*0b0011*/ >> ((m_fsr >> 10) & 3)) & 1; }

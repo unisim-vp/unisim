@@ -32,161 +32,123 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-// #include <scanner.hh>
+#include <scanner.hh>
+#include <init_tests.hh>
 // #include <runner.hh>
 // #include <unisim/util/random/random.hh>
-// #include <fstream>
+#include <fstream>
 #include <iostream>
 // #include <iomanip>
 // #include <sstream>
 // #include <vector>
 // #include <set>
-// #include <memory>
+#include <memory>
 // #include <sys/mman.h>
 // #include <inttypes.h>
 
-// struct Checker
-// {
+struct Checker
+{
 //   typedef unisim::util::symbolic::Expr Expr;
     
-//   Scanner::ISA isa;
-//   TestDB testdb;
-//   std::map<std::string,uintptr_t> stats;
+  Scanner::ISA isa;
+  TestDB testdb;
+  std::map<std::string,uintptr_t> stats;
   
-//   bool insert( Scanner::Operation const& op, uint32_t code, std::string const& disasm )
-//   {
-//     Interface iif(op, code, disasm);
+  bool insert( Scanner::Operation const& op, uint32_t code, std::string const& disasm )
+  {
+    Interface iif(op, code, disasm);
 
-//     decltype(testdb.begin()) tstbeg, tstend;
-//     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
+    decltype(testdb.begin()) tstbeg, tstend;
+    std::tie(tstbeg,tstend) = testdb.equal_range(iif);
  
-//     auto count = std::distance(tstbeg, tstend);
-//     if (count >= 2)
-//         return false;
-//     testdb.emplace_hint( tstend, std::move( iif ) );
-//     return true;
-//   }
+    auto count = std::distance(tstbeg, tstend);
+    if (count >= 2)
+        return false;
+    testdb.emplace_hint( tstend, std::move( iif ) );
+    return true;
+  }
 
-//   bool test( uint32_t trial )
-//   {
-//     bool found = false;
-//     try
-//       {
-//         std::string disasm;
-//         std::unique_ptr<Scanner::Operation> codeop = std::unique_ptr<Scanner::Operation>( isa.decode( 0x4000, trial, disasm ) );
-//         found = insert( *codeop, trial, disasm );
-//       }
-//     catch (unisim::util::sav::Untestable const& denial)
-//       {
-//         stats[denial.reason] += 1;
-//       }
+  bool test( uint32_t trial )
+  {
+    bool found = false;
+    try
+      {
+        std::string disasm;
+        std::unique_ptr<Scanner::Operation> codeop = std::unique_ptr<Scanner::Operation>( isa.decode( 0x4000, trial, disasm ) );
+        found = insert( *codeop, trial, disasm );
+      }
+    catch (unisim::util::sav::Untestable const& denial)
+      {
+        stats[denial.reason] += 1;
+      }
     
-//     return found;
-//   }
+    return found;
+  }
   
-//   Checker() {}
+  Checker() = default;
   
-//   void discover( uintptr_t count, uintptr_t ttl_reset )
-//   {
-//     int seed = testdb.size();
-//     unisim::util::random::Random rnd(seed,seed,seed,seed);
-//     uintptr_t ttl = ttl_reset, trial = 0;
-//     while (count)
-//       {
-//         for (auto format : isa.GetDecodeTable())
-//           {
-//             uint32_t code = (uint32_t(rnd.Generate()) & ~format.opcode_mask) | format.opcode;
+  void discover( uintptr_t count, uintptr_t ttl_reset )
+  {
+    int seed = testdb.size();
+    unisim::util::random::Random rnd(seed,seed,seed,seed);
+    uintptr_t ttl = ttl_reset, trial = 0;
+    while (count)
+      {
+        for (auto format : isa.GetDecodeTable())
+          {
+            uint32_t code = (uint32_t(rnd.Generate()) & ~format.opcode_mask) | format.opcode;
 
-//             if ((++trial % 1024) == 0)
-//               {
-//                 std::cerr << "\r\e[K#" << trial <<  " (total=" << testdb.size() << ", left=" << count << ")";
-//                 std::cerr.flush();
-//               }
+            if ((++trial % 1024) == 0)
+              {
+                std::cerr << "\r\e[K#" << trial <<  " (total=" << testdb.size() << ", left=" << count << ")";
+                std::cerr.flush();
+              }
 
-//             if (((test( code ) and ((ttl = ttl_reset) != 0) and (--count == 0))) or
-//                 ((--ttl == 0) and ((count = 0) == 0)))
-//               break;
-//           }
-//       }
-//     std::cerr << '\n';
+            if (((test( code ) and ((ttl = ttl_reset) != 0) and (--count == 0))) or
+                ((--ttl == 0) and ((count = 0) == 0)))
+              break;
+          }
+      }
+    std::cerr << '\n';
 
-//     {
-//       std::ofstream sink( "stats.csv" );
-//       for (auto kv: stats)
-//         {
-//           sink << kv.first << ',' << kv.second << '\n';
-//         }
-//       sink.close();
-//     }
-//   }
+    {
+      std::ofstream sink( "stats.csv" );
+      for (auto kv: stats)
+        {
+          sink << kv.first << ',' << kv.second << '\n';
+        }
+      sink.close();
+    }
+  }
   
-//   void
-//   write_repos( std::string const& reposname )
-//   {
-//     std::ofstream sink( reposname );
+  void
+  dump_repos( std::ostream& sink )
+  {
+    for (Interface const& test : testdb)
+      sink << "repos.add( " << std::hex << test.memcode << ", \"" << test.asmcode << "\" )\n";
+  }
 
-//     for (Interface const& test : testdb)
-//       sink << std::hex << test.memcode << "\t" << test.asmcode << '\n';
-//   }
-
-//   struct FileLoc
-//   {
-//     std::string name;
-//     unsigned    line;
-    
-//     FileLoc( std::string const& _name ) : name( _name ), line(0) {}
-//     void newline() { line += 1; }
-//     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << std::dec << fl.line << ": "; return sink; }
-//   };
-  
-//   bool
-//   read_repos( std::string const& reposname )
-//   {
-//     // Parsing incoming repository
-//     FileLoc fl( reposname );
-//     std::ifstream source( fl.name );
-//     bool updated = false;
-//     std::set<std::string> gilcoverage;
-    
-//     while (source)
-//       {
-//         fl.newline();
-
-//         uint32_t code;
-//         source >> std::hex >> code;
-//         { char tab; if (not source.get(tab) or tab != '\t') break; }
-//         std::string disasm;
-//         std::getline( source, disasm, '\n' );
-        
-//         try
-//           {
-//             std::string updated_disasm;
-//             std::unique_ptr<Scanner::Operation> codeop = std::unique_ptr<Scanner::Operation>( isa.decode( 0x4000, code, updated_disasm ) );
-//             if (disasm != updated_disasm)
-//               {
-//                 std::cerr << fl << ": warning, assembly code divergence (" << std::hex << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
-//                 updated = true;
-//               }
-//             if (not insert( *codeop, code, updated_disasm ))
-//               {
-//                 std::cerr << fl << ": warning " << std::hex << code << std::dec << ", " << disasm << " not inserted\n";
-//                 updated = true;
-//               }
-//             else
-//               gilcoverage.insert(codeop->GetName());
-//           }
-//         catch (unisim::util::sav::Untestable const& denial)
-//           {
-//             std::cerr << fl << ": behavioral rejection for " << std::hex << code << "\t" << disasm << " <" << denial.reason << ">\n";
-//             updated = true;
-//             continue;
-//           }
-//       }
-
-//     std::cerr << "Instruction coverage: " << gilcoverage.size() << " (genisslib instructions).\n";
-    
-//     return updated;
-//   }
+  void add( uint32_t code, char const* disasm )
+  {
+    try
+      {
+        std::string updated_disasm;
+        std::unique_ptr<Scanner::Operation> codeop = std::unique_ptr<Scanner::Operation>( isa.decode( 0x4000, code, updated_disasm ) );
+        if (updated_disasm.compare( disasm ) != 0)
+          {
+            std::cerr << "warning: assembly code divergence (" << std::hex << code << ").\n   new: "
+                      << updated_disasm << "\n   old: " << disasm << "\n";
+          }
+        if (not insert( *codeop, code, updated_disasm ))
+          {
+            std::cerr << "warning: " << std::hex << code << std::dec << ", " << disasm << " not inserted\n";
+          }
+      }
+    catch (unisim::util::sav::Untestable const& denial)
+      {
+        std::cerr << "warning: behavioral rejection for " << std::hex << code << "\t" << disasm << " <" << denial.reason << ">\n";
+      }
+  }
 
 //   void run_tests(char const* seed)
 //   {
@@ -379,69 +341,49 @@
 //         test.check( testbed, &reference[0], &workspace[0]);
 //       }
 //   }
-// };
+};
 
 int
 main( int argc, char** argv )
 {
   std::cout << "Let's go!\n";
-  int idx = 0;
-  for (std::string line; std::getline(std::cin, line).good() and line.size();)
+
+  Checker checker;
+
+  init_tests( checker );
+
+  if (argc)
     {
-      
-      std::cout << ++idx << ": " << line << std::endl;
+      uintptr_t scan_ttl = 10000, insn_count = 1000;
+      for (int idx = 1; idx < argc; ++idx)
+        {
+          std::string param(argv[idx]);
+          uintptr_t pos = param.find('=');
+          if (pos == std::string::npos)
+            {
+              std::cerr << "warning: ignoring header param '" << param << "' (not a key=value)\n";
+              continue;
+            }
+          if      (param.compare(0,pos,"insn_count") == 0)
+            insn_count = strtoull(&param[pos+1],0,0);
+          else if (param.compare(0,pos,"scan_ttl") == 0)
+            scan_ttl = strtoull(&param[pos+1],0,0);
+          else
+            {
+              std::cerr << "Unknown header entry: " << param << std::endl;
+              return 1;
+            }
+        }
+      std::cerr << "#" << insn_count << " instructions using a scan_ttl of " << scan_ttl << "\n";
+
+      checker.discover( insn_count, scan_ttl );
+      checker.dump_repos( std::cout );
     }
+  else
+    {
+      std::cerr << "Running tests\n";
+      //   checker.run_tests("01234567890123456789012345678901000000000000000000000000");
+    }
+  
   return 0;
-//   if (argc != 2)
-//     {
-//       std::cerr << "Wrong number of argument.\n";
-//       std::cerr << argv[0] << " <path_to_test_file>\n";
-//       return 1;
-//     }
-
-//   std::string reposname(argv[1]), suffix(".tests");
-  
-//   if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
-//     {
-//       std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
-//       return 1;
-//     }
-
-//   uintptr_t ttl_reset, insn_scan;
-//   struct {
-//     char const* name;
-//     uintptr_t& value;
-//     uintptr_t init;
-//   } params [] =
-//       {
-//        {"INSN_SCAN", insn_scan, 0},
-//        {"TTL_RESET", ttl_reset, 10000},
-//       };
-
-//   for (unsigned idx = 0, end = sizeof params / sizeof params[0]; idx < end; ++idx)
-//     {
-//       if (char const* env = getenv(params[idx].name))
-//         params[idx].value = strtoull(env,0,0);
-//       else
-//         params[idx].value = params[idx].init; 
-//       std::cerr << "Using " << params[idx].name << " of: " << params[idx].value << std::endl;
-//     }
-  
-  
-//   Checker checker;
-  
-//   bool updated = checker.read_repos( reposname );
-
-//   if (insn_scan != 0)
-//     {
-//       checker.discover( insn_scan, ttl_reset );
-//       updated = true;
-//     }
-  
-//   if (updated)
-//       checker.write_repos( reposname );
-
-//   checker.run_tests("01234567890123456789012345678901000000000000000000000000");
-
-//   return 0;
 }

@@ -50,11 +50,15 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
+scanner.cc \
+scanner.ops.cc \
 test.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 test.hh \
+scanner.hh \
+init_tests.hh \
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\

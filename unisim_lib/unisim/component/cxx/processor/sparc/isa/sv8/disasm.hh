@@ -74,6 +74,20 @@ namespace sv8 {
     DisasmRRAddress( unsigned _rs1, unsigned _rs2 ) : rs1(_rs1), rs2(_rs2) {} unsigned rs1; unsigned rs2;
     void operator () ( std::ostream& sink ) const;
   };
+
+  struct DisasmCondition : public DisasmObject
+  {
+    DisasmCondition( unsigned _cond ) : cond(_cond) {} unsigned cond;
+    static char const* cond_name(unsigned);
+    void operator () (std::ostream& sink) const;
+  };
+  
+  struct DisasmFCondition : public DisasmObject
+  {
+    DisasmFCondition( unsigned _cond ) : cond(_cond) {} unsigned cond;
+    static char const* cond_name(unsigned);
+    void operator () (std::ostream& sink) const;
+  };
   
 } // end of namespace sv8
 } // end of namespace isa

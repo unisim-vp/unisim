@@ -102,11 +102,12 @@ namespace Star {
     std::memcpy( &(m_gpr[24]), &(m_wgpr[((cwp()+1) % s_nwindows)*16]),  8*sizeof( uint32_t ) );
   }
 
-  void
-  Arch::jmp( uint32_t _nnpc, uint32_t _pcreg ) {
-    m_gpr[_pcreg] = m_pc;
-    m_nnpc = _nnpc;
-  }
+  // void
+  // Arch::jmp( uint32_t _nnpc, uint32_t _pcreg )
+  // {
+  //   m_gpr[_pcreg] = m_pc;
+  //   m_nnpc = _nnpc;
+  // }
   
   uint32_t
   Arch::rdasr( uint32_t id ) {

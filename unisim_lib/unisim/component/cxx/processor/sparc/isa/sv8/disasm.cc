@@ -55,12 +55,72 @@ namespace sv8 {
 
   void DisasmRIAddress::operator () ( std::ostream& sink ) const
   {
-    sink << DisasmGPR(rid) << (offset < 0 ? " - " : " + ") << std::hex << offset;
+    sink << DisasmGPR(rid);
+    if (offset < 0) sink << " - " << std::hex << -offset;
+    else            sink << " + " << std::hex << +offset;
   }
   
   void DisasmRRAddress::operator () ( std::ostream& sink ) const
   {
     sink << DisasmGPR(rs1) << " + " << DisasmGPR(rs2);
+  }
+
+  void DisasmCondition::operator () ( std::ostream& sink ) const
+  {
+    sink << cond_name(cond);
+  }
+
+  char const* DisasmFCondition::cond_name(unsigned code)
+  {
+    switch (code)
+      {
+      case 0b0000: return "n";   // Never
+      case 0b0001: return "ne";  // Not equal
+      case 0b0010: return "lg";  // Less or Greater
+      case 0b0011: return "ul";  // Unordered or less 
+      case 0b0100: return "l";   // Less 
+      case 0b0101: return "ug";  // Unordered or Greater
+      case 0b0110: return "g";   // Greater
+      case 0b0111: return "u";   // Unordered
+      case 0b1000: return "a";   // Always
+      case 0b1001: return "e";   // Equal
+      case 0b1010: return "ue";  // Unordered or Equal
+      case 0b1011: return "ge";  // Greater or Equal
+      case 0b1100: return "uge"; // Unordered or Greater or Equal
+      case 0b1101: return "le";  // Less or Equal
+      case 0b1110: return "ule"; // Unordered or Less or Equal
+      case 0b1111: return "o";   // Ordered
+      }
+    return "?";
+  }
+  
+  void DisasmCondition::operator () ( std::ostream& sink ) const
+  {
+    sink << cond_name(cond);
+  }
+
+  char const* DisasmCondition::cond_name(unsigned code)
+  {
+    switch (code)
+      {
+      case 0b0000: return "n";   // never
+      case 0b0001: return "e";   // equal
+      case 0b0010: return "le";  // less or equal
+      case 0b0011: return "l";   // less
+      case 0b0100: return "leu"; // less or equal unsigned
+      case 0b0101: return "cs";  // carry set
+      case 0b0110: return "neg"; // negative
+      case 0b0111: return "vs";  // overflow set
+      case 0b1000: return "a";   // always
+      case 0b1001: return "ne";  // not equal
+      case 0b1010: return "g";   // greater
+      case 0b1011: return "ge";  // greater or equal
+      case 0b1100: return "gu";  // greater unsigned
+      case 0b1101: return "cc";  // carry clear
+      case 0b1110: return "pos"; // positive
+      case 0b1111: return "vc";  // overflow clear
+      }
+    return "?";
   }
   
 } // end of namespace sv8

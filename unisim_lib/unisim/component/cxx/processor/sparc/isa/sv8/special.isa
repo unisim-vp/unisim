@@ -45,22 +45,22 @@ rdasr.disasm = {
 rdasr.execute = {
   if (rs1 == 0) // unpriviledged
     {
-      cpu.m_gpr[rd] = cpu.m_y;
+     cpu.SetGPR(rd, cpu.GetY());
       return;
     }
   if (rs1 >= 16 )
     {
       if (not cpu.asr_perm( rs1 ))
-        cpu.abort( Trap_t::privileged_instruction );
-      cpu.m_gpr[rd] = cpu.rdasr( rs1 );
+        cpu.Abort( Trap_t::privileged_instruction );
+      cpu.SetGPR(rd, cpu.rdasr( rs1 ));
       return;
     }
   if (rs1 == 15 and rd == 0) // TODO: stbar
     {
-      cpu.abort( Trap_t::illegal_instruction );
+      cpu.Abort( Trap_t::illegal_instruction );
       return;
     }
-  cpu.abort( Trap_t::illegal_instruction );
+  cpu.Abort( Trap_t::illegal_instruction );
 }
 
 op rdpsr( 0b10[2]:rd[5]:0b101001[6]:?[5]:?[1]:?[13] )
@@ -70,10 +70,10 @@ rdpsr.disasm = {
 }
 
 rdpsr.execute = {
-  if (not cpu.super())
-    cpu.abort( Trap_t::privileged_instruction );
+  if (not cpu.IsSuper())
+    cpu.Abort( Trap_t::privileged_instruction );
   
-  cpu.m_gpr[rd] = cpu.m_psr;
+  cpu.SetGPR(rd, cpu.GetPSR());
 }
 
 op rdwim( 0b10[2]:rd[5]:0b101010[6]:?[5]:?[1]:?[13] )
@@ -83,10 +83,12 @@ rdwim.disasm = {
 }
 
 rdwim.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
 
-  cpu.m_gpr[rd] = cpu.m_wim & uint32_t((uint64_t( 1 ) << cpu.nwindows())-1);
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+
+  cpu.SetGPR(rd, cpu.GetWIM() & U32((uint64_t( 1 ) << cpu.nwindows())-1));
 }
 
 op rdtbr( 0b10[2]:rd[5]:0b101011[6]:?[5]:?[1]:?[13] )
@@ -96,10 +98,10 @@ rdtbr.disasm = {
 }
 
 rdtbr.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
 
-  cpu.m_gpr[rd] = cpu.m_tbr;
+  cpu.SetGPR(rd, cpu.GetTBR());
 }
 
 /* Write State Register Instructions */
@@ -112,19 +114,23 @@ wrasr.disasm = {
 }
 
 wrasr.execute = {
+  typedef typename ARCH::U32 U32;
+
+  U32 result = cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2);
+  
   if (rd == 0) // unpriviledged
     {
-      cpu.m_y = cpu.m_gpr[rs1] ^ cpu.m_gpr[rs2];
+      cpu.SetY( result );
       return;
     }
   else if( rd >= 16 )
     {
       if (not cpu.asr_perm( rd ))
-        cpu.abort( Trap_t::privileged_instruction );
-      cpu.wrasr( rd, cpu.m_gpr[rs1] ^ cpu.m_gpr[rs2] );
+        cpu.Abort( Trap_t::privileged_instruction );
+      cpu.wrasr( rd, result );
       return;
     }
-  cpu.abort( Trap_t::illegal_instruction );    
+  cpu.Abort( Trap_t::illegal_instruction );    
 }
 
 op wrasri( 0b10[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
@@ -135,19 +141,23 @@ wrasri.disasm = {
 }
 
 wrasri.execute = {
+  typedef typename ARCH::U32 U32;
+
+  U32 result = cpu.GetGPR(rs1) ^ U32(simm13);
+
   if (rd == 0) // unpriviledged
     {
-      cpu.m_y = cpu.m_gpr[rs1] ^ simm13;
+     cpu.SetY( result );
       return;
     }
   if (rd >= 16)
     {
       if (not cpu.asr_perm( rd ))
-        cpu.abort( Trap_t::privileged_instruction );
-      cpu.wrasr( rd, cpu.m_gpr[rs1] ^ simm13 );
+        cpu.Abort( Trap_t::privileged_instruction );
+      cpu.wrasr( rd, result );
       return;
     }
-  cpu.abort( Trap_t::illegal_instruction );
+  cpu.Abort( Trap_t::illegal_instruction );
 }
 
 op wrpsr( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
@@ -157,15 +167,17 @@ wrpsr.disasm = {
 }
 
 wrpsr.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
 
-  uint32_t res = cpu.m_gpr[rs1] ^ cpu.m_gpr[rs2];
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+
+  U32 res = cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2);
   
-  if ((res & 0x1f) >= cpu.nwindows())
-    cpu.abort( Trap_t::illegal_instruction );
+  if (cpu.Test((res & U32(0x1f)) >= U32(cpu.nwindows())))
+    cpu.Abort( Trap_t::illegal_instruction );
   
-  cpu.m_psr = res;
+  cpu.SetPSR( res );
 }
 
 op wrpsri( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
@@ -175,14 +187,16 @@ wrpsri.disasm = {
 }
 
 wrpsri.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
 
-  uint32_t res = cpu.m_gpr[rs1] ^ simm13;
-  if ((res & 0x1f) >= cpu.nwindows())
-    cpu.abort( Trap_t::illegal_instruction );
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+
+  U32 res = cpu.GetGPR(rs1) ^ U32(simm13);
+  if (cpu.Test((res & U32(0x1f)) >= U32(cpu.nwindows())))
+    cpu.Abort( Trap_t::illegal_instruction );
   
-  cpu.m_psr = res;
+  cpu.SetPSR( res );
 }
 
 op wrwim( 0b10[2]:?[5]:0b110010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
@@ -192,10 +206,12 @@ wrwim.disasm = {
 }
 
 wrwim.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
 
-  cpu.m_wim = (cpu.m_gpr[rs1] ^ cpu.m_gpr[rs2]) & uint32_t((uint64_t( 1 ) << cpu.nwindows())-1);
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+
+  cpu.SetWIM( (cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2)) & U32((uint64_t( 1 ) << cpu.nwindows())-1) );
 }
 
 op wrwimi( 0b10[2]:?[5]:0b110010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
@@ -205,10 +221,12 @@ wrwimi.disasm = {
 }
 
 wrwimi.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
 
-  cpu.m_wim = (cpu.m_gpr[rs1] ^ simm13) & uint32_t((uint64_t( 1 ) << cpu.nwindows())-1);
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+
+  cpu.SetWIM( (cpu.GetGPR(rs1) ^ U32(simm13)) & U32((uint64_t( 1 ) << cpu.nwindows())-1) );
 }
 
 op wrtbr( 0b10[2]:?[5]:0b110011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
@@ -218,10 +236,10 @@ wrtbr.disasm = {
 }
 
 wrtbr.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
 
-  cpu.m_tbr = (cpu.m_gpr[rs1] ^ cpu.m_gpr[rs2]);
+  cpu.SetTBR((cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2)));
 }
 
 op wrtbri( 0b10[2]:?[5]:0b110011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
@@ -231,10 +249,12 @@ wrtbri.disasm = {
 }
 
 wrtbri.execute = {
-  if (not cpu.super())
-     cpu.abort( Trap_t::privileged_instruction );
+  typedef typename ARCH::U32 U32;
 
-  cpu.m_tbr = (cpu.m_gpr[rs1] ^ simm13) & uint32_t((uint64_t( 1 ) << cpu.nwindows())-1);
+  if (not cpu.IsSuper())
+     cpu.Abort( Trap_t::privileged_instruction );
+
+  cpu.SetTBR((cpu.GetGPR(rs1) ^ U32(simm13)) & U32((uint64_t( 1 ) << cpu.nwindows())-1));
 }
 
 /* Unimplemented Instruction */
@@ -246,5 +266,5 @@ unimp.disasm = {
 }
 
 unimp.execute = {
-  cpu.abort( Trap_t::illegal_instruction );
+  cpu.Abort( Trap_t::illegal_instruction );
 }

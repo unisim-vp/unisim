@@ -32,46 +32,28 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef LEONSAV_REVIEW_HH
-#define LEONSAV_REVIEW_HH
+#include <scanner.hh>
+#include <unisim/component/cxx/processor/sparc/isa_sv8.tcc>
+#include <sstream>
 
-#include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
-#include <unisim/util/sav/sav.hh>
-#include <unisim/util/symbolic/symbolic.hh>
-#include <string>
-#include <memory>
-#include <stdint.h>
+Scanner::ISA::ISA()
+  : Decoder()
+{}
 
-struct Scanner;
+Scanner::ISA::~ISA()
+{}
 
-struct Interface
+Scanner::Operation*
+Scanner::ISA::decode(uint64_t addr, uint32_t code, std::string& disasm)
 {
-  typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Scanner> Operation;
-  typedef unisim::util::symbolic::Expr Expr;
-  typedef void (*testcode_t)(uint64_t*);
-  struct Text { virtual void write(uint32_t) = 0; virtual ~Text() {} };
+  std::ostringstream buf;
+  Scanner::Operation* op = 0;
+  // try {
+    op = NCDecode(addr,code);
+  // } catch () { throw unisim::util::sav::Untestable("misencoded"); }
+      
+  op->disasm(buf, 0);
+  disasm = buf.str();
+  return op;
+}
 
-  Interface( Operation const& op, uint32_t code, std::string const& disasm );
-
-  void memaccess( Expr const& addr, bool iswrite );
-  uintptr_t workcells() const;
-  void gencode(Text& text) const;
-  void field_name(unsigned idx, std::ostream& sink) const;
-  bool usemem() const { return addrs.size(); }
-
-  uint32_t memcode;
-  std::string asmcode, gilname;
-  unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
-  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
-  std::shared_ptr<unisim::util::sav::ActionNode> behavior;
-  struct RelCmp { bool operator () (uint64_t l, uint64_t r) const { return int64_t(l-r) < 0; } };
-  std::set<uint64_t,RelCmp> addrs;
-  Expr base_addr;
-  unisim::util::sav::Addressings addressings;
-};
-
-struct TestLess { bool operator () ( Interface const& a, Interface const& b ) const; };
-  
-typedef std::multiset<Interface, TestLess> TestDB;
-
-#endif // LEONSAV_TEST_HH
