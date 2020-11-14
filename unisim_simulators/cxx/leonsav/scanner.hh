@@ -77,7 +77,7 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   {
     ISA();
     ~ISA();
-    Operation* decode(uint64_t addr, uint32_t code, std::string& disasm);
+    Operation* decode(uint32_t addr, uint32_t code, std::string& disasm);
   };
 
   typedef unisim::util::symbolic::Expr Expr;
@@ -166,30 +166,31 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   // typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
   /**/                           typedef VRWrite<GReg> GRegWrite;
 
-  struct SP {
-    typedef uint64_t register_type;
-    char const* c_str() const { return "sp"; }
-    int cmp( SP const& ) const { return 0; }
+  struct Y
+  {
+    typedef uint32_t register_type;
+    char const* c_str() const { return "%y"; }
+    int cmp( Y const& ) const { return 0; }
     ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
     {
       if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("sp-relative addressing");
+        dont("y-relative addressing");
       return 0;
     }
   };
     
-  struct PC
-  {
-    typedef uint64_t register_type;
-    char const* c_str() const { return "pc"; }
-    int cmp( PC const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("pc-relative addressing");
-      return 0;
-    }
-  };
+  // struct PC
+  // {
+  //   typedef uint64_t register_type;
+  //   char const* c_str() const { return "pc"; }
+  //   int cmp( PC const& ) const { return 0; }
+  //   ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+  //   {
+  //     if (dynamic_cast<AddrEval const*>( &evs ))
+  //       dont("pc-relative addressing");
+  //     return 0;
+  //   }
+  // };
 
   struct Load : public ExprNode
   {
@@ -228,9 +229,9 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   
   struct RelocEval : public EvalSpace
   {
-    RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
-    uint64_t const* regvalues;
-    uint64_t address;
+    RelocEval( uint32_t const* _regvalues, uint32_t _address ) : regvalues(_regvalues), address(_address) {}
+    uint32_t const* regvalues;
+    uint32_t address;
   };
 
   struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
@@ -239,9 +240,9 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
     {
       if (dynamic_cast<AddrEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
+        return new unisim::util::symbolic::ConstNode<uint32_t>( uint32_t(reg) << 16 );
       if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint64_t>( l->regvalues[idx] );
+        return new unisim::util::symbolic::ConstNode<uint32_t>( l->regvalues[idx] );
       return 0;
     };
   };
@@ -273,8 +274,34 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
 
   template <typename RID> RegWrite<RID>* newRegWrite( RID _id, Expr const& _value ) { return new RegWrite<RID>(_id, _value); }
 
+  struct Flag : public unisim::util::identifier::Identifier<Flag>
+  {
+    typedef bool register_type;
+    enum Code { C, V, Z, N, end } code;
+
+    char const* c_str() const
+    {
+      unsigned idx( code );
+      static char const* names[] = {"c", "v", "z", "n"};
+      return (idx < 4) ? names[idx] : "NA";
+    }
+    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+    {
+      if (dynamic_cast<AddrEval const*>( &evs ))
+        dont("flag-dependant addressing");
+      return 0;
+    }
+
+    Flag() : code(end) {}
+    Flag( Code _code ) : code(_code) {}
+    Flag( char const* _code ) : code(end) { init( _code ); }
+  };
+
   Scanner( Interface& iif );
   ~Scanner();
+
+  void step( Operation const& op );
+  bool close( Scanner const& ref );
 
   static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
 
@@ -288,10 +315,10 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     bool Eval( BOOL&& res ) const { return scanner.Test(res); }
     BOOL F() const { return BOOL(false); }
     BOOL T() const { return BOOL(true); }
-    BOOL N() const { return scanner.flags[3]; }
-    BOOL Z() const { return scanner.flags[2]; }
-    BOOL V() const { return scanner.flags[1]; }
-    BOOL C() const { return scanner.flags[0]; }
+    BOOL N() const { return scanner.flags[Flag::N]; }
+    BOOL Z() const { return scanner.flags[Flag::Z]; }
+    BOOL V() const { return scanner.flags[Flag::V]; }
+    BOOL C() const { return scanner.flags[Flag::C]; }
     Scanner& scanner;
   };
 
@@ -326,7 +353,13 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   U32  GetY() { return y; }
   void SetY(U32 const& value) { y = value; }
   
-  void SetNZVC(BOOL const& N, BOOL const& Z, BOOL const& V, BOOL const& C) { flags[3] = N.expr; flags[2] = Z.expr; flags[1] = V.expr; flags[0] = C.expr; }
+  void SetNZVC(BOOL const& N, BOOL const& Z, BOOL const& V, BOOL const& C)
+  {
+    flags[Flag::N] = N.expr;
+    flags[Flag::Z] = Z.expr;
+    flags[Flag::V] = V.expr;
+    flags[Flag::C] = C.expr;
+  }
   BOOL GetCarry() { return flags[0]; }
   BOOL GetN() { return flags[3]; }
   BOOL GetV() { return flags[1]; }
@@ -378,7 +411,7 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   bool InvalidWindow(int) { return false; }
   void RotateWindow(int) { dont("register-window"); }
 
-  U32 GetPC() { return pc; }
+  U32  GetPC() { dont("branch"); return U32(); }
   void DelayBranch(U32 target) { dont("branch"); }
   void SetAnnul(bool annul) { dont("branch"); }
 
@@ -398,7 +431,7 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   unisim::util::sav::ActionNode*    path;
   
   U32 gprs[32];
-  U32 y, pc;
+  U32 y;
   std::set<Expr> stores;
   Expr flags[4];
 };

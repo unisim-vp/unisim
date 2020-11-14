@@ -52,16 +52,15 @@ namespace sv8 {
     dobj( sink );
     return sink;
   }
-  
-  void DisasmSX::operator () ( std::ostream& sink ) const
+
+  void DisasmHex::operator () ( std::ostream& sink ) const
   {
-    if (offset < 0) sink << " - " << std::hex << -offset;
-    else            sink << " + " << std::hex << +offset;
+    sink << intro << "0x" << std::hex << value;
   }
 
   void DisasmRIAddress::operator () ( std::ostream& sink ) const
   {
-    sink << DisasmGPR(rid) << DisasmSX(offset);
+    sink << DisasmGPR(rid) << DisasmHex(offset, " - ", " + ");
   }
   
   void DisasmRRAddress::operator () ( std::ostream& sink ) const

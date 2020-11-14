@@ -33,8 +33,8 @@
  */
 
 #include <test.hh>
-//#include <scanner.hh>
-//#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <scanner.hh>
+#include <unisim/component/cxx/processor/sparc/isa/sv8/disasm.hh>
 #include <sstream>
 
 Interface::Interface( Operation const& op, uint32_t code, std::string const& disasm )
@@ -47,60 +47,59 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
   , addrs()
   , base_addr()
   , addressings()
-{}
-// {
-//   // Performing an abstract execution to check the validity of
-//   // the opcode, and to compute the interface of the operation
-//   Scanner reference( *this );
+{
+  // Performing an abstract execution to check the validity of
+  // the opcode, and to compute the interface of the operation
+  Scanner reference( *this );
 
-//   for (bool end = false; not end;)
-//     {
-//       Scanner arch( *this );
-//       arch.step( op );
-//       end = arch.close( reference );
-//     }
+  for (bool end = false; not end;)
+    {
+      Scanner arch( *this );
+      arch.step( op );
+      end = arch.close( reference );
+    }
 
-//   for (unsigned reg = 0; reg < 32; ++reg)
-//     {
-//       if (0x0004fefc >> reg & 1)
-//         continue;
-//       if (gregs.accessed(reg))
-//         {
-//           std::ostringstream buf;
-//           buf << "reserved register access (" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg) << ")";
-//           throw unisim::util::sav::Untestable(buf.str());
-//         }
-//     }
+  for (unsigned reg = 0; reg < 32; ++reg)
+    {
+      if (0x3cfffffe >> reg & 1)
+        continue;
+      if (gregs.accessed(reg))
+        {
+          std::ostringstream buf;
+          buf << "reserved register access (" << unisim::component::cxx::processor::sparc::isa::sv8::DisasmGPR(reg) << ")";
+          throw unisim::util::sav::Untestable(buf.str());
+        }
+    }
     
-//   if (addrs.size())
-//     {
-//       if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
-//         throw unisim::util::sav::Untestable("spread out memory accesses");
+  if (addrs.size())
+    {
+      if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
+        throw unisim::util::sav::Untestable("spread out memory accesses");
 
-//       struct ExpectedAddress : public unisim::util::symbolic::ExprNode
-//       {
-//         ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
-//         virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
-//         virtual int cmp(ExprNode const& rhs) const override { return 0; }
-//         virtual unsigned SubCount() const override { return 0; }
-//         virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-//         typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-//         typedef unisim::util::symbolic::ScalarType ScalarType;
-//         virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
-//         virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-//         {
-//           if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
-//             return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
-//           return 0;
-//         };
-//       };
+      struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+      {
+        ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+        virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+        virtual int cmp(ExprNode const& rhs) const override { return 0; }
+        virtual unsigned SubCount() const override { return 0; }
+        virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+        typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+        typedef unisim::util::symbolic::ScalarType ScalarType;
+        virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
+        virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
+        {
+          if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
+            return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
+          return 0;
+        };
+      };
       
-//       if (not addressings.solve(base_addr, new ExpectedAddress()))
-//         throw unisim::util::sav::Untestable("malformed address");
-//     }
+      if (not addressings.solve(base_addr, new ExpectedAddress()))
+        throw unisim::util::sav::Untestable("malformed address");
+    }
 
-//   behavior->simplify();
-// }
+  behavior->simplify();
+}
   
 void
 Interface::gencode(Text& text) const
@@ -182,18 +181,17 @@ Interface::workcells() const
     
 void
 Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
-{ throw 0; }
-// {
-//   uint64_t zaddr;
-//   if (auto z = addr.Eval( Scanner::AddrEval() ))
-//     { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
-//   else
-//     throw "WTF";
-//   addrs.insert(zaddr);
+{
+  uint64_t zaddr;
+  if (auto z = addr.Eval( Scanner::AddrEval() ))
+    { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
+  else
+    throw "WTF";
+  addrs.insert(zaddr);
 
-//   if (zaddr == *addrs.begin())
-//     base_addr = addr;
-// }
+  if (zaddr == *addrs.begin())
+    base_addr = addr;
+}
 
 void
 Interface::field_name(unsigned idx, std::ostream& sink) const
@@ -205,7 +203,7 @@ Interface::field_name(unsigned idx, std::ostream& sink) const
 //     {
 //       for (unsigned reg = 0; ; ++reg)
 //         if (gregs.accessed(reg) and gregs.index(reg) == idx)
-//           { sink << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(reg); return; }
+//           { sink << unisim::component::cxx::processor::sparc::isa::sparc64::DisasmGZXR(reg); return; }
 //       throw Ouch();
 //     }
 //   idx -= gregs.used();
@@ -217,7 +215,7 @@ Interface::field_name(unsigned idx, std::ostream& sink) const
 //       unsigned sub = idx & 1, vidx = idx >> 1;
 //       for (unsigned reg = 0; ; ++reg)
 //         if (vregs.accessed(reg) and vregs.index(reg) == vidx)
-//           { sink << unisim::component::cxx::processor::arm::isa::arm64::DisasmQ(reg) << (sub ? ".hi" : ".lo"); return; }
+//           { sink << unisim::component::cxx::processor::sparc::isa::sparc64::DisasmQ(reg) << (sub ? ".hi" : ".lo"); return; }
 //       throw Ouch();
 //     }
 //   throw Ouch();

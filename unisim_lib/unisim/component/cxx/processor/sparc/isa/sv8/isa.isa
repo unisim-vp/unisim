@@ -53,7 +53,6 @@ impl {
 #include <iostream>
 #include <cstdlib>
 
-using namespace std;
 }
 
 action {void} execute( {ARCH&} {cpu} ) const {

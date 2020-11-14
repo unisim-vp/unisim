@@ -36,38 +36,47 @@
 
 Scanner::Scanner( Interface& iif )
   : interface(iif)
+  , path(iif.behavior.get())
+  , gprs()
+  , y(newRegRead(Y()))
+  , stores()
+  , flags()
 {
+  // Flags
+  for (Flag reg; reg.next();)
+    flags[reg.idx()] = newRegRead( reg );
 }
 
 Scanner::~Scanner()
 {
 }
 
-// bool
-// Scanner::close( Scanner const& ref )
-// {
-//   bool complete = path->close();
+void
+Scanner::step(Scanner::Operation const& op)
+{
+  op.execute( *this );
+}
 
-//   // Scalar integer registers
-//   for (unsigned reg = 0; reg < GREGCOUNT; ++reg)
-//     if (gpr[reg].expr != ref.gpr[reg].expr)
-//       path->add_update( new GRegWrite( reg, interface.gregs.index(reg), gpr[reg].expr ) );
+bool
+Scanner::close( Scanner const& ref )
+{
+  bool complete = path->close();
 
-//   // Vector Registers
-//   for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
-//     if (interface.vregs.modified(reg))
-//       path->add_update( new VRegWrite( reg, interface.vregs.index(reg), vector_views[reg].GetConstStorage( &vector_data[reg][0], NeonRegister(), VUConfig::BYTECOUNT )->expr ) );
+  // Scalar integer registers
+  for (unsigned reg = 1; reg < 32; ++reg)
+    if (gprs[reg].expr != ref.gprs[reg].expr)
+      path->add_update( new GRegWrite( reg, interface.gregs.index(reg), gprs[reg].expr ) );
 
-//   // Flags
-//   for (Flag reg; reg.next();)
-//     if (flags[reg.idx()].expr != ref.flags[reg.idx()].expr)
-//       path->add_update( newRegWrite( reg, flags[reg.idx()].expr ) );
+  // Flags
+  for (Flag reg; reg.next();)
+    if (flags[reg.idx()] != ref.flags[reg.idx()])
+      path->add_update( newRegWrite( reg, flags[reg.idx()] ) );
 
-//   for (Expr const& store : stores)
-//     path->add_update( store );
+  for (Expr const& store : stores)
+    path->add_update( store );
     
-//   return complete;
-// }
+  return complete;
+}
   
 void
 Scanner::gregtouch( unsigned reg, bool write )

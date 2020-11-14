@@ -38,7 +38,7 @@ op ldsb( 0b11[2]:rd[5]:0[1]:a[1]:0b1001[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldsb.disasm = {
   sink << "ldsb" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 
@@ -69,7 +69,7 @@ op ldsh ( 0b11[2]:rd[5]:0[1]:a[1]:0b1010[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldsh.disasm = {
   sink << "ldsh" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 
@@ -99,7 +99,7 @@ op ldub ( 0b11[2]:rd[5]:0[1]:a[1]:0b0001[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldub.disasm = {
   sink << "ldub" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 
@@ -129,7 +129,7 @@ op lduh ( 0b11[2]:rd[5]:0[1]:a[1]:0b0010[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 lduh.disasm = {
   sink << "lduh" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 
@@ -159,7 +159,7 @@ op ld( 0b11[2]:rd[5]:0[1]:a[1]:0b0000[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ld.disasm = {
   sink << "ld" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 
@@ -187,7 +187,7 @@ op ldd ( 0b11[2]:rd[5]:0[1]:a[1]:0b0011[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldd.disasm = {
   sink << "ldd" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd & -2);
 };
 
@@ -222,7 +222,7 @@ lddi.execute = {
 op ldf( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 ldf.disasm = {
-  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], %f" << rd;
+  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], " << DisasmFPR(rd);
 };
 
 ldf.execute = {
@@ -234,7 +234,7 @@ ldf.execute = {
 op ldfi( 0b11[2]:rd[5]:0b100000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldfi.disasm = {
-  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], %f" << rd;
+  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmFPR(rd);
 };
 
 ldfi.execute = {
@@ -247,7 +247,7 @@ ldfi.execute = {
 op lddf( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 lddf.disasm = {
-  sink << "ldd [" << DisasmRRAddress(rs1, rs2) << "], %f" << (rd & -2);
+  sink << "ldd [" << DisasmRRAddress(rs1, rs2) << "], " << DisasmFPR(rd & -2);
 };
 
 lddf.execute = {
@@ -259,7 +259,7 @@ lddf.execute = {
 op lddfi( 0b11[2]:rd[5]:0b100011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 lddfi.disasm = {
-  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], %f" << (rd & -2);
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmFPR(rd & -2);
 };
 
 lddfi.execute = {
@@ -298,25 +298,25 @@ ldfsri.execute = {
 op ldc( 0b11[2]:rd[5]:0b110000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 ldc.disasm = {
-  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], %c" << rd;
+  sink << "ld [" << DisasmRRAddress(rs1, rs2) << "], " << DisasmCPR(rd);
 };
 
 op ldci( 0b11[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 ldci.disasm = {
-  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], %c" << rd;
+  sink << "ld [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmCPR(rd);
 };
 
 op lddc( 0b11[2]:rd[5]:0b110011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 lddc.disasm = {
-  sink << "ldd [" << DisasmRRAddress(rs1, rs2) << "], %c" << (rd & -2);
+  sink << "ldd [" << DisasmRRAddress(rs1, rs2) << "], " << DisasmCPR(rd & -2);
 };
 
 op lddci( 0b11[2]:rd[5]:0b110011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 lddci.disasm = {
-  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], %c" << (rd & -2);
+  sink << "ldd [" << DisasmRIAddress(rs1, simm13) << "], " << DisasmCPR(rd & -2);
 };
 
 op ldcsr( 0b11[2]:rd[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -337,7 +337,7 @@ op stb( 0b11[2]:rd[5]:0[1]:a[1]:0b0101[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 stb.disasm = {
   sink << "stb" << (a ? "a" : "") << " " << DisasmGPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
 };
 
 stb.execute = {
@@ -365,7 +365,7 @@ op sth ( 0b11[2]:rd[5]:0[1]:a[1]:0b0110[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 sth.disasm = {
   sink << "sth" << (a ? "a" : "") << " " << DisasmGPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
 };
 
 sth.execute = {
@@ -393,7 +393,7 @@ op st( 0b11[2]:rd[5]:0[1]:a[1]:0b0100[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 st.disasm = {
   sink << "st" << (a ? "a" : "") << " " << DisasmGPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
 };
 
 st.execute = {
@@ -418,7 +418,7 @@ op std( 0b11[2]:rd[5]:0[1]:a[1]:0b0111[4]:rs1[5]:0b0[1]:asi[8]:rs2[5] );
 
 std.disasm = {
   sink << "std" << (a ? "a" : "") << " " << DisasmGPR(rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
 };
 
 std.execute = {
@@ -449,7 +449,7 @@ stdi.execute = {
 op stf( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stf.disasm = {
-  sink << "st %f" << rd << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  sink << "st " << DisasmFPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
 };
 
 stf.execute = {
@@ -459,7 +459,7 @@ stf.execute = {
 op stfi( 0b11[2]:rd[5]:0b100100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stfi.disasm = {
-  sink << "st %f" << rd << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+  sink << "st " << DisasmFPR(rd) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
 };
 
 stfi.execute = {
@@ -471,7 +471,7 @@ stfi.execute = {
 op stdf( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stdf.disasm = {
-  sink << "std %f" << (rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  sink << "std " << DisasmFPR(rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
 };
 
 stdf.execute = {
@@ -481,7 +481,7 @@ stdf.execute = {
 op stdfi( 0b11[2]:rd[5]:0b100111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdfi.disasm = {
-  sink << "std %f" << (rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+  sink << "std " << DisasmFPR(rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
 };
 
 stdfi.execute = {
@@ -529,25 +529,25 @@ stdfqi.disasm = {
 op stc( 0b11[2]:rd[5]:0b110100[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stc.disasm = {
-  sink << "st %c" << rd << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  sink << "st " << DisasmCPR(rd) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
 };
 
 op stci( 0b11[2]:rd[5]:0b110100[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stci.disasm = {
-  sink << "st %c" << rd << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+  sink << "st " << DisasmCPR(rd) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
 };
 
 op stdc( 0b11[2]:rd[5]:0b110111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 stdc.disasm = {
-  sink << "std %c" << (rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
+  sink << "std " << DisasmCPR(rd & -2) << ", [" << DisasmRRAddress(rs1, rs2) << "]";
 };
 
 op stdci( 0b11[2]:rd[5]:0b110111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 stdci.disasm = {
-  sink << "std %c" << (rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
+  sink << "std " << DisasmCPR(rd & -2) << ", [" << DisasmRIAddress(rs1, simm13) << "]";
 };
 
 op stcsr( 0b11[2]:rd[5]:0b110101[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -580,7 +580,7 @@ op ldstub ( 0b11[2]:rd[5]:0[1]:a[1]:0b1101[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 ldstub.disasm = {
   sink << "ldstub" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 
@@ -620,7 +620,7 @@ op swap ( 0b11[2]:rd[5]:0[1]:a[1]:0b1111[4]:rs1[5]:0[1]:asi[8]:rs2[5] );
 
 swap.disasm = {
   sink << "swap" << (a ? "a" : "") << " [" << DisasmRRAddress(rs1, rs2) << "]";
-  if (a) sink << "0x" << std::hex << asi;
+  if (a) sink << "" << DisasmHex(asi);
   sink << ", " << DisasmGPR(rd);
 };
 

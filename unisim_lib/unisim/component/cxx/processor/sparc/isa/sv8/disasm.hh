@@ -69,10 +69,26 @@ namespace sv8 {
     void operator () ( std::ostream& sink ) const { sink << "%f" << std::dec << rid; }
   };
 
-  struct DisasmSX : public DisasmObject
+  struct DisasmCPR : public DisasmObject
   {
-    DisasmSX( int _offset ) : offset(_offset) {} int offset;
+    DisasmCPR( unsigned _rid ) : rid(_rid) {} unsigned rid;
+    void operator () ( std::ostream& sink ) const { sink << "%c" << std::dec << rid; }
+  };
+
+  struct DisasmI : public DisasmObject
+  {
+    DisasmI(int32_t _value) : value(_value) {} int32_t value;
+    void operator () ( std::ostream& sink ) const { sink << std::dec << value; }
+  };
+
+  struct DisasmHex : public DisasmObject
+  {
+    DisasmHex(uint32_t _value) : intro("-"), value(_value) {}
+    DisasmHex(int32_t _value, char const* n, char const* p="") : intro(_value < 0 ? n : p), value(_value < 0 ? -_value : _value ) {}
     void operator () ( std::ostream& sink ) const;
+    char const* intro;
+    uint32_t value;
+    
   };
 
   struct DisasmRIAddress : public DisasmObject

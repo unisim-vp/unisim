@@ -125,7 +125,7 @@ struct Checker
   dump_repos( std::ostream& sink )
   {
     for (Interface const& test : testdb)
-      sink << "repos.add( " << std::hex << test.memcode << ", \"" << test.asmcode << "\" )\n";
+      sink << "repos.add( 0x" << std::hex << test.memcode << ", \"" << test.asmcode << "\" );\n";
   }
 
   void add( uint32_t code, char const* disasm )
@@ -346,7 +346,7 @@ struct Checker
 int
 main( int argc, char** argv )
 {
-  std::cout << "Let's go!\n";
+  std::cerr << "Let's go!\n";
 
   Checker checker;
 
@@ -374,7 +374,7 @@ main( int argc, char** argv )
               return 1;
             }
         }
-      std::cerr << "#" << insn_count << " instructions using a scan_ttl of " << scan_ttl << "\n";
+      std::cerr << "#" << std::dec << insn_count << " instructions using a scan_ttl of " << scan_ttl << "\n";
 
       checker.discover( insn_count, scan_ttl );
       checker.dump_repos( std::cout );

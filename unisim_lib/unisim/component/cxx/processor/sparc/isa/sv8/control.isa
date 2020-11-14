@@ -88,8 +88,7 @@ restore.execute = {
 op restorei( 0b10[2]:rd[5]:0b111101[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
 
 restorei.disasm = {
-  if( simm13 >= 0 ) sink << "restore " << DisasmGPR(rs1) << ", " << "0x" << hex << simm13 << ", " << DisasmGPR(rd);
-  else              sink << "restore " << DisasmGPR(rs1) << ", -" << "0x" << hex << -simm13 << ", " << DisasmGPR(rd);
+  sink << "restore " << DisasmGPR(rs1) << ", " << DisasmHex(simm13,"-") << ", " << DisasmGPR(rd);
 }
 
 restorei.execute = {
@@ -108,7 +107,7 @@ restorei.execute = {
 op ba( 0b00[2]:annul[1]:0b1000[4]:0b010[3]:shl<2> sext disp22[22] )
 
 ba.disasm = {
-  sink << "ba" << (annul ? ",a " : " ") << "0x" << std::hex << pc + disp22;
+  sink << "ba" << (annul ? ",a " : " ") << "" << DisasmHex(pc + disp22);
 };
 
 ba.execute = {
@@ -119,7 +118,7 @@ ba.execute = {
 op bc( 0b00[2]:annul[1]:cond[4]:0b010[3]:shl<2> sext<32> disp22[22] );
 
 bc.disasm = {
-  sink << "b" << DisasmCondition(cond) << (annul ? ",a " : " ") << "0x" << std::hex << (this->GetAddr() + disp22);
+  sink << "b" << DisasmCondition(cond) << (annul ? ",a " : " ") << "" << DisasmHex(this->GetAddr() + disp22);
 };
 
 bc.execute = {
@@ -134,7 +133,7 @@ bc.execute = {
 op fba( 0b00[2]:annul[1]:0b1000[4]:0b110[3]:shl<2> sext<32> disp22[22] );
 
 fba.disasm = {
-  sink << "fba" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "fba" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 };
 
 fba.execute = {
@@ -144,7 +143,9 @@ fba.execute = {
   
 op fbc(   0b00[2]:annul[1]:cond[4]:0b110[3]:shl<2> sext<32> disp22[22] );
 
-fbc.disasm = { sink << "fb" << DisasmFCondition(cond) << (annul ? ",a " : " ") << "0x" << hex << pc + disp22; };
+fbc.disasm = {
+  sink << "fb" << DisasmFCondition(cond) << (annul ? ",a " : " ") << "" << DisasmHex(pc + disp22);
+};
 
 fbc.execute = {
   if (cpu.TestFCondition(cond))
@@ -158,97 +159,97 @@ fbc.execute = {
 op cba( 0b00[2]:annul[1]:0b1000[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cba.disasm = {
-  sink << "cba" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cba" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cbn( 0b00[2]:annul[1]:0b0000[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cbn.disasm = {
-  sink << "cbn" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cbn" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb3( 0b00[2]:annul[1]:0b0111[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb3.disasm = {
-  sink << "cb3" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb3" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb2( 0b00[2]:annul[1]:0b0110[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb2.disasm = {
-  sink << "cb2" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb2" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb23( 0b00[2]:annul[1]:0b0101[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb23.disasm = {
-  sink << "cb23" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb23" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb1( 0b00[2]:annul[1]:0b0100[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb1.disasm = {
-  sink << "cb1" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb1" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb13( 0b00[2]:annul[1]:0b0011[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb13.disasm = {
-  sink << "cb13" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb13" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb12( 0b00[2]:annul[1]:0b0010[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb12.disasm = {
-  sink << "cb12" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb12" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb123( 0b00[2]:annul[1]:0b0001[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb123.disasm = {
-  sink << "cb123" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb123" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb0( 0b00[2]:annul[1]:0b1001[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb0.disasm = {
-  sink << "cb0" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb0" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb03( 0b00[2]:annul[1]:0b1010[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb03.disasm = {
-  sink << "cb03" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb03" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb02( 0b00[2]:annul[1]:0b1011[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb02.disasm = {
-  sink << "cb02" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb02" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb023( 0b00[2]:annul[1]:0b1100[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb023.disasm = {
-  sink << "cb023" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb023" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb01( 0b00[2]:annul[1]:0b1101[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb01.disasm = {
-  sink << "cb01" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb01" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb013( 0b00[2]:annul[1]:0b1110[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb013.disasm = {
-  sink << "cb013" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb013" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 op cb012( 0b00[2]:annul[1]:0b1111[4]:0b111[3]:shl<2> sext<32> disp22[22] )
 
 cb012.disasm = {
-  sink << "cb012" << (annul ? ",a" : "") << " " << "0x" << hex << pc + disp22;
+  sink << "cb012" << (annul ? ",a" : "") << " " << "" << DisasmHex(pc + disp22);
 }
 
 /* Call and Link Instructions */
@@ -256,7 +257,7 @@ cb012.disasm = {
 op call( 0b01[2]:shl<2> disp30[30] );
 
 call.disasm = {
-  sink << "call " << "0x" << std::hex << disp30;
+  sink << "call " << "" << DisasmHex(disp30);
 };
 
 call.execute = {
@@ -380,7 +381,7 @@ ta.execute = {
 op tai( 0b10[2]:?[1]:0b1000[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
 
 tai.disasm = {
-  sink << "ta " << DisasmGPR(rs1) << " + " << "0x" << hex << imm7;
+  sink << "ta " << DisasmGPR(rs1) << " + " << "" << DisasmHex(imm7);
 }
 
 tai.execute = {
@@ -403,7 +404,7 @@ tc.execute = {
 op tci( 0b10[2]:?[1]:cond[4]:0b111010[6]:rs1[5]:0b1[1]:?[6]:imm7[7] )
 
 tci.disasm = {
-  sink << "t" << DisasmCondition(cond) << " " << DisasmGPR(rs1) << " + " << "0x" << hex << imm7;
+  sink << "t" << DisasmCondition(cond) << " " << DisasmGPR(rs1) << " + " << "" << DisasmHex(imm7);
 }
 
 tci.execute = {

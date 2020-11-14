@@ -44,7 +44,7 @@ Scanner::ISA::~ISA()
 {}
 
 Scanner::Operation*
-Scanner::ISA::decode(uint64_t addr, uint32_t code, std::string& disasm)
+Scanner::ISA::decode(uint32_t addr, uint32_t code, std::string& disasm)
 {
   std::ostringstream buf;
   Scanner::Operation* op = 0;
