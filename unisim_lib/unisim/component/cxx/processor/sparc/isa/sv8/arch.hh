@@ -72,7 +72,7 @@ struct Arch
       case  1: return _.Eval(                        _.Z()  ); //   e; equal
       case  2: return _.Eval(   (_.Z() or (_.N() xor _.V()))); //  le; less or equal
       case  3: return _.Eval(             (_.N() xor _.V()) ); //   l; less
-      case  4: return _.Eval(         (not _.C()  or _.Z()) ); // leu; less or equal unsigned
+      case  4: return _.Eval(             (_.C()  or _.Z()) ); // leu; less or equal unsigned
       case  5: return _.Eval(                        _.C()  ); //  cs; carry set
       case  6: return _.Eval(                        _.N()  ); // neg; negative
       case  7: return _.Eval(                        _.V()  ); //  vs; overflow set
@@ -80,7 +80,7 @@ struct Arch
       case  9: return _.Eval(                    not _.Z()  ); //  ne; not equal
       case 10: return _.Eval(not(_.Z() or (_.N() xor _.V()))); //   g; greater
       case 11: return _.Eval(         not (_.N() xor _.V()) ); //  ge; greater or equal
-      case 12: return _.Eval(     not (not _.C()  or _.Z()) ); //  gu; greater unsigned
+      case 12: return _.Eval(         not (_.C()  or _.Z()) ); //  gu; greater unsigned
       case 13: return _.Eval(                    not _.C()  ); //  cc; carry clear
       case 14: return _.Eval(                    not _.N()  ); // pos; positive
       case 15: return _.Eval(                    not _.V()  ); //  vc; overflow clear

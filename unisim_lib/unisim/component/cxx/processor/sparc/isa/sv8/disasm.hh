@@ -69,6 +69,12 @@ namespace sv8 {
     void operator () ( std::ostream& sink ) const { sink << "%f" << std::dec << rid; }
   };
 
+  struct DisasmSX : public DisasmObject
+  {
+    DisasmSX( int _offset ) : offset(_offset) {} int offset;
+    void operator () ( std::ostream& sink ) const;
+  };
+
   struct DisasmRIAddress : public DisasmObject
   {
     DisasmRIAddress( unsigned _rid, int _offset ) : rid(_rid), offset(_offset) {} unsigned rid; int offset;
