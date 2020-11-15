@@ -334,40 +334,45 @@ namespace Star
     bool                          read( ASI _asi, uint32_t _addr, uint32_t _size, uint8_t* _value )
     {
       m_asi_accesses[_asi.code&0xff] ++;
-      if( (_addr % _size) or _size > (1 << Page::s_bits) ) return false;
+      if ((_addr % _size) or _size > (1 << Page::s_bits)) return false;
       uint32_t pageidx = _addr >> Page::s_bits;
       uint32_t pageaddr = pageidx << Page::s_bits;
       pageidx = pageidx % (1 << s_bits);
       uint32_t offset = _addr - pageaddr;
 
       Page* match = m_pages[pageidx];
-      if( match and match->m_address != pageaddr ) {
-        match = 0;
-        for( Page* node = m_pages[pageidx]; node->m_next; node = node->m_next ) {
-          if( node->m_next->m_address != pageaddr ) continue;
-          match = node->m_next;
-          node->m_next = match->m_next;
-          match->m_next = m_pages[pageidx];
-          m_pages[pageidx] = match;
-          break;
+      if (match and match->m_address != pageaddr)
+        {
+          match = 0;
+          for (Page* node = m_pages[pageidx]; node->m_next; node = node->m_next)
+            {
+              if (node->m_next->m_address != pageaddr) continue;
+              match = node->m_next;
+              node->m_next = match->m_next;
+              match->m_next = m_pages[pageidx];
+              m_pages[pageidx] = match;
+              break;
+            }
         }
-      }
-      if( not match ) {
-        SSv8::Peripheral* target = peripheral( _addr );
-        if( target and target->read( _addr, _size, _value ) )
-          return true;
-        return uninitialized_data( _asi, _addr, _size ), false;
-      }
+      
+      if (not match)
+        {
+          SSv8::Peripheral* target = peripheral( _addr );
+          if (target and target->read( _addr, _size, _value ))
+            return true;
+          return uninitialized_data( _asi, _addr, _size ), false;
+        }
+      
       uint8_t const* storage = &(match->m_storage[offset]);
-      if( _size == 1 )      *_value = *storage;
-      else if( _size == 2 ) *((uint16_t*)( _value )) = *((uint16_t const*)( storage ));
-      else if( _size == 4 ) *((uint32_t*)( _value )) = *((uint32_t const*)( storage ));
-      else if( _size == 8 ) *((uint64_t*)( _value )) = *((uint64_t const*)( storage ));
-      else { for( uint32_t idx = 0; idx < _size; ++ idx ) _value[idx] = storage[idx]; }
+      
+      for (uint32_t idx = 0; idx < _size; ++ idx )
+        _value[idx] = storage[idx];
+      
       return true;
     }
     
-    bool                          write( ASI _asi, uint32_t _addr, uint32_t _size, uint8_t const* _value )
+    bool
+    write( ASI _asi, uint32_t _addr, uint32_t _size, uint8_t const* _value )
     {
       m_asi_accesses[_asi.code&0xff] ++;
       if( (_addr % _size) or _size > (1 << Page::s_bits) ) return false;
@@ -377,32 +382,33 @@ namespace Star
       uint32_t offset = _addr - pageaddr;
 
       Page* match = m_pages[pageidx];
-      if( match and match->m_address != pageaddr ) {
-        match = 0;
-        for( Page* node = m_pages[pageidx]; node->m_next; node = node->m_next ) {
-          if( node->m_next->m_address != pageaddr ) continue;
-          match = node->m_next;
-          node->m_next = match->m_next;
-          match->m_next = m_pages[pageidx];
-          m_pages[pageidx] = match;
-          break;
+      if (match and match->m_address != pageaddr)
+        {
+          match = 0;
+          for (Page* node = m_pages[pageidx]; node->m_next; node = node->m_next)
+            {
+              if (node->m_next->m_address != pageaddr) continue;
+              match = node->m_next;
+              node->m_next = match->m_next;
+              match->m_next = m_pages[pageidx];
+              m_pages[pageidx] = match;
+              break;
+            }
         }
-      }
       
-      if( not match ) {
-        SSv8::Peripheral* target = peripheral( _addr );
-        if( target ) return target->write( _addr, _size, _value );
-        match = new Page( m_pages[pageidx], pageaddr );
-        m_pages[pageidx] = match;
-      }
+      if (not match)
+        {
+          SSv8::Peripheral* target = peripheral( _addr );
+          if (target) return target->write( _addr, _size, _value );
+          match = new Page( m_pages[pageidx], pageaddr );
+          m_pages[pageidx] = match;
+        }
       
       uint8_t* storage = &(match->m_storage[offset]);
       
-      if( _size == 1 )      *storage = *_value;
-      else if( _size == 2 ) *((uint16_t*)( storage )) = *((uint16_t*)( _value ));
-      else if( _size == 4 ) *((uint32_t*)( storage )) = *((uint32_t*)( _value ));
-      else if( _size == 8 ) *((uint64_t*)( storage )) = *((uint64_t*)( _value ));
-      else { for( uint32_t idx = 0; idx < _size; ++ idx ) storage[idx] = _value[idx]; }
+      for (uint32_t idx = 0; idx < _size; ++ idx)
+        storage[idx] = _value[idx];
+      
       return true;
     }
 

@@ -392,8 +392,8 @@ main( int argc, char** argv )
             insn_count = strtoull(&param[pos+1],0,0);
           else if (param.compare(0,pos,"scan_ttl") == 0)
             scan_ttl = strtoull(&param[pos+1],0,0);
-          else if (param.compare(0,pos,"dumptests") == 0)
-            dump_tests = &param[pos+1];
+          else if (param.compare(0,pos,"dump_tests") == 0)
+            dump_tests = &argv[idx][pos+1];
           else
             {
               std::cerr << "Unknown header entry: " << param << std::endl;

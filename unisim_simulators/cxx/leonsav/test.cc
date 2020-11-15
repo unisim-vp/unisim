@@ -42,7 +42,7 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
   , asmcode(disasm)
   , gilname(op.GetName())
   , gregs()
-  , vregs()
+    //  , vregs()
   , behavior(std::make_shared<unisim::util::sav::ActionNode>())
   , addrs()
   , base_addr()
@@ -61,7 +61,7 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
 
   for (unsigned reg = 0; reg < 32; ++reg)
     {
-      if (0x3cfffffe >> reg & 1)
+      if (0xfcfc >> reg & 1)
         continue;
       if (gregs.accessed(reg))
         {
@@ -113,55 +113,51 @@ Interface::gencode(Text& text) const
       if (not gregs.accessed(reg)) continue;
       grmap[gregs.index(reg)] = reg;
     }
-  /* Setup Neon register map */
-  unsigned const vcount = vregs.used();
-  unsigned vrmap[vcount];
-  for (unsigned reg = 0; reg < vregs.count(); ++reg)
-    {
-      if (not vregs.accessed(reg)) continue;
-      vrmap[vregs.index(reg)] = reg;
-    }
-    
+  // /* Setup Neon register map */
+  // unsigned const vcount = vregs.used();
+  // unsigned vrmap[vcount];
+  // for (unsigned reg = 0; reg < vregs.count(); ++reg)
+  //   {
+  //     if (not vregs.accessed(reg)) continue;
+  //     vrmap[vregs.index(reg)] = reg;
+  //   }
+  
   /* Load GP registers and NZCV scratch (x1)*/
-  {
-    unsigned idx = 0;
-    if (gcount&1)
-      text.write( 0xf8400400 | 8 << 12 | 0 << 5 | grmap[idx++] << 0 ); // LDR <Xt>, [X0], 8
-    for (;idx < gcount; idx+=2)
-      text.write( 0xa8c00000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); // LDP <Xt1>, <Xt2>, [X0], 16
-  }
-  /* Load NZCV register */
-  text.write( 0xd51b4201 ); // msr NZCV, x1
-  /* Load Neon registers */
-  {
-    unsigned idx = 0;
-    if (vcount&1)
-      text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // LDR <Qt>, [X0], 16
-    for (;idx < vcount; idx+=2)
-      text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // LDP <Qt1>, <Qt2>, [X0], 32
-  }
+  unsigned offset = 0;
+  for (unsigned idx = 0; idx < gcount; ++idx, offset += 4)
+    text.write( 0xc0002000 | grmap[idx] << 25 | 8 << 14 | offset ); // ld [%o0 + <offset>], %r
+  /* Load NZVC register */
+  // text.write( 0x01003c00 |  9 << 25 ); // sethi  %hi(0xf00000), %o1
+  // text.write( 0x80080000 |  1 << 25 | 9 << 14 | 1 << 0 ); // and %o1, %g1, %g1
+  text.write( 0x80902000 |  0 << 25 |  0 << 14 | 1 << 0 ); // orcc %g0, 1, %g0
+  text.write( 0x81480000 | 9 << 25 ); // rd %psr, %o1
+  text.write( 0x81880000 | 9 << 14 |  1 <<  0 ); // wr %o1, %g1, %psr
+
+  // /* Load Neon registers */
+  // {
+  //   unsigned idx = 0;
+  //   if (vcount&1)
+  //     text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // LDR <Qt>, [X0], 16
+  //   for (;idx < vcount; idx+=2)
+  //     text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // LDP <Qt1>, <Qt2>, [X0], 32
+  // }
   /* Execute tested instruction */
   text.write(memcode);
   /* Store NZCV register*/
-  text.write( 0xd53b4201 ); // mrs NZCV, x1
+  text.write( 0x81480000 | 1 << 25 ); // rd %psr, %g1
   /* Store GP registers */
-  {
-    unsigned idx = 0;
-    if (gcount&1)
-      text.write( 0xf8000400 | 8 << 12 | 0 << 5 | grmap[idx++] << 0 ); // STR <Xt>, [X0], 8
-    for (;idx < gcount; idx+=2)
-      text.write( 0xa8800000 | 2 << 15 | grmap[idx+1] << 10 | 0 << 5 | grmap[idx] << 0 ); // STP <Xt1>, <Xt2>, [X0], 16
-  }
-  /* Store Neon registers */
-  {
-    unsigned idx = 0;
-    if (vcount&1)
-      text.write( 0x3c800400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // STR <Qt>, [X0], 16
-    for (;idx < vcount; idx+=2)
-      text.write( 0xac800000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // STP <Qt1>, <Qt2>, [X0], 32
-  }
+  for (unsigned idx = 0; idx < gcount; ++idx, offset += 4)
+    text.write( 0xc0202000 | grmap[idx] << 25 | 8 << 14 | offset ); // st %r, [%o0 + <offset>]
+  // /* Store Neon registers */
+  // {
+  //   unsigned idx = 0;
+  //   if (vcount&1)
+  //     text.write( 0x3c800400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // STR <Qt>, [X0], 16
+  //   for (;idx < vcount; idx+=2)
+  //     text.write( 0xac800000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // STP <Qt1>, <Qt2>, [X0], 32
+  // }
   // Return
-  text.write( 0xd65f03c0 ); // RET
+  text.write( 0x81c3e008 ); // retl
 }
 
 uintptr_t
