@@ -308,7 +308,10 @@ namespace CLex
             if (lch == end) return true;
             if (not s.append(lch)) return false;
             break;
-          case '\n': std::cerr << loc() << "error: unexpected end of line\n"; throw 0;
+          case '\n':
+            std::cerr << loc() << "error: unexpected end of line\n";
+            struct Bad {};
+            throw Bad();
           case '\\':
             switch (getchar())
               {

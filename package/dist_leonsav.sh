@@ -52,11 +52,14 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 scanner.cc \
 scanner.ops.cc \
+runner.cc \
+runner.ops.cc \
 test.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 test.hh \
+runner.hh \
 scanner.hh \
 init_tests.hh \
 "

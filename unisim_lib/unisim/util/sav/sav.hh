@@ -187,8 +187,8 @@ namespace sav {
     T generate()
     {
       T value = 0;
-      for (unsigned idx = sizeof (T) / sizeof (uint32_t); idx > 0; --idx)
-        value = value << 32 | uint32_t(Generate());
+      for (unsigned idx = sizeof (T) / sizeof (uint32_t); idx-- > 0;)
+        value |= T(Generate()) << (32*idx);
       return value;
     }
     template <typename UOP>
@@ -211,9 +211,9 @@ namespace sav {
 
   struct TestbedBase
   {
-    TestbedBase( char const* seed, uint64_t* elems, uintptr_t count );
+    TestbedBase( char const* seed, uint8_t* elems, uintptr_t count );
 
-    void serial( std::ostream& sink, uint64_t* elems, uintptr_t count ) const;
+    void serial( std::ostream& sink, uint8_t* elems, uintptr_t count ) const;
 
     Random rng;
     uintptr_t counter;
@@ -223,9 +223,9 @@ namespace sav {
   struct Testbed : public TestbedBase
   {
     typedef CELL cell_t;
-    Testbed( char const* seed ) : TestbedBase( seed, &buffer[0], COUNT ) {}
+    Testbed( char const* seed ) : TestbedBase( seed, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ) {}
 
-    void serial( std::ostream& sink ) { TestbedBase::serial( sink, &buffer[0], COUNT ); }
+    void serial( std::ostream& sink ) { TestbedBase::serial( sink, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ); }
 
     uintptr_t head(uintptr_t idx=0) const { return (counter+idx) % COUNT; }
 
@@ -240,7 +240,8 @@ namespace sav {
 
     void load( cell_t* ws, unsigned size ) const
     {
-      if (size >= COUNT) throw 0;
+      if (size >= COUNT)
+        { struct Bad {}; throw Bad (); }
       unsigned rnd_idx = head();
       for (unsigned idx = 0; idx < size; ++idx)
         {

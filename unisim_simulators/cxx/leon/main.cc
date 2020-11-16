@@ -51,7 +51,8 @@ using SSv8::CFmt;
 void usage( ostream& _sink, int _code );
 
 int
-main( int argc, char *argv[] ) {
+main( int argc, char *argv[] )
+{
   // Parsing options
   int aidx;
   try {

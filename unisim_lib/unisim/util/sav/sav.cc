@@ -122,7 +122,7 @@ namespace sav {
     }
   }
 
-  TestbedBase::TestbedBase(char const* seed, uint64_t* elems, uintptr_t count)
+  TestbedBase::TestbedBase(char const* seed, uint8_t* elems, uintptr_t count)
   {
     for (unsigned idx = 0, end = 5; idx < end; ++idx)
       HexLoad( rng.State(idx), seed );
@@ -131,7 +131,7 @@ namespace sav {
     HexLoad( counter, seed );
   }
 
-  void TestbedBase::serial( std::ostream& sink, uint64_t* elems, uintptr_t count ) const
+  void TestbedBase::serial( std::ostream& sink, uint8_t* elems, uintptr_t count ) const
   {
     for (unsigned idx = 0, end = 5; idx < end; ++idx)
       HexStore( sink, rng.State(idx) );

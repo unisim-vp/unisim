@@ -57,7 +57,7 @@ namespace vector {
       unsigned is_repeat() const { return sexp.node ? 0 : span; }
       bool     is_none() const   { return not sexp.node and not span; }
       ExprNode const* get_node() const { return sexp.node; }
-      unsigned size() const { if (not sexp.good()) throw 0; return span; }
+      unsigned size() const { if (not sexp.good()) { struct Bad {}; throw Bad(); } return span; }
       Expr const& expr() const { return sexp; }
 
     protected:
@@ -120,7 +120,7 @@ namespace vector {
         if (int pos = byte->is_repeat())
           {
             Byte const* base = byte - pos;
-            if (not base->is_source()) throw 0;
+            if (not base->is_source()) { struct Bad {}; throw Bad(); }
             dst = T(Expr(new VTrans<T>(*base, -pos)));
             return;
           }

@@ -35,8 +35,6 @@
 #ifndef __ARM64SAV_RUNNER_HH__
 #define __ARM64SAV_RUNNER_HH__
 
-// #include <scanner.hh>
-// #include <unisim/util/random/random.hh>
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/vector/vector.hh>

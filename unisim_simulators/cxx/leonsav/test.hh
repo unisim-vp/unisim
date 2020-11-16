@@ -48,13 +48,14 @@ struct Interface
 {
   typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Scanner> Operation;
   typedef unisim::util::symbolic::Expr Expr;
-  typedef void (*testcode_t)(uint64_t*);
+  typedef void (*testcode_t)(uint32_t*);
   struct Text { virtual void write(uint32_t) = 0; virtual ~Text() {} };
 
   Interface( Operation const& op, uint32_t code, std::string const& disasm );
 
   void memaccess( Expr const& addr, bool iswrite );
   uintptr_t workcells() const;
+  uintptr_t icc_index() const;
   void gencode(Text& text) const;
   void field_name(unsigned idx, std::ostream& sink) const;
   bool usemem() const { return addrs.size(); }

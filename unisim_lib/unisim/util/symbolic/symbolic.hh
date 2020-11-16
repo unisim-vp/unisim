@@ -380,7 +380,7 @@ namespace symbolic {
   
   struct OpNodeBase : public ExprNode
   {
-    OpNodeBase( Op _op ) : op(_op) { if (op.code == op.end) throw 0; }
+    OpNodeBase( Op _op ) : op(_op) { if (op.code == op.end) { struct Bad {}; throw Bad(); } }
     virtual OpNodeBase const* AsOpNode() const { return this; }
     virtual ScalarType::id_t GetType() const
     {
@@ -849,7 +849,9 @@ namespace symbolic {
       virtual ScalarType::id_t GetType() const
       {
         switch (dsz) { case 32: return ScalarType::F32; case 64: return ScalarType::F64; }
-        throw 0; return ScalarType::F32;
+        struct Bad {};
+        throw Bad();
+        return ScalarType::F32;
       }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FtoFNode const&>( rhs ) ); }
       int compare( FtoFNode const& rhs ) const

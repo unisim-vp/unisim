@@ -132,48 +132,26 @@ Interface::gencode(Text& text) const
   text.write( 0x80902000 |  0 << 25 |  0 << 14 | 1 << 0 ); // orcc %g0, 1, %g0
   text.write( 0x81480000 | 9 << 25 ); // rd %psr, %o1
   text.write( 0x81880000 | 9 << 14 |  1 <<  0 ); // wr %o1, %g1, %psr
-
-  // /* Load Neon registers */
-  // {
-  //   unsigned idx = 0;
-  //   if (vcount&1)
-  //     text.write( 0x3cc00400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // LDR <Qt>, [X0], 16
-  //   for (;idx < vcount; idx+=2)
-  //     text.write( 0xacc00000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // LDP <Qt1>, <Qt2>, [X0], 32
-  // }
   /* Execute tested instruction */
   text.write(memcode);
-  /* Store NZCV register*/
+  /* Store NZCV register */
   text.write( 0x81480000 | 1 << 25 ); // rd %psr, %g1
   /* Store GP registers */
+  // Delay code emission to reserve the delay slot
+  unsigned retloc = gcount - 1;
   for (unsigned idx = 0; idx < gcount; ++idx, offset += 4)
-    text.write( 0xc0202000 | grmap[idx] << 25 | 8 << 14 | offset ); // st %r, [%o0 + <offset>]
-  // /* Store Neon registers */
-  // {
-  //   unsigned idx = 0;
-  //   if (vcount&1)
-  //     text.write( 0x3c800400 | 16 << 12 | 0 << 5 | vrmap[idx++] << 0 ); // STR <Qt>, [X0], 16
-  //   for (;idx < vcount; idx+=2)
-  //     text.write( 0xac800000 | 2 << 15 | vrmap[idx+1] << 10 | 0 << 5 | vrmap[idx] << 0 ); // STP <Qt1>, <Qt2>, [X0], 32
-  // }
-  // Return
-  text.write( 0x81c3e008 ); // retl
+    {
+      if (idx == retloc)
+        text.write( 0x81c3e008 ); // retl
+      text.write( 0xc0202000 | grmap[idx] << 25 | 8 << 14 | offset ); // st %r, [%o0 + <offset>]
+    }
 }
 
 uintptr_t
 Interface::workcells() const
-{ struct Bad {}; throw Bad (); return 0;}
-// {
-//   uintptr_t const
-//     regwsize = 8*gregs.used(),
-//     vecwsize = Scanner::VUConfig::BYTECOUNT*vregs.used();
-//   uintptr_t offset = 0;
-//   offset += 8;        // placeholder for NZCV
-//   offset += regwsize; // placeholder for reg values 
-//   offset += vecwsize; // placeholder for vec values 
-//   if (offset % 8) throw "WTF";
-//   return offset / 8;
-// }
+{
+  return 1 + gregs.used();
+}
     
 void
 Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
@@ -189,33 +167,28 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
     base_addr = addr;
 }
 
+uintptr_t
+Interface::icc_index() const
+{
+  return gregs.used();
+}
+
 void
 Interface::field_name(unsigned idx, std::ostream& sink) const
 {
   struct Ouch {};
+  if (idx < gregs.used())
+    {
+      for (unsigned reg = 0; ; ++reg)
+        if (gregs.accessed(reg) and gregs.index(reg) == idx)
+          { sink << unisim::component::cxx::processor::sparc::isa::sv8::DisasmGPR(reg); return; }
+      throw Ouch();
+    }
+  idx -= gregs.used();
+  if (idx < 1)
+    { sink << "nzvc"; return; }
+  throw Ouch();
 }
-// {
-//   if (idx < gregs.used())
-//     {
-//       for (unsigned reg = 0; ; ++reg)
-//         if (gregs.accessed(reg) and gregs.index(reg) == idx)
-//           { sink << unisim::component::cxx::processor::sparc::isa::sparc64::DisasmGZXR(reg); return; }
-//       throw Ouch();
-//     }
-//   idx -= gregs.used();
-//   if (idx < 1)
-//     { sink << "nzcv"; return; }
-//   idx -= 1;
-//   if (idx < vregs.used()*2)
-//     {
-//       unsigned sub = idx & 1, vidx = idx >> 1;
-//       for (unsigned reg = 0; ; ++reg)
-//         if (vregs.accessed(reg) and vregs.index(reg) == vidx)
-//           { sink << unisim::component::cxx::processor::sparc::isa::sparc64::DisasmQ(reg) << (sub ? ".hi" : ".lo"); return; }
-//       throw Ouch();
-//     }
-//   throw Ouch();
-// }
 
 
 bool

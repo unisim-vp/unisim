@@ -34,88 +34,46 @@
 
 /* Read State Register Instructions */
 
-// op rdstr( 0b10[2]:rd[5]:0b1010[4]:str[2]:rs1[5]:?[1]:?[13]);
-// rdstr.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(ARCH::SysReg::read, str, rs1, rd)};
+op rdy( 0b10[2]:rd[5]:0b101000[6]:0b00000[5]:?[1]:?[13] );
 
-// rdstr.disasm = {
-//   sysreg->DisasmRead(str, rs1, rd, sink);
-// };
+rdy.disasm = {
+  sink << "rd %y, " << DisasmGPR(rd);
+};
 
-// rdstr.execute = {
-//   cpu.SetGPR(rd, sysreg->Read(str, rs1, cpu));
-// };
+rdy.execute = {
+  cpu.SetGPR(rd, cpu.GetY());
+};
 
-// op wrstr( 0b10[2]:rd[5]:0b1100[4]:str[2]:rs1[5]:0b0[1]:?[8]:rs2[5] );
-// wrstr.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(RCH::SysReg::write, str, rd, rs1)};
+op stbar( 0b10[2]:0b00000[5]:0b101000[6]:0b01111[5]:?[1]:?[13] );
 
-// wrstr.disasm = {
-//   sysreg->DisasmWrite(str, rs1, rs2, rd, sink); 
-// };
+stbar.disasm = {
+  sink << "stbar";
+};
 
-// wrstr.execute = {
-//   sysreg->Write(str, rd, cpu, cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2));
-// };
-
-// op wrstri( 0b10[2]:rd[5]:0b1100[4]:str[2]:rs1[5]:0b1[1]:sext<32> simm13[13] );
-// wrstri.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(RCH::SysReg::write, str, rd, rs1)};
-
-// wrstri.disasm = {
-//   sysreg->DisasmWrite(str, rs1, rs2, rd, sink);
-// };
-
-// wrstri.execute = {
-//   typedef typename ARCH::U32 U32;
-//   sysreg->Write(str, rd, cpu, cpu.GetGPR(rs1) ^ U32(simm13));
-// };
-
-
-op rdasr( 0b10[2]:rd[5]:0b101000[6]:rs1[5]:?[1]:?[13] )
+op rdasr( 0b10[2]:rd[5]:0b101000[6]:rs1[5]:?[1]:?[13] );
 
 rdasr.disasm = {
-  if (rs1 == 0)                    sink << "rd %y, " << DisasmGPR(rd);
-  else if (rs1 == 15 and rd == 0)  sink << "stbar";
-  else                             sink << "rd %asr" << DisasmI(rs1) << ", " << DisasmGPR(rd);
-}
+  sink << "rd %asr" << DisasmI(rs1) << ", " << DisasmGPR(rd);
+};
 
-rdasr.execute = {
-  if (rs1 == 0) // unpriviledged
-    {
-     cpu.SetGPR(rd, cpu.GetY());
-      return;
-    }
-  if (rs1 >= 16 )
-    {
-      if (not cpu.asr_perm( rs1 ))
-        cpu.Abort( Trap_t::privileged_instruction );
-      cpu.SetGPR(rd, cpu.rdasr( rs1 ));
-      return;
-    }
-  if (rs1 == 15 and rd == 0) // TODO: stbar
-    {
-      cpu.Abort( Trap_t::illegal_instruction );
-      return;
-    }
-  cpu.Abort( Trap_t::illegal_instruction );
-}
-
-op rdpsr( 0b10[2]:rd[5]:0b101001[6]:?[5]:?[1]:?[13] )
+op rdpsr( 0b10[2]:rd[5]:0b101001[6]:?[5]:?[1]:?[13] );
 
 rdpsr.disasm = {
   sink << "rd %psr, " << DisasmGPR(rd);
-}
+};
 
 rdpsr.execute = {
   if (not cpu.IsSuper())
     cpu.Abort( Trap_t::privileged_instruction );
   
   cpu.SetGPR(rd, cpu.GetPSR());
-}
+};
 
-op rdwim( 0b10[2]:rd[5]:0b101010[6]:?[5]:?[1]:?[13] )
+op rdwim( 0b10[2]:rd[5]:0b101010[6]:?[5]:?[1]:?[13] );
 
 rdwim.disasm = {
   sink << "rd %wim, " << DisasmGPR(rd);
-}
+};
 
 rdwim.execute = {
   typedef typename ARCH::U32 U32;
@@ -124,83 +82,60 @@ rdwim.execute = {
      cpu.Abort( Trap_t::privileged_instruction );
 
   cpu.SetGPR(rd, cpu.GetWIM() & U32((uint64_t( 1 ) << cpu.nwindows())-1));
-}
+};
 
-op rdtbr( 0b10[2]:rd[5]:0b101011[6]:?[5]:?[1]:?[13] )
+op rdtbr( 0b10[2]:rd[5]:0b101011[6]:?[5]:?[1]:?[13] );
 
 rdtbr.disasm = {
   sink << "rd %tbr, " << DisasmGPR(rd);
-}
+};
 
 rdtbr.execute = {
   if (not cpu.IsSuper())
      cpu.Abort( Trap_t::privileged_instruction );
 
   cpu.SetGPR(rd, cpu.GetTBR());
-}
+};
 
 /* Write State Register Instructions */
 
-op wrasr( 0b10[2]:rd[5]:0b110000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op wry( 0b10[2]:0b00000[5]:0b110000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
+
+wry.disasm = {
+  sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", %y";
+};
+
+wry.execute = {
+  cpu.SetY( cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2) );
+};
+
+op wryi( 0b10[2]:0b00000[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
+
+wryi.disasm = {
+  sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %y";
+};
+
+wryi.execute = {
+  cpu.SetY( cpu.GetGPR(rs1) ^ typename ARCH::U32(simm13) );
+};
+
+op wrasr( 0b10[2]:rd[5]:0b110000[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 wrasr.disasm = {
-  sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2);
-  if (rd == 0) sink << ", %y";
-  else         sink << ", %asr" << DisasmI(rd);
-}
+  sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", %asr" << DisasmI(rd);
+};
 
-wrasr.execute = {
-  typedef typename ARCH::U32 U32;
-
-  U32 result = cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2);
-  
-  if (rd == 0) // unpriviledged
-    {
-      cpu.SetY( result );
-      return;
-    }
-  else if( rd >= 16 )
-    {
-      if (not cpu.asr_perm( rd ))
-        cpu.Abort( Trap_t::privileged_instruction );
-      cpu.wrasr( rd, result );
-      return;
-    }
-  cpu.Abort( Trap_t::illegal_instruction );    
-}
-
-op wrasri( 0b10[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op wrasri( 0b10[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 wrasri.disasm = {
-  if( rd == 0 )  sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %y";
-  else           sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %asr" << std::dec << int(rd);
-}
+  sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %asr" << std::dec << int(rd);
+};
 
-wrasri.execute = {
-  typedef typename ARCH::U32 U32;
-
-  U32 result = cpu.GetGPR(rs1) ^ U32(simm13);
-
-  if (rd == 0) // unpriviledged
-    {
-     cpu.SetY( result );
-      return;
-    }
-  if (rd >= 16)
-    {
-      if (not cpu.asr_perm( rd ))
-        cpu.Abort( Trap_t::privileged_instruction );
-      cpu.wrasr( rd, result );
-      return;
-    }
-  cpu.Abort( Trap_t::illegal_instruction );
-}
-
-op wrpsr( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op wrpsr( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 wrpsr.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", %psr";
-}
+};
 
 wrpsr.execute = {
   typedef typename ARCH::U32 U32;
@@ -214,13 +149,13 @@ wrpsr.execute = {
     cpu.Abort( Trap_t::illegal_instruction );
   
   cpu.SetPSR( res );
-}
+};
 
-op wrpsri( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op wrpsri( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 wrpsri.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %psr";
-}
+};
 
 wrpsri.execute = {
   typedef typename ARCH::U32 U32;
@@ -233,13 +168,13 @@ wrpsri.execute = {
     cpu.Abort( Trap_t::illegal_instruction );
   
   cpu.SetPSR( res );
-}
+};
 
-op wrwim( 0b10[2]:?[5]:0b110010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op wrwim( 0b10[2]:?[5]:0b110010[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 wrwim.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", %wim";
-}
+};
 
 wrwim.execute = {
   typedef typename ARCH::U32 U32;
@@ -248,13 +183,13 @@ wrwim.execute = {
      cpu.Abort( Trap_t::privileged_instruction );
 
   cpu.SetWIM( (cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2)) & U32((uint64_t( 1 ) << cpu.nwindows())-1) );
-}
+};
 
-op wrwimi( 0b10[2]:?[5]:0b110010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op wrwimi( 0b10[2]:?[5]:0b110010[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 wrwimi.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %wim";
-}
+};
 
 wrwimi.execute = {
   typedef typename ARCH::U32 U32;
@@ -263,26 +198,26 @@ wrwimi.execute = {
      cpu.Abort( Trap_t::privileged_instruction );
 
   cpu.SetWIM( (cpu.GetGPR(rs1) ^ U32(simm13)) & U32((uint64_t( 1 ) << cpu.nwindows())-1) );
-}
+};
 
-op wrtbr( 0b10[2]:?[5]:0b110011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] )
+op wrtbr( 0b10[2]:?[5]:0b110011[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
 
 wrtbr.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", %tbr";
-}
+};
 
 wrtbr.execute = {
   if (not cpu.IsSuper())
      cpu.Abort( Trap_t::privileged_instruction );
 
   cpu.SetTBR((cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2)));
-}
+};
 
-op wrtbri( 0b10[2]:?[5]:0b110011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] )
+op wrtbri( 0b10[2]:?[5]:0b110011[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 wrtbri.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %tbr";
-}
+};
 
 wrtbri.execute = {
   typedef typename ARCH::U32 U32;
@@ -291,16 +226,16 @@ wrtbri.execute = {
      cpu.Abort( Trap_t::privileged_instruction );
 
   cpu.SetTBR((cpu.GetGPR(rs1) ^ U32(simm13)) & U32((uint64_t( 1 ) << cpu.nwindows())-1));
-}
+};
 
 /* Unimplemented Instruction */
 
-op unimp( 0b00[2]:?[5]:0b000[3]:const22[22] )
+op unimp( 0b00[2]:?[5]:0b000[3]:const22[22] );
 
 unimp.disasm = {
   sink << "unimp " << const22;
-}
+};
 
 unimp.execute = {
   cpu.Abort( Trap_t::illegal_instruction );
-}
+};
