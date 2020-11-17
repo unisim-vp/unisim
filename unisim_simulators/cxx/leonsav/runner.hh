@@ -66,9 +66,11 @@ struct Runner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<
   typedef unisim::component::cxx::processor::sparc::Trap_t Trap_t;
 
   void step_instruction();
-  Operation* decode(uint64_t insn_addr, uint32_t code);
+  Operation* decode(uint32_t insn_addr, uint32_t code);
   void run(Interface::testcode_t testcode, uint32_t* data);
   static void dont(char const*);
+
+  Runner();
 
   /***************************/
   /*** Architectural state ***/
@@ -169,13 +171,14 @@ struct Runner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<
   // U32 rdasr(unsigned) { dont("asr"); return U32(); }
   // void wrasr(unsigned, U32) { dont("asr"); }
 
-  U32 GetPSR() { dont("psr"); return U32(); }
   U32 GetWIM() { dont("wim"); return U32(); }
   U32 GetTBR() { dont("tbr"); return U32(); }
-  void SetPSR(U32) { dont("psr"); }
   void SetWIM(U32) { dont("wim"); }
   void SetTBR(U32) { dont("tbr"); }
-  unsigned nwindows() { dont("windows"); return 0; }
+  unsigned nwindows() { return 31; }
+  
+  U32 GetPSR() { return psr; }
+  void SetPSR(U32 value) { psr = value; }
   
   U32 gprs[32];
   U32 y;

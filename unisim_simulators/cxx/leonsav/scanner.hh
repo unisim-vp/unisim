@@ -179,19 +179,6 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     }
   };
     
-  // struct PC
-  // {
-  //   typedef uint64_t register_type;
-  //   char const* c_str() const { return "pc"; }
-  //   int cmp( PC const& ) const { return 0; }
-  //   ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-  //   {
-  //     if (dynamic_cast<AddrEval const*>( &evs ))
-  //       dont("pc-relative addressing");
-  //     return 0;
-  //   }
-  // };
-
   struct Load : public ExprNode
   {
     Load( ScalarType::id_t _tp, ASI _asi, Expr const& _addr ) : addr(_addr), asi(_asi), tp(_tp) {}

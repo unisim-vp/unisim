@@ -55,7 +55,7 @@ Runner::step_instruction()
       operation->disasm( std::cerr, pc );
       std::cerr << "\n";
     }
-  
+
   asm volatile ("operation_execute:");
   operation->execute( *this );
   
@@ -67,12 +67,12 @@ Runner::step_instruction()
 void
 Runner::run(Interface::testcode_t testcode, uint32_t* data)
 {
-  U64 const magic_return_address = 0xdeadc0de;
+  U32 const magic_return_address = 0xdeadc0de;
 
   SetGPR(8, uintptr_t(data));
   uint32_t sim_stack[32];
   SetGPR(14, uintptr_t(&sim_stack[0]) + sizeof sim_stack);
-  SetGPR(15, magic_return_address);
+  SetGPR(15, magic_return_address - 8);
   nnpc = (npc = (pc = uintptr_t(testcode)) + 4) + 4;
     
   for (int ttl = 100; GetPC() != magic_return_address;)
@@ -93,5 +93,20 @@ Runner::run(Interface::testcode_t testcode, uint32_t* data)
 //   UndefinedInstruction();
 // }
 
-void Runner::dont( char const* reason ) { throw std::runtime_error(reason); }
+void
+Runner::dont( char const* reason )
+{
+  std::cerr << "Runner error: " << reason << std::endl;
+  struct TheEnd {};
+  throw TheEnd ();
+}
   
+Runner::Runner()
+  : gprs()
+  , y()
+  , psr(0xf30010e7)
+  , nnpc()
+  , npc()
+  , pc()
+{
+}

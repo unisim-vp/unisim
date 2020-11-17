@@ -65,8 +65,8 @@ struct Interface
   unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
   //  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
   std::shared_ptr<unisim::util::sav::ActionNode> behavior;
-  struct RelCmp { bool operator () (uint64_t l, uint64_t r) const { return int64_t(l-r) < 0; } };
-  std::set<uint64_t,RelCmp> addrs;
+  struct RelCmp { bool operator () (uint32_t l, uint32_t r) const { return int32_t(l-r) < 0; } };
+  std::set<uint32_t,RelCmp> addrs;
   Expr base_addr;
   unisim::util::sav::Addressings addressings;
 };

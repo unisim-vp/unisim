@@ -61,7 +61,7 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
 
   for (unsigned reg = 0; reg < 32; ++reg)
     {
-      if (0xfcfc >> reg & 1)
+      if (0x3cfc >> reg & 1)
         continue;
       if (gregs.accessed(reg))
         {
@@ -73,7 +73,7 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
     
   if (addrs.size())
     {
-      if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
+      if (uint32_t(*addrs.rbegin() - *addrs.begin()) > 1024)
         throw unisim::util::sav::Untestable("spread out memory accesses");
 
       struct ExpectedAddress : public unisim::util::symbolic::ExprNode
@@ -85,11 +85,11 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
         virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
         typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
         typedef unisim::util::symbolic::ScalarType ScalarType;
-        virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
+        virtual ScalarType::id_t GetType() const override { return ScalarType::U32; }
         virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
         {
           if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
-            return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
+            return new unisim::util::symbolic::ConstNode<uint32_t>( l->address );
           return 0;
         };
       };
@@ -156,9 +156,9 @@ Interface::workcells() const
 void
 Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
 {
-  uint64_t zaddr;
+  uint32_t zaddr;
   if (auto z = addr.Eval( Scanner::AddrEval() ))
-    { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
+    { Expr dispose(z); zaddr = z->Get( uint32_t() ); }
   else
     throw "WTF";
   addrs.insert(zaddr);
@@ -236,7 +236,7 @@ TestLess::operator () ( Interface const& a, Interface const& b ) const
       if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
         {
           // return 0; /* XXX: temporarily considering all constants equivalent */
-          uint64_t av = an->Get(uint64_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint64_t() );
+          uint32_t av = an->Get(uint32_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint32_t() );
           if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
             return delta;
         }
