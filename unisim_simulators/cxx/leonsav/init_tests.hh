@@ -32,6 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+extern bool keep_test();
+
 template <typename R>
 void init_tests( R& repos )
 {

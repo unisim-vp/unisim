@@ -134,6 +134,9 @@ struct Checker
 
   void add( uint32_t code, char const* disasm )
   {
+    if (not ::keep_test())
+      return;
+    
     try
       {
         std::string updated_disasm;
@@ -349,7 +352,7 @@ struct Checker
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
-        if ((testbed.counter % 0x100000) == 0)
+        if ((testbed.counter % 0x1000) == 0)
           std::cout << testbed.counter << ": " << test.getasm() << std::endl;
         
         /* Perform simulation test */

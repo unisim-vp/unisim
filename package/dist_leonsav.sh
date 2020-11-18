@@ -55,6 +55,7 @@ scanner.ops.cc \
 runner.cc \
 runner.ops.cc \
 test.cc \
+init_tests.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
