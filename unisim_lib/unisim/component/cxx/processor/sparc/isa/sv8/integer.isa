@@ -1095,12 +1095,17 @@ udiv.disasm = {
 udiv.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::BOOL BOOL;
 
   if (cpu.Test(cpu.GetGPR(rs2) == U32(0)))
     cpu.Abort( Trap_t::division_by_zero );
   
-  U64 op1( U64( cpu.GetY() ) << 32 | U64(cpu.GetGPR(rs1)) ), op2( cpu.GetGPR(rs2) ), res = op1 / op2;
-  cpu.SetGPR(rd, cpu.Test(res >> 32) ? U32(0xffffffff) : U32(res));
+  U64 op1( U64( cpu.GetY() ) << 32 | U64(cpu.GetGPR(rs1)) ), op2( cpu.GetGPR(rs2) ), res64 = op1 / op2;
+
+  BOOL overflow(U64(U32(res64)) != res64);
+  U32 res = cpu.Test(overflow) ? U32(0xffffffff) : U32(res64);
+
+  cpu.SetGPR(rd, res);
 };
 
 op udivi( 0b10[2]:rd[5]:0b001110[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -1112,12 +1117,17 @@ udivi.disasm = {
 udivi.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::BOOL BOOL;
 
   if (simm13 == 0)
     cpu.Abort( Trap_t::division_by_zero );
   
-  U64 op1( U64( cpu.GetY() ) << 32 | U64(cpu.GetGPR(rs1)) ), op2 = U64( U32( simm13 ) ), res = op1 / op2;
-  cpu.SetGPR(rd, cpu.Test(res >> 32) ? U32(0xffffffff) : U32(res));
+  U64 op1( U64( cpu.GetY() ) << 32 | U64(cpu.GetGPR(rs1)) ), op2 = U64( U32( simm13 ) ), res64 = op1 / op2;
+
+  BOOL overflow(U64(U32(res64)) != res64);
+  U32 res = cpu.Test(overflow) ? U32(0xffffffff) : U32(res64);
+
+  cpu.SetGPR(rd, res);
 };
 
 op sdiv( 0b10[2]:rd[5]:0b001111[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -1131,13 +1141,17 @@ sdiv.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
+  typedef typename ARCH::BOOL BOOL;
 
   if (cpu.Test(cpu.GetGPR(rs2) == U32(0)))
     cpu.Abort( Trap_t::division_by_zero );
 
-  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( S32(cpu.GetGPR(rs2)) ), res = op1 / op2;
+  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( S32(cpu.GetGPR(rs2)) ), res64 = op1 / op2;
   
-  cpu.SetGPR(rd, cpu.Test(res >> 32) ? (U32(res >> 63) ^ U32(0x7fffffff)) : U32(res));
+  BOOL overflow(S64(S32(res64)) != res64);
+  U32 res = cpu.Test(overflow) ? (U32(res64 >> 63) ^ U32(0x7fffffff)) : U32(res64);
+
+  cpu.SetGPR(rd, res);
 };
 
 op sdivi( 0b10[2]:rd[5]:0b001111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -1149,14 +1163,19 @@ sdivi.disasm = {
 sdivi.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
+  typedef typename ARCH::BOOL BOOL;
 
   if (simm13 == 0)
     cpu.Abort( Trap_t::division_by_zero );
 
-  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( simm13 ), res = op1 / op2;
+  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( simm13 ), res64 = op1 / op2;
   
-  cpu.SetGPR(rd, cpu.Test(res >> 32) ? (U32(res >> 63) ^ U32(0x7fffffff)) : U32(res));
+  BOOL overflow(S64(S32(res64)) != res64);
+  U32 res = cpu.Test(overflow) ? (U32(res64 >> 63) ^ U32(0x7fffffff)) : U32(res64);
+
+  cpu.SetGPR(rd, res);
 };
 
 op udivcc( 0b10[2]:rd[5]:0b011110[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );
@@ -1176,7 +1195,7 @@ udivcc.execute = {
   
   U64 op1( U64( cpu.GetY() ) << 32 | U64(cpu.GetGPR(rs1)) ), op2( cpu.GetGPR(rs2) ), res64 = op1 / op2;
   
-  BOOL overflow(res64 >> 32);
+  BOOL overflow(U64(U32(res64)) != res64);
   U32 res = cpu.Test(overflow) ? U32(0xffffffff) : U32(res64);
 
   cpu.SetNZVC( S32(res) < S32(0), U32(res) == U32(0), overflow, BOOL(false) );
@@ -1201,7 +1220,7 @@ udivcci.execute = {
   
   U64 op1( U64( cpu.GetY() ) << 32 | U64(cpu.GetGPR(rs1)) ), op2 = U64( U32( simm13 ) ), res64 = op1 / op2;
 
-  BOOL overflow(res64 >> 32);
+  BOOL overflow(U64(U32(res64)) != res64);
   U32 res = cpu.Test(overflow) ? U32(0xffffffff) : U32(res64);
 
   cpu.SetNZVC( S32(res) < S32(0), U32(res) == U32(0), overflow, BOOL(false) );
@@ -1225,12 +1244,14 @@ sdivcc.execute = {
   if (cpu.Test(cpu.GetGPR(rs2) == U32(0)))
     cpu.Abort( Trap_t::division_by_zero );
 
-  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( S32(cpu.GetGPR(rs2)) ), res = op1 / op2;
+  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( S32(cpu.GetGPR(rs2)) ), res64 = op1 / op2;
 
-  BOOL overflow(res >> 32);
+  BOOL overflow(S64(S32(res64)) != res64);
+  U32 res = cpu.Test(overflow) ? (U32(res64 >> 63) ^ U32(0x7fffffff)) : U32(res64);
+
   cpu.SetNZVC( S32(res) < S32(0), U32(res) == U32(0), overflow, BOOL(false) );
 
-  cpu.SetGPR(rd, cpu.Test(overflow) ? (U32(res >> 63) ^ U32(0x7fffffff)) : U32(res));
+  cpu.SetGPR(rd, res);
 };
 
 op sdivcci( 0b10[2]:rd[5]:0b011111[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
@@ -1249,11 +1270,13 @@ sdivcci.execute = {
   if (simm13 == 0)
     cpu.Abort( Trap_t::division_by_zero );
 
-  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( simm13 ), res = op1 / op2;
+  S64 op1( U64( cpu.GetY() ) << 32 | U64( cpu.GetGPR(rs1) ) ), op2( simm13 ), res64 = op1 / op2;
 
-  BOOL overflow(res >> 32);
+  BOOL overflow(S64(S32(res64)) != res64);
+  U32 res = cpu.Test(overflow) ? (U32(res64 >> 63) ^ U32(0x7fffffff)) : U32(res64);
+
   cpu.SetNZVC( S32(res) < S32(0), U32(res) == U32(0), overflow, BOOL(false) );
 
-  cpu.SetGPR(rd, cpu.Test(overflow) ? (U32(res >> 63) ^ U32(0x7fffffff)) : U32(res));
+  cpu.SetGPR(rd, res);
 };
 
