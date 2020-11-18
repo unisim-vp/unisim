@@ -55,7 +55,8 @@ struct Interface
 
   void memaccess( Expr const& addr, bool iswrite );
   uintptr_t workcells() const;
-  uintptr_t icc_index() const;
+  uintptr_t icc_index() const { return gregs.used(); }
+  uintptr_t gpr_index(unsigned id) const { return id; }
   void gencode(Text& text) const;
   void field_name(unsigned idx, std::ostream& sink) const;
   bool usemem() const { return addrs.size(); }
@@ -63,6 +64,7 @@ struct Interface
   uint32_t memcode;
   std::string asmcode, gilname;
   unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
+  bool yaccess;
   //  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
   std::shared_ptr<unisim::util::sav::ActionNode> behavior;
   struct RelCmp { bool operator () (uint32_t l, uint32_t r) const { return int32_t(l-r) < 0; } };

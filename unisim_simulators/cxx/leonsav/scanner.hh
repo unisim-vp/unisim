@@ -337,8 +337,8 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
 
   void SetGPR( unsigned id, U32 const& value ) { if (id != 0) gregwrite(id, value); }
   U32  GetGPR( unsigned id ) { if (id != 0) return gregread(id); return U32(0); }
-  U32  GetY() { return y; }
-  void SetY(U32 const& value) { y = value; }
+  U32  GetY() { interface.yaccess = true; return y; }
+  void SetY(U32 const& value) { y = value; interface.yaccess = true; }
   
   void SetNZVC(BOOL const& N, BOOL const& Z, BOOL const& V, BOOL const& C)
   {

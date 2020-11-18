@@ -242,7 +242,7 @@ struct Checker
       {
         cut_nzvc(ws[data_index(tif.icc_index())]);
         if (relval.good())
-          ws[data_index(relreg)] = reloc;
+          ws[data_index(tif.gpr_index(relreg))] = reloc;
       }
       void load(uint32_t* ws, Testbed const& testbed) const
       {
@@ -260,8 +260,10 @@ struct Checker
       }
       void error(Testbed const& tb, uint32_t const* ref, uint32_t const* sim) const
       {
-        std::cerr << tb.counter << ": " << tif.gilname << '@' << ((void*)code) << ": error in " << tif.asmcode << '\n';
+        std::cerr << tb.counter << ": " << tif.gilname << '@' << ((void*)code)
+                  << ": error in " << tif.asmcode << " (" << ((void*)(uintptr_t)tif.memcode) << ")\n";
         std::cerr << "ref | sim\n";
+        std::cerr << "y:" << tif.yaccess << std::endl;
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             uint32_t r = ref[idx], s = sim[idx];
@@ -348,30 +350,31 @@ struct Checker
 
     Runner leon;
     
-    std::vector<uint32_t> simulation(workcells), workspace(workcells);
+    std::vector<uint32_t> workspace(workcells), reference(workcells);
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
         if ((testbed.counter % 0x1000) == 0)
           std::cout << testbed.counter << ": " << test.getasm() << std::endl;
         
-        /* Perform simulation test */
+        /* Perform native test */
         test.load( &workspace[0], testbed );
         // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
         uint32_t reloc = test.get_reloc( &workspace[0] );
         test.patch( &workspace[0],reloc );
         
-        test.run( leon, &workspace[0] );
-        std::copy( workspace.begin(), workspace.end(), simulation.begin() );
+        test.run( &workspace[0] );
         
-        /* Perform native test */
+        std::copy( workspace.begin(), workspace.end(), reference.begin() );
+        
+        /* Perform simulation test */
         test.load( &workspace[0], testbed );
         test.patch( &workspace[0], reloc );
         
-        test.run( &workspace[0] );
+        test.run( leon, &workspace[0] );
         
         /* Check for differences */
-        test.check( testbed, &workspace[0], &simulation[0]);
+        test.check( testbed, &reference[0], &workspace[0]);
       }
   }
 };

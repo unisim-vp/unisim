@@ -42,6 +42,7 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
   , asmcode(disasm)
   , gilname(op.GetName())
   , gregs()
+  , yaccess(false)
     //  , vregs()
   , behavior(std::make_shared<unisim::util::sav::ActionNode>())
   , addrs()
@@ -104,10 +105,16 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
 void
 Interface::gencode(Text& text) const
 {
-  /* Setup GP register map (inputs+scratches) */
-  unsigned const gcount = gregs.used()+1;
+  struct DelayText
+  {
+    void write( uint32_t _insn ) { if (last) text.write(last); last = _insn; }
+    DelayText(Text& _text) : text(_text), last(0), offset(0) {} Text& text; uint32_t last; uint32_t offset;
+    void ld(int rt) { write(0xc0002000 | rt << 25 | 8 << 14 | offset); offset += 4; } // ld [%o0 + <offset>], %r
+    void st(int rt) { write(0xc0202000 | rt << 25 | 8 << 14 | offset); offset += 4; } // st %r, [%o0 + <offset>]
+  } dtext(text);
+  /* Setup GP register map */
+  unsigned const gcount = gregs.used();
   unsigned grmap[gcount];
-  grmap[gcount-1] = 1; // NZCV scratch
   for (unsigned reg = 0; reg < gregs.count(); ++reg)
     {
       if (not gregs.accessed(reg)) continue;
@@ -122,35 +129,49 @@ Interface::gencode(Text& text) const
   //     vrmap[vregs.index(reg)] = reg;
   //   }
   
-  /* Load GP registers and NZCV scratch (x1)*/
+  /* Load GP registers */
   unsigned offset = 0;
   for (unsigned idx = 0; idx < gcount; ++idx, offset += 4)
-    text.write( 0xc0002000 | grmap[idx] << 25 | 8 << 14 | offset ); // ld [%o0 + <offset>], %r
+    dtext.ld( grmap[idx] );
   /* Load NZVC register */
-  // text.write( 0x01003c00 |  9 << 25 ); // sethi  %hi(0xf00000), %o1
-  // text.write( 0x80080000 |  1 << 25 | 9 << 14 | 1 << 0 ); // and %o1, %g1, %g1
-  text.write( 0x80902000 |  0 << 25 |  0 << 14 | 1 << 0 ); // orcc %g0, 1, %g0
-  text.write( 0x81480000 | 9 << 25 ); // rd %psr, %o1
-  text.write( 0x81880000 | 9 << 14 |  1 <<  0 ); // wr %o1, %g1, %psr
-  /* Execute tested instruction */
-  text.write(memcode);
-  /* Store NZCV register */
-  text.write( 0x81480000 | 1 << 25 ); // rd %psr, %g1
-  /* Store GP registers */
-  // Delay code emission to reserve the delay slot
-  unsigned retloc = gcount - 1;
-  for (unsigned idx = 0; idx < gcount; ++idx, offset += 4)
+  dtext.ld( 1 ); // %g1
+  // dtext.write( 0x01003c00 |  9 << 25 ); // sethi  %hi(0xf00000), %o1
+  // dtext.write( 0x80080000 |  1 << 25 | 9 << 14 | 1 << 0 ); // and %o1, %g1, %g1
+  dtext.write( 0x80902000 |  0 << 25 |  0 << 14 | 1 << 0 ); // orcc %g0, 1, %g0
+  dtext.write( 0x81480000 | 9 << 25 ); // rd %psr, %o1
+  dtext.write( 0x81880000 | 9 << 14 |  1 <<  0 ); // wr %o1, %g1, %psr
+  /* Load Y register if needed */
+  if (yaccess)
     {
-      if (idx == retloc)
-        text.write( 0x81c3e008 ); // retl
-      text.write( 0xc0202000 | grmap[idx] << 25 | 8 << 14 | offset ); // st %r, [%o0 + <offset>]
+      dtext.ld( 1 ); // %g1
+      dtext.write( 0x81802000 | 1 << 14 ); // wr %g1, 0, %y
     }
+  /* Execute tested instruction */
+  dtext.write(memcode);
+  /* Store GP registers */
+  for (unsigned idx = 0; idx < gcount; ++idx, offset += 4)
+    dtext.st( grmap[idx] );
+  /* Store NZCV register */
+  dtext.write( 0x81480000 | 1 << 25 ); // rd %psr, %g1
+  dtext.st( 1 );
+  /* Store Y if needed */
+  if (yaccess)
+    {
+      dtext.write( 0x81400000 | 1 << 25 ); // rd %y, %g1
+      dtext.st( 1 );
+    }
+  // Return and flush delay slot
+  text.write( 0x81c3e008 );
+  dtext.write(0);
 }
 
 uintptr_t
 Interface::workcells() const
 {
-  return 1 + gregs.used();
+  return 0
+    + 1 /*NZVC*/
+    + gregs.used()
+    + yaccess;
 }
     
 void
@@ -167,12 +188,6 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
     base_addr = addr;
 }
 
-uintptr_t
-Interface::icc_index() const
-{
-  return gregs.used();
-}
-
 void
 Interface::field_name(unsigned idx, std::ostream& sink) const
 {
@@ -185,8 +200,11 @@ Interface::field_name(unsigned idx, std::ostream& sink) const
       throw Ouch();
     }
   idx -= gregs.used();
-  if (idx < 1)
+  if (idx-- == 0)
     { sink << "nzvc"; return; }
+  if (yaccess and idx-- == 0)
+    { sink << "%y"; return; }
+  
   throw Ouch();
 }
 
