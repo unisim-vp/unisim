@@ -4,7 +4,7 @@
 	interrupt-parent = <&intc>;
 	#size-cells = <0x02>;
 	#address-cells = <0x02>;
-	compatible = "linux,arm64vp";
+	compatible = "linux,dummy-virt";
 
 	psci {
 		migrate = <0xc4000005>;
@@ -371,7 +371,7 @@
 	};
 
 	chosen {
-		bootargs = "root=/dev/vda rw  mem=256M ip=192.168.7.2::192.168.7.1:255.255.255.0 console=ttyAMA0 ";
-                /*		stdout-path = "/pl011@49000000";*/
+		bootargs = "root=/dev/vda rw mem=256M console=ttyAMA0";
+		stdout-path = "/pl011@49000000";
 	};
 };
