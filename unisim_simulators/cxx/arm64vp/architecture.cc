@@ -814,6 +814,12 @@ struct AArch64::Device::Request
     try { return tainted_access ( _ ); } catch(Undefined const&) {}
     return false;
   }
+  template <typename T>
+  bool fixed(T value)
+  {
+    if (write) return false;
+    return access( value );
+  }
   void location(std::ostream& sink)
   {
     uint64_t last = addr + size - 1;
@@ -914,6 +920,52 @@ AArch64::uart_tx()
   if (not uart.txpop()) return;
   gic.set_interrupt(33);
   gic.program(*this);
+}
+
+void
+AArch64::map_virtio_placeholder(uint64_t base_addr)
+{
+  static struct : public Device::Effect
+  {
+    virtual void get_name(std::ostream& sink) const override { sink << "VIRTIO (Placeholder)"; }
+
+    virtual bool access(AArch64& arch, Device::Request& req) const override
+    {
+      if (req.addr % 4 or req.size != 4) return false;
+      switch (req.addr / 4)
+        {
+        case 0: return req.fixed<uint32_t>(0x74726976); /* Magic Value */
+        case 1: return req.fixed<uint32_t>(0x2); /* Device version number */
+        case 2: return req.fixed<uint32_t>(0); /* Virtio Subsystem Device ID */
+        }
+      return false;
+    }
+  } virtio_placeholder_effect;
+
+  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_placeholder_effect) );
+}
+
+void
+AArch64::map_virtio_drive(uint64_t base_addr)
+{
+  static struct : public Device::Effect
+  {
+    virtual void get_name(std::ostream& sink) const override { sink << "VIRTIO (Placeholder)"; }
+
+    virtual bool access(AArch64& arch, Device::Request& req) const override
+    {
+      if (req.addr % 4 or req.size != 4) return false;
+      switch (req.addr / 4)
+        {
+        case 0: return req.fixed<uint32_t>(0x74726976); /* Magic Value */
+        case 1: return req.fixed<uint32_t>(0x2); /* Device version number */
+        case 2: return req.fixed<uint32_t>(0); /* Virtio Subsystem Device ID */
+        }
+      return false;
+    }
+  } virtio_drive_effect;
+
+  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_drive_effect) );
 }
 
 void
@@ -1378,7 +1430,7 @@ AArch64::ClearExclusiveLocal()
 void
 AArch64::page_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size)
 {
-  std::cerr << std::hex << current_insn_addr << "error during " << operation << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
+  std::cerr << std::hex << current_insn_addr << " error during " << operation << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
   struct Bad {}; raise(Bad());
 }
 

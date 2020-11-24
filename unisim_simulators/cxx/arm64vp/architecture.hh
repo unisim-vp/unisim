@@ -737,6 +737,9 @@ struct AArch64
   void handle_vtimer();
   uint64_t get_ipt() const { return 32; }
 
+  void map_virtio_placeholder(uint64_t base_addr);
+  void map_virtio_drive(uint64_t base_addr);
+  
   typedef std::multimap<uint64_t, event_handler_t> Events;
   void notify( uint64_t delay, event_handler_t method )
   {
