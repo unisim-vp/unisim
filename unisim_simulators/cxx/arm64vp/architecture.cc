@@ -378,6 +378,13 @@ AArch64::translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size)
   return entry.pa;
 }
 
+void
+AArch64::DataAbort::proceed( AArch64& cpu ) const
+{
+  cpu.ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
+  cpu.TakeException(1, 0x0, cpu.current_insn_addr);
+}
+
 template <class POLICY>
 void
 AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size )
@@ -492,7 +499,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         desc = descriptor.read(tbladdr + 8*index);
 
         if (not (desc & 1))
-          DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
+          throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
 
         if (not (desc & 2))
           {
@@ -554,7 +561,6 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
 
   // BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
   BranchTo( (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset), B_EXC );
-  EndOfInstruction();
 }
 
 void
@@ -617,13 +623,6 @@ AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::
 }
 
 void
-AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
-{
-  ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
-  TakeException(1, 0x0, current_insn_addr);
-}
-
-void
 AArch64::TakePhysicalIRQException()
 {
   TakeException(1, 0x80, current_insn_addr);
@@ -647,27 +646,8 @@ AArch64::PState::AsSPSR() const
   return spsr;
 }
 
-void
-AArch64::breakdance()
-{
-  std::cerr << "Debug time!\n";
-  // U64 addr = gpr[0];
-
-  // std::cerr << std::hex << addr.value << std::dec << '"';
-  // for (U8 byte; Test( (byte = MemRead8 (addr)) != U8(0) ); addr += U64(1))
-  //   {
-  //     if (byte.ubits)
-  //       { std::cerr << "\\b"; for (int bit = 8; --bit >=0;) { std::cerr << "01xx"[2*(byte.ubits >> bit & 1) | (byte.value >> bit & 1)]; } }
-  //     else if (isprint(byte.value))
-  //       std::cerr << byte.value;
-  //     else
-  //       std::cerr << "\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(byte.value) << std::dec;
-  //   }
-  // std::cerr << '"' << "\n";
-}
-
 bool
-AArch64::concretize()
+AArch64::concretize(bool possible)
 {
   if ((current_insn_addr - 0xffffffc0109f406c) < 8)
     { // <__pi_strlen>:
@@ -691,8 +671,25 @@ AArch64::concretize()
         return true;
     }
 
+  // <hashlen_string>:
+  // ...
+  // ffffffc010285e40:       f201c042        ands    x2, x2, #0x8080808080808080
+  // ...
+  // ffffffc010285e4c:       54fffe80        b.eq    ffffffc010285e1c <hashlen_string+0x34>  // b.none
+  // ...
+  // ffffffc010285e64:       b40000e2        cbz     x2, ffffffc010285e80 <hashlen_string+0x98>
+  
+  if (current_insn_addr == 0xffffffc010285e4c or
+      current_insn_addr == 0xffffffc010285e64)
+    {
+      gpr[2].ubits = 0;
+      gpr[3].ubits = 0;
+      return possible;
+    }
+
   if (current_insn_addr == 0xffffffc01028a6e8)
     {
+      // link_path_walk.part.0: b.eq (ands    x2, x2, #0x8080808080808080)
       gpr[2].ubits = 0;
       gpr[3].ubits = 0;
       gpr[5].ubits = 0;
@@ -702,6 +699,8 @@ AArch64::concretize()
 
   if ((current_insn_addr | 0x380)  == 0xffffffc01008238c)
     {
+      // Exception handling
+      // tbnz    w0, #14
       /* we're forced to lose x0 undefined bits... */
       gpr[31].ubits = 0;
       gpr[0].ubits = 0;
@@ -710,6 +709,10 @@ AArch64::concretize()
 
   if (current_insn_addr == 0xffffffc0109f3f20)
     {
+      // <__pi_strcmp>:
+      // ...
+      // orr     x6, x5, x4
+      // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
       gpr[2].ubits = 0;
       gpr[3].ubits = 0;
       gpr[6].ubits = 0;
@@ -718,6 +721,8 @@ AArch64::concretize()
 
   if (current_insn_addr == 0xffffffc010628f50)
     {
+      // <amba_device_try_add>:
+      // cbnz    x3, ffffffc010628f50 <amba_device_try_add+0xf8>
       gpr[3].ubits = 0;
       return false;
     }
@@ -731,17 +736,22 @@ AArch64::concretize()
   static uintptr_t idx =0;
   uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
 
-  if ((idx >= end) or (exceptions[idx].address != current_insn_addr))
-    {
-      std::cerr << "Condition depends on unitialized value.\n";
-      DisasmState ds;
-      last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
-      std::cerr << "\n";
+  if (idx < end and exceptions[idx].address == current_insn_addr)
+    return exceptions[idx++].result;
 
-      struct Bad {}; raise( Bad() );
-    }
+  uninitialized_error("condition");
 
-  return exceptions[idx++].result;
+  struct Bad {}; raise( Bad() );
+  return possible;
+}
+
+void
+AArch64::uninitialized_error( char const* rsrc )
+{
+  std::cerr << "Error: " << rsrc << " depends on unitialized value.\n";
+  DisasmState ds;
+  last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
+  std::cerr << "\n";
 }
 
 AArch64::GIC::GIC()
@@ -815,7 +825,7 @@ struct AArch64::Device::Request
     return false;
   }
   template <typename T>
-  bool fixed(T value)
+  bool ro(T value)
   {
     if (write) return false;
     return access( value );
@@ -881,7 +891,24 @@ AArch64::Device::Effect::error( char const* msg ) const
 }
 
 void
-AArch64::map_apbclk(uint64_t base_addr)
+AArch64::handle_rtc()
+{
+  if (not rtc.matching(*this) or rtc.masked)
+    return;
+  gic.set_interrupt(34);
+  gic.program(*this);
+}
+
+void
+AArch64::RTC::program(AArch64& cpu)
+{
+  uint64_t delay = (MR - LR)*cpu.get_freq()/get_cntfrq() - (cpu.insn_timer - load_insn_time) + 1;
+  
+  cpu.notify( delay, &AArch64::handle_rtc );
+}
+
+void
+AArch64::map_rtc(uint64_t base_addr)
 {
   static struct RTCEffect : public Device::Effect
   {
@@ -889,6 +916,50 @@ AArch64::map_apbclk(uint64_t base_addr)
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      auto& rtc = arch.rtc;
+      
+      if (req.addr == 0x0) // Data Register, RTCDR
+        return req.ro(rtc.get_counter(arch));
+      if (req.addr == 0x4) // Match Register, RTCMR
+        {
+          if (not req.access(rtc.MR)) return false;
+          if (not req.write) return true;
+          rtc.program(arch);
+          return true;
+        }
+      if (req.addr == 0x8) // Load Register, RTCLR 
+        {
+          if (not req.access(rtc.LR)) return false;
+          if (not req.write) return true;
+          rtc.flush_lr(arch);
+          rtc.program(arch);
+          return true;
+        }
+      if (req.addr == 0xc) // Control Register, RTCCR 
+        {
+          uint32_t started = rtc.started;
+          if (not req.write) return req.ro(started);
+          if (not req.access(started)) return false;
+          if (started & rtc.started) { rtc.LR = 0; rtc.flush_lr(arch); }
+          rtc.started = started;
+          rtc.program(arch);
+          return true;
+        }
+      if (req.addr == 0x10) // Interrupt Mask Set or Clear register, RTCIMSC
+        {
+          uint32_t masked = rtc.masked;
+          if (not req.write) return req.ro(masked);
+          if (not req.access(masked)) return false;
+          if (masked & ~rtc.masked) arch.handle_rtc();
+          rtc.masked = masked;
+          return true;
+        }
+      if (req.addr == 0x14) // Raw Interrupt Status, RTCRIS
+        return req.ro<uint32_t>(rtc.matching(arch));
+      if (req.addr == 0x18) // Masked Interrupt Status, RTCMIS
+        return req.ro<uint32_t>(rtc.matching(arch) and not rtc.masked);
+      if (req.addr == 0x1c) // Interrupt Clear Register, RTCICR
+        return req.write;
       if ((req.addr & -16) == 0xfe0)
         {
           if (req.write) return error( "Cannot write PeriphID" );
@@ -909,9 +980,9 @@ AArch64::map_apbclk(uint64_t base_addr)
       return false;
     }
 
-  } apbclk_effect;
+  } rtc_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0xfff, &apbclk_effect) );
+  devices.insert( Device( base_addr, base_addr + 0xfff, &rtc_effect) );
 }
 
 void
@@ -934,9 +1005,9 @@ AArch64::map_virtio_placeholder(uint64_t base_addr)
       if (req.addr % 4 or req.size != 4) return false;
       switch (req.addr / 4)
         {
-        case 0: return req.fixed<uint32_t>(0x74726976); /* Magic Value */
-        case 1: return req.fixed<uint32_t>(0x2); /* Device version number */
-        case 2: return req.fixed<uint32_t>(0); /* Virtio Subsystem Device ID */
+        case 0: return req.ro<uint32_t>(0x74726976); /* Magic Value */
+        case 1: return req.ro<uint32_t>(0x2); /* Device version number */
+        case 2: return req.ro<uint32_t>(0); /* Virtio Subsystem Device ID */
         }
       return false;
     }
@@ -957,9 +1028,9 @@ AArch64::map_virtio_drive(uint64_t base_addr)
       if (req.addr % 4 or req.size != 4) return false;
       switch (req.addr / 4)
         {
-        case 0: return req.fixed<uint32_t>(0x74726976); /* Magic Value */
-        case 1: return req.fixed<uint32_t>(0x2); /* Device version number */
-        case 2: return req.fixed<uint32_t>(0); /* Virtio Subsystem Device ID */
+        case 0: return req.ro<uint32_t>(0x74726976); /* Magic Value */
+        case 1: return req.ro<uint32_t>(0x2); /* Device version number */
+        case 2: return req.ro<uint32_t>(0); /* Virtio Subsystem Device ID */
         }
       return false;
     }
@@ -1243,7 +1314,7 @@ AArch64::Timer::program(AArch64& cpu)
   int32_t delay = read_tval(cpu);
   if (delay < 1) delay = 1;
 
-  cpu.notify( delay * cpu.get_ipt(), &AArch64::handle_vtimer );
+  cpu.notify( delay * cpu.get_freq() / get_cntfrq(), &AArch64::handle_vtimer );
 }
 
 bool
@@ -1261,6 +1332,7 @@ AArch64::handle_irqs()
     return;
 
   TakePhysicalIRQException();
+  throw Abort();
 }
 
 void
@@ -1335,8 +1407,9 @@ AArch64::run()
           insn_counter++; /* Instruction regularly finished */
         }
 
-      catch (Abort const&)
+      catch (Abort const& abort)
         {
+          abort.proceed(*this);
           /* Instruction aborted, proceed to next */
           //   if (unlikely(trap_reporting_import))
           //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
@@ -1376,26 +1449,33 @@ AArch64::MemDump64(uint64_t addr)
 
   uint8_t dbuf[size], ubuf[size];
 
-  unsigned vsize = access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size);
+  Page const& page = access_page(paddr);
+  unsigned vsize = page.read(paddr,&dbuf[0],&ubuf[0],size);
+  uintptr_t host_addr = (uintptr_t)page.get_data(paddr);
 
-  std::cerr << std::hex << addr << ":\t" << std::dec;
-  for (unsigned byte = size; byte-- > 0;)
+  std::cerr << std::hex << "virt: " << addr << ", phys: " << paddr << ", host: " << host_addr << std::dec << std::endl;
+  std::cerr << "\t0x";
+  for (unsigned byte = vsize; byte-- > 0;)
     {
-      std::cerr << ' ';
-      if (byte >= vsize) { std::cerr << "  "; continue; }
       uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
       for (unsigned nibble = 2; nibble-- > 0;)
         std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
     }
 
-  std::cerr << "\t(0b";
+  std::cerr << "\t0b";
   for (unsigned byte = vsize; byte-- > 0;)
     {
       uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
       for (unsigned bit = 8; bit-- > 0;)
         std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
     }
-  std::cerr << ")\n";
+  std::cerr << "\t\"";
+  for (unsigned byte = 0; byte < vsize; ++byte)
+    {
+      uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
+      std::cerr << (ubyte or dbyte < 32 or dbyte > 126 ? '.' : char(dbyte));
+    }
+  std::cerr << "\"\n";
 }
 
 void

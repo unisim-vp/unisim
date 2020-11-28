@@ -623,7 +623,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
             if (addr.ubits) { struct Bad {}; raise( Bad() ); }
-            cpu.el1.PAR = cpu.translate_address(addr.value, op2 ? mat_write : mat_read, 1);
+            try
+              {
+                uint64_t translation = cpu.translate_address(addr.value, op2 ? mat_write : mat_read, 1);
+                cpu.el1.PAR = U64(translation & 0x000ffffffffff000ull, 0xfff0000000000380ull);
+              }
+            catch (AArch64::DataAbort const& x)
+              {
+                cpu.el1.PAR = U64(0x801 | (unisim::component::cxx::processor::arm::EncodeLDFSC(x.type, x.level) << 1));
+              }
           }
         } x; return &x;
       } break;
@@ -814,18 +822,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Cache Level ID Register"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
-            return U64(0)
-              | U64(0b000)  // ICB, Inner cache boundary
-              | U64(0b001)  // LoUU, Level of Unification Uniprocessor 
-              | U64(0b010)  // LoC, Level of Coherence
-              | U64(0b001)  // LoUIS, Level of Unification Inner Shareable
-              | U64(0b000)  // Cache Type #7
-              | U64(0b000)  // Cache Type #6
-              | U64(0b000)  // Cache Type #2
-              | U64(0b000)  // Cache Type #2
-              | U64(0b000)  // Cache Type #2
-              | U64(0b100)  // Cache Type #2
-              | U64(0b011); // Cache Type #1
+            return
+               U64(0b000) << 30| // ICB, Inner cache boundary
+               U64(0b001) << 27| // LoUU, Level of Unification Uniprocessor 
+               U64(0b010) << 24| // LoC, Level of Coherence
+               U64(0b001) << 21| // LoUIS, Level of Unification Inner Shareable
+               U64(0b000) << 18| // Cache Type #7
+               U64(0b000) << 15| // Cache Type #6
+               U64(0b000) << 12| // Cache Type #2
+               U64(0b000) <<  9| // Cache Type #2
+               U64(0b000) <<  6| // Cache Type #2
+               U64(0b100) <<  3| // Cache Type #2
+               U64(0b011) <<  0; // Cache Type #1
           }
         } x; return &x;
       } break;

@@ -5939,6 +5939,15 @@ smulh.disasm = {
   sink << "smulh\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
 
+smulh.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  S64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( SignedMultiplyHigh64( cpu, op1, op2 ) );
+  
+  cpu.SetGZR(rd, U64(res));
+};
+
 /*******************************************************************
  * STLR
  *

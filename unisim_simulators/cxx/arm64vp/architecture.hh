@@ -90,6 +90,7 @@ struct AArch64
 
   InstructionInfo const& last_insn(int idx) const;
   void breakdance();
+  void uninitialized_error(char const* rsrc);
 
   void TODO();
 
@@ -234,11 +235,19 @@ struct AArch64
 
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET };
-  void BranchTo( U64 addr, branch_type_t branch_type ) { if (addr.ubits) { struct Bad {}; raise( Bad() ); } next_insn_addr = addr.value; }
-  bool concretize();
+  void BranchTo( U64 addr, branch_type_t branch_type )
+  {
+    if (addr.ubits)
+      {
+        uninitialized_error("branch target");
+        struct Bad {}; raise( Bad() );
+      }
+    next_insn_addr = addr.value;
+  }
+  bool concretize(bool);
   bool Test( bool cond ) { return cond; }
   // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
-  bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(); return cond.value; }
+  bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(cond.value); return cond.value; }
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
 
@@ -255,7 +264,7 @@ struct AArch64
   memory_read(U64 addr)
   {
     struct Bad {};
-    if (addr.ubits) raise( Bad() );
+    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_read, size);
@@ -305,7 +314,7 @@ struct AArch64
   memory_write(U64 addr, T src)
   {
     struct Bad {};
-    if (addr.ubits) raise( Bad() );
+    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_write, size);
@@ -369,8 +378,21 @@ struct AArch64
   //=                            Exceptions                             =
   //=====================================================================
 
-  struct Abort {};
-  void EndOfInstruction() { throw Abort(); }
+  struct Abort
+  {
+    virtual ~Abort() {}
+    virtual void proceed( AArch64& cpu ) const {}
+  };
+
+  struct DataAbort : public Abort
+  {
+    DataAbort(unisim::component::cxx::processor::arm::DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type_t _mat, unsigned _level, bool _ipavalid, bool _secondstage, bool _s2fs1walk)
+      : type(_type), va(_va), ipa(_ipa), mat(_mat), level(_level), ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
+    {}
+    virtual void proceed( AArch64& cpu ) const override;
+    unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type_t mat; unsigned level; bool ipavalid; bool secondstage; bool s2fs1walk;
+  };
+  
   /* AArch32 obsolete arguments
    * - bool taketohypmode
    * - LDFSRformat
@@ -378,9 +400,7 @@ struct AArch64
    * - domain    // Domain number, AArch32 only (UNKNOWN in AArch64)
    * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
    */
-  void DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
   void TakePhysicalIRQException();
-
   void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
   void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
 
@@ -590,8 +610,8 @@ struct AArch64
   {
     EL() : SPSR(), ESR(), ELR(), VBAR(), PAR(), FAR(), SCTLR() {}
     U32 SPSR, ESR;
-    U64 ELR, VBAR;
-    uint64_t PAR, FAR;
+    U64 ELR, VBAR, PAR;
+    uint64_t FAR;
     uint32_t SCTLR;
     void SetSCTLR(AArch64& cpu, uint32_t value)
     {
@@ -705,7 +725,24 @@ struct AArch64
   void handle_irqs();
   void wfi();
 
-  void map_apbclk(uint64_t base_addr);
+  struct RTC
+  {
+    RTC() : LR(0), MR(), load_insn_time(0), started(false), masked(true) {}
+    uint32_t get_counter(AArch64& cpu) const { return LR + get_gap(cpu); }
+    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) * get_cntfrq() / cpu.get_freq(); }
+    uint64_t get_cntfrq() const { return 1; }
+    void     flush_lr(AArch64& cpu) { load_insn_time = cpu.insn_timer; }
+    void     program(AArch64& cpu);
+    bool     matching(AArch64& cpu) { return get_counter(cpu) == MR; }
+
+    uint32_t LR, MR;
+    uint64_t load_insn_time;
+    uint32_t started : 1;
+    uint32_t masked : 1;
+  };
+  void map_rtc(uint64_t base_addr);
+  void handle_rtc();
+  
   struct UART
   {
     UART() : tx_count(), IBRD(0), FBRD(0), LCR(0), CR(0x0300), IMSC(0), RIS(0) {}
@@ -723,7 +760,7 @@ struct AArch64
     bool activated() const;
     void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
-    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / cpu.get_ipt(); }
+    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer * get_cntfrq() / cpu.get_freq(); }
     uint64_t read_ctl(AArch64& cpu) const { return ctl | ((read_tval(cpu) <= 0) << 2); }
     void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; program(cpu); }
     void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; program(cpu); }
@@ -735,7 +772,7 @@ struct AArch64
     uint64_t cval; /* Compare Value*/
   };
   void handle_vtimer();
-  uint64_t get_ipt() const { return 32; }
+  uint64_t get_freq() const { return 1075200000; }
 
   void map_virtio_placeholder(uint64_t base_addr);
   void map_virtio_drive(uint64_t base_addr);
@@ -757,6 +794,7 @@ public:
   GIC      gic;
   UART     uart;
   Timer    vt;
+  RTC      rtc;
 
   Pages    pages;
   ExcMon   excmon;
