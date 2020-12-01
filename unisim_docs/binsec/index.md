@@ -71,11 +71,38 @@ AARCH64DBA is an ARMv8 (64 bits) instruction set decoder. It supports a signific
 The decoder is available through the `dist_aarch64dba.sh` distribution script and the installation steps described above.
 
 
-# AMD64DBA: the x86_64 instruction decoder
+# AMD64DBA: the x86_64 / X86 instruction decoder
 
-AMD64DBA is an x86_64/amd64 (64 bits) instruction set decoder. It supports a significant part of the instruction set.
+AMD64DBA is an x86_64 (or amd64) 64 bits instruction set decoder.
+It can also be used has a x86 32 bits decoder, using the same compatibility mechanisms as those provided by the intel64 architecture (known as legacy x86 mode).
+A significant par if the instruction set is supported, and the dba translation is evolving toward decent maturity.
 The decoder is available through the `dist_amd64dba.sh` distribution script and the installation steps described above.
 
+usage: `usage: <program> x86|intel64 <address> <encoding>`
+
+The instruction encoding is given as an objdump-like byte sequence.
+
+    $ ./unisim-amd64dba-0.1.0 intel64 0x415b41 "41 ff 14 dc"
+    (address . 0x0000000000415b41)
+    (opcode . "41 ff 14 dc")
+    (mnemonic . "call *(%r12,%rbx,8)")
+    (0x0000000000415b41,0) nxt_rsp<64> := (rsp<64> - 0x0000000000000008); goto 1
+    (0x0000000000415b41,1) nxt_pc<64> := @[(r12<64> + (rbx<64> lshift 0x0000000000000003)),<-,256]; goto 2
+    (0x0000000000415b41,2) @[nxt_rsp<64>,<-,256] := 0x0000000000415b45; goto 3
+    (0x0000000000415b41,3) rsp<64> := nxt_rsp<64>; goto 4
+    (0x0000000000415b41,4) goto (nxt_pc<64>) // call (0x0000000000415b45,0)
+
+    $ ./unisim-amd64dba-0.1.0 x86 0x415b41 "ff 14 dc"
+    (address . 0x00415b41)
+    (opcode . "ff 14 dc")
+    (mnemonic . "call *(%esp,%ebx,8)")
+    (0x00415b41,0) nxt_esp<32> := (esp<32> - 0x00000004); goto 1
+    (0x00415b41,1) nxt_pc<32> := @[(esp<32> + (ebx<32> lshift 0x00000003)),<-,16]; goto 2
+    (0x00415b41,2) @[nxt_esp<32>,<-,16] := 0x00415b44; goto 3
+    (0x00415b41,3) esp<32> := nxt_esp<32>; goto 4
+    (0x00415b41,4) goto (nxt_pc<32>) // call (0x00415b44,0)
+
+ 
 
 # MIPSELSEC: the mips instrucrtion decoder
 
