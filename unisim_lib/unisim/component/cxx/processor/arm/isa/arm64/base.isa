@@ -5939,6 +5939,15 @@ smulh.disasm = {
   sink << "smulh\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
 
+smulh.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  S64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( SignedMultiplyHigh64( cpu, op1, op2 ) );
+  
+  cpu.SetGZR(rd, U64(res));
+};
+
 /*******************************************************************
  * STLR
  *
@@ -8060,3 +8069,147 @@ umulh.execute = {
 /*
  * end of UMULH
  *******************************************************************/
+
+/*******************************************************************
+ * CRC32B, CRC32H, CRC32W, CRC32X
+ * 
+ * CRC-32 checksum from byte, halfword, word or doubleword: Wd = CRC32(Wn, Rm<n:0>) // n = 7, 15, 31, 63
+ */
+
+op crc32b( 0[1] : 0b0011010110[10] : rm[5] : 0b0100[4] : 0[2] : rn[5] : rd[5] );
+
+crc32b.disasm = {
+  sink << "crc32b\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+//bits(32)  poly = (if crc32c then 0x1EDC6F41 else 0x04C11DB7)<31:0>;
+//bits(32)  poly = (if crc32c then 0x82f63b78 else 0xedb88320)<31:0>;
+
+crc32b.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( U8(cpu.GetGZR(rm)) ), res( PolyMod2<U32,8>(op1 ^ op2, 0xedb88320) );
+
+  cpu.SetGZR(rd, res);
+};
+
+op crc32h( 0[1] : 0b0011010110[10] : rm[5] : 0b0100[4] : 1[2] : rn[5] : rd[5] );
+
+crc32h.disasm = {
+  sink << "crc32h\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+crc32h.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( U16(cpu.GetGZR(rm)) ), res( PolyMod2<U32,16>(op1 ^ op2, 0xedb88320) );
+
+  cpu.SetGZR(rd, res);
+};
+
+op crc32w( 0[1] : 0b0011010110[10] : rm[5] : 0b0100[4] : 2[2] : rn[5] : rd[5] );
+
+crc32w.disasm = {
+  sink << "crc32w\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+crc32w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( PolyMod2<U32,32>(op1 ^ op2, 0xedb88320) );
+
+  cpu.SetGZR(rd, res);
+};
+
+op crc32x( 1[1] : 0b0011010110[10] : rm[5] : 0b0100[4] : 3[2] : rn[5] : rd[5] );
+
+crc32x.disasm = {
+  sink << "crc32x\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZXR(rm);
+};
+
+
+crc32x.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( U32(cpu.GetGZR(rn)) ), op2( cpu.GetGZR(rm) ), res( PolyMod2<U32,64>(op1 ^ op2, 0xedb88320) );
+
+  cpu.SetGZR(rd, res);
+};
+
+/* end of CRC32
+ *
+ *******************************************************************/
+
+/*******************************************************************
+ * CRC32CB, CRC32CH, CRC32CW, CRC32CX
+ * 
+ * CRC-32C checksum from byte, halfword, word or doubleword: Wd = CRC32C(Wn, Rm<n:0>) // n = 7, 15, 31, 63
+ */
+
+op crc32cb( 0[1] : 0b0011010110[10] : rm[5] : 0b0101[4] : 0[2] : rn[5] : rd[5] );
+
+crc32cb.disasm = {
+  sink << "crc32cb\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+crc32cb.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( U8(cpu.GetGZR(rm)) ), res( PolyMod2<U32,8>(op1 ^ op2, 0x82f63b78) );
+
+  cpu.SetGZR(rd, res);
+};
+
+op crc32ch( 0[1] : 0b0011010110[10] : rm[5] : 0b0101[4] : 1[2] : rn[5] : rd[5] );
+
+crc32ch.disasm = {
+  sink << "crc32ch\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+crc32ch.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( U16(cpu.GetGZR(rm)) ), res( PolyMod2<U32,16>(op1 ^ op2, 0x82f63b78) );
+
+  cpu.SetGZR(rd, res);
+};
+
+op crc32cw( 0[1] : 0b0011010110[10] : rm[5] : 0b0101[4] : 2[2] : rn[5] : rd[5] );
+
+crc32cw.disasm = {
+  sink << "crc32cw\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+crc32cw.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( PolyMod2<U32,32>(op1 ^ op2, 0x82f63b78) );
+
+  cpu.SetGZR(rd, res);
+};
+
+op crc32cx( 1[1] : 0b0011010110[10] : rm[5] : 0b0101[4] : 3[2] : rn[5] : rd[5] );
+
+crc32cx.disasm = {
+  sink << "crc32cx\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZXR(rm);
+};
+
+crc32cx.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( U32(cpu.GetGZR(rn)) ), op2( cpu.GetGZR(rm) ), res( PolyMod2<U32,64>(op1 ^ op2, 0x82f63b78) );
+
+  cpu.SetGZR(rd, res);
+};
+
+
+/* end of CRC32C
+ *
+ *******************************************************************/
+

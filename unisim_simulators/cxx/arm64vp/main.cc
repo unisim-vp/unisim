@@ -115,7 +115,7 @@ main(int argc, char *argv[])
 
   arch.map_gic(0x48000000);
   arch.map_uart(0x49000000);
-  arch.map_apbclk(0x49010000);
+  arch.map_rtc(0x49010000);
 
   for (unsigned int idx = 0; idx < 31; ++idx)
     arch.map_virtio_placeholder(0x4a000000 + 0x200*idx);
@@ -227,3 +227,6 @@ main(int argc, char *argv[])
   
   return 0;
 }
+
+void AArch64::breakdance() {}
+

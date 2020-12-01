@@ -371,7 +371,7 @@
 	};
 
 	chosen {
-		bootargs = "root=/dev/vda rw mem=256M console=ttyAMA0";
+		bootargs = "raid=noautodetect root=/dev/vda rw mem=256M console=ttyAMA0";
 		stdout-path = "/pl011@49000000";
 	};
 };

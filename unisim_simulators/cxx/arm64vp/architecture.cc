@@ -378,6 +378,13 @@ AArch64::translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size)
   return entry.pa;
 }
 
+void
+AArch64::DataAbort::proceed( AArch64& cpu ) const
+{
+  cpu.ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
+  cpu.TakeException(1, 0x0, cpu.current_insn_addr);
+}
+
 template <class POLICY>
 void
 AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size )
@@ -492,7 +499,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         desc = descriptor.read(tbladdr + 8*index);
 
         if (not (desc & 1))
-          DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
+          throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
 
         if (not (desc & 2))
           {
@@ -554,7 +561,6 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
 
   // BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
   BranchTo( (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset), B_EXC );
-  EndOfInstruction();
 }
 
 void
@@ -617,13 +623,6 @@ AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::
 }
 
 void
-AArch64::DataAbort(unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
-{
-  ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
-  TakeException(1, 0x0, current_insn_addr);
-}
-
-void
 AArch64::TakePhysicalIRQException()
 {
   TakeException(1, 0x80, current_insn_addr);
@@ -647,101 +646,104 @@ AArch64::PState::AsSPSR() const
   return spsr;
 }
 
-void
-AArch64::breakdance()
-{
-  std::cerr << "Debug time!\n";
-  // U64 addr = gpr[0];
-
-  // std::cerr << std::hex << addr.value << std::dec << '"';
-  // for (U8 byte; Test( (byte = MemRead8 (addr)) != U8(0) ); addr += U64(1))
-  //   {
-  //     if (byte.ubits)
-  //       { std::cerr << "\\b"; for (int bit = 8; --bit >=0;) { std::cerr << "01xx"[2*(byte.ubits >> bit & 1) | (byte.value >> bit & 1)]; } }
-  //     else if (isprint(byte.value))
-  //       std::cerr << byte.value;
-  //     else
-  //       std::cerr << "\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(byte.value) << std::dec;
-  //   }
-  // std::cerr << '"' << "\n";
-}
-
 bool
-AArch64::concretize()
+AArch64::concretize(bool possible)
 {
-  if ((current_insn_addr - 0xffffffc0109f406c) < 8)
+  struct ShouldNotHappen {};
+  
+  if (current_insn_addr == 0xffffffc0109fb26c or
+      current_insn_addr == 0xffffffc0109fb270)
     { // <__pi_strlen>:
-      //     ...
-      //     fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
-      //     54ffff00        b.eq    0xffffffc0109f4050
-      unsigned reg0, reg1;
-      bool first = current_insn_addr == 0xffffffc0109f406c;
-      if (first) { reg0 = 3; reg1 = 6; }
-      else       { reg0 = 2; reg1 = 5; }
-      uint64_t bytes = gpr[reg0].value | gpr[reg0].ubits;
-      uint64_t const magic = 0x0101010101010101;
-      bytes = ((bytes - magic) & (~bytes & (magic<<7)));
-      if (bytes)
-        {
-          // Need to patch strlen's internal variable
-          gpr[reg1] = U64(bytes);
-          return false;
-        }
-      if (first)
-        return true;
+      // ...
+      // ffffffc0109fb26c:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
+      // ffffffc0109fb270:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
+      gpr[5].ubits = 0;
+      gpr[6].ubits = 0;
+      return possible;
+    }
+  
+  if (current_insn_addr == 0xffffffc0102868fc or
+      current_insn_addr == 0xffffffc010286914)
+    { // <hashlen_string>:
+      // ...
+      // ffffffc0102868fc:       54fffe80        b.eq    ffffffc010285e1c <hashlen_string+0x34>  // b.none
+      // ...
+      // ffffffc010286914:       b40000e2        cbz     x2, ffffffc010285e80 <hashlen_string+0x98>
+      gpr[2].ubits = 0;
+      gpr[3].ubits = 0;
+      return possible;
     }
 
-  if (current_insn_addr == 0xffffffc01028a6e8)
+  if (current_insn_addr == 0xffffffc01028b198)
     {
+      // link_path_walk.part.0: b.eq (ands    x2, x2, #0x8080808080808080)
       gpr[2].ubits = 0;
       gpr[3].ubits = 0;
       gpr[5].ubits = 0;
       nzcv.ubits = 0;
-      return gpr[2].value == 0;
+      if ((gpr[2].value == 0) != possible) raise( ShouldNotHappen() );
+      return possible;
     }
 
   if ((current_insn_addr | 0x380)  == 0xffffffc01008238c)
     {
-      /* we're forced to lose x0 undefined bits... */
+      // <vectors>:
+      // ...
+      // tbnz    w0, #14
+      /* we're forced to definitely lose x0 undefined bits... */
       gpr[31].ubits = 0;
       gpr[0].ubits = 0;
-      return gpr[0].value >> 14 & 1;
+      if (bool(gpr[0].value >> 14 & 1) != possible) raise( ShouldNotHappen() );
+      return possible;
     }
 
-  if (current_insn_addr == 0xffffffc0109f3f20)
+  if (current_insn_addr == 0xffffffc0109fb120)
     {
+      // <__pi_strcmp>:
+      // ...
+      // orr     x6, x5, x4
+      // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
       gpr[2].ubits = 0;
       gpr[3].ubits = 0;
       gpr[6].ubits = 0;
-      return gpr[6].value == 0;
+      return possible;
     }
 
-  if (current_insn_addr == 0xffffffc010628f50)
+  if (current_insn_addr == 0xffffffc01062b630)
     {
+      // <amba_device_try_add>:
+      // ...
+      // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
       gpr[3].ubits = 0;
-      return false;
+      if (possible) raise( ShouldNotHappen() );
+      return possible;
     }
 
-  static struct { uint64_t address; bool result; }
-  exceptions [] =
-    {
-     {0xff3, false}, /* has_mismatched_cache_type */
-    };
+  // static struct { uint64_t address; bool result; }
+  // exceptions [] =
+  //   {
+  //    {0xff3, false}, /* has_mismatched_cache_type */
+  //   };
 
-  static uintptr_t idx =0;
-  uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
+  // static uintptr_t idx =0;
+  // uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
 
-  if ((idx >= end) or (exceptions[idx].address != current_insn_addr))
-    {
-      std::cerr << "Condition depends on unitialized value.\n";
-      DisasmState ds;
-      last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
-      std::cerr << "\n";
+  // if (idx < end and exceptions[idx].address == current_insn_addr)
+  //   return exceptions[idx++].result;
 
-      struct Bad {}; raise( Bad() );
-    }
+  uninitialized_error("condition");
 
-  return exceptions[idx++].result;
+  struct Bad {}; raise( Bad() );
+  return possible;
+}
+
+void
+AArch64::uninitialized_error( char const* rsrc )
+{
+  std::cerr << "Error: " << rsrc << " depends on unitialized value.\n";
+  DisasmState ds;
+  last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
+  std::cerr << "\n";
 }
 
 AArch64::GIC::GIC()
@@ -815,7 +817,7 @@ struct AArch64::Device::Request
     return false;
   }
   template <typename T>
-  bool fixed(T value)
+  bool ro(T value)
   {
     if (write) return false;
     return access( value );
@@ -881,7 +883,24 @@ AArch64::Device::Effect::error( char const* msg ) const
 }
 
 void
-AArch64::map_apbclk(uint64_t base_addr)
+AArch64::handle_rtc()
+{
+  if (not rtc.matching(*this) or rtc.masked)
+    return;
+  gic.set_interrupt(34);
+  gic.program(*this);
+}
+
+void
+AArch64::RTC::program(AArch64& cpu)
+{
+  uint64_t delay = (MR - LR)*cpu.get_freq()/get_cntfrq() - (cpu.insn_timer - load_insn_time) + 1;
+  
+  cpu.notify( delay, &AArch64::handle_rtc );
+}
+
+void
+AArch64::map_rtc(uint64_t base_addr)
 {
   static struct RTCEffect : public Device::Effect
   {
@@ -889,6 +908,50 @@ AArch64::map_apbclk(uint64_t base_addr)
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      auto& rtc = arch.rtc;
+      
+      if (req.addr == 0x0) // Data Register, RTCDR
+        return req.ro(rtc.get_counter(arch));
+      if (req.addr == 0x4) // Match Register, RTCMR
+        {
+          if (not req.access(rtc.MR)) return false;
+          if (not req.write) return true;
+          rtc.program(arch);
+          return true;
+        }
+      if (req.addr == 0x8) // Load Register, RTCLR 
+        {
+          if (not req.access(rtc.LR)) return false;
+          if (not req.write) return true;
+          rtc.flush_lr(arch);
+          rtc.program(arch);
+          return true;
+        }
+      if (req.addr == 0xc) // Control Register, RTCCR 
+        {
+          uint32_t started = rtc.started;
+          if (not req.write) return req.ro(started);
+          if (not req.access(started)) return false;
+          if (started & rtc.started) { rtc.LR = 0; rtc.flush_lr(arch); }
+          rtc.started = started;
+          rtc.program(arch);
+          return true;
+        }
+      if (req.addr == 0x10) // Interrupt Mask Set or Clear register, RTCIMSC
+        {
+          uint32_t masked = rtc.masked;
+          if (not req.write) return req.ro(masked);
+          if (not req.access(masked)) return false;
+          if (masked & ~rtc.masked) arch.handle_rtc();
+          rtc.masked = masked;
+          return true;
+        }
+      if (req.addr == 0x14) // Raw Interrupt Status, RTCRIS
+        return req.ro<uint32_t>(rtc.matching(arch));
+      if (req.addr == 0x18) // Masked Interrupt Status, RTCMIS
+        return req.ro<uint32_t>(rtc.matching(arch) and not rtc.masked);
+      if (req.addr == 0x1c) // Interrupt Clear Register, RTCICR
+        return req.write;
       if ((req.addr & -16) == 0xfe0)
         {
           if (req.write) return error( "Cannot write PeriphID" );
@@ -909,9 +972,9 @@ AArch64::map_apbclk(uint64_t base_addr)
       return false;
     }
 
-  } apbclk_effect;
+  } rtc_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0xfff, &apbclk_effect) );
+  devices.insert( Device( base_addr, base_addr + 0xfff, &rtc_effect) );
 }
 
 void
@@ -934,9 +997,9 @@ AArch64::map_virtio_placeholder(uint64_t base_addr)
       if (req.addr % 4 or req.size != 4) return false;
       switch (req.addr / 4)
         {
-        case 0: return req.fixed<uint32_t>(0x74726976); /* Magic Value */
-        case 1: return req.fixed<uint32_t>(0x2); /* Device version number */
-        case 2: return req.fixed<uint32_t>(0); /* Virtio Subsystem Device ID */
+        case 0: return req.ro<uint32_t>(0x74726976); /* Magic Value */
+        case 1: return req.ro<uint32_t>(0x2); /* Device version number */
+        case 2: return req.ro<uint32_t>(0); /* Virtio Subsystem Device ID */
         }
       return false;
     }
@@ -957,9 +1020,10 @@ AArch64::map_virtio_drive(uint64_t base_addr)
       if (req.addr % 4 or req.size != 4) return false;
       switch (req.addr / 4)
         {
-        case 0: return req.fixed<uint32_t>(0x74726976); /* Magic Value */
-        case 1: return req.fixed<uint32_t>(0x2); /* Device version number */
-        case 2: return req.fixed<uint32_t>(0); /* Virtio Subsystem Device ID */
+        case 0: return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
+        case 1: return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
+        case 2: return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
+          //        case 3: return req.ro<int32_t>(0xcea151); /* Virtio Subsystem Vendor ID */
         }
       return false;
     }
@@ -971,12 +1035,13 @@ AArch64::map_virtio_drive(uint64_t base_addr)
 void
 AArch64::map_uart(uint64_t base_addr)
 {
-  static struct UARTEffect : public Device::Effect
+  static struct : public Device::Effect
   {
     virtual void get_name(std::ostream& sink) const override { sink << "UART (PL011)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      AArch64::UART& uart = arch.uart;
       if ((req.addr & -4) == 0x0)
         {
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
@@ -984,7 +1049,7 @@ AArch64::map_uart(uint64_t base_addr)
             {
               uint8_t ch;
               if (not req.access( ch )) return false;
-              arch.uart.txpush( arch, ch );
+              uart.txpush( arch, ch );
               return true;
             }
           return error( "sorry" );
@@ -995,27 +1060,28 @@ AArch64::map_uart(uint64_t base_addr)
           uint16_t flags = 0x90;
           return req.access(flags);
         }
-      if (req.addr == 0x24) return req.access(arch.uart.IBRD);
-      if (req.addr == 0x28) return req.access(arch.uart.FBRD);
-      if (req.addr == 0x2c) return req.access(arch.uart.LCR);
-      if (req.addr == 0x30) return req.access(arch.uart.CR);
+      if (req.addr == 0x24) return req.access(uart.IBRD);
+      if (req.addr == 0x28) return req.access(uart.FBRD);
+      if (req.addr == 0x2c) return req.access(uart.LCR);
+      if (req.addr == 0x30) return req.access(uart.CR);
+      if (req.addr == 0x34) return req.access(uart.IFLS);
 
       if (req.addr == 0x38)
         {
-          if (not req.access(arch.uart.IMSC)) return false;
+          if (not req.access(uart.IMSC)) return false;
           return true;
         }
 
       if (req.addr == 0x3c)
         {
           if (req.write) return error( "Cannot write Raw Interrupt Status Register" );
-          return req.access(arch.uart.RIS);
+          return req.access(uart.RIS);
         }
 
       if (req.addr == 0x40)
         {
           if (req.write) return error( "Cannot write Masked Interrupt Status Register" );
-          uint16_t mis = arch.uart.RIS & ~arch.uart.IMSC;
+          uint16_t mis = uart.RIS & ~uart.IMSC;
           return req.access(mis);
         }
 
@@ -1024,7 +1090,7 @@ AArch64::map_uart(uint64_t base_addr)
           if (not req.write) return error( "Cannot read Interrupt Clear Register" );
           uint16_t icr;
           if (not req.access(icr)) return false;
-          arch.uart.RIS &= ~icr;
+          uart.RIS &= ~icr;
           return true;
         }
 
@@ -1063,12 +1129,28 @@ AArch64::UART::txpush(AArch64& arch, char ch)
   arch.notify( insns_per_char, &AArch64::uart_tx );
 }
 
+unsigned
+AArch64::UART::ifls( unsigned level )
+{
+  unsigned const count = 32;
+  switch (level)
+    {
+    default: { struct Bad {}; raise( Bad() ); }
+    case 0: return count*1/8;
+    case 1: return count*2/8;
+    case 2: return count*4/8;
+    case 3: return count*6/8;
+    case 4: return count*7/8;
+    }
+  return 0;
+}
+
 bool
 AArch64::UART::txpop()
 {
   struct Bad {};
   if (tx_count == 0) raise( Bad() );
-  if (--tx_count != 16) return false;
+  if (--tx_count != UART::ifls(IFLS >> 0 & 7)) return false;
   uint16_t const TXINTR = 0x10;
   RIS |= TXINTR;
   return TXINTR & ~IMSC;
@@ -1243,7 +1325,7 @@ AArch64::Timer::program(AArch64& cpu)
   int32_t delay = read_tval(cpu);
   if (delay < 1) delay = 1;
 
-  cpu.notify( delay * cpu.get_ipt(), &AArch64::handle_vtimer );
+  cpu.notify( delay * cpu.get_freq() / get_cntfrq(), &AArch64::handle_vtimer );
 }
 
 bool
@@ -1261,6 +1343,7 @@ AArch64::handle_irqs()
     return;
 
   TakePhysicalIRQException();
+  throw Abort();
 }
 
 void
@@ -1335,8 +1418,9 @@ AArch64::run()
           insn_counter++; /* Instruction regularly finished */
         }
 
-      catch (Abort const&)
+      catch (Abort const& abort)
         {
+          abort.proceed(*this);
           /* Instruction aborted, proceed to next */
           //   if (unlikely(trap_reporting_import))
           //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
@@ -1376,26 +1460,33 @@ AArch64::MemDump64(uint64_t addr)
 
   uint8_t dbuf[size], ubuf[size];
 
-  unsigned vsize = access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size);
+  Page const& page = access_page(paddr);
+  unsigned vsize = page.read(paddr,&dbuf[0],&ubuf[0],size);
+  uintptr_t host_addr = (uintptr_t)page.get_data(paddr);
 
-  std::cerr << std::hex << addr << ":\t" << std::dec;
-  for (unsigned byte = size; byte-- > 0;)
+  std::cerr << std::hex << "virt: " << addr << ", phys: " << paddr << ", host: " << host_addr << std::dec << std::endl;
+  std::cerr << "\t0x";
+  for (unsigned byte = vsize; byte-- > 0;)
     {
-      std::cerr << ' ';
-      if (byte >= vsize) { std::cerr << "  "; continue; }
       uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
       for (unsigned nibble = 2; nibble-- > 0;)
         std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
     }
 
-  std::cerr << "\t(0b";
+  std::cerr << "\t0b";
   for (unsigned byte = vsize; byte-- > 0;)
     {
       uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
       for (unsigned bit = 8; bit-- > 0;)
         std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
     }
-  std::cerr << ")\n";
+  std::cerr << "\t\"";
+  for (unsigned byte = 0; byte < vsize; ++byte)
+    {
+      uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
+      std::cerr << (ubyte or dbyte < 32 or dbyte > 126 ? '.' : char(dbyte));
+    }
+  std::cerr << "\"\n";
 }
 
 void
@@ -1428,7 +1519,7 @@ AArch64::ClearExclusiveLocal()
 }
 
 void
-AArch64::page_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size)
+AArch64::memory_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size)
 {
   std::cerr << std::hex << current_insn_addr << " error during " << operation << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
   struct Bad {}; raise(Bad());
