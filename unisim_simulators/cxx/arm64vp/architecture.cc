@@ -990,7 +990,7 @@ AArch64::map_virtio_placeholder(uint64_t base_addr)
 {
   static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "VIRTIO (Placeholder)"; }
+    virtual void get_name(std::ostream& sink) const override { sink << "Virtio Placeholder (empty)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
@@ -1013,7 +1013,7 @@ AArch64::map_virtio_drive(uint64_t base_addr)
 {
   static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "VIRTIO (Placeholder)"; }
+    virtual void get_name(std::ostream& sink) const override { sink << "Virtio Block Device (drive)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
@@ -1023,7 +1023,7 @@ AArch64::map_virtio_drive(uint64_t base_addr)
         case 0: return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
         case 1: return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
         case 2: return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
-          //        case 3: return req.ro<int32_t>(0xcea151); /* Virtio Subsystem Vendor ID */
+        case 3: return req.ro<int32_t>(0x70767375); /* Virtio Subsystem Vendor ID: 'usvp' */
         }
       return false;
     }
