@@ -659,7 +659,7 @@ public:
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg << '_' << beg << '_' << end; }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
     {
-      sink << 'd' << std::dec << reg << '{' << beg << ',' << end << '}' << " := " << GetCode(value, vars, label);
+      sink << 'd' << std::dec << reg << "<64>" << '{' << beg << ',' << end << '}' << " := " << GetCode(value, vars, label);
       return 0;
     }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
@@ -712,7 +712,7 @@ public:
           }
         else
           {
-            unsigned begin = pos*8, end = begin+size*8;
+            unsigned begin = pos*8, end = begin+size*8 - 1;
             Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, size*8, size*8, false ) );
             core.path->add_sink( new NeonPartialWrite( reg, begin, end, value ) );
           }
@@ -805,10 +805,14 @@ public:
   F64  GetVDR( unsigned idx ) { return F64(); }
   void SetVDR( unsigned idx, F64 val ) {}
 
-  static unsigned usizeof( U8 const& )  { return  1; }
-  static unsigned usizeof( U16 const& ) { return  2; }
-  static unsigned usizeof( U32 const& ) { return  4; }
-  static unsigned usizeof( U64 const& ) { return  8; }
+  static unsigned tsizeof( U8 const& )  { return  1; }
+  static unsigned tsizeof( U16 const& ) { return  2; }
+  static unsigned tsizeof( U32 const& ) { return  4; }
+  static unsigned tsizeof( U64 const& ) { return  8; }
+  static unsigned tsizeof( S8 const& )  { return  1; }
+  static unsigned tsizeof( S16 const& ) { return  2; }
+  static unsigned tsizeof( S32 const& ) { return  4; }
+  static unsigned tsizeof( S64 const& ) { return  8; }
 
   template <typename T> T ucast( T const& x ) { return x; }
   U8 ucast( S8 const& x ) { return U8(x); }
@@ -822,7 +826,7 @@ public:
   {
     using unisim::util::symbolic::binsec::BitFilter;
     auto uvalue = ucast( value );
-    unsigned usz = usizeof( uvalue );
+    unsigned usz = tsizeof( uvalue );
     Expr neonval( new BitFilter( uvalue.expr, usz*8, usz*8, 64, false ) );
     eneonwrite( reg, usz, usz*idx, neonval );
   }
@@ -830,7 +834,7 @@ public:
   template <class ELEMT>
   ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait )
   {
-    unsigned usz = usizeof( ucast(trait) );
+    unsigned usz = tsizeof( trait );
     return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) );
   }
   
