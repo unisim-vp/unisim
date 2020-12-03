@@ -713,7 +713,7 @@ public:
         else
           {
             unsigned begin = pos*8, end = begin+size*8 - 1;
-            Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, size*8, size*8, false ) );
+            Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, 0, size*8, size*8, false ) );
             core.path->add_sink( new NeonPartialWrite( reg, begin, end, value ) );
           }
       }
@@ -827,7 +827,7 @@ public:
     using unisim::util::symbolic::binsec::BitFilter;
     auto uvalue = ucast( value );
     unsigned usz = tsizeof( uvalue );
-    Expr neonval( new BitFilter( uvalue.expr, usz*8, usz*8, 64, false ) );
+    Expr neonval( new BitFilter( uvalue.expr, usz*8, 0, usz*8, 64, false ) );
     eneonwrite( reg, usz, usz*idx, neonval );
   }
 
@@ -844,7 +844,7 @@ public:
 
   void BranchExchange( U32 const& target, branch_type_t branch_type )
   {
-    cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 1, 1, false );
+    cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 0, 1, 1, false );
     Branch( target, branch_type );
   }
 	
