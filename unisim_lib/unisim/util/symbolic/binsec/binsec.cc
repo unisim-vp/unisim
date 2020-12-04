@@ -359,6 +359,21 @@ namespace binsec {
   Expr
   BitFilter::Simplify() const
   {
+    if (OpNodeBase const* onb = input->AsOpNode())
+      {
+        if (onb->op.code != onb->op.Lsl) return this;
+        ConstNodeBase const* cnb = onb->GetSub(1).Eval(EvalSpace());
+        if (not cnb) return this;
+        unsigned lshift = cnb->Get( unsigned() );
+        if (lshift > rshift) return this;
+        BitFilter bf( *this );
+        bf.Retain(); // Prevent deletion of this stack-allocated object
+        bf.rshift -= lshift;
+        bf.input = onb->GetSub(0);
+        Expr res( bf.Simplify() );
+        return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+      }
+    
     if (BitFilter const* bf = dynamic_cast<BitFilter const*>( input.node ))
       {
         struct Bad {};
