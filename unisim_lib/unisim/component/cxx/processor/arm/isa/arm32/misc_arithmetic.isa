@@ -560,22 +560,29 @@ ssat.disasm = {
 
 ssat.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  unsigned const ra = (31-sat_imm); // Right alignment
-  
+
   U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
-      res = src << ra;
-  
-  S32 const bound = S32(-1 << sat_imm);
-  U32 of = U32(S32(src) > ~bound) << 31, uf = U32(S32(src) < bound) << 31;
-  
-  U32 saturation = SignedSat( res, of, uf, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
-  
-  cpu.SetGPR( rd, U32(S32(res) >> ra) );
+        q = cpu.CPSR().Get( Q );
+
+  // negative bound
+  S32 const nbound = S32(-1 << sat_imm);
+  // positive bound
+  S32 const pbound = ~nbound;
+  U32 of = U32(S32(src) > pbound), uf = U32(S32(src) < nbound);
+
+  // mask for not overflow and not underflow
+  U32 mnof = (of - U32(1)), mnuf = (uf - U32(1));
+
+  U32 res = (mnof & mnuf & src)
+	  | (~mnof & U32(pbound))
+	  | (~mnuf & U32(nbound));
+
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( Q, q | of | uf );
+
 };
 
 /*
@@ -640,26 +647,25 @@ usat.disasm = {
 
 usat.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  // ra is Right alignment minus one (because shifts by 32 are
-  // unpredictable)
-  unsigned const ra = (31-sat_imm);
-  
+
+
   U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
-      res = (src << ra) << 1;
-  
+      q = cpu.CPSR().Get( Q );
+
   S32 const bound = S32(~(-1 << sat_imm));
-  U32 of = U32(S32(src) > bound) << 31, uf = U32(S32(src) < S32(0)) << 31;
-  
-  U32 saturation = cpu.CPSR().Get( Q );
-  saturation |= UnsignedPSat( res, of, SWP<32>() );
-  saturation |= UnsignedNSat( res, ~uf, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation );
-  
-  cpu.SetGPR( rd, (res >> 1) >> ra );
+  U32 of = U32(S32(src) > bound), uf = U32(S32(src) < S32(0));
+
+  // mask for not overflow and not underflow
+  U32 mnof = (of - U32(1)), mnuf = (uf - U32(1));
+
+  U32 res = (mnof & mnuf & src) | (~mnof & U32(bound) ) | (~mnuf & U32(0));
+
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( Q, q | of | uf );
+
 };
 
 /*
