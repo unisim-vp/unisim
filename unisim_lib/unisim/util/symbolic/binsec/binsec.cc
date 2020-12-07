@@ -381,6 +381,9 @@ namespace binsec {
         if (source != bf->extend)
           throw Bad ();
 
+        if (rshift >= bf->select) // TODO: maybe this can be optimized
+          return this;
+        
         unsigned new_rshift = bf->rshift + rshift;
 
         if ((rshift + select) <= bf->select)
@@ -390,7 +393,7 @@ namespace binsec {
         if (not sxtend and bf->sxtend)
           return this;
         
-        return new BitFilter( bf->input, bf->source, new_rshift, bf->select, extend, bf->sxtend );
+        return new BitFilter( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend );
       }
 
     return this;

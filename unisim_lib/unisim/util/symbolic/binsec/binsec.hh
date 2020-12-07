@@ -238,7 +238,7 @@ namespace binsec {
   struct BitFilter : public ASExprNode
   {
     BitFilter( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend )
-      : input(_input), source(_source), rshift(_rshift), select(_select), extend(_extend), sxtend(_sxtend), reserved()
+      : input(_input), source(_source), pad0(), rshift(_rshift), pad1(), select(_select), pad2(), extend(_extend), sxtend(_sxtend)
     {}
     virtual BitFilter* Mutate() const { return new BitFilter( *this ); }
     Expr Simplify() const;
@@ -254,11 +254,13 @@ namespace binsec {
     
     Expr     input;
     uint64_t source   : 15;
+    uint64_t pad0     :  1;
     uint64_t rshift   : 15;
+    uint64_t pad1     :  1;
     uint64_t select   : 15;
+    uint64_t pad2     :  1;
     uint64_t extend   : 15;
     uint64_t sxtend   :  1;
-    uint64_t reserved :  3;
   };
 
   struct Store : public ASExprNode
