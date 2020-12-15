@@ -32,15 +32,20 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64SAV_RUNNER_HH__
-#define __ARM64SAV_RUNNER_HH__
+#ifndef __ARM32SAV_RUNNER_HH__
+#define __ARM32SAV_RUNNER_HH__
 
 #include <test.hh>
 #include <top_arm32.hh>
+#include <top_thumb.hh>
+#include <iosfwd>
+#include <cstdlib>
+#include <cassert>
 #include <inttypes.h>
 
 struct Runner
 {
+  void run(Interface::testcode_t code, uint32_t*);
 };
 
-#endif // __ARM64SAV_RUNNER_HH__
+#endif // __ARM32SAV_RUNNER_HH__

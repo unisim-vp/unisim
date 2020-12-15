@@ -1,0 +1,182 @@
+e2b3e298	adcs	lr, r3, #-2147483639
+e0b31067	adcs	r1, r3, r7, rrx
+e0abdd70	adc	sp, fp, r0, ror sp
+e288aa37	add	sl, r8, #225280
+e083492d	add	r4, r3, sp, lsr #18
+e0992616	adds	r2, r9, r6, lsl r6
+e203590e	and	r5, r3, #229376
+e00728c2	and	r2, r7, r2, asr #17
+e0064a78	and	r4, r6, r8, ror sl
+e7d3921f	bfc	r9, #4, #16
+e7c8a210	bfi	sl, r0, #4, #5
+e3d27b50	bics	r7, r2, #81920
+e1cdd98a	bic	sp, sp, sl, lsl #19
+e1d2e47c	bics	lr, r2, ip, ror r4
+e16f2f14	clz	r2, r4
+e37603c7	cmn	r6, #469762051
+e1790d07	cmn	r9, r7, lsl #26
+e178091e	cmn	r8, lr, lsl r9
+e35a07ab	cmp	sl, #44826624
+e1500a82	cmp	r0, r2, lsl #21
+e151071c	cmp	r1, ip, lsl r7
+e2262cb6	eor	r2, r6, #46592
+e02d5bad	eor	r5, sp, sp, lsr #23
+e0262335	eor	r2, r6, r5, lsr r3
+e8b3799d	ldmia	r3!, {r0, r2, r3, r4, r7, r8, fp, ip, sp, lr}
+e954cea0	ldmdb	r4, {r5, r7, r9, sl, fp, lr, pc}^
+e595758b	ldr	r7, [r5, #1419]
+e792850d	ldr	r8, [r2, sp, lsl #10]
+e5d79f78	ldrb	r9, [r7, #3960]
+e779ae6b	ldrb	sl, [r9, -fp, ror #28]!
+e4f0de23	ldrbt	sp, [r0], #3619
+e6f39ccb	ldrbt	r9, [r3], fp, asr #25
+e0418bdb	ldrd	r8, [r1], #-187
+e00520d9	ldrd	r2, [r5], -r9
+e17160bb	ldrh	r6, [r1, #-11]!
+e19650be	ldrh	r5, [r6, lr]
+e0f857b4	ldrht	r5, [r8], #116
+e0b090b7	ldrht	r9, [r0], r7
+e1d884d3	ldrsb	r8, [r8, #67]
+e1b1a0d3	ldrsb	sl, [r1, r3]!
+e0750adb	ldrsbt	r0, [r5], #-171
+e0bb50d5	ldrsbt	r5, [fp], r5
+e1fd44f9	ldrsh	r4, [sp, #73]!
+e117d0fe	ldrsh	sp, [r7, -lr]
+e07327fd	ldrsht	r2, [r3], #-125
+e03040f3	ldrsht	r4, [r0], -r3
+e43c9acc	ldrt	r9, [ip], #-2764
+e63860cd	ldrt	r6, [r8], -sp, asr #1
+e0267793	mla	r6, r3, r7, r7
+e06b8b94	mls	fp, r4, fp, r8
+e3b09cc2	movs	r9, #49664
+e1a0a784	lsl	sl, r4, #15
+e1b09e1e	lsls	r9, lr, lr
+e34d2326	movt	r2, #54054
+e30d355c	movw	r3, #54620
+e012079d	muls	r2, sp, r7
+e3f0c04e	mvns	ip, #78
+e1e0276f	mvn	r2, pc, ror #14
+e1f0521d	mvns	r5, sp, lsl r2
+e39be784	orrs	lr, fp, #34603008
+e19663c7	orrs	r6, r6, r7, asr #7
+e1984736	orrs	r4, r8, r6, lsr r7
+e68e9196	pkhbt	r9, lr, r6, lsl #3
+e1098050	qadd	r8, r0, r9
+e62b7f1c	qadd16	r7, fp, ip
+e629af98	qadd8	sl, r9, r8
+e6200f3c	qasx	r0, r0, ip
+e143e05e	qdadd	lr, lr, r3
+e1615056	qdsub	r5, r6, r1
+e62a3f5b	qsax	r3, sl, fp
+e1207056	qsub	r7, r6, r0
+e6246f79	qsub16	r6, r4, r9
+e6281ffa	qsub8	r1, r8, sl
+e6ff7f36	rbit	r7, r6
+e6bfbf3e	rev	fp, lr
+e6bf2fb0	rev16	r2, r0
+e6ff6fb7	revsh	r6, r7
+e27bc1f9	rsbs	ip, fp, #1073741886
+e06ebe6b	rsb	fp, lr, fp, ror #28
+e0637058	rsb	r7, r3, r8, asr r0
+e2eca19d	rsc	sl, ip, #1073741863
+e0f3ce2f	rscs	ip, r3, pc, lsr #28
+e0f2a55d	rscs	sl, r2, sp, asr r5
+e6129f10	sadd16	r9, r2, r0
+e61c1f9a	sadd8	r1, ip, sl
+e6144f3e	sasx	r4, r4, lr
+e2df5d6d	sbcs	r5, pc, #6976
+e0c16588	sbc	r6, r1, r8, lsl #11
+e0d7ba15	sbcs	fp, r7, r5, lsl sl
+e7a2aa59	sbfx	sl, r9, #20, #3
+e6804fb3	sel	r4, r0, r3
+e637ef11	shadd16	lr, r7, r1
+e6384f98	shadd8	r4, r8, r8
+e6335f3d	shasx	r5, r3, sp
+e63a4f54	shsax	r4, sl, r4
+e63bcf7d	shsub16	ip, fp, sp
+e6397ffc	shsub8	r7, r9, ip
+e707d035	smladx	r7, r5, r0, sp
+e0f5ba99	smlals	fp, r5, r9, sl
+e74d633c	smlaldx	r6, sp, ip, r3
+e14c868a	smlalbb	r8, ip, sl, r6
+e1270789	smlawb	r7, r9, r7, r0
+e1001dae	smlatb	r0, lr, sp, r1
+e706905a	smlsd	r6, sl, r0, r9
+e74cec57	smlsld	lr, ip, r7, ip
+e75cd934	smmlar	ip, r4, r9, sp
+e75eacf2	smmlsr	lr, r2, ip, sl
+e75bfa1e	smmul	fp, lr, sl
+e708fa3b	smuadx	r8, fp, sl
+e0c5409b	smull	r4, r5, fp, r0
+e1200ead	smulwb	r0, sp, lr
+e16b0aea	smultt	fp, sl, sl
+e700f35d	smusd	r0, sp, r3
+e6a16559	ssat	r6, #2, r9, asr #10
+e6a9af34	ssat16	sl, #10, r4
+e6197f56	ssax	r7, r9, r6
+e61bcf72	ssub16	ip, fp, r2
+e6108ff5	ssub8	r8, r0, r5
+e980c556	stmib	r0, {r1, r2, r4, r6, r8, sl, lr, pc}
+e487caf2	str	ip, [r7], #2802
+e68143e8	str	r4, [r1], r8, ror #7
+e445a49a	strb	sl, [r5], #-1178
+e747bc04	strb	fp, [r7, -r4, lsl #24]
+e46c0847	strbt	r0, [ip], #-2119
+e6ec21a8	strbt	r2, [ip], r8, lsr #3
+e049c5fc	strd	ip, [r9], #-92
+e122c0fc	strd	ip, [r2, -ip]!
+e1ea95b3	strh	r9, [sl, #83]!
+e12c20bb	strh	r2, [ip, -fp]!
+e0e8b0b3	strht	fp, [r8], #3
+e02c90b9	strht	r9, [ip], -r9
+e4aab180	strt	fp, [sl], #384
+e62913a3	strt	r1, [r9], -r3, lsr #7
+e245ada9	sub	sl, r5, #10816
+e05e3923	subs	r3, lr, r3, lsr #18
+e043251b	sub	r2, r3, fp, lsl r5
+e1026096	swp	r6, r6, [r2]
+e144b09a	swpb	fp, sl, [r4]
+e6a7d070	sxtab	sp, r7, r0
+e6827873	sxtab16	r7, r2, r3, ror #16
+e6b73c78	sxtah	r3, r7, r8, ror #24
+e6af7875	sxtb	r7, r5, ror #16
+e68fec7b	sxtb16	lr, fp, ror #24
+e6bf1c78	sxth	r1, r8, ror #24
+e33601d8	teq	r6, #54
+e137018d	teq	r7, sp, lsl #3
+e1310633	teq	r1, r3, lsr r6
+e31c0772	tst	ip, #29884416
+e11f054c	tst	pc, ip, asr #10
+e1150077	tst	r5, r7, ror r0
+e659df16	uadd16	sp, r9, r6
+e6585f95	uadd8	r5, r8, r5
+e6585f36	uasx	r5, r8, r6
+e7ee765b	ubfx	r7, fp, #12, #15
+e679bf1c	uhadd16	fp, r9, ip
+e67c6f9a	uhadd8	r6, ip, sl
+e6744f34	uhasx	r4, r4, r4
+e67ecf50	uhsax	ip, lr, r0
+e6784f72	uhsub16	r4, r8, r2
+e67bbff0	uhsub8	fp, fp, r0
+e04dc892	umaal	ip, sp, r2, r8
+e0b17b95	umlals	r7, r1, r5, fp
+e0824e9a	umull	r4, r2, sl, lr
+e66b0f16	uqadd16	r0, fp, r6
+e661cf9d	uqadd8	ip, r1, sp
+e66caf32	uqasx	sl, ip, r2
+e66cef55	uqsax	lr, ip, r5
+e6601f7c	uqsub16	r1, r0, ip
+e66a6ff1	uqsub8	r6, sl, r1
+e78cfd1e	usad8	ip, lr, sp
+e787eb18	usada8	r7, r8, fp, lr
+e6f09ed3	usat	r9, #16, r3, asr #29
+e6ec7f3c	usat16	r7, #12, ip
+e651af5e	usax	sl, r1, lr
+e6540f7d	usub16	r0, r4, sp
+e6596ffe	usub8	r6, r9, lr
+e6e9847b	uxtab	r8, r9, fp, ror #8
+e6c9d87a	uxtab16	sp, r9, sl, ror #16
+e6fe7472	uxtah	r7, lr, r2, ror #8
+e6efb075	uxtb	fp, r5
+e6cf4071	uxtb16	r4, r1
+e6ff387a	uxth	r3, sl, ror #16

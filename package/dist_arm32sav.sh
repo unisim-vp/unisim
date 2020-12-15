@@ -62,11 +62,16 @@ UNISIM_SIMULATOR_ISA_FILES="${UNISIM_SIMULATOR_ISA_THUMB_FILES} ${UNISIM_SIMULAT
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
-arch.cc \
+scanner.cc \
+scanner.arm32.cc \
+scanner.thumb.cc \
+runner.cc \
+test.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="${UNISIM_SIMULATOR_ISA_FILES} \
-arch.hh \
-testutils.hh \
+scanner.hh \
+runner.hh \
+test.hh \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\

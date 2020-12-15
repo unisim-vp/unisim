@@ -32,15 +32,14 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64SAV_RUNNER_HH__
-#define __ARM64SAV_RUNNER_HH__
+#include <runner.hh>
+#include <iomanip>
+#include <ostream>
+#include <cmath>
 
-#include <test.hh>
-#include <top_arm32.hh>
-#include <inttypes.h>
-
-struct Runner
+void Runner::run(Interface::testcode_t code, uint32_t*)
 {
-};
+  struct TODO {};
+  throw TODO ();
+}
 
-#endif // __ARM64SAV_RUNNER_HH__

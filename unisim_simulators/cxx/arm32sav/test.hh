@@ -32,15 +32,48 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64SAV_RUNNER_HH__
-#define __ARM64SAV_RUNNER_HH__
+#ifndef ARM32SAV_REVIEW_HH
+#define ARM32SAV_REVIEW_HH
 
-#include <test.hh>
-#include <top_arm32.hh>
+#include <unisim/util/sav/sav.hh>
+#include <unisim/util/symbolic/symbolic.hh>
+#include <string>
+#include <memory>
 #include <inttypes.h>
 
-struct Runner
+struct Scanner;
+
+struct Interface
 {
+  typedef unisim::util::symbolic::Expr Expr;
+  typedef void (*testcode_t)(uint32_t*);
+
+  struct Insn { virtual void init( Interface& iif ) const = 0; virtual void exec(Scanner&) const = 0; virtual ~Insn() {} };
+  Interface( Insn const&, std::string const& disasm );
+  void memaccess( Expr const& addr, unsigned size, bool iswrite, bool isaligned );
+  
+  uintptr_t workcells() const;
+  uint32_t memspread() const { return memrange[1] - memrange[0]; }
+  uint32_t grmap() const;
+  bool usemem() const { return base_addr.good(); }
+  
+  std::string asmcode, gilname;
+  unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
+  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
+  std::shared_ptr<unisim::util::sav::ActionNode> behavior;
+  uint32_t memrange[2];
+  Expr base_addr;
+  unisim::util::sav::Addressings addressings;
+  uint32_t insncode;
+  uint32_t insnhalf    : 1;
+  uint32_t itsensitive : 1;
+  uint32_t aligned     : 1;
 };
 
-#endif // __ARM64SAV_RUNNER_HH__
+
+
+struct TestLess { bool operator () ( Interface const& a, Interface const& b ) const; };
+  
+typedef std::multiset<Interface, TestLess> TestDB;
+
+#endif // ARM32SAV_REVIEW_HH

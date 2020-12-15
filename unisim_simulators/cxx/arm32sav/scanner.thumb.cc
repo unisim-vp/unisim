@@ -32,15 +32,27 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64SAV_RUNNER_HH__
-#define __ARM64SAV_RUNNER_HH__
+#include <scanner.hh>
+#include <top_thumb.tcc>
+#include <sstream>
 
-#include <test.hh>
-#include <top_arm32.hh>
-#include <inttypes.h>
+Scanner::Thumb2::Thumb2()
+  : Decoder()
+{}
 
-struct Runner
+Scanner::Thumb2::~Thumb2()
+{}
+
+Scanner::Thumb2::Operation*
+Scanner::Thumb2::decode(uint32_t addr, uint32_t code, std::string& disasm)
 {
-};
+  std::ostringstream buf;
+  Operation* op = 0;
+  try { op = NCDecode(addr,code); }
+  catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("undefined"); }
+      
+  op->disasm(buf);
+  disasm = buf.str();
+  return op;
+}
 
-#endif // __ARM64SAV_RUNNER_HH__

@@ -32,468 +32,564 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <top_arm32.tcc>
-#include <top_thumb.tcc>
-#include <arch.hh>
+#include <scanner.hh>
+#include <runner.hh>
+#include <test.hh>
 #include <testutils.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/util/sav/sav.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <set>
 #include <memory>
+#include <sys/mman.h>
 #include <inttypes.h>
 
-using namespace unisim::component::cxx::processor::arm;
-
-struct Sink
+struct TestCode
 {
-  Sink( std::string const& gendir )
-    : macros( gendir + ".inc" ), sources( gendir + ".s" )
-  {
-    sources   << "\t.syntax\tunified\n\n";
-  }
-  
-  ~Sink() {}
-  
-  std::ofstream macros;
-  std::ofstream sources;
-  
-  char const* test_prefix() const { return "iut_"; }
+  virtual ~TestCode() {}
+  virtual void write(unsigned bytes, uint32_t code) = 0;
 };
 
-struct TestConfig
+struct ARM32
 {
-  ut::Interface const& iif;
-  std::string ident, disasm;
-  bool bigendian;
-  uint8_t offset;
+  typedef Scanner::Arm32 ISET;
+  typedef ISET::Decoder Decoder;
+  typedef ISET::CodeType CodeType;
+  typedef ISET::Operation Operation;
   
-  TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
-    : iif( _iif ), ident( _ident ), disasm( _disasm ), bigendian( false ), offset( 0 )
-  {}
-  
-  std::string prologue() const
+  static CodeType mkcode( uint32_t code )
   {
-    if (iif.usemem()) {
-      std::ostringstream sink;
-      try {
-        auto const& p = iif.GetPrologue();
-        DisasmRegister br( p.base );
-        uint32_t aoffset = uint32_t(offset);
-        sink << "\tldr\t" << br << ", =0x" << std::hex << (p.offset + (p.sign ? -aoffset : aoffset)) << std::dec << "\n";
-        if (p.sign)
-          sink << "\tsub\t" << br << ", " << br << ", r4\n";
-        else
-          sink << "\tadd\t" << br << ", " << br << ", r4\n";
-        for (auto reg : p.regs) {
-          sink << "\tldr\t" << DisasmRegister( reg.first ) << ", =0x" << std::hex << reg.second << std::dec << "\n";
-        }
-        if (bigendian) sink << "\tsetend\tbe\n";
-      } catch (ut::Interface::Prologue::Error const& x) {
-        std::cerr << "In: " << disasm << ".\n";
-        throw x;
-      }
-      return sink.str();
-    }
-    return "";
-  }
-  
-  std::string epilogue() const
-  {
-    if (iif.usemem()) {
-      std::ostringstream sink;  
-      if (bigendian) sink << "\tsetend\tle\n";
-      if (iif.store_addrs.size()) {
-        sink << "\tldm\tr4, {r5, r6, r7, r8}\n";
-        sink << "\tadd\tr9, r4, #16\n";
-        sink << "\tstm\tr9, {r5, r6, r7, r8}\n";
-      }
-      return sink.str();
-    }
-    return "";
-  }
-  
-  std::string finally() const { return iif.usemem() ? "\t.ltorg\n" : ""; }
-  TestConfig& altmem( bool be, unsigned _offset )
-  {
-    bigendian = be;
-    offset = _offset;
-    if (be) ident += "_eb";
-    switch (_offset) {
-    case 1: ident += "_o1"; break;
-    case 2: ident += "_o2"; break;
-    case 3: ident += "_o3"; break;
-    }
-    return *this;
-  }
-};
-
-struct ARM32 : isa::arm32::Decoder<ut::Arch>
-{
-  typedef isa::arm32::DecodeTableEntry<ut::Arch> DecodeTableEntry;
-  typedef isa::arm32::CodeType CodeType;
-  typedef isa::arm32::Operation<ut::Arch> Operation;
-  static CodeType mkcode( uint32_t code ) {
     if ((code >> 28) == 15)
       return CodeType( code );
     return CodeType( (0x0fffffff & code) | 0xe0000000 );
   }
   static char const* Name() { return "Arm32"; }
-  void
-  write_test( Sink& sink, TestConfig const& cfg, CodeType code )
-  {
-    std::string hexcode;
-    { std::ostringstream oss; oss << std::hex << code; hexcode = oss.str(); }
-    std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
-    
-    sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
-    
-    sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-                 << "\n\t.type\t" << opfunc_name
-                 << ", %function\n" << opfunc_name
-                 << ":\n"
-                 << cfg.prologue()
-                 << "\t.long\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-                 << cfg.epilogue()
-                 << "\tbx\tlr\n"
-                 << cfg.finally()
-                 << "\t.size\t" << opfunc_name
-                 << ", .-" << opfunc_name << "\n\n";
-  }
-  void
-  write_tests( Sink& sink, TestConfig const& cfg, CodeType code )
-  {
-    if ((code >> 28) == 14)
-      write_test( sink, cfg, ((code % 14) << 28) | (code & 0x0fffffff) );
-    write_test( sink, cfg, code );
-  }
+  static void emit_prologue(TestCode& tc, uint32_t regs) { /*push*/tc.write(4, 0xe9200000 | (13 << 16) | (1 << 14) | regs); }
+  static void emit_set_igprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*ldmia!*/tc.write(4, 0xe8b00000 | (reg << 16) | regs | (1 << 1)); }
+  static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.write(4, 0xe12ef001); }
+  static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.write(4, 0xe10f1000); /*setend le*/tc.write(4, 0xf1010000); }
+  static void emit_get_ogprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*stmia!*/tc.write(4, 0xe8a00000 | (reg << 16) | regs | (1 << 1)); }
+  static void emit_epilogue(TestCode& tc, uint32_t regs) { /*pop*/tc.write(4, 0xe8b00000 | (13 << 16) | (1 << 15) | regs); }
 };
 
-struct THUMB : isa::thumb::Decoder<ut::Arch>
+struct THUMB
 {
-  typedef isa::thumb::DecodeTableEntry<ut::Arch> DecodeTableEntry;
-  typedef isa::thumb::CodeType CodeType;
-  typedef isa::thumb::Operation<ut::Arch> Operation;
-  static CodeType mkcode( uint32_t code ) {
+  typedef Scanner::Thumb2 ISET;
+  typedef ISET::DecodeTableEntry DecodeTableEntry;
+  typedef ISET::Decoder Decoder;
+  typedef ISET::CodeType CodeType;
+  typedef ISET::Operation Operation;
+  
+  static CodeType mkcode( uint32_t code )
+  {
     if (((code >> 11) & 0b11111) < 0b11101) 
       return CodeType( code & 0xffff );
     return CodeType( code );
   }
   static char const* Name() { return "Thumb2"; }
-  
-  void
-  write_test( Sink& sink, std::string const& midfix, TestConfig const& cfg, unsigned cond, bool wide, std::string const& hexcode )
-  {
-    char const* condname = (cond < 15) ? &"eq\0ne\0cs\0cc\0mi\0pl\0vs\0vc\0hi\0ls\0ge\0lt\0gt\0le\0al"[cond*3] : 0;
-    
-    std::string opfunc_name( sink.test_prefix() + midfix );
-    if (condname) opfunc_name = opfunc_name + '_' + condname;
-    
-    sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
-    
-    sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-                 << "\n\t.type\t" << opfunc_name
-                 << ", %function\n\t.thumb\n\t.thumb_func\n" << opfunc_name
-                 << ":\n"
-                 << cfg.prologue();
-    if (condname) sink.sources << "\t.short\t0x" << std::hex << (0b1011111100001000 | (cond << 4)) << std::dec  << "/* it " << condname << " */\n";
-    sink.sources << "\t." << (wide ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-                 << cfg.epilogue()
-                 << "\tbx\tlr\n"
-                 << cfg.finally()
-                 << "\t.size\t" << opfunc_name
-                 << ", .-" << opfunc_name << "\n\n";
-  }
-  
-  void
-  write_tests( Sink& sink, TestConfig const& cfg, CodeType code )
-  {
-    int cond = code % 14;
-    std::string hexcode;
-    { std::ostringstream oss; oss << std::hex << code; hexcode = oss.str(); }
-    std::string midfix = cfg.ident + '_' + hexcode;
-    bool wide = (cfg.iif.length == 32);
-    write_test( sink, midfix, cfg, 15, wide, hexcode );
-    if (cfg.iif.itsensitive)
-      write_test( sink, midfix, cfg, 14, wide, hexcode );
-    write_test( sink, midfix, cfg, cond, wide, hexcode );
-  }
+  static void emit_prologue(TestCode& tc, uint32_t regs) { /*push*/tc.write(4, 0xe9200000 | (13 << 16) | (1 << 14) | regs); }
+  static void emit_set_igprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*ldmia!*/tc.write(4, 0xe8b00000 | (reg << 16) | regs | (1 << 1)); }
+  static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.write(4,0xf3818e00); }
+  static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.write(4,0xf3ef8100); /*setend le*/tc.write(2, 0xb650); }
+  static void emit_get_ogprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*stmia!*/tc.write(4, 0xe8a00000 | (reg << 16) | regs | (1 << 1)); }
+  static void emit_epilogue(TestCode& tc, uint32_t regs) { /*pop*/tc.write(4, 0xe8b00000 | (13 << 16) | (1 << 15) | regs); }
 };
-
-// template <typename ISA>
-// struct CodeUnit
-// {
-//   typedef typename ISA::CodeType CodeType;
-//   typedef typename ISA::Operation Operation;
-  
-//   CodeType   code;
-//   Operation* operation;
-  
-//   CodeUnit() : operation(0) {}
-//   ~CodeUnit() { delete operation; }
-// };
 
 template <typename ISA>
 struct Checker
 {
   typedef typename ISA::CodeType CodeType;
   typedef typename ISA::Operation Operation;
-  typedef std::multimap<ut::Interface, CodeType> CodeClass;
-  typedef std::map<std::string, CodeClass> TestClasses;
-  
-  unisim::util::random::Random random;
-  ISA isa;
-  
-  TestClasses testclasses;
-  
-  Checker() : random( 1, 2, 3, 4 ) {}
-  
-  void discover( uintptr_t ttl )
+
+  typename ISA::ISET isa;
+  TestDB testdb;
+  std::map<std::string,uintptr_t> stats;
+
+  Checker() : isa(), testdb() {}
+
+  bool discover( uintptr_t target, uintptr_t ttl_reset )
   {
-    uint64_t step = 0;
-    for (auto const& opc : isa.GetDecodeTable())
+    uintptr_t count = target - testdb.size();
+    if (count > target) return false;
+    int seed = testdb.size();
+    unisim::util::random::Random rnd(seed,seed,seed,seed);
+    uintptr_t ttl = ttl_reset, trial = 0;
+    while (count)
       {
-        uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
-        auto testclass = testclasses.end();
-        
-        try {
-          for (uintptr_t trial = 0; trial < ttl; ++trial)
-            {
-              step += 1;
-              try {
-                CodeType code = ISA::mkcode( (random.Generate() & ~mask) | bits );
-                
-                std::unique_ptr<Operation> codeop( opc.decode( code, 0 ) );
-                
-                {
-                  std::string name( codeop->GetName() );
-                  if (testclass == testclasses.end()) {
-                    testclasses[name];
-                    testclass = testclasses.find(name);
-                    std::cerr << "Tests[" << ISA::Name() << "::" << name << "]: ";
-                  } else if (testclass->first != name) {
-                    std::cerr << "Incoherent Operation names: " << testclass->first << " and " << name << std::endl;
-                    throw 0;
-                  }
-                }
-                
-                if (codeop->donttest())
-                  throw ut::DontTest( "not under test (explicit donttest)." );
-                
-                {
-                  std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
-                  if (strcmp( realop->GetName(), codeop->GetName() ) != 0)
-                    continue; /* Not the op we were looking for. */
-                }
-                
-                if (testclass->second.size() >= 256) {
-                  std::cerr << "Possible issue: too many tests for" << testclass->first << "...\n";
-                  throw 0;
-                }
-                // We need to perform an abstract execution of the
-                // instruction to 1/ further check testability and 2/
-                // compute operation interface.
-                ut::Arch arch;
-                codeop->execute( arch );
-                try { arch.interface.finalize( codeop->GetLength() ); }
-                catch (ut::Interface::Untestable const& ut) {
-                  //std::cerr << "Can't test (#" << step << ")" << this->disasm( code ) << ", " << ut.argument << std::endl;
-                  throw isa::Reject();
-                }
-                // At this point, code corresponds to valid operation
-                // to be tested. Nevertheless, if the interface of
-                // this operation matches an existing test, we don't
-                // add the operation since the new test is unlikely to
-                // reveal new bugs.
-                if (testclass->second.find( arch.interface ) != testclass->second.end()) continue;
-                testclass->second.insert( std::make_pair( arch.interface, code ) );
-                trial = 0;
+        for (auto const& format : isa.GetDecodeTable())
+          {
+            uint32_t code = ISA::mkcode( (uint32_t(rnd.Generate()) & ~format.opcode_mask) | format.opcode );
+
+            if ((++trial % 0x1000) == 0)
+              {
+                std::cerr << "\r\e[K#" << std::dec << trial <<  " (total=" << testdb.size() << ")";
+                std::cerr.flush();
               }
-              catch (isa::Reject const& reject) { continue; }
-            }
-          if (testclass == testclasses.end())
-            std::cerr << "Tests[" << ISA::Name() << "::?]: max ttl reached (nothing found).\n";
-          else if (testclass->second.size() == 0)
-            std::cerr << "max ttl reached (nothing found).\n";
-          else
-            std::cerr << testclass->second.size() << " patterns found." << std::endl;
-        }
-        catch (ut::DontTest const& dt) { std::cerr << dt.msg << std::endl; }
+
+            if (((test( code ) and ((ttl = ttl_reset) != 0) and (--count == 0))) or
+                ((--ttl == 0) and ((count = 0) == 0)))
+              break;
+          }
       }
+    std::cerr << '\n';
+
+    // {
+    //   std::ofstream sink( "stats.csv" );
+    //   for (auto kv: stats)
+    //     {
+    //       sink << kv.first << ',' << kv.second << '\n';
+    //     }
+    //   sink.close();
+    // }
+    return true;
+  }
+  bool test( CodeType trial )
+  {
+    bool found = false;
+    try
+      {
+        std::string disasm;
+        std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, trial, disasm ) );
+        found = insert( *codeop, disasm );
+      }
+    catch (unisim::util::sav::Untestable const& denial)
+      {
+        stats[denial.reason] += 1;
+      }
+    
+    return found;
   }
   
   void
   write_repos( std::string const& reposname )
   {
     std::ofstream sink( reposname );
-    
-    typedef typename TestClasses::value_type TCItem;
-    typedef typename CodeClass::value_type CCItem;
-    
-    for (TCItem const& tcitem : testclasses)
+
+    for (Interface const& test : testdb)
       {
-        std::string name = tcitem.first;
-        
-        for (CCItem const& ccitem : tcitem.second)
-          {
-            sink << name << '\t' << std::hex << uint32_t( ccitem.second ) << std::dec
-                 << "\t# " << this->disasm( ccitem.second ) << '\n';
-          }
+        sink << std::hex << test.insncode << "\t" << test.asmcode << '\n';
       }
   }
 
-  std::string disasm( CodeType code )
-  {
-    std::unique_ptr<Operation> operation( isa.NCDecode( 0, code ) );
-    std::ostringstream oss;
-    static ut::Arch for_disasm_purpose;
-    operation->disasm( for_disasm_purpose, oss );
-    return oss.str();
-  }
-  
   struct FileLoc
   {
     std::string name;
     unsigned    line;
     
-    FileLoc( std::string const& _name ) : name( _name ) {}
+    FileLoc( std::string const& _name ) : name(_name), line(0) {}
     void newline() { line += 1; }
-    std::ostream& dump( std::ostream& sink ) const { sink << name << ':' << line << ": "; return sink; }
+    friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { return sink << fl.name << ':' << std::dec << fl.line << ": "; }
   };
+
+  struct Insn : Interface::Insn
+  {
+    Insn(Operation const& _op) : op(_op) {}
+    void init(Interface& iif) const override
+    {
+      iif.gilname = op.GetName();
+      unsigned length = op.GetLength();
+      bool half = length == 16;
+      if (not half and length != 32) { struct Bad {}; throw Bad(); }
+      uint32_t code = op.GetEncoding();
+      code &= uint32_t((1ull << length)-1);
+      iif.insncode = code;
+      iif.insnhalf = half;
+    }
+    void exec(Scanner& arch) const override { arch.step(op); }
+    Operation const& op;
+  };
+
+  bool insert( Operation const& op, std::string const& disasm )
+  {
+    if (op.donttest()) return false;
+    
+    Interface iif(Insn(op), disasm);
+
+    decltype(testdb.begin()) tstbeg, tstend;
+    std::tie(tstbeg,tstend) = testdb.equal_range(iif);
+ 
+    auto count = std::distance(tstbeg, tstend);
+    if (count >= 2)
+      return false;
+    testdb.emplace_hint( tstend, std::move( iif ) );
+    return true;
+  }
   
-  void
+  bool
   read_repos( std::string const& reposname )
   {
     FileLoc fl( reposname );
     std::ifstream source( fl.name );
+    bool updated = false;
+    std::set<std::string> gilcoverage;
     
     while (source)
       {
         fl.newline();
         // Parsing incoming repository
-        std::string name;
-        if (not (source >> name)) break;
-        uint32_t rawcode;
-        if (not (source >> std::hex >> rawcode)) break;
-        std::string extra;
-        std::getline( source, extra, '\n' );
-        // Decoding operation and checking that given operation name is coherent
-        CodeType code = ISA::mkcode( rawcode );
-        try { 
-          std::unique_ptr<Operation> codeop( isa.NCDecode( 0, code ) );
-          if (name != codeop->GetName()) {
-            std::cerr << "Operation '" << std::hex << rawcode << std::dec << "' "
-                      << "is said to be: '" << name << "' "
-                      << "whereas it is: '" << codeop->GetName() << "'\n";
-            throw 0;
+        uint32_t code;
+        if (not (source >> std::hex >> code)) break;
+        { char tab; if (not source.get(tab) or tab != '\t') { std::cerr << fl << "parse error.\n"; break; } }
+        std::string disasm;
+        std::getline( source, disasm, '\n' );
+
+        try
+          {
+            std::string updated_disasm;
+            
+            // Registering operation
+            std::unique_ptr<Operation> codeop( isa.decode( 0x4000, ISA::mkcode(code), updated_disasm ) );
+            if (disasm != updated_disasm)
+              {
+                std::cerr << fl << ": warning, assembly code divergence (" << std::hex << code << ").\n"
+                          << "   new: " << updated_disasm << "\n   old: " << disasm << "\n";
+                updated = true;
+              }
+            if (code != codeop->GetEncoding())
+              {
+                std::cerr << fl << ": warning, encoding divergence (" << disasm << ").\n"
+                          << "   new: " << std::hex << codeop->GetEncoding() << "\n   old: " << code << "\n";
+                code = codeop->GetEncoding();
+                updated = true;
+              }
+            
+            if (not insert( *codeop, updated_disasm ))
+              {
+                std::cerr << fl << ": warning " << std::hex << code << std::dec << ", " << disasm << " not inserted\n";
+                updated = true;
+              }
+            else
+              gilcoverage.insert(codeop->GetName());
+          } 
+        catch (unisim::util::sav::Untestable const& denial)
+          {
+            std::cerr << fl << ": behavioral rejection for " << std::hex << code << "\t" << disasm << " <" << denial.reason << ">\n";
+            updated = true;
+            continue;
           }
-          if (codeop->donttest()) {
-            extra += " ... explicit donttest";
-            throw isa::Reject();
-          }
-          
-          // Performing an abstract execution to check the validity of
-          // the opcode, and to compute the interface of the operation
-          ut::Arch arch;
-          codeop->execute( arch );
-          try { arch.interface.finalize( codeop->GetLength() ); }
-          catch (ut::Interface::Untestable const& ut) {
-            std::stringstream err;
-            err << " ... can't test " << this->disasm( code ) << ", " << ut.argument;
-            extra += err.str();
-            throw isa::Reject();
-          }
-          arch.interface.length = codeop->GetLength();
-          
-          // Finally recording the operation test
-          testclasses[name].insert( std::make_pair( arch.interface, code ) );
-        } 
-        catch (isa::Reject const& reject) {
-          fl.dump( std::cerr ) << "(" << extra << ") rejected.\n";
-        }
       }
     
+    std::cerr << "Instruction coverage: " << gilcoverage.size() << " (genisslib instructions).\n";
+    return updated;
+  }
+  void gencode( TestCode& code, Interface const& test )
+  {
+    uint16_t grmap = test.grmap();
+    uint16_t saved = grmap & 0x0ff0;
+    
+    ISA::emit_prologue(code, saved);
+    ISA::emit_set_igprs(code, 0, grmap);
+    ISA::emit_set_flags(code);
+    code.write(test.insnhalf ? 2 : 4, test.insncode);
+    ISA::emit_get_flags(code);
+    ISA::emit_get_ogprs(code, 0, grmap);
+    ISA::emit_epilogue(code, saved);
   }
   
-  void
-  write_tests( Sink& sink )
+  void run_tests(char const* seed)
   {
-    typedef typename TestClasses::value_type TCItem;
-    typedef typename CodeClass::value_type CCItem;
-    
-    for (TCItem const& tcitem : testclasses)
+    /* First pass; computing memory requirements */
+    uintptr_t textsize, workcells = 0;
+    {
+      struct Code : public TestCode
       {
-        std::string name = tcitem.first;
+        Code() : size() {} uintptr_t size;
+        void write(unsigned bytes, uint32_t) override { size += bytes; }
+        void align() { size = (size + 3) & -4; }
+      } code;
+      
+      for (Interface const& test : testdb)
+        {
+          workcells = std::max( workcells, test.workcells() * (test.usemem() ? 3 : 2) );
+          gencode(code, test);
+          // TODO: itsensitive
+          code.align();
+        }
+      
+      textsize = code.size;
+    }
+
+    /* Manage executable code zone */
+    struct TextZone
+    {
+      TextZone(uintptr_t size)
+        : p(mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)), sz(size)
+      { if (p == MAP_FAILED) throw 0; }
+      void activate() { mprotect(p, sz, PROT_EXEC); }
+      ~TextZone() { munmap(p, sz); }
+      uint8_t* chunk(uintptr_t idx) { return &((uint8_t*)p)[idx]; }
+      void* p; uintptr_t sz;
+    } textzone(textsize);
+
+       typedef unisim::util::sav::Testbed<uint32_t,4096> Testbed;
+
+    /* Organize test data */
+    struct Test
+    {
+      typedef Interface::testcode_t testcode_t;
+      typedef unisim::util::symbolic::Expr Expr;
+      
+      Test(Interface const& _tif, testcode_t _code)
+        : tif(_tif), code(_code), relval(), relreg(), workcells(_tif.workcells())
+      {}
+      Test(Interface const& _tif, testcode_t _code, Expr const& _relreg, Expr const& _relval)
+        : tif(_tif), code(_code), relval(_relval),
+          relreg(),
+          workcells(_tif.workcells())
+      {
+        uint32_t gregs = tif.grmap();
+        unsigned reg = dynamic_cast<Scanner::GRegRead const*>(_relreg.node)->reg;
+        if (not (gregs >> reg & 1)) { struct Bad {}; throw Bad (); }
+        relreg = __builtin_popcount( gregs & ((1 << reg)-1) );
+      }
+      uint32_t get_reloc(uint32_t const* ws) const
+      {
+        if (not relval.good()) return 0;
         
-        for (CCItem const& ccitem : tcitem.second)
+        uint32_t value;
+        if (auto v = relval.Eval( Scanner::RelocEval(&ws[data_index(0)], uintptr_t(ws)) ))
+          { Expr dispose(v); value = v->Get( uint32_t() ); }
+        else
+          throw "WTF";
+
+        return value;
+      }
+      void patch(uint32_t* ws, uint32_t reloc) const
+      {
+        ws[data_index(0)] &= 0xf80f0200;
+        if (relval.good())
+          ws[data_index(1+relreg)] = reloc;
+      }
+      void load(uint32_t* ws, Testbed const& testbed) const
+      {
+        testbed.load(ws, relval.good() ? 2*workcells : workcells );
+      }
+      void check(Testbed const& tb, uint32_t* ref, uint32_t* sim) const
+      {
+        for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
-            TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
-            if (cfg.iif.usemem()) {
-              unsigned offset_end = cfg.iif.aligned ? 1 : 4;
-              for (unsigned offset = 0; offset < offset_end; ++offset) {
-                isa.write_tests( sink, TestConfig( cfg ).altmem( false, offset ), ccitem.second );
-                isa.write_tests( sink, TestConfig( cfg ).altmem( true, offset ), ccitem.second );
-              }
-            } else {
-              isa.write_tests( sink, cfg, ccitem.second );
-            }
+            if (ref[idx] != sim[idx])
+              error(tb,ref,sim);
           }
+      }
+      void error(Testbed const& tb, uint32_t const* ref, uint32_t const* sim) const
+      {
+        std::cerr << tb.counter << ": " << tif.gilname << '@' << ((void*)code) << ": error in " << tif.asmcode << '\n';
+        std::cerr << "ref | sim\n";
+        for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
+          {
+            uint32_t r = ref[idx], s = sim[idx];
+            field_name(idx, std::cerr) << ": " << std::hex << r;
+            if (r != s)
+              std::cerr << " <> " << s << '\n';
+            else
+              std::cerr << '\n';
+          }
+        throw 0;
+      }
+
+      std::string const& getasm() const { return tif.asmcode; }
+
+      void run( uint32_t* ws ) const
+      {
+        code( &ws[data_index(0)] ); /*< native code execution */
+      }
+      void run( Runner& sim, uint32_t* ws ) const
+      {
+        sim.run( code, &ws[data_index(0)] ); /* code simulation */
+      }
+      
+    private:
+      uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workcells : 0) + idx; }
+      uintptr_t sink_index( uintptr_t idx ) const { return workcells + data_index(idx); }
+      
+      std::ostream& sub_field_name(unsigned idx, std::ostream& sink) const
+      {
+        if (idx-- == 0)
+          return sink << "cpsr";
+        for (uint32_t grmap = tif.grmap(), reg = 0; grmap; reg += 1, grmap >>= 1)
+          {
+            if (not (grmap & 1))
+              continue;
+            if (idx-- == 0)
+              return sink << unisim::component::cxx::processor::arm::DisasmRegister(reg);
+          }
+        return sink << "spare";
+      }
+      std::ostream& field_name(unsigned idx, std::ostream& sink) const
+      {
+        unsigned sub = idx % workcells, part = (idx / workcells) + (relval.good() ? 0 : 1);
+        if (part == 0)
+          {
+            sink << "mem@" << std::right << std::setw(2) << std::dec << (sub*8) << "  ";
+            return sink;
+          }
+        sink << (part == 1 ? " in." : "out.");
+        std::ostringstream buf;
+        sub_field_name(sub, sink);
+        sink << std::left << std::setw(4) << buf.str();
+        return sink;
+      }
+
+      Interface const& tif;
+      Interface::testcode_t code;
+      Expr relval;
+      unsigned relreg, workcells;
+    };
+
+    std::vector<Test> tests;
+    
+    /* 2nd pass; generating tests (data and code)*/
+    textsize = 0;
+    for (Interface const& test : testdb)
+      {
+        /* generating test code */
+        struct Code : public TestCode
+        {
+          Code(uint8_t* _mem) : mem(_mem), size(0) {}
+          virtual void write(unsigned sz, uint32_t insn)
+          {
+            uint8_t const* bytes = reinterpret_cast<uint8_t const*>(&insn);
+            std::copy( bytes, bytes+sz, &mem[size] );
+            size += sz;
+          }
+          Interface::testcode_t code() const { return (Interface::testcode_t)mem; }
+          uint8_t* mem;
+          uintptr_t size;
+        } code( textzone.chunk(textsize) );
+        gencode(code, test);
+        textsize = (textsize + code.size + 3) & -4;
+
+        /* Fill out test data */
+        if (test.usemem())
+          for (auto const& solution : test.addressings.solutions)
+            tests.push_back( Test(test, code.code(), solution.first, solution.second) );
+        else
+          tests.push_back( Test(test, code.code()) );
+      }
+
+    /* Now, undergo real tests */
+    textzone.activate();
+
+    Runner arm32;
+    
+    std::vector<uint32_t> reference(workcells), workspace(workcells);
+    for (Testbed testbed(seed);; testbed.next())
+      {
+        Test const& test = testbed.select(tests);
+        if ((testbed.counter % 0x100000) == 0)
+          std::cout << testbed.counter << ": " << test.getasm() << std::endl;
+        
+        /* Perform native test */
+        test.load( &workspace[0], testbed );
+        // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
+        uint32_t reloc = test.get_reloc( &workspace[0] );
+        test.patch( &workspace[0],reloc );
+        test.run( &workspace[0] );
+        std::copy( workspace.begin(), workspace.end(),reference.begin() );
+        
+        /* Perform simulation test */
+        test.load( &workspace[0], testbed );
+        test.patch( &workspace[0], reloc );
+        test.run( arm32, &workspace[0] );
+        
+        /* Check for differences */
+        test.check( testbed, &reference[0], &workspace[0]);
       }
   }
 };
 
-template <typename T>
-void Update( std::string const& reposname )
+struct Args
 {
-  uintptr_t ttl = 10000;
-  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); }
-  
-  std::string suffix(".tests");
-  
-  if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
-    {
-      std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
-      throw 0;
-    }
-  
-  std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
-  
-  Sink sink( basename );
-      
+  Args() : repos(0), scan_ttl(10000), insn_count(2500), run(false) {}
+  char const* repos;
+  uintptr_t scan_ttl, insn_count;
+  bool run;
+
+  void dump(std::ostream& sink)
+  {
+    sink << "repos=" << repos << "\n";
+    sink << "insn_count=" << insn_count << "\n";
+    sink << "scan_ttl=" << scan_ttl << "\n";
+    sink << "run=" << (run ? "yes" : "no") << "\n";
+  }
+};
+
+template <typename T>
+void Update( Args const& args )
+{
   Checker<T> checker;
-  checker.read_repos( reposname );
-  checker.discover( ttl );
-  checker.write_repos( reposname );
-  checker.write_tests( sink );
+  bool updated = checker.read_repos( args.repos );
+  
+  updated |= checker.discover( args.insn_count, args.scan_ttl );
+  if (updated)
+    checker.write_repos( args.repos );
+
+  if (args.run)
+    checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 }
 
 int
 main( int argc, char** argv )
 {
+  struct Usage {};
+  
   try
     {
-      if (argc != 3) {
-        std::cerr << "Wrong number of argument.\n";
-        throw 0;
-      }
+      Args args;
+
+      char const* arch = 0;
+    
+      for (int idx = 1; idx < argc; ++idx)
+        {
+          std::string param(argv[idx]);
+          uintptr_t pos = param.find('=');
+          if (pos == std::string::npos)
+            {
+              if      (not arch)       arch = argv[idx];
+              else if (not args.repos) args.repos = argv[idx];
+              else
+                {
+                  std::cerr << "error: extra argument `" << param << "`\n";
+                  throw Usage();
+                }
+            }
+          else if (param.compare(0,pos,"insn_count") == 0)
+            args.insn_count = strtoull(&param[pos+1],0,0);
+          else if (param.compare(0,pos,"scan_ttl") == 0)
+            args.scan_ttl = strtoull(&param[pos+1],0,0);
+          else if (param.compare("run=yes") == 0)
+            args.run = true;
+          else
+            {
+              std::cerr << "Unknown header entry: " << param << std::endl;
+              throw Usage();
+            }
+        }
+
+      if (not arch) { std::cerr << "No arch secified\n"; throw Usage(); }
+      if (not args.repos) { std::cerr << "No repository secified (option: <repos=...>)\n"; throw Usage(); }
+  
+      args.dump(std::cerr);
       
-      if      (strcmp("arm32",argv[1]) == 0)
-        {
-          Update<ARM32>( argv[2] );
-        }
-      else if (strcmp("thumb",argv[1]) == 0)
-        {
-          Update<THUMB>( argv[2] );
-        }
+      if      (strcmp("arm32",arch) == 0)
+        Update<ARM32>( args );
+      else if (strcmp("thumb",arch) == 0)
+        Update<THUMB>( args );
       else
-        throw 0;
+        {
+          std::cerr << "Wrong arch argument: " << arch << "\n";
+          throw Usage();
+        }
     }
-  catch (...)
+  catch (Usage const&)
     {
       std::cerr << argv[0] << " [arm32|thumb] <path_to_test_file>\n";
       return 1;

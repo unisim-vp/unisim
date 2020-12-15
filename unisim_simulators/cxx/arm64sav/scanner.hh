@@ -440,21 +440,25 @@ struct Scanner
   void CallHypervisor( uint32_t imm ) { dont("system"); }
   void ExceptionReturn() { dont("system"); }
 
-  template <typename T> T MemReadT( U64 const& addr )
+  Expr MemRead(ScalarType::id_t tp, Expr const& addr)
   {
-    interface.memaccess( addr.expr, false );
-    return T( Expr(new Load( T::GetType(), addr.expr )) );
+    interface.memaccess( addr, false );
+    return new Load( tp, addr );
   }
+  template <typename T>
+  T MemReadT( U64 const& addr ) { return MemRead(T::GetType(), addr.expr); }
   U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
   U32 MemRead32(U64 addr) { return MemReadT<U32>(addr); }
   U16 MemRead16(U64 addr) { return MemReadT<U16>(addr); }
   U8  MemRead8 (U64 addr) { return MemReadT<U8> (addr); }
 
-  template <typename T> void MemWriteT(U64 const& addr, T data)
+  void MemWrite(ScalarType::id_t tp, Expr const& addr, Expr const& data)
   {
-    interface.memaccess( addr.expr, true );
-    stores.insert( new Store( T::GetType(), addr.expr, data.expr ) );
+    interface.memaccess( addr, true );
+    stores.insert( new Store( tp, addr, data ) );
   }
+  template <typename T> void MemWriteT(U64 const& addr, T const& data) { MemWrite(T::GetType(), addr.expr, data.expr); }
+  
   void     MemWrite64(U64 addr, U64 val) { MemWriteT(addr, val); }
   void     MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }
   void     MemWrite16(U64 addr, U16 val) { MemWriteT(addr, val); }

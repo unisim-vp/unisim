@@ -408,7 +408,7 @@ cp15_mcr.var reject : {Reject} = {(rt == 15)};
 cp15_mcr.disasm = {
   buffer << "mcr" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", " << DisasmRegister(rt)
          << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "} ; Write "
-         << cpu.CP15DescribeRegister( crn, opc1, crm, opc2 );
+         << ARCH::CP15DescribeRegister( crn, opc1, crm, opc2 );
 };
 
 cp15_mcr.execute = {
@@ -424,7 +424,7 @@ cp15_mrc.disasm = {
   if (rt == 15) buffer << "APSR_nzcv";
   else          buffer << DisasmRegister(rt);
   buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "} ; Read "
-         << cpu.CP15DescribeRegister( crn, opc1, crm, opc2 );
+                 << ARCH::CP15DescribeRegister( crn, opc1, crm, opc2 );
 };
 
 cp15_mrc.execute = {
