@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2019-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,17 +32,22 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef TESTUTILS_HH
-#define TESTUTILS_HH
+#include <runner.hh>
+#include <top_arm32.tcc>
+#include <sstream>
 
-#include <string>
+Runner::Arm32::Arm32()
+  : Decoder()
+{}
 
-namespace ut
+Runner::Arm32::~Arm32()
+{}
+
+Runner::Arm32::Operation*
+Runner::Arm32::decode(uint32_t addr, uint32_t code)
 {
-  struct DontTest
-  {
-    DontTest( std::string _msg ) : msg( _msg ) {} std::string msg;
-  };
+  try { return Decode(addr,code); }
+  catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("undefined"); }
+  return 0;
 }
 
-#endif // TESTUTILS_HH

@@ -403,35 +403,40 @@ mrrc2.execute = {
 /********************/
 
 op cp15_mcr( cond[4]: 0b1110[4]: opc1[3]: 0b0[1]: crn[4]: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+cp15_mcr.var cp15reg : {typename ARCH::CP15Reg const*} = {ARCH::CP15GetRegister(crn, opc1, crm, opc2)};
 cp15_mcr.var reject : {Reject} = {(rt == 15)};
 
 cp15_mcr.disasm = {
   buffer << "mcr" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", " << DisasmRegister(rt)
-         << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "} ; Write "
-         << ARCH::CP15DescribeRegister( crn, opc1, crm, opc2 );
+         << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
+  cp15reg->Describe( crn, opc1, crm, opc2, buffer << " ; Write " );
 };
 
 cp15_mcr.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
 
-  cpu.CP15WriteRegister( crn, opc1, crm, opc2, cpu.GetGPR(rt) );
+  cp15reg->CheckPermissions(crn, opc1, crm, opc2, cpu, true);
+  
+  cp15reg->Write( crn, opc1, crm, opc2, cpu, cpu.GetGPR(rt) );
 };
 
 op cp15_mrc( cond[4]: 0b1110[4]: opc1[3]: 0b1[1]: crn[4]: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+cp15_mrc.var cp15reg : {typename ARCH::CP15Reg const*} = {ARCH::CP15GetRegister(crn, opc1, crm, opc2)};
 
 cp15_mrc.disasm = {
   buffer << "mrc" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", ";
   if (rt == 15) buffer << "APSR_nzcv";
   else          buffer << DisasmRegister(rt);
-  buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "} ; Read "
-                 << ARCH::CP15DescribeRegister( crn, opc1, crm, opc2 );
+  buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
+  cp15reg->Describe( crn, opc1, crm, opc2, buffer << " ; Read " );
 };
 
 cp15_mrc.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
   
-  typedef typename ARCH::U32 U32;
-  U32 value = cpu.CP15ReadRegister( crn, opc1, crm, opc2 );
+  cp15reg->CheckPermissions(crn, opc1, crm, opc2, cpu, false);
+  
+  typename ARCH::U32 value = cp15reg->Read( crn, opc1, crm, opc2, cpu );
   if (rt != 15)
     cpu.SetGPR( rt, value );
   else

@@ -46,7 +46,7 @@
 
 struct GIL : public CLI, public Opts
 {
-  void description() { std::cerr << "Generator of instruction set simulators." << std::endl; }
+  void description() const override { std::cerr << "Generator of instruction set simulators." << std::endl; }
   
   void version()
   {
@@ -87,7 +87,7 @@ struct GIL : public CLI, public Opts
     return true;
   }
   
-  void parse( CLI::Args& _args )
+  void parse( CLI::Args& _args ) override
   {
     if (_args.match( "-I", "<directory>", "Adds the directory <directory> "
                      "to the search paths for include directives." ))

@@ -37,7 +37,7 @@
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <sstream>
 
-Interface::Interface( Insn const& insn, std::string const& disasm )
+Interface::Interface( std::string const& disasm )
   : asmcode(disasm)
   , gilname()
   , gregs()
@@ -50,19 +50,45 @@ Interface::Interface( Insn const& insn, std::string const& disasm )
   , insnhalf(false)
   , itsensitive(false)
   , aligned(true)
+{}
+
+namespace
 {
-  insn.init(*this);
+template <class INSN>
+void init( Interface& self, INSN const& insn )
+{
+  self.gilname = insn.GetName();
+  self.insnhalf = insn.GetLength() == 16;
+  self.insncode = insn.GetEncoding();
   // Performing an abstract execution to check the validity of
   // the opcode, and to compute the interface of the operation
-  Scanner reference( *this );
-  
+  Scanner reference( self );
+    
   for (bool end = false; not end;)
     {
-      Scanner arch( *this );
-      insn.exec(arch);
+      Scanner arch( self );
+      insn.execute(arch);
       end = arch.close( reference );
     }
+  self.start();
+}
+}
+
+Interface::Interface( unisim::component::cxx::processor::arm::isa::arm32::Operation<Scanner> const& insn, std::string const& disasm )
+  : Interface(disasm)
+{
+  init(*this, insn);
+}
+
+Interface::Interface( unisim::component::cxx::processor::arm::isa::thumb::Operation<Scanner> const& insn, std::string const& disasm)
+  : Interface(disasm)
+{
+  init(*this, insn);
+}
   
+void
+Interface::start()
+{
   for (unsigned reg = 0; reg < 15; ++reg)
     {
       if (0x0ffc >> reg & 1)

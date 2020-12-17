@@ -33,13 +33,116 @@
  */
 
 #include <runner.hh>
+#include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <iomanip>
 #include <ostream>
 #include <cmath>
 
-void Runner::run(Interface::testcode_t code, uint32_t*)
+Runner::Runner( char const* name )
+  : unisim::kernel::Object( name, 0 )
+  , CPU(name,0)
 {
-  struct TODO {};
-  throw TODO ();
 }
 
+Runner::~Runner()
+{
+}
+
+unisim::util::endian::endian_type
+Runner::endianess()
+{
+  using namespace unisim::util::endian;
+  return cpsr.Get( unisim::component::cxx::processor::arm::E ) ? E_BIG_ENDIAN : E_LITTLE_ENDIAN;
+}
+
+void
+Runner::step_instruction()
+{
+  // Instruction boundary next_insn_addr becomes current_insn_addr
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
+  
+  // Fetch 
+  uint32_t insn = MemRead32(insn_addr);
+  
+  // Instruction Fetch Decode and Execution
+  if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
+    {
+      /* Thumb state */
+      Thumb2::Operation* op = thumb2iset.decode(insn_addr, insn);
+        
+      /* update PC register value before execution */
+      insn_length = op->GetLength() / 8;
+      this->gpr[15] = insn_addr + 4;
+      this->next_insn_addr = insn_addr + insn_length;
+        
+      /* Execute instruction */
+      asm volatile( "thumb_operation_execute:" );
+      op->execute( *this );
+        
+      this->ITAdvance();
+    }
+  else
+    {
+      /* Arm32 state */
+      Arm32::Operation* op = arm32iset.decode(insn_addr, insn);
+    
+      /* update PC register value before execution */
+      insn_length = op->GetLength() / 8;
+      this->gpr[15] = insn_addr + 8;
+      this->next_insn_addr = insn_addr + insn_length;
+        
+      /* Execute instruction */
+      asm volatile( "arm32_operation_execute:" );
+      op->execute( *this );
+    }
+}
+
+void Runner::run(Interface::testcode_t testcode, uint32_t* data)
+{
+  uint32_t const magic_return_address = 0xdeadc0de;
+
+  SetGPR(0, uintptr_t(data));
+  uint32_t sim_stack[32];
+  SetGPR(13, reinterpret_cast<uintptr_t>( &sim_stack[0] ) + sizeof sim_stack);
+  SetGPR(14, magic_return_address);
+  BranchExchange( reinterpret_cast<uintptr_t>(testcode), B_CALL );
+    
+  for (int ttl = 100; GetNIA() != magic_return_address;)
+    {
+      if (--ttl < 0) { struct Issue {}; throw Issue(); }
+      step_instruction();
+    }
+}
+  
+// namespace { template <unsigned W> struct HEX { friend std::ostream& operator << (std::ostream& os, HEX&&) { return (os << std::hex << std::setfill('0') << std::setw(W)); } }; }
+
+// void
+// Runner::UndefinedInstruction( Runner::Operation const* insn )
+// {
+//   std::cerr << "Undefined Instruction @" << HEX<16>() << insn->GetAddr() << " (<" << insn->GetName() << ">)\n";
+//   insn->disasm(*this,std::cerr << HEX<8>() << insn->GetEncoding() << ":\t");
+//   std::cerr << std::endl;
+//   UndefinedInstruction();
+// }
+
+void Runner::dont( char const* reason ) { throw std::runtime_error(reason); }
+  
+// Runner::SysReg const*
+// Runner::GetSystemRegister(int op0, int op1, int crn, int crm, int op2)
+// {
+//   // Need to support NZCV ^^
+//   if (op0==3 and op1==3 and crn==4 and crm==2 and op2==0)
+//     {
+//       static struct : public SysReg {
+//         void DisasmWrite(int, int, int, int, int, int rt, std::ostream& s) const override
+//         { s << "msr\tNZCV, " << unisim::component::cxx::processor::arm::isa::arm32::DisasmGZXR(rt); }
+//         void DisasmRead(int, int, int, int, int, int rt, std::ostream& s) const override
+//         { s << "mrs\t" << unisim::component::cxx::processor::arm::isa::arm32::DisasmGZXR(rt) << ", NZCV"; }
+//         U32 Read(int, int, int, int, int, Runner& cpu) const override { return U32(cpu.nzcv << 28); }
+//         void Write(int, int, int, int, int, Runner& cpu, U32 value) const override { cpu.nzcv = U32(value) >> 28; }
+//       } x; return &x;
+//     }
+//   else
+//     dont("system");
+//   return 0;
+// }

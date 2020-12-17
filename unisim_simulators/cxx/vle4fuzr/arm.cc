@@ -219,10 +219,16 @@ struct ArmBranch
   void BKPT( int ) {  }
 
   void WaitForInterrupt() {}
-  
-  U32  CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return U32(); }
-  void CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 value ) {}
-  char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return "no"; }
+
+  struct CP15Reg
+  {
+    void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, ArmBranch&, bool) const {}
+    U32  Read(uint8_t, uint8_t, uint8_t, uint8_t, ArmBranch&) const { return U32(); }
+    void Write(uint8_t, uint8_t, uint8_t, uint8_t, ArmBranch&, U32 value ) const {}
+    void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink ) const { sink << "no"; }
+  };
+
+  static CP15Reg* CP15GetRegister(uint8_t, uint8_t, uint8_t, uint8_t) { static CP15Reg x; return &x; }
 
   void CallSupervisor( uint32_t imm ) {}
 

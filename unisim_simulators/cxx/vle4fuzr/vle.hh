@@ -47,9 +47,9 @@ namespace vle {
     };
   };
   
-namespace concrete {
-
-  struct Operation;
+namespace concrete
+{
+  class Operation;
 
   typedef bool  BOOL;
   typedef uint8_t   U8;
@@ -282,7 +282,7 @@ namespace concrete {
 
 namespace branch
 {
-  struct Operation;
+  class Operation;
 
   typedef x::XValue<bool>     BOOL;
   typedef x::XValue<uint8_t>  U8;

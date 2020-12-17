@@ -36,7 +36,6 @@
 #include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
-#include <testutils.hh>
 #include <sstream>
 #include <iostream>
 #include <set>

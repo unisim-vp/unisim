@@ -154,14 +154,14 @@ struct Checker
 
         uint32_t code;
         source >> std::hex >> code;
-        { char tab; if (not source.get(tab) or tab != '\t') { fl.dump(std::cerr) << "parse error.\n"; break; } }
+        { char tab; if (not source.get(tab) or tab != '\t') { std::cerr << fl << ": parse error.\n"; break; } }
         std::string disasm;
         std::getline( source, disasm, '\n' );
         
         try
           {
             std::string updated_disasm;
-            std::unique_ptr<Scanner::Operation> codeop( isa.decode( 0x4000, code, updated_disasm ) ) );
+            std::unique_ptr<Scanner::Operation> codeop( isa.decode( 0x4000, code, updated_disasm ) );
             if (disasm != updated_disasm)
               {
                 std::cerr << fl << ": warning, assembly code divergence (" << std::hex << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";

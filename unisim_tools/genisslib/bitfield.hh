@@ -124,7 +124,7 @@ struct OperandBitField : public FixedSizeBitField
 
   unsigned int          dstsize() const;
   
-  ConstStr              getsymbol() const { return symbol; };
+  ConstStr              getsymbol() const override { return symbol; };
 
   int                   cmp( BitField const& rhs ) const override { return compare( dynamic_cast<OperandBitField const&>(rhs) ); }
   int                   compare( OperandBitField const& rhs ) const
@@ -202,7 +202,7 @@ struct SubOpBitField : public BitField
   SubOpBitField( ConstStr _symbol, SDInstance const* _sdinstance );
   SubOpBitField( SubOpBitField const& _src );
 
-  ConstStr              getsymbol() const { return symbol; };
+  ConstStr              getsymbol() const override { return symbol; };
   
   int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<SubOpBitField const&>(rhs)); }
   int                   compare(SubOpBitField const& rhs) const
@@ -247,7 +247,7 @@ struct SpOperandBitField : public FixedSizeBitField
   unsigned int          dstsize() const;
   ConstStr              constval() const;
   
-  ConstStr              getsymbol() const { return symbol; };
+  ConstStr              getsymbol() const override { return symbol; };
 
   bool                  hasopcode() const override { return true; }
   uint64_t              bits() const override { return value; };

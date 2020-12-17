@@ -84,13 +84,6 @@
 //   template <typename operT, typename fpscrT> int FloatCompare( operT op1, operT op2, fpscrT& fpscr ) { return 0; }
 
 
-//   struct UniqueVId {
-//     UniqueVId() : index(0) {} unsigned index;
-//     unsigned next() { return index++; }
-//     void reset() { index = 0; }
-//   };
-
-
 //   // struct Interface
 //   // {
 //   //   typedef unisim::util::symbolic::Expr Expr;
@@ -147,8 +140,8 @@ struct Scanner
 {
   struct Arm32 : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<Scanner>
   {
-    typedef unisim::component::cxx::processor::arm::isa::arm32::DecodeTableEntry<Scanner> DecodeTableEntry;
-    typedef unisim::component::cxx::processor::arm::isa::arm32::CodeType CodeType;
+    // typedef unisim::component::cxx::processor::arm::isa::arm32::DecodeTableEntry<Scanner> DecodeTableEntry;
+    // typedef unisim::component::cxx::processor::arm::isa::arm32::CodeType CodeType;
     typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<Scanner> Operation;
 
     Arm32();
@@ -159,8 +152,8 @@ struct Scanner
 
   struct Thumb2 : public unisim::component::cxx::processor::arm::isa::thumb::Decoder<Scanner>
   {
-    typedef unisim::component::cxx::processor::arm::isa::thumb::DecodeTableEntry<Scanner> DecodeTableEntry;
-    typedef unisim::component::cxx::processor::arm::isa::thumb::CodeType CodeType;
+    // typedef unisim::component::cxx::processor::arm::isa::thumb::DecodeTableEntry<Scanner> DecodeTableEntry;
+    // typedef unisim::component::cxx::processor::arm::isa::thumb::CodeType CodeType;
     typedef unisim::component::cxx::processor::arm::isa::thumb::Operation<Scanner> Operation;
 
     Thumb2();
@@ -344,7 +337,7 @@ struct Scanner
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
     int compare( Load const& rhs ) const { return int(tp) - int(rhs.tp); }
-    virtual ScalarType::id_t GetType() const { return tp; }
+    virtual ScalarType::id_t GetType() const override { return tp; }
 
     Expr addr;
     ScalarType::id_t tp;
@@ -368,13 +361,14 @@ struct Scanner
   };
 
   static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
-  template <typename T> T dontread(char const* reason) { dont(reason); return T(); }
+  template <typename T>
+  static T dontread(char const* reason) { dont(reason); return T(); }
 
   void gregtouch(unsigned id, bool write);
   U32 gregread(unsigned id) { gregtouch(id, false); return gpr[id]; }
   void gregwrite(unsigned id, U32 const& value) { gregtouch(id, true); gpr[id] = value; }
 
-  U32  GetGPR_usr( int id ) { /* Only work in system mode instruction */ dont("system"); return U32(); }
+  U32  GetGPR_usr( int id ) { /* Only work in system mode instruction */ return dontread<U32>("system"); }
   U32  GetGPR( int id ) { return id == 13 ? dontread<U32>("=SP") : id == 15 ? gpr[15] : gregread(id); }
   void SetGPR_usr( int id, U32 const& ) { /* Only work in system mode instruction */ dont("system"); }
   void SetGPR_mem( int id, U32 const& value ) { SetGPR(id, value); }
@@ -578,13 +572,21 @@ struct Scanner
 
   Mode&  CurrentMode() { dont("system"); return mode; }
   Mode&  GetMode(uint8_t) { dont("system"); return mode; }
-  U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { dont("system"); return U32(0); }
+  U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { return dontread<U32>("system"); }
   void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value ) { dont("system"); }
 
-  U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { dont("system"); return U32(0); }
-  void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { dont("system"); }
-  static
-  char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { dont("system"); return ""; }
+  struct CP15Reg
+  {
+    void CheckPermissions( uint8_t, uint8_t, uint8_t, uint8_t, Scanner&, bool ) const { dont("cp15"); }
+    U32 Read( uint8_t, uint8_t, uint8_t, uint8_t, Scanner& ) const { return dontread<U32>("cp15"); }
+    void Write( uint8_t, uint8_t, uint8_t, uint8_t, Scanner&, U32 const& ) const { dont("cp15"); }
+    void Describe( uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, std::ostream& sink ) const
+    {
+      sink << "CR15{crn=" << crn << ", op1=" << op1 << ", crm=" << crm << ", op2=" << op2 << "}";
+    }
+  };
+
+  static CP15Reg* CP15GetRegister(uint8_t, uint8_t, uint8_t, uint8_t) { static CP15Reg _; return &_; }
 
   Interface&     interface;
   unisim::util::sav::ActionNode*    path;
@@ -595,5 +597,6 @@ struct Scanner
   BOOL           flags[Flag::end];
   U32            current_insn_addr, next_insn_addr;
 };
+
 
 #endif // ARM32SAV_SCANNER_HH

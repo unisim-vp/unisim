@@ -66,6 +66,8 @@ scanner.cc \
 scanner.arm32.cc \
 scanner.thumb.cc \
 runner.cc \
+runner.arm32.cc \
+runner.thumb.cc \
 test.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="${UNISIM_SIMULATOR_ISA_FILES} \

@@ -4890,7 +4890,6 @@ movk_x.execute = {
 
 op mrs( 0b1101010100[10] : 1[1] : op0[2] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
 mrs.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(op0, op1, crn, crm, op2)};
-mrs.var format : {char const*} = {"base,249"};
 
 mrs.disasm = {
   sysreg->DisasmRead(op0, op1, crn, crm, op2, rt, sink);
@@ -4914,7 +4913,6 @@ mrs.execute = {
 
 op msr( 0b1101010100[10] : 0[1] : op0[2] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
 msr.var sysreg : {typename ARCH::SysReg const*} = {ARCH::GetSystemRegister(op0, op1, crn, crm, op2)};
-msr.var format : {char const*} = {"base,248"};
 
 msr.disasm = {
   sysreg->DisasmWrite(op0, op1, crn, crm, op2, rt, sink);

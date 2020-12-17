@@ -35,7 +35,6 @@
 #include <scanner.hh>
 #include <runner.hh>
 #include <test.hh>
-#include <testutils.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
@@ -60,52 +59,52 @@ struct TestCode
 struct ARM32
 {
   typedef Scanner::Arm32 ISET;
-  typedef ISET::Decoder Decoder;
-  typedef ISET::CodeType CodeType;
+  // typedef ISET::Decoder Decoder;
+  // typedef ISET::CodeType CodeType;
   typedef ISET::Operation Operation;
   
-  static CodeType mkcode( uint32_t code )
+  static uint32_t mkcode( uint32_t code )
   {
     if ((code >> 28) == 15)
-      return CodeType( code );
-    return CodeType( (0x0fffffff & code) | 0xe0000000 );
+      return uint32_t( code );
+    return uint32_t( (0x0fffffff & code) | 0xe0000000 );
   }
+  static uintptr_t mkfunc(uint8_t* addr) { return reinterpret_cast<uintptr_t>(addr); }
   static char const* Name() { return "Arm32"; }
-  static void emit_prologue(TestCode& tc, uint32_t regs) { /*push*/tc.write(4, 0xe9200000 | (13 << 16) | (1 << 14) | regs); }
-  static void emit_set_igprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*ldmia!*/tc.write(4, 0xe8b00000 | (reg << 16) | regs | (1 << 1)); }
+  static void emit_prologue(TestCode& tc, uint32_t regs) { if (regs) tc.write(4, 0xe92d4000 | regs); else tc.write(4, 0xe52de004); }
+  static void emit_set_igprs(TestCode& tc, uint32_t regs) { tc.write(4, 0xe8b00002 | regs); }
   static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.write(4, 0xe12ef001); }
   static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.write(4, 0xe10f1000); /*setend le*/tc.write(4, 0xf1010000); }
-  static void emit_get_ogprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*stmia!*/tc.write(4, 0xe8a00000 | (reg << 16) | regs | (1 << 1)); }
-  static void emit_epilogue(TestCode& tc, uint32_t regs) { /*pop*/tc.write(4, 0xe8b00000 | (13 << 16) | (1 << 15) | regs); }
+  static void emit_get_ogprs(TestCode& tc, uint32_t regs) { tc.write(4, 0xe8a00002 | regs); }
+  static void emit_epilogue(TestCode& tc, uint32_t regs) { if (regs) tc.write(4, 0xe8bd8000 | regs); else tc.write(4, 0xe49df004); }
 };
 
 struct THUMB
 {
   typedef Scanner::Thumb2 ISET;
-  typedef ISET::DecodeTableEntry DecodeTableEntry;
-  typedef ISET::Decoder Decoder;
-  typedef ISET::CodeType CodeType;
+  // typedef ISET::Decoder Decoder;
+  // typedef ISET::CodeType uint32_t;
   typedef ISET::Operation Operation;
   
-  static CodeType mkcode( uint32_t code )
+  static uint32_t mkcode( uint32_t code )
   {
     if (((code >> 11) & 0b11111) < 0b11101) 
-      return CodeType( code & 0xffff );
-    return CodeType( code );
+      return uint32_t( code & 0xffff );
+    return uint32_t( code );
   }
+  static uintptr_t mkfunc(uint8_t* addr) { return reinterpret_cast<uintptr_t>(addr)+1; }
   static char const* Name() { return "Thumb2"; }
-  static void emit_prologue(TestCode& tc, uint32_t regs) { /*push*/tc.write(4, 0xe9200000 | (13 << 16) | (1 << 14) | regs); }
-  static void emit_set_igprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*ldmia!*/tc.write(4, 0xe8b00000 | (reg << 16) | regs | (1 << 1)); }
+  static void emit_prologue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe92d4000 | regs); else tc.write(2, 0xb500 | regs); }
+  static void emit_set_igprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe8b00002 | regs); else tc.write(2, 0xc802 | regs); }
   static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.write(4,0xf3818e00); }
   static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.write(4,0xf3ef8100); /*setend le*/tc.write(2, 0xb650); }
-  static void emit_get_ogprs(TestCode& tc, uint32_t reg, uint32_t regs) { /*stmia!*/tc.write(4, 0xe8a00000 | (reg << 16) | regs | (1 << 1)); }
-  static void emit_epilogue(TestCode& tc, uint32_t regs) { /*pop*/tc.write(4, 0xe8b00000 | (13 << 16) | (1 << 15) | regs); }
+  static void emit_get_ogprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe8a00002 | regs); else tc.write(2, 0xc002 | regs); }
+  static void emit_epilogue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe8bd8000 | regs); else tc.write(2, 0xbd00 | regs); }
 };
 
 template <typename ISA>
 struct Checker
 {
-  typedef typename ISA::CodeType CodeType;
   typedef typename ISA::Operation Operation;
 
   typename ISA::ISET isa;
@@ -150,7 +149,7 @@ struct Checker
     // }
     return true;
   }
-  bool test( CodeType trial )
+  bool test( uint32_t trial )
   {
     bool found = false;
     try
@@ -188,29 +187,11 @@ struct Checker
     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { return sink << fl.name << ':' << std::dec << fl.line << ": "; }
   };
 
-  struct Insn : Interface::Insn
-  {
-    Insn(Operation const& _op) : op(_op) {}
-    void init(Interface& iif) const override
-    {
-      iif.gilname = op.GetName();
-      unsigned length = op.GetLength();
-      bool half = length == 16;
-      if (not half and length != 32) { struct Bad {}; throw Bad(); }
-      uint32_t code = op.GetEncoding();
-      code &= uint32_t((1ull << length)-1);
-      iif.insncode = code;
-      iif.insnhalf = half;
-    }
-    void exec(Scanner& arch) const override { arch.step(op); }
-    Operation const& op;
-  };
-
   bool insert( Operation const& op, std::string const& disasm )
   {
     if (op.donttest()) return false;
     
-    Interface iif(Insn(op), disasm);
+    Interface iif(op, disasm);
 
     decltype(testdb.begin()) tstbeg, tstend;
     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
@@ -285,14 +266,33 @@ struct Checker
     uint16_t saved = grmap & 0x0ff0;
     
     ISA::emit_prologue(code, saved);
-    ISA::emit_set_igprs(code, 0, grmap);
+    ISA::emit_set_igprs(code, grmap);
     ISA::emit_set_flags(code);
     code.write(test.insnhalf ? 2 : 4, test.insncode);
     ISA::emit_get_flags(code);
-    ISA::emit_get_ogprs(code, 0, grmap);
+    ISA::emit_get_ogprs(code, grmap);
     ISA::emit_epilogue(code, saved);
   }
   
+  void gen_tests(std::ostream& sink)
+  {
+    for (Interface const& test : testdb)
+      {
+        struct Code : public TestCode
+        {
+          Code(std::ostream& _sink) : sink(_sink) {} std::ostream& sink;
+          void write(unsigned sz, uint32_t insn) override
+          {
+            uint8_t bytes[4];
+            for (unsigned idx = 0; idx < sz; ++idx)
+              { bytes[idx] = insn; insn >>= 8; }
+            sink.write((char const*)&bytes[0], 4);
+          }
+        } code(sink);
+        gencode(code, test);
+      }
+  }
+
   void run_tests(char const* seed)
   {
     /* First pass; computing memory requirements */
@@ -460,7 +460,7 @@ struct Checker
             std::copy( bytes, bytes+sz, &mem[size] );
             size += sz;
           }
-          Interface::testcode_t code() const { return (Interface::testcode_t)mem; }
+          Interface::testcode_t code() const { return (Interface::testcode_t)(ISA::mkfunc(mem)); }
           uint8_t* mem;
           uintptr_t size;
         } code( textzone.chunk(textsize) );
@@ -478,7 +478,7 @@ struct Checker
     /* Now, undergo real tests */
     textzone.activate();
 
-    Runner arm32;
+    Runner proc("proc");
     
     std::vector<uint32_t> reference(workcells), workspace(workcells);
     for (Testbed testbed(seed);; testbed.next())
@@ -498,7 +498,7 @@ struct Checker
         /* Perform simulation test */
         test.load( &workspace[0], testbed );
         test.patch( &workspace[0], reloc );
-        test.run( arm32, &workspace[0] );
+        test.run( proc, &workspace[0] );
         
         /* Check for differences */
         test.check( testbed, &reference[0], &workspace[0]);
@@ -508,14 +508,15 @@ struct Checker
 
 struct Args
 {
-  Args() : repos(0), scan_ttl(10000), insn_count(2500), run(false) {}
-  char const* repos;
+  Args() : repos(0), dump_tests(0), scan_ttl(10000), insn_count(2500), run(false) {}
+  char const *repos, *dump_tests;
   uintptr_t scan_ttl, insn_count;
   bool run;
 
   void dump(std::ostream& sink)
   {
     sink << "repos=" << repos << "\n";
+    sink << "dump_tests=" << (dump_tests ? dump_tests : "") << "\n";
     sink << "insn_count=" << insn_count << "\n";
     sink << "scan_ttl=" << scan_ttl << "\n";
     sink << "run=" << (run ? "yes" : "no") << "\n";
@@ -531,6 +532,13 @@ void Update( Args const& args )
   updated |= checker.discover( args.insn_count, args.scan_ttl );
   if (updated)
     checker.write_repos( args.repos );
+
+  if (args.dump_tests)
+    {
+      std::cerr << "Dumping tests to " << args.dump_tests << std::endl;
+      std::ofstream sink(args.dump_tests);
+      checker.gen_tests(sink);
+    }
 
   if (args.run)
     checker.run_tests("01234567890123456789012345678901000000000000000000000000");
@@ -565,6 +573,8 @@ main( int argc, char** argv )
             args.insn_count = strtoull(&param[pos+1],0,0);
           else if (param.compare(0,pos,"scan_ttl") == 0)
             args.scan_ttl = strtoull(&param[pos+1],0,0);
+          else if (param.compare(0,pos,"dump_tests") == 0)
+            args.dump_tests = argv[idx] + pos + 1;
           else if (param.compare("run=yes") == 0)
             args.run = true;
           else
