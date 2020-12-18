@@ -62,8 +62,8 @@ Runner::step_instruction()
   // Instruction boundary next_insn_addr becomes current_insn_addr
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
   
-  // Fetch 
-  uint32_t insn = MemRead32(insn_addr);
+  // Fetch (always little endian in armv7)
+  uint32_t insn = *reinterpret_cast<uint32_t const*>(insn_addr);
   
   // Instruction Fetch Decode and Execution
   if (cpsr.Get( unisim::component::cxx::processor::arm::T ))

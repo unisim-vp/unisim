@@ -1126,7 +1126,7 @@ usada8.execute = {
 
 op sbfx( cond[4]: 0b01111[5]: 0b0[1]: 0b1[1]: widthm1[5]: rd[4]: lsb[5]: 0b101[3]: rn[4] );
 sbfx.var width : {uint32_t} = {widthm1+1};
-sbfx.var reject : {Reject} = {(lsb + widthm1) > 31};
+sbfx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (lsb + widthm1) > 31};
 
 sbfx.disasm = {
   buffer << "sbfx" << DisasmCondition(cond) << '\t'
@@ -1215,7 +1215,7 @@ bfc.execute = {
 
 op ubfx( cond[4]: 0b01111[5]: 0b1[1]: 0b1[1]: widthm1[5]: rd[4]: lsb[5]: 0b101[3]: rn[4] );
 ubfx.var width : {uint32_t} = {widthm1+1};
-ubfx.var reject : {Reject} = {(lsb + widthm1) > 31};
+ubfx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (lsb + widthm1) > 31};
 
 ubfx.disasm = {
   buffer << "ubfx" << DisasmCondition(cond) << '\t'
