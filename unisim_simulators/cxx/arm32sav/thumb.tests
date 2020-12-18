@@ -1,0 +1,5000 @@
+4164	adcs	r4, r4
+4164	adcs	r4, r4
+417c	adcs	r4, r7
+4174	adcs	r4, r6
+58b7eb47	adc.w	r8, r7, r7, ror #22
+6af7eb47	adc.w	sl, r7, r7, ror #27
+7687eb47	adc.w	r6, r7, r7, lsl #30
+6327eb47	adc.w	r3, r7, r7, asr #24
+1703eb47	adc.w	r7, r7, r3, lsl #4
+2748eb47	adc.w	r7, r7, r8, lsl #9
+475beb47	adc.w	r7, r7, fp, lsr #17
+27d5eb47	adc.w	r7, r7, r5, lsr #11
+7792eb47	adc.w	r7, r7, r2, lsr #30
+77a2eb47	adc.w	r7, r7, r2, asr #30
+16b6eb47	adc.w	r6, r7, r6, ror #6
+2373eb47	adc.w	r3, r7, r3, ror #9
+13c3eb47	adc.w	r3, r7, r3, lsl #7
+19c9eb47	adc.w	r9, r7, r9, lsl #7
+75d5eb47	adc.w	r5, r7, r5, lsr #31
+3b8eb47	adc.w	r3, r7, r8, ror #2
+5438eb47	adc.w	r4, r7, r8, ror #20
+5233eb47	adc.w	r2, r7, r3, ror #20
+63b9eb47	adc.w	r3, r7, r9, ror #26
+73f8eb47	adc.w	r3, r7, r8, ror #31
+4609eb47	adc.w	r6, r7, r9, lsl #16
+3b06eb47	adc.w	fp, r7, r6, lsl #12
+43c8eb47	adc.w	r3, r7, r8, lsl #19
+39aeb47	adc.w	r3, r7, sl, lsr #2
+4a53eb47	adc.w	sl, r7, r3, lsr #17
+225aeb47	adc.w	r2, r7, sl, lsr #9
+5955eb47	adc.w	r9, r7, r5, lsr #21
+3954eb47	adc.w	r9, r7, r4, lsr #13
+2a29eb47	adc.w	sl, r7, r9, asr #8
+ae6eb47	adc.w	sl, r7, r6, asr #3
+5663eb47	adc.w	r6, r7, r3, asr #21
+7426eb47	adc.w	r4, r7, r6, asr #28
+79a5eb47	adc.w	r9, r7, r5, asr #30
+7707eb57	adcs.w	r7, r7, r7, lsl #28
+7607eb57	adcs.w	r6, r7, r7, lsl #28
+33d7eb57	adcs.w	r3, r7, r7, lsr #15
+15e7eb57	adcs.w	r5, r7, r7, asr #7
+5b5eb57	adcs.w	r5, r7, r5, ror #2
+5775eb57	adcs.w	r7, r7, r5, ror #21
+6676eb57	adcs.w	r6, r7, r6, ror #25
+282eb57	adcs.w	r2, r7, r2, lsl #2
+3c3eb57	adcs.w	r3, r7, r3, lsl #3
+3788eb57	adcs.w	r7, r7, r8, lsl #14
+1616eb57	adcs.w	r6, r7, r6, lsr #4
+2728eb57	adcs.w	r7, r7, r8, asr #8
+812eb57	adcs.w	r8, r7, r2, lsr #32
+1b38eb57	adcs.w	fp, r7, r8, ror #4
+1438eb57	adcs.w	r4, r7, r8, ror #4
+bb4eb57	adcs.w	fp, r7, r4, ror #2
+3baeb57	adcs.w	r3, r7, sl, ror #2
+29b4eb57	adcs.w	r9, r7, r4, ror #10
+457aeb57	adcs.w	r5, r7, sl, ror #17
+2378eb57	adcs.w	r3, r7, r8, ror #9
+69baeb57	adcs.w	r9, r7, sl, ror #26
+35b2eb57	adcs.w	r5, r7, r2, ror #14
+14f2eb57	adcs.w	r4, r7, r2, ror #7
+387beb57	adcs.w	r8, r7, fp, ror #13
+7bb9eb57	adcs.w	fp, r7, r9, ror #30
+69f3eb57	adcs.w	r9, r7, r3, ror #27
+2608eb57	adcs.w	r6, r7, r8, lsl #8
+450beb57	adcs.w	r5, r7, fp, lsl #16
+560aeb57	adcs.w	r6, r7, sl, lsl #20
+3605eb57	adcs.w	r6, r7, r5, lsl #12
+35beb57	adcs.w	r3, r7, fp, lsr #1
+a95eb57	adcs.w	sl, r7, r5, lsr #2
+2a9beb57	adcs.w	sl, r7, fp, lsr #10
+72d5eb57	adcs.w	r2, r7, r5, lsr #31
+36a2eb57	adcs.w	r6, r7, r2, asr #14
+74abeb57	adcs.w	r4, r7, fp, asr #30
+76c2f146	adc.w	r6, r6, #25427968
+6c3f546	adc.w	r6, r6, #6389760
+4699f546	adc.w	r6, r6, #19584
+568ff546	adc.w	r6, r6, #4576
+16f6f546	adc.w	r6, r6, #2015232
+263af146	adc.w	r6, r6, #973093376
+26ecf146	adc.w	r6, r6, #-335483904
+69c0f146	adc.w	r9, r6, #100663296
+5288f546	adc.w	r2, r6, #4352
+2b11f546	adc.w	fp, r6, #593920
+5285f546	adc.w	r2, r6, #4256
+548bf546	adc.w	r4, r6, #4448
+2554f546	adc.w	r5, r6, #868352
+1366f546	adc.w	r3, r6, #3768320
+babf546	adc.w	fp, r6, #5603328
+7bddf146	adc.w	fp, r6, #28966912
+6abef146	adc.w	sl, r6, #99614720
+78bff546	adc.w	r8, r6, #382
+2496f146	adc.w	r4, r6, #-1778346496
+2ae4f146	adc.w	sl, r6, #-469703680
+3786f146	adc.w	r7, r6, #-2038004090
+2bb7f146	adc.w	fp, r6, #-1224689920
+3bedf146	adc.w	fp, r6, #-303174163
+6609f556	adcs.w	r6, r6, #2192
+616f556	adcs.w	r6, r6, #9830400
+2638f556	adcs.w	r6, r6, #753664
+63ff556	adcs.w	r6, r6, #12517376
+1697f156	adcs.w	r6, r6, #9896087
+844f156	adcs.w	r8, r6, #68
+7288f556	adcs.w	r2, r6, #272
+7541f556	adcs.w	r5, r6, #772
+6aa1f156	adcs.w	sl, r6, #84410368
+768f556	adcs.w	r7, r6, #15204352
+38ef156	adcs.w	r3, r6, #142
+4baf556	adcs.w	r4, r6, #6094848
+7ab9f156	adcs.w	sl, r6, #24248320
+37f3f556	adcs.w	r7, r6, #124416
+973f556	adcs.w	r9, r6, #15925248
+59bff156	adcs.w	r9, r6, #400556032
+4977f156	adcs.w	r9, r6, #-150994944
+2a4ef156	adcs.w	sl, r6, #1308642816
+12b8f156	adcs.w	r2, r6, #12058808
+23c7f156	adcs.w	r3, r6, #-956250368
+1737f156	adcs.w	r7, r6, #3604535
+34c1f156	adcs.w	r4, r6, #-1044266559
+3317f156	adcs.w	r3, r6, #387389207
+337ef156	adcs.w	r3, r6, #2122219134
+1c3f	adds	r7, r7, #0
+1c3f	adds	r7, r7, #0
+1d3f	adds	r7, r7, #4
+1c7f	adds	r7, r7, #1
+1cff	adds	r7, r7, #3
+1d7f	adds	r7, r7, #5
+1dff	adds	r7, r7, #7
+1dff	adds	r7, r7, #7
+1c1f	adds	r7, r3, #0
+1c2f	adds	r7, r5, #0
+1c67	adds	r7, r4, #1
+1c77	adds	r7, r6, #1
+1cef	adds	r7, r5, #3
+1d93	adds	r3, r2, #6
+1ddf	adds	r7, r3, #7
+1def	adds	r7, r5, #7
+3506	adds	r5, #6
+3206	adds	r2, #6
+3286	adds	r2, #134
+3326	adds	r3, #38
+3396	adds	r3, #150
+3436	adds	r4, #54
+353e	adds	r5, #62
+34d6	adds	r4, #214
+32f6	adds	r2, #246
+34ee	adds	r4, #238
+33fe	adds	r3, #254
+35fe	adds	r5, #254
+18db	adds	r3, r3, r3
+1923	adds	r3, r4, r4
+1893	adds	r3, r2, r2
+18e3	adds	r3, r4, r3
+191b	adds	r3, r3, r4
+189b	adds	r3, r3, r2
+18bb	adds	r3, r7, r2
+18a3	adds	r3, r4, r2
+44c0	add	r8, r8
+44c0	add	r8, r8
+44f8	add	r8, pc
+44f8	add	r8, pc
+44b0	add	r8, r6
+44b8	add	r8, r7
+1383eb03	add.w	r3, r3, r3, lsl #6
+676eb03	add.w	r6, r3, r6, ror #1
+4283eb03	add.w	r2, r3, r3, lsl #18
+7707eb0b	add.w	r7, fp, r7, lsl #28
+29d3eb03	add.w	r9, r3, r3, lsr #11
+5a1aeb03	add.w	sl, r3, sl, lsr #20
+442beb0b	add.w	r4, fp, fp, asr #16
+2723eb03	add.w	r7, r3, r3, asr #8
+2969eb0b	add.w	r9, fp, r9, asr #9
+4babeb03	add.w	fp, r3, fp, asr #18
+3b3aeb0b	add.w	fp, fp, sl, ror #12
+2b06eb0b	add.w	fp, fp, r6, lsl #8
+330aeb03	add.w	r3, r3, sl, lsl #12
+6397eb03	add.w	r3, r3, r7, lsr #26
+7319eb03	add.w	r3, r3, r9, lsr #28
+3b25eb0b	add.w	fp, fp, r5, asr #12
+5369eb03	add.w	r3, r3, r9, asr #21
+33abeb03	add.w	r3, r3, fp, asr #14
+2238eb0b	add.w	r2, fp, r8, ror #8
+6a34eb03	add.w	sl, r3, r4, ror #24
+6933eb0b	add.w	r9, fp, r3, ror #24
+19b5eb03	add.w	r9, r3, r5, ror #6
+39bbeb03	add.w	r9, r3, fp, ror #14
+68b9eb0b	add.w	r8, fp, r9, ror #26
+43f8eb0b	add.w	r3, fp, r8, ror #19
+6974eb03	add.w	r9, r3, r4, ror #25
+36f4eb0b	add.w	r6, fp, r4, ror #15
+75f3eb0b	add.w	r5, fp, r3, ror #31
+73f4eb0b	add.w	r3, fp, r4, ror #31
+982eb03	add.w	r9, r3, r2, lsl #2
+140beb03	add.w	r4, r3, fp, lsl #4
+248aeb0b	add.w	r4, fp, sl, lsl #10
+3706eb0b	add.w	r7, fp, r6, lsl #12
+5244eb03	add.w	r2, r3, r4, lsl #21
+5649eb03	add.w	r6, r3, r9, lsl #21
+67c2eb03	add.w	r7, r3, r2, lsl #27
+39caeb03	add.w	r9, r3, sl, lsl #15
+1913eb0b	add.w	r9, fp, r3, lsr #4
+498eb03	add.w	r4, r3, r8, lsr #2
+3916eb03	add.w	r9, r3, r6, lsr #12
+2953eb0b	add.w	r9, fp, r3, lsr #9
+5752eb0b	add.w	r7, fp, r2, lsr #21
+27daeb03	add.w	r7, r3, sl, lsr #11
+79d2eb03	add.w	r9, r3, r2, lsr #31
+482aeb0b	add.w	r8, fp, sl, asr #16
+2b29eb03	add.w	fp, r3, r9, asr #8
+48abeb03	add.w	r8, r3, fp, asr #18
+1667eb03	add.w	r6, r3, r7, asr #5
+6865eb0b	add.w	r8, fp, r5, asr #25
+54a9eb0b	add.w	r4, fp, r9, asr #22
+39eaeb0b	add.w	r9, fp, sl, asr #15
+6ae7eb0b	add.w	sl, fp, r7, asr #27
+6bcbeb1b	adds.w	fp, fp, fp, lsl #27
+5bebeb1b	adds.w	fp, fp, fp, asr #23
+473beb1b	adds.w	r7, fp, fp, ror #16
+4bf3eb13	adds.w	fp, r3, r3, ror #19
+73bbeb1b	adds.w	r3, fp, fp, ror #30
+4a3aeb13	adds.w	sl, r3, sl, ror #16
+3bb6eb1b	adds.w	fp, fp, r6, ror #14
+6777eb13	adds.w	r7, r3, r7, ror #25
+75b5eb13	adds.w	r5, r3, r5, ror #30
+3afaeb13	adds.w	sl, r3, sl, ror #15
+158beb1b	adds.w	r5, fp, fp, lsl #6
+4243eb13	adds.w	r2, r3, r3, lsl #17
+4b0beb13	adds.w	fp, r3, fp, lsl #16
+434aeb13	adds.w	r3, r3, sl, lsl #17
+5b4aeb1b	adds.w	fp, fp, sl, lsl #21
+7646eb13	adds.w	r6, r3, r6, lsl #29
+35aeb13	adds.w	r3, r3, sl, lsr #1
+5515eb13	adds.w	r5, r3, r5, lsr #20
+16d6eb1b	adds.w	r6, fp, r6, lsr #7
+3b9aeb1b	adds.w	fp, fp, sl, lsr #14
+33daeb13	adds.w	r3, r3, sl, lsr #15
+336beb1b	adds.w	r3, fp, fp, asr #13
+a2beb1b	adds.w	sl, fp, fp, asr #32
+67a7eb1b	adds.w	r7, fp, r7, asr #26
+55e5eb13	adds.w	r5, r3, r5, asr #23
+74e4eb13	adds.w	r4, r3, r4, asr #31
+713eb1b	adds.w	r7, fp, r3, lsr #32
+739eb1b	adds.w	r7, fp, r9, rrx
+4638eb13	adds.w	r6, r3, r8, ror #16
+5a35eb1b	adds.w	sl, fp, r5, ror #20
+15b7eb13	adds.w	r5, r3, r7, ror #6
+15baeb1b	adds.w	r5, fp, sl, ror #6
+4274eb13	adds.w	r2, r3, r4, ror #17
+1877eb1b	adds.w	r8, fp, r7, ror #5
+793aeb1b	adds.w	r9, fp, sl, ror #28
+39b7eb1b	adds.w	r9, fp, r7, ror #14
+59b8eb13	adds.w	r9, r3, r8, ror #22
+3479eb13	adds.w	r4, r3, r9, ror #13
+4bf8eb13	adds.w	fp, r3, r8, ror #19
+5afbeb13	adds.w	sl, r3, fp, ror #23
+64f7eb1b	adds.w	r4, fp, r7, ror #27
+78faeb13	adds.w	r8, r3, sl, ror #31
+73f2eb1b	adds.w	r3, fp, r2, ror #31
+4502eb13	adds.w	r5, r3, r2, lsl #16
+4602eb13	adds.w	r6, r3, r2, lsl #16
+3504eb1b	adds.w	r5, fp, r4, lsl #12
+2b48eb13	adds.w	fp, r3, r8, lsl #9
+554beb13	adds.w	r5, r3, fp, lsl #21
+45c7eb13	adds.w	r5, r3, r7, lsl #19
+798aeb13	adds.w	r9, r3, sl, lsl #30
+2619eb13	adds.w	r6, r3, r9, lsr #8
+956eb13	adds.w	r9, r3, r6, lsr #1
+4652eb13	adds.w	r6, r3, r2, lsr #17
+3615eb13	adds.w	r6, r3, r5, lsr #12
+6a57eb1b	adds.w	sl, fp, r7, lsr #25
+6692eb13	adds.w	r6, r3, r2, lsr #26
+769aeb1b	adds.w	r6, fp, sl, lsr #30
+5ad3eb1b	adds.w	sl, fp, r3, lsr #23
+2725eb13	adds.w	r7, r3, r5, asr #8
+4822eb13	adds.w	r8, r3, r2, asr #16
+4264eb1b	adds.w	r2, fp, r4, asr #17
+67a4eb1b	adds.w	r7, fp, r4, asr #26
+56a8eb13	adds.w	r6, r3, r8, asr #22
+68e7eb1b	adds.w	r8, fp, r7, asr #27
+5be5eb13	adds.w	fp, r3, r5, asr #23
+3281f502	add.w	r2, r2, #66048
+6250f102	add.w	r2, r2, #218103808
+4aa1f50a	add.w	sl, sl, #20608
+5264f502	add.w	r2, r2, #14592
+a4df10a	add.w	sl, sl, #77
+4a39f10a	add.w	sl, sl, #-1191182336
+6235f102	add.w	r2, r2, #189792256
+2a64f10a	add.w	sl, sl, #1677747200
+7a9ff50a	add.w	sl, sl, #318
+3217f102	add.w	r2, r2, #387389207
+4a81f102	add.w	sl, r2, #1082130432
+6710f502	add.w	r7, r2, #2304
+a32f102	add.w	sl, r2, #50
+5486f502	add.w	r4, r2, #4288
+3223f50a	add.w	r2, sl, #166912
+43b2f50a	add.w	r3, sl, #22784
+74e5f10a	add.w	r4, sl, #30015488
+64cef102	add.w	r4, r2, #108003328
+761ff50a	add.w	r6, sl, #636
+666df50a	add.w	r6, sl, #3792
+537df50a	add.w	r3, sl, #16192
+78fbf50a	add.w	r8, sl, #502
+2b2ef102	add.w	fp, r2, #771763712
+3fff10a	add.w	r3, sl, #255
+2873f102	add.w	r8, r2, #1929409280
+1b9ef10a	add.w	fp, sl, #10354846
+135ff10a	add.w	r3, sl, #6226015
+18bef10a	add.w	r8, sl, #12452030
+37fbf102	add.w	r7, r2, #-67372037
+5a22f11a	adds.w	sl, sl, #679477248
+724af112	adds.w	r2, r2, #52953088
+7a6af51a	adds.w	sl, sl, #936
+4ab6f51a	adds.w	sl, sl, #23296
+4275f112	adds.w	r2, r2, #-184549376
+52b7f112	adds.w	r2, r2, #383778816
+2a1ef11a	adds.w	sl, sl, #503324160
+32caf112	adds.w	r2, r2, #-892679478
+7301f112	adds.w	r3, r2, #33816576
+7b10f512	adds.w	fp, r2, #576
+75d0f11a	adds.w	r5, sl, #27262976
+8c1f11a	adds.w	r8, sl, #193
+4b2cf512	adds.w	fp, r2, #44032
+75e8f112	adds.w	r5, r2, #30408704
+5b53f512	adds.w	fp, r2, #13504
+57d5f11a	adds.w	r7, sl, #446693376
+1954f112	adds.w	r9, r2, #5505108
+14f6f51a	adds.w	r4, sl, #2015232
+2377f51a	adds.w	r3, sl, #1011712
+16c3f11a	adds.w	r6, sl, #12779715
+1b87f11a	adds.w	fp, sl, #8847495
+23ecf112	adds.w	r3, r2, #-335483904
+14d6f11a	adds.w	r4, sl, #14024918
+17faf112	adds.w	r7, r2, #16384250
+1abef112	adds.w	sl, r2, #12452030
+344bf112	adds.w	r4, r2, #1263225675
+341ef11a	adds.w	r4, sl, #505290270
+39d9f112	adds.w	r9, r2, #-640034343
+35f2f11a	adds.w	r5, sl, #-218959118
+504f605	addw	r5, r5, #2052
+150af205	addw	r5, r5, #266
+4588f205	addw	r5, r5, #1160
+15acf205	addw	r5, r5, #428
+259cf205	addw	r5, r5, #668
+5d5f605	addw	r5, r5, #2261
+5aff605	addw	r5, r5, #2223
+75a4f605	addw	r5, r5, #4004
+553bf605	addw	r5, r5, #3387
+653ff605	addw	r5, r5, #3647
+1a60f205	addw	sl, r5, #352
+4b04f605	addw	fp, r5, #3076
+72bf205	addw	r7, r5, #43
+2a58f205	addw	sl, r5, #600
+179cf205	addw	r7, r5, #412
+5a25f205	addw	sl, r5, #1317
+227cf205	addw	r2, r5, #636
+4827f605	addw	r8, r5, #3111
+7353f205	addw	r3, r5, #1875
+69c3f605	addw	r9, r5, #3779
+6bdbf205	addw	fp, r5, #1755
+52ebf205	addw	r2, r5, #1515
+187ff605	addw	r8, r5, #2431
+72e7f205	addw	r2, r5, #2023
+68fef605	addw	r8, r5, #3838
+53f7f605	addw	r3, r5, #3575
+78dff605	addw	r8, r5, #4063
+5afff605	addw	sl, r5, #3583
+a502	add	r5, pc, #8
+a202	add	r2, pc, #8
+a612	add	r6, pc, #72
+a542	add	r5, pc, #264
+a562	add	r5, pc, #392
+a352	add	r3, pc, #328
+a43a	add	r4, pc, #232
+a6ca	add	r6, pc, #808
+a2da	add	r2, pc, #872
+a5f2	add	r5, pc, #968
+a3fa	add	r3, pc, #1000
+a5fa	add	r5, pc, #1000
+1600f20f	addw	r6, pc, #256
+2801f20f	addw	r8, pc, #513
+4518f20f	addw	r5, pc, #1048
+5b00f60f	addw	fp, pc, #3328
+2298f20f	addw	r2, pc, #664
+a54f60f	addw	sl, pc, #2132
+432df20f	addw	r3, pc, #1069
+4a68f60f	addw	sl, pc, #3176
+35b0f60f	addw	r5, pc, #2992
+6943f60f	addw	r9, pc, #3651
+3abcf20f	addw	sl, pc, #956
+239df60f	addw	r3, pc, #2717
+369bf60f	addw	r6, pc, #2971
+4bdef60f	addw	fp, pc, #3294
+6bfcf60f	addw	fp, pc, #3836
+34d7f60f	addw	r4, pc, #3031
+33fff20f	addw	r3, pc, #1023
+79ebf60f	addw	r9, pc, #4075
+300f2af	subw	r3, pc, #0
+1608f2af	subw	r6, pc, #264
+4b01f2af	subw	fp, pc, #1025
+3980f2af	subw	r9, pc, #896
+1910f6af	subw	r9, pc, #2320
+2b4af2af	subw	fp, pc, #586
+47a1f2af	subw	r7, pc, #1185
+47caf2af	subw	r7, pc, #1226
+16ccf2af	subw	r6, pc, #460
+4653f6af	subw	r6, pc, #3155
+6ae0f6af	subw	sl, pc, #3808
+687cf2af	subw	r8, pc, #1660
+12bdf2af	subw	r2, pc, #445
+78a7f2af	subw	r8, pc, #1959
+47f3f6af	subw	r7, pc, #3315
+74cdf6af	subw	r4, pc, #4045
+757bf2af	subw	r5, pc, #1915
+37dff6af	subw	r7, pc, #3039
+79ebf6af	subw	r9, pc, #4075
+403f	ands	r7, r7
+403f	ands	r7, r7
+402f	ands	r7, r5
+4037	ands	r7, r6
+29b5ea05	and.w	r9, r5, r5, ror #10
+54f5ea05	and.w	r4, r5, r5, ror #23
+3995ea05	and.w	r9, r5, r5, lsr #14
+36d5ea05	and.w	r6, r5, r5, lsr #15
+6b25ea05	and.w	fp, r5, r5, asr #24
+53e5ea05	and.w	r3, r5, r5, asr #23
+55b2ea05	and.w	r5, r5, r2, ror #22
+357aea05	and.w	r5, r5, sl, ror #13
+5587ea05	and.w	r5, r5, r7, lsl #22
+25a6ea05	and.w	r5, r5, r6, asr #10
+55e6ea05	and.w	r5, r5, r6, asr #23
+2bbbea05	and.w	fp, r5, fp, ror #10
+4b73ea05	and.w	fp, r5, r3, ror #17
+2af4ea05	and.w	sl, r5, r4, ror #11
+42f8ea05	and.w	r2, r5, r8, ror #19
+77f9ea05	and.w	r7, r5, r9, ror #31
+b88ea05	and.w	fp, r5, r8, lsl #2
+986ea05	and.w	r9, r5, r6, lsl #2
+4683ea05	and.w	r6, r5, r3, lsl #18
+2348ea05	and.w	r3, r5, r8, lsl #9
+784bea05	and.w	r8, r5, fp, lsl #29
+4716ea05	and.w	r7, r5, r6, lsr #16
+2399ea05	and.w	r3, r5, r9, lsr #10
+3954ea05	and.w	r9, r5, r4, lsr #13
+246bea05	and.w	r4, r5, fp, asr #9
+44a8ea05	and.w	r4, r5, r8, asr #18
+3b68ea05	and.w	fp, r5, r8, asr #13
+6a6bea05	and.w	sl, r5, fp, asr #25
+62e9ea05	and.w	r2, r5, r9, asr #27
+7869ea05	and.w	r8, r5, r9, asr #29
+79e3ea05	and.w	r9, r5, r3, asr #31
+5bb5ea15	ands.w	fp, r5, r5, ror #22
+52d5ea15	ands.w	r2, r5, r5, lsr #23
+4aa5ea15	ands.w	sl, r5, r5, asr #18
+57e5ea15	ands.w	r7, r5, r5, asr #23
+6636ea15	ands.w	r6, r5, r6, ror #24
+75f8ea15	ands.w	r5, r5, r8, ror #31
+7b8bea15	ands.w	fp, r5, fp, lsl #30
+151bea15	ands.w	r5, r5, fp, lsr #4
+6767ea15	ands.w	r7, r5, r7, asr #25
+1273ea15	ands.w	r2, r5, r3, ror #5
+49f6ea15	ands.w	r9, r5, r6, ror #19
+5a79ea15	ands.w	sl, r5, r9, ror #21
+5afbea15	ands.w	sl, r5, fp, ror #23
+1746ea15	ands.w	r7, r5, r6, lsl #5
+4a48ea15	ands.w	sl, r5, r8, lsl #17
+5283ea15	ands.w	r2, r5, r3, lsl #22
+42c7ea15	ands.w	r2, r5, r7, lsl #19
+7286ea15	ands.w	r2, r5, r6, lsl #30
+a96ea15	ands.w	sl, r5, r6, lsr #2
+1253ea15	ands.w	r2, r5, r3, lsr #5
+5296ea15	ands.w	r2, r5, r6, lsr #22
+3429ea15	ands.w	r4, r5, r9, asr #12
+3b28ea15	ands.w	fp, r5, r8, asr #12
+22e9ea15	ands.w	r2, r5, r9, asr #11
+58a6ea15	ands.w	r8, r5, r6, asr #22
+7b67ea15	ands.w	fp, r5, r7, asr #29
+77e2ea15	ands.w	r7, r5, r2, asr #31
+2440f404	and.w	r4, r4, #786432
+5411f404	and.w	r4, r4, #9280
+54b0f004	and.w	r4, r4, #369098752
+44c3f004	and.w	r4, r4, #1635778560
+407f404	and.w	r4, r4, #8847360
+74e7f404	and.w	r4, r4, #462
+44ebf404	and.w	r4, r4, #30080
+44dff004	and.w	r4, r4, #1870659584
+747ff404	and.w	r4, r4, #1020
+34d1f004	and.w	r4, r4, #-774778415
+5780f004	and.w	r7, r4, #268435456
+2980f004	and.w	r9, r4, #-2147450880
+2b21f404	and.w	fp, r4, #659456
+28af404	and.w	r2, r4, #4521984
+4b29f004	and.w	fp, r4, #-1459617792
+ba6f004	and.w	fp, r4, #166
+1bb5f404	and.w	fp, r4, #1482752
+6647f404	and.w	r6, r4, #3184
+1362f004	and.w	r3, r4, #6422626
+2afcf404	and.w	sl, r4, #516096
+59dff404	and.w	r9, r4, #7136
+19e2f004	and.w	r9, r4, #14811362
+291ef004	and.w	r9, r4, #503324160
+17aef004	and.w	r7, r4, #11403438
+1797f004	and.w	r7, r4, #9896087
+28eef004	and.w	r8, r4, #-301928960
+399df004	and.w	r9, r4, #-1650614883
+3af7f004	and.w	sl, r4, #-134744073
+24aaf014	ands.w	r4, r4, #-1442797056
+b4cf014	ands.w	fp, r4, #76
+ba2f014	ands.w	fp, r4, #162
+5446f014	ands.w	r4, r4, #830472192
+9d1f014	ands.w	r9, r4, #209
+2ba0f014	ands.w	fp, r4, #-1610571776
+7daf014	ands.w	r7, r4, #218
+13a8f014	ands.w	r3, r4, #11010216
+1ae0f014	ands.w	sl, r4, #14680288
+284ef014	ands.w	r8, r4, #1308642816
+1278f014	ands.w	r2, r4, #7864440
+27f5f014	ands.w	r7, r4, #-184486656
+353af014	ands.w	r5, r4, #976894522
+323af014	ands.w	r2, r4, #976894522
+5300f014	ands.w	r3, r4, #536870912
+2608f414	ands.w	r6, r4, #557056
+6381f414	ands.w	r3, r4, #1032
+2324f414	ands.w	r3, r4, #671744
+5311f014	ands.w	r3, r4, #608174080
+260bf414	ands.w	r6, r4, #569344
+4896f414	ands.w	r8, r4, #19200
+46d3f014	ands.w	r6, r4, #1769996288
+59abf014	ands.w	r9, r4, #358612992
+4a2df014	ands.w	sl, r4, #-1392508928
+73aff414	ands.w	r3, r4, #350
+5579f014	ands.w	r5, r4, #1044381696
+7b7bf414	ands.w	fp, r4, #1004
+5a77f414	ands.w	sl, r4, #15808
+4136	asrs	r6, r6
+4136	asrs	r6, r6
+4126	asrs	r6, r4
+411e	asrs	r6, r3
+b1ef36f	bfc	fp, #0, #31
+71cf36f	bfc	r7, #0, #29
+a1cf36f	bfc	sl, #0, #29
+8ddf36f	bfc	r8, #3, #27
+4ddf36f	bfc	r4, #3, #27
+b9bf36f	bfc	fp, #2, #26
+151cf36f	bfc	r5, #4, #25
+6dbf36f	bfc	r6, #3, #25
+121bf36f	bfc	r2, #4, #24
+998f36f	bfc	r9, #2, #23
+18dcf36f	bfc	r8, #7, #22
+697f36f	bfc	r6, #2, #22
+15dbf36f	bfc	r5, #7, #21
+1458f36f	bfc	r4, #5, #20
+3a1ff36f	bfc	sl, #12, #20
+794f36f	bfc	r7, #2, #19
+295bf36f	bfc	r9, #9, #19
+325ef36f	bfc	r2, #13, #18
+13d8f36f	bfc	r3, #7, #18
+1996f36f	bfc	r9, #6, #17
+3a9ef36f	bfc	sl, #14, #17
+2899f36f	bfc	r8, #10, #16
+2717f36f	bfc	r7, #8, #16
+1794f36f	bfc	r7, #6, #15
+590f36f	bfc	r5, #2, #15
+8d0f36f	bfc	r8, #3, #14
+15d4f36f	bfc	r5, #7, #14
+29d7f36f	bfc	r9, #11, #13
+84df36f	bfc	r8, #1, #13
+4b1bf36f	bfc	fp, #16, #12
+3cef36f	bfc	r3, #3, #12
+1b4ff36f	bfc	fp, #5, #11
+3b98f36f	bfc	fp, #14, #11
+4919f36f	bfc	r9, #16, #10
+309f36f	bfc	r3, #0, #10
+174df36f	bfc	r7, #5, #9
+949f36f	bfc	r9, #1, #9
+59def36f	bfc	r9, #23, #8
+2bd2f36f	bfc	fp, #11, #8
+ac9f36f	bfc	sl, #3, #7
+4998f36f	bfc	r9, #18, #7
+6a9ff36f	bfc	sl, #26, #6
+240df36f	bfc	r4, #8, #6
+675df36f	bfc	r7, #25, #5
+3592f36f	bfc	r5, #14, #5
+5417f36f	bfc	r4, #20, #4
+1689f36f	bfc	r6, #6, #4
+4a94f36f	bfc	sl, #18, #3
+384ff36f	bfc	r8, #13, #3
+842f36f	bfc	r8, #1, #2
+1387f36f	bfc	r3, #6, #2
+200f36f	bfc	r2, #0, #1
+5696f36f	bfc	r6, #22, #1
+458f364	bfi	r4, r4, #1, #24
+453f364	bfi	r4, r4, #1, #19
+4457f364	bfi	r4, r4, #17, #7
+4c9f364	bfi	r4, r4, #3, #7
+745ff364	bfi	r4, r4, #29, #3
+31df364	bfi	r3, r4, #0, #30
+79df364	bfi	r7, r4, #2, #28
+919f364	bfi	r9, r4, #0, #26
+59bf364	bfi	r5, r4, #2, #26
+918f364	bfi	r9, r4, #0, #25
+999f364	bfi	r9, r4, #2, #24
+131bf364	bfi	r3, r4, #4, #24
+165bf364	bfi	r6, r4, #5, #23
+297f364	bfi	r2, r4, #2, #22
+2b1cf364	bfi	fp, r4, #8, #21
+2a9ef364	bfi	sl, r4, #10, #21
+a95f364	bfi	sl, r4, #2, #20
+295cf364	bfi	r9, r4, #9, #20
+19daf364	bfi	r9, r4, #7, #20
+271af364	bfi	r7, r4, #8, #19
+1b57f364	bfi	fp, r4, #5, #19
+365ff364	bfi	r6, r4, #13, #19
+3d4f364	bfi	r3, r4, #3, #18
+321df364	bfi	r2, r4, #12, #18
+1b14f364	bfi	fp, r4, #4, #17
+3d3f364	bfi	r3, r4, #3, #17
+2bdaf364	bfi	fp, r4, #11, #16
+2557f364	bfi	r5, r4, #9, #15
+80cf364	bfi	r8, r4, #0, #13
+491bf364	bfi	r9, r4, #16, #12
+74cf364	bfi	r7, r4, #1, #12
+4b9df364	bfi	fp, r4, #18, #12
+7cef364	bfi	r7, r4, #3, #12
+134ff364	bfi	r3, r4, #5, #11
+2b93f364	bfi	fp, r4, #10, #10
+2510f364	bfi	r5, r4, #8, #9
+28af364	bfi	r2, r4, #2, #9
+2892f364	bfi	r8, r4, #10, #9
+2992f364	bfi	r9, r4, #10, #9
+2bd3f364	bfi	fp, r4, #11, #9
+4317f364	bfi	r3, r4, #16, #8
+3ad6f364	bfi	sl, r4, #15, #8
+347f364	bfi	r3, r4, #1, #7
+254ff364	bfi	r5, r4, #9, #7
+905f364	bfi	r9, r4, #0, #6
+5519f364	bfi	r5, r4, #20, #6
+1b4af364	bfi	fp, r4, #5, #6
+4ad8f364	bfi	sl, r4, #19, #6
+1749f364	bfi	r7, r4, #5, #5
+168af364	bfi	r6, r4, #6, #5
+49d7f364	bfi	r9, r4, #19, #5
+4ad7f364	bfi	sl, r4, #19, #5
+985f364	bfi	r9, r4, #2, #4
+bc6f364	bfi	fp, r4, #3, #4
+5299f364	bfi	r2, r4, #22, #4
+5adaf364	bfi	sl, r4, #23, #4
+681af364	bfi	r8, r4, #24, #3
+6c5f364	bfi	r6, r4, #3, #3
+665bf364	bfi	r6, r4, #25, #3
+274af364	bfi	r7, r4, #9, #2
+5897f364	bfi	r8, r4, #22, #2
+795ef364	bfi	r9, r4, #29, #2
+374df364	bfi	r7, r4, #13, #1
+789ef364	bfi	r8, r4, #30, #1
+58d7f364	bfi	r8, r4, #23, #1
+53d3ea23	bic.w	r3, r3, r3, lsr #23
+57fbea2b	bic.w	r7, fp, fp, ror #23
+67fbea2b	bic.w	r7, fp, fp, ror #27
+4643ea23	bic.w	r6, r3, r3, lsl #17
+2943ea23	bic.w	r9, r3, r3, lsl #9
+1293ea23	bic.w	r2, r3, r3, lsr #6
+5653ea23	bic.w	r6, r3, r3, lsr #21
+725bea2b	bic.w	r2, fp, fp, lsr #29
+78d3ea23	bic.w	r8, r3, r3, lsr #31
+2e3ea23	bic.w	r2, r3, r3, asr #3
+3335ea23	bic.w	r3, r3, r5, ror #12
+5b42ea2b	bic.w	fp, fp, r2, lsl #21
+23c5ea23	bic.w	r3, r3, r5, lsl #11
+7b87ea2b	bic.w	fp, fp, r7, lsl #30
+ba3ea2b	bic.w	fp, fp, r3, asr #2
+1b67ea2b	bic.w	fp, fp, r7, asr #5
+3404ea23	bic.w	r4, r3, r4, lsl #12
+1494ea2b	bic.w	r4, fp, r4, lsr #6
+5626ea23	bic.w	r6, r3, r6, asr #20
+87bea23	bic.w	r8, r3, fp, ror #1
+6433ea2b	bic.w	r4, fp, r3, ror #24
+5635ea23	bic.w	r6, r3, r5, ror #20
+1a78ea2b	bic.w	sl, fp, r8, ror #5
+5679ea23	bic.w	r6, r3, r9, ror #21
+13f8ea2b	bic.w	r3, fp, r8, ror #7
+55f7ea23	bic.w	r5, r3, r7, ror #23
+7af5ea2b	bic.w	sl, fp, r5, ror #31
+48bea23	bic.w	r4, r3, fp, lsl #2
+4504ea23	bic.w	r5, r3, r4, lsl #16
+8c7ea23	bic.w	r8, r3, r7, lsl #3
+1985ea23	bic.w	r9, r3, r5, lsl #6
+5246ea23	bic.w	r2, r3, r6, lsl #21
+15c6ea2b	bic.w	r5, fp, r6, lsl #7
+7986ea23	bic.w	r9, r3, r6, lsl #30
+7982ea2b	bic.w	r9, fp, r2, lsl #30
+74c9ea2b	bic.w	r4, fp, r9, lsl #31
+69aea2b	bic.w	r6, fp, sl, lsr #2
+4516ea2b	bic.w	r5, fp, r6, lsr #16
+3a12ea2b	bic.w	sl, fp, r2, lsr #12
+5a16ea23	bic.w	sl, r3, r6, lsr #20
+5358ea2b	bic.w	r3, fp, r8, lsr #21
+18daea23	bic.w	r8, r3, sl, lsr #7
+7a92ea23	bic.w	sl, r3, r2, lsr #30
+38daea23	bic.w	r8, r3, sl, lsr #15
+2729ea2b	bic.w	r7, fp, r9, asr #8
+a63ea2b	bic.w	sl, fp, r3, asr #1
+14a2ea2b	bic.w	r4, fp, r2, asr #6
+486aea23	bic.w	r8, r3, sl, asr #17
+6668ea23	bic.w	r6, r3, r8, asr #25
+69aaea2b	bic.w	r9, fp, sl, asr #26
+328ea2b	bic.w	r3, fp, r8, asr #32
+5b1bea3b	bics.w	fp, fp, fp, lsr #20
+74fbea3b	bics.w	r4, fp, fp, ror #31
+783ea33	bics.w	r7, r3, r3, lsl #2
+3703ea33	bics.w	r7, r3, r3, lsl #12
+74cbea3b	bics.w	r4, fp, fp, lsl #31
+5923ea33	bics.w	r9, r3, r3, asr #20
+5263ea33	bics.w	r2, r3, r3, asr #21
+48e3ea33	bics.w	r8, r3, r3, asr #19
+503ea3b	bics.w	r5, fp, r3
+939ea3b	bics.w	r9, fp, r9, rrx
+b72ea3b	bics.w	fp, fp, r2, ror #1
+4474ea33	bics.w	r4, r3, r4, ror #17
+2373ea3b	bics.w	r3, fp, r3, ror #9
+5b77ea3b	bics.w	fp, fp, r7, ror #21
+2888ea33	bics.w	r8, r3, r8, lsl #10
+1a4aea3b	bics.w	sl, fp, sl, lsl #5
+6646ea3b	bics.w	r6, fp, r6, lsl #25
+b9bea33	bics.w	fp, r3, fp, lsr #2
+1b54ea3b	bics.w	fp, fp, r4, lsr #5
+1bd5ea3b	bics.w	fp, fp, r5, lsr #7
+53d4ea33	bics.w	r3, r3, r4, lsr #23
+7959ea3b	bics.w	r9, fp, r9, lsr #29
+1b67ea3b	bics.w	fp, fp, r7, asr #5
+27a7ea33	bics.w	r7, r3, r7, asr #10
+5b65ea3b	bics.w	fp, fp, r5, asr #21
+7baaea3b	bics.w	fp, fp, sl, asr #30
+4338ea3b	bics.w	r3, fp, r8, ror #16
+4337ea3b	bics.w	r3, fp, r7, ror #16
+1634ea3b	bics.w	r6, fp, r4, ror #4
+4b2ea33	bics.w	r4, r3, r2, ror #2
+6a35ea33	bics.w	sl, r3, r5, ror #24
+4ab6ea3b	bics.w	sl, fp, r6, ror #18
+783bea33	bics.w	r8, r3, fp, ror #28
+7937ea33	bics.w	r9, r3, r7, ror #28
+59bbea33	bics.w	r9, r3, fp, ror #22
+15faea3b	bics.w	r5, fp, sl, ror #7
+12f4ea3b	bics.w	r2, fp, r4, ror #7
+7476ea3b	bics.w	r4, fp, r6, ror #29
+35faea3b	bics.w	r5, fp, sl, ror #15
+75f6ea33	bics.w	r5, r3, r6, ror #31
+4204ea33	bics.w	r2, r3, r4, lsl #16
+547ea33	bics.w	r5, r3, r7, lsl #1
+6607ea3b	bics.w	r6, fp, r7, lsl #24
+6209ea3b	bics.w	r2, fp, r9, lsl #24
+2985ea33	bics.w	r9, r3, r5, lsl #10
+2748ea33	bics.w	r7, r3, r8, lsl #9
+6842ea33	bics.w	r8, r3, r2, lsl #25
+3849ea3b	bics.w	r8, fp, r9, lsl #13
+68c6ea3b	bics.w	r8, fp, r6, lsl #27
+35c9ea33	bics.w	r5, r3, r9, lsl #15
+293ea3b	bics.w	r2, fp, r3, lsr #2
+2514ea33	bics.w	r5, r3, r4, lsr #8
+ad8ea33	bics.w	sl, r3, r8, lsr #3
+9d8ea33	bics.w	r9, r3, r8, lsr #3
+2398ea3b	bics.w	r3, fp, r8, lsr #10
+5519ea3b	bics.w	r5, fp, r9, lsr #20
+6a18ea33	bics.w	sl, r3, r8, lsr #24
+6758ea33	bics.w	r7, r3, r8, lsr #25
+6552ea3b	bics.w	r5, fp, r2, lsr #25
+7712ea3b	bics.w	r7, fp, r2, lsr #28
+7916ea3b	bics.w	r9, fp, r6, lsr #28
+7b94ea33	bics.w	fp, r3, r4, lsr #30
+4a2ea3b	bics.w	r4, fp, r2, asr #2
+1a25ea3b	bics.w	sl, fp, r5, asr #4
+466bea33	bics.w	r6, r3, fp, asr #17
+7e4ea33	bics.w	r7, r3, r4, asr #3
+12a4ea3b	bics.w	r2, fp, r4, asr #6
+1aa6ea33	bics.w	sl, r3, r6, asr #6
+3a25ea3b	bics.w	sl, fp, r5, asr #12
+3724ea33	bics.w	r7, r3, r4, asr #12
+6427ea33	bics.w	r4, r3, r7, asr #24
+27eaea3b	bics.w	r7, fp, sl, asr #11
+3766ea3b	bics.w	r7, fp, r6, asr #13
+68a6ea33	bics.w	r8, r3, r6, asr #26
+38e6ea3b	bics.w	r8, fp, r6, asr #15
+72a3ea3b	bics.w	r2, fp, r3, asr #30
+73e4ea3b	bics.w	r3, fp, r4, asr #31
+428ea3b	bics.w	r4, fp, r8, asr #32
+2a53f02a	bic.w	sl, sl, #1392530176
+5afdf42a	bic.w	sl, sl, #8096
+122af022	bic.w	r2, r2, #2752554
+4ab9f42a	bic.w	sl, sl, #23680
+7ae8f02a	bic.w	sl, sl, #30408704
+4246f022	bic.w	r2, r2, #-973078528
+12b0f422	bic.w	r2, r2, #1441792
+a8af42a	bic.w	sl, sl, #4521984
+337cf022	bic.w	r3, r2, #2088533116
+397cf02a	bic.w	r9, sl, #2088533116
+363cf02a	bic.w	r6, sl, #1010580540
+3939f022	bic.w	r9, r2, #960051513
+32c8f02a	bic.w	r2, sl, #-926365496
+37c2f022	bic.w	r7, r2, #-1027423550
+17ecf022	bic.w	r7, r2, #15466732
+2476f02a	bic.w	r4, sl, #1979741696
+2559f02a	bic.w	r5, sl, #1493195008
+3428f022	bic.w	r4, r2, #673720360
+437df022	bic.w	r3, r2, #-50331648
+75eff02a	bic.w	r5, sl, #31326208
+633ef422	bic.w	r3, r2, #3040
+5b5bf422	bic.w	fp, r2, #14016
+75dcf422	bic.w	r5, r2, #440
+6a65f022	bic.w	sl, r2, #240123904
+2b42f022	bic.w	fp, r2, #1107313152
+59e8f02a	bic.w	r9, sl, #486539264
+53b0f42a	bic.w	r3, sl, #5632
+1514f42a	bic.w	r5, sl, #2424832
+5440f42a	bic.w	r4, sl, #12288
+5b40f42a	bic.w	fp, sl, #12288
+6680f02a	bic.w	r6, sl, #67108864
+12ecf032	bics.w	r2, r2, #15466732
+1295f032	bics.w	r2, r2, #9765013
+222ef032	bics.w	r2, r2, #771763712
+259f032	bics.w	r2, r2, #89
+ad8f03a	bics.w	sl, sl, #216
+39f3f03a	bics.w	r9, sl, #-202116109
+368df032	bics.w	r6, r2, #-1920103027
+3a39f032	bics.w	sl, r2, #960051513
+17fef03a	bics.w	r7, sl, #16646398
+3886f03a	bics.w	r8, sl, #-2038004090
+1ae3f032	bics.w	sl, r2, #14876899
+1495f03a	bics.w	r4, sl, #9765013
+2bd8f032	bics.w	fp, r2, #-671033344
+7afbf03a	bics.w	sl, sl, #32899072
+2bbf432	bics.w	r2, r2, #6127616
+2dbf432	bics.w	r2, r2, #7176192
+1631f032	bics.w	r6, r2, #3211313
+3fcf032	bics.w	r3, r2, #252
+6a55f43a	bics.w	sl, sl, #3408
+72b5f032	bics.w	r2, r2, #23724032
+4245f432	bics.w	r2, r2, #50432
+32c5f432	bics.w	r2, r2, #100864
+3910f03a	bics.w	r9, sl, #269488144
+1714f03a	bics.w	r7, sl, #1310740
+720af432	bics.w	r2, r2, #552
+462f03a	bics.w	r4, sl, #98
+b42f032	bics.w	fp, r2, #66
+2280f03a	bics.w	r2, sl, #-2147450880
+1400f03a	bics.w	r4, sl, #0
+53fff03a	bics.w	r3, sl, #534773760
+137ff43a	bics.w	r3, sl, #4177920
+777bf032	bics.w	r7, r2, #65798144
+757df03a	bics.w	r5, sl, #66322432
+577af03a	bics.w	r7, sl, #1048576000
+46bdf032	bics.w	r6, r2, #1585446912
+4479f032	bics.w	r4, r2, #-117440512
+4557f03a	bics.w	r5, sl, #-687865856
+696cf03a	bics.w	r9, sl, #247463936
+696af43a	bics.w	r9, sl, #3744
+6543f432	bics.w	r5, r2, #3120
+7b49f43a	bics.w	fp, sl, #804
+7660f43a	bics.w	r6, sl, #896
+590af432	bics.w	r9, r2, #8832
+4611f032	bics.w	r6, r2, #-1862270976
+4718f03a	bics.w	r7, sl, #-1744830464
+6690f43a	bics.w	r6, sl, #1152
+7701f032	bics.w	r7, r2, #33816576
+7580f032	bics.w	r5, r2, #16777216
+f787fab7	clz	r7, r7
+f387fab7	clz	r3, r7
+fa87fab7	clz	sl, r7
+4fb9eb19	cmn.w	r9, r9, ror #18
+3f79eb19	cmn.w	r9, r9, ror #13
+3fc9eb19	cmn.w	r9, r9, lsl #15
+5f19eb19	cmn.w	r9, r9, lsr #20
+3f99eb19	cmn.w	r9, r9, lsr #14
+f63eb13	cmn.w	r3, r3, asr #1
+1f29eb19	cmn.w	r9, r9, asr #4
+2fa9eb19	cmn.w	r9, r9, asr #10
+3f29eb19	cmn.w	r9, r9, asr #12
+2fe9eb19	cmn.w	r9, r9, asr #11
+7f29eb19	cmn.w	r9, r9, asr #28
+5fe9eb19	cmn.w	r9, r9, asr #23
+f13eb19	cmn.w	r9, r3, lsr #32
+f15eb19	cmn.w	r9, r5, lsr #32
+4f3beb19	cmn.w	r9, fp, ror #16
+4f34eb19	cmn.w	r9, r4, ror #16
+2f36eb19	cmn.w	r9, r6, ror #8
+2f3beb13	cmn.w	r3, fp, ror #8
+1f3aeb19	cmn.w	r9, sl, ror #4
+1f3beb19	cmn.w	r9, fp, ror #4
+fb7eb19	cmn.w	r9, r7, ror #2
+fbaeb19	cmn.w	r9, sl, ror #2
+f72eb19	cmn.w	r9, r2, ror #1
+f75eb19	cmn.w	r9, r5, ror #1
+2fb6eb19	cmn.w	r9, r6, ror #10
+2fbbeb13	cmn.w	r3, fp, ror #10
+2f76eb19	cmn.w	r9, r6, ror #9
+ffbeb19	cmn.w	r9, fp, ror #3
+7f37eb19	cmn.w	r9, r7, ror #28
+6fb2eb19	cmn.w	r9, r2, ror #26
+6fb4eb19	cmn.w	r9, r4, ror #26
+6f76eb19	cmn.w	r9, r6, ror #25
+1ff3eb19	cmn.w	r9, r3, ror #7
+7fb3eb19	cmn.w	r9, r3, ror #30
+6ff7eb19	cmn.w	r9, r7, ror #27
+7f7beb19	cmn.w	r9, fp, ror #29
+7ff7eb19	cmn.w	r9, r7, ror #31
+f44eb19	cmn.w	r9, r4, lsl #1
+1f05eb19	cmn.w	r9, r5, lsl #4
+6f0beb19	cmn.w	r9, fp, lsl #24
+fc5eb19	cmn.w	r9, r5, lsl #3
+3f82eb19	cmn.w	r9, r2, lsl #14
+6f85eb19	cmn.w	r9, r5, lsl #26
+7f4aeb19	cmn.w	r9, sl, lsl #29
+7f4aeb19	cmn.w	r9, sl, lsl #29
+2f16eb19	cmn.w	r9, r6, lsr #8
+4f14eb19	cmn.w	r9, r4, lsr #16
+6f17eb19	cmn.w	r9, r7, lsr #24
+1f9beb19	cmn.w	r9, fp, lsr #6
+6f55eb19	cmn.w	r9, r5, lsr #25
+7f12eb19	cmn.w	r9, r2, lsr #28
+3fdaeb19	cmn.w	r9, sl, lsr #15
+5fd6eb19	cmn.w	r9, r6, lsr #23
+7fd6eb19	cmn.w	r9, r6, lsr #31
+2f23eb19	cmn.w	r9, r3, asr #8
+4f2aeb19	cmn.w	r9, sl, asr #16
+1fa6eb19	cmn.w	r9, r6, asr #6
+4f66eb19	cmn.w	r9, r6, asr #17
+4fe4eb19	cmn.w	r9, r4, asr #19
+3fa4eb19	cmn.w	r9, r4, asr #14
+6febeb19	cmn.w	r9, fp, asr #27
+5fe4eb19	cmn.w	r9, r4, asr #23
+f25eb19	cmn.w	r9, r5, asr #32
+7febeb19	cmn.w	r9, fp, asr #31
+2f80f518	cmn.w	r8, #262144
+5f90f518	cmn.w	r8, #4608
+f14f118	cmn.w	r8, #20
+5f21f512	cmn.w	r2, #10304
+7f60f518	cmn.w	r8, #896
+5f93f518	cmn.w	r8, #4704
+1f32f518	cmn.w	r8, #2916352
+5f27f118	cmn.w	r8, #700448768
+4f1bf118	cmn.w	r8, #-1694498816
+1f89f118	cmn.w	r8, #8978569
+5f1ff118	cmn.w	r8, #666894336
+1feff518	cmn.w	r8, #1957888
+f5ff518	cmn.w	r8, #14614528
+2f69f118	cmn.w	r8, #1761634560
+1fa9f118	cmn.w	r8, #11075753
+1fdcf118	cmn.w	r8, #14418140
+1ff2f118	cmn.w	r8, #15859954
+1f7df118	cmn.w	r8, #8192125
+3fe0f118	cmn.w	r8, #-522133280
+2fbff118	cmn.w	r8, #-1090470144
+3f1bf118	cmn.w	r8, #454761243
+3f27f118	cmn.w	r8, #656877351
+3feaf118	cmn.w	r8, #-353703190
+3fdcf118	cmn.w	r8, #-589505316
+3f9ff118	cmn.w	r8, #-1616928865
+3fddf118	cmn.w	r8, #-572662307
+3ffbf118	cmn.w	r8, #-67372037
+2a03	cmp	r2, #3
+2b03	cmp	r3, #3
+2c0b	cmp	r4, #11
+2e13	cmp	r6, #19
+2cc3	cmp	r4, #195
+2f1b	cmp	r7, #27
+2bb3	cmp	r3, #179
+2fcb	cmp	r7, #203
+2adb	cmp	r2, #219
+2ff3	cmp	r7, #243
+2cfb	cmp	r4, #251
+2dfb	cmp	r5, #251
+4292	cmp	r2, r2
+4292	cmp	r2, r2
+42ba	cmp	r2, r7
+42a2	cmp	r2, r4
+455d	cmp	r5, fp
+4545	cmp	r5, r8
+6f37ebb7	cmp.w	r7, r7, ror #24
+2ff7ebb7	cmp.w	r7, r7, ror #11
+7ff7ebb7	cmp.w	r7, r7, ror #31
+3f03ebb3	cmp.w	r3, r3, lsl #12
+2f47ebb7	cmp.w	r7, r7, lsl #9
+7fd7ebb7	cmp.w	r7, r7, lsr #31
+7fdbebbb	cmp.w	fp, fp, lsr #31
+fe7ebb7	cmp.w	r7, r7, asr #3
+3fe7ebb7	cmp.w	r7, r7, asr #15
+5fe7ebb7	cmp.w	r7, r7, asr #23
+f35ebb7	cmp.w	r7, r5, rrx
+4f32ebb7	cmp.w	r7, r2, ror #16
+1f39ebb3	cmp.w	r3, r9, ror #4
+1f35ebb7	cmp.w	r7, r5, ror #4
+6f38ebb7	cmp.w	r7, r8, ror #24
+3f32ebb7	cmp.w	r7, r2, ror #12
+3f3bebb7	cmp.w	r7, fp, ror #12
+4fbbebb3	cmp.w	r3, fp, ror #18
+2fbaebb7	cmp.w	r7, sl, ror #10
+2f76ebb7	cmp.w	r7, r6, ror #9
+2f78ebb7	cmp.w	r7, r8, ror #9
+7f3bebb7	cmp.w	r7, fp, ror #28
+3fb3ebb7	cmp.w	r7, r3, ror #14
+3fbaebb7	cmp.w	r7, sl, ror #14
+1ffaebb7	cmp.w	r7, sl, ror #7
+4ff8ebb7	cmp.w	r7, r8, ror #19
+7fb8ebb7	cmp.w	r7, r8, ror #30
+7f72ebb7	cmp.w	r7, r2, ror #29
+6ff3ebb7	cmp.w	r7, r3, ror #27
+7ff9ebb7	cmp.w	r7, r9, ror #31
+f86ebb7	cmp.w	r7, r6, lsl #2
+1f08ebb7	cmp.w	r7, r8, lsl #4
+3f0aebb7	cmp.w	r7, sl, lsl #12
+2f89ebb7	cmp.w	r7, r9, lsl #10
+5f48ebb7	cmp.w	r7, r8, lsl #21
+6f87ebbb	cmp.w	fp, r7, lsl #26
+5fcbebb7	cmp.w	r7, fp, lsl #23
+3fc3ebb7	cmp.w	r7, r3, lsl #15
+7fc2ebb7	cmp.w	r7, r2, lsl #31
+4f19ebb7	cmp.w	r7, r9, lsr #16
+f56ebb7	cmp.w	r7, r6, lsr #1
+1f9aebb7	cmp.w	r7, sl, lsr #6
+1f55ebb7	cmp.w	r7, r5, lsr #5
+2fdbebb7	cmp.w	r7, fp, lsr #11
+6f99ebb7	cmp.w	r7, r9, lsr #26
+6fdbebb7	cmp.w	r7, fp, lsr #27
+3fdaebb7	cmp.w	r7, sl, lsr #15
+4f2bebb7	cmp.w	r7, fp, asr #16
+4f22ebb7	cmp.w	r7, r2, asr #16
+fe4ebb7	cmp.w	r7, r4, asr #3
+4f64ebb7	cmp.w	r7, r4, asr #17
+4fe9ebb7	cmp.w	r7, r9, asr #19
+2feaebb7	cmp.w	r7, sl, asr #11
+7fa3ebb7	cmp.w	r7, r3, asr #30
+3fe4ebb7	cmp.w	r7, r4, asr #15
+5f00f1b6	cmp.w	r6, #536870912
+7f40f1b6	cmp.w	r6, #50331648
+f21f1b6	cmp.w	r6, #33
+6f8cf5b6	cmp.w	r6, #1120
+7fa8f5b6	cmp.w	r6, #336
+5f95f1b6	cmp.w	r6, #312475648
+5f45f1b6	cmp.w	r6, #826277888
+4f2df5b6	cmp.w	r6, #44288
+feaf5b6	cmp.w	r6, #7667712
+1febf5ba	cmp.w	sl, #1925120
+5f79f5b6	cmp.w	r6, #15936
+f7ff1b6	cmp.w	r6, #127
+2feff5b6	cmp.w	r6, #489472
+1f66f1b6	cmp.w	r6, #6684774
+2fb1f1b6	cmp.w	r6, #-1325354752
+1ff2f1b6	cmp.w	r6, #15859954
+1f7cf1b6	cmp.w	r6, #8126588
+2f7df1b6	cmp.w	r6, #2097184000
+3f49f1b6	cmp.w	r6, #1229539657
+1feff1b6	cmp.w	r6, #15663343
+3ff0f1b6	cmp.w	r6, #-252645136
+3f6cf1b6	cmp.w	r6, #1819044972
+3fd3f1b6	cmp.w	r6, #-741092397
+3f73f1b6	cmp.w	r6, #1936946035
+4064	eors	r4, r4
+4064	eors	r4, r4
+4074	eors	r4, r6
+405c	eors	r4, r3
+19b9ea89	eor.w	r9, r9, r9, ror #6
+2bf9ea89	eor.w	fp, r9, r9, ror #11
+649ea89	eor.w	r6, r9, r9, lsl #1
+6719ea89	eor.w	r7, r9, r9, lsr #24
+2907ea89	eor.w	r9, r9, r7, lsl #8
+5964ea89	eor.w	r9, r9, r4, asr #21
+5964ea89	eor.w	r9, r9, r4, asr #21
+35d5ea89	eor.w	r5, r9, r5, lsr #15
+6aaaea89	eor.w	sl, r9, sl, asr #26
+604ea89	eor.w	r6, r9, r4
+73bea89	eor.w	r7, r9, fp, rrx
+b3aea89	eor.w	fp, r9, sl, rrx
+2f6ea89	eor.w	r2, r9, r6, ror #3
+4774ea89	eor.w	r7, r9, r4, ror #17
+68b4ea89	eor.w	r8, r9, r4, ror #26
+7bf4ea89	eor.w	fp, r9, r4, ror #31
+440bea89	eor.w	r4, r9, fp, lsl #16
+4a04ea89	eor.w	sl, r9, r4, lsl #16
+6708ea89	eor.w	r7, r9, r8, lsl #24
+7c5ea89	eor.w	r7, r9, r5, lsl #3
+18cbea89	eor.w	r8, r9, fp, lsl #7
+6243ea89	eor.w	r2, r9, r3, lsl #25
+7b43ea89	eor.w	fp, r9, r3, lsl #29
+4213ea89	eor.w	r2, r9, r3, lsr #16
+6817ea89	eor.w	r8, r9, r7, lsr #24
+2793ea89	eor.w	r7, r9, r3, lsr #10
+6b54ea89	eor.w	fp, r9, r4, lsr #25
+379aea89	eor.w	r7, r9, sl, lsr #14
+7498ea89	eor.w	r4, r9, r8, lsr #30
+7697ea89	eor.w	r6, r9, r7, lsr #30
+2522ea89	eor.w	r5, r9, r2, asr #8
+5823ea89	eor.w	r8, r9, r3, asr #20
+2e7ea89	eor.w	r2, r9, r7, asr #3
+53a4ea89	eor.w	r3, r9, r4, asr #22
+12e4ea89	eor.w	r2, r9, r4, asr #7
+75e7ea89	eor.w	r5, r9, r7, asr #31
+3959ea99	eors.w	r9, r9, r9, lsr #13
+3279ea99	eors.w	r2, r9, r9, ror #13
+62c9ea99	eors.w	r2, r9, r9, lsl #27
+18d9ea99	eors.w	r8, r9, r9, lsr #7
+5559ea99	eors.w	r5, r9, r9, lsr #21
+629ea99	eors.w	r6, r9, r9, asr #32
+636ea99	eors.w	r6, r9, r6, rrx
+1636ea99	eors.w	r6, r9, r6, ror #4
+59b2ea99	eors.w	r9, r9, r2, ror #22
+7b8bea99	eors.w	fp, r9, fp, lsl #30
+656ea99	eors.w	r6, r9, r6, lsr #1
+6616ea99	eors.w	r6, r9, r6, lsr #24
+2adaea99	eors.w	sl, r9, sl, lsr #11
+7917ea99	eors.w	r9, r9, r7, lsr #28
+7998ea99	eors.w	r9, r9, r8, lsr #30
+9aaea99	eors.w	r9, r9, sl, asr #2
+2963ea99	eors.w	r9, r9, r3, asr #9
+19e6ea99	eors.w	r9, r9, r6, asr #7
+4634ea99	eors.w	r6, r9, r4, ror #16
+1635ea99	eors.w	r6, r9, r5, ror #4
+7bbea99	eors.w	r7, r9, fp, ror #2
+23b6ea99	eors.w	r3, r9, r6, ror #10
+1a76ea99	eors.w	sl, r9, r6, ror #5
+66b8ea99	eors.w	r6, r9, r8, ror #26
+5ab4ea99	eors.w	sl, r9, r4, ror #22
+4af2ea99	eors.w	sl, r9, r2, ror #19
+6473ea99	eors.w	r4, r9, r3, ror #25
+4a0bea99	eors.w	sl, r9, fp, lsl #16
+5a07ea99	eors.w	sl, r9, r7, lsl #20
+6887ea99	eors.w	r8, r9, r7, lsl #26
+6342ea99	eors.w	r3, r9, r2, lsl #25
+73c7ea99	eors.w	r3, r9, r7, lsl #31
+1856ea99	eors.w	r8, r9, r6, lsr #5
+445aea99	eors.w	r4, r9, sl, lsr #17
+3712ea99	eors.w	r7, r9, r2, lsr #12
+3715ea99	eors.w	r7, r9, r5, lsr #12
+6716ea99	eors.w	r7, r9, r6, lsr #24
+3653ea99	eors.w	r6, r9, r3, lsr #13
+2bd7ea99	eors.w	fp, r9, r7, lsr #11
+7a15ea99	eors.w	sl, r9, r5, lsr #28
+7ad2ea99	eors.w	sl, r9, r2, lsr #31
+aa3ea99	eors.w	sl, r9, r3, asr #2
+436bea99	eors.w	r3, r9, fp, asr #17
+47e5ea99	eors.w	r7, r9, r5, asr #19
+7a65ea99	eors.w	sl, r9, r5, asr #29
+76eaea99	eors.w	r6, r9, sl, asr #31
+180cf488	eor.w	r8, r8, #2293760
+5894f088	eor.w	r8, r8, #310378496
+28d2f488	eor.w	r8, r8, #430080
+7851f088	eor.w	r8, r8, #54788096
+6827f488	eor.w	r8, r8, #2672
+8dbf088	eor.w	r8, r8, #219
+282ff088	eor.w	r8, r8, #788541184
+28bbf088	eor.w	r8, r8, #-1157580032
+4440f088	eor.w	r4, r8, #-1073741824
+5588f088	eor.w	r5, r8, #285212672
+7a8f488	eor.w	r7, r8, #5505024
+3930f488	eor.w	r9, r8, #180224
+3938f488	eor.w	r9, r8, #188416
+24d8f488	eor.w	r4, r8, #442368
+341bf488	eor.w	r4, r8, #158720
+67cdf088	eor.w	r7, r8, #107479040
+327cf488	eor.w	r2, r8, #258048
+af5f088	eor.w	sl, r8, #245
+2973f088	eor.w	r9, r8, #1929409280
+16e6f088	eor.w	r6, r8, #15073510
+372ef088	eor.w	r7, r8, #774778414
+3475f088	eor.w	r4, r8, #1970632053
+808f098	eors.w	r8, r8, #8
+892f098	eors.w	r8, r8, #146
+84df098	eors.w	r8, r8, #77
+2806f498	eors.w	r8, r8, #548864
+6805f098	eors.w	r8, r8, #139460608
+b8af098	eors.w	fp, r8, #138
+4887f098	eors.w	r8, r8, #1132462080
+190af098	eors.w	r9, r8, #655370
+61df098	eors.w	r6, r8, #29
+786ef498	eors.w	r8, r8, #952
+78def498	eors.w	r8, r8, #444
+485bf098	eors.w	r8, r8, #-620756992
+75ff098	eors.w	r7, r8, #95
+174cf098	eors.w	r7, r8, #4980812
+135cf098	eors.w	r3, r8, #6029404
+245cf098	eors.w	r4, r8, #1543527424
+26e5f098	eors.w	r6, r8, #-452926208
+1576f098	eors.w	r5, r8, #7733366
+16def098	eors.w	r6, r8, #14549214
+3965f098	eors.w	r9, r8, #1701143909
+3af4f098	eors.w	sl, r8, #-185273100
+1690f498	eors.w	r6, r8, #1179648
+5708f098	eors.w	r7, r8, #570425344
+3524f498	eors.w	r5, r8, #167936
+6bb0f498	eors.w	fp, r8, #1408
+1607f498	eors.w	r6, r8, #2211840
+720bf498	eors.w	r2, r8, #556
+521df098	eors.w	r2, r8, #658505728
+67f2f098	eors.w	r7, r8, #126877696
+4669f098	eors.w	r6, r8, #-385875968
+635ef498	eors.w	r3, r8, #3552
+654ff098	eors.w	r5, r8, #217055232
+595ff498	eors.w	r9, r8, #14272
+147bf498	eors.w	r4, r8, #4112384
+b10e935	ldmdb	r5!, {r4, r8, r9, fp}
+d18e915	ldmdb	r5, {r3, r4, r8, sl, fp}
+589b	ldr	r3, [r3, r2]
+591b	ldr	r3, [r3, r4]
+58e3	ldr	r3, [r4, r3]
+58fb	ldr	r3, [r7, r3]
+5993	ldr	r3, [r2, r6]
+58a3	ldr	r3, [r4, r2]
+6cddf856	ldr.w	r6, [r6, #-221]
+6c2bf856	ldr.w	r6, [r6, #-43]
+acb8f856	ldr.w	sl, [r6, #-184]
+bcf7f856	ldr.w	fp, [r6, #-247]
+8c20f856	ldr.w	r8, [r6, #-32]
+3cc7f856	ldr.w	r3, [r6, #-199]
+7cb5f856	ldr.w	r7, [r6, #-181]
+7c0ff856	ldr.w	r7, [r6, #-15]
+8c1bf856	ldr.w	r8, [r6, #-27]
+bc09f856	ldr.w	fp, [r6, #-9]
+8b20f856	ldr.w	r8, [r6], #32
+7f82f856	ldr.w	r7, [r6, #130]!
+4f81f856	ldr.w	r4, [r6, #129]!
+2b62f856	ldr.w	r2, [r6], #98
+9b45f856	ldr.w	r9, [r6], #69
+8b87f856	ldr.w	r8, [r6], #135
+3fd2f856	ldr.w	r3, [r6, #210]!
+9fe8f856	ldr.w	r9, [r6, #232]!
+abbaf856	ldr.w	sl, [r6], #186
+8bd6f856	ldr.w	r8, [r6], #214
+afd3f856	ldr.w	sl, [r6, #211]!
+2fe5f856	ldr.w	r2, [r6, #229]!
+7beef856	ldr.w	r7, [r6], #238
+bbf5f856	ldr.w	fp, [r6], #245
+3f7ef856	ldr.w	r3, [r6, #126]!
+9ffff856	ldr.w	r9, [r6, #255]!
+29fcf856	ldr.w	r2, [r6], #-252
+29a0f856	ldr.w	r2, [r6], #-160
+4dfaf856	ldr.w	r4, [r6, #-250]!
+59edf856	ldr.w	r5, [r6], #-237
+4974f856	ldr.w	r4, [r6], #-116
+8dcef856	ldr.w	r8, [r6, #-206]!
+895df856	ldr.w	r8, [r6], #-93
+79c7f856	ldr.w	r7, [r6], #-199
+2dcbf856	ldr.w	r2, [r6, #-203]!
+8dd3f856	ldr.w	r8, [r6, #-211]!
+2992f856	ldr.w	r2, [r6], #-146
+b944f856	ldr.w	fp, [r6], #-68
+2d4af856	ldr.w	r2, [r6, #-74]!
+bd44f856	ldr.w	fp, [r6, #-68]!
+b989f856	ldr.w	fp, [r6], #-137
+2901f856	ldr.w	r2, [r6], #-1
+a029f8da	ldr.w	sl, [sl, #41]
+2504f8d2	ldr.w	r2, [r2, #1284]
+2216f8d2	ldr.w	r2, [r2, #534]
+a328f8da	ldr.w	sl, [sl, #808]
+a12bf8da	ldr.w	sl, [sl, #299]
+a391f8da	ldr.w	sl, [sl, #913]
+2696f8d2	ldr.w	r2, [r2, #1686]
+ab0df8da	ldr.w	sl, [sl, #2829]
+a71ef8da	ldr.w	sl, [sl, #1822]
+297ef8d2	ldr.w	r2, [r2, #2430]
+2db3f8d2	ldr.w	r2, [r2, #3507]
+2de7f8d2	ldr.w	r2, [r2, #3559]
+300cf8d2	ldr.w	r3, [r2, #12]
+4024f8d2	ldr.w	r4, [r2, #36]
+34a0f8da	ldr.w	r3, [sl, #1184]
+2488f8da	ldr.w	r2, [sl, #1160]
+9624f8d2	ldr.w	r9, [r2, #1572]
+2251f8da	ldr.w	r2, [sl, #593]
+8a0bf8da	ldr.w	r8, [sl, #2571]
+4c15f8d2	ldr.w	r4, [r2, #3093]
+5b13f8d2	ldr.w	r5, [r2, #2835]
+6d1cf8d2	ldr.w	r6, [r2, #3356]
+79aef8d2	ldr.w	r7, [r2, #2478]
+9b4df8da	ldr.w	r9, [sl, #2893]
+79eef8d2	ldr.w	r7, [r2, #2542]
+963ff8d2	ldr.w	r9, [r2, #1599]
+2d7ef8da	ldr.w	r2, [sl, #3454]
+69bff8d2	ldr.w	r6, [r2, #2495]
+4dfdf8d2	ldr.w	r4, [r2, #3581]
+bf7df8da	ldr.w	fp, [sl, #3965]
+bffbf8da	ldr.w	fp, [sl, #4091]
+7f7ff8d2	ldr.w	r7, [r2, #3967]
+900af859	ldr.w	r9, [r9, sl]
+900af859	ldr.w	r9, [r9, sl]
+9016f859	ldr.w	r9, [r9, r6, lsl #1]
+9015f859	ldr.w	r9, [r9, r5, lsl #1]
+8008f859	ldr.w	r8, [r9, r8]
+6006f859	ldr.w	r6, [r9, r6]
+2022f859	ldr.w	r2, [r9, r2, lsl #2]
+5025f859	ldr.w	r5, [r9, r5, lsl #2]
+2032f859	ldr.w	r2, [r9, r2, lsl #3]
+4008f859	ldr.w	r4, [r9, r8]
+800af859	ldr.w	r8, [r9, sl]
+4016f859	ldr.w	r4, [r9, r6, lsl #1]
+2024f859	ldr.w	r2, [r9, r4, lsl #2]
+a038f859	ldr.w	sl, [r9, r8, lsl #3]
+b034f859	ldr.w	fp, [r9, r4, lsl #3]
+7824	ldrb	r4, [r4, #0]
+7824	ldrb	r4, [r4, #0]
+7864	ldrb	r4, [r4, #1]
+7a24	ldrb	r4, [r4, #8]
+7e24	ldrb	r4, [r4, #24]
+7964	ldrb	r4, [r4, #5]
+7ae4	ldrb	r4, [r4, #11]
+7e64	ldrb	r4, [r4, #25]
+7ee4	ldrb	r4, [r4, #27]
+7be4	ldrb	r4, [r4, #15]
+7fe4	ldrb	r4, [r4, #31]
+7fe4	ldrb	r4, [r4, #31]
+7814	ldrb	r4, [r2, #0]
+7834	ldrb	r4, [r6, #0]
+7c2c	ldrb	r4, [r5, #16]
+7854	ldrb	r4, [r2, #1]
+79b4	ldrb	r4, [r6, #6]
+799c	ldrb	r4, [r3, #6]
+7f2c	ldrb	r4, [r5, #28]
+7b54	ldrb	r4, [r2, #13]
+7bfc	ldrb	r4, [r7, #15]
+7f6c	ldrb	r4, [r5, #29]
+7fec	ldrb	r4, [r5, #31]
+7ffc	ldrb	r4, [r7, #31]
+5d7f	ldrb	r7, [r7, r5]
+5dbf	ldrb	r7, [r7, r6]
+5ddf	ldrb	r7, [r3, r7]
+5def	ldrb	r7, [r5, r7]
+5cd7	ldrb	r7, [r2, r3]
+5d5f	ldrb	r7, [r3, r5]
+acb0f81a	ldrb.w	sl, [sl, #-176]
+2c60f812	ldrb.w	r2, [r2, #-96]
+acdaf81a	ldrb.w	sl, [sl, #-218]
+2c98f812	ldrb.w	r2, [r2, #-152]
+2c9bf812	ldrb.w	r2, [r2, #-155]
+6cbff81a	ldrb.w	r6, [sl, #-191]
+ac6cf812	ldrb.w	sl, [r2, #-108]
+8cf2f81a	ldrb.w	r8, [sl, #-242]
+7c4cf81a	ldrb.w	r7, [sl, #-76]
+4c9af812	ldrb.w	r4, [r2, #-154]
+6c99f812	ldrb.w	r6, [r2, #-153]
+7c59f81a	ldrb.w	r7, [sl, #-89]
+6c15f81a	ldrb.w	r6, [sl, #-21]
+9c04f81a	ldrb.w	r9, [sl, #-4]
+4c11f81a	ldrb.w	r4, [sl, #-17]
+bc11f812	ldrb.w	fp, [r2, #-17]
+3f80f812	ldrb.w	r3, [r2, #128]!
+6b90f812	ldrb.w	r6, [r2], #144
+bf06f81a	ldrb.w	fp, [sl, #6]!
+5f14f81a	ldrb.w	r5, [sl, #20]!
+7b58f812	ldrb.w	r7, [r2], #88
+6b46f81a	ldrb.w	r6, [sl], #70
+bfa2f81a	ldrb.w	fp, [sl, #162]!
+8f8af81a	ldrb.w	r8, [sl, #138]!
+8be8f81a	ldrb.w	r8, [sl], #232
+8b35f812	ldrb.w	r8, [r2], #53
+4f55f81a	ldrb.w	r4, [sl, #85]!
+bf36f81a	ldrb.w	fp, [sl, #54]!
+abe5f812	ldrb.w	sl, [r2], #229
+bb6bf812	ldrb.w	fp, [r2], #107
+bf76f812	ldrb.w	fp, [r2, #118]!
+afc7f812	ldrb.w	sl, [r2, #199]!
+ab7df812	ldrb.w	sl, [r2], #125
+6bf3f81a	ldrb.w	r6, [sl], #243
+3fbef81a	ldrb.w	r3, [sl, #190]!
+9ff6f81a	ldrb.w	r9, [sl, #246]!
+abf7f812	ldrb.w	sl, [r2], #247
+6bfdf81a	ldrb.w	r6, [sl], #253
+7dc0f812	ldrb.w	r7, [r2, #-192]!
+4dfcf81a	ldrb.w	r4, [sl, #-252]!
+99f7f812	ldrb.w	r9, [r2], #-247
+b9bef812	ldrb.w	fp, [r2], #-190
+6db0f81a	ldrb.w	r6, [sl, #-176]!
+7dbff81a	ldrb.w	r7, [sl, #-191]!
+597df81a	ldrb.w	r5, [sl], #-125
+69f5f81a	ldrb.w	r6, [sl], #-245
+adaef812	ldrb.w	sl, [r2, #-174]!
+6df9f81a	ldrb.w	r6, [sl, #-249]!
+29adf81a	ldrb.w	r2, [sl], #-173
+592ef812	ldrb.w	r5, [r2], #-46
+bdb9f812	ldrb.w	fp, [r2, #-185]!
+bd18f81a	ldrb.w	fp, [sl, #-24]!
+492df81a	ldrb.w	r4, [sl], #-45
+b98af812	ldrb.w	fp, [r2], #-138
+8d69f812	ldrb.w	r8, [r2, #-105]!
+6d55f81a	ldrb.w	r6, [sl, #-85]!
+3912f81a	ldrb.w	r3, [sl], #-18
+b982f812	ldrb.w	fp, [r2], #-130
+8d29f81a	ldrb.w	r8, [sl, #-41]!
+9d43f812	ldrb.w	r9, [r2, #-67]!
+4109f894	ldrb.w	r4, [r4, #265]
+4128f894	ldrb.w	r4, [r4, #296]
+409af894	ldrb.w	r4, [r4, #154]
+419cf894	ldrb.w	r4, [r4, #412]
+42a5f894	ldrb.w	r4, [r4, #677]
+484ff894	ldrb.w	r4, [r4, #2127]
+41dcf894	ldrb.w	r4, [r4, #476]
+466bf894	ldrb.w	r4, [r4, #1643]
+47d4f894	ldrb.w	r4, [r4, #2004]
+4bf6f894	ldrb.w	r4, [r4, #3062]
+a028f894	ldrb.w	sl, [r4, #40]
+8118f894	ldrb.w	r8, [r4, #280]
+9828f894	ldrb.w	r9, [r4, #2088]
+b84cf894	ldrb.w	fp, [r4, #2124]
+7622f894	ldrb.w	r7, [r4, #1570]
+7a4cf894	ldrb.w	r7, [r4, #2636]
+9a46f894	ldrb.w	r9, [r4, #2630]
+6c3cf894	ldrb.w	r6, [r4, #3132]
+65c9f894	ldrb.w	r6, [r4, #1481]
+5d53f894	ldrb.w	r5, [r4, #3411]
+279cf894	ldrb.w	r2, [r4, #1948]
+8bb6f894	ldrb.w	r8, [r4, #2998]
+bb6df894	ldrb.w	fp, [r4, #2925]
+5c7ff894	ldrb.w	r5, [r4, #3199]
+77eef894	ldrb.w	r7, [r4, #2030]
+5008f815	ldrb.w	r5, [r5, r8]
+500bf815	ldrb.w	r5, [r5, fp]
+5012f815	ldrb.w	r5, [r5, r2, lsl #1]
+5013f815	ldrb.w	r5, [r5, r3, lsl #1]
+5033f815	ldrb.w	r5, [r5, r3, lsl #3]
+7007f815	ldrb.w	r7, [r5, r7]
+2012f815	ldrb.w	r2, [r5, r2, lsl #1]
+6016f815	ldrb.w	r6, [r5, r6, lsl #1]
+b03bf815	ldrb.w	fp, [r5, fp, lsl #3]
+3033f815	ldrb.w	r3, [r5, r3, lsl #3]
+4007f815	ldrb.w	r4, [r5, r7]
+b003f815	ldrb.w	fp, [r5, r3]
+b01af815	ldrb.w	fp, [r5, sl, lsl #1]
+4029f815	ldrb.w	r4, [r5, r9, lsl #2]
+403af815	ldrb.w	r4, [r5, sl, lsl #3]
+9034f815	ldrb.w	r9, [r5, r4, lsl #3]
+9e01f819	ldrbt	r9, [r9, #1]
+9e0af819	ldrbt	r9, [r9, #10]
+ae48f81a	ldrbt	sl, [sl, #72]
+ae98f81a	ldrbt	sl, [sl, #152]
+9e0ef819	ldrbt	r9, [r9, #14]
+9e72f819	ldrbt	r9, [r9, #114]
+9eccf819	ldrbt	r9, [r9, #204]
+9edcf819	ldrbt	r9, [r9, #220]
+9ee9f819	ldrbt	r9, [r9, #233]
+9e7bf819	ldrbt	r9, [r9, #123]
+9edef819	ldrbt	r9, [r9, #222]
+9eeff819	ldrbt	r9, [r9, #239]
+3e00f819	ldrbt	r3, [r9, #0]
+ae00f819	ldrbt	sl, [r9, #0]
+8e40f819	ldrbt	r8, [r9, #64]
+be02f812	ldrbt	fp, [r2, #2]
+ae44f812	ldrbt	sl, [r2, #68]
+3e42f819	ldrbt	r3, [r9, #66]
+7e16f819	ldrbt	r7, [r9, #22]
+2e25f81a	ldrbt	r2, [sl, #37]
+5ed4f819	ldrbt	r5, [r9, #212]
+4e4ef819	ldrbt	r4, [r9, #78]
+8e3ef819	ldrbt	r8, [r9, #62]
+7e97f81a	ldrbt	r7, [sl, #151]
+3eebf819	ldrbt	r3, [r9, #235]
+6ed7f819	ldrbt	r6, [r9, #215]
+5ebff819	ldrbt	r5, [r9, #191]
+4ef7f819	ldrbt	r4, [r9, #247]
+6efff819	ldrbt	r6, [r9, #255]
+99b0e9d6	ldrd	r9, r9, [r6, #704]
+44d4e9d6	ldrd	r4, r4, [r6, #848]
+3371e9f6	ldrd	r3, r3, [r6, #452]!
+bb6ee976	ldrd	fp, fp, [r6, #-440]!
+338be876	ldrd	r3, r3, [r6], #-556
+6507e9d6	ldrd	r6, r5, [r6, #28]
+86cae9d6	ldrd	r8, r6, [r6, #808]
+76b7e956	ldrd	r7, r6, [r6, #-732]
+b2cce9d6	ldrd	fp, r2, [r6, #816]
+bacae9d6	ldrd	fp, sl, [r6, #808]
+49dee9d6	ldrd	r4, r9, [r6, #888]
+9877e956	ldrd	r9, r8, [r6, #-476]
+92b3e956	ldrd	r9, r2, [r6, #-716]
+ab8fe956	ldrd	sl, fp, [r6, #-572]
+ab2be956	ldrd	sl, fp, [r6, #-172]
+4959e956	ldrd	r4, r9, [r6, #-356]
+ba22e956	ldrd	fp, sl, [r6, #-136]
+240ae956	ldrd	r2, r4, [r6, #-40]
+920ae8f6	ldrd	r9, r2, [r6], #40
+9a12e8f6	ldrd	r9, sl, [r6], #72
+7238e9f6	ldrd	r7, r2, [r6, #224]!
+7523e9f6	ldrd	r7, r5, [r6, #140]!
+9517e8f6	ldrd	r9, r5, [r6], #92
+58a5e8f6	ldrd	r5, r8, [r6], #660
+a43ce9f6	ldrd	sl, r4, [r6, #240]!
+544de9f6	ldrd	r5, r4, [r6, #308]!
+a8b3e8f6	ldrd	sl, r8, [r6], #716
+b79de8f6	ldrd	fp, r7, [r6], #628
+5a9be9f6	ldrd	r5, sl, [r6, #620]!
+82b6e9f6	ldrd	r8, r2, [r6, #728]!
+baf3e8f6	ldrd	fp, sl, [r6], #972
+59cfe9f6	ldrd	r5, r9, [r6, #828]!
+34fee9f6	ldrd	r3, r4, [r6, #1016]!
+35e8e976	ldrd	r3, r5, [r6, #-928]!
+a5b8e976	ldrd	sl, r5, [r6, #-736]!
+9258e876	ldrd	r9, r2, [r6], #-352
+346ce976	ldrd	r3, r4, [r6, #-432]!
+b730e976	ldrd	fp, r7, [r6, #-192]!
+82aae876	ldrd	r8, r2, [r6], #-680
+453be876	ldrd	r4, r5, [r6], #-236
+28b2e976	ldrd	r2, r8, [r6, #-712]!
+5296e976	ldrd	r5, r2, [r6, #-600]!
+3465e876	ldrd	r3, r4, [r6], #-404
+2392e976	ldrd	r2, r3, [r6, #-584]!
+7906e876	ldrd	r7, r9, [r6], #-24
+9515e876	ldrd	r9, r5, [r6], #-84
+4525e976	ldrd	r4, r5, [r6, #-148]!
+a729e976	ldrd	sl, r7, [r6, #-164]!
+5403e976	ldrd	r5, r4, [r6, #-12]!
+8836	ldrh	r6, [r6, #0]
+8836	ldrh	r6, [r6, #0]
+8936	ldrh	r6, [r6, #8]
+88b6	ldrh	r6, [r6, #4]
+8a76	ldrh	r6, [r6, #18]
+8e36	ldrh	r6, [r6, #48]
+8d76	ldrh	r6, [r6, #42]
+8eb6	ldrh	r6, [r6, #52]
+8f76	ldrh	r6, [r6, #58]
+8ef6	ldrh	r6, [r6, #54]
+8ff6	ldrh	r6, [r6, #62]
+8ff6	ldrh	r6, [r6, #62]
+8826	ldrh	r6, [r4, #0]
+881e	ldrh	r6, [r3, #0]
+88ae	ldrh	r6, [r5, #4]
+8896	ldrh	r6, [r2, #4]
+8e2e	ldrh	r6, [r5, #48]
+8b26	ldrh	r6, [r4, #24]
+8cd6	ldrh	r6, [r2, #38]
+8e7e	ldrh	r6, [r7, #50]
+8f6e	ldrh	r6, [r5, #58]
+8fbe	ldrh	r6, [r7, #60]
+8ffe	ldrh	r6, [r7, #62]
+8fe6	ldrh	r6, [r4, #62]
+8c41f838	ldrh.w	r8, [r8, #-65]
+2cfcf838	ldrh.w	r2, [r8, #-252]
+9cf0f838	ldrh.w	r9, [r8, #-240]
+ac74f838	ldrh.w	sl, [r8, #-116]
+bcb7f838	ldrh.w	fp, [r8, #-183]
+5c8cf838	ldrh.w	r5, [r8, #-140]
+3c36f838	ldrh.w	r3, [r8, #-54]
+6c27f838	ldrh.w	r6, [r8, #-39]
+bc2df838	ldrh.w	fp, [r8, #-45]
+2ca1f838	ldrh.w	r2, [r8, #-161]
+9d00f838	ldrh.w	r9, [r8, #0]!
+3b05f838	ldrh.w	r3, [r8], #5
+3f28f838	ldrh.w	r3, [r8, #40]!
+6f06f838	ldrh.w	r6, [r8, #6]!
+3bb0f838	ldrh.w	r3, [r8], #176
+2b34f838	ldrh.w	r2, [r8], #52
+2bd8f838	ldrh.w	r2, [r8], #216
+bb4df838	ldrh.w	fp, [r8], #77
+9f6cf838	ldrh.w	r9, [r8, #108]!
+9fa3f838	ldrh.w	r9, [r8, #163]!
+9bf4f838	ldrh.w	r9, [r8], #244
+9ba7f838	ldrh.w	r9, [r8], #167
+4fe5f838	ldrh.w	r4, [r8, #229]!
+9fbcf838	ldrh.w	r9, [r8, #188]!
+5ff5f838	ldrh.w	r5, [r8, #245]!
+79fef838	ldrh.w	r7, [r8], #-254
+69e0f838	ldrh.w	r6, [r8], #-224
+4dfff838	ldrh.w	r4, [r8, #-255]!
+297cf838	ldrh.w	r2, [r8], #-124
+6ddef838	ldrh.w	r6, [r8, #-222]!
+a97bf838	ldrh.w	sl, [r8], #-123
+6d3ef838	ldrh.w	r6, [r8, #-62]!
+3d20f838	ldrh.w	r3, [r8, #-32]!
+a9d9f838	ldrh.w	sl, [r8], #-217
+3910f838	ldrh.w	r3, [r8], #-16
+3d73f838	ldrh.w	r3, [r8, #-115]!
+5dc4f838	ldrh.w	r5, [r8, #-196]!
+4dc3f838	ldrh.w	r4, [r8, #-195]!
+b922f838	ldrh.w	fp, [r8], #-34
+5982f838	ldrh.w	r5, [r8], #-130
+5d49f838	ldrh.w	r5, [r8, #-73]!
+8111f8b8	ldrh.w	r8, [r8, #273]
+8409f8b8	ldrh.w	r8, [r8, #1033]
+82a8f8b8	ldrh.w	r8, [r8, #680]
+8c48f8b8	ldrh.w	r8, [r8, #3144]
+8391f8b8	ldrh.w	r8, [r8, #913]
+86c8f8b8	ldrh.w	r8, [r8, #1736]
+868df8b8	ldrh.w	r8, [r8, #1677]
+8d0ef8b8	ldrh.w	r8, [r8, #3342]
+8575f8b8	ldrh.w	r8, [r8, #1397]
+83bef8b8	ldrh.w	r8, [r8, #958]
+87bef8b8	ldrh.w	r8, [r8, #1982]
+2104f8b8	ldrh.w	r2, [r8, #260]
+6410f8b8	ldrh.w	r6, [r8, #1040]
+6290f8b8	ldrh.w	r6, [r8, #656]
+5405f8b8	ldrh.w	r5, [r8, #1029]
+4905f8b8	ldrh.w	r4, [r8, #2309]
+3226f8b8	ldrh.w	r3, [r8, #550]
+319cf8b8	ldrh.w	r3, [r8, #412]
+ae03f8b8	ldrh.w	sl, [r8, #3587]
+a8f8f8b8	ldrh.w	sl, [r8, #2296]
+2a27f8b8	ldrh.w	r2, [r8, #2599]
+3da6f8b8	ldrh.w	r3, [r8, #3494]
+b34ff8b8	ldrh.w	fp, [r8, #847]
+4d3df8b8	ldrh.w	r4, [r8, #3389]
+2abbf8b8	ldrh.w	r2, [r8, #2747]
+9bedf8b8	ldrh.w	r9, [r8, #3053]
+bfb5f8b8	ldrh.w	fp, [r8, #4021]
+9fd7f8b8	ldrh.w	r9, [r8, #4055]
+9efef8b8	ldrh.w	r9, [r8, #3838]
+b002f83b	ldrh.w	fp, [fp, r2]
+3002f833	ldrh.w	r3, [r3, r2]
+b017f83b	ldrh.w	fp, [fp, r7, lsl #1]
+3027f833	ldrh.w	r3, [r3, r7, lsl #2]
+3036f833	ldrh.w	r3, [r3, r6, lsl #3]
+3036f833	ldrh.w	r3, [r3, r6, lsl #3]
+7007f83b	ldrh.w	r7, [fp, r7]
+7007f83b	ldrh.w	r7, [fp, r7]
+9029f833	ldrh.w	r9, [r3, r9, lsl #2]
+6026f833	ldrh.w	r6, [r3, r6, lsl #2]
+8038f83b	ldrh.w	r8, [fp, r8, lsl #3]
+a03af83b	ldrh.w	sl, [fp, sl, lsl #3]
+7004f83b	ldrh.w	r7, [fp, r4]
+6002f833	ldrh.w	r6, [r3, r2]
+2018f833	ldrh.w	r2, [r3, r8, lsl #1]
+a029f83b	ldrh.w	sl, [fp, r9, lsl #2]
+8037f833	ldrh.w	r8, [r3, r7, lsl #3]
+6037f833	ldrh.w	r6, [r3, r7, lsl #3]
+8e40f838	ldrht	r8, [r8, #64]
+8e84f838	ldrht	r8, [r8, #132]
+6e8af836	ldrht	r6, [r6, #138]
+6ea4f836	ldrht	r6, [r6, #164]
+6e6cf836	ldrht	r6, [r6, #108]
+6e5af836	ldrht	r6, [r6, #90]
+6ec7f836	ldrht	r6, [r6, #199]
+6eecf836	ldrht	r6, [r6, #236]
+2e00f836	ldrht	r2, [r6, #0]
+9e00f836	ldrht	r9, [r6, #0]
+4e02f836	ldrht	r4, [r6, #2]
+7e04f836	ldrht	r7, [r6, #4]
+2e14f836	ldrht	r2, [r6, #20]
+ae28f838	ldrht	sl, [r8, #40]
+8e92f836	ldrht	r8, [r6, #146]
+2e92f836	ldrht	r2, [r6, #146]
+3e33f836	ldrht	r3, [r6, #51]
+ae63f836	ldrht	sl, [r6, #99]
+ae75f836	ldrht	sl, [r6, #117]
+5e9bf838	ldrht	r5, [r8, #155]
+aeddf836	ldrht	sl, [r6, #221]
+7e7bf836	ldrht	r7, [r6, #123]
+aef7f838	ldrht	sl, [r8, #247]
+bedff836	ldrht	fp, [r6, #223]
+3efff838	ldrht	r3, [r8, #255]
+aefff836	ldrht	sl, [r6, #255]
+4c1af914	ldrsb.w	r4, [r4, #-26]
+ac80f914	ldrsb.w	sl, [r4, #-128]
+3cf8f914	ldrsb.w	r3, [r4, #-248]
+bcbff914	ldrsb.w	fp, [r4, #-191]
+6cebf914	ldrsb.w	r6, [r4, #-235]
+acd5f914	ldrsb.w	sl, [r4, #-213]
+5c66f914	ldrsb.w	r5, [r4, #-102]
+acd1f914	ldrsb.w	sl, [r4, #-209]
+9c06f914	ldrsb.w	r9, [r4, #-6]
+3c0af914	ldrsb.w	r3, [r4, #-10]
+2f00f914	ldrsb.w	r2, [r4, #0]!
+2f08f914	ldrsb.w	r2, [r4, #8]!
+6b0af914	ldrsb.w	r6, [r4], #10
+9f41f914	ldrsb.w	r9, [r4, #65]!
+3b86f914	ldrsb.w	r3, [r4], #134
+bb49f914	ldrsb.w	fp, [r4], #73
+2f0ef914	ldrsb.w	r2, [r4, #14]!
+7bf0f914	ldrsb.w	r7, [r4], #240
+2b5cf914	ldrsb.w	r2, [r4], #92
+2f99f914	ldrsb.w	r2, [r4, #153]!
+3f36f914	ldrsb.w	r3, [r4, #54]!
+5bd5f914	ldrsb.w	r5, [r4], #213
+9ff1f914	ldrsb.w	r9, [r4, #241]!
+9fb3f914	ldrsb.w	r9, [r4, #179]!
+bbbbf914	ldrsb.w	fp, [r4], #187
+29fcf914	ldrsb.w	r2, [r4], #-252
+59fff914	ldrsb.w	r5, [r4], #-255
+6dfef914	ldrsb.w	r6, [r4, #-254]!
+b99ff914	ldrsb.w	fp, [r4], #-159
+89b4f914	ldrsb.w	r8, [r4], #-180
+6d30f914	ldrsb.w	r6, [r4, #-48]!
+bdaff914	ldrsb.w	fp, [r4, #-175]!
+396af914	ldrsb.w	r3, [r4], #-106
+a91ef914	ldrsb.w	sl, [r4], #-30
+ad28f914	ldrsb.w	sl, [r4, #-40]!
+9db5f914	ldrsb.w	r9, [r4, #-181]!
+2993f914	ldrsb.w	r2, [r4], #-147
+594af914	ldrsb.w	r5, [r4], #-74
+2d69f914	ldrsb.w	r2, [r4, #-105]!
+5d2af914	ldrsb.w	r5, [r4, #-42]!
+ad0df914	ldrsb.w	sl, [r4, #-13]!
+8d02f914	ldrsb.w	r8, [r4, #-2]!
+600cf996	ldrsb.w	r6, [r6, #12]
+6c05f996	ldrsb.w	r6, [r6, #3077]
+686af996	ldrsb.w	r6, [r6, #2154]
+650bf996	ldrsb.w	r6, [r6, #1291]
+6b64f996	ldrsb.w	r6, [r6, #2916]
+627af996	ldrsb.w	r6, [r6, #634]
+6d3cf996	ldrsb.w	r6, [r6, #3388]
+6caff996	ldrsb.w	r6, [r6, #3247]
+8400f996	ldrsb.w	r8, [r6, #1024]
+9900f996	ldrsb.w	r9, [r6, #2304]
+9190f996	ldrsb.w	r9, [r6, #400]
+8019f996	ldrsb.w	r8, [r6, #25]
+40f0f996	ldrsb.w	r4, [r6, #240]
+5641f996	ldrsb.w	r5, [r6, #1601]
+b07cf996	ldrsb.w	fp, [r6, #124]
+7705f996	ldrsb.w	r7, [r6, #1797]
+b86df996	ldrsb.w	fp, [r6, #2157]
+2f0af996	ldrsb.w	r2, [r6, #3850]
+83b9f996	ldrsb.w	r8, [r6, #953]
+9d8df996	ldrsb.w	r9, [r6, #3469]
+b7b9f996	ldrsb.w	fp, [r6, #1977]
+ba7ef996	ldrsb.w	fp, [r6, #2686]
+3eaff996	ldrsb.w	r3, [r6, #3759]
+2ef3f996	ldrsb.w	r2, [r6, #3827]
+2faff996	ldrsb.w	r2, [r6, #4015]
+7003f917	ldrsb.w	r7, [r7, r3]
+700bf917	ldrsb.w	r7, [r7, fp]
+701af917	ldrsb.w	r7, [r7, sl, lsl #1]
+701bf917	ldrsb.w	r7, [r7, fp, lsl #1]
+b00bf917	ldrsb.w	fp, [r7, fp]
+2002f917	ldrsb.w	r2, [r7, r2]
+2022f917	ldrsb.w	r2, [r7, r2, lsl #2]
+3023f917	ldrsb.w	r3, [r7, r3, lsl #2]
+a03af917	ldrsb.w	sl, [r7, sl, lsl #3]
+5035f917	ldrsb.w	r5, [r7, r5, lsl #3]
+b002f917	ldrsb.w	fp, [r7, r2]
+8005f917	ldrsb.w	r8, [r7, r5]
+b029f917	ldrsb.w	fp, [r7, r9, lsl #2]
+901af917	ldrsb.w	r9, [r7, sl, lsl #1]
+a035f917	ldrsb.w	sl, [r7, r5, lsl #3]
+303bf917	ldrsb.w	r3, [r7, fp, lsl #3]
+8e91f918	ldrsbt	r8, [r8, #145]
+8e64f918	ldrsbt	r8, [r8, #100]
+8e6af918	ldrsbt	r8, [r8, #106]
+8eb8f918	ldrsbt	r8, [r8, #184]
+8e9bf918	ldrsbt	r8, [r8, #155]
+8ee9f918	ldrsbt	r8, [r8, #233]
+4efdf914	ldrsbt	r4, [r4, #253]
+8efdf918	ldrsbt	r8, [r8, #253]
+4e00f918	ldrsbt	r4, [r8, #0]
+be01f918	ldrsbt	fp, [r8, #1]
+3e40f918	ldrsbt	r3, [r8, #64]
+4e88f918	ldrsbt	r4, [r8, #136]
+be24f918	ldrsbt	fp, [r8, #36]
+3e86f918	ldrsbt	r3, [r8, #134]
+be15f918	ldrsbt	fp, [r8, #21]
+3ed2f914	ldrsbt	r3, [r4, #210]
+2ea5f918	ldrsbt	r2, [r8, #165]
+6ee6f918	ldrsbt	r6, [r8, #230]
+3e9bf918	ldrsbt	r3, [r8, #155]
+9e6ff918	ldrsbt	r9, [r8, #111]
+aed7f918	ldrsbt	sl, [r8, #215]
+6efef914	ldrsbt	r6, [r4, #254]
+3ebff914	ldrsbt	r3, [r4, #191]
+6efff918	ldrsbt	r6, [r8, #255]
+5fdb	ldrsh	r3, [r3, r7]
+5e9b	ldrsh	r3, [r3, r2]
+5ed3	ldrsh	r3, [r2, r3]
+5eeb	ldrsh	r3, [r5, r3]
+5fe3	ldrsh	r3, [r4, r7]
+5f13	ldrsh	r3, [r2, r4]
+2cfbf932	ldrsh.w	r2, [r2, #-251]
+ac1ff93a	ldrsh.w	sl, [sl, #-31]
+ac28f93a	ldrsh.w	sl, [sl, #-40]
+9cc0f93a	ldrsh.w	r9, [sl, #-192]
+4cb0f932	ldrsh.w	r4, [r2, #-176]
+2cd6f93a	ldrsh.w	r2, [sl, #-214]
+5c9ef932	ldrsh.w	r5, [r2, #-158]
+6c34f93a	ldrsh.w	r6, [sl, #-52]
+ac37f932	ldrsh.w	sl, [r2, #-55]
+2c65f93a	ldrsh.w	r2, [sl, #-101]
+3c4af93a	ldrsh.w	r3, [sl, #-74]
+5c25f93a	ldrsh.w	r5, [sl, #-37]
+6c91f932	ldrsh.w	r6, [r2, #-145]
+6b10f93a	ldrsh.w	r6, [sl], #16
+9f80f932	ldrsh.w	r9, [r2, #128]!
+6f04f932	ldrsh.w	r6, [r2, #4]!
+8b44f93a	ldrsh.w	r8, [sl], #68
+7b90f93a	ldrsh.w	r7, [sl], #144
+5f81f93a	ldrsh.w	r5, [sl, #129]!
+3f60f932	ldrsh.w	r3, [r2, #96]!
+6b70f93a	ldrsh.w	r6, [sl], #112
+2b61f93a	ldrsh.w	r2, [sl], #97
+bf54f932	ldrsh.w	fp, [r2, #84]!
+3f83f93a	ldrsh.w	r3, [sl, #131]!
+4b99f93a	ldrsh.w	r4, [sl], #153
+7b69f93a	ldrsh.w	r7, [sl], #105
+8f4ef932	ldrsh.w	r8, [r2, #78]!
+8fd1f93a	ldrsh.w	r8, [sl, #209]!
+6bbcf932	ldrsh.w	r6, [r2], #188
+3b3df932	ldrsh.w	r3, [r2], #61
+7f3ef932	ldrsh.w	r7, [r2, #62]!
+9fd6f93a	ldrsh.w	r9, [sl, #214]!
+7bebf932	ldrsh.w	r7, [r2], #235
+9b7ef93a	ldrsh.w	r9, [sl], #126
+2fdef93a	ldrsh.w	r2, [sl, #222]!
+bb7ff93a	ldrsh.w	fp, [sl], #127
+4bdff932	ldrsh.w	r4, [r2], #223
+8fdff932	ldrsh.w	r8, [r2, #223]!
+2ffff93a	ldrsh.w	r2, [sl, #255]!
+6980f932	ldrsh.w	r6, [r2], #-128
+99e8f93a	ldrsh.w	r9, [sl], #-232
+897ef932	ldrsh.w	r8, [r2], #-126
+ada0f932	ldrsh.w	sl, [r2, #-160]!
+5de8f932	ldrsh.w	r5, [r2, #-232]!
+393cf93a	ldrsh.w	r3, [sl], #-60
+395ff932	ldrsh.w	r3, [r2], #-95
+2dbaf93a	ldrsh.w	r2, [sl, #-186]!
+4db4f932	ldrsh.w	r4, [r2, #-180]!
+89cbf93a	ldrsh.w	r8, [sl], #-203
+895af932	ldrsh.w	r8, [r2], #-90
+bd54f932	ldrsh.w	fp, [r2, #-84]!
+3dabf93a	ldrsh.w	r3, [sl, #-171]!
+b987f93a	ldrsh.w	fp, [sl], #-135
+79a9f932	ldrsh.w	r7, [r2], #-169
+ad84f932	ldrsh.w	sl, [r2, #-132]!
+6d59f932	ldrsh.w	r6, [r2, #-89]!
+7929f932	ldrsh.w	r7, [r2], #-41
+b923f93a	ldrsh.w	fp, [sl], #-35
+4d83f93a	ldrsh.w	r4, [sl, #-131]!
+2dc1f93a	ldrsh.w	r2, [sl, #-193]!
+411af9b4	ldrsh.w	r4, [r4, #282]
+41e1f9b4	ldrsh.w	r4, [r4, #481]
+4233f9b4	ldrsh.w	r4, [r4, #563]
+4c97f9b4	ldrsh.w	r4, [r4, #3223]
+41d7f9b4	ldrsh.w	r4, [r4, #471]
+4d57f9b4	ldrsh.w	r4, [r4, #3415]
+b800f9b4	ldrsh.w	fp, [r4, #2048]
+3401f9b4	ldrsh.w	r3, [r4, #1025]
+6208f9b4	ldrsh.w	r6, [r4, #520]
+2150f9b4	ldrsh.w	r2, [r4, #336]
+5016f9b4	ldrsh.w	r5, [r4, #22]
+9846f9b4	ldrsh.w	r9, [r4, #2118]
+9151f9b4	ldrsh.w	r9, [r4, #337]
+911ef9b4	ldrsh.w	r9, [r4, #286]
+9519f9b4	ldrsh.w	r9, [r4, #1305]
+216df9b4	ldrsh.w	r2, [r4, #365]
+78dcf9b4	ldrsh.w	r7, [r4, #2268]
+9bc5f9b4	ldrsh.w	r9, [r4, #3013]
+8733f9b4	ldrsh.w	r8, [r4, #1843]
+79aff9b4	ldrsh.w	r7, [r4, #2479]
+61fdf9b4	ldrsh.w	r6, [r4, #509]
+afd9f9b4	ldrsh.w	sl, [r4, #4057]
+bdfcf9b4	ldrsh.w	fp, [r4, #3580]
+7dfff9b4	ldrsh.w	r7, [r4, #3583]
+5009f935	ldrsh.w	r5, [r5, r9]
+5022f935	ldrsh.w	r5, [r5, r2, lsl #2]
+5029f935	ldrsh.w	r5, [r5, r9, lsl #2]
+5032f935	ldrsh.w	r5, [r5, r2, lsl #3]
+503af935	ldrsh.w	r5, [r5, sl, lsl #3]
+4024f935	ldrsh.w	r4, [r5, r4, lsl #2]
+a01af935	ldrsh.w	sl, [r5, sl, lsl #1]
+b03bf935	ldrsh.w	fp, [r5, fp, lsl #3]
+8038f935	ldrsh.w	r8, [r5, r8, lsl #3]
+a003f935	ldrsh.w	sl, [r5, r3]
+9007f935	ldrsh.w	r9, [r5, r7]
+901bf935	ldrsh.w	r9, [r5, fp, lsl #1]
+301bf935	ldrsh.w	r3, [r5, fp, lsl #1]
+a034f935	ldrsh.w	sl, [r5, r4, lsl #3]
+8039f935	ldrsh.w	r8, [r5, r9, lsl #3]
+be01f93b	ldrsht	fp, [fp, #1]
+3e14f933	ldrsht	r3, [r3, #20]
+3e70f933	ldrsht	r3, [r3, #112]
+be0ef93b	ldrsht	fp, [fp, #14]
+3eb8f933	ldrsht	r3, [r3, #184]
+3e95f933	ldrsht	r3, [r3, #149]
+bec7f93b	ldrsht	fp, [fp, #199]
+be76f93b	ldrsht	fp, [fp, #118]
+3ecff933	ldrsht	r3, [r3, #207]
+3e5ff933	ldrsht	r3, [r3, #95]
+8e04f933	ldrsht	r8, [r3, #4]
+9e01f933	ldrsht	r9, [r3, #1]
+aea0f933	ldrsht	sl, [r3, #160]
+8e14f93b	ldrsht	r8, [fp, #20]
+5e43f933	ldrsht	r5, [r3, #67]
+4e98f93b	ldrsht	r4, [fp, #152]
+7e87f93b	ldrsht	r7, [fp, #135]
+5ec6f93b	ldrsht	r5, [fp, #198]
+2ed6f93b	ldrsht	r2, [fp, #214]
+5e7af933	ldrsht	r5, [r3, #122]
+8ecff933	ldrsht	r8, [r3, #207]
+2e5ff933	ldrsht	r2, [r3, #95]
+8edff93b	ldrsht	r8, [fp, #223]
+2efdf93a	ldrsht	r2, [sl, #253]
+8e40f858	ldrt	r8, [r8, #64]
+6e80f856	ldrt	r6, [r6, #128]
+8e0af858	ldrt	r8, [r8, #10]
+8e25f858	ldrt	r8, [r8, #37]
+8e86f858	ldrt	r8, [r8, #134]
+8eacf858	ldrt	r8, [r8, #172]
+8e47f858	ldrt	r8, [r8, #71]
+6ebcf856	ldrt	r6, [r6, #188]
+8ee9f858	ldrt	r8, [r8, #233]
+8efaf858	ldrt	r8, [r8, #250]
+7e20f858	ldrt	r7, [r8, #32]
+4e80f858	ldrt	r4, [r8, #128]
+5e22f858	ldrt	r5, [r8, #34]
+5e22f858	ldrt	r5, [r8, #34]
+5ea2f858	ldrt	r5, [r8, #162]
+ae58f858	ldrt	sl, [r8, #88]
+2e53f858	ldrt	r2, [r8, #83]
+bec5f858	ldrt	fp, [r8, #197]
+9e3bf858	ldrt	r9, [r8, #59]
+9e6bf858	ldrt	r9, [r8, #107]
+7ed7f858	ldrt	r7, [r8, #215]
+be77f858	ldrt	fp, [r8, #119]
+aedff858	ldrt	sl, [r8, #223]
+aeeff858	ldrt	sl, [r8, #239]
+3efff858	ldrt	r3, [r8, #255]
+40bf	lsls	r7, r7
+40bf	lsls	r7, r7
+40b7	lsls	r7, r6
+4097	lsls	r7, r2
+40f6	lsrs	r6, r6
+40f6	lsrs	r6, r6
+40de	lsrs	r6, r3
+40ee	lsrs	r6, r5
+4604fb04	mla	r6, r4, r4, r4
+4a04fb04	mla	sl, r4, r4, r4
+6406fb04	mla	r4, r4, r6, r6
+4408fb04	mla	r4, r4, r8, r4
+4403fb04	mla	r4, r4, r3, r4
+4303fb04	mla	r3, r4, r3, r4
+6806fb04	mla	r8, r4, r6, r6
+3a03fb04	mla	sl, r4, r3, r3
+6704fb04	mla	r7, r4, r4, r6
+5304fb04	mla	r3, r4, r4, r5
+450bfb04	mla	r5, r4, fp, r4
+4b05fb04	mla	fp, r4, r5, r4
+220bfb04	mla	r2, r4, fp, r2
+2207fb04	mla	r2, r4, r7, r2
+3407fb04	mla	r4, r4, r7, r3
+740afb04	mla	r4, r4, sl, r7
+7909fb04	mla	r9, r4, r9, r7
+2a0afb04	mla	sl, r4, sl, r2
+9806fb04	mla	r8, r4, r6, r9
+2709fb04	mla	r7, r4, r9, r2
+bb1bfb0b	mls	fp, fp, fp, fp
+221bfb0b	mls	r2, fp, fp, r2
+4413fb03	mls	r4, r3, r3, r4
+3312fb03	mls	r3, r3, r2, r3
+4414fb03	mls	r4, r3, r4, r4
+6216fb0b	mls	r2, fp, r6, r6
+9719fb0b	mls	r7, fp, r9, r9
+6a13fb03	mls	sl, r3, r3, r6
+781bfb0b	mls	r8, fp, fp, r7
+ba17fb0b	mls	sl, fp, r7, fp
+b81afb0b	mls	r8, fp, sl, fp
+3319fb0b	mls	r3, fp, r9, r3
+661afb03	mls	r6, r3, sl, r6
+ab16fb0b	mls	fp, fp, r6, sl
+4b1afb0b	mls	fp, fp, sl, r4
+4515fb03	mls	r5, r3, r5, r4
+3414fb0b	mls	r4, fp, r4, r3
+941afb0b	mls	r4, fp, sl, r9
+6718fb03	mls	r7, r3, r8, r6
+2701	movs	r7, #1
+2201	movs	r2, #1
+2621	movs	r6, #33
+2541	movs	r5, #65
+2449	movs	r4, #73
+2289	movs	r2, #137
+2769	movs	r7, #105
+27b1	movs	r7, #177
+23d9	movs	r3, #217
+25f1	movs	r5, #241
+26f9	movs	r6, #249
+27f9	movs	r7, #249
+46c0	mov	r8, r8
+46c0	mov	r8, r8
+46f8	mov	r8, pc
+46f8	mov	r8, pc
+46d0	mov	r8, sl
+46a0	mov	r8, r4
+81b	lsrs	r3, r3, #32
+23	movs	r3, r4
+2b	movs	r3, r5
+11b	lsls	r3, r3, #4
+19b	lsls	r3, r3, #6
+15b	lsls	r3, r3, #5
+39b	lsls	r3, r3, #14
+59b	lsls	r3, r3, #22
+35b	lsls	r3, r3, #13
+55b	lsls	r3, r3, #21
+79b	lsls	r3, r3, #30
+3db	lsls	r3, r3, #15
+5db	lsls	r3, r3, #23
+7db	lsls	r3, r3, #31
+a1b	lsrs	r3, r3, #8
+c1b	lsrs	r3, r3, #16
+a5b	lsrs	r3, r3, #9
+c5b	lsrs	r3, r3, #17
+99b	lsrs	r3, r3, #6
+e1b	lsrs	r3, r3, #24
+e5b	lsrs	r3, r3, #25
+9db	lsrs	r3, r3, #7
+e9b	lsrs	r3, r3, #26
+bdb	lsrs	r3, r3, #15
+ddb	lsrs	r3, r3, #23
+105b	asrs	r3, r3, #1
+109b	asrs	r3, r3, #2
+121b	asrs	r3, r3, #8
+125b	asrs	r3, r3, #9
+145b	asrs	r3, r3, #17
+129b	asrs	r3, r3, #10
+149b	asrs	r3, r3, #18
+12db	asrs	r3, r3, #11
+14db	asrs	r3, r3, #19
+169b	asrs	r3, r3, #26
+171b	asrs	r3, r3, #28
+16db	asrs	r3, r3, #27
+101b	asrs	r3, r3, #32
+833	lsrs	r3, r6, #32
+823	lsrs	r3, r4, #32
+433	lsls	r3, r6, #16
+423	lsls	r3, r4, #16
+223	lsls	r3, r4, #8
+22b	lsls	r3, r5, #8
+13b	lsls	r3, r7, #4
+b3	lsls	r3, r6, #2
+bb	lsls	r3, r7, #2
+63	lsls	r3, r4, #1
+7b	lsls	r3, r7, #1
+633	lsls	r3, r6, #24
+623	lsls	r3, r4, #24
+33b	lsls	r3, r7, #12
+53b	lsls	r3, r7, #20
+193	lsls	r3, r2, #6
+2b3	lsls	r3, r6, #10
+16b	lsls	r3, r5, #5
+253	lsls	r3, r2, #9
+713	lsls	r3, r2, #28
+73b	lsls	r3, r7, #28
+6ab	lsls	r3, r5, #26
+393	lsls	r3, r2, #14
+57b	lsls	r3, r7, #21
+36b	lsls	r3, r5, #13
+7a3	lsls	r3, r4, #30
+793	lsls	r3, r2, #30
+3e3	lsls	r3, r4, #15
+77b	lsls	r3, r7, #29
+7e3	lsls	r3, r4, #31
+853	lsrs	r3, r2, #1
+8ab	lsrs	r3, r5, #2
+913	lsrs	r3, r2, #4
+93b	lsrs	r3, r7, #4
+a33	lsrs	r3, r6, #8
+a23	lsrs	r3, r4, #8
+c33	lsrs	r3, r6, #16
+8f3	lsrs	r3, r6, #3
+97b	lsrs	r3, r7, #5
+9bb	lsrs	r3, r7, #6
+9a3	lsrs	r3, r4, #6
+b13	lsrs	r3, r2, #12
+d13	lsrs	r3, r2, #20
+e33	lsrs	r3, r6, #24
+9d3	lsrs	r3, r2, #7
+9eb	lsrs	r3, r5, #7
+bb3	lsrs	r3, r6, #14
+e93	lsrs	r3, r2, #26
+f23	lsrs	r3, r4, #28
+f2b	lsrs	r3, r5, #28
+dfb	lsrs	r3, r7, #23
+bd3	lsrs	r3, r2, #15
+fb3	lsrs	r3, r6, #30
+fbb	lsrs	r3, r7, #30
+ffb	lsrs	r3, r7, #31
+fd3	lsrs	r3, r2, #31
+1073	asrs	r3, r6, #1
+1093	asrs	r3, r2, #2
+10ab	asrs	r3, r5, #2
+1123	asrs	r3, r4, #4
+112b	asrs	r3, r5, #4
+123b	asrs	r3, r7, #8
+143b	asrs	r3, r7, #16
+1153	asrs	r3, r2, #5
+147b	asrs	r3, r7, #17
+1293	asrs	r3, r2, #10
+11b3	asrs	r3, r6, #6
+1533	asrs	r3, r6, #20
+1323	asrs	r3, r4, #12
+1613	asrs	r3, r2, #24
+163b	asrs	r3, r7, #24
+12e3	asrs	r3, r4, #11
+1353	asrs	r3, r2, #13
+16a3	asrs	r3, r4, #26
+15ab	asrs	r3, r5, #22
+1733	asrs	r3, r6, #28
+1723	asrs	r3, r4, #28
+16e3	asrs	r3, r4, #27
+1753	asrs	r3, r2, #29
+17ab	asrs	r3, r5, #30
+17b3	asrs	r3, r6, #30
+17f3	asrs	r3, r6, #31
+17fb	asrs	r3, r7, #31
+707ea4f	mov.w	r7, r7
+919ea4f	mov.w	r9, r9, lsr #32
+2333ea4f	mov.w	r3, r3, ror #8
+4909ea4f	mov.w	r9, r9, lsl #16
+1a4aea4f	mov.w	sl, sl, lsl #5
+2343ea4f	mov.w	r3, r3, lsl #9
+4818ea4f	mov.w	r8, r8, lsr #16
+1565ea4f	mov.w	r5, r5, asr #5
+7323ea4f	mov.w	r3, r3, asr #28
+50aea4f	mov.w	r5, sl
+403ea4f	mov.w	r4, r3
+4839ea4f	mov.w	r8, r9, ror #16
+2539ea4f	mov.w	r5, r9, ror #8
+1a34ea4f	mov.w	sl, r4, ror #4
+1a3bea4f	mov.w	sl, fp, ror #4
+ab6ea4f	mov.w	sl, r6, ror #2
+4f9ea4f	mov.w	r4, r9, ror #3
+157bea4f	mov.w	r5, fp, ror #5
+783aea4f	mov.w	r8, sl, ror #28
+6277ea4f	mov.w	r2, r7, ror #25
+88aea4f	mov.w	r8, sl, lsl #2
+5206ea4f	mov.w	r2, r6, lsl #20
+5c4ea4f	mov.w	r5, r4, lsl #3
+5b43ea4f	mov.w	fp, r3, lsl #21
+6682ea4f	mov.w	r6, r2, lsl #26
+7682ea4f	mov.w	r6, r2, lsl #30
+1714ea4f	mov.w	r7, r4, lsr #4
+4314ea4f	mov.w	r3, r4, lsr #16
+4556ea4f	mov.w	r5, r6, lsr #17
+2895ea4f	mov.w	r8, r5, lsr #10
+3b9aea4f	mov.w	fp, sl, lsr #14
+3392ea4f	mov.w	r3, r2, lsr #14
+7859ea4f	mov.w	r8, r9, lsr #29
+39d8ea4f	mov.w	r9, r8, lsr #15
+79d2ea4f	mov.w	r9, r2, lsr #31
+75d7ea4f	mov.w	r5, r7, lsr #31
+1925ea4f	mov.w	r9, r5, asr #4
+469ea4f	mov.w	r4, r9, asr #1
+8e6ea4f	mov.w	r8, r6, asr #3
+ae3ea4f	mov.w	sl, r3, asr #3
+59abea4f	mov.w	r9, fp, asr #22
+366bea4f	mov.w	r6, fp, asr #13
+6beaea4f	mov.w	fp, sl, asr #27
+75a6ea4f	mov.w	r5, r6, asr #30
+926ea4f	mov.w	r9, r6, asr #32
+74e6ea4f	mov.w	r4, r6, asr #31
+3737ea5f	movs.w	r7, r7, ror #12
+5878ea5f	movs.w	r8, r8, ror #21
+292ea5f	movs.w	r2, r2, lsr #2
+4b9bea5f	movs.w	fp, fp, lsr #18
+6858ea5f	movs.w	r8, r8, lsr #25
+1666ea5f	movs.w	r6, r6, asr #5
+7464ea5f	movs.w	r4, r4, asr #29
+626ea5f	movs.w	r6, r6, asr #32
+833ea5f	movs.w	r8, r3, rrx
+ab9ea5f	movs.w	sl, r9, ror #2
+623bea5f	movs.w	r2, fp, ror #24
+45bbea5f	movs.w	r5, fp, ror #18
+2abbea5f	movs.w	sl, fp, ror #10
+1775ea5f	movs.w	r7, r5, ror #5
+3ab5ea5f	movs.w	sl, r5, ror #14
+6477ea5f	movs.w	r4, r7, ror #25
+17f6ea5f	movs.w	r7, r6, ror #7
+5af6ea5f	movs.w	sl, r6, ror #23
+7b72ea5f	movs.w	fp, r2, ror #29
+1504ea5f	movs.w	r5, r4, lsl #4
+84bea5f	movs.w	r8, fp, lsl #1
+670aea5f	movs.w	r7, sl, lsl #24
+3a0bea5f	movs.w	sl, fp, lsl #12
+5407ea5f	movs.w	r4, r7, lsl #20
+428bea5f	movs.w	r2, fp, lsl #18
+2a44ea5f	movs.w	sl, r4, lsl #9
+1a47ea5f	movs.w	sl, r7, lsl #5
+668bea5f	movs.w	r6, fp, lsl #26
+5b47ea5f	movs.w	fp, r7, lsl #21
+14c5ea5f	movs.w	r4, r5, lsl #7
+758bea5f	movs.w	r5, fp, lsl #30
+56c7ea5f	movs.w	r6, r7, lsl #23
+6ac4ea5f	movs.w	sl, r4, lsl #27
+695ea5f	movs.w	r6, r5, lsr #2
+a96ea5f	movs.w	sl, r6, lsr #2
+161bea5f	movs.w	r6, fp, lsr #4
+4a12ea5f	movs.w	sl, r2, lsr #16
+461bea5f	movs.w	r6, fp, lsr #16
+425aea5f	movs.w	r2, sl, lsr #17
+2355ea5f	movs.w	r3, r5, lsr #9
+2896ea5f	movs.w	r8, r6, lsr #10
+5816ea5f	movs.w	r8, r6, lsr #20
+6b16ea5f	movs.w	fp, r6, lsr #24
+6253ea5f	movs.w	r2, r3, lsr #25
+3b55ea5f	movs.w	fp, r5, lsr #13
+7a9ea5f	movs.w	r7, r9, asr #2
+2228ea5f	movs.w	r2, r8, asr #8
+4466ea5f	movs.w	r4, r6, asr #17
+24a6ea5f	movs.w	r4, r6, asr #10
+5526ea5f	movs.w	r5, r6, asr #20
+5a22ea5f	movs.w	sl, r2, asr #20
+6425ea5f	movs.w	r4, r5, asr #24
+39a4ea5f	movs.w	r9, r4, asr #14
+57a9ea5f	movs.w	r7, r9, asr #22
+7225ea5f	movs.w	r2, r5, asr #28
+7b25ea5f	movs.w	fp, r5, asr #28
+69ebea5f	movs.w	r9, fp, asr #27
+63e5ea5f	movs.w	r3, r5, asr #27
+7ae3ea5f	movs.w	sl, r3, asr #31
+73e7ea5f	movs.w	r3, r7, asr #31
+2920f04f	mov.w	r9, #536879104
+4708f04f	mov.w	r7, #-2013265920
+4294f44f	mov.w	r2, #18944
+6260f04f	mov.w	r2, #234881024
+5b52f04f	mov.w	fp, #880803840
+559cf04f	mov.w	r5, #327155712
+5ad9f04f	mov.w	sl, #455081984
+5aabf04f	mov.w	sl, #358612992
+671ff04f	mov.w	r7, #166723584
+6b3bf04f	mov.w	fp, #196083712
+54fef44f	mov.w	r4, #8128
+57fdf04f	mov.w	r7, #530579456
+16d1f04f	mov.w	r6, #13697233
+1935f04f	mov.w	r9, #3473461
+15cdf04f	mov.w	r5, #13435085
+1497f04f	mov.w	r4, #9896087
+37e0f04f	mov.w	r7, #-522133280
+26d7f04f	mov.w	r6, #-687810816
+13bff04f	mov.w	r3, #12517567
+27bff04f	mov.w	r7, #-1090470144
+364ef04f	mov.w	r6, #1313754702
+38c3f04f	mov.w	r8, #-1010580541
+3ba7f04f	mov.w	fp, #-1482184793
+34ebf04f	mov.w	r4, #-336860181
+908f05f	movs.w	r9, #8
+a48f05f	movs.w	sl, #72
+b0ef05f	movs.w	fp, #14
+261f05f	movs.w	r2, #97
+2b8f05f	movs.w	r2, #184
+4a6f05f	movs.w	r4, #166
+7ecf05f	movs.w	r7, #236
+26df05f	movs.w	r2, #109
+1964f05f	movs.w	r9, #6553700
+1656f05f	movs.w	r6, #5636182
+1353f05f	movs.w	r3, #5439571
+2b57f05f	movs.w	fp, #1459640064
+295df05f	movs.w	r9, #1560304896
+1bb7f05f	movs.w	fp, #11993271
+3738f05f	movs.w	r7, #943208504
+3355f05f	movs.w	r3, #1431655765
+3b4df05f	movs.w	fp, #1296911693
+2bbaf05f	movs.w	fp, #-1174357504
+2aecf05f	movs.w	sl, #-335483904
+23d7f05f	movs.w	r3, #-687810816
+2bedf05f	movs.w	fp, #-318706432
+369af05f	movs.w	r6, #-1701143910
+32a3f05f	movs.w	r2, #-1549556829
+35cbf05f	movs.w	r5, #-875836469
+32b3f05f	movs.w	r2, #-1280068685
+32bff05f	movs.w	r2, #-1077952577
+7320f45f	movs.w	r3, #640
+5384f05f	movs.w	r3, #276824064
+43e0f45f	movs.w	r3, #28672
+6b0cf05f	movs.w	fp, #146800640
+738bf05f	movs.w	r3, #18219008
+164cf45f	movs.w	r6, #3342336
+65bcf05f	movs.w	r5, #98566144
+a4bf45f	movs.w	sl, #13303808
+55e7f05f	movs.w	r5, #484442112
+64aff05f	movs.w	r4, #91750400
+3fdf45f	movs.w	r3, #8290304
+687ef45f	movs.w	r8, #4064
+450df05f	movs.w	r5, #-1929379840
+444ef05f	movs.w	r4, #-838860800
+4427f05f	movs.w	r4, #-1493172224
+446ef05f	movs.w	r4, #-301989888
+2300f2c4	movt	r3, #16896
+588f2c4	movt	r5, #16520
+311f2c4	movt	r3, #16401
+711f6c4	movt	r7, #18449
+728f6c4	movt	r7, #18472
+b56f2c4	movt	fp, #16470
+6642f2c4	movt	r6, #17986
+336f2cc	movt	r3, #49206
+1a39f2c4	movt	sl, #16697
+590ef2cc	movt	r9, #50446
+236af6c4	movt	r3, #19050
+63a1f6cc	movt	r3, #52897
+55a3f2cc	movt	r5, #50595
+46f7f2c4	movt	r6, #17655
+65b4f6cc	movt	r5, #52916
+6267f6cc	movt	r2, #52839
+57fbf2c4	movt	r7, #17915
+25fdf6cc	movt	r5, #51965
+78e3f6cc	movt	r8, #53219
+776ff6cc	movt	r7, #53103
+79bdf6cc	movt	r9, #53181
+780f647	movw	r7, #30848
+1201f247	movw	r2, #28929
+b41f24f	movw	fp, #61505
+4420f24f	movw	r4, #62496
+2442f647	movw	r4, #31298
+71ef247	movw	r7, #28702
+274cf647	movw	r7, #31308
+3a2cf247	movw	sl, #29484
+144af64f	movw	r4, #63818
+750df247	movw	r5, #30477
+3813f64f	movw	r8, #64275
+37d9f247	movw	r7, #29657
+4bfef247	movw	fp, #29950
+1bcef64f	movw	fp, #63950
+7666f64f	movw	r6, #65382
+68eaf64f	movw	r8, #65258
+47bff64f	movw	r7, #64703
+75f2f64f	movw	r5, #65522
+3bfff647	movw	fp, #31743
+54fef64f	movw	r4, #65022
+437f	muls	r7, r7
+437f	muls	r7, r7
+435f	muls	r7, r3
+4367	muls	r7, r4
+f808fb08	mul.w	r8, r8, r8
+f808fb08	mul.w	r8, r8, r8
+f608fb08	mul.w	r6, r8, r8
+f608fb08	mul.w	r6, r8, r8
+f802fb08	mul.w	r8, r8, r2
+f803fb08	mul.w	r8, r8, r3
+f909fb08	mul.w	r9, r8, r9
+f303fb08	mul.w	r3, r8, r3
+f305fb08	mul.w	r3, r8, r5
+f50bfb08	mul.w	r5, r8, fp
+43d2	mvns	r2, r2
+43d2	mvns	r2, r2
+43e2	mvns	r2, r4
+43f2	mvns	r2, r6
+6636ea6f	mvn.w	r6, r6, ror #24
+1474ea6f	mvn.w	r4, r4, ror #5
+1444ea6f	mvn.w	r4, r4, lsl #5
+2696ea6f	mvn.w	r6, r6, lsr #10
+1555ea6f	mvn.w	r5, r5, lsr #5
+4929ea6f	mvn.w	r9, r9, asr #16
+3323ea6f	mvn.w	r3, r3, asr #12
+2969ea6f	mvn.w	r9, r9, asr #9
+518ea6f	mvn.w	r5, r8, lsr #32
+736ea6f	mvn.w	r7, r6, rrx
+2239ea6f	mvn.w	r2, r9, ror #8
+3933ea6f	mvn.w	r9, r3, ror #12
+5532ea6f	mvn.w	r5, r2, ror #20
+2bb7ea6f	mvn.w	fp, r7, ror #10
+44bbea6f	mvn.w	r4, fp, ror #18
+1978ea6f	mvn.w	r9, r8, ror #5
+7f9ea6f	mvn.w	r7, r9, ror #3
+66bbea6f	mvn.w	r6, fp, ror #26
+37b3ea6f	mvn.w	r7, r3, ror #14
+45fbea6f	mvn.w	r5, fp, ror #19
+19f8ea6f	mvn.w	r9, r8, ror #7
+6bfaea6f	mvn.w	fp, sl, ror #27
+69f3ea6f	mvn.w	r9, r3, ror #27
+944ea6f	mvn.w	r9, r4, lsl #1
+4507ea6f	mvn.w	r5, r7, lsl #16
+2347ea6f	mvn.w	r3, r7, lsl #9
+5c8ea6f	mvn.w	r5, r8, lsl #3
+6783ea6f	mvn.w	r7, r3, lsl #26
+17c6ea6f	mvn.w	r7, r6, lsl #7
+33caea6f	mvn.w	r3, sl, lsl #15
+68c7ea6f	mvn.w	r8, r7, lsl #27
+7ac7ea6f	mvn.w	sl, r7, lsl #31
+72cbea6f	mvn.w	r2, fp, lsl #31
+4214ea6f	mvn.w	r2, r4, lsr #16
+6316ea6f	mvn.w	r3, r6, lsr #24
+3612ea6f	mvn.w	r6, r2, lsr #12
+7613ea6f	mvn.w	r6, r3, lsr #28
+3499ea6f	mvn.w	r4, r9, lsr #14
+69d5ea6f	mvn.w	r9, r5, lsr #27
+3ad7ea6f	mvn.w	sl, r7, lsr #15
+1724ea6f	mvn.w	r7, r4, asr #4
+3abea6f	mvn.w	r3, fp, asr #2
+256aea6f	mvn.w	r5, sl, asr #9
+4267ea6f	mvn.w	r2, r7, asr #17
+64a2ea6f	mvn.w	r4, r2, asr #26
+7268ea6f	mvn.w	r2, r8, asr #29
+69e8ea6f	mvn.w	r9, r8, asr #27
+b25ea6f	mvn.w	fp, r5, asr #32
+73e5ea6f	mvn.w	r3, r5, asr #31
+7939ea7f	mvns.w	r9, r9, ror #28
+7474ea7f	mvns.w	r4, r4, ror #29
+7373ea7f	mvns.w	r3, r3, ror #29
+4909ea7f	mvns.w	r9, r9, lsl #16
+1686ea7f	mvns.w	r6, r6, lsl #6
+4747ea7f	mvns.w	r7, r7, lsl #17
+26c6ea7f	mvns.w	r6, r6, lsl #11
+66c6ea7f	mvns.w	r6, r6, lsl #27
+5a1aea7f	mvns.w	sl, sl, lsr #20
+5515ea7f	mvns.w	r5, r5, lsr #20
+47a7ea7f	mvns.w	r7, r7, asr #18
+715ea7f	mvns.w	r7, r5, lsr #32
+237ea7f	mvns.w	r2, r7, rrx
+436ea7f	mvns.w	r4, r6, rrx
+2533ea7f	mvns.w	r5, r3, ror #8
+1b34ea7f	mvns.w	fp, r4, ror #4
+a79ea7f	mvns.w	sl, r9, ror #1
+879ea7f	mvns.w	r8, r9, ror #1
+6538ea7f	mvns.w	r5, r8, ror #24
+2ab4ea7f	mvns.w	sl, r4, ror #10
+1a75ea7f	mvns.w	sl, r5, ror #5
+7537ea7f	mvns.w	r5, r7, ror #28
+39b5ea7f	mvns.w	r9, r5, ror #14
+6bb2ea7f	mvns.w	fp, r2, ror #26
+3674ea7f	mvns.w	r6, r4, ror #13
+5376ea7f	mvns.w	r3, r6, ror #21
+69f3ea7f	mvns.w	r9, r3, ror #27
+57f3ea7f	mvns.w	r7, r3, ror #23
+1609ea7f	mvns.w	r6, r9, lsl #4
+a85ea7f	mvns.w	sl, r5, lsl #2
+842ea7f	mvns.w	r8, r2, lsl #1
+320bea7f	mvns.w	r2, fp, lsl #12
+4487ea7f	mvns.w	r4, r7, lsl #18
+2783ea7f	mvns.w	r7, r3, lsl #10
+4c7ea7f	mvns.w	r4, r7, lsl #3
+5a89ea7f	mvns.w	sl, r9, lsl #22
+49c2ea7f	mvns.w	r9, r2, lsl #19
+6942ea7f	mvns.w	r9, r2, lsl #25
+7782ea7f	mvns.w	r7, r2, lsl #30
+62caea7f	mvns.w	r2, sl, lsl #27
+35c2ea7f	mvns.w	r5, r2, lsl #15
+77c5ea7f	mvns.w	r7, r5, lsl #31
+254ea7f	mvns.w	r2, r4, lsr #1
+955ea7f	mvns.w	r9, r5, lsr #1
+181aea7f	mvns.w	r8, sl, lsr #4
+2852ea7f	mvns.w	r8, r2, lsr #9
+2452ea7f	mvns.w	r4, r2, lsr #9
+2298ea7f	mvns.w	r2, r8, lsr #10
+6516ea7f	mvns.w	r5, r6, lsr #24
+6b13ea7f	mvns.w	fp, r3, lsr #24
+695aea7f	mvns.w	r9, sl, lsr #25
+13d2ea7f	mvns.w	r3, r2, lsr #7
+5499ea7f	mvns.w	r4, r9, lsr #22
+55dbea7f	mvns.w	r5, fp, lsr #23
+37d9ea7f	mvns.w	r7, r9, lsr #15
+74daea7f	mvns.w	r4, sl, lsr #31
+364ea7f	mvns.w	r3, r4, asr #1
+665ea7f	mvns.w	r6, r5, asr #1
+146bea7f	mvns.w	r4, fp, asr #5
+23a6ea7f	mvns.w	r3, r6, asr #10
+5423ea7f	mvns.w	r4, r3, asr #20
+3968ea7f	mvns.w	r9, r8, asr #13
+396aea7f	mvns.w	r9, sl, asr #13
+65a8ea7f	mvns.w	r5, r8, asr #26
+6ba9ea7f	mvns.w	fp, r9, asr #26
+7425ea7f	mvns.w	r4, r5, asr #28
+32e5ea7f	mvns.w	r2, r5, asr #15
+64e2ea7f	mvns.w	r4, r2, asr #27
+78e2ea7f	mvns.w	r8, r2, asr #31
+82aea7f	mvns.w	r8, sl, asr #32
+3877f06f	mvn.w	r8, #2004318071
+3bfaf06f	mvn.w	fp, #-84215046
+376df06f	mvn.w	r7, #1835887981
+334df06f	mvn.w	r3, #1296911693
+3374f06f	mvn.w	r3, #1953789044
+12eff06f	mvn.w	r2, #15663343
+2afef06f	mvn.w	sl, #-33489408
+3b23f06f	mvn.w	fp, #589505315
+3946f06f	mvn.w	r9, #1179010630
+139af06f	mvn.w	r3, #10092698
+231ef06f	mvn.w	r3, #503324160
+53fbf06f	mvn.w	r3, #526385152
+5bdff06f	mvn.w	fp, #467664896
+49eef46f	mvn.w	r9, #30464
+7357f06f	mvn.w	r3, #56360960
+65f4f46f	mvn.w	r5, #1952
+57b9f46f	mvn.w	r7, #5920
+5731f06f	mvn.w	r7, #742391808
+6b38f46f	mvn.w	fp, #2944
+583f06f	mvn.w	r5, #131
+53a1f46f	mvn.w	r3, #5152
+b18f06f	mvn.w	fp, #24
+1901f06f	mvn.w	r9, #65537
+5300f06f	mvn.w	r3, #536870912
+6680f06f	mvn.w	r6, #67108864
+2af6f07f	mvns.w	sl, #-167709184
+22f9f07f	mvns.w	r2, #-117376768
+342df07f	mvns.w	r4, #757935405
+361bf07f	mvns.w	r6, #454761243
+17fdf07f	mvns.w	r7, #16580861
+3945f07f	mvns.w	r9, #1162167621
+18dbf07f	mvns.w	r8, #14352603
+226df07f	mvns.w	r2, #1828744448
+134ef07f	mvns.w	r3, #5111886
+3611f07f	mvns.w	r6, #286331153
+231cf07f	mvns.w	r3, #469769216
+1416f07f	mvns.w	r4, #1441814
+3adf07f	mvns.w	r3, #173
+7f8f07f	mvns.w	r7, #248
+bb4f07f	mvns.w	fp, #180
+2a5f07f	mvns.w	r2, #165
+2d0f07f	mvns.w	r2, #208
+20cf07f	mvns.w	r2, #12
+1640f07f	mvns.w	r6, #4194368
+4765f07f	mvns.w	r7, #-452984832
+4617f07f	mvns.w	r6, #-1761607680
+4424f07f	mvns.w	r4, #-1543503872
+4a10f07f	mvns.w	sl, #-1879048192
+783ff07f	mvns.w	r8, #50069504
+463ff47f	mvns.w	r6, #48896
+5b5bf47f	mvns.w	fp, #14016
+75eef07f	mvns.w	r5, #31195136
+585cf07f	mvns.w	r8, #922746880
+78d6f07f	mvns.w	r8, #28049408
+13e4f47f	mvns.w	r3, #1867776
+54c9f47f	mvns.w	r4, #6432
+288cf47f	mvns.w	r8, #286720
+6244f07f	mvns.w	r2, #205520896
+58a0f07f	mvns.w	r8, #335544320
+1a81f47f	mvns.w	sl, #1056768
+426d	negs	r5, r5
+426d	negs	r5, r5
+4265	negs	r5, r4
+4275	negs	r5, r6
+3a6aea6a	orn	sl, sl, sl, asr #13
+2542ea62	orn	r5, r2, r2, lsl #9
+2bc2ea62	orn	fp, r2, r2, lsl #11
+7ac2ea62	orn	sl, r2, r2, lsl #31
+4392ea62	orn	r3, r2, r2, lsr #18
+1ab9ea6a	orn	sl, sl, r9, ror #6
+4278ea62	orn	r2, r2, r8, ror #17
+5206ea62	orn	r2, r2, r6, lsl #20
+7299ea62	orn	r2, r2, r9, lsr #30
+2333ea6a	orn	r3, sl, r3, ror #8
+1575ea6a	orn	r5, sl, r5, ror #5
+555ea6a	orn	r5, sl, r5, lsr #1
+6292ea6a	orn	r2, sl, r2, lsr #26
+1934ea62	orn	r9, r2, r4, ror #4
+1533ea6a	orn	r5, sl, r3, ror #4
+576ea6a	orn	r5, sl, r6, ror #1
+6236ea6a	orn	r2, sl, r6, ror #24
+6338ea6a	orn	r3, sl, r8, ror #24
+1876ea6a	orn	r8, sl, r6, ror #5
+2776ea6a	orn	r7, sl, r6, ror #9
+7b34ea6a	orn	fp, sl, r4, ror #28
+7832ea6a	orn	r8, sl, r2, ror #28
+3872ea6a	orn	r8, sl, r2, ror #13
+2bf9ea62	orn	fp, r2, r9, ror #11
+79baea62	orn	r9, r2, sl, ror #30
+32f3ea6a	orn	r2, sl, r3, ror #15
+55f7ea6a	orn	r5, sl, r7, ror #23
+79fbea6a	orn	r9, sl, fp, ror #31
+2806ea6a	orn	r8, sl, r6, lsl #8
+1347ea62	orn	r3, r2, r7, lsl #5
+2a45ea62	orn	sl, r2, r5, lsl #9
+6b48ea6a	orn	fp, sl, r8, lsl #25
+7406ea6a	orn	r4, sl, r6, lsl #28
+67c5ea62	orn	r7, r2, r5, lsl #27
+74c6ea62	orn	r4, r2, r6, lsl #31
+7ac9ea62	orn	sl, r2, r9, lsl #31
+992ea6a	orn	r9, sl, r2, lsr #2
+2594ea62	orn	r5, r2, r4, lsr #10
+5214ea6a	orn	r2, sl, r4, lsr #20
+5354ea62	orn	r3, r2, r4, lsr #21
+6b95ea6a	orn	fp, sl, r5, lsr #26
+62d4ea6a	orn	r2, sl, r4, lsr #27
+34d2ea6a	orn	r4, sl, r2, lsr #15
+3a8ea6a	orn	r3, sl, r8, asr #2
+4425ea6a	orn	r4, sl, r5, asr #16
+29a2ea6a	orn	r9, sl, r2, asr #10
+2aa3ea62	orn	sl, r2, r3, asr #10
+3b63ea6a	orn	fp, sl, r3, asr #13
+6aa6ea62	orn	sl, r2, r6, asr #26
+6be4ea6a	orn	fp, sl, r4, asr #27
+52e8ea6a	orn	r2, sl, r8, asr #23
+6abaea7a	orns	sl, sl, sl, ror #26
+72b2ea72	orns	r2, r2, r2, ror #30
+404ea72	orns	r4, r2, r4
+8f2ea72	orns	r8, r2, r2, ror #3
+171aea7a	orns	r7, sl, sl, lsr #4
+7752ea72	orns	r7, r2, r2, lsr #29
+296aea7a	orns	r9, sl, sl, asr #9
+146aea7a	orns	r4, sl, sl, asr #5
+27aaea7a	orns	r7, sl, sl, asr #10
+7962ea72	orns	r9, r2, r2, asr #29
+905ea7a	orns	r9, sl, r5
+7373ea7a	orns	r3, sl, r3, ror #29
+3202ea7a	orns	r2, sl, r2, lsl #12
+7585ea7a	orns	r5, sl, r5, lsl #30
+7848ea72	orns	r8, r2, r8, lsl #29
+25bea72	orns	r2, r2, fp, lsr #1
+129aea72	orns	r2, r2, sl, lsr #6
+2494ea72	orns	r4, r2, r4, lsr #10
+6a58ea7a	orns	sl, sl, r8, lsr #25
+62d2ea7a	orns	r2, sl, r2, lsr #27
+72dbea72	orns	r2, r2, fp, lsr #31
+42a4ea72	orns	r2, r2, r4, asr #18
+3323ea7a	orns	r3, sl, r3, asr #12
+415ea7a	orns	r4, sl, r5, lsr #32
+81bea7a	orns	r8, sl, fp, lsr #32
+1733ea7a	orns	r7, sl, r3, ror #4
+163bea72	orns	r6, r2, fp, ror #4
+7bbea72	orns	r7, r2, fp, ror #2
+13b4ea7a	orns	r3, sl, r4, ror #6
+47bbea7a	orns	r7, sl, fp, ror #18
+2875ea72	orns	r8, r2, r5, ror #9
+587aea72	orns	r8, r2, sl, ror #21
+4bf9ea7a	orns	fp, sl, r9, ror #19
+79b6ea72	orns	r9, r2, r6, ror #30
+75b9ea72	orns	r5, r2, r9, ror #30
+36fbea7a	orns	r6, sl, fp, ror #15
+37f6ea7a	orns	r7, sl, r6, ror #15
+7bfaea72	orns	fp, r2, sl, ror #31
+2b0aea72	orns	fp, r2, sl, lsl #8
+280bea7a	orns	r8, sl, fp, lsl #8
+1607ea7a	orns	r6, sl, r7, lsl #4
+28bea7a	orns	r2, sl, fp, lsl #2
+648ea7a	orns	r6, sl, r8, lsl #1
+4985ea7a	orns	r9, sl, r5, lsl #18
+6586ea7a	orns	r5, sl, r6, lsl #26
+578aea72	orns	r7, r2, sl, lsl #22
+3a49ea72	orns	sl, r2, r9, lsl #13
+77c6ea72	orns	r7, r2, r6, lsl #31
+397ea7a	orns	r3, sl, r7, lsr #2
+4a14ea72	orns	sl, r2, r4, lsr #16
+2a58ea72	orns	sl, r2, r8, lsr #9
+4894ea7a	orns	r8, sl, r4, lsr #18
+531bea7a	orns	r3, sl, fp, lsr #20
+361bea72	orns	r6, r2, fp, lsr #12
+681bea7a	orns	r8, sl, fp, lsr #24
+5594ea72	orns	r5, r2, r4, lsr #22
+5498ea7a	orns	r4, sl, r8, lsr #22
+32d4ea7a	orns	r2, sl, r4, lsr #15
+37daea72	orns	r7, r2, sl, lsr #15
+739bea7a	orns	r3, sl, fp, lsr #30
+5a3ea7a	orns	r5, sl, r3, asr #2
+4523ea72	orns	r5, r2, r3, asr #16
+4366ea72	orns	r3, r2, r6, asr #17
+46a7ea7a	orns	r6, sl, r7, asr #18
+49a4ea72	orns	r9, r2, r4, asr #18
+572bea72	orns	r7, r2, fp, asr #20
+6426ea7a	orns	r4, sl, r6, asr #24
+4ae8ea72	orns	sl, r2, r8, asr #19
+5668ea7a	orns	r6, sl, r8, asr #21
+58a5ea72	orns	r8, r2, r5, asr #22
+54a3ea7a	orns	r4, sl, r3, asr #22
+7725ea72	orns	r7, r2, r5, asr #28
+36e9ea7a	orns	r6, sl, r9, asr #15
+b25ea7a	orns	fp, sl, r5, asr #32
+556df465	orn	r5, r5, #15168
+575f065	orn	r5, r5, #117
+75e3f065	orn	r5, r5, #29753344
+45a6f465	orn	r5, r5, #21248
+45c3f465	orn	r5, r5, #24960
+6560f465	orn	r5, r5, #3584
+38dbf065	orn	r8, r5, #-606348325
+14d7f065	orn	r4, r5, #14090455
+627ff465	orn	r2, r5, #4080
+2427f065	orn	r4, r5, #654321408
+49dff465	orn	r9, r5, #28544
+27f7f465	orn	r7, r5, #505856
+6bbbf065	orn	fp, r5, #98041856
+539ff065	orn	r3, r5, #333447168
+76b5f465	orn	r6, r5, #362
+98ff465	orn	r9, r5, #4685824
+5658f065	orn	r6, r5, #905969664
+5734f465	orn	r7, r5, #11520
+1785f465	orn	r7, r5, #1089536
+5612f465	orn	r6, r5, #9344
+1302f065	orn	r3, r5, #131074
+6488f065	orn	r4, r5, #71303168
+7880f065	orn	r8, r5, #16777216
+25a4f075	orns	r5, r5, #-1543461888
+538f075	orns	r5, r5, #56
+39fff075	orns	r9, r5, #-1
+397ff075	orns	r9, r5, #2139062143
+366ff075	orns	r6, r5, #1869573999
+3aa1f075	orns	sl, r5, #-1583242847
+3231f075	orns	r2, r5, #825307441
+276bf075	orns	r7, r5, #1795189504
+187cf075	orns	r8, r5, #8126588
+1493f075	orns	r4, r5, #9633939
+53ff475	orns	r5, r5, #12517376
+557df075	orns	r5, r5, #1061158912
+1643f075	orns	r6, r5, #4390979
+2a2cf075	orns	sl, r5, #738208768
+45f8f475	orns	r5, r5, #31744
+1a41f075	orns	sl, r5, #4259905
+3308f075	orns	r3, r5, #134744072
+9a4f075	orns	r9, r5, #164
+264f075	orns	r2, r5, #100
+585ff475	orns	r8, r5, #14272
+57cff475	orns	r7, r5, #6624
+48edf475	orns	r8, r5, #30336
+4774f475	orns	r7, r5, #62464
+339bf475	orns	r3, r5, #79360
+7929f475	orns	r9, r5, #676
+3b0df475	orns	fp, r5, #144384
+4291f475	orns	r2, r5, #18560
+2ac2f475	orns	sl, r5, #397312
+710f475	orns	r7, r5, #9437184
+5b08f075	orns	fp, r5, #570425344
+4324	orrs	r4, r4
+4324	orrs	r4, r4
+4334	orrs	r4, r6
+431c	orrs	r4, r3
+374ea44	orr.w	r3, r4, r4, ror #1
+2ac4ea44	orr.w	sl, r4, r4, lsl #11
+4694ea44	orr.w	r6, r4, r4, lsr #18
+487ea44	orr.w	r4, r4, r7, lsl #2
+4d9ea44	orr.w	r4, r4, r9, lsr #3
+34a2ea44	orr.w	r4, r4, r2, asr #14
+373ea44	orr.w	r3, r4, r3, ror #1
+6abaea44	orr.w	sl, r4, sl, ror #26
+63f3ea44	orr.w	r3, r4, r3, ror #27
+603ea44	orr.w	r6, r4, r3
+233ea44	orr.w	r2, r4, r3, rrx
+6b35ea44	orr.w	fp, r4, r5, ror #24
+5b3aea44	orr.w	fp, r4, sl, ror #20
+3938ea44	orr.w	r9, r4, r8, ror #12
+497bea44	orr.w	r9, r4, fp, ror #17
+af2ea44	orr.w	sl, r4, r2, ror #3
+53b9ea44	orr.w	r3, r4, r9, ror #22
+1bf8ea44	orr.w	fp, r4, r8, ror #7
+7278ea44	orr.w	r2, r4, r8, ror #29
+36f3ea44	orr.w	r6, r4, r3, ror #15
+746ea44	orr.w	r7, r4, r6, lsl #1
+2a05ea44	orr.w	sl, r4, r5, lsl #8
+278bea44	orr.w	r7, r4, fp, lsl #10
+1b49ea44	orr.w	fp, r4, r9, lsl #5
+22c8ea44	orr.w	r2, r4, r8, lsl #11
+6846ea44	orr.w	r8, r4, r6, lsl #25
+6daea44	orr.w	r6, r4, sl, lsr #3
+621aea44	orr.w	r2, r4, sl, lsr #24
+6795ea44	orr.w	r7, r4, r5, lsr #26
+29d6ea44	orr.w	r9, r4, r6, lsr #11
+3bd3ea44	orr.w	fp, r4, r3, lsr #15
+52dbea44	orr.w	r2, r4, fp, lsr #23
+4ba9ea44	orr.w	fp, r4, r9, asr #18
+15e9ea44	orr.w	r5, r4, r9, asr #7
+726bea44	orr.w	r2, r4, fp, asr #29
+78e3ea44	orr.w	r8, r4, r3, asr #31
+5464ea54	orrs.w	r4, r4, r4, asr #21
+5234ea54	orrs.w	r2, r4, r4, ror #20
+b44ea54	orrs.w	fp, r4, r4, lsl #1
+6984ea54	orrs.w	r9, r4, r4, lsl #26
+6284ea54	orrs.w	r2, r4, r4, lsl #26
+73c4ea54	orrs.w	r3, r4, r4, lsl #31
+5a14ea54	orrs.w	sl, r4, r4, lsr #20
+6254ea54	orrs.w	r2, r4, r4, lsr #25
+3436ea54	orrs.w	r4, r4, r6, ror #12
+48bea54	orrs.w	r4, r4, fp, lsl #2
+282ea54	orrs.w	r2, r4, r2, lsl #2
+5447ea54	orrs.w	r4, r4, r7, lsl #21
+4a9aea54	orrs.w	sl, r4, sl, lsr #18
+3b32ea54	orrs.w	fp, r4, r2, ror #12
+3506ea54	orrs.w	r5, r4, r6, lsl #12
+5306ea54	orrs.w	r3, r4, r6, lsl #20
+8c3ea54	orrs.w	r8, r4, r3, lsl #3
+3948ea54	orrs.w	r9, r4, r8, lsl #13
+43c5ea54	orrs.w	r3, r4, r5, lsl #19
+59caea54	orrs.w	r9, r4, sl, lsl #23
+3359ea54	orrs.w	r3, r4, r9, lsr #13
+2adbea54	orrs.w	sl, r4, fp, lsr #11
+59d6ea54	orrs.w	r9, r4, r6, lsr #23
+33d9ea54	orrs.w	r3, r4, r9, lsr #15
+7799ea54	orrs.w	r7, r4, r9, lsr #30
+789bea54	orrs.w	r8, r4, fp, lsr #30
+1522ea54	orrs.w	r5, r4, r2, asr #4
+8e9ea54	orrs.w	r8, r4, r9, asr #3
+4366ea54	orrs.w	r3, r4, r6, asr #17
+19a6ea54	orrs.w	r9, r4, r6, asr #6
+19a3ea54	orrs.w	r9, r4, r3, asr #6
+3527ea54	orrs.w	r5, r4, r7, asr #12
+4be2ea54	orrs.w	fp, r4, r2, asr #19
+5a66ea54	orrs.w	sl, r4, r6, asr #21
+5711f047	orr.w	r7, r7, #608174080
+176af447	orr.w	r7, r7, #3833856
+171ff447	orr.w	r7, r7, #2605056
+373ef447	orr.w	r7, r7, #194560
+3684f447	orr.w	r6, r7, #67584
+318f047	orr.w	r3, r7, #24
+2628f447	orr.w	r6, r7, #688128
+a1af047	orr.w	sl, r7, #26
+444cf447	orr.w	r4, r7, #52224
+2407f447	orr.w	r4, r7, #552960
+58f4f447	orr.w	r8, r7, #7808
+7639f047	orr.w	r6, r7, #48496640
+73edf047	orr.w	r3, r7, #31064064
+4875f047	orr.w	r8, r7, #-184549376
+495ff047	orr.w	r9, r7, #-553648128
+3950f047	orr.w	r9, r7, #1347440720
+15b8f047	orr.w	r5, r7, #12058808
+2a79f047	orr.w	sl, r7, #2030074112
+2497f047	orr.w	r4, r7, #-1761569024
+1bb7f047	orr.w	fp, r7, #11993271
+29eef047	orr.w	r9, r7, #-301928960
+3b2ef047	orr.w	fp, r7, #774778414
+3497f047	orr.w	r4, r7, #-1751672937
+6784f057	orrs.w	r7, r7, #69206016
+605f057	orrs.w	r6, r7, #5
+5789f057	orrs.w	r7, r7, #287309824
+a45f057	orrs.w	sl, r7, #69
+226f057	orrs.w	r2, r7, #38
+77b1f057	orrs.w	r7, r7, #23199744
+53cf057	orrs.w	r5, r7, #60
+37ecf457	orrs.w	r7, r7, #120832
+37e6f457	orrs.w	r7, r7, #117760
+37af057	orrs.w	r3, r7, #122
+1773f457	orrs.w	r7, r7, #3981312
+8cff057	orrs.w	r8, r7, #207
+277f057	orrs.w	r2, r7, #119
+17fbf457	orrs.w	r7, r7, #2056192
+3381f057	orrs.w	r3, r7, #-2122219135
+1a8ef057	orrs.w	sl, r7, #9306254
+186df057	orrs.w	r8, r7, #7143533
+328af057	orrs.w	r2, r7, #-1970632054
+332ff057	orrs.w	r3, r7, #791621423
+7a20f057	orrs.w	sl, r7, #41943040
+7b0af457	orrs.w	fp, r7, #552
+7242f457	orrs.w	r2, r7, #776
+79b4f057	orrs.w	r9, r7, #23592960
+6907f457	orrs.w	r9, r7, #2160
+62d5f457	orrs.w	r2, r7, #1704
+2aeaf457	orrs.w	sl, r7, #479232
+42ddf057	orrs.w	r2, r7, #1853882368
+589ff057	orrs.w	r8, r7, #333447168
+b5ff457	orrs.w	fp, r7, #14614528
+286ff457	orrs.w	r8, r7, #978944
+68fff057	orrs.w	r8, r7, #133693440
+49fff457	orrs.w	r9, r7, #32640
+47e7eac7	pkhtb	r7, r7, r7, asr #19
+3787eac7	pkhbt	r7, r7, r7, lsl #14
+1827eac7	pkhtb	r8, r7, r7, asr #4
+12a7eac7	pkhtb	r2, r7, r7, asr #6
+32a7eac7	pkhtb	r2, r7, r7, asr #14
+6aa7eac7	pkhtb	sl, r7, r7, asr #26
+75e7eac7	pkhtb	r5, r7, r7, asr #31
+2323eac7	pkhtb	r3, r7, r3, asr #8
+4aeaeac7	pkhtb	sl, r7, sl, asr #19
+7222eac7	pkhtb	r2, r7, r2, asr #28
+36e6eac7	pkhtb	r6, r7, r6, asr #15
+4b07eac7	pkhbt	fp, r7, r7, lsl #16
+6303eac7	pkhbt	r3, r7, r3, lsl #24
+5505eac7	pkhbt	r5, r7, r5, lsl #20
+24c4eac7	pkhbt	r4, r7, r4, lsl #11
+2725eac7	pkhtb	r7, r7, r5, asr #8
+27e3eac7	pkhtb	r7, r7, r3, asr #11
+1788eac7	pkhbt	r7, r7, r8, lsl #6
+1b25eac7	pkhtb	fp, r7, r5, asr #4
+4628eac7	pkhtb	r6, r7, r8, asr #16
+1a64eac7	pkhtb	sl, r7, r4, asr #5
+1b66eac7	pkhtb	fp, r7, r6, asr #5
+5a64eac7	pkhtb	sl, r7, r4, asr #21
+68a4eac7	pkhtb	r8, r7, r4, asr #26
+55e9eac7	pkhtb	r5, r7, r9, asr #23
+54e5eac7	pkhtb	r4, r7, r5, asr #23
+74ebeac7	pkhtb	r4, r7, fp, asr #31
+624eac7	pkhtb	r6, r7, r4, asr #32
+a08eac7	pkhbt	sl, r7, r8
+4305eac7	pkhbt	r3, r7, r5, lsl #16
+1904eac7	pkhbt	r9, r7, r4, lsl #4
+6b0aeac7	pkhbt	fp, r7, sl, lsl #24
+2a42eac7	pkhbt	sl, r7, r2, lsl #9
+28c9eac7	pkhbt	r8, r7, r9, lsl #11
+720beac7	pkhbt	r2, r7, fp, lsl #28
+65c3eac7	pkhbt	r5, r7, r3, lsl #27
+7b86eac7	pkhbt	fp, r7, r6, lsl #30
+72c4eac7	pkhbt	r2, r7, r4, lsl #31
+7ac6eac7	pkhbt	sl, r7, r6, lsl #31
+f616fa96	qadd16	r6, r6, r6
+f816fa96	qadd16	r8, r6, r6
+f516fa96	qadd16	r5, r6, r6
+fb1bfa96	qadd16	fp, r6, fp
+f919fa96	qadd16	r9, r6, r9
+f613fa96	qadd16	r6, r6, r3
+f619fa96	qadd16	r6, r6, r9
+f817fa96	qadd16	r8, r6, r7
+f218fa96	qadd16	r2, r6, r8
+f819fa89	qadd8	r8, r9, r9
+f419fa89	qadd8	r4, r9, r9
+f616fa89	qadd8	r6, r9, r6
+f313fa89	qadd8	r3, r9, r3
+f917fa89	qadd8	r9, r9, r7
+f918fa89	qadd8	r9, r9, r8
+f617fa89	qadd8	r6, r9, r7
+f712fa89	qadd8	r7, r9, r2
+f818faa8	qasx	r8, r8, r8
+f818faa8	qasx	r8, r8, r8
+f618faa8	qasx	r6, r8, r8
+f418faa8	qasx	r4, r8, r8
+f414faa8	qasx	r4, r8, r4
+f414faa8	qasx	r4, r8, r4
+f817faa8	qasx	r8, r8, r7
+f812faa8	qasx	r8, r8, r2
+f514faa8	qasx	r5, r8, r4
+f516faa8	qasx	r5, r8, r6
+fb1bfaeb	qsax	fp, fp, fp
+f313fae3	qsax	r3, r3, r3
+f913fae3	qsax	r9, r3, r3
+f813fae3	qsax	r8, r3, r3
+f717faeb	qsax	r7, fp, r7
+f515fae3	qsax	r5, r3, r5
+fb17faeb	qsax	fp, fp, r7
+fb16faeb	qsax	fp, fp, r6
+f81bfae3	qsax	r8, r3, fp
+f918faeb	qsax	r9, fp, r8
+f313fad3	qsub16	r3, r3, r3
+fb1bfadb	qsub16	fp, fp, fp
+f51bfadb	qsub16	r5, fp, fp
+f713fad3	qsub16	r7, r3, r3
+f515fadb	qsub16	r5, fp, r5
+f919fadb	qsub16	r9, fp, r9
+fb14fadb	qsub16	fp, fp, r4
+f319fad3	qsub16	r3, r3, r9
+f417fad3	qsub16	r4, r3, r7
+f714fad3	qsub16	r7, r3, r4
+f212fac2	qsub8	r2, r2, r2
+fa1afaca	qsub8	sl, sl, sl
+f41afaca	qsub8	r4, sl, sl
+f412fac2	qsub8	r4, r2, r2
+f515faca	qsub8	r5, sl, r5
+f515fac2	qsub8	r5, r2, r5
+f21afac2	qsub8	r2, r2, sl
+fa12faca	qsub8	sl, sl, r2
+f814fac2	qsub8	r8, r2, r4
+f315fac2	qsub8	r3, r2, r5
+f7a6fa96	rbit	r7, r6
+f9a6fa96	rbit	r9, r6
+ba24	rev	r4, r4
+ba24	rev	r4, r4
+ba1c	rev	r4, r3
+ba2c	rev	r4, r5
+ba7f	rev16	r7, r7
+ba7f	rev16	r7, r7
+ba57	rev16	r7, r2
+ba5f	rev16	r7, r3
+f398fa98	rev16.w	r3, r8
+f698fa98	rev16.w	r6, r8
+f989fa99	rev.w	r9, r9
+f689fa99	rev.w	r6, r9
+f789fa99	rev.w	r7, r9
+baf6	revsh	r6, r6
+baf6	revsh	r6, r6
+bade	revsh	r6, r3
+baee	revsh	r6, r5
+f3b3fa93	revsh.w	r3, r3
+fbbbfa9b	revsh.w	fp, fp
+f5b3fa93	revsh.w	r5, r3
+f4bbfa9b	revsh.w	r4, fp
+41ff	rors	r7, r7
+41ff	rors	r7, r7
+41d7	rors	r7, r2
+41df	rors	r7, r3
+809ebc9	rsb	r8, r9, r9
+4938ebc9	rsb	r9, r9, r8, ror #16
+1a39ebc9	rsb	sl, r9, r9, ror #4
+9f7ebc9	rsb	r9, r9, r7, ror #3
+33f9ebc9	rsb	r3, r9, r9, ror #15
+449ebc9	rsb	r4, r9, r9, lsl #1
+849ebc9	rsb	r8, r9, r9, lsl #1
+299ebc9	rsb	r2, r9, r9, lsr #2
+4a99ebc9	rsb	sl, r9, r9, lsr #18
+691bebc9	rsb	r9, r9, fp, lsr #24
+19d3ebc9	rsb	r9, r9, r3, lsr #7
+3927ebc9	rsb	r9, r9, r7, asr #12
+7429ebc9	rsb	r4, r9, r9, asr #28
+79a8ebc9	rsb	r9, r9, r8, asr #30
+373ebc9	rsb	r3, r9, r3, ror #1
+3636ebc9	rsb	r6, r9, r6, ror #12
+2616ebc9	rsb	r6, r9, r6, lsr #8
+8a8ebc9	rsb	r8, r9, r8, asr #2
+2262ebc9	rsb	r2, r9, r2, asr #9
+3aaaebc9	rsb	sl, r9, sl, asr #14
+b02ebc9	rsb	fp, r9, r2
+483aebc9	rsb	r8, r9, sl, ror #16
+1773ebc9	rsb	r7, r9, r3, ror #5
+64b6ebc9	rsb	r4, r9, r6, ror #26
+34b2ebc9	rsb	r4, r9, r2, ror #14
+72b5ebc9	rsb	r2, r9, r5, ror #30
+78f4ebc9	rsb	r8, r9, r4, ror #31
+5802ebc9	rsb	r8, r9, r2, lsl #20
+620aebc9	rsb	r2, r9, sl, lsl #24
+6742ebc9	rsb	r7, r9, r2, lsl #25
+678bebc9	rsb	r7, r9, fp, lsl #26
+6613ebc9	rsb	r6, r9, r3, lsr #24
+2458ebc9	rsb	r4, r9, r8, lsr #9
+432bebc9	rsb	r3, r9, fp, asr #16
+4625ebc9	rsb	r6, r9, r5, asr #16
+4aa8ebc9	rsb	sl, r9, r8, asr #18
+7a26ebc9	rsb	sl, r9, r6, asr #28
+42e3ebc9	rsb	r2, r9, r3, asr #19
+79e9ebd9	rsbs	r9, r9, r9, asr #31
+1575ebd9	rsbs	r5, r9, r5, ror #5
+3976ebd9	rsbs	r9, r9, r6, ror #13
+494bebd9	rsbs	r9, r9, fp, lsl #17
+5449ebd9	rsbs	r4, r9, r9, lsl #21
+598aebd9	rsbs	r9, r9, sl, lsl #22
+4d4ebd9	rsbs	r4, r9, r4, lsr #3
+599bebd9	rsbs	r9, r9, fp, lsr #22
+4329ebd9	rsbs	r3, r9, r9, asr #16
+59a6ebd9	rsbs	r9, r9, r6, asr #22
+506ebd9	rsbs	r5, r9, r6
+263bebd9	rsbs	r6, r9, fp, ror #8
+5534ebd9	rsbs	r5, r9, r4, ror #20
+4ab6ebd9	rsbs	sl, r9, r6, ror #18
+14b3ebd9	rsbs	r4, r9, r3, ror #6
+54b5ebd9	rsbs	r4, r9, r5, ror #22
+4bf3ebd9	rsbs	fp, r9, r3, ror #19
+1af4ebd9	rsbs	sl, r9, r4, ror #7
+57fbebd9	rsbs	r7, r9, fp, ror #23
+52fbebd9	rsbs	r2, r9, fp, ror #23
+75faebd9	rsbs	r5, r9, sl, ror #31
+6406ebd9	rsbs	r4, r9, r6, lsl #24
+4ac7ebd9	rsbs	sl, r9, r7, lsl #19
+25c6ebd9	rsbs	r5, r9, r6, lsl #11
+5bcaebd9	rsbs	fp, r9, sl, lsl #23
+131aebd9	rsbs	r3, r9, sl, lsr #4
+697ebd9	rsbs	r6, r9, r7, lsr #2
+6216ebd9	rsbs	r2, r9, r6, lsr #24
+3458ebd9	rsbs	r4, r9, r8, lsr #13
+3692ebd9	rsbs	r6, r9, r2, lsr #14
+34d6ebd9	rsbs	r4, r9, r6, lsr #15
+6822ebd9	rsbs	r8, r9, r2, asr #24
+48a3ebd9	rsbs	r8, r9, r3, asr #18
+18eaebd9	rsbs	r8, r9, sl, asr #7
+77a5ebd9	rsbs	r7, r9, r5, asr #30
+38a1f5c8	rsb	r8, r8, #82432
+4834f5c8	rsb	r8, r8, #46080
+3810f1c8	rsb	r8, r8, #269488144
+8f3f5c8	rsb	r8, r8, #7962624
+380cf1c8	rsb	r8, r8, #202116108
+183df1c8	rsb	r8, r8, #3997757
+6680f1c8	rsb	r6, r8, #67108864
+2b90f5c8	rsb	fp, r8, #294912
+602f5c8	rsb	r6, r8, #8519680
+7ba4f5c8	rsb	fp, r8, #328
+5205f5c8	rsb	r2, r8, #8512
+352f5c8	rsb	r3, r8, #13762560
+13f0f5c8	rsb	r3, r8, #1966080
+6b72f1c8	rsb	fp, r8, #253755392
+5272f5c8	rsb	r2, r8, #15488
+144cf1c8	rsb	r4, r8, #4980812
+1564f1c8	rsb	r5, r8, #6553700
+55fef5c8	rsb	r5, r8, #8128
+4afff1c8	rsb	sl, r8, #2139095040
+1aaaf1c8	rsb	sl, r8, #11141290
+3b4af1c8	rsb	fp, r8, #1246382666
+24fef1c8	rsb	r4, r8, #-33489408
+3b9bf1c8	rsb	fp, r8, #-1684300901
+1806f5d8	rsbs	r8, r8, #2195456
+78d2f5d8	rsbs	r8, r8, #420
+281af5d8	rsbs	r8, r8, #630784
+38adf5d8	rsbs	r8, r8, #88576
+82ff5d8	rsbs	r8, r8, #11468800
+189ff5d8	rsbs	r8, r8, #1302528
+787ef1d8	rsbs	r8, r8, #66584576
+2878f1d8	rsbs	r8, r8, #2013296640
+6208f5d8	rsbs	r2, r8, #2176
+3908f5d8	rsbs	r9, r8, #139264
+1222f5d8	rsbs	r2, r8, #2654208
+5b0f5d8	rsbs	r5, r8, #5767168
+52c6f5d8	rsbs	r2, r8, #6336
+1568f5d8	rsbs	r5, r8, #3801088
+55e6f1d8	rsbs	r5, r8, #482344960
+44cef1d8	rsbs	r4, r8, #1728053248
+62ebf1d8	rsbs	r2, r8, #123207680
+7bf5f5d8	rsbs	fp, r8, #490
+142bf1d8	rsbs	r4, r8, #2818091
+2b1bf1d8	rsbs	fp, r8, #452991744
+371cf1d8	rsbs	r7, r8, #471604252
+3434f1d8	rsbs	r4, r8, #875836468
+3be6f1d8	rsbs	fp, r8, #-421075226
+353ff1d8	rsbs	r5, r8, #1061109567
+41b6	sbcs	r6, r6
+41b6	sbcs	r6, r6
+419e	sbcs	r6, r3
+41ae	sbcs	r6, r5
+3237eb67	sbc.w	r2, r7, r7, ror #12
+15b5eb67	sbc.w	r5, r7, r5, ror #6
+7347eb67	sbc.w	r3, r7, r7, lsl #29
+25c5eb67	sbc.w	r5, r7, r5, lsl #11
+4d4eb67	sbc.w	r4, r7, r4, lsr #3
+4959eb67	sbc.w	r9, r7, r9, lsr #17
+5393eb67	sbc.w	r3, r7, r3, lsr #22
+574aeb67	sbc.w	r7, r7, sl, lsl #21
+574beb67	sbc.w	r7, r7, fp, lsl #21
+6795eb67	sbc.w	r7, r7, r5, lsr #26
+27d3eb67	sbc.w	r7, r7, r3, lsr #11
+3723eb67	sbc.w	r7, r7, r3, asr #12
+17e8eb67	sbc.w	r7, r7, r8, asr #7
+902eb67	sbc.w	r9, r7, r2
+6236eb67	sbc.w	r2, r7, r6, ror #24
+49b4eb67	sbc.w	r9, r7, r4, ror #18
+257aeb67	sbc.w	r5, r7, sl, ror #9
+3a7beb67	sbc.w	sl, r7, fp, ror #13
+58f9eb67	sbc.w	r8, r7, r9, ror #23
+3af9eb67	sbc.w	sl, r7, r9, ror #15
+2805eb67	sbc.w	r8, r7, r5, lsl #8
+5603eb67	sbc.w	r6, r7, r3, lsl #20
+334beb67	sbc.w	r3, r7, fp, lsl #13
+6ac2eb67	sbc.w	sl, r7, r2, lsl #27
+74cbeb67	sbc.w	r4, r7, fp, lsl #31
+a92eb67	sbc.w	sl, r7, r2, lsr #2
+895eb67	sbc.w	r8, r7, r5, lsr #2
+4a93eb67	sbc.w	sl, r7, r3, lsr #18
+5614eb67	sbc.w	r6, r7, r4, lsr #20
+385aeb67	sbc.w	r8, r7, sl, lsr #13
+59d2eb67	sbc.w	r9, r7, r2, lsr #23
+664eb67	sbc.w	r6, r7, r4, asr #1
+4a63eb67	sbc.w	sl, r7, r3, asr #17
+19e6eb67	sbc.w	r9, r7, r6, asr #7
+7669eb67	sbc.w	r6, r7, r9, asr #29
+32e9eb67	sbc.w	r2, r7, r9, asr #15
+5777eb77	sbcs.w	r7, r7, r7, ror #21
+47f9eb77	sbcs.w	r7, r7, r9, ror #19
+36f6eb77	sbcs.w	r6, r7, r6, ror #15
+67f2eb77	sbcs.w	r7, r7, r2, ror #27
+4746eb77	sbcs.w	r7, r7, r6, lsl #17
+bdbeb77	sbcs.w	fp, r7, fp, lsr #3
+2798eb77	sbcs.w	r7, r7, r8, lsr #10
+7b5beb77	sbcs.w	fp, r7, fp, lsr #29
+16e7eb77	sbcs.w	r6, r7, r7, asr #7
+768eb77	sbcs.w	r7, r7, r8, asr #1
+4762eb77	sbcs.w	r7, r7, r2, asr #17
+726eb77	sbcs.w	r7, r7, r6, asr #32
+83aeb77	sbcs.w	r8, r7, sl, rrx
+4936eb77	sbcs.w	r9, r7, r6, ror #16
+4bb8eb77	sbcs.w	fp, r7, r8, ror #18
+2275eb77	sbcs.w	r2, r7, r5, ror #9
+3ab9eb77	sbcs.w	sl, r7, r9, ror #14
+5a72eb77	sbcs.w	sl, r7, r2, ror #21
+7672eb77	sbcs.w	r6, r7, r2, ror #29
+489eb77	sbcs.w	r4, r7, r9, lsl #2
+1542eb77	sbcs.w	r5, r7, r2, lsl #5
+3a04eb77	sbcs.w	sl, r7, r4, lsl #12
+7a02eb77	sbcs.w	sl, r7, r2, lsl #28
+654aeb77	sbcs.w	r5, r7, sl, lsl #25
+54c5eb77	sbcs.w	r4, r7, r5, lsl #23
+381aeb77	sbcs.w	r8, r7, sl, lsr #12
+4693eb77	sbcs.w	r6, r7, r3, lsr #18
+6b59eb77	sbcs.w	fp, r7, r9, lsr #25
+16daeb77	sbcs.w	r6, r7, sl, lsr #7
+7892eb77	sbcs.w	r8, r7, r2, lsr #30
+3a23eb77	sbcs.w	sl, r7, r3, asr #12
+44a8eb77	sbcs.w	r4, r7, r8, asr #18
+3b63eb77	sbcs.w	fp, r7, r3, asr #13
+59e8eb77	sbcs.w	r9, r7, r8, asr #23
+4683f566	sbc.w	r6, r6, #16768
+16c8f566	sbc.w	r6, r6, #1638400
+162cf566	sbc.w	r6, r6, #2818048
+26c5f566	sbc.w	r6, r6, #403456
+261df566	sbc.w	r6, r6, #643072
+6dbf566	sbc.w	r6, r6, #7176192
+56f7f166	sbc.w	r6, r6, #517996544
+66fbf566	sbc.w	r6, r6, #2008
+263cf166	sbc.w	r6, r6, #1006648320
+7aa0f566	sbc.w	sl, r6, #320
+348cf566	sbc.w	r4, r6, #71680
+a92f166	sbc.w	sl, r6, #146
+6546f566	sbc.w	r5, r6, #3168
+1452f566	sbc.w	r4, r6, #3440640
+12f2f566	sbc.w	r2, r6, #1982464
+29df566	sbc.w	r2, r6, #5144576
+223bf566	sbc.w	r2, r6, #765952
+4a2ff166	sbc.w	sl, r6, #-1358954496
+196ff566	sbc.w	r9, r6, #3915776
+4f7f566	sbc.w	r4, r6, #8093696
+1bd8f166	sbc.w	fp, r6, #14155992
+2b3ff166	sbc.w	fp, r6, #1056980736
+389ff166	sbc.w	r8, r6, #-1616928865
+33aff166	sbc.w	r3, r6, #-1347440721
+36a8f576	sbcs.w	r6, r6, #86016
+56b0f576	sbcs.w	r6, r6, #5632
+16d2f576	sbcs.w	r6, r6, #1720320
+1639f576	sbcs.w	r6, r6, #3031040
+562ef176	sbcs.w	r6, r6, #729808896
+56ebf176	sbcs.w	r6, r6, #492830720
+46cff176	sbcs.w	r6, r6, #1736441856
+36e9f176	sbcs.w	r6, r6, #-370546199
+941f176	sbcs.w	r9, r6, #65
+39a0f576	sbcs.w	r9, r6, #81920
+59a4f576	sbcs.w	r9, r6, #5248
+bc2f576	sbcs.w	fp, r6, #6356992
+65c9f176	sbcs.w	r5, r6, #105381888
+7358f576	sbcs.w	r3, r6, #864
+3ae3f576	sbcs.w	sl, r6, #116224
+3aa7f576	sbcs.w	sl, r6, #85504
+2a3df576	sbcs.w	sl, r6, #774144
+47f6f176	sbcs.w	r7, r6, #2063597568
+1a7ef576	sbcs.w	sl, r6, #4161536
+25d2f176	sbcs.w	r5, r6, #-771698176
+22b8f176	sbcs.w	r2, r6, #-1207912448
+17f2f176	sbcs.w	r7, r6, #15859954
+13aef176	sbcs.w	r3, r6, #11403438
+24f6f176	sbcs.w	r4, r6, #-167709184
+3aa4f176	sbcs.w	sl, r6, #-1532713820
+34bcf176	sbcs.w	r4, r6, #-1128481604
+3551f345	sbfx	r5, r5, #13, #18
+3550f345	sbfx	r5, r5, #13, #17
+559f345	sbfx	r5, r5, #1, #26
+254cf345	sbfx	r5, r5, #9, #13
+1581f345	sbfx	r5, r5, #6, #2
+15c4f345	sbfx	r5, r5, #7, #5
+25c0f345	sbfx	r5, r5, #11, #1
+2543f345	sbfx	r5, r5, #9, #4
+1592f345	sbfx	r5, r5, #6, #19
+1582f345	sbfx	r5, r5, #6, #3
+498df345	sbfx	r9, r5, #18, #14
+125af345	sbfx	r2, r5, #5, #27
+44cbf345	sbfx	r4, r5, #19, #12
+480bf345	sbfx	r8, r5, #16, #12
+2754f345	sbfx	r7, r5, #9, #21
+2346f345	sbfx	r3, r5, #9, #7
+38c8f345	sbfx	r8, r5, #15, #9
+59c4f345	sbfx	r9, r5, #23, #5
+170ff345	sbfx	r7, r5, #4, #16
+228ff345	sbfx	r2, r5, #10, #16
+3687f345	sbfx	r6, r5, #14, #8
+228bf345	sbfx	r2, r5, #10, #12
+1854f345	sbfx	r8, r5, #5, #21
+4706f345	sbfx	r7, r5, #16, #7
+5284f345	sbfx	r2, r5, #22, #5
+1ac4f345	sbfx	sl, r5, #7, #5
+3940f345	sbfx	r9, r5, #13, #1
+5680f345	sbfx	r6, r5, #22, #1
+2c3f345	sbfx	r2, r5, #3, #4
+1906f345	sbfx	r9, r5, #4, #7
+1a08f345	sbfx	sl, r5, #4, #9
+1701f345	sbfx	r7, r5, #4, #2
+1280f345	sbfx	r2, r5, #6, #1
+2b40f345	sbfx	fp, r5, #9, #1
+2647f345	sbfx	r6, r5, #9, #8
+2986f345	sbfx	r9, r5, #10, #7
+a04f345	sbfx	sl, r5, #0, #5
+f222fa92	shadd16	r2, r2, r2
+fb22fa92	shadd16	fp, r2, r2
+f32afa9a	shadd16	r3, sl, sl
+f222fa9a	shadd16	r2, sl, r2
+f525fa92	shadd16	r5, r2, r5
+f22bfa92	shadd16	r2, r2, fp
+fa25fa9a	shadd16	sl, sl, r5
+f728fa92	shadd16	r7, r2, r8
+f624fa9a	shadd16	r6, sl, r4
+f725fa85	shadd8	r7, r5, r5
+f725fa85	shadd8	r7, r5, r5
+f222fa85	shadd8	r2, r5, r2
+fb2bfa85	shadd8	fp, r5, fp
+f52bfa85	shadd8	r5, r5, fp
+f522fa85	shadd8	r5, r5, r2
+f924fa85	shadd8	r9, r5, r4
+f62bfa85	shadd8	r6, r5, fp
+f428faa8	shasx	r4, r8, r8
+f428faa8	shasx	r4, r8, r8
+f323faa8	shasx	r3, r8, r3
+f929faa8	shasx	r9, r8, r9
+f826faa8	shasx	r8, r8, r6
+f822faa8	shasx	r8, r8, r2
+f625faa8	shasx	r6, r8, r5
+f72afaa8	shasx	r7, r8, sl
+f202fa68	ror.w	r2, r8, r2
+f802fa48	asr.w	r8, r8, r2
+f807fa68	ror.w	r8, r8, r7
+f504fa08	lsl.w	r5, r8, r4
+f506fa08	lsl.w	r5, r8, r6
+fb06fa28	lsr.w	fp, r8, r6
+f504fa28	lsr.w	r5, r8, r4
+fa04fa48	asr.w	sl, r8, r4
+f507fa48	asr.w	r5, r8, r7
+f403fa68	ror.w	r4, r8, r3
+f30bfa68	ror.w	r3, r8, fp
+f808fa78	rors.w	r8, r8, r8
+f408fa18	lsls.w	r4, r8, r8
+f408fa38	lsrs.w	r4, r8, r8
+f404fa38	lsrs.w	r4, r8, r4
+f807fa38	lsrs.w	r8, r8, r7
+f303fa58	asrs.w	r3, r8, r3
+f404fa58	asrs.w	r4, r8, r4
+f802fa58	asrs.w	r8, r8, r2
+f805fa58	asrs.w	r8, r8, r5
+f308fa78	rors.w	r3, r8, r8
+fa0afa78	rors.w	sl, r8, sl
+f809fa78	rors.w	r8, r8, r9
+f807fa78	rors.w	r8, r8, r7
+fb02fa18	lsls.w	fp, r8, r2
+fb02fa18	lsls.w	fp, r8, r2
+f702fa38	lsrs.w	r7, r8, r2
+f504fa38	lsrs.w	r5, r8, r4
+f30bfa58	asrs.w	r3, r8, fp
+f204fa58	asrs.w	r2, r8, r4
+f60afa78	rors.w	r6, r8, sl
+fb09fa78	rors.w	fp, r8, r9
+f82bfaeb	shsax	r8, fp, fp
+f823fae3	shsax	r8, r3, r3
+f727fae3	shsax	r7, r3, r7
+f828fae3	shsax	r8, r3, r8
+f326fae3	shsax	r3, r3, r6
+f327fae3	shsax	r3, r3, r7
+fb22fae3	shsax	fp, r3, r2
+f72afaeb	shsax	r7, fp, sl
+f626fad6	shsub16	r6, r6, r6
+f226fad6	shsub16	r2, r6, r6
+fa26fad6	shsub16	sl, r6, r6
+f727fad6	shsub16	r7, r6, r7
+f222fad6	shsub16	r2, r6, r2
+f623fad6	shsub16	r6, r6, r3
+f624fad6	shsub16	r6, r6, r4
+f824fad6	shsub16	r8, r6, r4
+f729fad6	shsub16	r7, r6, r9
+f929fac9	shsub8	r9, r9, r9
+f329fac9	shsub8	r3, r9, r9
+f229fac9	shsub8	r2, r9, r9
+f626fac9	shsub8	r6, r9, r6
+fb2bfac9	shsub8	fp, r9, fp
+f92afac9	shsub8	r9, r9, sl
+f922fac9	shsub8	r9, r9, r2
+f623fac9	shsub8	r6, r9, r3
+f623fac9	shsub8	r6, r9, r3
+2909fbc9	smlal	r2, r9, r9, r9
+8909fbc9	smlal	r8, r9, r9, r9
+9709fbc9	smlal	r9, r7, r9, r9
+4707fbc9	smlal	r4, r7, r9, r7
+5202fbc9	smlal	r5, r2, r9, r2
+b509fbc9	smlal	fp, r5, r9, r9
+4709fbc9	smlal	r4, r7, r9, r9
+a70afbc9	smlal	sl, r7, r9, sl
+5a05fbc9	smlal	r5, sl, r9, r5
+a904fbc9	smlal	sl, r9, r9, r4
+3905fbc9	smlal	r3, r9, r9, r5
+9302fbc9	smlal	r9, r3, r9, r2
+9806fbc9	smlal	r9, r8, r9, r6
+b508fbc9	smlal	fp, r5, r9, r8
+6803fbc9	smlal	r6, r8, r9, r3
+a7d7fbc7	smlaldx	sl, r7, r7, r7
+47d7fbc7	smlaldx	r4, r7, r7, r7
+75c7fbc7	smlald	r7, r5, r7, r7
+7ad7fbc7	smlaldx	r7, sl, r7, r7
+8bdbfbc7	smlaldx	r8, fp, r7, fp
+46d6fbc7	smlaldx	r4, r6, r7, r6
+9bc7fbc7	smlald	r9, fp, r7, r7
+82c7fbc7	smlald	r8, r2, r7, r7
+b2cbfbc7	smlald	fp, r2, r7, fp
+63c6fbc7	smlald	r6, r3, r7, r6
+8ad8fbc7	smlaldx	r8, sl, r7, r8
+45d4fbc7	smlaldx	r4, r5, r7, r4
+37d9fbc7	smlaldx	r3, r7, r7, r9
+57dafbc7	smlaldx	r5, r7, r7, sl
+bac3fbc7	smlald	fp, sl, r7, r3
+abc3fbc7	smlald	sl, fp, r7, r3
+6bdafbc7	smlaldx	r6, fp, r7, sl
+83d9fbc7	smlaldx	r8, r3, r7, r9
+6796fbc6	smlalbt	r6, r7, r6, r6
+9282fbc6	smlalbb	r9, r2, r6, r2
+a494fbc6	smlalbt	sl, r4, r6, r4
+3b9bfbc6	smlalbt	r3, fp, r6, fp
+94a4fbc6	smlaltb	r9, r4, r6, r4
+a5b5fbc6	smlaltt	sl, r5, r6, r5
+7596fbc6	smlalbt	r7, r5, r6, r6
+aba6fbc6	smlaltb	sl, fp, r6, r6
+72a7fbc6	smlaltb	r7, r2, r6, r7
+74b7fbc6	smlaltt	r7, r4, r6, r7
+8693fbc6	smlalbt	r8, r6, r6, r3
+969afbc6	smlalbt	r9, r6, r6, sl
+56a8fbc6	smlaltb	r5, r6, r6, r8
+b6b5fbc6	smlaltt	fp, r6, r6, r5
+6395fbc6	smlalbt	r6, r3, r6, r5
+6793fbc6	smlalbt	r6, r7, r6, r3
+63b5fbc6	smlaltt	r6, r3, r6, r5
+a885fbc6	smlalbb	sl, r8, r6, r5
+9a82fbc6	smlalbb	r9, sl, r6, r2
+7599fbc6	smlalbt	r7, r5, r6, r9
+4798fbc6	smlalbt	r4, r7, r6, r8
+78abfbc6	smlaltb	r7, r8, r6, fp
+79a3fbc6	smlaltb	r7, r9, r6, r3
+9ab7fbc6	smlaltt	r9, sl, r6, r7
+b3b8fbc6	smlaltt	fp, r3, r6, r8
+92d2fbd9	smlsldx	r9, r2, r9, r2
+68c8fbd9	smlsld	r6, r8, r9, r8
+b6d6fbd9	smlsldx	fp, r6, r9, r6
+83d3fbd9	smlsldx	r8, r3, r9, r3
+27c9fbd9	smlsld	r2, r7, r9, r9
+2ad9fbd9	smlsldx	r2, sl, r9, r9
+35d3fbd9	smlsldx	r3, r5, r9, r3
+8bd8fbd9	smlsldx	r8, fp, r9, r8
+79c6fbd9	smlsld	r7, r9, r9, r6
+a9cbfbd9	smlsld	sl, r9, r9, fp
+39d8fbd9	smlsldx	r3, r9, r9, r8
+b9dafbd9	smlsldx	fp, r9, r9, sl
+97c8fbd9	smlsld	r9, r7, r9, r8
+96c7fbd9	smlsld	r9, r6, r9, r7
+94d6fbd9	smlsldx	r9, r4, r9, r6
+96d8fbd9	smlsldx	r9, r6, r9, r8
+a2c6fbd9	smlsld	sl, r2, r9, r6
+bac7fbd9	smlsld	fp, sl, r9, r7
+72d4fbd9	smlsldx	r7, r2, r9, r4
+85d6fbd9	smlsldx	r8, r5, r9, r6
+5805fb58	smmla	r8, r8, r5, r5
+a808fb58	smmla	r8, r8, r8, sl
+6808fb58	smmla	r8, r8, r8, r6
+bb08fb58	smmla	fp, r8, r8, fp
+8706fb58	smmla	r7, r8, r6, r8
+8603fb58	smmla	r6, r8, r3, r8
+8215fb58	smmlar	r2, r8, r5, r8
+8913fb58	smmlar	r9, r8, r3, r8
+2702fb58	smmla	r7, r8, r2, r2
+6916fb58	smmlar	r9, r8, r6, r6
+5915fb58	smmlar	r9, r8, r5, r5
+b708fb58	smmla	r7, r8, r8, fp
+7508fb58	smmla	r5, r8, r8, r7
+6707fb58	smmla	r7, r8, r7, r6
+5909fb58	smmla	r9, r8, r9, r5
+5313fb58	smmlar	r3, r8, r3, r5
+5212fb58	smmlar	r2, r8, r2, r5
+480afb58	smmla	r8, r8, sl, r4
+b806fb58	smmla	r8, r8, r6, fp
+b815fb58	smmlar	r8, r8, r5, fp
+7813fb58	smmlar	r8, r8, r3, r7
+990afb58	smmla	r9, r8, sl, r9
+661bfb58	smmlar	r6, r8, fp, r6
+3205fb58	smmla	r2, r8, r5, r3
+950bfb58	smmla	r5, r8, fp, r9
+731bfb58	smmlar	r3, r8, fp, r7
+5913fb58	smmlar	r9, r8, r3, r5
+b808fb6b	smmls	r8, fp, r8, fp
+8b08fb6b	smmls	fp, fp, r8, r8
+2202fb6b	smmls	r2, fp, r2, r2
+5505fb6b	smmls	r5, fp, r5, r5
+8803fb63	smmls	r8, r3, r3, r8
+8803fb63	smmls	r8, r3, r3, r8
+340afb63	smmls	r4, r3, sl, r3
+b203fb6b	smmls	r2, fp, r3, fp
+3519fb63	smmlsr	r5, r3, r9, r3
+b816fb6b	smmlsr	r8, fp, r6, fp
+3603fb6b	smmls	r6, fp, r3, r3
+3503fb6b	smmls	r5, fp, r3, r3
+3413fb6b	smmlsr	r4, fp, r3, r3
+6816fb63	smmlsr	r8, r3, r6, r6
+590bfb6b	smmls	r9, fp, fp, r5
+7603fb63	smmls	r6, r3, r3, r7
+381bfb6b	smmlsr	r8, fp, fp, r3
+9813fb63	smmlsr	r8, r3, r3, r9
+9707fb6b	smmls	r7, fp, r7, r9
+7808fb63	smmls	r8, r3, r8, r7
+4212fb6b	smmlsr	r2, fp, r2, r4
+ab1bfb63	smmlsr	fp, r3, fp, sl
+ab08fb6b	smmls	fp, fp, r8, sl
+9305fb63	smmls	r3, r3, r5, r9
+a312fb63	smmlsr	r3, r3, r2, sl
+770bfb63	smmls	r7, r3, fp, r7
+2206fb63	smmls	r2, r3, r6, r2
+8814fb63	smmlsr	r8, r3, r4, r8
+aa18fb6b	smmlsr	sl, fp, r8, sl
+5a02fb6b	smmls	sl, fp, r2, r5
+a504fb63	smmls	r5, r3, r4, sl
+2914fb63	smmlsr	r9, r3, r4, r2
+6a18fb63	smmlsr	sl, r3, r8, r6
+f802fb52	smmul	r8, r2, r2
+f30afb5a	smmul	r3, sl, sl
+f812fb52	smmulr	r8, r2, r2
+fb1afb5a	smmulr	fp, sl, sl
+f606fb5a	smmul	r6, sl, r6
+fb0bfb52	smmul	fp, r2, fp
+f919fb58	smmulr	r9, r8, r9
+f616fb52	smmulr	r6, r2, r6
+fa08fb5a	smmul	sl, sl, r8
+f205fb52	smmul	r2, r2, r5
+f21afb52	smmulr	r2, r2, sl
+f21afb52	smmulr	r2, r2, sl
+fa05fb52	smmul	sl, r2, r5
+f903fb5a	smmul	r9, sl, r3
+f71bfb5a	smmulr	r7, sl, fp
+f715fb52	smmulr	r7, r2, r5
+7307fb87	smull	r7, r3, r7, r7
+b707fb87	smull	fp, r7, r7, r7
+2707fb87	smull	r2, r7, r7, r7
+2507fb87	smull	r2, r5, r7, r7
+2407fb87	smull	r2, r4, r7, r7
+9708fb87	smull	r9, r7, r7, r8
+2708fb87	smull	r2, r7, r7, r8
+5305fb87	smull	r5, r3, r7, r5
+ab0afb87	smull	sl, fp, r7, sl
+5404fb87	smull	r5, r4, r7, r4
+8506fb87	smull	r8, r5, r7, r6
+460bfb87	smull	r4, r6, r7, fp
+f515fb35	smulwt	r5, r5, r5
+f70afb3a	smulwb	r7, sl, sl
+f70afb3a	smulwb	r7, sl, sl
+f815fb35	smulwt	r8, r5, r5
+f315fb35	smulwt	r3, r5, r5
+f808fb35	smulwb	r8, r5, r8
+f909fb35	smulwb	r9, r5, r9
+f919fb35	smulwt	r9, r5, r9
+f818fb35	smulwt	r8, r5, r8
+fa05fb3a	smulwb	sl, sl, r5
+f506fb35	smulwb	r5, r5, r6
+f518fb35	smulwt	r5, r5, r8
+f517fb35	smulwt	r5, r5, r7
+fa03fb35	smulwb	sl, r5, r3
+f603fb32	smulwb	r6, r2, r3
+f61afb32	smulwt	r6, r2, sl
+f418fb35	smulwt	r4, r5, r8
+f303fb13	smulbb	r3, r3, r3
+fb0bfb1b	smulbb	fp, fp, fp
+f80bfb1b	smulbb	r8, fp, fp
+fa0bfb1b	smulbb	sl, fp, fp
+fb13fb13	smulbt	fp, r3, r3
+f21bfb1b	smulbt	r2, fp, fp
+fa0afb1b	smulbb	sl, fp, sl
+f707fb13	smulbb	r7, r3, r7
+f717fb13	smulbt	r7, r3, r7
+f313fb1b	smulbt	r3, fp, r3
+f62bfb1b	smultb	r6, fp, fp
+f32bfb1b	smultb	r3, fp, fp
+f33bfb1b	smultt	r3, fp, fp
+f53bfb1b	smultt	r5, fp, fp
+f929fb1b	smultb	r9, fp, r9
+fa2afb1b	smultb	sl, fp, sl
+f535fb1b	smultt	r5, fp, r5
+f737fb13	smultt	r7, r3, r7
+fb09fb1b	smulbb	fp, fp, r9
+fb03fb1b	smulbb	fp, fp, r3
+f318fb13	smulbt	r3, r3, r8
+fb14fb1b	smulbt	fp, fp, r4
+fb26fb1b	smultb	fp, fp, r6
+f826fb18	smultb	r8, r8, r6
+f336fb13	smultt	r3, r3, r6
+fb38fb1b	smultt	fp, fp, r8
+f502fb1b	smulbb	r5, fp, r2
+f509fb1b	smulbb	r5, fp, r9
+f718fb13	smulbt	r7, r3, r8
+f514fb13	smulbt	r5, r3, r4
+f826fb1b	smultb	r8, fp, r6
+f725fb13	smultb	r7, r3, r5
+f632fb13	smultt	r6, r3, r2
+f432fb1b	smultt	r4, fp, r2
+f604fb44	smusd	r6, r4, r4
+f904fb44	smusd	r9, r4, r4
+f202fb44	smusd	r2, r4, r2
+f808fb44	smusd	r8, r4, r8
+f714fb44	smusdx	r7, r4, r4
+f314fb44	smusdx	r3, r4, r4
+f818fb44	smusdx	r8, r4, r8
+f515fb46	smusdx	r5, r6, r5
+f405fb44	smusd	r4, r4, r5
+f405fb44	smusd	r4, r4, r5
+f415fb44	smusdx	r4, r4, r5
+f41bfb44	smusdx	r4, r4, fp
+f609fb44	smusd	r6, r4, r9
+f308fb44	smusd	r3, r4, r8
+f519fb44	smusdx	r5, r4, r9
+f21afb44	smusdx	r2, r4, sl
+b0ce907	stmdb	r7, {r2, r3, r8, r9, fp}
+76ce927	stmdb	r7!, {r2, r3, r5, r6, r8, r9, sl}
+c204	stmia	r2!, {r2}
+c604	stmia	r6!, {r2}
+c304	stmia	r3!, {r2}
+c214	stmia	r2!, {r2, r4}
+c20c	stmia	r2!, {r2, r3}
+c444	stmia	r4!, {r2, r6}
+c314	stmia	r3!, {r2, r4}
+c2a4	stmia	r2!, {r2, r5, r7}
+c22c	stmia	r2!, {r2, r3, r5}
+c764	stmia	r7!, {r2, r5, r6}
+c634	stmia	r6!, {r2, r4, r5}
+c23c	stmia	r2!, {r2, r3, r4, r5}
+c2e4	stmia	r2!, {r2, r5, r6, r7}
+c4cc	stmia	r4!, {r2, r3, r6, r7}
+c73c	stmia	r7!, {r2, r3, r4, r5}
+c27c	stmia	r2!, {r2, r3, r4, r5, r6}
+c2bc	stmia	r2!, {r2, r3, r4, r5, r7}
+c77c	stmia	r7!, {r2, r3, r4, r5, r6}
+c3f4	stmia	r3!, {r2, r4, r5, r6, r7}
+c2fc	stmia	r2!, {r2, r3, r4, r5, r6, r7}
+c2fc	stmia	r2!, {r2, r3, r4, r5, r6, r7}
+a04e886	stmia.w	r6, {r2, r9, fp}
+8a8e8a6	stmia.w	r6!, {r3, r5, r7, fp}
+6012	str	r2, [r2, #0]
+6012	str	r2, [r2, #0]
+6092	str	r2, [r2, #8]
+6052	str	r2, [r2, #4]
+6312	str	r2, [r2, #48]
+6292	str	r2, [r2, #40]
+6592	str	r2, [r2, #88]
+62d2	str	r2, [r2, #44]
+65d2	str	r2, [r2, #92]
+6792	str	r2, [r2, #120]
+67d2	str	r2, [r2, #124]
+67d2	str	r2, [r2, #124]
+601a	str	r2, [r3, #0]
+6032	str	r2, [r6, #0]
+6072	str	r2, [r6, #4]
+613a	str	r2, [r7, #16]
+6332	str	r2, [r6, #48]
+62aa	str	r2, [r5, #40]
+656a	str	r2, [r5, #84]
+66ba	str	r2, [r7, #104]
+63fa	str	r2, [r7, #60]
+67a2	str	r2, [r4, #120]
+67e2	str	r2, [r4, #124]
+67ea	str	r2, [r5, #124]
+512d	str	r5, [r5, r4]
+51ad	str	r5, [r5, r6]
+517d	str	r5, [r7, r5]
+5175	str	r5, [r6, r5]
+51d5	str	r5, [r2, r7]
+509d	str	r5, [r3, r2]
+bcd0f84b	str.w	fp, [fp, #-208]
+bc47f84b	str.w	fp, [fp, #-71]
+4c80f843	str.w	r4, [r3, #-128]
+9ce0f843	str.w	r9, [r3, #-224]
+7c70f84b	str.w	r7, [fp, #-112]
+7ceef84b	str.w	r7, [fp, #-238]
+7cb4f843	str.w	r7, [r3, #-180]
+4ccff84b	str.w	r4, [fp, #-207]
+9ccbf843	str.w	r9, [r3, #-203]
+6cf1f843	str.w	r6, [r3, #-241]
+5c53f843	str.w	r5, [r3, #-83]
+2c1df843	str.w	r2, [r3, #-29]
+7c42f84b	str.w	r7, [fp, #-66]
+2c09f84b	str.w	r2, [fp, #-9]
+5c03f84b	str.w	r5, [fp, #-3]
+3c01f84b	str.w	r3, [fp, #-1]
+2f10f84b	str.w	r2, [fp, #16]!
+7b21f843	str.w	r7, [r3], #33
+7ba0f843	str.w	r7, [r3], #160
+2f0af843	str.w	r2, [r3, #10]!
+2f88f84b	str.w	r2, [fp, #136]!
+5b07f843	str.w	r5, [r3], #7
+2b85f84b	str.w	r2, [fp], #133
+3f51f84b	str.w	r3, [fp, #81]!
+6f4cf843	str.w	r6, [r3, #76]!
+8bc3f843	str.w	r8, [r3], #195
+2b9cf843	str.w	r2, [r3], #156
+bf27f843	str.w	fp, [r3, #39]!
+3f47f84b	str.w	r3, [fp, #71]!
+ab6bf843	str.w	sl, [r3], #107
+2b57f843	str.w	r2, [r3], #87
+6f1ff84b	str.w	r6, [fp, #31]!
+bfadf843	str.w	fp, [r3, #173]!
+8bbdf843	str.w	r8, [r3], #189
+bfe7f843	str.w	fp, [r3, #231]!
+bbdff843	str.w	fp, [r3], #223
+6f7ff84b	str.w	r6, [fp, #127]!
+9fdff84b	str.w	r9, [fp, #223]!
+99c0f84b	str.w	r9, [fp], #-192
+5de0f843	str.w	r5, [r3, #-224]!
+6d80f843	str.w	r6, [r3, #-128]!
+a9bcf843	str.w	sl, [r3], #-188
+89b0f843	str.w	r8, [r3], #-176
+79acf84b	str.w	r7, [fp], #-172
+8dd7f843	str.w	r8, [r3, #-215]!
+5d9cf84b	str.w	r5, [fp, #-156]!
+5934f843	str.w	r5, [r3], #-52
+698ef84b	str.w	r6, [fp], #-142
+9daaf843	str.w	r9, [r3, #-170]!
+9d56f84b	str.w	r9, [fp, #-86]!
+49a5f84b	str.w	r4, [fp], #-165
+2935f843	str.w	r2, [r3], #-53
+9d92f84b	str.w	r9, [fp, #-146]!
+7d16f843	str.w	r7, [r3, #-22]!
+7945f843	str.w	r7, [r3], #-69
+4923f84b	str.w	r4, [fp], #-35
+4d0df843	str.w	r4, [r3, #-13]!
+2d13f843	str.w	r2, [r3, #-19]!
+7911f84b	str.w	r7, [fp], #-17
+2941f843	str.w	r2, [r3], #-65
+7d01f84b	str.w	r7, [fp, #-1]!
+8415f8c8	str.w	r8, [r8, #1045]
+8e82f8c8	str.w	r8, [r8, #3714]
+8174f8c8	str.w	r8, [r8, #372]
+813bf8c8	str.w	r8, [r8, #315]
+8571f8c8	str.w	r8, [r8, #1393]
+8cc7f8c8	str.w	r8, [r8, #3271]
+8af6f8c8	str.w	r8, [r8, #2806]
+87e5f8c8	str.w	r8, [r8, #2021]
+8cfef8c8	str.w	r8, [r8, #3326]
+9080f8c8	str.w	r9, [r8, #128]
+4104f8c8	str.w	r4, [r8, #260]
+b050f8c8	str.w	fp, [r8, #80]
+a881f8c8	str.w	sl, [r8, #2177]
+9888f8c8	str.w	r9, [r8, #2184]
+a431f8c8	str.w	sl, [r8, #1073]
+a344f8c8	str.w	sl, [r8, #836]
+3a31f8c8	str.w	r3, [r8, #2609]
+b2caf8c8	str.w	fp, [r8, #714]
+4559f8c8	str.w	r4, [r8, #1369]
+3d58f8c8	str.w	r3, [r8, #3416]
+987bf8c8	str.w	r9, [r8, #2171]
+61ddf8c8	str.w	r6, [r8, #477]
+27ecf8c8	str.w	r2, [r8, #2028]
+7eabf8c8	str.w	r7, [r8, #3755]
+2f5ef8c8	str.w	r2, [r8, #3934]
+96fef8c8	str.w	r9, [r8, #1790]
+77fef8c8	str.w	r7, [r8, #2046]
+3bfbf8c8	str.w	r3, [r8, #3067]
+7fbff8c8	str.w	r7, [r8, #4031]
+5005f842	str.w	r5, [r2, r5]
+7007f84a	str.w	r7, [sl, r7]
+a009f84a	str.w	sl, [sl, r9]
+a002f84a	str.w	sl, [sl, r2]
+8018f842	str.w	r8, [r2, r8, lsl #1]
+4024f84a	str.w	r4, [sl, r4, lsl #2]
+a027f84a	str.w	sl, [sl, r7, lsl #2]
+2013f842	str.w	r2, [r2, r3, lsl #1]
+b03bf842	str.w	fp, [r2, fp, lsl #3]
+9039f842	str.w	r9, [r2, r9, lsl #3]
+2038f842	str.w	r2, [r2, r8, lsl #3]
+a037f84a	str.w	sl, [sl, r7, lsl #3]
+b007f842	str.w	fp, [r2, r7]
+900bf84a	str.w	r9, [sl, fp]
+8013f84a	str.w	r8, [sl, r3, lsl #1]
+8012f84a	str.w	r8, [sl, r2, lsl #1]
+9038f84a	str.w	r9, [sl, r8, lsl #3]
+8034f84a	str.w	r8, [sl, r4, lsl #3]
+703f	strb	r7, [r7, #0]
+70bf	strb	r7, [r7, #2]
+713f	strb	r7, [r7, #4]
+70ff	strb	r7, [r7, #3]
+717f	strb	r7, [r7, #5]
+71ff	strb	r7, [r7, #7]
+72ff	strb	r7, [r7, #11]
+73ff	strb	r7, [r7, #15]
+75ff	strb	r7, [r7, #23]
+77ff	strb	r7, [r7, #31]
+7037	strb	r7, [r6, #0]
+702f	strb	r7, [r5, #0]
+7417	strb	r7, [r2, #16]
+709f	strb	r7, [r3, #2]
+7457	strb	r7, [r2, #17]
+70df	strb	r7, [r3, #3]
+76af	strb	r7, [r5, #26]
+772f	strb	r7, [r5, #28]
+76ef	strb	r7, [r5, #27]
+776f	strb	r7, [r5, #29]
+77ef	strb	r7, [r5, #31]
+77d7	strb	r7, [r2, #31]
+54f6	strb	r6, [r6, r3]
+5576	strb	r6, [r6, r5]
+55ae	strb	r6, [r5, r6]
+5596	strb	r6, [r2, r6]
+5516	strb	r6, [r2, r4]
+54be	strb	r6, [r7, r2]
+9c9df809	strb.w	r9, [r9, #-157]
+3cfcf809	strb.w	r3, [r9, #-252]
+4ca0f809	strb.w	r4, [r9, #-160]
+7cecf809	strb.w	r7, [r9, #-236]
+bca8f809	strb.w	fp, [r9, #-168]
+7c5cf809	strb.w	r7, [r9, #-92]
+aca7f809	strb.w	sl, [r9, #-167]
+7cc7f809	strb.w	r7, [r9, #-199]
+7c0ef809	strb.w	r7, [r9, #-14]
+5c63f809	strb.w	r5, [r9, #-99]
+3c12f809	strb.w	r3, [r9, #-18]
+4c45f809	strb.w	r4, [r9, #-69]
+2b10f809	strb.w	r2, [r9], #16
+8b0cf809	strb.w	r8, [r9], #12
+6b48f809	strb.w	r6, [r9], #72
+6f22f809	strb.w	r6, [r9, #34]!
+4f81f809	strb.w	r4, [r9, #129]!
+abd0f809	strb.w	sl, [r9], #208
+ab31f809	strb.w	sl, [r9], #49
+3f2af809	strb.w	r3, [r9, #42]!
+4b2bf809	strb.w	r4, [r9], #43
+7f9af809	strb.w	r7, [r9, #154]!
+3f0ff809	strb.w	r3, [r9, #15]!
+4b3ef809	strb.w	r4, [r9], #62
+ab73f809	strb.w	sl, [r9], #115
+af79f809	strb.w	sl, [r9, #121]!
+7f1ff809	strb.w	r7, [r9, #31]!
+2b7df809	strb.w	r2, [r9], #125
+abbef809	strb.w	sl, [r9], #190
+2fbbf809	strb.w	r2, [r9, #187]!
+5fbdf809	strb.w	r5, [r9, #189]!
+3f7ff809	strb.w	r3, [r9, #127]!
+2dfcf809	strb.w	r2, [r9, #-252]!
+a9ecf809	strb.w	sl, [r9], #-236
+b9b0f809	strb.w	fp, [r9], #-176
+b958f809	strb.w	fp, [r9], #-88
+49eaf809	strb.w	r4, [r9], #-234
+bd77f809	strb.w	fp, [r9, #-119]!
+2de7f809	strb.w	r2, [r9, #-231]!
+b92ef809	strb.w	fp, [r9], #-46
+49b9f809	strb.w	r4, [r9], #-185
+2d1ff809	strb.w	r2, [r9, #-31]!
+5d57f809	strb.w	r5, [r9, #-87]!
+bd1bf809	strb.w	fp, [r9, #-27]!
+5dd1f809	strb.w	r5, [r9, #-209]!
+7906f809	strb.w	r7, [r9], #-6
+2983f809	strb.w	r2, [r9], #-131
+8d43f809	strb.w	r8, [r9, #-67]!
+bd23f809	strb.w	fp, [r9, #-35]!
+bd11f809	strb.w	fp, [r9, #-17]!
+6049f886	strb.w	r6, [r6, #73]
+6850f886	strb.w	r6, [r6, #2128]
+6303f886	strb.w	r6, [r6, #771]
+62c8f886	strb.w	r6, [r6, #712]
+6a51f886	strb.w	r6, [r6, #2641]
+61b2f886	strb.w	r6, [r6, #434]
+6c39f886	strb.w	r6, [r6, #3129]
+6d8cf886	strb.w	r6, [r6, #3468]
+615ff886	strb.w	r6, [r6, #351]
+6e87f886	strb.w	r6, [r6, #3719]
+6b9bf886	strb.w	r6, [r6, #2971]
+6f2bf886	strb.w	r6, [r6, #3883]
+400df886	strb.w	r4, [r6, #13]
+5484f886	strb.w	r5, [r6, #1156]
+8cc0f886	strb.w	r8, [r6, #3264]
+4816f886	strb.w	r4, [r6, #2070]
+52ccf886	strb.w	r5, [r6, #716]
+a067f886	strb.w	sl, [r6, #103]
+7999f886	strb.w	r7, [r6, #2457]
+4e92f886	strb.w	r4, [r6, #3730]
+3f32f886	strb.w	r3, [r6, #3890]
+3a37f886	strb.w	r3, [r6, #2615]
+5d3df886	strb.w	r5, [r6, #3389]
+5e5ef886	strb.w	r5, [r6, #3678]
+27e7f886	strb.w	r2, [r6, #2023]
+9fabf886	strb.w	r9, [r6, #4011]
+bffcf886	strb.w	fp, [r6, #4092]
+affbf886	strb.w	sl, [r6, #4091]
+4004f808	strb.w	r4, [r8, r4]
+a00af808	strb.w	sl, [r8, sl]
+8004f808	strb.w	r8, [r8, r4]
+800bf808	strb.w	r8, [r8, fp]
+8017f808	strb.w	r8, [r8, r7, lsl #1]
+802af808	strb.w	r8, [r8, sl, lsl #2]
+b004f808	strb.w	fp, [r8, r4]
+b002f808	strb.w	fp, [r8, r2]
+7014f808	strb.w	r7, [r8, r4, lsl #1]
+5024f808	strb.w	r5, [r8, r4, lsl #2]
+9036f808	strb.w	r9, [r8, r6, lsl #3]
+203bf808	strb.w	r2, [r8, fp, lsl #3]
+4e1af804	strbt	r4, [r4, #26]
+4e46f804	strbt	r4, [r4, #70]
+4e27f804	strbt	r4, [r4, #39]
+4e33f804	strbt	r4, [r4, #51]
+4eeaf804	strbt	r4, [r4, #234]
+4ee7f804	strbt	r4, [r4, #231]
+4eaff804	strbt	r4, [r4, #175]
+4e7ff804	strbt	r4, [r4, #127]
+4efef804	strbt	r4, [r4, #254]
+5e01f804	strbt	r5, [r4, #1]
+ae10f804	strbt	sl, [r4, #16]
+ae22f804	strbt	sl, [r4, #34]
+be30f804	strbt	fp, [r4, #48]
+9e1cf804	strbt	r9, [r4, #28]
+6e85f804	strbt	r6, [r4, #133]
+7e3cf804	strbt	r7, [r4, #60]
+2e95f809	strbt	r2, [r9, #149]
+7eabf804	strbt	r7, [r4, #171]
+9e37f804	strbt	r9, [r4, #55]
+6eaff804	strbt	r6, [r4, #175]
+5e7ef804	strbt	r5, [r4, #126]
+5ef7f804	strbt	r5, [r4, #247]
+7ef7f804	strbt	r7, [r4, #247]
+2b98e9cb	strd	r2, fp, [fp, #608]
+22c4e9cb	strd	r2, r2, [fp, #784]
+772de9cb	strd	r7, r7, [fp, #180]
+34b8e943	strd	r3, r4, [r3, #-736]
+358de943	strd	r3, r5, [r3, #-564]
+5589e943	strd	r5, r5, [r3, #-548]
+5551e94b	strd	r5, r5, [fp, #-324]
+bb0ee8e3	strd	fp, fp, [r3], #56
+2245e9e3	strd	r2, r2, [r3, #276]!
+4491e9eb	strd	r4, r4, [fp, #580]!
+993ce9eb	strd	r9, r9, [fp, #240]!
+aa56e9e3	strd	sl, sl, [r3, #344]!
+88b7e9e3	strd	r8, r8, [r3, #732]!
+22fde96b	strd	r2, r2, [fp, #-1012]!
+aadae96b	strd	sl, sl, [fp, #-872]!
+228fe86b	strd	r2, r2, [fp], #-572
+7763e86b	strd	r7, r7, [fp], #-396
+3383e86b	strd	r3, r3, [fp], #-524
+9550e9c3	strd	r9, r5, [r3, #320]
+7282e9c3	strd	r7, r2, [r3, #520]
+49c8e9cb	strd	r4, r9, [fp, #800]
+42e2e9cb	strd	r4, r2, [fp, #904]
+841ee9cb	strd	r8, r4, [fp, #120]
+52fae9c3	strd	r5, r2, [r3, #1000]
+29eee9cb	strd	r2, r9, [fp, #952]
+a3fee94b	strd	sl, r3, [fp, #-1016]
+47d0e94b	strd	r4, r7, [fp, #-832]
+62bfe943	strd	r6, r2, [r3, #-764]
+34ace94b	strd	r3, r4, [fp, #-688]
+3acae94b	strd	r3, sl, [fp, #-808]
+69cbe943	strd	r6, r9, [r3, #-812]
+380ce94b	strd	r3, r8, [fp, #-48]
+5859e94b	strd	r5, r8, [fp, #-356]
+6422e943	strd	r6, r4, [r3, #-136]
+8a41e94b	strd	r8, sl, [fp, #-260]
+291ce8eb	strd	r2, r9, [fp], #112
+6729e8e3	strd	r6, r7, [r3], #164
+720de9e3	strd	r7, r2, [r3, #52]!
+5986e9eb	strd	r5, r9, [fp, #536]!
+a52ee8e3	strd	sl, r5, [r3], #184
+8972e8eb	strd	r8, r9, [fp], #456
+89e4e9e3	strd	r8, r9, [r3, #912]!
+392ee9eb	strd	r3, r9, [fp, #184]!
+43c7e8eb	strd	r4, r3, [fp], #796
+a97ce8eb	strd	sl, r9, [fp], #496
+79d5e9e3	strd	r7, r9, [r3, #852]!
+2a5be9e3	strd	r2, sl, [r3, #364]!
+4677e8e3	strd	r4, r6, [r3], #476
+2777e9e3	strd	r2, r7, [r3, #476]!
+56fee9e3	strd	r5, r6, [r3, #1016]!
+43f0e96b	strd	r4, r3, [fp, #-960]!
+79bce86b	strd	r7, r9, [fp], #-752
+45bfe963	strd	r4, r5, [r3, #-764]!
+976ee863	strd	r9, r7, [r3], #-440
+6af2e96b	strd	r6, sl, [fp, #-968]!
+689ce96b	strd	r6, r8, [fp, #-624]!
+2a2ee863	strd	r2, sl, [r3], #-184
+734fe86b	strd	r7, r3, [fp], #-316
+541fe96b	strd	r5, r4, [fp, #-124]!
+5648e96b	strd	r5, r6, [fp, #-288]!
+4839e863	strd	r4, r8, [r3], #-228
+5692e863	strd	r5, r6, [r3], #-584
+62b1e963	strd	r6, r2, [r3, #-708]!
+4a25e86b	strd	r4, sl, [fp], #-148
+a229e963	strd	sl, r2, [r3, #-164]!
+6407e963	strd	r6, r4, [r3, #-28]!
+2403e96b	strd	r2, r4, [fp, #-12]!
+4c1bf824	strh.w	r4, [r4, #-27]
+3cfcf824	strh.w	r3, [r4, #-252]
+3cf5f824	strh.w	r3, [r4, #-245]
+5cacf824	strh.w	r5, [r4, #-172]
+5ca7f824	strh.w	r5, [r4, #-167]
+ace5f824	strh.w	sl, [r4, #-229]
+2ca3f824	strh.w	r2, [r4, #-163]
+6cc9f824	strh.w	r6, [r4, #-201]
+5c43f824	strh.w	r5, [r4, #-67]
+5b44f824	strh.w	r5, [r4], #68
+ab48f824	strh.w	sl, [r4], #72
+9f21f824	strh.w	r9, [r4, #33]!
+2f0af824	strh.w	r2, [r4, #10]!
+8bb0f824	strh.w	r8, [r4], #176
+af23f824	strh.w	sl, [r4, #35]!
+8f2cf824	strh.w	r8, [r4, #44]!
+abc3f824	strh.w	sl, [r4], #195
+2b4bf824	strh.w	r2, [r4], #75
+2f0ff824	strh.w	r2, [r4, #15]!
+3f0ff824	strh.w	r3, [r4, #15]!
+abdcf824	strh.w	sl, [r4], #220
+3bf1f824	strh.w	r3, [r4], #241
+5f1ff824	strh.w	r5, [r4, #31]!
+8fcdf824	strh.w	r8, [r4, #205]!
+8bfcf824	strh.w	r8, [r4], #252
+affaf824	strh.w	sl, [r4, #250]!
+8f7ff824	strh.w	r8, [r4, #127]!
+9bfff824	strh.w	r9, [r4], #255
+a9e8f824	strh.w	sl, [r4], #-232
+997cf824	strh.w	r9, [r4], #-124
+8de8f824	strh.w	r8, [r4, #-232]!
+89aff824	strh.w	r8, [r4], #-175
+b93ef824	strh.w	fp, [r4], #-62
+bd90f824	strh.w	fp, [r4, #-144]!
+adc8f824	strh.w	sl, [r4, #-200]!
+9994f824	strh.w	r9, [r4], #-148
+b967f824	strh.w	fp, [r4], #-103
+6dcdf824	strh.w	r6, [r4, #-205]!
+a924f824	strh.w	sl, [r4], #-36
+791bf824	strh.w	r7, [r4], #-27
+6d86f824	strh.w	r6, [r4, #-134]!
+5d26f824	strh.w	r5, [r4, #-38]!
+3961f824	strh.w	r3, [r4], #-97
+590bf824	strh.w	r5, [r4], #-11
+7d04f824	strh.w	r7, [r4, #-4]!
+7d51f824	strh.w	r7, [r4, #-81]!
+7d01f824	strh.w	r7, [r4, #-1]!
+5049f8a5	strh.w	r5, [r5, #73]
+5302f8a5	strh.w	r5, [r5, #770]
+5249f8a5	strh.w	r5, [r5, #585]
+5143f8a5	strh.w	r5, [r5, #323]
+5391f8a5	strh.w	r5, [r5, #913]
+522ef8a5	strh.w	r5, [r5, #558]
+5b0bf8a5	strh.w	r5, [r5, #2827]
+578cf8a5	strh.w	r5, [r5, #1932]
+5c9ef8a5	strh.w	r5, [r5, #3230]
+5acdf8a5	strh.w	r5, [r5, #2765]
+51eff8a5	strh.w	r5, [r5, #495]
+59bef8a5	strh.w	r5, [r5, #2494]
+5bbef8a5	strh.w	r5, [r5, #3006]
+5fdaf8a5	strh.w	r5, [r5, #4058]
+5ff3f8a5	strh.w	r5, [r5, #4083]
+5ffbf8a5	strh.w	r5, [r5, #4091]
+a100f8a5	strh.w	sl, [r5, #256]
+4012f8a5	strh.w	r4, [r5, #18]
+7402f8a5	strh.w	r7, [r5, #1026]
+6904f8a5	strh.w	r6, [r5, #2308]
+2221f8a5	strh.w	r2, [r5, #545]
+b0d1f8a5	strh.w	fp, [r5, #209]
+4219f8a5	strh.w	r4, [r5, #537]
+bcc1f8a5	strh.w	fp, [r5, #3265]
+bda0f8a5	strh.w	fp, [r5, #3488]
+ad38f8a5	strh.w	sl, [r5, #3384]
+b6a9f8a5	strh.w	fp, [r5, #1705]
+ac9bf8a5	strh.w	sl, [r5, #3227]
+a8f3f8a5	strh.w	sl, [r5, #2291]
+46bdf8a5	strh.w	r4, [r5, #1725]
+9ecbf8a5	strh.w	r9, [r5, #3787]
+7bd7f8a5	strh.w	r7, [r5, #3031]
+6f6df8a5	strh.w	r6, [r5, #3949]
+bffef8a5	strh.w	fp, [r5, #4094]
+7ffff8a5	strh.w	r7, [r5, #4095]
+5005f827	strh.w	r5, [r7, r5]
+3003f827	strh.w	r3, [r7, r3]
+7008f827	strh.w	r7, [r7, r8]
+7009f827	strh.w	r7, [r7, r9]
+9019f827	strh.w	r9, [r7, r9, lsl #1]
+a01af827	strh.w	sl, [r7, sl, lsl #1]
+701af827	strh.w	r7, [r7, sl, lsl #1]
+7024f827	strh.w	r7, [r7, r4, lsl #2]
+7033f827	strh.w	r7, [r7, r3, lsl #3]
+703bf827	strh.w	r7, [r7, fp, lsl #3]
+b00af827	strh.w	fp, [r7, sl]
+200af827	strh.w	r2, [r7, sl]
+3012f827	strh.w	r3, [r7, r2, lsl #1]
+2016f827	strh.w	r2, [r7, r6, lsl #1]
+203af827	strh.w	r2, [r7, sl, lsl #3]
+a039f827	strh.w	sl, [r7, r9, lsl #3]
+4e11f824	strht	r4, [r4, #17]
+5e18f825	strht	r5, [r5, #24]
+5eb0f825	strht	r5, [r5, #176]
+5e89f825	strht	r5, [r5, #137]
+5e72f825	strht	r5, [r5, #114]
+5e56f825	strht	r5, [r5, #86]
+5e57f825	strht	r5, [r5, #87]
+5eaef825	strht	r5, [r5, #174]
+5efcf825	strht	r5, [r5, #252]
+6e00f825	strht	r6, [r5, #0]
+4e80f825	strht	r4, [r5, #128]
+be01f825	strht	fp, [r5, #1]
+aec0f825	strht	sl, [r5, #192]
+ae50f825	strht	sl, [r5, #80]
+4e16f825	strht	r4, [r5, #22]
+2e13f825	strht	r2, [r5, #19]
+2e47f825	strht	r2, [r5, #71]
+4e33f825	strht	r4, [r5, #51]
+8eb5f825	strht	r8, [r5, #181]
+aeb6f825	strht	sl, [r5, #182]
+3eaff825	strht	r3, [r5, #175]
+9e9ff825	strht	r9, [r5, #159]
+3ebff824	strht	r3, [r4, #191]
+8ef7f825	strht	r8, [r5, #247]
+befff824	strht	fp, [r4, #255]
+2e28f842	strt	r2, [r2, #40]
+ae0ef84a	strt	sl, [sl, #14]
+2e07f842	strt	r2, [r2, #7]
+ae53f84a	strt	sl, [sl, #83]
+ae6cf84a	strt	sl, [sl, #108]
+3eb6f843	strt	r3, [r3, #182]
+2ee3f842	strt	r2, [r2, #227]
+3ed7f843	strt	r3, [r3, #215]
+2e3ff842	strt	r2, [r2, #63]
+ae7ff84a	strt	sl, [sl, #127]
+be00f842	strt	fp, [r2, #0]
+5e04f84a	strt	r5, [sl, #4]
+ae20f842	strt	sl, [r2, #32]
+be48f842	strt	fp, [r2, #72]
+8e0af84b	strt	r8, [fp, #10]
+5e34f842	strt	r5, [r2, #52]
+6e85f84a	strt	r6, [sl, #133]
+be65f842	strt	fp, [r2, #101]
+7ec6f84a	strt	r7, [sl, #198]
+6e9ef842	strt	r6, [r2, #158]
+4e57f84b	strt	r4, [fp, #87]
+9e6ff84a	strt	r9, [sl, #111]
+5e7df842	strt	r5, [r2, #125]
+5efef842	strt	r5, [r2, #254]
+befbf84a	strt	fp, [sl, #251]
+2efff84a	strt	r2, [sl, #255]
+1f1b	subs	r3, r3, #4
+1f9b	subs	r3, r3, #6
+1f5b	subs	r3, r3, #5
+1e2b	subs	r3, r5, #0
+1e13	subs	r3, r2, #0
+1eb3	subs	r3, r6, #2
+1e63	subs	r3, r4, #1
+1f73	subs	r3, r6, #5
+1f93	subs	r3, r2, #6
+1ff3	subs	r3, r6, #7
+3f00	subs	r7, #0
+3c00	subs	r4, #0
+3c20	subs	r4, #32
+3e40	subs	r6, #64
+3b48	subs	r3, #72
+3a88	subs	r2, #136
+3ba8	subs	r3, #168
+3ce0	subs	r4, #224
+3ae8	subs	r2, #232
+3bf0	subs	r3, #240
+3ff8	subs	r7, #248
+3cf8	subs	r4, #248
+1adb	subs	r3, r3, r3
+1adb	subs	r3, r3, r3
+1a93	subs	r3, r2, r2
+1bfb	subs	r3, r7, r7
+1ad3	subs	r3, r2, r3
+1aeb	subs	r3, r5, r3
+1b5b	subs	r3, r3, r5
+1b9b	subs	r3, r3, r6
+1b63	subs	r3, r4, r5
+1b7b	subs	r3, r7, r5
+13c3eba3	sub.w	r3, r3, r3, lsl #7
+2bebebab	sub.w	fp, fp, fp, asr #11
+4a73eba3	sub.w	sl, r3, r3, ror #17
+1743eba3	sub.w	r7, r3, r3, lsl #5
+590bebab	sub.w	r9, fp, fp, lsl #20
+790bebab	sub.w	r9, fp, fp, lsl #28
+33cbebab	sub.w	r3, fp, fp, lsl #15
+7303ebab	sub.w	r3, fp, r3, lsl #28
+65c5eba3	sub.w	r5, r3, r5, lsl #27
+469bebab	sub.w	r6, fp, fp, lsr #18
+3252ebab	sub.w	r2, fp, r2, lsr #13
+5696eba3	sub.w	r6, r3, r6, lsr #22
+5babeba3	sub.w	fp, r3, fp, asr #22
+6aaaeba3	sub.w	sl, r3, sl, asr #26
+59e9eba3	sub.w	r9, r3, r9, asr #23
+1b09ebab	sub.w	fp, fp, r9, lsl #4
+1bc9ebab	sub.w	fp, fp, r9, lsl #7
+33c7eba3	sub.w	r3, r3, r7, lsl #15
+3315eba3	sub.w	r3, r3, r5, lsr #12
+7312eba3	sub.w	r3, r3, r2, lsr #28
+b67ebab	sub.w	fp, fp, r7, asr #1
+2b22ebab	sub.w	fp, fp, r2, asr #8
+5324eba3	sub.w	r3, r3, r4, asr #20
+912eba3	sub.w	r9, r3, r2, lsr #32
+4a32eba3	sub.w	sl, r3, r2, ror #16
+8baeba3	sub.w	r8, r3, sl, ror #2
+6935ebab	sub.w	r9, fp, r5, ror #24
+15b6eba3	sub.w	r5, r3, r6, ror #6
+4573ebab	sub.w	r5, fp, r3, ror #17
+7faeba3	sub.w	r7, r3, sl, ror #3
+7839eba3	sub.w	r8, r3, r9, ror #28
+67b9eba3	sub.w	r7, r3, r9, ror #26
+67b6ebab	sub.w	r7, fp, r6, ror #26
+35f6ebab	sub.w	r5, fp, r6, ror #15
+4209ebab	sub.w	r2, fp, r9, lsl #16
+2b07eba3	sub.w	fp, r3, r7, lsl #8
+9c5eba3	sub.w	r9, r3, r5, lsl #3
+640aeba3	sub.w	r4, r3, sl, lsl #24
+5487eba3	sub.w	r4, r3, r7, lsl #22
+5749ebab	sub.w	r7, fp, r9, lsl #21
+594ebab	sub.w	r5, fp, r4, lsr #2
+998eba3	sub.w	r9, r3, r8, lsr #2
+6518eba3	sub.w	r5, r3, r8, lsr #24
+6416eba3	sub.w	r4, r3, r6, lsr #24
+369aeba3	sub.w	r6, r3, sl, lsr #14
+6955ebab	sub.w	r9, fp, r5, lsr #25
+725aeba3	sub.w	r2, r3, sl, lsr #29
+7897eba3	sub.w	r8, r3, r7, lsr #30
+2a26ebab	sub.w	sl, fp, r6, asr #8
+56aeba3	sub.w	r5, r3, sl, asr #1
+4e7ebab	sub.w	r4, fp, r7, asr #3
+1a69ebab	sub.w	sl, fp, r9, asr #5
+28e6eba3	sub.w	r8, r3, r6, asr #11
+5264eba3	sub.w	r2, r3, r4, asr #21
+75abeba3	sub.w	r5, r3, fp, asr #30
+324ebab	sub.w	r3, fp, r4, asr #32
+1933ebb3	subs.w	r9, r3, r3, ror #4
+46fbebbb	subs.w	r6, fp, fp, ror #19
+73b2ebb3	subs.w	r3, r3, r2, ror #30
+5afaebbb	subs.w	sl, fp, sl, ror #23
+72f2ebbb	subs.w	r2, fp, r2, ror #31
+98bebbb	subs.w	r9, fp, fp, lsl #2
+6943ebb3	subs.w	r9, r3, r3, lsl #25
+5243ebb3	subs.w	r2, r3, r3, lsl #21
+4707ebb3	subs.w	r7, r3, r7, lsl #16
+4282ebb3	subs.w	r2, r3, r2, lsl #18
+2b1aebbb	subs.w	fp, fp, sl, lsr #8
+3319ebb3	subs.w	r3, r3, r9, lsr #12
+3b14ebbb	subs.w	fp, fp, r4, lsr #12
+7b14ebbb	subs.w	fp, fp, r4, lsr #28
+65d5ebb3	subs.w	r5, r3, r5, lsr #27
+432bebbb	subs.w	r3, fp, fp, asr #16
+3a63ebb3	subs.w	sl, r3, r3, asr #13
+5328ebb3	subs.w	r3, r3, r8, asr #20
+13a2ebb3	subs.w	r3, r3, r2, asr #6
+6364ebb3	subs.w	r3, r3, r4, asr #25
+23eaebb3	subs.w	r3, r3, sl, asr #11
+319ebbb	subs.w	r3, fp, r9, lsr #32
+316ebbb	subs.w	r3, fp, r6, lsr #32
+b39ebb3	subs.w	fp, r3, r9, rrx
+933ebbb	subs.w	r9, fp, r3, rrx
+4638ebbb	subs.w	r6, fp, r8, ror #16
+8b6ebb3	subs.w	r8, r3, r6, ror #2
+4bb7ebb3	subs.w	fp, r3, r7, ror #18
+2a79ebbb	subs.w	sl, fp, r9, ror #9
+bf4ebb3	subs.w	fp, r3, r4, ror #3
+7b35ebb3	subs.w	fp, r3, r5, ror #28
+7534ebbb	subs.w	r5, fp, r4, ror #28
+5ab6ebbb	subs.w	sl, fp, r6, ror #22
+58b4ebb3	subs.w	r8, r3, r4, ror #22
+22f5ebb3	subs.w	r2, r3, r5, ror #11
+1af2ebbb	subs.w	sl, fp, r2, ror #7
+52f4ebb3	subs.w	r2, r3, r4, ror #23
+7973ebbb	subs.w	r9, fp, r3, ror #29
+140aebbb	subs.w	r4, fp, sl, lsl #4
+245ebbb	subs.w	r2, fp, r5, lsl #1
+6a06ebbb	subs.w	sl, fp, r6, lsl #24
+4386ebbb	subs.w	r3, fp, r6, lsl #18
+16caebb3	subs.w	r6, r3, sl, lsl #7
+25c6ebbb	subs.w	r5, fp, r6, lsl #11
+1718ebb3	subs.w	r7, r3, r8, lsr #4
+4897ebbb	subs.w	r8, fp, r7, lsr #18
+4994ebbb	subs.w	r9, fp, r4, lsr #18
+3754ebb3	subs.w	r7, r3, r4, lsr #13
+4ad7ebb3	subs.w	sl, r3, r7, lsr #19
+38d3ebbb	subs.w	r8, fp, r3, lsr #15
+32d6ebb3	subs.w	r2, r3, r6, lsr #15
+75d8ebb3	subs.w	r5, r3, r8, lsr #31
+77d9ebbb	subs.w	r7, fp, r9, lsr #31
+122aebbb	subs.w	r2, fp, sl, asr #4
+8a5ebbb	subs.w	r8, fp, r5, asr #2
+1ba8ebb3	subs.w	fp, r3, r8, asr #6
+5427ebb3	subs.w	r4, r3, r7, asr #20
+4be2ebb3	subs.w	fp, r3, r2, asr #19
+17eaebb3	subs.w	r7, r3, sl, asr #7
+927ebbb	subs.w	r9, fp, r7, asr #32
+2201f1a2	sub.w	r2, r2, #16777472
+6a40f5aa	sub.w	sl, sl, #3072
+5a85f5aa	sub.w	sl, sl, #4256
+5ab2f5aa	sub.w	sl, sl, #5696
+6ad1f5aa	sub.w	sl, sl, #1672
+523af1a2	sub.w	r2, r2, #780140544
+52b6f5a2	sub.w	r2, r2, #5824
+525ff1a2	sub.w	r2, r2, #935329792
+72bff5a2	sub.w	r2, r2, #382
+2aacf1aa	sub.w	sl, sl, #-1409242112
+1ae8f1aa	sub.w	sl, sl, #15204584
+3217f1a2	sub.w	r2, r2, #387389207
+704f1a2	sub.w	r7, r2, #4
+4808f5a2	sub.w	r8, r2, #34816
+5781f1aa	sub.w	r7, sl, #270532608
+7850f5a2	sub.w	r8, r2, #832
+4309f5a2	sub.w	r3, r2, #35072
+7a0ef1a2	sub.w	sl, r2, #37224448
+282af5aa	sub.w	r8, sl, #696320
+7b36f5a2	sub.w	fp, r2, #728
+1974f5aa	sub.w	r9, sl, #3997696
+453df1aa	sub.w	r5, sl, #-1124073472
+565bf1aa	sub.w	r6, sl, #918552576
+8fbf1aa	sub.w	r8, sl, #251
+147df5a2	sub.w	r4, r2, #4145152
+121df1aa	sub.w	r2, sl, #1900573
+28acf1aa	sub.w	r8, sl, #-1409242112
+1675f1a2	sub.w	r6, r2, #7667829
+165ef1aa	sub.w	r6, sl, #6160478
+14ddf1a2	sub.w	r4, r2, #14483677
+32d0f1aa	sub.w	r2, sl, #-791621424
+3bc6f1aa	sub.w	fp, sl, #-960051514
+394bf1aa	sub.w	r9, sl, #1263225675
+39bcf1a2	sub.w	r9, r2, #-1128481604
+4a88f1ba	subs.w	sl, sl, #1140850688
+2219f5b2	subs.w	r2, r2, #626688
+4246f1b2	subs.w	r2, r2, #-973078528
+32d6f5b2	subs.w	r2, r2, #109568
+5af3f5ba	subs.w	sl, sl, #7776
+427bf1b2	subs.w	r2, r2, #-83886080
+127df1b2	subs.w	r2, r2, #8192125
+1aebf1ba	subs.w	sl, sl, #15401195
+501f1ba	subs.w	r5, sl, #1
+4390f5b2	subs.w	r3, r2, #18432
+2604f1ba	subs.w	r6, sl, #67109888
+17c2f5b2	subs.w	r7, r2, #1589248
+4812f5ba	subs.w	r8, sl, #37376
+84cf5b2	subs.w	r8, r2, #13369344
+36a3f5b2	subs.w	r6, r2, #83456
+36c7f5ba	subs.w	r6, sl, #101888
+43abf1b2	subs.w	r3, r2, #1434451968
+645bf1b2	subs.w	r4, r2, #229638144
+75f6f1ba	subs.w	r5, sl, #32243712
+5b7df1b2	subs.w	fp, r2, #1061158912
+467df1ba	subs.w	r6, sl, #-50331648
+78fff5b2	subs.w	r8, r2, #510
+281bf1b2	subs.w	r8, r2, #452991744
+133bf1ba	subs.w	r3, sl, #3866683
+1bf8f1ba	subs.w	fp, sl, #16253176
+372af1ba	subs.w	r7, sl, #707406378
+3b83f1b2	subs.w	fp, r2, #-2088533117
+32b8f1ba	subs.w	r2, sl, #-1195853640
+3bc5f1b2	subs.w	fp, r2, #-976894523
+3b9df1b2	subs.w	fp, r2, #-1650614883
+343bf1b2	subs.w	r4, r2, #993737531
+6512f2a5	subw	r5, r5, #1554
+4545f2a5	subw	r5, r5, #1093
+5e8f6a5	subw	r5, r5, #2280
+595f6a5	subw	r5, r5, #2197
+5557f2a5	subw	r5, r5, #1367
+15fcf2a5	subw	r5, r5, #508
+35f1f6a5	subw	r5, r5, #3057
+2840f2a5	subw	r8, r5, #576
+624f2a5	subw	r6, r5, #36
+1402f6a5	subw	r4, r5, #2306
+2a14f2a5	subw	sl, r5, #532
+8e8f2a5	subw	r8, r5, #232
+6290f2a5	subw	r2, r5, #1680
+2898f6a5	subw	r8, r5, #2712
+23a3f2a5	subw	r3, r5, #675
+1a3df2a5	subw	sl, r5, #317
+166bf2a5	subw	r6, r5, #363
+684ef6a5	subw	r8, r5, #3662
+7b51f6a5	subw	fp, r5, #3921
+7797f2a5	subw	r7, r5, #1943
+5beaf6a5	subw	fp, r5, #3562
+6b6ff6a5	subw	fp, r5, #3695
+7b5ff2a5	subw	fp, r5, #1887
+f7b7fa47	sxtab	r7, r7, r7, ror #24
+f887fa47	sxtab	r8, r7, r7
+f987fa47	sxtab	r9, r7, r7
+f6a7fa47	sxtab	r6, r7, r7, ror #16
+f897fa47	sxtab	r8, r7, r7, ror #8
+fab7fa47	sxtab	sl, r7, r7, ror #24
+f3b7fa47	sxtab	r3, r7, r7, ror #24
+f484fa47	sxtab	r4, r7, r4
+f282fa47	sxtab	r2, r7, r2
+faaafa47	sxtab	sl, r7, sl, ror #16
+f292fa47	sxtab	r2, r7, r2, ror #8
+f9b9fa47	sxtab	r9, r7, r9, ror #24
+f78afa47	sxtab	r7, r7, sl
+f78afa47	sxtab	r7, r7, sl
+f7a8fa47	sxtab	r7, r7, r8, ror #16
+f7b3fa47	sxtab	r7, r7, r3, ror #24
+f7b6fa47	sxtab	r7, r7, r6, ror #24
+f982fa47	sxtab	r9, r7, r2
+fa85fa47	sxtab	sl, r7, r5
+f699fa47	sxtab	r6, r7, r9, ror #8
+f896fa47	sxtab	r8, r7, r6, ror #8
+f2bbfa47	sxtab	r2, r7, fp, ror #24
+f3bafa47	sxtab	r3, r7, sl, ror #24
+fb84fa24	sxtab16	fp, r4, r4
+f284fa24	sxtab16	r2, r4, r4
+f6b4fa24	sxtab16	r6, r4, r4, ror #24
+f2b4fa24	sxtab16	r2, r4, r4, ror #24
+f898fa24	sxtab16	r8, r4, r8, ror #8
+fbabfa24	sxtab16	fp, r4, fp, ror #16
+fabafa24	sxtab16	sl, r4, sl, ror #24
+f6b6fa24	sxtab16	r6, r4, r6, ror #24
+f48bfa24	sxtab16	r4, r4, fp
+f48afa24	sxtab16	r4, r4, sl
+f493fa24	sxtab16	r4, r4, r3, ror #8
+f4abfa24	sxtab16	r4, r4, fp, ror #16
+f4b2fa24	sxtab16	r4, r4, r2, ror #24
+f4b2fa24	sxtab16	r4, r4, r2, ror #24
+f683fa24	sxtab16	r6, r4, r3
+f887fa24	sxtab16	r8, r4, r7
+f3a6fa24	sxtab16	r3, r4, r6, ror #16
+f893fa24	sxtab16	r8, r4, r3, ror #8
+f2b3fa24	sxtab16	r2, r4, r3, ror #24
+f6b7fa24	sxtab16	r6, r4, r7, ror #24
+f696fa06	sxtah	r6, r6, r6, ror #8
+f6a6fa06	sxtah	r6, r6, r6, ror #16
+f486fa06	sxtah	r4, r6, r6
+f986fa06	sxtah	r9, r6, r6
+f896fa06	sxtah	r8, r6, r6, ror #8
+f7a6fa06	sxtah	r7, r6, r6, ror #16
+f9b6fa06	sxtah	r9, r6, r6, ror #24
+fb8bfa06	sxtah	fp, r6, fp
+f585fa06	sxtah	r5, r6, r5
+fbabfa06	sxtah	fp, r6, fp, ror #16
+fb9bfa06	sxtah	fp, r6, fp, ror #8
+f7b7fa06	sxtah	r7, r6, r7, ror #24
+f3b3fa06	sxtah	r3, r6, r3, ror #24
+f684fa06	sxtah	r6, r6, r4
+f692fa06	sxtah	r6, r6, r2, ror #8
+f6a5fa06	sxtah	r6, r6, r5, ror #16
+f6b2fa06	sxtah	r6, r6, r2, ror #24
+f6b4fa06	sxtah	r6, r6, r4, ror #24
+f483fa06	sxtah	r4, r6, r3
+f884fa06	sxtah	r8, r6, r4
+f9abfa06	sxtah	r9, r6, fp, ror #16
+f7aafa06	sxtah	r7, r6, sl, ror #16
+f3bafa06	sxtah	r3, r6, sl, ror #24
+f8b5fa06	sxtah	r8, r6, r5, ror #24
+b276	sxtb	r6, r6
+b276	sxtb	r6, r6
+b256	sxtb	r6, r2
+b27e	sxtb	r6, r7
+f787fa2f	sxtb16	r7, r7
+f989fa2f	sxtb16	r9, r9
+f7a7fa2f	sxtb16	r7, r7, ror #16
+f9a9fa2f	sxtb16	r9, r9, ror #16
+f2b2fa2f	sxtb16	r2, r2, ror #24
+f3b3fa2f	sxtb16	r3, r3, ror #24
+fb89fa2f	sxtb16	fp, r9
+f588fa2f	sxtb16	r5, r8
+f7a3fa2f	sxtb16	r7, r3, ror #16
+f496fa2f	sxtb16	r4, r6, ror #8
+f7b6fa2f	sxtb16	r7, r6, ror #24
+f4bafa2f	sxtb16	r4, sl, ror #24
+f484fa4f	sxtb.w	r4, r4
+fb8bfa4f	sxtb.w	fp, fp
+f6a6fa4f	sxtb.w	r6, r6, ror #16
+f393fa4f	sxtb.w	r3, r3, ror #8
+f4b4fa4f	sxtb.w	r4, r4, ror #24
+f8b8fa4f	sxtb.w	r8, r8, ror #24
+fb83fa4f	sxtb.w	fp, r3
+fb85fa4f	sxtb.w	fp, r5
+fa92fa4f	sxtb.w	sl, r2, ror #8
+f6a8fa4f	sxtb.w	r6, r8, ror #16
+fbb3fa4f	sxtb.w	fp, r3, ror #24
+f4b5fa4f	sxtb.w	r4, r5, ror #24
+f383fa0f	sxth.w	r3, r3
+fb8bfa0f	sxth.w	fp, fp
+f8a8fa0f	sxth.w	r8, r8, ror #16
+f2a2fa0f	sxth.w	r2, r2, ror #16
+f3b3fa0f	sxth.w	r3, r3, ror #24
+f4b4fa0f	sxth.w	r4, r4, ror #24
+fb85fa0f	sxth.w	fp, r5
+f285fa0f	sxth.w	r2, r5
+f892fa0f	sxth.w	r8, r2, ror #8
+fa96fa0f	sxth.w	sl, r6, ror #8
+f7b9fa0f	sxth.w	r7, r9, ror #24
+f8b4fa0f	sxth.w	r8, r4, ror #24
+f3bea9b	teq	fp, fp, rrx
+2f33ea93	teq	r3, r3, ror #8
+5f33ea93	teq	r3, r3, ror #20
+1f73ea93	teq	r3, r3, ror #5
+1f73ea93	teq	r3, r3, ror #5
+4ff3ea93	teq	r3, r3, ror #19
+2ffbea9b	teq	fp, fp, ror #11
+1f83ea93	teq	r3, r3, lsl #6
+fc3ea93	teq	r3, r3, lsl #3
+1f43ea93	teq	r3, r3, lsl #5
+3f4bea9b	teq	fp, fp, lsl #13
+5f43ea93	teq	r3, r3, lsl #21
+3fcbea9b	teq	fp, fp, lsl #15
+1f9bea9b	teq	fp, fp, lsr #6
+fa3ea93	teq	r3, r3, asr #2
+4fabea9b	teq	fp, fp, asr #18
+5f6bea9b	teq	fp, fp, asr #21
+5f63ea93	teq	r3, r3, asr #21
+6fa3ea93	teq	r3, r3, asr #26
+7f23ea93	teq	r3, r3, asr #28
+6fe3ea93	teq	r3, r3, asr #27
+f02ea93	teq	r3, r2
+f16ea9b	teq	fp, r6, lsr #32
+f38ea93	teq	r3, r8, rrx
+f39ea9b	teq	fp, r9, rrx
+4f39ea93	teq	r3, r9, ror #16
+2f33ea9b	teq	fp, r3, ror #8
+2f3bea93	teq	r3, fp, ror #8
+1f32ea9b	teq	fp, r2, ror #4
+1f39ea93	teq	r3, r9, ror #4
+fb9ea9b	teq	fp, r9, ror #2
+f77ea93	teq	r3, r7, ror #1
+f78ea93	teq	r3, r8, ror #1
+6f3aea9b	teq	fp, sl, ror #24
+6f35ea93	teq	r3, r5, ror #24
+3f35ea9b	teq	fp, r5, ror #12
+3f39ea9b	teq	fp, r9, ror #12
+4fb4ea93	teq	r3, r4, ror #18
+4fb3ea9b	teq	fp, r3, ror #18
+ff7ea93	teq	r3, r7, ror #3
+ff2ea9b	teq	fp, r2, ror #3
+7f37ea9b	teq	fp, r7, ror #28
+6fb2ea9b	teq	fp, r2, ror #26
+3fb7ea93	teq	r3, r7, ror #14
+1ff8ea9b	teq	fp, r8, ror #7
+1ffaea9b	teq	fp, sl, ror #7
+3ff6ea9b	teq	fp, r6, ror #15
+3ff2ea93	teq	r3, r2, ror #15
+7ff2ea93	teq	r3, r2, ror #31
+7ff9ea9b	teq	fp, r9, ror #31
+2f06ea93	teq	r3, r6, lsl #8
+1f06ea93	teq	r3, r6, lsl #4
+1f04ea93	teq	r3, r4, lsl #4
+f85ea9b	teq	fp, r5, lsl #2
+f84ea9b	teq	fp, r4, lsl #2
+f43ea9b	teq	fp, r3, lsl #1
+6f09ea9b	teq	fp, r9, lsl #24
+6f0aea9b	teq	fp, sl, lsl #24
+3f09ea9b	teq	fp, r9, lsl #12
+5f05ea9b	teq	fp, r5, lsl #20
+4f82ea9b	teq	fp, r2, lsl #18
+2f85ea9b	teq	fp, r5, lsl #10
+1f44ea93	teq	r3, r4, lsl #5
+4f4aea93	teq	r3, sl, lsl #17
+7f07ea93	teq	r3, r7, lsl #28
+3f86ea9b	teq	fp, r6, lsl #14
+5f8bea93	teq	r3, fp, lsl #22
+3f42ea9b	teq	fp, r2, lsl #13
+2fc3ea9b	teq	fp, r3, lsl #11
+7f88ea93	teq	r3, r8, lsl #30
+7f86ea9b	teq	fp, r6, lsl #30
+7f48ea93	teq	r3, r8, lsl #29
+6fc9ea9b	teq	fp, r9, lsl #27
+7fc3ea9b	teq	fp, r3, lsl #31
+7fc9ea93	teq	r3, r9, lsl #31
+f5bea93	teq	r3, fp, lsr #1
+f55ea9b	teq	fp, r5, lsr #1
+f9aea93	teq	r3, sl, lsr #2
+f96ea93	teq	r3, r6, lsr #2
+1f18ea9b	teq	fp, r8, lsr #4
+1f15ea93	teq	r3, r5, lsr #4
+2f13ea9b	teq	fp, r3, lsr #8
+2f12ea93	teq	r3, r2, lsr #8
+4f13ea9b	teq	fp, r3, lsr #16
+4f15ea9b	teq	fp, r5, lsr #16
+1f58ea93	teq	r3, r8, lsr #5
+2f55ea93	teq	r3, r5, lsr #9
+1f97ea9b	teq	fp, r7, lsr #6
+1f9bea93	teq	r3, fp, lsr #6
+3f12ea9b	teq	fp, r2, lsr #12
+5f1bea93	teq	r3, fp, lsr #20
+6f13ea9b	teq	fp, r3, lsr #24
+2fd5ea93	teq	r3, r5, lsr #11
+5f54ea93	teq	r3, r4, lsr #21
+5f99ea9b	teq	fp, r9, lsr #22
+7f1bea93	teq	r3, fp, lsr #28
+7f55ea93	teq	r3, r5, lsr #29
+3fd9ea93	teq	r3, r9, lsr #15
+7f95ea9b	teq	fp, r5, lsr #30
+7fdbea93	teq	r3, fp, lsr #31
+7fd9ea9b	teq	fp, r9, lsr #31
+f69ea93	teq	r3, r9, asr #1
+f62ea93	teq	r3, r2, asr #1
+fa3ea9b	teq	fp, r3, asr #2
+faaea9b	teq	fp, sl, asr #2
+1f29ea93	teq	r3, r9, asr #4
+1f29ea93	teq	r3, r9, asr #4
+2f27ea93	teq	r3, r7, asr #8
+2f23ea9b	teq	fp, r3, asr #8
+4f22ea93	teq	r3, r2, asr #16
+fe4ea9b	teq	fp, r4, asr #3
+1f66ea9b	teq	fp, r6, asr #5
+2fa5ea93	teq	r3, r5, asr #10
+4fa6ea9b	teq	fp, r6, asr #18
+3f2bea93	teq	r3, fp, asr #12
+5f23ea9b	teq	fp, r3, asr #20
+3f69ea93	teq	r3, r9, asr #13
+4fe2ea9b	teq	fp, r2, asr #19
+3fa5ea9b	teq	fp, r5, asr #14
+6fabea93	teq	r3, fp, asr #26
+7f22ea9b	teq	fp, r2, asr #28
+6fe4ea93	teq	r3, r4, asr #27
+5fe4ea9b	teq	fp, r4, asr #23
+7fe9ea9b	teq	fp, r9, asr #31
+7fe9ea9b	teq	fp, r9, asr #31
+f22ea9b	teq	fp, r2, asr #32
+f24ea93	teq	r3, r4, asr #32
+f08f09a	teq	sl, #8
+2f04f092	teq	r2, #67109888
+f21f092	teq	r2, #33
+f31f092	teq	r2, #49
+f58f09a	teq	sl, #88
+fcaf092	teq	r2, #202
+f27f092	teq	r2, #39
+ff1f092	teq	r2, #241
+f5bf09a	teq	sl, #91
+2f86f09a	teq	sl, #-2046786048
+1f31f09a	teq	sl, #3211313
+1fc3f092	teq	r2, #12779715
+2f74f092	teq	r2, #1946186752
+2fa7f092	teq	r2, #-1493129472
+2fd9f092	teq	r2, #-654255872
+2fe7f09a	teq	sl, #-419371264
+2ffcf09a	teq	sl, #-67044352
+3f2bf092	teq	r2, #724249387
+3f74f09a	teq	sl, #1953789044
+3fcdf092	teq	r2, #-842150451
+3ff1f092	teq	r2, #-235802127
+3fd7f09a	teq	sl, #-673720361
+3f7ef09a	teq	sl, #2122219134
+3ffef092	teq	r2, #-16843010
+6f00f09a	teq	sl, #134217728
+6f00f49a	teq	sl, #2048
+1f08f492	teq	r2, #2228224
+7f88f092	teq	r2, #17825792
+4f10f092	teq	r2, #-1879048192
+6f0af09a	teq	sl, #144703488
+5f94f492	teq	r2, #4736
+7f16f49a	teq	sl, #600
+3f4af492	teq	r2, #206848
+4f32f09a	teq	sl, #-1308622848
+4f2cf09a	teq	sl, #-1409286144
+6faef492	teq	r2, #1392
+7f4bf49a	teq	sl, #812
+2f4ff49a	teq	sl, #847872
+1f57f492	teq	r2, #3522560
+4f73f09a	teq	sl, #-218103808
+4ff7f49a	teq	sl, #31616
+5f7ef09a	teq	sl, #1065353216
+4f77f09a	teq	sl, #-150994944
+4f5ff092	teq	r2, #-553648128
+2ffff49a	teq	sl, #522240
+f7ff492	teq	r2, #16711680
+422d	tst	r5, r5
+422d	tst	r5, r5
+4235	tst	r5, r6
+423d	tst	r5, r7
+f05ea15	tst.w	r5, r5
+f15ea15	tst.w	r5, r5, lsr #32
+f35ea15	tst.w	r5, r5, rrx
+4f35ea15	tst.w	r5, r5, ror #16
+1f35ea15	tst.w	r5, r5, ror #4
+fb5ea15	tst.w	r5, r5, ror #2
+fb5ea15	tst.w	r5, r5, ror #2
+ff5ea15	tst.w	r5, r5, ror #3
+1ff5ea15	tst.w	r5, r5, ror #7
+2f05ea15	tst.w	r5, r5, lsl #8
+4f85ea15	tst.w	r5, r5, lsl #18
+2f45ea15	tst.w	r5, r5, lsl #9
+5f45ea15	tst.w	r5, r5, lsl #21
+6fc5ea15	tst.w	r5, r5, lsl #27
+2f55ea15	tst.w	r5, r5, lsr #9
+3f15ea15	tst.w	r5, r5, lsr #12
+6f95ea15	tst.w	r5, r5, lsr #26
+2f65ea15	tst.w	r5, r5, asr #9
+f16ea15	tst.w	r5, r6, lsr #32
+f16ea15	tst.w	r5, r6, lsr #32
+1f36ea15	tst.w	r5, r6, ror #4
+1f36ea15	tst.w	r5, r6, ror #4
+6f34ea15	tst.w	r5, r4, ror #24
+4fb3ea15	tst.w	r5, r3, ror #18
+1f76ea15	tst.w	r5, r6, ror #5
+1f76ea15	tst.w	r5, r6, ror #5
+7f33ea15	tst.w	r5, r3, ror #28
+6fbbea15	tst.w	r5, fp, ror #26
+5fb7ea15	tst.w	r5, r7, ror #22
+6f77ea15	tst.w	r5, r7, ror #25
+2ff9ea15	tst.w	r5, r9, ror #11
+5ff4ea15	tst.w	r5, r4, ror #23
+5ff7ea15	tst.w	r5, r7, ror #23
+7ffbea15	tst.w	r5, fp, ror #31
+2f0bea15	tst.w	r5, fp, lsl #8
+1f06ea15	tst.w	r5, r6, lsl #4
+1f0aea15	tst.w	r5, sl, lsl #4
+f8bea15	tst.w	r5, fp, lsl #2
+f44ea15	tst.w	r5, r4, lsl #1
+6f0aea15	tst.w	r5, sl, lsl #24
+6f08ea15	tst.w	r5, r8, lsl #24
+2f8bea15	tst.w	r5, fp, lsl #10
+2f8aea15	tst.w	r5, sl, lsl #10
+fc3ea15	tst.w	r5, r3, lsl #3
+1f48ea15	tst.w	r5, r8, lsl #5
+3f83ea15	tst.w	r5, r3, lsl #14
+4fc4ea15	tst.w	r5, r4, lsl #19
+6f4aea15	tst.w	r5, sl, lsl #25
+3fc9ea15	tst.w	r5, r9, lsl #15
+7fc7ea15	tst.w	r5, r7, lsl #31
+7fc8ea15	tst.w	r5, r8, lsl #31
+f93ea15	tst.w	r5, r3, lsr #2
+1f1bea15	tst.w	r5, fp, lsr #4
+2f13ea15	tst.w	r5, r3, lsr #8
+2f52ea15	tst.w	r5, r2, lsr #9
+fd7ea15	tst.w	r5, r7, lsr #3
+1f9bea15	tst.w	r5, fp, lsr #6
+1f97ea15	tst.w	r5, r7, lsr #6
+5f54ea15	tst.w	r5, r4, lsr #21
+1fd3ea15	tst.w	r5, r3, lsr #7
+5f93ea15	tst.w	r5, r3, lsr #22
+7f13ea15	tst.w	r5, r3, lsr #28
+7f17ea15	tst.w	r5, r7, lsr #28
+7f5bea15	tst.w	r5, fp, lsr #29
+5fdaea15	tst.w	r5, sl, lsr #23
+7f94ea15	tst.w	r5, r4, lsr #30
+7f9bea15	tst.w	r5, fp, lsr #30
+f68ea15	tst.w	r5, r8, asr #1
+1f22ea15	tst.w	r5, r2, asr #4
+1f22ea15	tst.w	r5, r2, asr #4
+2f28ea15	tst.w	r5, r8, asr #8
+4f27ea15	tst.w	r5, r7, asr #16
+1f68ea15	tst.w	r5, r8, asr #5
+4fa3ea15	tst.w	r5, r3, asr #18
+4fa3ea15	tst.w	r5, r3, asr #18
+2fe6ea15	tst.w	r5, r6, asr #11
+1fe6ea15	tst.w	r5, r6, asr #7
+5fa7ea15	tst.w	r5, r7, asr #22
+7f27ea15	tst.w	r5, r7, asr #28
+3fe2ea15	tst.w	r5, r2, asr #15
+5fe8ea15	tst.w	r5, r8, asr #23
+7fa8ea15	tst.w	r5, r8, asr #30
+7fa8ea15	tst.w	r5, r8, asr #30
+f23ea15	tst.w	r5, r3, asr #32
+f23ea15	tst.w	r5, r3, asr #32
+f41f014	tst.w	r4, #65
+2f01f014	tst.w	r4, #16777472
+f23f014	tst.w	r4, #35
+f89f014	tst.w	r4, #137
+fc9f014	tst.w	r4, #201
+2f82f014	tst.w	r4, #-2113895936
+f75f014	tst.w	r4, #117
+f8ff014	tst.w	r4, #143
+2f52f014	tst.w	r4, #1375752704
+1f49f014	tst.w	r4, #4784201
+2f72f014	tst.w	r4, #1912631808
+3f05f014	tst.w	r4, #84215045
+2feaf014	tst.w	r4, #-369038848
+2fe5f014	tst.w	r4, #-452926208
+2fdbf014	tst.w	r4, #-620700928
+3fc8f014	tst.w	r4, #-926365496
+2f7ff014	tst.w	r4, #2130738944
+3fd8f014	tst.w	r4, #-656877352
+3f36f014	tst.w	r4, #909522486
+3f1ff014	tst.w	r4, #522133279
+3ff8f014	tst.w	r4, #-117901064
+3ff6f014	tst.w	r4, #-151587082
+5f80f014	tst.w	r4, #268435456
+7f80f014	tst.w	r4, #16777216
+6f01f414	tst.w	r4, #2064
+5f10f014	tst.w	r4, #603979776
+4f02f014	tst.w	r4, #-2113929216
+5f91f414	tst.w	r4, #4640
+4f92f014	tst.w	r4, #1224736768
+6f58f014	tst.w	r4, #226492416
+5fc9f414	tst.w	r4, #6432
+1f1ef414	tst.w	r4, #2588672
+4fd5f414	tst.w	r4, #27264
+4f1bf014	tst.w	r4, #-1694498816
+4f5cf014	tst.w	r4, #-603979776
+5f5df414	tst.w	r4, #14144
+6ff6f414	tst.w	r4, #1968
+4f1ff014	tst.w	r4, #-1627389952
+2f7ef414	tst.w	r4, #1040384
+ffbf414	tst.w	r4, #8224768
+7281f3c2	ubfx	r2, r2, #30, #2
+32cff3c2	ubfx	r2, r2, #15, #16
+1ad6f3ca	ubfx	sl, sl, #7, #23
+2a13f3ca	ubfx	sl, sl, #8, #20
+324df3c2	ubfx	r2, r2, #13, #14
+a13f3ca	ubfx	sl, sl, #0, #20
+6201f3c2	ubfx	r2, r2, #24, #2
+5a44f3ca	ubfx	sl, sl, #21, #5
+224ff3c2	ubfx	r2, r2, #9, #16
+1247f3c2	ubfx	r2, r2, #5, #8
+1ad1f3ca	ubfx	sl, sl, #7, #18
+5dcf3c2	ubfx	r5, r2, #3, #29
+2995f3c2	ubfx	r9, r2, #10, #22
+14d7f3c2	ubfx	r4, r2, #7, #24
+35cff3c2	ubfx	r5, r2, #15, #16
+3b0bf3ca	ubfx	fp, sl, #12, #12
+22d3f3ca	ubfx	r2, sl, #11, #20
+6406f3c2	ubfx	r4, r2, #24, #7
+6703f3ca	ubfx	r7, sl, #24, #4
+3b42f3c2	ubfx	fp, r2, #13, #3
+3490f3c2	ubfx	r4, r2, #14, #17
+697f3ca	ubfx	r6, sl, #2, #24
+26cff3ca	ubfx	r6, sl, #11, #16
+284df3c2	ubfx	r8, r2, #9, #14
+507f3c2	ubfx	r5, r2, #0, #8
+1611f3ca	ubfx	r6, sl, #4, #18
+646f3ca	ubfx	r6, sl, #1, #7
+6b41f3ca	ubfx	fp, sl, #25, #2
+5544f3ca	ubfx	r5, sl, #21, #5
+496f3ca	ubfx	r4, sl, #2, #23
+2487f3c2	ubfx	r4, r2, #10, #8
+812f3c2	ubfx	r8, r2, #0, #19
+38c9f3ca	ubfx	r8, sl, #15, #10
+15c2f3ca	ubfx	r5, sl, #7, #3
+a44f3c2	ubfx	sl, r2, #1, #5
+1b40f3ca	ubfx	fp, sl, #5, #1
+3b00f3ca	ubfx	fp, sl, #12, #1
+3cdf3c2	ubfx	r3, r2, #3, #14
+486f3c2	ubfx	r4, r2, #2, #7
+3b43f3c2	ubfx	fp, r2, #13, #4
+2908f3c2	ubfx	r9, r2, #8, #9
+1700f3c2	ubfx	r7, r2, #4, #1
+f868fa98	uhadd16	r8, r8, r8
+fa68fa98	uhadd16	sl, r8, r8
+fa68fa98	uhadd16	sl, r8, r8
+f262fa98	uhadd16	r2, r8, r2
+f565fa98	uhadd16	r5, r8, r5
+f864fa98	uhadd16	r8, r8, r4
+f864fa98	uhadd16	r8, r8, r4
+f26afa98	uhadd16	r2, r8, sl
+f369fa98	uhadd16	r3, r8, r9
+f363fa83	uhadd8	r3, r3, r3
+f363fa83	uhadd8	r3, r3, r3
+f863fa83	uhadd8	r8, r3, r3
+f36bfa8b	uhadd8	r3, fp, fp
+f767fa83	uhadd8	r7, r3, r7
+fb6bfa83	uhadd8	fp, r3, fp
+fb65fa8b	uhadd8	fp, fp, r5
+fb65fa8b	uhadd8	fp, fp, r5
+f56bfa83	uhadd8	r5, r3, fp
+f764fa83	uhadd8	r7, r3, r4
+f262faa2	uhasx	r2, r2, r2
+f56afaaa	uhasx	r5, sl, sl
+f562faa2	uhasx	r5, r2, r2
+f868faaa	uhasx	r8, sl, r8
+f666faaa	uhasx	r6, sl, r6
+fa69faaa	uhasx	sl, sl, r9
+f26bfaa2	uhasx	r2, r2, fp
+f567faaa	uhasx	r5, sl, r7
+fb69faaa	uhasx	fp, sl, r9
+f865fae5	uhsax	r8, r5, r5
+f965fae5	uhsax	r9, r5, r5
+f969fae5	uhsax	r9, r5, r9
+f767fae5	uhsax	r7, r5, r7
+f563fae5	uhsax	r5, r5, r3
+f569fae5	uhsax	r5, r5, r9
+f667fae5	uhsax	r6, r5, r7
+fb68fae5	uhsax	fp, r5, r8
+f364fad4	uhsub16	r3, r4, r4
+f364fad4	uhsub16	r3, r4, r4
+f666fad4	uhsub16	r6, r4, r6
+f868fad4	uhsub16	r8, r4, r8
+f463fad4	uhsub16	r4, r4, r3
+f466fad4	uhsub16	r4, r4, r6
+fa66fad4	uhsub16	sl, r4, r6
+f368fad4	uhsub16	r3, r4, r8
+f867fac7	uhsub8	r8, r7, r7
+f567fac7	uhsub8	r5, r7, r7
+f868fac7	uhsub8	r8, r7, r8
+f363fac7	uhsub8	r3, r7, r3
+f766fac7	uhsub8	r7, r7, r6
+f76afac7	uhsub8	r7, r7, sl
+f669fac7	uhsub8	r6, r7, r9
+f86bfac7	uhsub8	r8, r7, fp
+4565fbe4	umaal	r4, r5, r4, r5
+a467fbe4	umaal	sl, r4, r4, r7
+4667fbe4	umaal	r4, r6, r4, r7
+4668fbe4	umaal	r4, r6, r4, r8
+5767fbe4	umaal	r5, r7, r4, r7
+9a69fbe4	umaal	r9, sl, r4, r9
+6766fbe4	umaal	r6, r7, r4, r6
+a564fbe4	umaal	sl, r5, r4, r4
+6264fbe4	umaal	r6, r2, r4, r4
+a269fbe4	umaal	sl, r2, r4, r9
+9762fbe4	umaal	r9, r7, r4, r2
+3509fbe5	umlal	r3, r5, r5, r9
+5b04fbe5	umlal	r5, fp, r5, r4
+5907fbe5	umlal	r5, r9, r5, r7
+4909fbe5	umlal	r4, r9, r5, r9
+3808fbe5	umlal	r3, r8, r5, r8
+6b06fbe5	umlal	r6, fp, r5, r6
+2805fbe5	umlal	r2, r8, r5, r5
+2305fbe5	umlal	r2, r3, r5, r5
+2703fbe5	umlal	r2, r7, r5, r3
+a904fbe5	umlal	sl, r9, r5, r4
+a30afbaa	umull	sl, r3, sl, sl
+3a0afbaa	umull	r3, sl, sl, sl
+6a06fbaa	umull	r6, sl, sl, r6
+3802fba2	umull	r3, r8, r2, r2
+5b02fba2	umull	r5, fp, r2, r2
+2409fba2	umull	r2, r4, r2, r9
+240bfba2	umull	r2, r4, r2, fp
+920bfba2	umull	r9, r2, r2, fp
+3a02fbaa	umull	r3, sl, sl, r2
+6a06fba2	umull	r6, sl, r2, r6
+7207fbaa	umull	r7, r2, sl, r7
+2b0bfbaa	umull	r2, fp, sl, fp
+4707fba2	umull	r4, r7, r2, r7
+920bfbaa	umull	r9, r2, sl, fp
+8604fba2	umull	r8, r6, r2, r4
+f555fa95	uqadd16	r5, r5, r5
+fa55fa95	uqadd16	sl, r5, r5
+f255fa95	uqadd16	r2, r5, r5
+f656fa95	uqadd16	r6, r5, r6
+fa5afa95	uqadd16	sl, r5, sl
+f557fa95	uqadd16	r5, r5, r7
+f558fa95	uqadd16	r5, r5, r8
+fb59fa95	uqadd16	fp, r5, r9
+f459fa95	uqadd16	r4, r5, r9
+f454fa84	uqadd8	r4, r4, r4
+f254fa84	uqadd8	r2, r4, r4
+f354fa84	uqadd8	r3, r4, r4
+f353fa84	uqadd8	r3, r4, r3
+f353fa84	uqadd8	r3, r4, r3
+f457fa84	uqadd8	r4, r4, r7
+f455fa84	uqadd8	r4, r4, r5
+f65afa84	uqadd8	r6, r4, sl
+fb52fa84	uqadd8	fp, r4, r2
+fa5afaaa	uqasx	sl, sl, sl
+fa5afaaa	uqasx	sl, sl, sl
+f852faa2	uqasx	r8, r2, r2
+f85afaaa	uqasx	r8, sl, sl
+f858faa2	uqasx	r8, r2, r8
+f353faaa	uqasx	r3, sl, r3
+f253faa2	uqasx	r2, r2, r3
+f259faa2	uqasx	r2, r2, r9
+f35bfaa2	uqasx	r3, r2, fp
+f55bfaaa	uqasx	r5, sl, fp
+f555fae5	uqsax	r5, r5, r5
+f555fae5	uqsax	r5, r5, r5
+fa55fae5	uqsax	sl, r5, r5
+f955fae5	uqsax	r9, r5, r5
+f252fae5	uqsax	r2, r5, r2
+fb5bfae5	uqsax	fp, r5, fp
+f552fae5	uqsax	r5, r5, r2
+f552fae5	uqsax	r5, r5, r2
+fa54fae5	uqsax	sl, r5, r4
+f75afae5	uqsax	r7, r5, sl
+f857fad7	uqsub16	r8, r7, r7
+f857fad7	uqsub16	r8, r7, r7
+f555fad7	uqsub16	r5, r7, r5
+f959fad7	uqsub16	r9, r7, r9
+f75afad7	uqsub16	r7, r7, sl
+f754fad7	uqsub16	r7, r7, r4
+fb59fad7	uqsub16	fp, r7, r9
+f455fad7	uqsub16	r4, r7, r5
+f856fac6	uqsub8	r8, r6, r6
+f454fac6	uqsub8	r4, r6, r4
+f858fac6	uqsub8	r8, r6, r8
+f654fac6	uqsub8	r6, r6, r4
+f652fac6	uqsub8	r6, r6, r2
+f254fac6	uqsub8	r2, r6, r4
+f453fac6	uqsub8	r4, r6, r3
+f909fb79	usad8	r9, r9, r9
+f707fb77	usad8	r7, r7, r7
+f609fb79	usad8	r6, r9, r9
+fa09fb79	usad8	sl, r9, r9
+fb0bfb79	usad8	fp, r9, fp
+f606fb79	usad8	r6, r9, r6
+f906fb79	usad8	r9, r9, r6
+f906fb79	usad8	r9, r9, r6
+f504fb79	usad8	r5, r9, r4
+fb05fb79	usad8	fp, r9, r5
+7303fb77	usada8	r3, r7, r3, r7
+7304fb77	usada8	r3, r7, r4, r7
+7a0bfb77	usada8	sl, r7, fp, r7
+2307fb77	usada8	r3, r7, r7, r2
+3207fb77	usada8	r2, r7, r7, r3
+5405fb77	usada8	r4, r7, r5, r5
+5405fb77	usada8	r4, r7, r5, r5
+bb06fb77	usada8	fp, r7, r6, fp
+9505fb77	usada8	r5, r7, r5, r9
+2808fb77	usada8	r8, r7, r8, r2
+270bfb77	usada8	r7, r7, fp, r2
+4703fb77	usada8	r7, r7, r3, r4
+540bfb77	usada8	r4, r7, fp, r5
+8405fb77	usada8	r4, r7, r5, r8
+f989fa59	uxtab	r9, r9, r9
+fa99fa59	uxtab	sl, r9, r9, ror #8
+f6a9fa59	uxtab	r6, r9, r9, ror #16
+f6b9fa59	uxtab	r6, r9, r9, ror #24
+f282fa59	uxtab	r2, r9, r2
+f6a6fa59	uxtab	r6, r9, r6, ror #16
+f898fa59	uxtab	r8, r9, r8, ror #8
+f6b6fa59	uxtab	r6, r9, r6, ror #24
+f6b6fa59	uxtab	r6, r9, r6, ror #24
+f988fa59	uxtab	r9, r9, r8
+f985fa59	uxtab	r9, r9, r5
+f997fa59	uxtab	r9, r9, r7, ror #8
+f994fa59	uxtab	r9, r9, r4, ror #8
+f9b3fa59	uxtab	r9, r9, r3, ror #24
+f9b2fa59	uxtab	r9, r9, r2, ror #24
+f28afa59	uxtab	r2, r9, sl
+f68afa59	uxtab	r6, r9, sl
+f594fa59	uxtab	r5, r9, r4, ror #8
+f4aafa59	uxtab	r4, r9, sl, ror #16
+f4b5fa59	uxtab	r4, r9, r5, ror #24
+f6b2fa59	uxtab	r6, r9, r2, ror #24
+f686fa36	uxtab16	r6, r6, r6
+fa86fa36	uxtab16	sl, r6, r6
+f7a6fa36	uxtab16	r7, r6, r6, ror #16
+f996fa36	uxtab16	r9, r6, r6, ror #8
+f8b6fa36	uxtab16	r8, r6, r6, ror #24
+fab6fa36	uxtab16	sl, r6, r6, ror #24
+f989fa36	uxtab16	r9, r6, r9
+f888fa36	uxtab16	r8, r6, r8
+f292fa36	uxtab16	r2, r6, r2, ror #8
+f595fa36	uxtab16	r5, r6, r5, ror #8
+f9b9fa36	uxtab16	r9, r6, r9, ror #24
+f8b8fa36	uxtab16	r8, r6, r8, ror #24
+f69afa36	uxtab16	r6, r6, sl, ror #8
+f6a9fa36	uxtab16	r6, r6, r9, ror #16
+f6b4fa36	uxtab16	r6, r6, r4, ror #24
+fa89fa36	uxtab16	sl, r6, r9
+f985fa36	uxtab16	r9, r6, r5
+fb94fa36	uxtab16	fp, r6, r4, ror #8
+f59afa36	uxtab16	r5, r6, sl, ror #8
+f4b7fa36	uxtab16	r4, r6, r7, ror #24
+f7b3fa36	uxtab16	r7, r6, r3, ror #24
+f688fa18	uxtah	r6, r8, r8
+f388fa18	uxtah	r3, r8, r8
+f698fa18	uxtah	r6, r8, r8, ror #8
+f498fa18	uxtah	r4, r8, r8, ror #8
+f4b8fa18	uxtah	r4, r8, r8, ror #24
+fa8afa18	uxtah	sl, r8, sl
+fb8bfa18	uxtah	fp, r8, fp
+f393fa18	uxtah	r3, r8, r3, ror #8
+f2a2fa18	uxtah	r2, r8, r2, ror #16
+f883fa18	uxtah	r8, r8, r3
+f8abfa18	uxtah	r8, r8, fp, ror #16
+f8b6fa18	uxtah	r8, r8, r6, ror #24
+f8bbfa18	uxtah	r8, r8, fp, ror #24
+f982fa18	uxtah	r9, r8, r2
+fb82fa18	uxtah	fp, r8, r2
+f392fa18	uxtah	r3, r8, r2, ror #8
+f6a2fa18	uxtah	r6, r8, r2, ror #16
+f3bafa18	uxtah	r3, r8, sl, ror #24
+fab9fa18	uxtah	sl, r8, r9, ror #24
+f989fa3f	uxtb16	r9, r9
+f989fa3f	uxtb16	r9, r9
+f898fa3f	uxtb16	r8, r8, ror #8
+f9a9fa3f	uxtb16	r9, r9, ror #16
+f9b9fa3f	uxtb16	r9, r9, ror #24
+f3b3fa3f	uxtb16	r3, r3, ror #24
+f889fa3f	uxtb16	r8, r9
+f985fa3f	uxtb16	r9, r5
+f6a3fa3f	uxtb16	r6, r3, ror #16
+f99bfa3f	uxtb16	r9, fp, ror #8
+f4b2fa3f	uxtb16	r4, r2, ror #24
+f4b3fa3f	uxtb16	r4, r3, ror #24
+f989fa5f	uxtb.w	r9, r9
+f484fa5f	uxtb.w	r4, r4
+f9a9fa5f	uxtb.w	r9, r9, ror #16
+fb9bfa5f	uxtb.w	fp, fp, ror #8
+f7b7fa5f	uxtb.w	r7, r7, ror #24
+fabafa5f	uxtb.w	sl, sl, ror #24
+f28afa5f	uxtb.w	r2, sl
+fb85fa5f	uxtb.w	fp, r5
+f497fa5f	uxtb.w	r4, r7, ror #8
+fb97fa5f	uxtb.w	fp, r7, ror #8
+f4bafa5f	uxtb.w	r4, sl, ror #24
+f2b7fa5f	uxtb.w	r2, r7, ror #24
+b29b	uxth	r3, r3
+b29b	uxth	r3, r3
+b2a3	uxth	r3, r4
+b2ab	uxth	r3, r5
+f686fa1f	uxth.w	r6, r6
+f787fa1f	uxth.w	r7, r7
+f999fa1f	uxth.w	r9, r9, ror #8
+f292fa1f	uxth.w	r2, r2, ror #8
+f3b3fa1f	uxth.w	r3, r3, ror #24
+f7b7fa1f	uxth.w	r7, r7, ror #24
+f784fa1f	uxth.w	r7, r4
+f986fa1f	uxth.w	r9, r6
+f394fa1f	uxth.w	r3, r4, ror #8
+f9a2fa1f	uxth.w	r9, r2, ror #16
+f6b9fa1f	uxth.w	r6, r9, ror #24
+fab8fa1f	uxth.w	sl, r8, ror #24

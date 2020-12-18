@@ -149,13 +149,12 @@ CPU::BeginSetup()
   return true;
 }
 
-/** Resets the internal values of corresponding CP15 Registers
+/** Resets architectural registers
  */
 void
-CPU::CP15ResetRegisters()
+CPU::TakeReset()
 {
-  this->PCPU::CP15ResetRegisters();
-  
+  this->PCPU::TakeReset();
   // PMSA default values for SCTLR (may be overwritten by implementations)
   sctlr::DZ.Set(     SCTLR, 0 ); // Divide by Zero fault enable bit
   sctlr::BR.Set(     SCTLR, 0 ); // Background Region bit
@@ -172,7 +171,6 @@ CPU::EndSetup()
   /* Finalizing LOAD job */
   if (verbose)
     logger << DebugInfo << "**bare metal/full system** mode: TakeReset" << EndDebugInfo;
-  this->TakeReset();
   
   if (verbose)
     logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
@@ -180,12 +178,13 @@ CPU::EndSetup()
   /* If the memory access reporting import is not connected remove the
    *   need of reporting memory accesses and finished instruction.
    */
-  if(!memory_access_reporting_import) {
-    requires_memory_access_reporting = false;
-    requires_fetch_instruction_reporting = false;
-    requires_commit_instruction_reporting = false;
-  }
-  
+  if (not memory_access_reporting_import)
+    {
+      requires_memory_access_reporting = false;
+      requires_fetch_instruction_reporting = false;
+      requires_commit_instruction_reporting = false;
+    }
+
   return true;
 }
 
@@ -919,7 +918,7 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
-CPU::CP15Reg&
+CPU::CP15Reg*
 CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
@@ -931,7 +930,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "CTR, Cache Type Register"; }
           uint32_t Read( CP15CPU& _cpu ) { return 0x8403c003; }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 0, 0, 0, 4 ):
@@ -942,7 +941,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           uint32_t Read( CP15CPU& _cpu )
           { return ((MPU::IRegion << 16) | (MPU::DRegion << 8) | (MPU::Unified ? 0 : 1)); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 0, 1, 0, 0 ):
@@ -961,7 +960,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             }
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 0, 1, 0, 1 ):
@@ -981,7 +980,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             return (LoUU << 27) | (LoC << 24) | (LoUIS << 21) | (Ctype2 << 3) | (Ctype1 << 0);
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 0, 0, 1, 4 ):
@@ -991,7 +990,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "ID_MMFR0, Memory Model Feature Register 0"; }
           uint32_t Read( CP15CPU& _cpu ) { return 0x30; /* pmsav7 */ }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 0, 2, 0, 0 ):
@@ -1004,7 +1003,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).csselr; }
         } x;
-        return x;
+        return &x;
       } break;
       
       /*********************************/
@@ -1018,7 +1017,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).DFSR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).DFSR; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 5, 0, 0, 1 ):
@@ -1029,7 +1028,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).IFSR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).IFSR; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 0 ):
@@ -1040,7 +1039,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).DFAR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).DFAR; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 2 ):
@@ -1051,7 +1050,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).IFAR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).IFAR; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 1, 0 ):
@@ -1063,7 +1062,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 1 ):
@@ -1075,7 +1074,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 2 ):
@@ -1087,7 +1086,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 3 ):
@@ -1099,7 +1098,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 4 ):
@@ -1111,7 +1110,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 5 ):
@@ -1123,7 +1122,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 6, 0, 2, 0 ):
@@ -1135,7 +1134,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
-        return x;
+        return &x;
       } break;
       
       /***************************************************************
@@ -1151,7 +1150,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 7, 0, 5, 1 ):
@@ -1164,7 +1163,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 7, 0, 5, 6 ):
@@ -1177,7 +1176,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 7, 0, 10, 1 ):
@@ -1190,7 +1189,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 7, 0, 11, 1 ):
@@ -1203,7 +1202,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 7, 0, 14, 1 ):
@@ -1216,7 +1215,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 7, 0, 14, 2 ):
@@ -1229,7 +1228,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     }

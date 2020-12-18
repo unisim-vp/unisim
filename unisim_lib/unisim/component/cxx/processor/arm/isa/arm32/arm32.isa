@@ -52,7 +52,7 @@ action {void} execute({ARCH &} {cpu}) {
   cpu.UndefinedInstruction( this );
 }
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
+action {void} disasm({std::ostream&} {buffer}) {
   buffer << "; Unknown ARM instruction";
 }
 

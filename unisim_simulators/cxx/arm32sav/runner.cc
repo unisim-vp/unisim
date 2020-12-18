@@ -42,6 +42,7 @@ Runner::Runner( char const* name )
   : unisim::kernel::Object( name, 0 )
   , CPU(name,0)
 {
+  cpsr.Set(unisim::component::cxx::processor::arm::M, this->USER_MODE);
 }
 
 Runner::~Runner()
@@ -99,7 +100,7 @@ Runner::step_instruction()
 
 void Runner::run(Interface::testcode_t testcode, uint32_t* data)
 {
-  uint32_t const magic_return_address = 0xdeadc0de;
+  uint32_t const magic_return_address = 0xfeb0d0d0;
 
   SetGPR(0, uintptr_t(data));
   uint32_t sim_stack[32];

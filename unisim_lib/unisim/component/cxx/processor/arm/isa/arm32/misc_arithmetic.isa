@@ -294,7 +294,7 @@ qsub8.execute = {
       S8 op1 = S8(opn >> 8*idx), op2 = S8(opm >> 8*idx), res = op1 - op2;
 
       // n is the observed negative flag and sbn is what this flag should be
-      BOOL n = res < S8(0), sbn = op1 <= op2, of = not sbn and n, uf = sbn and not n;
+      BOOL n = res < S8(0), sbn = op1 < op2, of = not sbn and n, uf = sbn and not n;
       res32 |= U32(CondMove<U8>(of, pbound, uf, nbound, res)) << 8*idx;
     }
 

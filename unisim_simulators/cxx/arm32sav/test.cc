@@ -145,12 +145,11 @@ uint32_t Interface::grmap() const
 uintptr_t
 Interface::workcells() const
 {
-  return 0;
   uintptr_t count = 0;
   count += gregs.used();
   count += 1; // placeholder for nzcv
   uintptr_t memcells = memspread() / 4;
-  if (memcells > count) count = memcells;
+  if (count < memcells) count = memcells;
   return  count;
 }
     

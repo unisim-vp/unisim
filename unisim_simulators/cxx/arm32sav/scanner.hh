@@ -45,103 +45,10 @@
 #include <vector>
 #include <list>
 
-//   template <typename operT, typename fpscrT> void FloatFlushToZero( operT& op, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatAdd( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatSub( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatDiv( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatMul( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatMulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatNeg( operT& res, operT op, fpscrT& fpscr ) {}
-
-//   template <typename fpT, typename intT, typename fpscrT> void FloatItoF( fpT& res, intT op, int fracbits, fpscrT& fpscr ) {}
-
-//   template <typename intT, typename fpT, typename fpscrT> void FloatFtoI( intT& res, fpT op, int fracbits, fpscrT& fpscr ) {}
-
-//   template <typename ofpT, typename ifpT, typename fpscrT> void FloatFtoF( ofpT& res, ifpT op, fpscrT& fpscr ) {}
-
-//   template <typename fpscrT> void FloatAbs( double& res, double op, fpscrT& fpscr ) {}
-
-//   template <typename fpscrT> void FloatAbs( float& res, float op, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return false; }
-
-//   template <typename operT, typename fpscrT> bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return false; }
-
-//   template <typename operT, typename fpscrT> void FloatSetQuietBit( operT& op, fpscrT const& fpscr ) {}
-
-//   template <typename fpscrT> void FloatSetDefaultNan( double& result, fpscrT const& fpscr ) {}
-
-//   template <typename fpscrT> void FloatSetDefaultNan( float& result, fpscrT const& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> void FloatSqrt( operT& res, operT const& op, fpscrT& fpscr ) {}
-
-//   template <typename operT, typename fpscrT> int FloatCompare( operT op1, operT op2, fpscrT& fpscr ) { return 0; }
-
-
-//   // struct Interface
-//   // {
-//   //   typedef unisim::util::symbolic::Expr Expr;
-//   //   typedef unisim::util::symbolic::ExprNode ExprNode;
-
-//   //   Interface()
-//   //     : irmap(), iruse(), load_addrs(), store_addrs()
-//   //     , psr(0), length(0), itsensitive(false), base_register(-1), aligned(true)
-//   //   {}
-
-//   //   std::map<unsigned,VirtualRegister> irmap;
-//   //   std::vector<unsigned>              iruse;
-//   //   std::list<Expr>                    load_addrs;
-//   //   std::list<Expr>                    store_addrs;
-//   //   VirtualRegister                    psr;
-//   //   uint8_t                            length;
-//   //   bool                               itsensitive;
-//   //   uint8_t                            base_register;
-//   //   bool                               aligned;
-
-//   //   void irappend( uint8_t _index, bool w, UniqueVId& uvi );
-//   //   void readflags() { psr.addaccess( false ); }
-//   //   void writeflags() { psr.addaccess( true ); }
-
-//   //   int  cmp( Interface const& ) const;
-//   //   bool operator < ( Interface const& b ) const { return cmp( b ) < 0; }
-//   //   bool usemem() const { return store_addrs.size() or load_addrs.size(); }
-
-//   //   void finalize( uint8_t _length );
-
-//   //   struct Prologue
-//   //   {
-//   //     struct Error {};
-
-//   //     typedef std::map<unsigned,uint32_t> Regs;
-//   //     Prologue( Regs const& _regs, uint32_t _offset, bool _sign, uint8_t _base )
-//   //       : regs( _regs ), offset( _offset ), sign( _sign ), base( _base )
-//   //     {}
-//   //     Regs regs; uint32_t offset; bool sign; uint8_t base;
-//   //   };
-
-//   //   Prologue GetPrologue() const;
-
-//   //   void PCRelPrologue( Prologue const& pc ) const;
-//   //   struct Untestable
-//   //   {
-//   //     std::string argument;
-//   //     Untestable( std::string part ) : argument( part ) {}
-//   //     Untestable( std::string part, Untestable const& ut ) : argument( part + ' ' + ut.argument ) {}
-//   //   };
-//   // };
-
 struct Scanner
 {
   struct Arm32 : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<Scanner>
   {
-    // typedef unisim::component::cxx::processor::arm::isa::arm32::DecodeTableEntry<Scanner> DecodeTableEntry;
-    // typedef unisim::component::cxx::processor::arm::isa::arm32::CodeType CodeType;
     typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<Scanner> Operation;
 
     Arm32();
@@ -152,8 +59,6 @@ struct Scanner
 
   struct Thumb2 : public unisim::component::cxx::processor::arm::isa::thumb::Decoder<Scanner>
   {
-    // typedef unisim::component::cxx::processor::arm::isa::thumb::DecodeTableEntry<Scanner> DecodeTableEntry;
-    // typedef unisim::component::cxx::processor::arm::isa::thumb::CodeType CodeType;
     typedef unisim::component::cxx::processor::arm::isa::thumb::Operation<Scanner> Operation;
 
     Thumb2();
@@ -582,7 +487,7 @@ struct Scanner
     void Write( uint8_t, uint8_t, uint8_t, uint8_t, Scanner&, U32 const& ) const { dont("cp15"); }
     void Describe( uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, std::ostream& sink ) const
     {
-      sink << "CR15{crn=" << crn << ", op1=" << op1 << ", crm=" << crm << ", op2=" << op2 << "}";
+      sink << "CR15{crn=" << int(crn) << ", op1=" << int(op1) << ", crm=" << int(crm) << ", op2=" << int(op2) << "}";
     }
   };
 

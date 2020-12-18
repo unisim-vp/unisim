@@ -338,7 +338,7 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
     variable_register_pool.insert( var_reg );
   }
     
-  this->CPU<FP_IMPL,CPU_IMPL>::CP15ResetRegisters();
+  CP15ResetRegisters();
 }
 
 /** Destructor.
@@ -558,9 +558,8 @@ CPU<FP_IMPL,CPU_IMPL>::TakeReset()
   
   cpsr.Set( M, SUPERVISOR_MODE );
   //if HaveSecurityExt() then SCR.NS = '0';
-  
-  //this->CP14ResetRegisters();
-  this->CP15ResetRegisters();
+
+  CP15ResetRegisters();
   
   //if HaveAdvSIMDorVFP() then FPEXC.EN = '0'; SUBARCHITECTURE_DEFINED further resetting;
   //if HaveThumbEE() then TEECR.XED = '0';
@@ -581,6 +580,36 @@ CPU<FP_IMPL,CPU_IMPL>::TakeReset()
   // it is impossible to return from a reset in an architecturally defined way.
   // Branch to Reset vector.
   Branch(ExcVectorBase() + 0, B_EXC);
+}
+
+
+/** Take Undefined Exception
+ *  Implements how the processor takes the undefined exception
+ */
+template <class FP_IMPL, class CPU_IMPL>
+void
+CPU<FP_IMPL,CPU_IMPL>::CP15ResetRegisters()
+{
+  // Base default values for SCTLR (may be overwritten by memory architectures)
+  SCTLR = 0x00c50058; // SBO mask
+  sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
+  sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
+  sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
+  sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
+  sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
+  sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
+  sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
+  sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
+  sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
+  sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
+  sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+  sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
+  sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
+  sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
+  sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
+  sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
+  
+  CPACR = 0x0;
 }
 
 /** Take Undefined Exception
@@ -937,9 +966,9 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRURO, User Read-Only Thread ID Register"; }
-          unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
+          void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, bool w) const override { return cpu.RequiresPL(w ? 1 : 0); }
           uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.TPIDRURO; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t val) const override { cpu.RequiresPL(1); cpu.TPIDRURO = val; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t val) const override { cpu.TPIDRURO = val; }
         } x;
         return &x;
       } break;
@@ -963,34 +992,6 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
 
 #undef CP15ENCODE
 
-/** Resets the internal values of corresponding CP15 Registers
- */
-template <class FP_IMPL, class CPU_IMPL>
-void
-CPU<FP_IMPL,CPU_IMPL>::CP15ResetRegisters()
-{
-  // Base default values for SCTLR (may be overwritten by memory architectures)
-  SCTLR = 0x00c50058; // SBO mask
-  sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
-  sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
-  sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
-  sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
-  sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
-  sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
-  sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
-  sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
-  sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
-  sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
-  sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-  sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
-  sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
-  sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
-  sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
-  sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
-  
-  CPACR = 0x0;
-}
-    
 /** Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
  *   notifiy the processor.

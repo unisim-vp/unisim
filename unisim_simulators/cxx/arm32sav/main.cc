@@ -257,7 +257,7 @@ struct Checker
           }
       }
     
-    std::cerr << "Instruction coverage: " << gilcoverage.size() << " (genisslib instructions).\n";
+    std::cerr << "Instruction coverage: " << std::dec << gilcoverage.size() << " (genisslib instructions).\n";
     return updated;
   }
   void gencode( TestCode& code, Interface const& test )
@@ -478,6 +478,19 @@ struct Checker
     /* Now, undergo real tests */
     textzone.activate();
 
+    struct SimEnv : public unisim::kernel::Simulator
+    {
+      typedef unisim::kernel::Simulator BaseSimulator;
+      struct Bad {};
+  
+      SimEnv() : BaseSimulator(0, 0, SimEnv::DefaultConfiguration) {}
+      BaseSimulator::SetupStatus Setup() override { if (BaseSimulator::Setup() != ST_OK_TO_START) throw Bad(); return ST_OK_TO_START; }
+      void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false) override { throw Bad (); }
+      static void DefaultConfiguration(unisim::kernel::Simulator* sim) {}
+  
+      //      unisim::kernel::logger::console::Printer logger_console_printer;
+    } simenv;
+    
     Runner proc("proc");
     
     std::vector<uint32_t> reference(workcells), workspace(workcells);
