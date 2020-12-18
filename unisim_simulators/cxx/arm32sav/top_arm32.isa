@@ -114,6 +114,9 @@ strexb.donttest = { return true; };
 strexd.donttest = { return true; };
 clrex.donttest = { return true; };
 
+swp.donttest = { return true; };
+swpb.donttest = { return true; };
+
 setend.donttest = { return true; };
 
 unconditional.donttest = { return true; };
