@@ -42,12 +42,13 @@
  * mla instruction
  */
 
-op mla( cond[4]: 0b0000001[7]: s[1]: rd[4]: rn[4]: rs[4]: 0b1001[4]: rm[4] );
+op mla( cond[4]: 0b0000001[7]: s[1]: rd[4]: ra[4]: rm[4]: 0b1001[4]: rn[4] );
+mla.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 mla.disasm = {
   buffer << "mla" << (s?"s":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
-         << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 mla.execute = {
@@ -56,7 +57,7 @@ mla.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   
-  U32 res = cpu.GetGPR(rm) * cpu.GetGPR(rs) + cpu.GetGPR(rn);
+  U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm) + cpu.GetGPR(ra);
   cpu.SetGPR( rd, res );
   
   if (s)

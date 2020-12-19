@@ -228,7 +228,6 @@ ${ARMSEC} arm 0x40c8 0xe1c02371 # bic	r2, r0, r1, ror r3
 ${ARMSEC} arm 0x40c8 0xe1d13250 # bics	r3, r1, r0, asr r2
 ${ARMSEC} arm 0x40c8 0xe16f2f12 # clz	r2, r2
 ${ARMSEC} arm 0x40c8 0xe16f1f10 # clz	r1, r0
-${ARMSEC} arm 0x40c8 0xe16f3f1f # clz	r3, pc
 ${ARMSEC} arm 0x40c8 0xe370070d # cmn	r0, #3407872
 ${ARMSEC} arm 0x40c8 0xe37f0e63 # cmn	pc, #1584
 ${ARMSEC} arm 0x40c8 0xe17004c0 # cmn	r0, r0, asr #9
@@ -410,28 +409,12 @@ ${ARMSEC} arm 0x40c8 0xe0231393 # mla	r3, r3, r3, r1
 ${ARMSEC} arm 0x40c8 0xe0312191 # mlas	r1, r1, r1, r2
 ${ARMSEC} arm 0x40c8 0xe0211192 # mla	r1, r2, r1, r1
 ${ARMSEC} arm 0x40c8 0xe0311192 # mlas	r1, r2, r1, r1
-${ARMSEC} arm 0x40c8 0xe020009f # mla	r0, pc, r0, r0
-${ARMSEC} arm 0x40c8 0xe033339f # mlas	r3, pc, r3, r3
 ${ARMSEC} arm 0x40c8 0xe0233293 # mla	r3, r3, r2, r3
 ${ARMSEC} arm 0x40c8 0xe0300290 # mlas	r0, r0, r2, r0
 ${ARMSEC} arm 0x40c8 0xe0233191 # mla	r3, r1, r1, r3
 ${ARMSEC} arm 0x40c8 0xe0322393 # mlas	r2, r3, r3, r2
-${ARMSEC} arm 0x40c8 0xe0200f90 # mla	r0, r0, pc, r0
-${ARMSEC} arm 0x40c8 0xe0311f91 # mlas	r1, r1, pc, r1
-${ARMSEC} arm 0x40c8 0xe0222f9f # mla	r2, pc, pc, r2
-${ARMSEC} arm 0x40c8 0xe0300f9f # mlas	r0, pc, pc, r0
-${ARMSEC} arm 0x40c8 0xe022f292 # mla	r2, r2, r2, pc
-${ARMSEC} arm 0x40c8 0xe031f191 # mlas	r1, r1, r1, pc
-${ARMSEC} arm 0x40c8 0xe021f19f # mla	r1, pc, r1, pc
-${ARMSEC} arm 0x40c8 0xe033f39f # mlas	r3, pc, r3, pc
-${ARMSEC} arm 0x40c8 0xe021ff91 # mla	r1, r1, pc, pc
-${ARMSEC} arm 0x40c8 0xe032ff92 # mlas	r2, r2, pc, pc
-${ARMSEC} arm 0x40c8 0xe021ff9f # mla	r1, pc, pc, pc
-${ARMSEC} arm 0x40c8 0xe033ff9f # mlas	r3, pc, pc, pc
 ${ARMSEC} arm 0x40c8 0xe0230092 # mla	r3, r2, r0, r0
 ${ARMSEC} arm 0x40c8 0xe0320091 # mlas	r2, r1, r0, r0
-${ARMSEC} arm 0x40c8 0xe022339f # mla	r2, pc, r3, r3
-${ARMSEC} arm 0x40c8 0xe031339f # mlas	r1, pc, r3, r3
 ${ARMSEC} arm 0x40c8 0xe0213093 # mla	r1, r3, r0, r3
 ${ARMSEC} arm 0x40c8 0xe0301291 # mlas	r0, r1, r2, r1
 ${ARMSEC} arm 0x40c8 0xe0230292 # mla	r3, r2, r2, r0
@@ -440,38 +423,10 @@ ${ARMSEC} arm 0x40c8 0xe0223092 # mla	r2, r2, r0, r3
 ${ARMSEC} arm 0x40c8 0xe0330193 # mlas	r3, r3, r1, r0
 ${ARMSEC} arm 0x40c8 0xe0230392 # mla	r3, r2, r3, r0
 ${ARMSEC} arm 0x40c8 0xe0321293 # mlas	r2, r3, r2, r1
-${ARMSEC} arm 0x40c8 0xe023139f # mla	r3, pc, r3, r1
-${ARMSEC} arm 0x40c8 0xe032029f # mlas	r2, pc, r2, r0
-${ARMSEC} arm 0x40c8 0xe0230f90 # mla	r3, r0, pc, r0
-${ARMSEC} arm 0x40c8 0xe0310f90 # mlas	r1, r0, pc, r0
-${ARMSEC} arm 0x40c8 0xe0212f91 # mla	r1, r1, pc, r2
-${ARMSEC} arm 0x40c8 0xe0302f90 # mlas	r0, r0, pc, r2
-${ARMSEC} arm 0x40c8 0xe0202f9f # mla	r0, pc, pc, r2
-${ARMSEC} arm 0x40c8 0xe0301f9f # mlas	r0, pc, pc, r1
 ${ARMSEC} arm 0x40c8 0xe0211093 # mla	r1, r3, r0, r1
 ${ARMSEC} arm 0x40c8 0xe0333190 # mlas	r3, r0, r1, r3
-${ARMSEC} arm 0x40c8 0xe021139f # mla	r1, pc, r3, r1
-${ARMSEC} arm 0x40c8 0xe031129f # mlas	r1, pc, r2, r1
-${ARMSEC} arm 0x40c8 0xe0233f92 # mla	r3, r2, pc, r3
-${ARMSEC} arm 0x40c8 0xe0311f92 # mlas	r1, r2, pc, r1
-${ARMSEC} arm 0x40c8 0xe020f393 # mla	r0, r3, r3, pc
-${ARMSEC} arm 0x40c8 0xe032f090 # mlas	r2, r0, r0, pc
-${ARMSEC} arm 0x40c8 0xe023f193 # mla	r3, r3, r1, pc
-${ARMSEC} arm 0x40c8 0xe033f193 # mlas	r3, r3, r1, pc
-${ARMSEC} arm 0x40c8 0xe021f29f # mla	r1, pc, r2, pc
-${ARMSEC} arm 0x40c8 0xe031f39f # mlas	r1, pc, r3, pc
-${ARMSEC} arm 0x40c8 0xe022f290 # mla	r2, r0, r2, pc
-${ARMSEC} arm 0x40c8 0xe033f391 # mlas	r3, r1, r3, pc
-${ARMSEC} arm 0x40c8 0xe023ff92 # mla	r3, r2, pc, pc
-${ARMSEC} arm 0x40c8 0xe032ff91 # mlas	r2, r1, pc, pc
 ${ARMSEC} arm 0x40c8 0xe0223190 # mla	r2, r0, r1, r3
 ${ARMSEC} arm 0x40c8 0xe0330291 # mlas	r3, r1, r2, r0
-${ARMSEC} arm 0x40c8 0xe023209f # mla	r3, pc, r0, r2
-${ARMSEC} arm 0x40c8 0xe033219f # mlas	r3, pc, r1, r2
-${ARMSEC} arm 0x40c8 0xe0210f93 # mla	r1, r3, pc, r0
-${ARMSEC} arm 0x40c8 0xe0330f91 # mlas	r3, r1, pc, r0
-${ARMSEC} arm 0x40c8 0xe022f391 # mla	r2, r1, r3, pc
-${ARMSEC} arm 0x40c8 0xe031f392 # mlas	r1, r2, r3, pc
 ${ARMSEC} arm 0x40c8 0xe0611191 # mls	r1, r1, r1, r1
 ${ARMSEC} arm 0x40c8 0xe0630090 # mls	r3, r0, r0, r0
 ${ARMSEC} arm 0x40c8 0xe0600292 # mls	r0, r2, r2, r0
@@ -839,7 +794,6 @@ ${ARMSEC} arm 0x40c8 0xe0c03271 # sbc	r3, r0, r1, ror r2
 ${ARMSEC} arm 0x40c8 0xe0d01233 # sbcs	r1, r0, r3, lsr r2
 ${ARMSEC} arm 0x40c8 0xe7a235d3 # sbfx	r3, r3, #11, #3
 ${ARMSEC} arm 0x40c8 0xe7b00652 # sbfx	r0, r2, #12, #17
-${ARMSEC} arm 0x40c8 0xe7a41bdf # sbfx	r1, pc, #23, #5
 ${ARMSEC} arm 0x40c8 0xe6800fb0 # sel	r0, r0, r0
 ${ARMSEC} arm 0x40c8 0xe6832fb3 # sel	r2, r3, r3
 ${ARMSEC} arm 0x40c8 0xe6813fb3 # sel	r3, r1, r3
@@ -1250,20 +1204,10 @@ ${ARMSEC} arm 0x40c8 0xe0402112 # sub	r2, r0, r2, lsl r1
 ${ARMSEC} arm 0x40c8 0xe0502112 # subs	r2, r0, r2, lsl r1
 ${ARMSEC} arm 0x40c8 0xe0402371 # sub	r2, r0, r1, ror r3
 ${ARMSEC} arm 0x40c8 0xe0523051 # subs	r3, r2, r1, asr r0
-${ARMSEC} arm 0x40c8 0xe1000090 # swp	r0, r0, [r0]
-${ARMSEC} arm 0x40c8 0xe1013091 # swp	r3, r1, [r1]
-${ARMSEC} arm 0x40c8 0xe1033091 # swp	r3, r1, [r3]
 ${ARMSEC} arm 0x40c8 0xe1020090 # swp	r0, r0, [r2]
-${ARMSEC} arm 0x40c8 0xe102209f # swp	r2, pc, [r2]
 ${ARMSEC} arm 0x40c8 0xe1020091 # swp	r0, r1, [r2]
-${ARMSEC} arm 0x40c8 0xe102309f # swp	r3, pc, [r2]
-${ARMSEC} arm 0x40c8 0xe1411091 # swpb	r1, r1, [r1]
-${ARMSEC} arm 0x40c8 0xe1402090 # swpb	r2, r0, [r0]
-${ARMSEC} arm 0x40c8 0xe1422090 # swpb	r2, r0, [r2]
 ${ARMSEC} arm 0x40c8 0xe1410090 # swpb	r0, r0, [r1]
-${ARMSEC} arm 0x40c8 0xe141109f # swpb	r1, pc, [r1]
 ${ARMSEC} arm 0x40c8 0xe1430092 # swpb	r0, r2, [r3]
-${ARMSEC} arm 0x40c8 0xe141009f # swpb	r0, pc, [r1]
 ${ARMSEC} arm 0x40c8 0xe6a11c71 # sxtab	r1, r1, r1, ror #24
 ${ARMSEC} arm 0x40c8 0xe6a20872 # sxtab	r0, r2, r2, ror #16
 ${ARMSEC} arm 0x40c8 0xe6a32072 # sxtab	r2, r3, r2
@@ -1326,7 +1270,6 @@ ${ARMSEC} arm 0x40c8 0xe6500f33 # uasx	r0, r0, r3
 ${ARMSEC} arm 0x40c8 0xe6532f30 # uasx	r2, r3, r0
 ${ARMSEC} arm 0x40c8 0xe7f91051 # ubfx	r1, r1, #0, #26
 ${ARMSEC} arm 0x40c8 0xe7e309d3 # ubfx	r0, r3, #19, #4
-${ARMSEC} arm 0x40c8 0xe7e901df # ubfx	r0, pc, #3, #10
 ${ARMSEC} arm 0x40c8 0xe6700f10 # uhadd16	r0, r0, r0
 ${ARMSEC} arm 0x40c8 0xe6720f12 # uhadd16	r0, r2, r2
 ${ARMSEC} arm 0x40c8 0xe6713f13 # uhadd16	r3, r1, r3
@@ -1494,7 +1437,6 @@ ${ARMSEC} arm 0x40c8 0xe6f22c71 # uxtah	r2, r2, r1, ror #24
 ${ARMSEC} arm 0x40c8 0xe6f20071 # uxtah	r0, r2, r1
 ${ARMSEC} arm 0x40c8 0xe6ef0c70 # uxtb	r0, r0, ror #24
 ${ARMSEC} arm 0x40c8 0xe6ef3c70 # uxtb	r3, r0, ror #24
-${ARMSEC} arm 0x40c8 0xe6ef307f # uxtb	r3, pc
 ${ARMSEC} arm 0x40c8 0xe6cf1871 # uxtb16	r1, r1, ror #16
 ${ARMSEC} arm 0x40c8 0xe6cf2471 # uxtb16	r2, r1, ror #8
 ${ARMSEC} arm 0x40c8 0xe6ff0c70 # uxth	r0, r0, ror #24

@@ -260,65 +260,19 @@ namespace arm {
     static uint32_t const lsbmask = msbmask >> msb2lsb;
   };
 
-  template <typename U32T, typename SWPT>
-  U32T
-  SignedSat(U32T& res, U32T const& overflow, U32T const& underflow, SWPT const& )
+  template <typename VT, typename CT, typename V0T, typename V1T, typename VDT>
+  VT CondMove( CT c0, V0T v0, CT c1, V1T v1, VDT vd )
   {
-    // In the following we saturate (if needed) the packed res value
-    // by arithmetic and logic means. BIC masks represent bits that
-    // should be cleared, and BIS masks represent bits that should be
-    // set. The caller provides overflow (respectively underflow)
-    // value that should have its packed MSB set in case of overflow
-    // (respectively underflow).
-    
-    U32T of_bic = overflow & U32T(SWPT::msbmask);
-    U32T of_bis = (((of_bic ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | of_bic) - U32T(SWPT::lsbmask);
-    
-    U32T uf_bis = underflow & U32T(SWPT::msbmask);
-    U32T uf_bic = (((uf_bis ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bis) - U32T(SWPT::lsbmask);
-    
-    res = (res | (of_bis | uf_bis)) & ~(of_bic | uf_bic);
-    
-    return U32T((of_bic | uf_bis) != U32T(0));
-  }
+    VT mnc0 = VT(c0) - VT(1), mnc1 = VT(c1) - VT(1);
+    return (mnc0 & mnc1 & VT(vd)) | (~mnc0 & VT(v0)) | (~mnc1 & VT(v1));
+  }  
   
-  template <typename U32T, typename SWPT>
-  U32T
-  UnsignedPSat(U32T& res, U32T const& overflow, SWPT const& )
+  template <typename VT, typename CT, typename V0T, typename VDT>
+  VT CondMove( CT c0, V0T v0, VDT vd )
   {
-    // In the following we saturate (if needed) the packed res value
-    // by arithmetic and logic means. BIC masks represent bits that
-    // should be cleared, and BIS masks represent bits that should be
-    // set. The caller provides overflow (respectively underflow)
-    // value that should have its packed MSB set in case of overflow
-    // (respectively underflow).
-    
-    U32T of_bis = overflow & U32T(SWPT::msbmask);
-    of_bis |= (((of_bis ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | of_bis) - U32T(SWPT::lsbmask);
-    
-    res |= of_bis;
-    
-    return U32T(of_bis != U32T(0));
-  }
-  
-  template <typename U32T, typename SWPT>
-  U32T
-  UnsignedNSat(U32T& res, U32T const& no_uflow, SWPT const& )
-  {
-    // In the following we saturate (if needed) the packed res value
-    // by arithmetic and logic means. BIC masks represent bits that
-    // should be cleared, and BIS masks represent bits that should be
-    // set. The caller provides overflow (respectively underflow)
-    // value that should have its packed MSB set in case of overflow
-    // (respectively underflow).
-    
-    U32T uf_bam = no_uflow & U32T(SWPT::msbmask);
-    uf_bam |= (((uf_bam ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bam) - U32T(SWPT::lsbmask);
-    
-    res &= uf_bam;
-    
-    return U32T(uf_bam != U32T(-1));
-  }
+    VT mnc0 = VT(c0) - VT(1);
+    return (mnc0 & VT(vd)) | (~mnc0 & VT(v0));
+  }  
   
   template <typename coreT>
   void

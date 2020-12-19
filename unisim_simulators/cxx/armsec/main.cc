@@ -49,8 +49,6 @@
 #include <cstdlib>
 #include <cstdio>
 
-#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
-
 // template <typename ARCH, unsigned OPSIZE> struct TypeFor {};
 
 // template <typename ARCH> struct TypeFor<ARCH, 8> { typedef typename ARCH:: S8 S; typedef typename ARCH:: U8 U; };
@@ -213,15 +211,6 @@ struct Processor
     
   typedef std::map<std::pair<uint8_t,uint32_t>,Expr> ForeignRegisters;
   
-  struct CP15Reg
-  {
-    virtual            ~CP15Reg() {}
-    virtual unsigned    RequiredPL() { return 1; }
-    virtual void        Write( Processor& proc, U32 const& value ) { throw Unimplemented(); }
-    virtual U32         Read( Processor& proc ) { throw Unimplemented(); return U32(); }
-    virtual char const* Describe() = 0;
-  };
-
   struct Load : public unisim::util::symbolic::binsec::Load
   {
     Load( Expr const& addr, unsigned size, unsigned alignment, bool bigendian )
@@ -583,16 +572,21 @@ public:
   
   Mode&  CurrentMode() { /* throw Unimplemented(); */ return mode; }
   Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
+  void RequiresPL(unsigned rpl) { /*TODO: todo*/ }
   
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  struct CP15Reg
+  {
+    void CheckPermissions( uint8_t, uint8_t, uint8_t, uint8_t, Processor& cpu, bool ) const { cpu.RequiresPL(1); }
+    virtual U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor&) const { throw Unimplemented(); return U32(); }
+    virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor&, U32 const&) const { throw Unimplemented(); }
+    virtual void Describe(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, std::ostream& sink ) const
+    {
+      sink << "CR15{crn=" << crn << ", op1=" << op1 << ", crm=" << crm << ", op2=" << op2 << "}";
+    }
+  };
   
-  U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
-  { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
-  void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value )
-  { CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value ); }
-  char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
-  { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe(); }
-
+  static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  
   //   ====================================================================
   //   =         Vector and Floating-point Registers access methods       =
   //   ====================================================================
@@ -713,7 +707,7 @@ public:
         else
           {
             unsigned begin = pos*8, end = begin+size*8 - 1;
-            Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, size*8, size*8, false ) );
+            Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, 0, size*8, size*8, false ) );
             core.path->add_sink( new NeonPartialWrite( reg, begin, end, value ) );
           }
       }
@@ -725,20 +719,20 @@ public:
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
     
-    struct
-    {
-      Expr ui( unsigned sz, Expr const& src ) const
-      {
-        switch (sz) {
-        default: throw 0;
-        case 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
-        case 2: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
-        case 4: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
-        case 8: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
-        }
-        return 0;
-      }
-    } cast;
+    // struct
+    // {
+    //   Expr ui( unsigned sz, Expr const& src ) const
+    //   {
+    //     switch (sz) {
+    //     default: throw 0;
+    //     case 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
+    //     case 2: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
+    //     case 4: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
+    //     case 8: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
+    //     }
+    //     return 0;
+    //   }
+    // } cast;
     
     if (not neonregs[reg][pos].node)
       {
@@ -746,22 +740,22 @@ public:
         unsigned src = pos;
         do { src = src & (src-1); } while (not neonregs[reg][src].node);
         unsigned shift = 8*(pos - src);
-        return cast.ui( size, make_operation( "Lsr", neonregs[reg][src], make_const( shift ) ) );
+        return new unisim::util::symbolic::binsec::BitFilter( neonregs[reg][src], 64, shift, 8*size, 64, false );
       }
     else if (not neonregs[reg][(pos|size)&(NEONSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
-        return cast.ui( size, neonregs[reg][pos] );
+        return new unisim::util::symbolic::binsec::BitFilter( neonregs[reg][pos], 64, 0, 8*size, 64, false );
       }
     else if ((size > 1) and (neonregs[reg][pos|(size >> 1)].node))
       {
         // requested read is a concatenation of multiple source values
-        Expr concat = cast.ui( size, neonregs[reg][pos] );
-        for (unsigned idx = 0; ++idx < size;)
+        Expr concat = neonregs[reg][pos];
+        for (unsigned idx = 1; ++idx < size;)
           {
             if (not neonregs[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", cast.ui( size, neonregs[reg][idx] ), make_const( 8*idx ) ), concat );
+            concat = make_operation( "Or", make_operation( "Lsl", neonregs[reg][idx], make_const( uint8_t(8*idx) ) ), concat );
           }
         return concat;
       }
@@ -799,7 +793,7 @@ public:
   U32  GetVSU( unsigned idx ) { return U32( U64( eneonread( idx / 2, 4, (idx*4) & 4 ) ) ); }
   void SetVSU( unsigned idx, U32 val ) { eneonwrite( idx / 2, 4, (idx*4) & 4, U64(val).expr ); }
   U64  GetVDU( unsigned idx ) { return U64( eneonread( idx, 8, 0 ) ); }
-  void SetVDU( unsigned idx, U64 val ) { eneonwrite( idx, 8, 0, U64(val).expr ); }
+  void SetVDU( unsigned idx, U64 val ) { eneonwrite( idx, 8, 0, val.expr ); }
   F32  GetVSR( unsigned idx ) { return F32(); }
   void SetVSR( unsigned idx, F32 val ) {}
   F64  GetVDR( unsigned idx ) { return F64(); }
@@ -819,6 +813,14 @@ public:
   U16 ucast( S16 const& x ) { return U16(x); }
   U32 ucast( S32 const& x ) { return U32(x); }
   U64 ucast( S64 const& x ) { return U64(x); }
+
+  template <typename T> T neoncast( T const&, Expr const& x ) { return T(x); }
+  S8 neoncast( S8 const&, Expr const& x ) { return S8(U8(x)); }
+  S16 neoncast( S16 const&, Expr const& x ) { return S16(U16(x)); }
+  S32 neoncast( S32 const&, Expr const& x ) { return S32(U32(x)); }
+  S64 neoncast( S64 const&, Expr const& x ) { return S64(U64(x)); }
+
+  
   // Get|Set elements
   template <class ELEMT>
   void
@@ -827,7 +829,7 @@ public:
     using unisim::util::symbolic::binsec::BitFilter;
     auto uvalue = ucast( value );
     unsigned usz = tsizeof( uvalue );
-    Expr neonval( new BitFilter( uvalue.expr, usz*8, usz*8, 64, false ) );
+    Expr neonval( new BitFilter( uvalue.expr, usz*8, 0, usz*8, 64, false ) );
     eneonwrite( reg, usz, usz*idx, neonval );
   }
 
@@ -844,7 +846,7 @@ public:
 
   void BranchExchange( U32 const& target, branch_type_t branch_type )
   {
-    cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 1, 1, false );
+    cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 0, 1, 1, false );
     Branch( target, branch_type );
   }
 	
@@ -1469,7 +1471,9 @@ main( int argc, char** argv )
   return 0;
 }
 
-Processor::CP15Reg&
+#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
+
+Processor::CP15Reg*
 Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
@@ -1481,61 +1485,61 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CTR, Cache Type Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("ctr"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CTR, Cache Type Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ctr"); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 0, 0, 0, 5 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "MPIDR, Multiprocessor Affinity Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("mpidr"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "MPIDR, Multiprocessor Affinity Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("mpidr"); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 0, 0, 1, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
-          U32 Read( Processor& proc ) { return proc.SReg("id_pfr0"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ID_PFR0, Processor Feature Register 0"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("id_pfr0"); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 0, 1, 0, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
-          U32 Read( Processor& proc ) { return proc.SReg("ccsidr"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CCSIDR, Cache Size ID Registers"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ccsidr"); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 0, 1, 0, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("clidr"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CLIDR, Cache Level ID Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("clidr"); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 0, 2, 0, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("csselr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("csselr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CSSELR, Cache Size Selection Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("csselr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("csselr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
       
       /****************************
@@ -1545,44 +1549,44 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "SCTLR, System Control Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("sctlr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("sctlr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "SCTLR, System Control Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("sctlr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("sctlr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 1, 0, 0, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "ACTLR, Auxiliary Control Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("actlr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("actlr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ACTLR, Auxiliary Control Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("actlr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("actlr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 1, 0, 0, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CPACR, Coprocessor Access Control Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("cpacr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("cpacr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CPACR, Coprocessor Access Control Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("cpacr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("cpacr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 1, 0, 1, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "NSACR, Non-Secure Access Control Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("nsacr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("nsacr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "NSACR, Non-Secure Access Control Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("nsacr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("nsacr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
       /*******************************************
@@ -1592,44 +1596,44 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("ttbr0") = value; }
-          U32 Read( Processor& proc ) { return proc.SReg("ttbr0"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TTBR0, Translation Table Base Register 0"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("ttbr0") = value; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ttbr0"); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 2, 0, 0, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("ttbr1") = value; }
-          U32 Read( Processor& proc ) { return proc.SReg("ttbr1"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TTBR1, Translation Table Base Register 1"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("ttbr1") = value; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ttbr1"); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 2, 0, 0, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("ttbcr") = value; }
-          U32 Read( Processor& proc ) { return proc.SReg("ttbcr"); }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TTBCR, Translation Table Base Control Register"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("ttbcr") = value; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ttbcr"); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 3, 0, 0, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DACR, Domain Access Control Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dacr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dacr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DACR, Domain Access Control Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dacr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dacr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
 
@@ -1640,44 +1644,44 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DFSR, Data Fault Status Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dfsr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dfsr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DFSR, Data Fault Status Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dfsr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dfsr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 5, 0, 0, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("ifsr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("ifsr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "IFSR, Instruction Fault Status Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ifsr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("ifsr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DFAR, Data Fault Status Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dfar"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dfar") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DFAR, Data Fault Status Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dfar"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dfar") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "IFAR, Instruction Fault Status Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("ifar"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("ifar") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "IFAR, Instruction Fault Status Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("ifar"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("ifar") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
       /***************************************************************
@@ -1688,121 +1692,121 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "ICIALLUIS, Invalidate all instruction caches to PoU Inner Shareable"; }
-          U32 Read( Processor& proc ) { return proc.SReg("icialluis"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("icialluis") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ICIALLUIS, Invalidate all instruction caches to PoU Inner Shareable"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("icialluis"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("icialluis") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 1, 6 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "BPIALLIS, Invalidate all branch predictors Inner Shareable"; }
-          U32 Read( Processor& proc ) { return proc.SReg("bpiallis"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("bpiallis") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "BPIALLIS, Invalidate all branch predictors Inner Shareable"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("bpiallis"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("bpiallis") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 5, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
-          U32 Read( Processor& proc ) { return proc.SReg("iciallu"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("iciallu") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ICIALLU, Invalidate all instruction caches to PoU"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("iciallu"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("iciallu") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 5, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
-          U32 Read( Processor& proc ) { return proc.SReg("icimvau"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("icimvau") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ICIMVAU, Clean data* cache line by MVA to PoU"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("icimvau"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("icimvau") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 5, 6 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
-          U32 Read( Processor& proc ) { return proc.SReg("bpiall"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("bpiall") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "BPIALL, Invalidate all branch predictors"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("bpiall"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("bpiall") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 6, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DCIMVAC, Invalidate data* cache line by MVA to PoC"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dcimvac"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dcimvac") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCIMVAC, Invalidate data* cache line by MVA to PoC"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dcimvac"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dcimvac") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 6, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DCISW, Invalidate data* cache line by set/way"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dcisw"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dcisw") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCISW, Invalidate data* cache line by set/way"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dcisw"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dcisw") = value; }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 7, 0, 10, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dccmvac"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dccmvac") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCMVAC, Clean data* cache line by MVA to PoC"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dccmvac"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dccmvac") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 10, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DCCSW, Clean data* cache line by set/way"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dccsw"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dccsw") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCSW, Clean data* cache line by set/way"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dccsw"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dccsw") = value; }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 7, 0, 11, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dccmvau"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dccmvau") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCMVAU, Clean data* cache line by MVA to PoU"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dccmvau"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dccmvau") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 14, 1 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DCCIMVAC, Clean and invalidate data* cache line by MVA to PoC"; }
-          U32 Read( Processor& proc ) { return proc.SReg("dccimvac"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("dccimvac") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCIMVAC, Clean and invalidate data* cache line by MVA to PoC"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("dccimvac"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("dccimvac") = value; }
         } x;
-        return x;
+        return &x;
       } break;
           
       /******************************
@@ -1813,44 +1817,44 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TLBIALLIS, Invalidate entire TLB Inner Shareable"; }
-          U32 Read( Processor& proc ) { return proc.SReg("tlbiallis"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("tlbiallis") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TLBIALLIS, Invalidate entire TLB Inner Shareable"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("tlbiallis"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("tlbiallis") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 8, 0, 7, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
-          U32 Read( Processor& proc ) { return proc.SReg("tlbiall"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("tlbiall") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TLBIALL, invalidate unified TLB"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("tlbiall"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("tlbiall") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 8, 0, 7, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TLBIASID, invalidate unified TLB by ASID match"; }
-          U32 Read( Processor& proc ) { return proc.SReg("tlbiasid"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("tlbiasid") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TLBIASID, invalidate unified TLB by ASID match"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("tlbiasid"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("tlbiasid") = value; }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 12, 0, 0, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "VBAR, Vector Base Address Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("vbar"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("vbar") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "VBAR, Vector Base Address Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("vbar"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("vbar") = value; }
         } x;
-        return x;
+        return &x;
       } break;
           
       /***********************************/
@@ -1861,11 +1865,11 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("contextidr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("contextidr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CONTEXTIDR, Context ID Register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("contextidr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("contextidr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
       /* BOARD specific */
@@ -1874,31 +1878,31 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "DIAGCR, undocumented Diagnostic Control register"; }
-          U32 Read( Processor& proc ) { return proc.SReg("diagcr"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("diagcr") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DIAGCR, undocumented Diagnostic Control register"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("diagcr"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("diagcr") = value; }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 15, 4, 0, 0 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CBAR, Configuration Base Address"; }
-          U32 Read( Processor& proc ) { return proc.SReg("cbar"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("cbar") = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CBAR, Configuration Base Address"; }
+          U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc) const override { return proc.SReg("cbar"); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor& proc, U32 const& value) const override { proc.SReg("cbar") = value; }
         } x;
-        return x;
+        return &x;
       } break;
 
     }
 
-  static struct CP15Error : public CP15Reg {
-    char const* Describe() { return "Unknown CP15 register"; }
-  } err;
-  return err;
+  static CP15Reg err;
+  return &err;
 }
+
+#undef CP15ENCODE
 
 void
 Processor::PSR::Set( NZCVRF const& _, U32 const& value )

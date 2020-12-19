@@ -101,7 +101,7 @@ mov_wri.execute = {
 
 op mov_w( 0b11101010[8]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 mov_w.var imm : {uint32_t} = {imm1|imm0};
-mov_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+mov_w.var reject : {Reject} = {rd == 15 or rm == 15 or ((rd == 13 or rm == 13) and (s or rd == rm))};
 
 mov_w.disasm = {
   buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );

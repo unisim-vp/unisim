@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/util/simfloat/integer.hh>
 #include <unisim/util/simfloat/integer.tcc>

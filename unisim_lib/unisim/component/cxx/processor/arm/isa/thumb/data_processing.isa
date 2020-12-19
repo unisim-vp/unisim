@@ -199,7 +199,7 @@ add_6.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR( rd, cpu.GetGPR(cpu.SP_reg) + U32(imm) );
+  cpu.SetGPR( rd, cpu.GetGPR(13) + U32(imm) );
 };
 
 /*
@@ -220,7 +220,7 @@ add_7.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR( cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + U32(imm) );
+  cpu.SetGPR( 13, cpu.GetGPR(13) + U32(imm) );
 };
 
 /*
@@ -757,7 +757,7 @@ sub_4.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR( cpu.SP_reg, cpu.GetGPR( cpu.SP_reg ) - U32(imm) );
+  cpu.SetGPR( 13, cpu.GetGPR( 13 ) - U32(imm) );
 };
 
 /*

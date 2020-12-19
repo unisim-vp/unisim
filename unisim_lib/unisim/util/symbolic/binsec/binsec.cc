@@ -60,11 +60,40 @@ namespace binsec {
   }
 
   Expr
-  ASExprNode::Simplify( Expr const& expr )
+  ASExprNode::Simplify( Expr const& ixpr )
   {
-    unsigned subcount = expr->SubCount();
+    unsigned subcount = ixpr->SubCount();
+    Expr subs[subcount];
+
+    struct Simplified
+    {
+      Simplified(ExprNode const* _e, Expr* _subs, unsigned _subc)
+        : e(_e), subs(_subs), subc(_subc), diff(false)
+      {
+        for (unsigned idx = 0; idx < subc; ++idx)
+          {
+            Expr const& sub = e->GetSub(idx);
+            if (sub != (subs[idx] = ASExprNode::Simplify( sub )))
+              diff = true;
+          }
+      }
+      ExprNode const* base()
+      {
+        if (ExprNode* r = diff ? e->Mutate() : 0)
+          {
+            for (unsigned idx = 0; idx < subc; ++idx)
+              const_cast<Expr&>(r->GetSub(idx)) = subs[idx];
+            return r;
+          }
+        return e;
+      }
+      ExprNode const* e;
+      Expr* subs;
+      unsigned subc;
+      bool diff;
+    } simplified(ixpr.node,&subs[0],subcount);
     
-    if (ConstNodeBase const* node = expr->AsConstNode())
+    if (ConstNodeBase const* node = simplified.e->AsConstNode())
       {
         switch (node->GetType())
           {
@@ -74,19 +103,46 @@ namespace binsec {
           case ScalarType::S64: return make_const( node->Get( uint64_t() ) );
           default: break;
           }
-        return expr;
+        return simplified.base();
       }
-    else if (OpNodeBase const* node = expr->AsOpNode())
+    else if (OpNodeBase const* node = simplified.e->AsOpNode())
       {
         switch (node->op.code)
           {
           default: break;
+
+            //          case Op::Lsl:
+          case Op::Asr:
+          case Op::Lsr:
+            if (subcount == 2)
+              {
+                if (ConstNodeBase const* cnb = subs[1].Eval(EvalSpace()))
+                  {
+                    uint64_t sh = cnb->Get( uint64_t() );
+                    unsigned bitsize = ScalarType(subs[0]->GetType()).bitsize;
+                    if (sh >= bitsize) { struct Bad {}; throw Bad(); }
+
+                    unsigned rshift, sxtend;
+                    switch (node->op.code)
+                      {
+                      case Op::Lsr: rshift = sh; sxtend = false; break;
+                      case Op::Asr: rshift = sh; sxtend = true; break;
+                      default:  { struct Bad {}; throw Bad(); }
+                      }
+                    
+                    BitFilter bf( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
+                    bf.Retain(); // Prevent deletion of this stack-allocated object
+                    Expr res( bf.Simplify() );
+                    return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                  }
+
+              }
+            break;
+            
             
           case Op::And:
             if (subcount == 2)
               {
-                Expr subs[2] = {ASExprNode::Simplify( node->GetSub(0) ), ASExprNode::Simplify( node->GetSub(1) )};
-                  
                 for (unsigned idx = 0; idx < 2; ++idx)
                   if (ConstNodeBase const* node = subs[idx].Eval(EvalSpace()))
                     {
@@ -99,39 +155,26 @@ namespace binsec {
                       unsigned bitsize = ScalarType(node->GetType()).bitsize, select = arithmetic::BitScanReverse(v)+1;
                       if (select >= bitsize)
                         return subs[idx^1];
-                      BitFilter bf( subs[idx^1], bitsize, select, bitsize, false );
+                      BitFilter bf( subs[idx^1], bitsize, 0, select, bitsize, false );
                       bf.Retain(); // Prevent deletion of this stack-allocated object
                       Expr res( bf.Simplify() );
                       return (res.node == &bf) ? new BitFilter( bf ) : res.node;
                     }
-                
-                return (subs[0] != node->GetSub(0)) or (subs[1] != node->GetSub(1)) ? make_operation( node->op.code, subs[0], subs[1] ) : node;
               }
             break;
 
           case Op::Cast:
             if (subcount == 1)
               {
-                Expr sub = ASExprNode::Simplify( node->GetSub(0) );
-            
-                CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
+                CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *ixpr.node );
                 ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
                 if (not dst.is_integer or not src.is_integer or (dst.bitsize == 1 and src.bitsize != 1))
-                  {
-                    // Complex casts
-                    if (sub == node->GetSub(0))
-                      return expr;
-                    ExprNode* en = cnb.Mutate();
-                    Expr res(en); // Exception safety
-                    dynamic_cast<CastNodeBase&>( *en ).src = sub;
-                    return res;
-                  }
+                  return simplified.base(); // Complex casts
 
                 if (src.bitsize == dst.bitsize)
-                  return sub;
-                  
-                  
-                BitFilter bf( sub, src.bitsize, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
+                  return subs[0];
+
+                BitFilter bf( subs[0], src.bitsize, 0, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
                 bf.Retain(); // Not a heap-allocated object (never delete);
                 Expr res( bf.Simplify() );
                 return (res.node == &bf) ? new BitFilter( bf ) : res.node;
@@ -139,33 +182,12 @@ namespace binsec {
             break;
           }
       }
-    else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
+    else if (dynamic_cast<ASExprNode const*>( ixpr.node ))
       {
-        Expr res = node->Simplify();
-        if (res.good())
-          return res;
+        return dynamic_cast<ASExprNode const*>( simplified.base() )->Simplify();
       }
     
-    Expr subs[subcount];
-
-    bool simplified = false;
-    
-    for (unsigned idx = 0; idx < subcount; ++idx)
-      {
-        Expr const& sub = expr->GetSub(idx);
-        if (sub != (subs[idx] = ASExprNode::Simplify( sub )))
-          simplified = true;
-      }
-    
-    if (not simplified)
-      return expr;
-
-    ExprNode* res = expr->Mutate();
-
-    for (unsigned idx = 0; idx < subcount; ++idx)
-      const_cast<Expr&>(res->GetSub(idx)) = subs[idx];
-    
-    return Expr(res);
+    return simplified.base();
   }
 
   int
@@ -334,17 +356,97 @@ namespace binsec {
     return 0;
   }
 
+  Expr
+  BitFilter::Simplify() const
+  {
+    if (OpNodeBase const* onb = input->AsOpNode())
+      {
+        if (onb->op.code != onb->op.Lsl) return this;
+        ConstNodeBase const* cnb = onb->GetSub(1).Eval(EvalSpace());
+        if (not cnb) return this;
+        unsigned lshift = cnb->Get( unsigned() );
+        if (lshift > rshift) return this;
+        BitFilter bf( *this );
+        bf.Retain(); // Prevent deletion of this stack-allocated object
+        bf.rshift -= lshift;
+        bf.input = onb->GetSub(0);
+        Expr res( bf.Simplify() );
+        return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+      }
+    
+    if (BitFilter const* bf = dynamic_cast<BitFilter const*>( input.node ))
+      {
+        struct Bad {};
+        
+        if (source != bf->extend)
+          throw Bad ();
+
+        if (rshift >= bf->select) // TODO: maybe this can be optimized
+          return this;
+        
+        unsigned new_rshift = bf->rshift + rshift;
+
+        if ((rshift + select) <= bf->select)
+          return new BitFilter( bf->input, bf->source, new_rshift, select, extend, sxtend );
+        
+        // (rshift + select) > bf->select
+        if (not sxtend and bf->sxtend)
+          return this;
+        
+        return new BitFilter( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend );
+      }
+
+    return this;
+  }
+  
+  int
+  BitFilter::compare( BitFilter const& rhs ) const
+  {
+    if (int delta = int(source) - int(rhs.source)) return delta;
+    if (int delta = int(rshift) - int(rhs.rshift)) return delta;
+    if (int delta = int(select) - int(rhs.select)) return delta;
+    if (int delta = int(extend) - int(rhs.extend)) return delta;
+    return int(sxtend) - int(rhs.sxtend);
+  }
+  
+  ConstNodeBase const*
+  BitFilter::Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const
+  {
+    uint64_t value = cnbs[0]->Get( uint64_t() ) >> rshift;
+    unsigned ext = 64 - select;
+    value <<= ext;
+    value = sxtend ? (int64_t(value) >> ext) : value >> ext;
+
+    if (extend == 64) return new ConstNode<uint64_t>( value );
+    if (extend == 32) return new ConstNode<uint32_t>( value );
+    if (extend == 16) return new ConstNode<uint16_t>( value );
+    if (extend ==  8) return new ConstNode<uint8_t>( value );
+    if (extend ==  1) return new ConstNode<bool>( value );
+    
+    struct Bad {};
+    throw Bad ();
+    return 0;
+  }
+  
   int
   BitFilter::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
-    if (extend == source)
-      {
-        /* TODO: check GetCode bitsize == extend == source */
-        sink << "(" << GetCode(input, vars, label) << " and " << dbx(source/8, (1ull << select)-1) << ")";
-        return extend;
-      }
-    bool extension = extend > select;
     bool selection = source > select;
+    if (extend == source and selection)
+      {
+        bool done = true;
+        if      (not rshift and not sxtend)
+          sink << "(" << GetCode(input, vars, label, source) << " and " << dbx(source/8, (1ull << select)-1) << ")";
+        else if ((rshift + select) == extend)
+          sink << "(" << GetCode(input, vars, label, source) << " rshift" << (sxtend?"s ":"u ") << dbx(source/8, rshift) << ")";
+        else
+          done = false;
+
+        if (done)
+          return extend;
+      }
+
+    bool extension = extend > select;
     if (extension)
       sink << '(' << (sxtend ? "exts " : "extu ");
     if (selection)
@@ -354,7 +456,7 @@ namespace binsec {
     if (chksize != source) throw 0;
     
     if (selection)
-        sink << " {0," << (select-1) << "})";
+      sink << " {" << (rshift) << "," << (rshift+select-1) << "})";
     if (extension)
       sink << ' ' << extend << ')';
     
@@ -366,6 +468,7 @@ namespace binsec {
   {
     sink << "BitFilter(" << input
          << ", " << source
+         << ", " << rshift
          << ", " << select
          << ", " << extend
          << ", " << (sxtend ? "signed" : "unsigned")
@@ -564,7 +667,6 @@ namespace binsec {
           virtual int cmp( ExprNode const& rhs ) const override { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
           virtual unsigned SubCount() const { return 0; }
           virtual void Repr( std::ostream& sink ) const { sink << ref; }
-          virtual Expr Simplify() const { return 0; }
           std::string ref;
           int dsz;
         };

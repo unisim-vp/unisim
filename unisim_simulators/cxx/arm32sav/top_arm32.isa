@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -56,18 +56,23 @@ impl {
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
 #include <unisim/util/likely/likely.hh>
-#include <testutils.hh>
 #include <iostream>
 #include <iomanip>
 
+using unisim::util::arithmetic::RotateRight;
+using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::endian::ByteSwap;
+
 } // end of impl
 
-action {void} execute({ARCH &} {cpu}) {
-  throw ut::DontTest( std::string( "warning, " ) + GetName() + " is not implemented." );
+action {void} execute({ARCH &} {cpu}) const {
+  throw unisim::component::cxx::processor::arm::isa::Reject();
 }
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
+//action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer})
+action {void} disasm({std::ostream&} {buffer}) const {
   buffer << "Unknown instruction (arm32)";
 }
 
@@ -108,6 +113,9 @@ strexh.donttest = { return true; };
 strexb.donttest = { return true; };
 strexd.donttest = { return true; };
 clrex.donttest = { return true; };
+
+swp.donttest = { return true; };
+swpb.donttest = { return true; };
 
 setend.donttest = { return true; };
 

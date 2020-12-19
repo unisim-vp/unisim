@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2019-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,17 +32,27 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef TESTUTILS_HH
-#define TESTUTILS_HH
+#include <scanner.hh>
+#include <top_thumb.tcc>
+#include <sstream>
 
-#include <string>
+Scanner::Thumb2::Thumb2()
+  : Decoder()
+{}
 
-namespace ut
+Scanner::Thumb2::~Thumb2()
+{}
+
+Scanner::Thumb2::Operation*
+Scanner::Thumb2::decode(uint32_t addr, uint32_t code, std::string& disasm)
 {
-  struct DontTest
-  {
-    DontTest( std::string _msg ) : msg( _msg ) {} std::string msg;
-  };
+  std::ostringstream buf;
+  Operation* op = 0;
+  try { op = NCDecode(addr,code); }
+  catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("undefined"); }
+      
+  op->disasm(buf);
+  disasm = buf.str();
+  return op;
 }
 
-#endif // TESTUTILS_HH

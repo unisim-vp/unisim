@@ -136,18 +136,27 @@ namespace binsec {
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
-    virtual Expr Simplify() const { return 0; };
+    virtual Expr Simplify() const { return this; }
     static  Expr Simplify( Expr const& );
   };
 
   struct GetCode
   {
-    GetCode(Expr const& _expr, Variables& _vars, Label& _label) : expr(_expr), vars(_vars), label(_label) {} Expr const& expr; Variables& vars; Label& label;
+    GetCode(Expr const& _expr, Variables& _vars, Label& _label)
+      : expr(_expr), vars(_vars), label(_label), expected(-1)
+    {}
+    GetCode(Expr const& _expr, Variables& _vars, Label& _label, int _expected)
+      : expr(_expr), vars(_vars), label(_label), expected(_expected)
+    {}
+    
     friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
     {
-      ASExprNode::GenerateCode( gc.expr, gc.vars, gc.label, sink );
+      int size = ASExprNode::GenerateCode( gc.expr, gc.vars, gc.label, sink );
+      if (gc.expected >= 0 and gc.expected != size) { struct TypeSizeMisMatch {}; throw TypeSizeMisMatch(); }
       return sink;
     }
+    Expr const& expr; Variables& vars; Label& label;
+    int expected;
   };
 
   struct RegRead : public ASExprNode
@@ -228,76 +237,30 @@ namespace binsec {
 
   struct BitFilter : public ASExprNode
   {
-    BitFilter( Expr const& _input, unsigned _source, unsigned _select, unsigned _extend, bool _sxtend )
-      : input(_input), source(_source), select(_select), extend(_extend), sxtend(_sxtend), reserved()
+    BitFilter( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend )
+      : input(_input), source(_source), pad0(), rshift(_rshift), pad1(), select(_select), pad2(), extend(_extend), sxtend(_sxtend)
     {}
     virtual BitFilter* Mutate() const { return new BitFilter( *this ); }
-
-    Expr Simplify() const
-    {
-      Expr ninput( ASExprNode::Simplify( input ) );
-      
-      if (BitFilter const* bf = dynamic_cast<BitFilter const*>( ninput.node ))
-        {
-          // if (source != bf.extend) throw "ouch!";
-          if (select <= bf->select)
-            return new BitFilter( bf->input, bf->source, select, extend, sxtend );
-          // select > bf->select
-          if (not sxtend and bf->sxtend)
-            return this;
-          return new BitFilter( bf->input, bf->source, bf->select, extend, bf->sxtend );
-        }
-
-      return ninput != input ? new BitFilter( ninput, source, select, extend, sxtend ) : this;
-    }
+    Expr Simplify() const;
     virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, extend ); }
-    
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
-    int compare( BitFilter const& rhs ) const
-    {
-      if (int delta = int(source) - int(rhs.source)) return delta;
-      if (int delta = int(select) - int(rhs.select)) return delta;
-      if (int delta = int(extend) - int(rhs.extend)) return delta;
-      return int(sxtend) - int(rhs.sxtend);
-    }
+    int compare( BitFilter const& rhs ) const;
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
 
-    virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const
-    {
-      unsigned ext = extend - select;
-      if (extend == 64)
-        {
-          if (sxtend) return new ConstNode<int64_t>( (cnbs[0]->Get( int64_t() ) << ext) >> ext );
-          return new ConstNode<uint64_t>( (cnbs[0]->Get( uint64_t() ) << ext) >> ext );
-        }
-      if (extend == 32)
-        {
-          if (sxtend) return new ConstNode<int32_t>( (cnbs[0]->Get( int32_t() ) << ext) >> ext );
-          return new ConstNode<uint32_t>( (cnbs[0]->Get( uint32_t() ) << ext) >> ext );
-        }
-      if (extend == 16)
-        {
-          if (sxtend) return new ConstNode<int16_t>( (cnbs[0]->Get( int16_t() ) << ext) >> ext );
-          return new ConstNode<uint16_t>( (cnbs[0]->Get( uint16_t() ) << ext) >> ext );
-        }
-      if (extend == 8)
-        {
-          if (sxtend) return new ConstNode<int8_t>( (cnbs[0]->Get( int8_t() ) << ext) >> ext );
-          return new ConstNode<uint8_t>( (cnbs[0]->Get( uint8_t() ) << ext) >> ext );
-        }
-      return 0;
-    }
+    virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const;
     
     Expr     input;
-    uint32_t source   : 10;
-    uint32_t select   : 10;
-    uint32_t extend   : 10;
-    uint32_t sxtend   :  1;
-    uint32_t reserved :  1;
+    uint64_t source   : 15;
+    uint64_t pad0     :  1;
+    uint64_t rshift   : 15;
+    uint64_t pad1     :  1;
+    uint64_t select   : 15;
+    uint64_t pad2     :  1;
+    uint64_t extend   : 15;
+    uint64_t sxtend   :  1;
   };
 
   struct Store : public ASExprNode

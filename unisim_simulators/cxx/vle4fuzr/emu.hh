@@ -341,8 +341,8 @@ struct Processor
 
     bool bound_check(uint64_t addr) { return (addr >= begin and addr <= end) or begin > end; }
     
-  private:
-    uintptr_t refs;
+  // private:
+  //   uintptr_t refs;
     
   public:
     unsigned types;

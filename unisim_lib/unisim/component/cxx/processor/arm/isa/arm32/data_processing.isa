@@ -1093,6 +1093,7 @@ mvn_reg_shift.execute = {
 
 { ARCH::Config::insns5T }: \
 op clz( cond[4]: 0b00010110[8]: 0b1111[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
+clz.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 clz.disasm = {
   buffer << "clz" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);

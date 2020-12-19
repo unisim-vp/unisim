@@ -12,6 +12,8 @@
 #define __VLE4FUZR_ARM_HH__
 
 #include <emu.hh>
+#include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/cpu.hh>
@@ -19,31 +21,33 @@
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 
-struct ARMv7cfg
-{
-  //=====================================================================
-  //=                  ARM architecture model description               =
-  //=====================================================================
-
-  // Following a standard armv7 configuration
-  static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
-  static bool const     insns4T = true;
-  static bool const     insns5E = true;
-  static bool const     insns5J = true;
-  static bool const     insns5T = true;
-  static bool const     insns6  = true;
-  static bool const     insnsRM = true;
-  static bool const     insnsT2 = true;
-  static bool const     insns7  = true;
-  static bool const     hasVFP  = true;
-  static bool const     hasAdvSIMD = false;
-};
-
 struct ArmProcessor
   : public Processor
-  , public unisim::component::cxx::processor::arm::CPU<ARMv7cfg>
+  , public unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::simfloat::FP,ArmProcessor>
 {
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
+  typedef unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::simfloat::FP, ArmProcessor> CP15CPU;
+  
+  struct Config
+  {
+    //=====================================================================
+    //=                  ARM architecture model description               =
+    //=====================================================================
+
+    // Following a standard armv7 configuration
+    static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
+    static bool const     insns4T = true;
+    static bool const     insns5E = true;
+    static bool const     insns5J = true;
+    static bool const     insns5T = true;
+    static bool const     insns6  = true;
+    static bool const     insnsRM = true;
+    static bool const     insnsT2 = true;
+    static bool const     insns7  = true;
+    static bool const     hasVFP  = true;
+    static bool const     hasAdvSIMD = false;
+  };
+
+  
   //  typedef typename CP15CPU::CP15Reg CP15Reg;
   typedef BranchInfo InsnBranch;
 
@@ -103,7 +107,7 @@ struct ArmProcessor
 
   void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
   void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
-  void     UnpredictableInsnBehaviour();
+  void     UnpredictableInsnBehaviour() override;
   void     CallSupervisor( uint32_t imm );
   virtual void FPTrap( unsigned fpx ) override;
   void     BKPT( int );
@@ -111,8 +115,6 @@ struct ArmProcessor
   // TODO:
   // SetCPSR => CPSRSetByInstriction
   // CP15 functions have access to CPU (already do privilege checks enough)
-  // uint32_t    CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  // void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value );
   // Huge issues with Mode system (gives access to system behavior) { checked by nature ? }
   
 };

@@ -33,6 +33,7 @@
  */
  
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
+#include <unisim/component/cxx/processor/arm/vmsav7/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -128,7 +129,7 @@ using namespace unisim::kernel::logger;
 CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
-  , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav7::CPU<CPU>(name, parent)
   , master_socket("master_socket")
   , check_external_event(false)
   , external_event("extevt")
@@ -833,17 +834,18 @@ CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, u
   return true;
 }
 
-/** Resets the internal values of corresponding CP15 Registers
+/** Resets Architectural Registers
  */
 void
-CPU::CP15ResetRegisters()
+CPU::TakeReset()
 {
-  this->PCPU::CP15ResetRegisters();
-  
+  this->PCPU::TakeReset();
   // Implementation defined values for SCTLR
   cxx::processor::arm::sctlr::V.Set( SCTLR, VINITHI );
 }
     
+#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
+
 /** Get the Internal representation of the CP15 Register
  * 
  * @param crn     the "crn" field of the instruction code
@@ -852,7 +854,7 @@ CPU::CP15ResetRegisters()
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
-CPU::CP15Reg&
+CPU::CP15Reg*
 CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
@@ -864,14 +866,16 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "MIDR, Main ID Register"; }
           uint32_t Read( CP15CPU& cpu ) { return 0x414fc090; }
         } x;
-        return x;
+        return &x;
       } break;
       
     }
   
   // Fall back to base cpu CP15 registers
-  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+  return PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
+
+#undef CP15ENCODE
 
 void
 CPU::WaitForInterrupt()
@@ -904,6 +908,10 @@ CPU::GetExternalEvent()
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
+
+template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::simfloat::FP,
+                                                            unisim::component::tlm2::processor::arm::cortex_a9::CPU>;
+template struct unisim::component::cxx::processor::arm::vmsav7::CPU<unisim::component::tlm2::processor::arm::cortex_a9::CPU>;
 
 #undef LOCATION
 #undef TIME
