@@ -103,6 +103,7 @@ include "unisim/component/cxx/processor/arm/isa/thumb2/branch.isa"
 include "unisim/component/cxx/processor/arm/isa/thumb2/coprocessor.isa"
 include "unisim/component/cxx/processor/arm/isa/thumb2/hints.isa"
 include "unisim/component/cxx/processor/arm/isa/thumb2/exception.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb2/status_register_access.isa"
 group donttest end;
 
 donttest.donttest = { return true; }

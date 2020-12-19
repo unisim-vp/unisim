@@ -54,6 +54,7 @@ struct TestCode
 {
   virtual ~TestCode() {}
   virtual void write(unsigned bytes, uint32_t code) = 0;
+  void writ2(unsigned bytes, uint32_t code) { if (bytes > 2) write(2,code>>16); write(2,code); }
 };
 
 struct ARM32
@@ -94,12 +95,12 @@ struct THUMB
   }
   static uintptr_t mkfunc(uint8_t* addr) { return reinterpret_cast<uintptr_t>(addr)+1; }
   static char const* Name() { return "Thumb2"; }
-  static void emit_prologue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe92d4000 | regs); else tc.write(2, 0xb500 | regs); }
-  static void emit_set_igprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe8b00002 | regs); else tc.write(2, 0xc802 | regs); }
-  static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.write(4,0xf3818e00); }
-  static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.write(4,0xf3ef8100); /*setend le*/tc.write(2, 0xb650); }
-  static void emit_get_ogprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe8a00002 | regs); else tc.write(2, 0xc002 | regs); }
-  static void emit_epilogue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.write(4, 0xe8bd8000 | regs); else tc.write(2, 0xbd00 | regs); }
+  static void emit_prologue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe92d4000 | regs); else tc.writ2(2, 0xb500 | regs); }
+  static void emit_set_igprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe8b00002 | regs); else tc.writ2(2, 0xc802 | regs); }
+  static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.writ2(4,0xf3818e00); }
+  static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.writ2(4,0xf3ef8100); /*setend le*/tc.writ2(2, 0xb650); }
+  static void emit_get_ogprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe8a00002 | regs); else tc.writ2(2, 0xc002 | regs); }
+  static void emit_epilogue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe8bd8000 | regs); else tc.writ2(2, 0xbd00 | regs); }
 };
 
 template <typename ISA>
@@ -366,8 +367,15 @@ struct Checker
       {
         testbed.load(ws, relval.good() ? 2*workcells : workcells );
       }
+      void fixflags(uint32_t& psr) const
+      {
+        // normalize to APSR
+        psr &= 0xf80f0000;
+      }
       void check(Testbed const& tb, uint32_t* ref, uint32_t* sim) const
       {
+        fixflags(ref[sink_index(0)]);
+        fixflags(sim[sink_index(0)]);
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             if (ref[idx] != sim[idx])
