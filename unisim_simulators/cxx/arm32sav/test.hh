@@ -58,12 +58,13 @@ struct Interface
   
   uintptr_t workcells() const;
   uint32_t memspread() const { return memrange[1] - memrange[0]; }
-  uint32_t grmap() const;
   bool usemem() const { return base_addr.good(); }
+  unsigned gindex(unsigned reg) const { return __builtin_popcount(grmap & ((1<<reg)-1)); }
   
   std::string asmcode, gilname;
-  unisim::util::sav::OperandMap<uint8_t,32> gregs; /* general purpose registers */
-  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
+  unisim::util::sav::OperandMap<uint8_t,16> gregs; /* general purpose registers */
+  uint32_t grmap;
+  //  unisim::util::sav::OperandMap<uint8_t,16> vregs; /* vector registers */
   std::shared_ptr<unisim::util::sav::ActionNode> behavior;
   uint32_t memrange[2];
   Expr base_addr;

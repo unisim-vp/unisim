@@ -113,8 +113,11 @@ struct Scanner
 
   struct RelocEval : public EvalSpace
   {
-    RelocEval( uint32_t const* _regvalues, uint32_t _address ) : regvalues(_regvalues), address(_address) {}
-    uint32_t const* regvalues;
+    RelocEval( uint32_t const* _regs, Interface const& _tif, uint32_t _address )
+      : regs(_regs), tif(_tif), address(_address) {}
+    uint32_t GetReg(unsigned reg) const { return regs[tif.gindex(reg)]; }
+    uint32_t const* regs;
+    Interface const& tif;
     uint32_t address;
   };
 
@@ -201,7 +204,7 @@ struct Scanner
       if (dynamic_cast<AddrEval const*>( &evs ))
         return new unisim::util::symbolic::ConstNode<uint32_t>( uint64_t(reg) << 28 );
       if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( l->regvalues[idx] );
+        return new unisim::util::symbolic::ConstNode<uint32_t>( l->GetReg(reg) );
       return 0;
     };
   };

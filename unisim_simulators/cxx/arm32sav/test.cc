@@ -41,7 +41,8 @@ Interface::Interface( std::string const& disasm )
   : asmcode(disasm)
   , gilname()
   , gregs()
-  , vregs()
+  , grmap()
+    //  , vregs()
   , behavior(std::make_shared<unisim::util::sav::ActionNode>())
   , memrange()
   , base_addr()
@@ -89,16 +90,18 @@ Interface::Interface( unisim::component::cxx::processor::arm::isa::thumb::Operat
 void
 Interface::start()
 {
-  for (unsigned reg = 0; reg < 15; ++reg)
+  // build sorted indexing
+  for (unsigned reg = 0; reg < gregs.count(); ++reg)
     {
-      if (0x0ffc >> reg & 1)
+      if (not gregs.accessed(reg))
         continue;
-      if (gregs.accessed(reg))
+      if (0xf003 >> reg & 1)
         {
           std::ostringstream buf;
           buf << "reserved register access (" << unisim::component::cxx::processor::arm::DisasmRegister(reg) << ")";
           throw unisim::util::sav::Untestable(buf.str());
         }
+      grmap |= 1 << reg;
     }
     
   if (base_addr.good())
@@ -129,17 +132,6 @@ Interface::start()
     }
 
   behavior->simplify();
-}
-
-uint32_t Interface::grmap() const
-{
-  uint32_t res = 0;
-  for (unsigned reg = 0; reg < gregs.count(); ++reg)
-    {
-      if (not gregs.accessed(reg)) continue;
-      res |= 1 << reg;
-    }
-  return res;
 }
 
 uintptr_t

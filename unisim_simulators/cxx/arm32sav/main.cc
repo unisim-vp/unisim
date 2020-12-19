@@ -262,7 +262,7 @@ struct Checker
   }
   void gencode( TestCode& code, Interface const& test )
   {
-    uint16_t grmap = test.grmap();
+    uint16_t grmap = test.grmap;
     uint16_t saved = grmap & 0x0ff0;
     
     ISA::emit_prologue(code, saved);
@@ -341,20 +341,15 @@ struct Checker
       {}
       Test(Interface const& _tif, testcode_t _code, Expr const& _relreg, Expr const& _relval)
         : tif(_tif), code(_code), relval(_relval),
-          relreg(),
+          relreg(_tif.gindex(dynamic_cast<Scanner::GRegRead const*>(_relreg.node)->reg)),
           workcells(_tif.workcells())
-      {
-        uint32_t gregs = tif.grmap();
-        unsigned reg = dynamic_cast<Scanner::GRegRead const*>(_relreg.node)->reg;
-        if (not (gregs >> reg & 1)) { struct Bad {}; throw Bad (); }
-        relreg = __builtin_popcount( gregs & ((1 << reg)-1) );
-      }
+      {}
       uint32_t get_reloc(uint32_t const* ws) const
       {
         if (not relval.good()) return 0;
         
         uint32_t value;
-        if (auto v = relval.Eval( Scanner::RelocEval(&ws[data_index(0)], uintptr_t(ws)) ))
+        if (auto v = relval.Eval(Scanner::RelocEval(&ws[data_index(1)], tif, uintptr_t(ws))))
           { Expr dispose(v); value = v->Get( uint32_t() ); }
         else
           throw "WTF";
@@ -414,9 +409,9 @@ struct Checker
       {
         if (idx-- == 0)
           return sink << "cpsr";
-        for (uint32_t grmap = tif.grmap(), reg = 0; grmap; reg += 1, grmap >>= 1)
+        for (unsigned reg = 0; reg < tif.gregs.count(); ++reg)
           {
-            if (not (grmap & 1))
+            if (not tif.gregs.accessed(reg))
               continue;
             if (idx-- == 0)
               return sink << unisim::component::cxx::processor::arm::DisasmRegister(reg);

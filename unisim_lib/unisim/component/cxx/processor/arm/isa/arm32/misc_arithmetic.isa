@@ -460,7 +460,7 @@ pkh.execute = {
 
 op sxtab16( cond[4]: 0b01101000[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 sxtab16.var ror : {uint8_t} = {8*rotate};
-sxtab16.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
+sxtab16.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 sxtab16.disasm = {
   buffer << "sxtab16" << DisasmCondition(cond) << '\t'
@@ -530,7 +530,7 @@ sxtb16.execute = {
 
 op uxtab16( cond[4]: 0b01101100[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 uxtab16.var ror : {uint8_t} = {8*rotate};
-uxtab16.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
+uxtab16.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 uxtab16.disasm = {
   buffer << "uxtab16" << DisasmCondition(cond) << '\t'
@@ -803,7 +803,7 @@ usat16.execute = {
 
 op sxtab( cond[4]: 0b01101010[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 sxtab.var ror : {uint8_t} = {8*rotate};
-sxtab.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
+sxtab.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 sxtab.disasm = {
   buffer << "sxtab" << DisasmCondition(cond) << '\t'
@@ -869,7 +869,7 @@ sxtb.execute = {
 
 op sxtah( cond[4]: 0b01101011[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 sxtah.var ror : {uint8_t} = {8*rotate};
-sxtah.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
+sxtah.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 sxtah.disasm = {
   buffer << "sxtah" << DisasmCondition(cond) << '\t'
@@ -930,7 +930,7 @@ sxth.execute = {
 
 op uxtab( cond[4]: 0b01101110[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 uxtab.var ror : {uint8_t} = {8*rotate};
-uxtab.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
+uxtab.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 uxtab.disasm = {
   buffer << "uxtab" << DisasmCondition(cond) << '\t'
@@ -962,6 +962,7 @@ uxtab.execute = {
 
 op uxtb( cond[4]: 0b01101110[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 uxtb.var ror : {uint32_t} = {rotate<<3};
+uxtb.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 uxtb.disasm = {
   buffer << "uxtb" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
