@@ -816,12 +816,8 @@ struct AArch64::Device::Request
     try { return tainted_access ( _ ); } catch(Undefined const&) {}
     return false;
   }
-  template <typename T>
-  bool ro(T value)
-  {
-    if (write) return false;
-    return access( value );
-  }
+  template <typename T> bool ro(T  value) { return not write and access(value); }
+  template <typename T> bool wo(T& value) { return     write and access(value); }
   void location(std::ostream& sink)
   {
     uint64_t last = addr + size - 1;
@@ -841,15 +837,18 @@ AArch64::Device::write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vsrc += n; usrc += n; }
   } idata(addr, dbuf, ubuf, size);
 
-  do {} while (idata.size and effect->access(arch, idata));
+  do
+    {
+      if (effect->access(arch, idata))
+        continue;
+      effect->get_name(std::cerr << "Unmapped ");
+      idata.location(std::cerr << " register write @" );
+      std::cerr << '\n';
+      return false;
+    }
+  while (idata.size);
 
-  if (not idata.size)
-    return true;
-
-  effect->get_name(std::cerr << "Unmapped ");
-  idata.location(std::cerr << " register write @" );
-  std::cerr << '\n';
-  return false;
+  return true;
 }
 
 bool
@@ -863,15 +862,18 @@ AArch64::Device::read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vdst += n; udst += n; }
   } odata(addr, dbuf, ubuf, size);
 
-  do {} while (odata.size and effect->access(arch, odata));
+  do
+    {
+      if (effect->access(arch, odata))
+        continue;
+      effect->get_name(std::cerr << "Unmapped ");
+      odata.location( std::cerr << " register read @" );
+      std::cerr << '\n';
+      return false;
+    }
+  while (odata.size);
 
-  if (not odata.size)
-    return true;
-
-  effect->get_name(std::cerr << "Unmapped ");
-  odata.location( std::cerr << " register read @" );
-  std::cerr << '\n';
-  return false;
+  return true;
 }
 
 bool
@@ -1009,27 +1011,44 @@ AArch64::map_virtio_placeholder(uint64_t base_addr)
 }
 
 void
-AArch64::map_virtio_drive(uint64_t base_addr)
+AArch64::map_virtio_disk(uint64_t base_addr)
 {
   static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "Virtio Block Device (drive)"; }
+    virtual void get_name(std::ostream& sink) const override { sink << "Virtio Block Device (disk)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      VIODisk& viodisk = arch.viodisk;
       if (req.addr % 4 or req.size != 4) return false;
+      uint32_t tmp;
       switch (req.addr / 4)
         {
-        case 0: return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
-        case 1: return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
-        case 2: return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
-        case 3: return req.ro<int32_t>(0x70767375); /* Virtio Subsystem Vendor ID: 'usvp' */
+        case 0:  return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
+        case 1:  return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
+        case 2:  return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
+        case 3:  return req.ro(viodisk.Vendor()); /* Virtio Subsystem Vendor ID: 'usvp' */
+        case 4:  return req.ro(viodisk.ClaimedFeatures()); /* features supported by the device */
+        case 5:  return req.wo(viodisk.DeviceFeaturesSel); /* Device (host) features word selection. */
+        case 8:  return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
+        case 9:  return req.wo(viodisk.DriverFeaturesSel); /* Activated (guest) features word selection */
+        case 12: return req.wo(tmp) and (tmp == 0); /* Virtual queue index (only 0) */
+        case 13: return req.ro(viodisk.QueueNumMax());
+        case 14: return req.wo(viodisk.QueueNum);
+        case 17: return req.access(viodisk.QueueReady); /* Virtual queue ready bit */
+        case 28: return req.access(viodisk.Status) and (not req.write or viodisk.CheckStatus()); /* Device status */
+        case 32:
+        case 33: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDesc))[req.addr >> 2 & 1]);
+        case 64: 
+        case 65: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
+          //case 66: return req.ro<uint32_t>(viodisk.SizeMax());
+        case 67: return req.ro<uint32_t>(viodisk.SegMax());
         }
       return false;
     }
-  } virtio_drive_effect;
+  } virtio_disk_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_drive_effect) );
+  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_disk_effect) );
 }
 
 void

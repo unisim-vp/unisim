@@ -49,6 +49,7 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 UNISIM_SIMULATOR_SOURCE_FILES="\
 taint.cc \
 architecture.cc \
+viodisk.cc \
 system.cc \
 instruction.cc \
 main.cc \
@@ -58,6 +59,7 @@ debugger.cc \
 UNISIM_SIMULATOR_HEADER_FILES="\
 taint.hh \
 architecture.hh \
+viodisk.hh \
 debugger.hh \
 "
 

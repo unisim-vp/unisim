@@ -36,6 +36,7 @@
 #define __ARM64VP_ARCHITECTURE_HH__
 
 #include "taint.hh"
+#include "viodisk.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
@@ -776,7 +777,7 @@ struct AArch64
   uint64_t get_freq() const { return 1075200000; }
 
   void map_virtio_placeholder(uint64_t base_addr);
-  void map_virtio_drive(uint64_t base_addr);
+  void map_virtio_disk(uint64_t base_addr);
   
   typedef std::multimap<uint64_t, event_handler_t> Events;
   void notify( uint64_t delay, event_handler_t method )
@@ -796,6 +797,7 @@ public:
   UART     uart;
   Timer    vt;
   RTC      rtc;
+  VIODisk  viodisk;
 
   Pages    pages;
   ExcMon   excmon;
