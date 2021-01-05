@@ -1020,30 +1020,65 @@ AArch64::map_virtio_disk(uint64_t base_addr)
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
       VIODisk& viodisk = arch.viodisk;
-      if (req.addr % 4 or req.size != 4) return false;
-      uint32_t tmp;
-      switch (req.addr / 4)
+      if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
+        return false;
+      
+      if      (req.size == 1)
         {
-        case 0:  return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
-        case 1:  return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
-        case 2:  return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
-        case 3:  return req.ro(viodisk.Vendor()); /* Virtio Subsystem Vendor ID: 'usvp' */
-        case 4:  return req.ro(viodisk.ClaimedFeatures()); /* features supported by the device */
-        case 5:  return req.wo(viodisk.DeviceFeaturesSel); /* Device (host) features word selection. */
-        case 8:  return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
-        case 9:  return req.wo(viodisk.DriverFeaturesSel); /* Activated (guest) features word selection */
-        case 12: return req.wo(tmp) and (tmp == 0); /* Virtual queue index (only 0) */
-        case 13: return req.ro(viodisk.QueueNumMax());
-        case 14: return req.wo(viodisk.QueueNum);
-        case 17: return req.access(viodisk.QueueReady); /* Virtual queue ready bit */
-        case 28: return req.access(viodisk.Status) and (not req.write or viodisk.CheckStatus()); /* Device status */
-        case 32:
-        case 33: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDesc))[req.addr >> 2 & 1]);
-        case 64: 
-        case 65: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
-          //case 66: return req.ro<uint32_t>(viodisk.SizeMax());
-        case 67: return req.ro<uint32_t>(viodisk.SegMax());
+          switch (req.addr)
+            {
+            case 0x118: return req.ro<uint8_t>(0); // logical blocks per physical block (log)
+            case 0x119: return req.ro<uint8_t>(0); // offset of first aligned logical block
+            case 0x120: return req.access(viodisk.WriteBack);
+            }
         }
+      
+      else if (req.size == 2)
+        {
+          switch (req.addr)
+            {
+            case 0x11a: return req.ro<uint16_t>(0); // suggested minimum I/O size in blocks
+            }
+        }
+      
+      else if (req.size == 4)
+        {
+          uint32_t tmp;
+          switch (req.addr)
+            {
+            case 0x00: return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
+            case 0x04: return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
+            case 0x08: return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
+            case 0x0c: return req.ro(viodisk.Vendor()); /* Virtio Subsystem Vendor ID: 'usvp' */
+            case 0x10: return req.ro(viodisk.ClaimedFeatures()); /* features supported by the device */
+            case 0x14: return req.wo(viodisk.DeviceFeaturesSel); /* Device (host) features word selection. */
+            case 0x20: return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
+            case 0x24: return req.wo(viodisk.DriverFeaturesSel); /* Activated (guest) features word selection */
+            case 0x30: return req.wo(tmp) and (tmp == 0); /* Virtual queue index (only 0) */
+            case 0x34: return req.ro(viodisk.QueueNumMax());
+            case 0x38: return req.wo(viodisk.QueueNum);
+            case 0x44: return req.access(viodisk.QueueReady); /* Virtual queue ready bit */
+            case 0x70: return req.access(viodisk.Status) and (not req.write or viodisk.CheckStatus()); /* Device status */
+            case 0x80:
+            case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDescArea))[req.addr >> 2 & 1]);
+            case 0x90: 
+            case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDriverArea))[req.addr >> 2 & 1]);
+            case 0xa0: 
+            case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDeviceArea))[req.addr >> 2 & 1]);
+            case 0xfc: return req.ro(viodisk.ConfigGeneration);
+            case 0x100: 
+            case 0x104: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
+              //case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
+            case 0x10c: return req.ro(viodisk.SegMax());
+            case 0x114: return req.ro(viodisk.BlkSize());
+            case 0x11c: return req.ro<uint32_t>(0); // optimal (suggested maximum) I/O size in blocks
+            case 0x124: return req.ro(viodisk.MaxDiscardSectors());
+            case 0x128: return req.ro(viodisk.MaxDiscardSeg());
+            case 0x12c: return req.ro(viodisk.DiscardSectorAlignment());
+            case 0x130: return req.ro(viodisk.MaxWriteZeroesSectors());
+            }
+        }
+          
       return false;
     }
   } virtio_disk_effect;

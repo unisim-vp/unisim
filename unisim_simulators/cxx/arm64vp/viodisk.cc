@@ -36,8 +36,9 @@
 #include <iostream>
 
 VIODisk::VIODisk()
-  : Status(0), DeviceFeaturesSel(), DriverFeaturesSel(), QueueReady(0)
-  , Capacity(837212)
+  : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), QueueNum(), QueueReady(0)
+  , ConfigGeneration(0), QueueDescArea(), QueueDriverArea(), QueueDeviceArea()
+  , Capacity(837212), WriteBack(1)
 {}
 
 void
@@ -47,6 +48,7 @@ VIODisk::reset()
   DeviceFeaturesSel = 0;
   DriverFeaturesSel = 0;
   QueueReady = 0;
+  ConfigGeneration = 0;
 }
 
 // Features:
@@ -56,8 +58,8 @@ VIODisk::reset()
 //   SEG_MAX = 2, // Maximum number of segments in a request is in seg_max.
 //   GEOMETRY = 4, // Disk-style geometry specified in geometry.
 //   RO = 5, // Device is read-only.
-//   SCSI = 7, // Device supports scsi packet commands (legacy).
 //   BLK_SIZE = 6, // Block size of disk is in blk_size.
+//   SCSI = 7, // Device supports scsi packet commands (legacy).
 //   FLUSH = 9, // Cache flush command support (a.k.a WCE in legacy).
 //   TOPOLOGY = 10, // Device exports information on optimal I/O alignment.
 //   CONFIG_WCE = 11, // Device can toggle its cache between writeback and writethrough modes.
@@ -79,7 +81,7 @@ VIODisk::ClaimedFeatures()
 {
   switch (DeviceFeaturesSel)
     {
-    case 0: return 0b0011 << 28 | 0b110111001010110;
+    case 0: return 0b0011 << 28 | 0b110111001000100;
     case 1: return 0b1001111;
     }
   

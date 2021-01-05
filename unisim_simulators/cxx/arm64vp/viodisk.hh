@@ -41,15 +41,31 @@ struct VIODisk
 {
   VIODisk();
   void reset();
-  uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, QueueNum, QueueReady;
-  uint64_t QueueDesc, Capacity;
+  
+  // Generic Config
   static uint32_t Vendor() { return 0x70767375; }
   static uint32_t QueueNumMax() { return 1024; }
   uint32_t ClaimedFeatures();
   bool UsedFeatures(uint32_t);
   bool CheckFeatures();
   bool CheckStatus();
-  uint32_t SegMax() { return 254; }
+  
+  // Block Device Config
+  static uint32_t SegMax() { return 254; }
+  static uint32_t BlkSize() { return 512; }
+  static uint32_t DiscardSectorAlignment() { return 1; }
+  static uint32_t MaxDiscardSectors() { return 0x3fffff; }
+  static uint32_t MaxDiscardSeg() { return 1; }
+  static uint32_t MaxWriteZeroesSectors() { return 0x3fffff; }
+  
+  // Generic Config
+  uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, QueueNum, QueueReady, ConfigGeneration;
+  uint64_t QueueDescArea, QueueDriverArea, QueueDeviceArea;
+  
+  // Block Device Config
+  uint64_t Capacity;
+  uint8_t WriteBack;
+  
 };
 
 #endif /* __ARM64VP_VIODISK_HH__ */
