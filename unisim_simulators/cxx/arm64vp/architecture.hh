@@ -258,8 +258,9 @@ struct AArch64
 
   enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
   uint64_t translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size);
-  void memory_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
-
+  struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
+  void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
+  
   template <typename T>
   T
   memory_read(U64 addr)
@@ -270,6 +271,19 @@ struct AArch64
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_read, size);
 
+    try
+      { return memory_pread<T>(paddr); }
+    catch (MemFault const& mf)
+      { memory_fault(mf, "read", addr.value, paddr, size); }
+    return T();
+  }
+  
+  template <typename T>
+  T
+  memory_pread(uint64_t paddr)
+  {
+    struct Bad {};
+    unsigned const size = sizeof (typename T::value_type);
     uint8_t dbuf[size], ubuf[size];
     try
       {
@@ -283,11 +297,7 @@ struct AArch64
     catch (Device const& device)
       {
         if (not device.read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          memory_fault("device read", addr.value, paddr, size);
-      }
-    catch (PageFault const&)
-      {
-        memory_fault("read", addr.value, paddr, size);
+          throw MemFault("device");
       }
 
     typedef typename T::value_type value_type;
@@ -320,6 +330,18 @@ struct AArch64
     unsigned const size = sizeof (typename T::value_type);
     uint64_t paddr = translate_address(addr.value, mat_write, size);
 
+    try
+      { memory_pwrite(paddr, src); }
+    catch(MemFault const& mf)
+      { memory_fault(mf, "write", addr.value, paddr, size); }
+  }
+  
+  template <typename T>
+  void
+  memory_pwrite(uint64_t paddr, T src)
+  {
+    struct Bad {};
+    unsigned const size = sizeof (typename T::value_type);
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
     bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
@@ -343,7 +365,7 @@ struct AArch64
     catch (Device const& device)
       {
         if (not device.write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          memory_fault("device write", addr.value, paddr, size);
+          throw MemFault("device");
       }
   }
 
@@ -526,7 +548,6 @@ struct AArch64
   typedef std::set<Page, Page::Above> Pages;
   typedef std::set<Device, Device::Above> Devices;
 
-  struct PageFault {};
   Page const& access_page( uint64_t addr )
   {
     auto pi = pages.lower_bound(addr);
@@ -535,7 +556,7 @@ struct AArch64
         auto di = devices.lower_bound(addr);
         if (di != devices.end() and addr <= di->last)
           throw *di;
-        throw PageFault();
+        throw MemFault();
       }
     return *pi;
   }

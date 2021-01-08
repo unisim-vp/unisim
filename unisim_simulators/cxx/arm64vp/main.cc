@@ -120,7 +120,7 @@ main(int argc, char *argv[])
   for (unsigned int idx = 0; idx < 31; ++idx)
     arch.map_virtio_placeholder(0x4a000000 + 0x200*idx);
   arch.map_virtio_disk(0x4a000000 + 0x200*31);
-  
+
   // SETUP the VirtIO Hypervisor Emulator
   // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
   // cpu.SetLinuxOS( &linux32 );

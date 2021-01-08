@@ -51,85 +51,98 @@ VIODisk::reset()
   ConfigGeneration = 0;
 }
 
-// Features:
-//  BLOCK specific
-//   BARRIER = 0, // Device supports request barriers (legacy).
-//   SIZE_MAX  = 1, // Maximum size of any single segment is in size_max.
-//   SEG_MAX = 2, // Maximum number of segments in a request is in seg_max.
-//   GEOMETRY = 4, // Disk-style geometry specified in geometry.
-//   RO = 5, // Device is read-only.
-//   BLK_SIZE = 6, // Block size of disk is in blk_size.
-//   SCSI = 7, // Device supports scsi packet commands (legacy).
-//   FLUSH = 9, // Cache flush command support (a.k.a WCE in legacy).
-//   TOPOLOGY = 10, // Device exports information on optimal I/O alignment.
-//   CONFIG_WCE = 11, // Device can toggle its cache between writeback and writethrough modes.
-//   DISCARD = 13, // Support discard command with max_discard_sectors and max_discard_seg limits.
-//   WRITE_ZEROES = 14, // Support write zeroes command with max_write_zeroes_sectors and max_write_zeroes_seg limits.
-//  Common
-//   VIRTIO_F_RING_INDIRECT_DESC (28) // Device supports with the VIRTQ_DESC_F_INDIRECT flag set
-//   VIRTIO_F_RING_EVENT_IDX (29) // This feature enables the used_event and the avail_event fields
-//   VIRTIO_F_VERSION_1(32) // This indicates compliance with this specification
-//   VIRTIO_F_ACCESS_PLATFORM(33) // Device supports IOMMU
-//   VIRTIO_F_RING_PACKED(34) // Device supports the packed virtqueue layout
-//   VIRTIO_F_IN_ORDER(35) // Device supports in-order use of buffers
-//   VIRTIO_F_ORDER_PLATFORM(36) // Device needs platform ordering
-//   VIRTIO_F_SR_IOV(37) // Device supports Single Root I/O Virtualization
-//   VIRTIO_F_NOTIFICATION_DATA(38) // Device support extended notifications
-// 
+template <unsigned POS, typename FEATTYPE, int FEAT>
+struct Claimed
+{
+  enum { BIT = int(Feature<FEATTYPE,FEATTYPE(FEAT)>::BIT) - POS };
+  static uint32_t const bit = (BIT < 0) ? 0 : (BIT >= 32) ? 0 : 1 << BIT;
+  static uint32_t const mask = bit | Claimed<POS, FEATTYPE, FEAT - 1>::mask;
+};
+
+template <unsigned POS, typename FEATTYPE>
+struct Claimed<POS, FEATTYPE, -1>
+{
+  static uint32_t const mask = 0;
+};
+
+template <unsigned POS>
+struct BlockClaimed
+{
+  typedef CommonFeatures::Code CF;
+  typedef BlockFeatures::Code BF;
+  static uint32_t const mask = Claimed<POS, CF, (int)CommonFeatures::end - 1>::mask | Claimed<POS, BF, (int)BlockFeatures::end - 1>::mask;
+};
+
+namespace
+{
+  uint32_t claimed_features(unsigned sel)
+  {
+    switch (sel)
+      {
+      case 0: return BlockClaimed< 0>::mask; // should be: 0x30006e44, 0b0011 << 28 | 0b110111001000100
+      case 1: return BlockClaimed<32>::mask; // should be: 0x7, 0b111
+      }
+    struct Bad {};
+    throw Bad ();
+  
+    return 0;
+  }
+}
+
 uint32_t
 VIODisk::ClaimedFeatures()
 {
-  switch (DeviceFeaturesSel)
-    {
-    case 0: return 0b0011 << 28 | 0b110111001000100;
-    case 1: return 0b1001111;
-    }
-  
-  struct Bad {};
-  throw Bad ();
-  
-  return 0;
+  return claimed_features(DeviceFeaturesSel);
+}
+
+template <typename FEATTYPE, int FEAT>
+struct GetName
+{
+  typedef Feature<FEATTYPE,FEATTYPE(FEAT)> Feat;
+  static char const* feature(unsigned bit)
+  {
+    if (bit == Feat::BIT) return Feat::name();
+    return GetName<FEATTYPE, FEAT - 1>::feature(bit);
+  }
+};
+
+template <typename FEATTYPE> struct GetName<FEATTYPE, -1> { static char const* feature(unsigned bit) { return 0; } };
+
+namespace
+{
+  void feat_list_msg(std::ostream& sink, unsigned pos, uint32_t mask, char const* pre)
+  {
+    for (unsigned bit = 32; bit-->0;)
+      if (mask >> bit & 1)
+        {
+          unsigned fbit = pos+bit;
+          sink << pre; pre = ", ";
+          if (char const* name = GetName<CommonFeatures::Code,(int)CommonFeatures::end - 1>::feature(fbit)) sink << name;
+          else if (char const* name = GetName<BlockFeatures::Code,(int)BlockFeatures::end - 1>::feature(fbit)) sink << name;
+          else sink << "unknown(" << fbit << ")";
+        }
+  }
 }
 
 bool
-VIODisk::UsedFeatures(uint32_t feat)
+VIODisk::UsedFeatures(uint32_t requested)
 {
-  std::cerr << "UsedFeatures: ";
-  char const* sep = "";
-  for (unsigned bit = 32; bit-->0;)
+  struct Bad {};
+  uint32_t claimed = claimed_features(DriverFeaturesSel);
+  
+  if (uint32_t err = requested & ~claimed)
     {
-      if (not (feat >> bit & 1))
-        continue;
-
-      std::cerr << sep; sep = ", ";
-      unsigned fnum = bit+32*DriverFeaturesSel;
-      switch (fnum)
-        {
-          //        case 0:  std::cerr << "BARRIER"; break; // Device supports barrier commands (legacy).
-        case 1:  std::cerr << "SIZE_MAX"; break; // Maximum size of any single segment is in size_max.
-        case 2:  std::cerr << "SEG_MAX"; break; // Maximum number of segments in a request is in seg_max.
-        case 4:  std::cerr << "GEOMETRY"; break; // Disk-style geometry specified in geometry.
-        case 5:  std::cerr << "RO"; break; // Device is read-only.
-          //        case 7:  std::cerr << "SCSI"; break; // Device supports scsi packet commands (legacy).
-        case 6:  std::cerr << "BLK_SIZE"; break; // Block size of disk is in blk_size.
-        case 9:  std::cerr << "FLUSH"; break; // Cache flush command support (a.k.a WCE in legacy).
-        case 10: std::cerr << "TOPOLOGY"; break; // Device exports information on optimal I/O alignment.
-        case 11: std::cerr << "CONFIG_WCE"; break; // Device can toggle its cache between writeback and writethrough modes.
-        case 13: std::cerr << "DISCARD"; break; // Support discard command with max_discard_sectors and max_discard_seg limits.
-        case 14: std::cerr << "WRITE_ZEROES"; break; // Support write zeroes command (max_write_zeroes_sectors, max_write_zeroes_seg)
-        case 28: std::cerr << "RING_INDIRECT_DESC "; break; // Device supports with the VIRTQ_DESC_F_INDIRECT flag set
-        case 29: std::cerr << "RING_EVENT_IDX "; break; // This feature enables the used_event and the avail_event fields
-        case 32: std::cerr << "VERSION_1"; break; // This indicates compliance with this specification
-        case 33: std::cerr << "ACCESS_PLATFORM"; break; // Device supports IOMMU
-        case 34: std::cerr << "RING_PACKED"; break; // Device supports the packed virtqueue layout
-        case 35: std::cerr << "IN_ORDER"; break; // Device supports in-order use of buffers
-        case 36: std::cerr << "ORDER_PLATFORM"; break; // Device needs platform ordering
-        case 37: std::cerr << "SR_IOV"; break; // Device supports Single Root I/O Virtualization
-        case 38: std::cerr << "NOTIFICATION_DATA"; break; // Device support extended notifications
-        default: std::cerr << "Unknown feature (" << fnum << ")";
-        }
+      feat_list_msg(std::cerr, 32*DriverFeaturesSel, err, "Erroneous feature(s) activation: ");
+      std::cerr << std::endl;
+      throw Bad();
     }
-  std::cerr << "\n";
+  if (uint32_t err = claimed & ~requested)
+    {
+      feat_list_msg(std::cerr, 32*DriverFeaturesSel, err, "Unsupported feature(s) deactivation: ");
+      std::cerr << std::endl;
+      throw Bad();
+    }
+  
   return true;
 }
 
@@ -162,3 +175,23 @@ VIODisk::CheckStatus()
   return true;
 }
 
+bool
+VIODisk::ReadQueue(VIOAccess const& vioa)
+{
+  uint64_t addr =   vioa.read(QueueDescArea +  0, 8);
+  uint32_t len =    vioa.read(QueueDescArea +  8, 4);
+  uint16_t id =     vioa.read(QueueDescArea + 12, 2);
+  uint16_t flags =  vioa.read(QueueDescArea + 14, 2);
+
+  std::cerr << "pvirtq_desc";
+  std::cerr << "{ addr=0x" << std::hex << addr;
+  std::cerr << ", len=" << std::dec << len;
+  std::cerr << ", id=" << std::dec << id;
+  std::cerr << ", flags=0x" << std::hex << flags;
+  std::cerr << ", (DescArea): " << std::hex << QueueDescArea;
+  std::cerr << ", (DriverArea): " << std::hex << QueueDriverArea;
+  std::cerr << ", (DeviceArea): " << std::hex << QueueDeviceArea;
+  std::cerr << "}\n";
+    
+  return false;
+}

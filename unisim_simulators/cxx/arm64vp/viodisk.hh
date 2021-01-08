@@ -37,6 +37,13 @@
 
 #include <inttypes.h>
 
+struct VIOAccess
+{
+  virtual ~VIOAccess() {}
+  virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
+  virtual void write(uint64_t addr, unsigned size, uint64_t val) const = 0;
+};
+
 struct VIODisk
 {
   VIODisk();
@@ -49,6 +56,7 @@ struct VIODisk
   bool UsedFeatures(uint32_t);
   bool CheckFeatures();
   bool CheckStatus();
+  bool ReadQueue(VIOAccess const& vioa);
   
   // Block Device Config
   static uint32_t SegMax() { return 254; }
@@ -67,6 +75,49 @@ struct VIODisk
   uint8_t WriteBack;
   
 };
+
+template <typename FEATTYPE, FEATTYPE FEAT> struct Feature {};
+
+struct CommonFeatures
+{
+  enum Code { RING_INDIRECT_DESC, RING_EVENT_IDX, VERSION_1, ACCESS_PLATFORM, RING_PACKED, end };
+};
+
+#define COMMON_FEATURE(FEAT,BPOS) template <> struct Feature<CommonFeatures::Code,CommonFeatures::FEAT> { enum {BIT=BPOS}; static char const* name() { return #FEAT; } }
+
+COMMON_FEATURE(   RING_INDIRECT_DESC, 28); // Device supports buffer indirection
+COMMON_FEATURE(       RING_EVENT_IDX, 29); // used_event and avail_event availables
+COMMON_FEATURE(            VERSION_1, 32); // This indicates compliance with this specification
+COMMON_FEATURE(      ACCESS_PLATFORM, 33); // Device supports IOMMU
+COMMON_FEATURE(          RING_PACKED, 34); // Device supports the packed virtqueue layout
+// COMMON_FEATURE(          IN_ORDER, 35); // Device supports in-order use of buffers
+// COMMON_FEATURE(    ORDER_PLATFORM, 36); // Device needs platform ordering
+// COMMON_FEATURE(            SR_IOV, 37); // Device supports Single Root I/O Virtualization
+// COMMON_FEATURE( NOTIFICATION_DATA, 38); // Device support extended notifications
+
+#undef COMMON_FEATURE
+
+struct BlockFeatures
+{
+  enum Code { SEG_MAX, BLK_SIZE, FLUSH, TOPOLOGY, CONFIG_WCE, DISCARD, WRITE_ZEROES, end };
+};
+
+#define BLOCK_FEATURE(FEAT,BPOS) template <> struct Feature<BlockFeatures::Code,BlockFeatures::FEAT> { enum {BIT=BPOS}; static char const* name() { return #FEAT; } }
+
+// BLOCK_FEATURE(            BARRIER,  0); // Device supports request barriers (legacy).
+// BLOCK_FEATURE(           SIZE_MAX,  1); // Maximum size of a segment is in size_max.
+BLOCK_FEATURE(               SEG_MAX,  2); // Maximum number of segments in a request is in seg_max.
+// BLOCK_FEATURE(           GEOMETRY,  4); // Disk-style geometry specified in geometry.
+// BLOCK_FEATURE(                 RO,  5); // Device is read-only.
+BLOCK_FEATURE(              BLK_SIZE,  6); // Block size of disk is in blk_size.
+// BLOCK_FEATURE(               SCSI,  7); // Device supports scsi packet commands (legacy).
+BLOCK_FEATURE(                 FLUSH,  9); // Cache flush command support (a.k.a WCE in legacy).
+BLOCK_FEATURE(              TOPOLOGY, 10); // Device exports information on optimal I/O alignment.
+BLOCK_FEATURE(            CONFIG_WCE, 11); // Device can toggle its cache between writeback and writethrough modes.
+BLOCK_FEATURE(               DISCARD, 13); // Support discard command with max_discard_sectors and max_discard_seg limits.
+BLOCK_FEATURE(          WRITE_ZEROES, 14); // Support write zeroes command with max_write_zeroes_sectors and max_write_zeroes_seg limits.
+
+#undef BLOCK_FEATURE
 
 #endif /* __ARM64VP_VIODISK_HH__ */
 

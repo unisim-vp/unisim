@@ -818,10 +818,9 @@ struct AArch64::Device::Request
   }
   template <typename T> bool ro(T  value) { return not write and access(value); }
   template <typename T> bool wo(T& value) { return     write and access(value); }
-  void location(std::ostream& sink)
+  static void location(std::ostream& sink, uint64_t addr, unsigned size)
   {
-    uint64_t last = addr + size - 1;
-    sink << std::hex << addr << ".." << last;
+    sink << std::hex << addr << std::dec << "[" << size << "]";
   }
   uint64_t addr; uint8_t size; bool write;
 };
@@ -842,7 +841,7 @@ AArch64::Device::write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_
       if (effect->access(arch, idata))
         continue;
       effect->get_name(std::cerr << "Unmapped ");
-      idata.location(std::cerr << " register write @" );
+      idata.location(std::cerr << " register write @", addr, size);
       std::cerr << '\n';
       return false;
     }
@@ -867,7 +866,7 @@ AArch64::Device::read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf
       if (effect->access(arch, odata))
         continue;
       effect->get_name(std::cerr << "Unmapped ");
-      odata.location( std::cerr << " register read @" );
+      odata.location( std::cerr << " register read @", addr, size );
       std::cerr << '\n';
       return false;
     }
@@ -1010,6 +1009,42 @@ AArch64::map_virtio_placeholder(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_placeholder_effect) );
 }
 
+namespace {
+  struct VIOA : public VIOAccess
+  {
+    VIOA(AArch64& _core) : core(_core) {} AArch64& core;
+    template <typename T>
+    uint64_t read(uint64_t addr) const
+    {
+      T value = core.memory_pread<T>(addr);
+      if (value.ubits) { struct Bad {}; throw Bad(); };
+      return value.value;
+    }
+    uint64_t read(uint64_t addr, unsigned size) const override
+    {
+      switch (size)
+        {
+        case 1: return read<AArch64::U8>(addr);
+        case 2: return read<AArch64::U16>(addr);
+        case 4: return read<AArch64::U32>(addr);
+        case 8: return read<AArch64::U64>(addr);
+        }
+      struct Bad {}; throw Bad(); return 0;
+    }
+    void write(uint64_t addr, unsigned size, uint64_t value) const override
+    {
+      switch (size)
+        {
+        case 1: return core.memory_pwrite(addr,AArch64::U8(value));
+        case 2: return core.memory_pwrite(addr,AArch64::U16(value));
+        case 4: return core.memory_pwrite(addr,AArch64::U32(value));
+        case 8: return core.memory_pwrite(addr,AArch64::U64(value));
+        }
+      struct Bad {}; throw Bad();
+    }
+  };
+}
+
 void
 AArch64::map_virtio_disk(uint64_t base_addr)
 {
@@ -1022,6 +1057,8 @@ AArch64::map_virtio_disk(uint64_t base_addr)
       VIODisk& viodisk = arch.viodisk;
       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
         return false;
+
+      VIOA vioa(arch);
       
       if      (req.size == 1)
         {
@@ -1046,18 +1083,19 @@ AArch64::map_virtio_disk(uint64_t base_addr)
           uint32_t tmp;
           switch (req.addr)
             {
-            case 0x00: return req.ro<uint32_t>(0x74726976); /* Magic Value: 'virt' */
-            case 0x04: return req.ro<uint32_t>(0x2); /* Device version number: Virtio 1 - 1.1 */
-            case 0x08: return req.ro<uint32_t>(2); /* Virtio Subsystem Device ID: block device */
-            case 0x0c: return req.ro(viodisk.Vendor()); /* Virtio Subsystem Vendor ID: 'usvp' */
-            case 0x10: return req.ro(viodisk.ClaimedFeatures()); /* features supported by the device */
-            case 0x14: return req.wo(viodisk.DeviceFeaturesSel); /* Device (host) features word selection. */
+            case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
+            case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
+            case 0x08: return req.ro<uint32_t>(2);                       /* Virtio Subsystem Device ID: block device */
+            case 0x0c: return req.ro(viodisk.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
+            case 0x10: return req.ro(viodisk.ClaimedFeatures());         /* features supported by the device */
+            case 0x14: return req.wo(viodisk.DeviceFeaturesSel);         /* Device (host) features word selection. */
             case 0x20: return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
-            case 0x24: return req.wo(viodisk.DriverFeaturesSel); /* Activated (guest) features word selection */
-            case 0x30: return req.wo(tmp) and (tmp == 0); /* Virtual queue index (only 0) */
-            case 0x34: return req.ro(viodisk.QueueNumMax());
-            case 0x38: return req.wo(viodisk.QueueNum);
-            case 0x44: return req.access(viodisk.QueueReady); /* Virtual queue ready bit */
+            case 0x24: return req.wo(viodisk.DriverFeaturesSel);         /* Activated (guest) features word selection */
+            case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0) */
+            case 0x34: return req.ro(viodisk.QueueNumMax());             /* Maximum virtual queue size */
+            case 0x38: return req.wo(viodisk.QueueNum);                  /* Virtual queue size */
+            case 0x44: return req.access(viodisk.QueueReady);            /* Virtual queue ready bit */
+            case 0x50: return req.wo(tmp) and viodisk.ReadQueue(vioa);   /* Queue notifier */
             case 0x70: return req.access(viodisk.Status) and (not req.write or viodisk.CheckStatus()); /* Device status */
             case 0x80:
             case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDescArea))[req.addr >> 2 & 1]);
@@ -1573,9 +1611,11 @@ AArch64::ClearExclusiveLocal()
 }
 
 void
-AArch64::memory_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size)
+AArch64::memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size)
 {
-  std::cerr << std::hex << current_insn_addr << " error during " << operation << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
+  std::cerr << std::hex << current_insn_addr << " error during " << operation;
+  if (mf.op) std::cerr << " (" << mf.op << ")";
+  std::cerr << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
   struct Bad {}; raise(Bad());
 }
 
