@@ -56,8 +56,8 @@ struct MMapped : AArch64::Page::Free
   ~MMapped() { close(fd); }
   void free (AArch64::Page& page) const override
   {
-    munmap((void*)page.get_data(), page.size());
-    munmap((void*)page.get_udat(), page.size());
+    munmap((void*)page.data_beg(), page.size());
+    munmap((void*)page.udat_beg(), page.size());
   }
   bool get(struct stat& res)
   {
@@ -95,6 +95,8 @@ main(int argc, char *argv[])
 {
   char const* img_filename = "Image";
   char const* dt_filename = "device_tree.dtb";
+  char const* disk_filename = "rootfs.ext4";
+  
   // Booting an AArch64 system
   //
   // Docs & Notes: 
@@ -118,8 +120,8 @@ main(int argc, char *argv[])
   arch.map_rtc(0x49010000);
 
   for (unsigned int idx = 0; idx < 31; ++idx)
-    arch.map_virtio_placeholder(0x4a000000 + 0x200*idx);
-  arch.map_virtio_disk(0x4a000000 + 0x200*31);
+    arch.map_virtio_placeholder(idx, 0x4a000000 + 0x200*idx);
+  arch.map_virtio_disk(disk_filename, 0x4a000000 + 0x200*31, 32 + 16 + 31);
 
   // SETUP the VirtIO Hypervisor Emulator
   // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
@@ -154,7 +156,7 @@ main(int argc, char *argv[])
     lseek(linux_image.fd,0,SEEK_SET);
     if (base % 64) { std::cerr << "Bad size: " << std::hex << base << std::endl; return 1; }
     if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
-    AArch64::Page page(0,base,base+size-1,0,0,&linux_image);
+    AArch64::Page page(base,base+size-1,0,0,&linux_image);
     linux_image.dump_load( std::cerr, "linux image", page );
     if (not linux_image.get(page))
       return 1;
@@ -164,11 +166,9 @@ main(int argc, char *argv[])
     uint64_t xbase = base + size, xlast = base + kernel_size - 1;
     if (xbase <= xlast)
       {
-        unsigned xsize = kernel_size-size;
-        auto xudat = new uint8_t[size];
-        std::fill(&xudat[0], &xudat[size], -1);
-        static struct : AArch64::Page::Free { void free (AArch64::Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
-        arch.mem_map(AArch64::Page(0, xbase, xlast, new uint8_t[xsize], xudat, &free));
+        AArch64::Page extra(xbase, xlast);
+        std::fill(extra.udat_beg(), extra.udat_end(), -1);
+        arch.mem_map(std::move(extra));
       }
     arch.MemDump64(base);
   }
@@ -181,7 +181,7 @@ main(int argc, char *argv[])
     size = (size + 63) & uint64_t(-64);
     if (base % 64) { std::cerr << "Bad base: " << std::hex << base << std::endl; return 1; }
     // The device tree blob (dtb) must be placed on an 8-byte boundary
-    AArch64::Page page(0,base,base+size-1,0,0,&device_tree);
+    AArch64::Page page(base,base+size-1,0,0,&device_tree);
     device_tree.dump_load( std::cerr, "device tree", page );
     if (not device_tree.get(page))
       return 1;
@@ -198,10 +198,10 @@ main(int argc, char *argv[])
   }
 
   
-  // ffffffc010eb5198 0x20000
-  AArch64::Page const& logbuf = arch.modify_page(0xeb5198);
-  uint8_t const* logbytes = logbuf.get_data(0xeb5198);
-  std::cerr << "logbuf: " << (void*)logbytes << std::endl;
+  // // ffffffc010eb5198 0x20000
+  // AArch64::Page const& logbuf = arch.modify_page(0xeb5198);
+  // uint8_t const* logbytes = logbuf.data_abs(0xeb5198);
+  // std::cerr << "logbuf: " << (void*)logbytes << std::endl;
 
   std::cerr << "\n*** Run ***" << std::endl;
 

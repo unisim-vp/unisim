@@ -36,18 +36,59 @@
 #define __ARM64VP_VIODISK_HH__
 
 #include <inttypes.h>
+#include <fstream>
 
 struct VIOAccess
 {
   virtual ~VIOAccess() {}
-  virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
-  virtual void write(uint64_t addr, unsigned size, uint64_t val) const = 0;
+
+  struct Slice { uint8_t* bytes; uint64_t size; };
+  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
+  virtual void notify() const = 0;
+  
+  struct Iterator : Slice
+  {
+    Iterator(uint64_t addr, uint64_t size, bool _write) : slice{0,0}, ptr(addr), left(size), write(_write) {}
+    Slice slice;
+    uint64_t ptr, left;
+    bool write;
+    bool next(VIOAccess const& vioa);
+  };
+  
+  uint64_t read(uint64_t addr, unsigned size) const;
+  void write(uint64_t addr, unsigned size, uint64_t value) const;
 };
+
+struct VIOQueue
+{
+  struct DescIterator
+  {
+    DescIterator() : index(0), wrap(1) {}
+    unsigned wrap_counter() const { return index >> 15 & 1; }
+    uint64_t get_offset() const { return (index & 0x7fff); }
+    void next(VIOQueue const& vq) { if (++index < vq.size) return; index = 0; wrap ^= 1;  }
+    bool available(uint16_t flags) { return (flags >> 15 ^ wrap) & ~(flags >> 7 ^ wrap) & 1; }
+    uint16_t used(bool write) { return wrap << 15 | wrap << 7 | int(write) << 1; }
+    unsigned index : 16;
+    unsigned wrap  :  1;
+  };
+
+  //enum { NEXT=1, WRITE=2, INDIRECT=4 };
+
+  VIOQueue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0), head() {}
+  uint64_t desc_addr(DescIterator const& desc) const { return desc_area + 16*desc.index; }
+
+  uint32_t size, ready;
+  uint64_t desc_area, driver_area, device_area;
+  DescIterator head;
+};
+
 
 struct VIODisk
 {
   VIODisk();
   void reset();
+  void open(char const* filename);
   
   // Generic Config
   static uint32_t Vendor() { return 0x70767375; }
@@ -67,13 +108,13 @@ struct VIODisk
   static uint32_t MaxWriteZeroesSectors() { return 0x3fffff; }
   
   // Generic Config
-  uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, QueueNum, QueueReady, ConfigGeneration;
-  uint64_t QueueDescArea, QueueDriverArea, QueueDeviceArea;
-  
+  uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+
   // Block Device Config
+  VIOQueue rq;
+  std::fstream storage;
   uint64_t Capacity;
-  uint8_t WriteBack;
-  
+  uint8_t  WriteBack;
 };
 
 template <typename FEATTYPE, FEATTYPE FEAT> struct Feature {};

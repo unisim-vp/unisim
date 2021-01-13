@@ -313,6 +313,7 @@ struct AArch64
   }
 
   void MemDump64(uint64_t addr);
+  void PMemDump64(uint64_t addr);
   U64 MemRead64(U64 addr) { return memory_read<U64>(addr); }
   U32 MemRead32(U64 addr) { return memory_read<U32>(addr); }
   U16 MemRead16(U64 addr) { return memory_read<U16>(addr); }
@@ -473,10 +474,13 @@ struct AArch64
       virtual void free (Page&) const {};
       static Free nop;
     };
-    Page( Free*, uint64_t _base, uint64_t _last, uint8_t* _data, uint8_t* _udat, Free* _free )
+    /* Standard buffer (de)allocation */
+    Page(uint64_t base, uint64_t last);
+    /* Custom buffer (de)allocation */
+    Page(uint64_t _base, uint64_t _last, uint8_t* _data, uint8_t* _udat, Free* _free)
       : Zone(_base, _last), data(_data), udat(_udat), free(_free)
     {}
-    Page( Page&& page )
+    Page(Page&& page)
       : Zone(page), data(page.data), udat(page.udat), free(page.free)
     {
       page.data = 0;
@@ -500,13 +504,22 @@ struct AArch64
       std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
       return cnt;
     }
+
+    uint64_t size_from(uint64_t addr) const { return last - addr + 1; }
+    uint8_t* data_beg() const { return &data[0]; }
+    uint8_t* data_end() const { return &data[size()]; }
+    uint8_t* udat_beg() const { return &udat[0]; }
+    uint8_t* udat_end() const { return &udat[size()]; }
+    uint8_t* data_abs(uint64_t addr) const { return &data[addr-base]; }
+    uint8_t* udat_abs(uint64_t addr) const { return &udat[addr-base]; }
+    uint8_t* data_rel(uint64_t offset) const { return &data[offset]; }
+    uint8_t* udat_rel(uint64_t offset) const { return &udat[offset]; }
+    
     bool has_data() const { return data; }
-    uint8_t const* get_data() const { return data; }
-    uint8_t const* get_data(uint64_t addr) const { return &data[addr-base]; }
     void set_data(uint8_t* _data) { data = _data; }
     bool has_udat() const { return data; }
-    uint8_t const* get_udat() const { return udat; }
     void set_udat(uint8_t* _udat) { udat = _udat; }
+    
     uint64_t size() const { return last - base + 1; }
 
     void dump_range(std::ostream&) const;
@@ -523,9 +536,9 @@ struct AArch64
   {
     struct Effect;
 
-    Device( uint64_t _base, uint64_t _last, Effect const* _effect )
+    Device( uint64_t _base, uint64_t _last, Effect const* _effect, unsigned _id )
       : Zone( _base, _last )
-      , effect( _effect )
+      , effect( _effect ), id(_id)
     {}
 
     bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const;
@@ -537,11 +550,12 @@ struct AArch64
     {
       virtual ~Effect() {};
       virtual bool access(AArch64& arch, Request& req) const = 0;
-      virtual void get_name(std::ostream& sink) const = 0;
-      bool error( char const* msg ) const;
+      virtual void get_name(unsigned dev_id, std::ostream& sink) const = 0;
+      bool error(unsigned dev_id, char const* msg) const;
     };
 
     Effect const* effect;
+    unsigned id;
   };
 
 
@@ -574,10 +588,10 @@ struct AArch64
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
+  Page make_mem_page(uint64_t base, uint64_t last);
 
   void error_mem_overlap( Page const& a, Page const& b );
 
-  bool new_page(uint64_t addr, uint64_t size);
   bool mem_map(Page&& page);
 
   void step_instruction();
@@ -797,8 +811,8 @@ struct AArch64
   void handle_vtimer();
   uint64_t get_freq() const { return 1075200000; }
 
-  void map_virtio_placeholder(uint64_t base_addr);
-  void map_virtio_disk(uint64_t base_addr);
+  void map_virtio_placeholder(unsigned id, uint64_t base_addr);
+  void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
   
   typedef std::multimap<uint64_t, event_handler_t> Events;
   void notify( uint64_t delay, event_handler_t method )
@@ -843,6 +857,10 @@ public:
 
   uint64_t bdaddr;
   bool     disasm;
+
+  /*QESCAPTURE*/
+  bool QESCapture();
+  struct QES { uint16_t desc; uint16_t flags; } qes[2];
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

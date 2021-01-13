@@ -36,19 +36,20 @@
 #include <iostream>
 
 VIODisk::VIODisk()
-  : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), QueueNum(), QueueReady(0)
-  , ConfigGeneration(0), QueueDescArea(), QueueDriverArea(), QueueDeviceArea()
-  , Capacity(837212), WriteBack(1)
+  : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
+  , rq(), storage(), Capacity(837212), WriteBack(1)
 {}
 
 void
 VIODisk::reset()
 {
   Status = 0;
+  Features = 0;
   DeviceFeaturesSel = 0;
   DriverFeaturesSel = 0;
-  QueueReady = 0;
   ConfigGeneration = 0;
+  rq = VIOQueue();
+  WriteBack = 1;
 }
 
 template <unsigned POS, typename FEATTYPE, int FEAT>
@@ -178,20 +179,163 @@ VIODisk::CheckStatus()
 bool
 VIODisk::ReadQueue(VIOAccess const& vioa)
 {
-  uint64_t addr =   vioa.read(QueueDescArea +  0, 8);
-  uint32_t len =    vioa.read(QueueDescArea +  8, 4);
-  uint16_t id =     vioa.read(QueueDescArea + 12, 2);
-  uint16_t flags =  vioa.read(QueueDescArea + 14, 2);
+  if (not rq.ready)
+    return true;
+  
+  struct Request
+  {
+    Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type() {}
+    enum { Head, Body, Status } state; VIOAccess const& vioa; VIODisk& disk;
+    enum Type { In = 0, Out, Flush = 4, Discard = 11, WriteZeroes = 13 } type;
+    uint64_t sector;
+    enum { OK, IOERR, UNSUPP } status = OK;
+    uint32_t process(uint64_t buf, uint32_t len, uint16_t flags)
+    {
+      uint32_t wlen = 0;
+      //bool is_write = VIOQFlags::WRITE.Get(flags);
+      bool is_write = flags & 2;
+      std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
+      struct Bad {};
+      switch (state)
+        {
+        case Head:
+          if (is_write or len != 16) throw Bad();
+          type = Type(vioa.read(buf + 0, 4));
+          sector = vioa.read(buf + 8, 8);
+          state = Body;
+          break;
+          
+        case Body:
+          switch (type)
+            {
+            default:
+              status = UNSUPP;
+              break;
+            case In:
+              if (not is_write or len >= 0x100000) throw Bad();
+              disk.storage.seekg(512*sector);
+              for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
+                disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
+              wlen += len;
+              break;
+            case Out: throw Bad();
+            case Flush: throw Bad();
+            case Discard: throw Bad();
+            case WriteZeroes: throw Bad();
+            }
+          state = Status;
+          break;
 
-  std::cerr << "pvirtq_desc";
-  std::cerr << "{ addr=0x" << std::hex << addr;
-  std::cerr << ", len=" << std::dec << len;
-  std::cerr << ", id=" << std::dec << id;
-  std::cerr << ", flags=0x" << std::hex << flags;
-  std::cerr << ", (DescArea): " << std::hex << QueueDescArea;
-  std::cerr << ", (DriverArea): " << std::hex << QueueDriverArea;
-  std::cerr << ", (DeviceArea): " << std::hex << QueueDeviceArea;
-  std::cerr << "}\n";
-    
-  return false;
+        case Status:
+          if (not is_write or len != 1) throw Bad();
+          vioa.write(buf, 1, status);
+          wlen += 1;
+          state = Head;
+          break;
+        }
+      return wlen;
+    }
+  } req(vioa, *this);
+
+  bool used = false;
+  for (;;)
+    {
+      uint64_t desc_addr = rq.desc_addr(rq.head);
+      uint16_t flags = vioa.read(desc_addr + 14, 2);
+      if (not rq.head.available(flags))
+        break;
+      
+      VIOQueue::DescIterator tail(rq.head);
+      uint32_t wlen = 0;
+
+      for (;;)
+        {
+          uint64_t buf_addr =   vioa.read(desc_addr + 0, 8);
+          uint32_t buf_len =    vioa.read(desc_addr + 8, 4);
+          //if (VIOQFlags::INDIRECT.Get(flags))
+          if (flags & 4)
+            {
+              for (uint64_t desc_addr = buf_addr, buf_end = buf_addr + buf_len; desc_addr < buf_end; desc_addr += 16)
+                {
+                  uint64_t buf_addr =  vioa.read(desc_addr +  0, 8);
+                  uint32_t buf_len =   vioa.read(desc_addr +  8, 4);
+                  uint16_t buf_flags = vioa.read(desc_addr + 14, 2);
+              
+                  wlen += req.process(buf_addr, buf_len, buf_flags);
+                }
+            }
+          else
+            {
+              wlen += req.process(buf_addr, buf_len, flags);
+            }
+      
+          rq.head.next(rq);
+          // if (VIOQFlags::NEXT.Get(flags));
+          if (flags & 1)
+            {
+              desc_addr = rq.desc_addr(rq.head);
+              flags =  vioa.read(desc_addr + 14, 2);
+            }
+          else
+            break;
+        }
+
+      uint16_t id = vioa.read(desc_addr + 12, 2);
+      std::cerr << "ID:" << id << std::endl;
+
+      uint64_t tail_addr = rq.desc_addr(tail);
+      vioa.write(tail_addr +  8, 4, wlen);
+      vioa.write(tail_addr + 12, 2, id);
+      vioa.write(tail_addr + 14, 2, tail.used(wlen > 0));
+      used = true;
+    }
+
+  if (used)
+    vioa.notify();
+  return true;
+}
+
+void
+VIODisk::open(char const* filename)
+{
+  storage.open(filename);
+  if (not storage or not storage.is_open()) { struct Bad {}; throw Bad (); }
+  Capacity = storage.seekg( 0, std::ios::end ).tellg();
+}
+
+uint64_t
+VIOAccess::read(uint64_t addr, unsigned size) const
+{
+  uint64_t res = 0, wbyte = 0;
+
+  for (Iterator itr(addr, size, false); itr.next(*this);)
+    {
+      for (uint64_t rbyte = 0; rbyte < itr.slice.size; ++rbyte, ++wbyte)
+        res |= uint64_t(itr.slice.bytes[rbyte]) << 8*wbyte;
+    }
+  
+  return res;
+}
+
+void
+VIOAccess::write(uint64_t addr, unsigned size, uint64_t value) const
+{
+  uint64_t rbyte = 0;
+  
+  for (Iterator itr(addr, size, true); itr.next(*this);)
+    {
+      for (uint64_t wbyte = 0; wbyte < itr.slice.size; ++rbyte, ++wbyte)
+        itr.slice.bytes[wbyte] = value >> 8*rbyte;
+    }
+}
+
+bool
+VIOAccess::Iterator::next(VIOAccess const& vioa)
+{
+  if (uint64_t nleft = left - slice.size)
+    { left = nleft; ptr += slice.size; }
+  else
+    return false;
+  slice = vioa.access(ptr, left, write);
+  return true;
 }

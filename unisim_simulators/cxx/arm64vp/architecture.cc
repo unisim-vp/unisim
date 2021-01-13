@@ -61,6 +61,7 @@ AArch64::AArch64()
   , CPACR()
   , bdaddr(0)
   , disasm(false)
+  , qes()
 {
 }
 
@@ -109,20 +110,20 @@ AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
   if (pages.size() and pi != pages.begin() and (--pi)->base <= last)
     { last = pi->base - 1; }
 
-  unsigned size = last-base+1;
-  auto udat = new uint8_t[size];
-  std::fill(&udat[0], &udat[size], -1);
-  static struct : Page::Free { void free (Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
-  return *pages.insert(pi, Page(0, base, last, new uint8_t[size], udat, &free));
+  Page res(base, last);
+  std::fill(res.udat_beg(), res.udat_end(), -1);
+  return *pages.insert(pi, std::move(res));
 }
 
-bool
-AArch64::new_page(uint64_t addr, uint64_t size)
+AArch64::Page::Page(uint64_t base, uint64_t last)
+  : Zone(base, last), data(), udat(), free()
 {
-  auto udat = new uint8_t[size];
-  std::fill(&udat[0], &udat[size], -1);
-  static struct : Page::Free { void free (Page& page) const override { delete [] page.get_data(); delete [] page.get_udat(); } } free;
-  return this->mem_map( Page(0, addr, addr+size-1, new uint8_t[size], udat, &free) );
+  uint64_t size = last-base+1;
+  if (size >= 0x4000000) { struct OverSizedPage {}; raise( OverSizedPage() ); }
+  static struct : Page::Free { void free(Page& page) const override { delete [] page.data; delete [] page.udat; } } lefree;
+  free = &lefree;
+  data = new uint8_t[size];
+  udat = new uint8_t[size];
 }
 
 AArch64::Page::Free AArch64::Page::Free::nop;
@@ -785,9 +786,10 @@ AArch64::GIC::ScanPendingInterruptsFor( uint8_t required, uint8_t enough ) const
 
 struct AArch64::Device::Request
 {
+  Request(unsigned _dev, uint64_t _addr, uint8_t _size, bool _write) : dev(_dev), addr(_addr), size(_size), write(_write) {}
   virtual ~Request() {}
   virtual void transfer(uint8_t*, uint8_t*, unsigned) = 0;
-  Request(uint64_t _addr, uint8_t _size, bool _write) : addr(_addr), size(_size), write(_write) {}
+  
   template <class T>
   bool tainted_access( T& reg )
   {
@@ -822,7 +824,7 @@ struct AArch64::Device::Request
   {
     sink << std::hex << addr << std::dec << "[" << size << "]";
   }
-  uint64_t addr; uint8_t size; bool write;
+  unsigned dev; uint64_t addr; uint8_t size; bool write;
 };
 
 bool
@@ -831,16 +833,17 @@ AArch64::Device::write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_
   struct IRequest : public Request
   {
     typedef uint8_t const* Src;
-    IRequest(uint64_t _addr, Src _vsrc, Src _usrc, uint8_t _size ) : Request( _addr, _size, true ), vsrc(_vsrc) , usrc(_usrc) {} Src vsrc, usrc;
+    IRequest(unsigned dev, uint64_t addr, Src _vsrc, Src _usrc, uint8_t size )
+      : Request(dev, addr, size, true), vsrc(_vsrc) , usrc(_usrc) {} Src vsrc, usrc;
     void transfer(uint8_t* vdst, uint8_t* udst, unsigned n) override
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vsrc += n; usrc += n; }
-  } idata(addr, dbuf, ubuf, size);
+  } idata(id, addr, dbuf, ubuf, size);
 
   do
     {
       if (effect->access(arch, idata))
         continue;
-      effect->get_name(std::cerr << "Unmapped ");
+      effect->get_name(id, std::cerr << "Unmapped ");
       idata.location(std::cerr << " register write @", addr, size);
       std::cerr << '\n';
       return false;
@@ -856,16 +859,17 @@ AArch64::Device::read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf
   struct ORequest : public Request
   {
     typedef uint8_t* Dst;
-    ORequest(uint64_t _addr, Dst _vdst, Dst _udst, uint8_t _size ) : Request( _addr, _size, false ), vdst(_vdst), udst(_udst) {} Dst vdst, udst;
+    ORequest(unsigned dev, uint64_t addr, Dst _vdst, Dst _udst, uint8_t size )
+      : Request(dev, addr, size, false), vdst(_vdst), udst(_udst) {} Dst vdst, udst;
     void transfer(uint8_t* vsrc, uint8_t* usrc, unsigned n) override
     { std::copy(vsrc, vsrc + n, vdst); std::copy(usrc, usrc + n, udst); vdst += n; udst += n; }
-  } odata(addr, dbuf, ubuf, size);
+  } odata(id, addr, dbuf, ubuf, size);
 
   do
     {
       if (effect->access(arch, odata))
         continue;
-      effect->get_name(std::cerr << "Unmapped ");
+      effect->get_name(id, std::cerr << "Unmapped ");
       odata.location( std::cerr << " register read @", addr, size );
       std::cerr << '\n';
       return false;
@@ -876,9 +880,9 @@ AArch64::Device::read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf
 }
 
 bool
-AArch64::Device::Effect::error( char const* msg ) const
+AArch64::Device::Effect::error(unsigned dev, char const* msg) const
 {
-  this->get_name(std::cerr);
+  this->get_name(dev, std::cerr);
   std::cerr << " error: " << msg << "\n";
   return false;
 }
@@ -903,9 +907,9 @@ AArch64::RTC::program(AArch64& cpu)
 void
 AArch64::map_rtc(uint64_t base_addr)
 {
-  static struct RTCEffect : public Device::Effect
+  static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "Real Time Clock (PL031)"; }
+    virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Real Time Clock (PL031)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
@@ -955,7 +959,7 @@ AArch64::map_rtc(uint64_t base_addr)
         return req.write;
       if ((req.addr & -16) == 0xfe0)
         {
-          if (req.write) return error( "Cannot write PeriphID" );
+          if (req.write) return error( req.dev, "Cannot write PeriphID" );
           /* ARM PrimeCell (R) Real Time Clock (PL031) Revision: r1p3 */
           uint32_t value(0x00041031);
           uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
@@ -964,7 +968,7 @@ AArch64::map_rtc(uint64_t base_addr)
 
       if ((req.addr & -16) == 0xff0)
         {
-          if (req.write) return error( "Cannot write PCellID" );
+          if (req.write) return error( req.dev, "Cannot write PCellID" );
 
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
@@ -975,7 +979,7 @@ AArch64::map_rtc(uint64_t base_addr)
 
   } rtc_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0xfff, &rtc_effect) );
+  devices.insert( Device( base_addr, base_addr + 0xfff, &rtc_effect, 0) );
 }
 
 void
@@ -987,11 +991,11 @@ AArch64::uart_tx()
 }
 
 void
-AArch64::map_virtio_placeholder(uint64_t base_addr)
+AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 {
   static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "Virtio Placeholder (empty)"; }
+    virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Virtio Empty Placeholder (" << id << ")"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
@@ -1006,59 +1010,55 @@ AArch64::map_virtio_placeholder(uint64_t base_addr)
     }
   } virtio_placeholder_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_placeholder_effect) );
+  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_placeholder_effect, id) );
 }
 
 namespace {
   struct VIOA : public VIOAccess
   {
-    VIOA(AArch64& _core) : core(_core) {} AArch64& core;
-    template <typename T>
-    uint64_t read(uint64_t addr) const
+    VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
+    VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
     {
-      T value = core.memory_pread<T>(addr);
-      if (value.ubits) { struct Bad {}; throw Bad(); };
-      return value.value;
+      AArch64::Page const& page = core.access_page(addr);
+      VIOAccess::Slice res{page.data_abs(addr), page.size_from(addr)};
+      if      (res.size > size) res.size = size;
+      else if (size > res.size) size = res.size;
+      
+      struct Bad {};
+      uint8_t* chunk_udat = page.udat_abs(addr);
+      if (write) { std::fill(&chunk_udat[0], &chunk_udat[res.size], 0); }
+      else if (std::any_of(&chunk_udat[0], &chunk_udat[res.size], [](uint8_t b) { return b != 0; } )) throw Bad();
+      
+      return res;
     }
-    uint64_t read(uint64_t addr, unsigned size) const override
+
+    void notify() const override
     {
-      switch (size)
-        {
-        case 1: return read<AArch64::U8>(addr);
-        case 2: return read<AArch64::U16>(addr);
-        case 4: return read<AArch64::U32>(addr);
-        case 8: return read<AArch64::U64>(addr);
-        }
-      struct Bad {}; throw Bad(); return 0;
-    }
-    void write(uint64_t addr, unsigned size, uint64_t value) const override
-    {
-      switch (size)
-        {
-        case 1: return core.memory_pwrite(addr,AArch64::U8(value));
-        case 2: return core.memory_pwrite(addr,AArch64::U16(value));
-        case 4: return core.memory_pwrite(addr,AArch64::U32(value));
-        case 8: return core.memory_pwrite(addr,AArch64::U64(value));
-        }
-      struct Bad {}; throw Bad();
+      core.gic.set_interrupt(irq);
+      core.gic.program(core);
     }
   };
 }
 
 void
-AArch64::map_virtio_disk(uint64_t base_addr)
+AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 {
+  viodisk.open(filename);
+  
   static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "Virtio Block Device (disk)"; }
+    virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Virtio Block Device (disk)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
+      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
+      std::cerr << '\n';
+      
       VIODisk& viodisk = arch.viodisk;
       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
         return false;
 
-      VIOA vioa(arch);
+      VIOA vioa(arch, req.dev);
       
       if      (req.size == 1)
         {
@@ -1091,18 +1091,18 @@ AArch64::map_virtio_disk(uint64_t base_addr)
             case 0x14: return req.wo(viodisk.DeviceFeaturesSel);         /* Device (host) features word selection. */
             case 0x20: return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
             case 0x24: return req.wo(viodisk.DriverFeaturesSel);         /* Activated (guest) features word selection */
-            case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0) */
+            case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
             case 0x34: return req.ro(viodisk.QueueNumMax());             /* Maximum virtual queue size */
-            case 0x38: return req.wo(viodisk.QueueNum);                  /* Virtual queue size */
-            case 0x44: return req.access(viodisk.QueueReady);            /* Virtual queue ready bit */
+            case 0x38: return req.wo(viodisk.rq.size);                   /* Virtual queue size */
+            case 0x44: return req.access(viodisk.rq.ready) and (not req.write or arch.QESCapture()); /* Virtual queue ready bit */
             case 0x50: return req.wo(tmp) and viodisk.ReadQueue(vioa);   /* Queue notifier */
             case 0x70: return req.access(viodisk.Status) and (not req.write or viodisk.CheckStatus()); /* Device status */
             case 0x80:
-            case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDescArea))[req.addr >> 2 & 1]);
+            case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.desc_area))[req.addr >> 2 & 1]);
             case 0x90: 
-            case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDriverArea))[req.addr >> 2 & 1]);
+            case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.driver_area))[req.addr >> 2 & 1]);
             case 0xa0: 
-            case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.QueueDeviceArea))[req.addr >> 2 & 1]);
+            case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
             case 0xfc: return req.ro(viodisk.ConfigGeneration);
             case 0x100: 
             case 0x104: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
@@ -1121,7 +1121,7 @@ AArch64::map_virtio_disk(uint64_t base_addr)
     }
   } virtio_disk_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_disk_effect) );
+  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_disk_effect, irq) );
 }
 
 void
@@ -1129,7 +1129,7 @@ AArch64::map_uart(uint64_t base_addr)
 {
   static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "UART (PL011)"; }
+    virtual void get_name(unsigned, std::ostream& sink) const override { sink << "UART (PL011)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
@@ -1144,11 +1144,11 @@ AArch64::map_uart(uint64_t base_addr)
               uart.txpush( arch, ch );
               return true;
             }
-          return error( "sorry" );
+          return error(req.dev, "sorry");
         }
       if (req.addr == 0x18)
         {
-          if (req.write) return error( "Cannot write Flag Register" );
+          if (req.write) return error(req.dev, "Cannot write Flag Register");
           uint16_t flags = 0x90;
           return req.access(flags);
         }
@@ -1166,20 +1166,20 @@ AArch64::map_uart(uint64_t base_addr)
 
       if (req.addr == 0x3c)
         {
-          if (req.write) return error( "Cannot write Raw Interrupt Status Register" );
+          if (req.write) return error(req.dev, "Cannot write Raw Interrupt Status Register" );
           return req.access(uart.RIS);
         }
 
       if (req.addr == 0x40)
         {
-          if (req.write) return error( "Cannot write Masked Interrupt Status Register" );
+          if (req.write) return error(req.dev, "Cannot write Masked Interrupt Status Register" );
           uint16_t mis = uart.RIS & ~uart.IMSC;
           return req.access(mis);
         }
 
       if (req.addr == 0x44)
         {
-          if (not req.write) return error( "Cannot read Interrupt Clear Register" );
+          if (not req.write) return error(req.dev, "Cannot read Interrupt Clear Register" );
           uint16_t icr;
           if (not req.access(icr)) return false;
           uart.RIS &= ~icr;
@@ -1188,7 +1188,7 @@ AArch64::map_uart(uint64_t base_addr)
 
       if ((req.addr & -16) == 0xfe0)
         {
-          if (req.write) return error( "Cannot write PeriphID" );
+          if (req.write) return error(req.dev, "Cannot write PeriphID" );
           /* ARM PrimeCell (R) UART (PL011) Revision: r1p5 */
           uint32_t value(0x00341011);
           uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
@@ -1197,7 +1197,7 @@ AArch64::map_uart(uint64_t base_addr)
 
       if ((req.addr & -16) == 0xff0)
         {
-          if (req.write) return error( "Cannot write PCellID" );
+          if (req.write) return error(req.dev, "Cannot write PCellID" );
 
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
           return req.access(byte);
@@ -1208,7 +1208,7 @@ AArch64::map_uart(uint64_t base_addr)
 
   } uart_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect) );
+  devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 }
 
 void
@@ -1251,9 +1251,9 @@ AArch64::UART::txpop()
 void
 AArch64::map_gic(uint64_t base_addr)
 {
-  static struct GICEffect : public Device::Effect
+  static struct : public Device::Effect
   {
-    virtual void get_name(std::ostream& sink) const override { sink << "Generic Interrupt Controller (GICv2)"; }
+    virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Generic Interrupt Controller (GICv2)"; }
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
@@ -1267,7 +1267,7 @@ AArch64::map_gic(uint64_t base_addr)
 
       if (req.addr == 0x10c) /* Interrupt Acknowledge Register */
         {
-          if (req.write) return error( "Cannot write GICC_IAR" );
+          if (req.write) return error(req.dev, "Cannot write GICC_IAR" );
 
           unsigned int_id = arch.gic.HighestPriorityPendingInterrupt();
 
@@ -1283,7 +1283,7 @@ AArch64::map_gic(uint64_t base_addr)
 
       if (req.addr == 0x110) /* End of Interrupt Register */
         {
-          if (not req.write) return error( "Cannot read GICC_EOIR" );
+          if (not req.write) return error(req.dev, "Cannot read GICC_EOIR" );
           U32 reg;
           if (not req.tainted_access(reg))
             return false;
@@ -1302,7 +1302,7 @@ AArch64::map_gic(uint64_t base_addr)
 
       if (req.addr == 0x1fc) /* Identification Register, GICC_IIDR */
         {
-          if (req.write) return error( "Cannot write GICC_IIDR" );
+          if (req.write) return error(req.dev, "Cannot write GICC_IIDR" );
           U32 reg = U32(0)
             | U32(0,0xff0)       << 20  // An product identifier (linux wants 0bx..x0000)
             | U32(2)             << 16  // Architecture version (GICv2)
@@ -1317,7 +1317,7 @@ AArch64::map_gic(uint64_t base_addr)
 
       if (req.addr == 0x1004) /* Interrupt Controller Type Register */
         {
-          if (req.write) return error( "Cannot write GICD_TYPER" );
+          if (req.write) return error(req.dev, "Cannot write GICD_TYPER" );
           U32 reg = U32(0)
             | U32(0,0xffff)      << 16  // Reserved
             | U32(0,0x1f)        << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
@@ -1385,7 +1385,7 @@ AArch64::map_gic(uint64_t base_addr)
     }
   } gic_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0x1fff, &gic_effect) );
+  devices.insert( Device( base_addr, base_addr + 0x1fff, &gic_effect, 0) );
 }
 
 bool
@@ -1546,17 +1546,27 @@ raise_breakpoint()
 void
 AArch64::MemDump64(uint64_t addr)
 {
-  unsigned const size = 8;
   addr &= -8;
+
+  std::cerr << std::hex << "virt: " << addr << ", ";
   uint64_t paddr = translate_address(addr, mat_read, 8);
 
+  PMemDump64(paddr);
+}
+
+void
+AArch64::PMemDump64(uint64_t paddr)
+{
+  paddr &= -8;
+  
+  unsigned const size = 8;
   uint8_t dbuf[size], ubuf[size];
 
   Page const& page = access_page(paddr);
   unsigned vsize = page.read(paddr,&dbuf[0],&ubuf[0],size);
-  uintptr_t host_addr = (uintptr_t)page.get_data(paddr);
+  uintptr_t host_addr = (uintptr_t)page.data_abs(paddr);
 
-  std::cerr << std::hex << "virt: " << addr << ", phys: " << paddr << ", host: " << host_addr << std::dec << std::endl;
+  std::cerr << "phys: " << paddr << ", host: " << host_addr << std::dec << std::endl;
   std::cerr << "\t0x";
   for (unsigned byte = vsize; byte-- > 0;)
     {
@@ -1617,5 +1627,66 @@ AArch64::memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr,
   if (mf.op) std::cerr << " (" << mf.op << ")";
   std::cerr << " operation at {vaddr= " << vaddr << ", paddr= " << paddr << ", size= " << std::dec << size << "}\n";
   struct Bad {}; raise(Bad());
+}
+
+bool
+AArch64::QESCapture()
+{
+  VIOA vioa(*this,0);
+
+  std::cerr << "VIRTQ.ready => " << viodisk.rq.ready << "\n";
+  for (unsigned side = 0; side < 2; ++side)
+    {
+      uint64_t base = (side ? viodisk.rq.device_area : viodisk.rq.driver_area);
+      char const* name = (side ? "Device" : "Driver");
+      std::cerr << "pvirtq_event_suppress@" << std::hex << base << "(" << name << ")"
+                << "{ offset=" << std::dec << vioa.read(base + 0, 2)
+                << ", flags=0x" << std::hex << vioa.read(base + 2, 2)
+                << "}\n";
+      Page const& sur = access_page(base);
+      sur.dump_range(std::cerr << "  In: ");
+      std::cerr << std::endl;
+      Page before(sur.base, base-1), after(base+4,sur.last);
+      uint64_t mid = base - sur.base;
+      std::copy(sur.data_rel(0), sur.data_rel(mid), before.data_rel(0));
+      std::copy(sur.udat_rel(0), sur.udat_rel(mid), before.udat_rel(0));
+      std::copy(sur.data_rel(mid+4), sur.data_rel(sur.size()), after.data_rel(0));
+      std::copy(sur.udat_rel(mid+4), sur.udat_rel(sur.size()), after.udat_rel(0));
+      pages.erase(sur);
+      mem_map(std::move(after));
+      mem_map(std::move(before));
+      // insert the device
+
+      static struct : public Device::Effect
+      {
+        static char const* side(unsigned id) { return id ? "device" : "driver"; }
+         
+        void get_name(unsigned id, std::ostream& sink) const override { sink << side(id) << " event suppression"; }
+
+        bool access(AArch64& arch, Device::Request& req) const override
+        {
+          req.location(std::cerr << "<=o=> " << side(req.dev) << " QES " << (req.write ? "write" : "read") << " @", req.addr, req.size);
+          std::cerr << '\n';
+
+          auto& qes = arch.qes[req.dev];
+          if (req.size == 2)
+            {
+              if (req.addr == 0) return req.access(qes.desc);
+              if (req.addr == 2) return req.access(qes.flags);
+              return false;
+            }
+          else if (req.size == 4)
+            {
+              if (req.addr == 0) return req.access(*(uint32_t*)&qes.desc);
+              return false;
+            }
+
+          return false;
+        }
+      } qes_effect;
+      devices.insert( Device( base, base + 4, &qes_effect, side) );
+    }
+
+  return true;
 }
 
