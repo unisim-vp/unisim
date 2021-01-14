@@ -67,8 +67,9 @@ struct VIOQueue
     unsigned wrap_counter() const { return index >> 15 & 1; }
     uint64_t get_offset() const { return (index & 0x7fff); }
     void next(VIOQueue const& vq) { if (++index < vq.size) return; index = 0; wrap ^= 1;  }
-    bool available(uint16_t flags) { return (flags >> 15 ^ wrap) & ~(flags >> 7 ^ wrap) & 1; }
-    uint16_t used(bool write) { return wrap << 15 | wrap << 7 | int(write) << 1; }
+    bool available(uint16_t flags) const { return (flags >> 15 ^ wrap) & ~(flags >> 7 ^ wrap) & 1; }
+    uint16_t used(bool write) const { return wrap << 15 | wrap << 7 | int(write) << 1; }
+    uint16_t idx() const { return (index & 0x7fff) | (wrap << 15); }
     unsigned index : 16;
     unsigned wrap  :  1;
   };
@@ -97,7 +98,9 @@ struct VIODisk
   bool UsedFeatures(uint32_t);
   bool CheckFeatures();
   bool CheckStatus();
+  bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
   bool ReadQueue(VIOAccess const& vioa);
+  bool SetupQueue(VIOAccess const& vioa);
   
   // Block Device Config
   static uint32_t SegMax() { return 254; }

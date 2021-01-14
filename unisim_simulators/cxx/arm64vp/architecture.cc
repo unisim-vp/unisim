@@ -1094,9 +1094,13 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
             case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
             case 0x34: return req.ro(viodisk.QueueNumMax());             /* Maximum virtual queue size */
             case 0x38: return req.wo(viodisk.rq.size);                   /* Virtual queue size */
-            case 0x44: return req.access(viodisk.rq.ready) and (not req.write or arch.QESCapture()); /* Virtual queue ready bit */
+            case 0x44: return req.access(viodisk.rq.ready)               /* Virtual queue ready bit */
+                and (not req.write or viodisk.SetupQueue(vioa));
             case 0x50: return req.wo(tmp) and viodisk.ReadQueue(vioa);   /* Queue notifier */
-            case 0x70: return req.access(viodisk.Status) and (not req.write or viodisk.CheckStatus()); /* Device status */
+            case 0x60: return req.ro(viodisk.InterruptStatus);           /* Interrupt status */
+            case 0x64: return req.wo(tmp) and viodisk.InterruptAck(tmp); /* Interrupt status */
+            case 0x70: return req.access(viodisk.Status)                 /* Device status */
+                and (not req.write or viodisk.CheckStatus()); 
             case 0x80:
             case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.desc_area))[req.addr >> 2 & 1]);
             case 0x90: 

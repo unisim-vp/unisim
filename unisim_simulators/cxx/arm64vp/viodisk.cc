@@ -177,10 +177,19 @@ VIODisk::CheckStatus()
 }
 
 bool
+VIODisk::SetupQueue(VIOAccess const& vioa)
+{
+  /* {desc = x, flags = enable} */
+  vioa.write(rq.device_area, 4, 0);
+  return true;
+}
+
+bool
 VIODisk::ReadQueue(VIOAccess const& vioa)
 {
   if (not rq.ready)
     return true;
+  uint32_t pqes = vioa.read(rq.driver_area, 4);
   
   struct Request
   {
@@ -189,19 +198,29 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
     enum Type { In = 0, Out, Flush = 4, Discard = 11, WriteZeroes = 13 } type;
     uint64_t sector;
     enum { OK, IOERR, UNSUPP } status = OK;
-    uint32_t process(uint64_t buf, uint32_t len, uint16_t flags)
+    uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last)
     {
       uint32_t wlen = 0;
       //bool is_write = VIOQFlags::WRITE.Get(flags);
       bool is_write = flags & 2;
       std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
       struct Bad {};
+      
+      if (state == Body and last) state = Status;
+      
       switch (state)
         {
         case Head:
-          if (is_write or len != 16) throw Bad();
-          type = Type(vioa.read(buf + 0, 4));
-          sector = vioa.read(buf + 8, 8);
+          if (is_write or len != 16) { std::cerr << "error: expected 16 byte header\n"; throw Bad(); }
+          switch (type = Type(vioa.read(buf + 0, 4)))
+            {
+            default:
+              break;
+            case In: case Out:
+              disk.storage.seekg(512*vioa.read(buf + 8, 8));
+              break;
+            }
+          
           state = Body;
           break;
           
@@ -212,22 +231,24 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               status = UNSUPP;
               break;
             case In:
-              if (not is_write or len >= 0x100000) throw Bad();
-              disk.storage.seekg(512*sector);
+              if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
               for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
                 disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
               wlen += len;
               break;
-            case Out: throw Bad();
-            case Flush: throw Bad();
-            case Discard: throw Bad();
-            case WriteZeroes: throw Bad();
+            case Out:
+              if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
+              for (VIOAccess::Iterator itr(buf, len, false); itr.next(vioa);)
+                disk.storage.write((char*)itr.slice.bytes, itr.slice.size);
+              break;
+            case Flush: std::cerr << "TODO: Flush\n"; throw Bad();
+            case Discard: std::cerr << "TODO: Discard\n"; throw Bad();
+            case WriteZeroes: std::cerr << "TODO: WriteZeroes\n"; throw Bad();
             }
-          state = Status;
           break;
 
         case Status:
-          if (not is_write or len != 1) throw Bad();
+          if (not is_write or len != 1) { std::cerr << "error: expected a 1 byte footer\n"; throw Bad(); }
           vioa.write(buf, 1, status);
           wlen += 1;
           state = Head;
@@ -237,13 +258,14 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
     }
   } req(vioa, *this);
 
-  bool used = false;
+  bool notification = false;
   for (;;)
     {
       uint64_t desc_addr = rq.desc_addr(rq.head);
       uint16_t flags = vioa.read(desc_addr + 14, 2);
       if (not rq.head.available(flags))
         break;
+      bool last = not (flags & 1);
       
       VIOQueue::DescIterator tail(rq.head);
       uint32_t wlen = 0;
@@ -255,29 +277,31 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
           //if (VIOQFlags::INDIRECT.Get(flags))
           if (flags & 4)
             {
-              for (uint64_t desc_addr = buf_addr, buf_end = buf_addr + buf_len; desc_addr < buf_end; desc_addr += 16)
+              uint64_t desc_addr = buf_addr, buf_end = buf_addr + buf_len;
+              for (bool cont = true; cont; )
                 {
                   uint64_t buf_addr =  vioa.read(desc_addr +  0, 8);
                   uint32_t buf_len =   vioa.read(desc_addr +  8, 4);
                   uint16_t buf_flags = vioa.read(desc_addr + 14, 2);
+
+                  desc_addr += 16;
+                  cont = desc_addr < buf_end;
               
-                  wlen += req.process(buf_addr, buf_len, buf_flags);
+                  wlen += req.process(buf_addr, buf_len, buf_flags, last and not cont);
                 }
             }
           else
             {
-              wlen += req.process(buf_addr, buf_len, flags);
+              wlen += req.process(buf_addr, buf_len, flags, last);
             }
       
           rq.head.next(rq);
           // if (VIOQFlags::NEXT.Get(flags));
-          if (flags & 1)
-            {
-              desc_addr = rq.desc_addr(rq.head);
-              flags =  vioa.read(desc_addr + 14, 2);
-            }
-          else
+          if (last)
             break;
+          
+          desc_addr = rq.desc_addr(rq.head);
+          flags =  vioa.read(desc_addr + 14, 2);
         }
 
       uint16_t id = vioa.read(desc_addr + 12, 2);
@@ -287,11 +311,24 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       vioa.write(tail_addr +  8, 4, wlen);
       vioa.write(tail_addr + 12, 2, id);
       vioa.write(tail_addr + 14, 2, tail.used(wlen > 0));
-      used = true;
+
+      if (not notification)
+        {
+          switch (pqes >> 16 & 3)
+            {
+            default: { std::cerr << "error: bad flag value.\n"; struct Bad {}; throw Bad (); }
+            case 0: /*  ENABLE */ notification = true; break;
+            case 1: /* DISABLE */ break;
+            case 2: /*    DESC */ notification = tail.idx() == (pqes & 0xffff); break;
+            }
+        }
     }
 
-  if (used)
-    vioa.notify();
+  if (notification)
+    {
+      InterruptStatus |= 1;
+      vioa.notify();
+    }
   return true;
 }
 
