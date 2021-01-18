@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 /**********************************************
 
            MULTIPLY INSTRUCTIONS
@@ -53,13 +53,13 @@ mla.disasm = {
 
 mla.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm) + cpu.GetGPR(ra);
   cpu.SetGPR( rd, res );
-  
+
   if (s)
     {
       cpu.CPSR().Set( N, S32(res) < S32(0) );
@@ -109,13 +109,13 @@ mul.disasm = {
 
 mul.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm);
   cpu.SetGPR(rd, res);
-  
+
   if (s)
     {
       cpu.CPSR().Set( N, S32(res) < S32(0) );
@@ -142,18 +142,18 @@ smlal.disasm = {
          << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
          << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
-  
+
 smlal.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   S64 op1 = S64( S32( cpu.GetGPR(rn) ) );
   S64 op2 = S64( S32( cpu.GetGPR(rm) ) );
   S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
-  
+
   cpu.SetGPR( rdlo, U32( res >> 0 ) );
   cpu.SetGPR( rdhi, U32( res >> 32 ) );
 
@@ -192,7 +192,7 @@ smull.execute = {
   S64 res = S64( S32( cpu.GetGPR( rn ) ) ) * S64( S32( cpu.GetGPR( rm ) ) );
   cpu.SetGPR( rdlo, U32( res >> 0 ) );
   cpu.SetGPR( rdhi, U32( res >> 32 ) );
-  
+
   if (s)
     {
       cpu.CPSR().Set( N, res <  S64(0) );
@@ -225,10 +225,10 @@ umlal.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
-  
+
   U64 res = ((U64(cpu.GetGPR( rdlo ))) <<  0) | ((U64(cpu.GetGPR( rdhi ))) << 32);
   res += U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
-  
+
   cpu.SetGPR( rdlo, U32(res >> 0) );
   cpu.SetGPR( rdhi, U32(res >> 32) );
 
@@ -261,7 +261,7 @@ umaal.disasm = {
 
 umaal.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U32 U32;
   U64 res = (U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ))) + U64(cpu.GetGPR( rdlo )) + U64(cpu.GetGPR( rdhi ));
@@ -297,7 +297,7 @@ umull.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
-  
+
   U64 res = U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
   cpu.SetGPR( rdlo, U32(res >> 0) );
   cpu.SetGPR( rdhi, U32(res >> 32) );
@@ -329,22 +329,23 @@ smlaxy.disasm = {
 
 smlaxy.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+  typedef typename ARCH::BOOL BOOL;
+
   S32 mop1 = S32(S16(cpu.GetGPR(rn) >> (16*n)));
   S32 mop2 = S32(S16(cpu.GetGPR(rm) >> (16*m)));
-  
+
   // Compute operands and result of signed addition
   U32 op1 = U32(mop1 * mop2),
       op2 = cpu.GetGPR(ra),
       res = op1 + op2;
-  
+
   U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
-  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
-  
+  cpu.CPSR().Set( Q, BOOL(overflow | cpu.CPSR().Get( Q )) );
+
   cpu.SetGPR( rd, res );
 };
 
@@ -368,15 +369,15 @@ smlalxy.disasm = {
 
 smlalxy.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S16 S16;
-  
+
   S64 op1 = S64( S16(cpu.GetGPR(rn) >> (16*n)) );
   S64 op2 = S64( S16(cpu.GetGPR(rm) >> (16*m)) );
   S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
-  
+
   cpu.SetGPR( rdlo, U32( res >> 0 ) );
   cpu.SetGPR( rdhi, U32( res >> 32 ) );
 };
@@ -399,22 +400,23 @@ smlawy.disasm = {
 
 smlawy.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+  typedef typename ARCH::BOOL BOOL;
+
   S64 mop1 = S64( S32(cpu.GetGPR(rn)) );
   S64 mop2 = S64( S16(cpu.GetGPR(rm) >> (16*m)) );
-  
+
   U32 op1 = U32( (mop1 * mop2) >> 16 ),
       op2 = cpu.GetGPR(ra),
       res = op1 + op2;
-  
+
   U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
-  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
-  
+  cpu.CPSR().Set( Q, BOOL(overflow | cpu.CPSR().Get( Q )) );
+
   cpu.SetGPR( rd, res );
 };
 
@@ -437,13 +439,13 @@ smulxy.disasm = {
 
 smulxy.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   S32 op1 = S32( S16(cpu.GetGPR(rn) >> (16*n)) );
   S32 op2 = S32( S16(cpu.GetGPR(rm) >> (16*m)) );
-  
+
   cpu.SetGPR( rd, U32(op1 * op2) );
 };
 
@@ -466,14 +468,14 @@ smulwy.disasm = {
 
 smulwy.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+
   U32 rmval = cpu.GetGPR(rm) >> (16*m);
-  
+
   S64 res64 = S64(S32(cpu.GetGPR(rn))) * S64(S16(rmval));
   cpu.SetGPR( rd, U32((res64 >> 16) & S64(0xffffffffULL)) );
 };
@@ -501,16 +503,16 @@ sdiv.disasm = {
 
 sdiv.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   S32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
       res(0); // An untrapped division by zero result in 0.
-  
+
   if (not cpu.IntegerZeroDivide( op2 == S32(0) )) {
     res = op1 / op2;
   }
-  
+
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -536,15 +538,15 @@ udiv.disasm = {
 
 udiv.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
       res(0); // An untrapped division by zero result in 0.
-  
+
   if (not cpu.IntegerZeroDivide( op2 == U32(0) )) {
     res = op1 / op2;
   }
-  
+
   cpu.SetGPR( rd, res );
 }
 
@@ -576,22 +578,23 @@ smlad.disasm = {
 
 smlad.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+  typedef typename ARCH::BOOL BOOL;
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
-  
+
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
   S64 res = S64(product1) + S64(product2) + S64(S32(cpu.GetGPR(ra)));
-  
+
   U32 saturation( res != S64(S32(res)) );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+
+  cpu.CPSR().Set( Q, BOOL(saturation | cpu.CPSR().Get( Q )) );
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -624,20 +627,20 @@ smlald.disasm = {
 
 smlald.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
-  
+
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
   S64 addend = (S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) );
   S64 res = S64(product1) + S64(product2) + addend;
-  
+
   cpu.SetGPR( rdlo, U32(res      ) );
   cpu.SetGPR( rdhi, U32(res >> 32) );
 };
@@ -669,22 +672,23 @@ smlsd.disasm = {
 
 smlsd.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+  typedef typename ARCH::BOOL BOOL;
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
-  
+
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
   S64 res = S64(product1) - S64(product2) + S64(S32(cpu.GetGPR(ra)));
-  
+
   U32 saturation( res != S64(S32(res)) );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+
+  cpu.CPSR().Set( Q, BOOL(saturation | cpu.CPSR().Get( Q )) );
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -717,20 +721,20 @@ smlsld.disasm = {
 
 smlsld.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
-  
+
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
   S64 addend = (S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) );
   S64 res = S64(product1) - S64(product2) + addend;
-  
+
   cpu.SetGPR( rdlo, U32(res      ) );
   cpu.SetGPR( rdhi, U32(res >> 32) );
 };
@@ -761,11 +765,11 @@ smmla.disasm = {
 
 smmla.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   S64 a(S32(cpu.GetGPR(ra))), n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
   S64 res = (a<<32) + n*m + (S64(round)<<31);
 
@@ -796,11 +800,11 @@ smmls.disasm = {
 
 smmls.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   S64 a(S32(cpu.GetGPR(ra))), n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
   S64 res = (a<<32) - n*m + (S64(round)<<31);
 
@@ -833,11 +837,11 @@ smmul.disasm = {
 
 smmul.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   S64 n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
   S64 res = n*m + (S64(round)<<31);
 
@@ -871,22 +875,23 @@ smuad.disasm = {
 
 smuad.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+  typedef typename ARCH::BOOL BOOL;
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
-  
+
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
   S64 res = S64(product1) + S64(product2);
-  
+
   U32 saturation( res != S64(S32(res)) );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+
+  cpu.CPSR().Set( Q, BOOL(saturation | cpu.CPSR().Get( Q )) );
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -918,21 +923,20 @@ smusd.disasm = {
 
 smusd.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
-  
+
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
-  
+
   cpu.SetGPR( rd, U32(product1 - product2) );
 };
 
 /*
  * end of smusd instruction
  *******************************************************************/
-

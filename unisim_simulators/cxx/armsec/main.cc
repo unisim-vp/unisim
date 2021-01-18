@@ -63,7 +63,7 @@ struct Processor
   //   =====================================================================
   struct Unimplemented {};
   struct Undefined {};
-    
+
   struct Config
   {
     // Following a standard armv7-a configuration
@@ -77,7 +77,7 @@ struct Processor
     static bool const     insnsT2 = true;
     static bool const     insns7  = true;
   };
-    
+
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
@@ -92,11 +92,11 @@ struct Processor
   typedef unisim::util::symbolic::SmartValue<int16_t>  S16;
   typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
   typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
-    
+
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
   typedef unisim::util::symbolic::ScalarType           ScalarType;
-  
+
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
   typedef unisim::util::symbolic::binsec::Store        Store;
   typedef unisim::util::symbolic::binsec::Branch       Br;
@@ -130,7 +130,7 @@ struct Processor
     }
     virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
-    
+
     char const* mode_ident() const
     {
       switch (mode)
@@ -158,11 +158,11 @@ struct Processor
       if (int delta = int(mode) - int(rhs.mode)) return delta;
       return idx - rhs.idx;
     }
-    
+
     unsigned idx;
     uint8_t mode;
   };
-  
+
   template <typename RID>
   struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
   {
@@ -173,13 +173,13 @@ struct Processor
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
-    
+
     RID id;
   };
 
   template <typename RID>
   static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
-  
+
   struct Goto : public Br
   {
     Goto( Expr const& value ) : Br( value ) {}
@@ -198,7 +198,7 @@ struct Processor
   };
 
   struct ITCond {};
-    
+
   struct Mode
   {
     Mode() {}
@@ -208,9 +208,9 @@ struct Processor
     U32      GetSPSR() { throw Unimplemented(); return U32(); }
     void     Swap( Processor& ) {}
   };
-    
+
   typedef std::map<std::pair<uint8_t,uint32_t>,Expr> ForeignRegisters;
-  
+
   struct Load : public unisim::util::symbolic::binsec::Load
   {
     Load( Expr const& addr, unsigned size, unsigned alignment, bool bigendian )
@@ -220,11 +220,11 @@ struct Processor
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
-  
+
   struct StatusRegister
   {
     enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE };
-      
+
     typedef unisim::util::symbolic::Expr       Expr;
     StatusRegister()
       : iset(Arm)                  // Default is ARM instruction set
@@ -240,31 +240,31 @@ struct Processor
     bool           bigendian;
     uint8_t        mode;
   };
-  
+
   struct PSR : public StatusRegister
   {
     typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
     typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
     typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
     typedef unisim::component::cxx::processor::arm::RegisterField<28,1> VRF; /* Overflow Integer Condition Flag */
-    //typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
-      
+    typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+
     typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
-      
-      
+
+
     typedef unisim::component::cxx::processor::arm::RegisterField<24,1> JRF; /* Jazelle execution state bit */
     typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
     typedef unisim::component::cxx::processor::arm::RegisterField< 5,1> TRF; /* Thumb execution state bit */
-      
+
     typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
-      
+
     typedef unisim::component::cxx::processor::arm::RegisterField<10,6> ITHIRF;
     typedef unisim::component::cxx::processor::arm::RegisterField<25,2> ITLORF;
-      
+
     typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALLRF;
-      
-    static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
-      
+
+    static uint32_t const bg_mask = 0x00ff01c0; /* 23-20, GE[3:0], A, I, F, are not handled for now */
+
   private:
     PSR( PSR const& );
   public:
@@ -275,11 +275,12 @@ struct Processor
       , z(newRegRead(RegID("z"), ScalarType::BOOL))
       , c(newRegRead(RegID("c"), ScalarType::BOOL))
       , v(newRegRead(RegID("v"), ScalarType::BOOL))
+      , q(newRegRead(RegID("q"), ScalarType::BOOL))
       , itstate(ref.itstate >> 8 ? newRegRead(RegID("itstate"), ScalarType::U8) : U8(ref.itstate).expr )
       , bg(newRegRead(RegID("cpsr"), ScalarType::U32))
     {
     }
-    
+
     bool   GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
     bool   GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
 
@@ -287,53 +288,57 @@ struct Processor
     void   Set( RF const& _, U32 const& value )
     {
       unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+      unisim::util::symbolic::StaticAssert<(RF::pos > 27) or ((RF::pos + RF::size) <= 27)>::check(); // Q
       unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
       unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
       unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
-        
+
       return _.Set( bg, value );
     }
-      
+
     template <typename RF>
     U32    Get( RF const& _ )
     {
       unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+      unisim::util::symbolic::StaticAssert<(RF::pos > 27) or ((RF::pos + RF::size) <= 27)>::check(); // Q
       unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
       unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
       unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
-        
+
       return _.Get( bg );
     }
-      
+
     void   SetBits( U32 const& bits, uint32_t mask );
     U32    GetBits();
-    
+
     void   Set( NRF const& _, BOOL const& value ) { n = value.expr; }
     void   Set( ZRF const& _, BOOL const& value ) { z = value.expr; }
     void   Set( CRF const& _, BOOL const& value ) { c = value.expr; }
     void   Set( VRF const& _, BOOL const& value ) { v = value.expr; }
+    void   Set( QRF const& _, BOOL const& value ) { q = value.expr; }
     void   Set( ERF const& _, U32 const& value ) { if (proc.Test(value != U32(bigendian))) proc.UnpredictableInsnBehaviour(); }
     void   Set( NZCVRF const& _, U32 const& value );
 
     void   SetITState( uint8_t init_val ) { itstate = U8(init_val); }
     BOOL   InITBlock() const { return (itstate & U8(0b1111)) != U8(0); }
-      
+
     U32    Get( NRF const& _ ) { return U32(BOOL(n)); }
     U32    Get( ZRF const& _ ) { return U32(BOOL(z)); }
     U32    Get( CRF const& _ ) { return U32(BOOL(c)); }
     U32    Get( VRF const& _ ) { return U32(BOOL(v)); }
-      
+    U32    Get( QRF const& _ ) { return U32(BOOL(q)); }
+
     /* ISetState */
     U32    Get( JRF const& _ ) { return U32(GetJ()); }
     U32    Get( TRF const& _ ) { return U32(GetT()); }
-      
+
     /* Endianness */
     U32    Get( ERF const& _ ) { return U32(bigendian); }
     U32    Get( MRF const& _ ) { return U32(mode); }
     // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
-      
+
     Processor& proc;
-    Expr n, z, c, v, nthumb; /* TODO: should handle q */
+    Expr n, z, c, v, q, nthumb;
     U8 itstate;
     U32 bg;
   };
@@ -341,7 +346,7 @@ struct Processor
 private:
   Processor( Processor const& );
 public:
-  
+
   Processor( StatusRegister const& ref_psr )
     : path(0)
     , reg_values()
@@ -362,7 +367,7 @@ public:
     // GPR regs
     for (unsigned reg = 0; reg < 15; ++reg)
       reg_values[reg] = U32( newRegRead( RegID("r0") + reg, ScalarType::U32 ) );
-      
+
     // Special registers
     for (SRegID reg; reg.next();)
       sregs[reg.idx()] = U32( newRegRead( reg, ScalarType::U32 ) );
@@ -391,6 +396,8 @@ public:
       path->add_sink( newRegWrite( RegID("c"), cpsr.c ) );
     if (cpsr.v != ref.cpsr.v)
       path->add_sink( newRegWrite( RegID("v"), cpsr.v ) );
+    if (cpsr.q != ref.cpsr.q)
+      path->add_sink( newRegWrite( RegID("q"), cpsr.q ) );
     if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
       path->add_sink( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
@@ -407,7 +414,7 @@ public:
         else
           path->add_sink( newRegWrite( RegID("t"), nt ) );
       }
-      
+
     if (spsr.expr != ref.spsr.expr)
       path->add_sink( newRegWrite( RegID("spsr"), spsr.expr ) );
 
@@ -442,16 +449,16 @@ public:
       path->add_sink( *itr );
     return complete;
   }
-  
+
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================
-  
+
   void UnpredictableInsnBehaviour() { unpredictable = true; }
-  
+
   template <typename OP>
   void UndefinedInstruction( OP* op ) { throw Undefined(); }
-    
+
   bool concretize( Expr cexp )
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
@@ -461,7 +468,7 @@ public:
     path = path->next( predicate );
     return predicate;
   }
-  
+
   template <typename T>
   bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
   {
@@ -470,18 +477,18 @@ public:
 
     return concretize( BOOL(cond).expr );
   }
-  
+
   void FPTrap( unsigned exc )
   {
     throw Unimplemented();
   }
-    
+
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
-    
+
   U32  GetGPR( uint32_t id ) { return reg_values[id]; }
-  
+
   // TODO: interworking branches are not correctly handled
   void SetGPR_mem( uint32_t id, U32 const& value )
   {
@@ -496,10 +503,10 @@ public:
     else
       SetNIA( value, B_JMP );
   }
-    
+
   void SetGPR_usr( uint32_t id, U32 const& value ) { /* system mode */ throw Unimplemented(); }
   U32  GetGPR_usr( uint32_t id ) { /* system mode */ throw Unimplemented(); return U32(); }
-    
+
   U32  GetNIA() { return next_insn_addr; }
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   void SetNIA( U32 const& nia, branch_type_t bt )
@@ -515,7 +522,7 @@ public:
       result = new ForeignRegister( foreign_mode, idx );
     return result;
   }
-    
+
   U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx )
   {
     if ((cpsr.mode == foreign_mode) or
@@ -526,7 +533,7 @@ public:
       return GetGPR( idx );
     return U32( GetForeignRegister( foreign_mode, idx ) );
   }
-    
+
   void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value )
   {
     if ((cpsr.mode == foreign_mode) or
@@ -537,27 +544,27 @@ public:
       return SetGPR( idx, value );
     GetForeignRegister( foreign_mode, idx ) = value.expr;
   }
-    
+
   //   =====================================================================
   //   =              Special/System Registers access methods              =
   //   =====================================================================
 
   PSR& CPSR() { return cpsr; }
-  
+
   U32  GetCPSR()                                 { return cpsr.GetBits(); }
   void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
-    
+
   U32& SPSR() { throw Unimplemented(); static U32 spsr_dummy; return spsr_dummy; }
-  
+
   ITCond itcond() const { return ITCond(); }
   bool itblock() { return Test(cpsr.InITBlock()); }
-  
+
   void ITSetState( uint32_t cond, uint32_t mask )
   {
     cpsr.SetITState( (cond << 4) | mask );
     is_it_assigned = true;
   }
-  
+
   void ITAdvance()
   {
     if (is_it_assigned)
@@ -569,11 +576,11 @@ public:
         cpsr.itstate = itstate;
       }
   }
-  
+
   Mode&  CurrentMode() { /* throw Unimplemented(); */ return mode; }
   Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
   void RequiresPL(unsigned rpl) { /*TODO: todo*/ }
-  
+
   struct CP15Reg
   {
     void CheckPermissions( uint8_t, uint8_t, uint8_t, uint8_t, Processor& cpu, bool ) const { cpu.RequiresPL(1); }
@@ -584,9 +591,9 @@ public:
       sink << "CR15{crn=" << crn << ", op1=" << op1 << ", crm=" << crm << ", op2=" << op2 << "}";
     }
   };
-  
+
   static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  
+
   //   ====================================================================
   //   =         Vector and Floating-point Registers access methods       =
   //   ====================================================================
@@ -597,22 +604,22 @@ public:
     unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
     return fpscr;
   }
-    
+
   U32 RoundToNearestFPSCR() const
   {
     U32 fpscr = FPSCR;
     unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundToNearest) );
     return fpscr;
   }
-    
+
   // U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
-    
+
   struct NeonName
   { // Convenience class for name construction
     NeonName( unsigned idx ) : begin(&buf[sizeof(buf)]) { _('\0'); do { _('0'+idx%10); idx /= 10; } while (idx); _('d'); }
     void _(char c) { *--begin = c; } operator char const* () const { return begin; } char buf[4]; char* begin;
   };
-  
+
   struct NeonRead : public unisim::util::symbolic::binsec::RegRead
   {
     typedef NeonRead this_type;
@@ -623,7 +630,7 @@ public:
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<NeonRead const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { return int(reg) - int(rhs.reg); }
-    
+
     unsigned reg;
   };
 
@@ -636,7 +643,7 @@ public:
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
-    
+
     unsigned reg;
   };
 
@@ -664,10 +671,10 @@ public:
       if (int delta = int(end) - int(rhs.end)) return delta;
       return Super::compare( rhs );
     }
-    
+
     unsigned reg, beg, end;
   };
-  
+
   static unsigned const NEONSIZE = 8;
 
   void
@@ -675,7 +682,7 @@ public:
   {
     using unisim::util::symbolic::binsec::BitFilter;
     // using unisim::util::symbolic::make_const;
-    
+
     { // Check for constant values
       Expr dr = unisim::util::symbolic::binsec::ASExprNode::Simplify( GetVDU(reg).expr );
       if (dr.ConstSimplify())
@@ -691,7 +698,7 @@ public:
         path->add_sink( new NeonWrite( reg, eneonread(reg,NEONSIZE,0) ) );
         return;
       }
-    
+
     // Requested read is a concatenation of multiple source values
     struct _
     {
@@ -713,12 +720,12 @@ public:
       }
     } concat( *this, reg );
   }
- 
+
   Expr eneonread( unsigned reg, unsigned size, unsigned pos )
   {
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
-    
+
     // struct
     // {
     //   Expr ui( unsigned sz, Expr const& src ) const
@@ -733,7 +740,7 @@ public:
     //     return 0;
     //   }
     // } cast;
-    
+
     if (not neonregs[reg][pos].node)
       {
         // requested read is in the middle of a larger value
@@ -759,15 +766,15 @@ public:
           }
         return concat;
       }
-    
+
     // requested read is directly available
     return neonregs[reg][pos];
   }
-  
+
   void eneonwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
   {
     Expr nxt[NEONSIZE];
-    
+
     for (unsigned ipos = pos, isize = size, cpos;
          cpos = (ipos^isize) & (NEONSIZE-1), (not neonregs[reg][ipos].node) or (not neonregs[reg][cpos].node);
          isize *= 2, ipos &= -isize
@@ -775,15 +782,15 @@ public:
       {
         nxt[cpos] = eneonread( reg, isize, cpos );
       }
-    
+
     for (unsigned ipos = 0; ipos < NEONSIZE; ++ipos)
       {
         if (nxt[ipos].node)
           neonregs[reg][ipos] = nxt[ipos];
       }
-    
+
     neonregs[reg][pos] = xpr;
-    
+
     for (unsigned rem = 1; rem < size; ++rem)
       {
         neonregs[reg][pos+rem] = 0;
@@ -820,7 +827,7 @@ public:
   S32 neoncast( S32 const&, Expr const& x ) { return S32(U32(x)); }
   S64 neoncast( S64 const&, Expr const& x ) { return S64(U64(x)); }
 
-  
+
   // Get|Set elements
   template <class ELEMT>
   void
@@ -839,7 +846,7 @@ public:
     unsigned usz = tsizeof( trait );
     return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) );
   }
-  
+
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
@@ -849,7 +856,7 @@ public:
     cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 0, 1, 1, false );
     Branch( target, branch_type );
   }
-	
+
   void Branch( U32 const& target, branch_type_t branch_type )
   {
     SetNIA( target & U32(this->cpsr.GetT() ? -2 : -4), branch_type );
@@ -862,37 +869,37 @@ public:
   // {
   //   SetNIA( target, branch_type );
   // }
-    
+
   void WaitForInterrupt() { throw Unimplemented(); }
   void SWI( uint32_t imm ) { throw Unimplemented(); }
   void BKPT( uint32_t imm ) { throw Unimplemented(); }
   void CallSupervisor( uint32_t imm ) { throw Unimplemented(); }
   bool IntegerZeroDivide( BOOL const& condition ) { return false; }
-  
+
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
-  
+
   U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
   U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
   U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 2, false ) ) ); }
   U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 1, false ) ) ); }
   U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( addr.expr, 0, 0, false ) ) ); }
-  
+
   void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
   void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
   void MemWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 2, false ) ); }
   void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 1, false ) ); }
   void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( addr.expr, value.expr, 0, 0, false ) ); }
-    
+
   void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
   bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
   void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
-  
+
   //   =====================================================================
   //   =                         Processor Storage                         =
   //   =====================================================================
-  
+
   static const unsigned PC_reg = 15;
   static const unsigned LR_reg = 14;
   static const unsigned SP_reg = 13;
@@ -924,7 +931,7 @@ public:
   // static uint32_t const COND_GT = 0x0c;
   // static uint32_t const COND_LE = 0x0d;
   // static uint32_t const COND_AL = 0x0e;
-    
+
   /* mask for valid bits in processor control and status registers */
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
 
@@ -996,21 +1003,21 @@ public:
     SRegID( Code _code ) : code(_code) {}
     SRegID( char const* _code ) : code(end) { init(_code); }
   };
-  
+
   U32& SReg( SRegID reg )
   {
     if (reg.code == SRegID::end)
       throw 0;
     return sregs[reg.idx()];
   }
-    
+
   struct RegID : public unisim::util::identifier::Identifier<RegID>
   {
     enum Code
       {
         NA = 0,
         r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr,
-        n, z, c, v, t, itstate, // q, ge0, ge1, ge2, ge3,
+        n, z, c, v, q, t, itstate, // q, ge0, ge1, ge2, ge3,
         cpsr, spsr,
         fpscr, fpexc,
         r8_fiq,
@@ -1063,6 +1070,7 @@ public:
         case          z: return "z";
         case          c: return "c";
         case          v: return "v";
+	case          q: return "q";
         case          t: return "t";
         case    itstate: return "itstate";
         case       cpsr: return "cpsr";
@@ -1098,7 +1106,7 @@ public:
         }
       return "NA";
     }
-      
+
     RegID() : code(end) {}
     RegID( Code _code ) : code(_code) {}
     RegID( char const* _code ) : code(end) { init( _code ); }
@@ -1123,7 +1131,7 @@ public:
 bool CheckCondition( Processor& state, unsigned cond )
 {
   Processor::BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v, result(false);
-  
+
   switch (cond) {
   case  0: result =                   Z; break; // eq; equal
   case  1: result =               not Z; break; // ne; not equal
@@ -1261,18 +1269,18 @@ struct Translator
 {
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
   typedef Processor::StatusRegister StatusRegister;
-  
+
   Translator( uint32_t _addr, uint32_t _code )
     : addr(_addr), code(_code), coderoot(new ActionNode)
   {}
   ~Translator() { delete coderoot; }
-  
+
   template <class ISA>
   void
   extract( std::ostream& sink, ISA& isa )
   {
     sink << "(address . " << unisim::util::symbolic::binsec::dbx(4, addr) << ")\n";
-  
+
     // Instruction decoding
     struct Instruction
     {
@@ -1281,38 +1289,38 @@ struct Translator
         : operation(0), bytecount(0)
       {
         operation = isa.NCDecode( addr, ISA::mkcode( code ) );
-        unsigned bitlength = operation->GetLength(); 
+        unsigned bitlength = operation->GetLength();
         if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
           { delete operation; operation = 0; }
         bytecount = bitlength/8;
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
-      
+
       Operation* operation;
       unsigned   bytecount;
     };
-    
+
     Instruction instruction( isa, addr, code );
-    
+
     {
       uint32_t encoding = instruction->GetEncoding();
       if (instruction.bytecount == 2)
         encoding &= 0xffff;
-      
+
       sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(instruction.bytecount, encoding) << ")\n(size . " << (instruction.bytecount) << ")\n";
     }
-    
+
     Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     // Processor::U32      insn_addr = Expr(new InstructionAddress()); //< symbolic instruction address
     Processor reference( status );
-    
+
     // Disassemble
     sink << "(mnemonic . \"";
     try { instruction->disasm( reference, sink ); }
     catch (...) { sink << "(bad)"; }
     sink << "\")\n";
-    
+
     // Get actions
     bool is_thumb = status.IsThumb();
     for (bool end = false; not end;)
@@ -1373,7 +1381,7 @@ struct Translator
   uint32_t    addr, code;
   ActionNode* coderoot;
 };
-  
+
 uint32_t getu32( uint32_t& res, char const* arg )
 {
   char *end;
@@ -1418,7 +1426,7 @@ main( int argc, char** argv )
 
   Translator actset( addr, code );
   Translator::StatusRegister& status = actset.status;
-  
+
   std::string exec_flags(argv[1]);
   exec_flags += ',';
   for (std::string::iterator cur = exec_flags.begin(), end = exec_flags.end(), nxt; cur != end; cur = nxt+1 )
@@ -1467,7 +1475,7 @@ main( int argc, char** argv )
     }
 
   actset.translate( std::cout );
-  
+
   return 0;
 }
 
@@ -1490,7 +1498,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 0, 0, 0, 5 ):
       {
         static struct : public CP15Reg
@@ -1500,7 +1508,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 0, 0, 1, 0 ):
       {
         static struct : public CP15Reg
@@ -1510,7 +1518,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 0, 1, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -1541,7 +1549,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-      
+
       /****************************
        * System control registers *
        ****************************/
@@ -1687,7 +1695,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       /***************************************************************
        * Cache maintenance, address translation, and other functions *
        ***************************************************************/
-          
+
     case CP15ENCODE( 7, 0, 1, 0 ):
       {
         static struct : public CP15Reg
@@ -1764,7 +1772,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 7, 0, 10, 1 ):
       {
         static struct : public CP15Reg
@@ -1786,7 +1794,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 7, 0, 11, 1 ):
       {
         static struct : public CP15Reg
@@ -1808,7 +1816,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
       /******************************
        * TLB maintenance operations *
        ******************************/
@@ -1845,7 +1853,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 12, 0, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -1856,7 +1864,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
       /***********************************/
       /* Context and thread ID registers */
       /***********************************/
@@ -1873,7 +1881,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       } break;
 
       /* BOARD specific */
-          
+
     case CP15ENCODE( 15, 0, 0, 1 ):
       {
         static struct : public CP15Reg
@@ -1884,7 +1892,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 15, 4, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -1911,6 +1919,7 @@ Processor::PSR::Set( NZCVRF const& _, U32 const& value )
   z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
   c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
   v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
+
 }
 
 Processor::U32
@@ -1921,11 +1930,12 @@ Processor::PSR::GetBits()
     (U32(BOOL(z)) << 30) |
     (U32(BOOL(c)) << 29) |
     (U32(BOOL(v)) << 28) |
+    (U32(BOOL(q)) << 27) |
     (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
     U32((uint32_t(GetJ()) << 24) | (uint32_t(GetT()) << 5) | uint32_t(mode)) |
     bg;
 }
-      
+
 void
 Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
 {
@@ -1933,7 +1943,8 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
   if (ZRF().Get(mask)) { z = BOOL( ZRF().Get(bits) ).expr; ZRF().Set(mask, 0u); }
   if (CRF().Get(mask)) { c = BOOL( CRF().Get(bits) ).expr; CRF().Set(mask, 0u); }
   if (VRF().Get(mask)) { v = BOOL( VRF().Get(bits) ).expr; VRF().Set(mask, 0u); }
-        
+  if (QRF().Get(mask)) { q = BOOL( QRF().Get(bits) ).expr; QRF().Set(mask, 0u); }
+
   if (ITHIRF().Get(mask) or ITLORF().Get(mask))
     {
       itstate = U8((ITHIRF().Get(bits) << 2) | ITLORF().Get(bits));
@@ -1943,7 +1954,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
       mask &= ~itmask;
       ITHIRF().Set(mask, 0u); ITLORF().Set(mask, 0u);
     }
-        
+
   if (MRF().Get(mask))
     {
       if (MRF().Get(mask) != 0x1f)
@@ -1953,10 +1964,10 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
       if (proc.Test(nmode != U32(mode)))
         proc.UnpredictableInsnBehaviour();
     }
-        
+
   if (JRF().Get(mask)) { if (proc.Test(JRF().Get(bits) != U32(GetJ())))    { proc.UnpredictableInsnBehaviour(); } JRF().Set(mask, 0u); }
   if (TRF().Get(mask)) { if (proc.Test(TRF().Get(bits) != U32(GetT())))    { proc.UnpredictableInsnBehaviour(); } TRF().Set(mask, 0u); }
   if (ERF().Get(mask)) { if (proc.Test(ERF().Get(bits) != U32(bigendian))) { proc.UnpredictableInsnBehaviour(); } ERF().Set(mask, 0u); }
-        
+
   bg = (bg & U32(~mask)) | (bits & U32(mask));
 }

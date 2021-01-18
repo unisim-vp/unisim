@@ -65,7 +65,7 @@ qadd.execute = {
 
   // negative and positive bounds
   int32_t const nbound = -1 << 31, pbound = ~nbound;
-  
+
   BOOL q = BOOL(cpu.CPSR().Get( Q ));
   S32 op1 = S32(cpu.GetGPR(rn)), op2 = S32(cpu.GetGPR(rm)), res = op1 + op2;
 
@@ -74,7 +74,7 @@ qadd.execute = {
   U32 satres = CondMove<U32>( of, pbound, uf, nbound, res );
 
   cpu.SetGPR( rd, satres );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -208,7 +208,7 @@ qsub.execute = {
   U32 satres = CondMove<U32>(of, pbound, uf, nbound, res);
 
   cpu.SetGPR( rd, satres );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -345,9 +345,9 @@ qdadd.execute = {
   n = res < S32(0); sbn = op1 <= S32(~op2); of = not sbn and n; uf = sbn and not n;
   res = CondMove<S32>(of, pbound, uf, nbound, res);
   q |= of | uf;
-  
+
   cpu.SetGPR( rd, U32(res) );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -393,9 +393,9 @@ qdsub.execute = {
   n = res < S32(0); sbn = op1 < op2; of = not sbn and n; uf = sbn and not n;
   res = CondMove<S32>(of, pbound, uf, nbound, res);
   q |= of | uf;
-  
+
   cpu.SetGPR( rd, U32(res) );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -656,7 +656,7 @@ ssat.execute = {
   U32 res = CondMove<U32>(of, pbound, uf, nbound, src);
 
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -699,9 +699,9 @@ ssat16.execute = {
       res32 |= U32(CondMove<U16>(of,pbound,uf,nbound,src)) << 16*idx;
       q |= of | uf;
     }
-  
+
   cpu.SetGPR( rd, res32 );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -734,12 +734,12 @@ usat.execute = {
 
   BOOL q = BOOL(cpu.CPSR().Get( Q ));
   S32 src = S32(ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ));
-  
+
   BOOL of = src > S32(bound), uf = src < S32(0);
   U32 res = CondMove<U32>(of, bound, uf, 0, src);
 
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -782,9 +782,9 @@ usat16.execute = {
       res32 |= U32(CondMove<U16>(of,bound,uf,0,src)) << 16*idx;
       q |= of | uf;
     }
-  
+
   cpu.SetGPR( rd, res32 );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -2059,7 +2059,7 @@ uqasx.execute = {
     U16 op1 = U16(opn >> 16), op2 = U16(opm), res = op1 + op2;
     res32 |= U32(CondMove<U16>(op1 > U16(~op2), bound, res)) << 16;
   }
-  
+
   cpu.SetGPR( rd, res32 );
 };
 
@@ -2103,7 +2103,7 @@ uqsax.execute = {
     U16 op1 = U16(opn >> 16), op2 = U16(opm), res = op1 - op2;
     res32 |= U32(CondMove<U16>(op1 < op2, 0, res)) << 16;
   }
-  
+
   cpu.SetGPR( rd, res32 );
 };
 
@@ -2434,4 +2434,3 @@ uhsax.execute = {
 /*
  * end of uhsax instruction
  *******************************************************************/
-
