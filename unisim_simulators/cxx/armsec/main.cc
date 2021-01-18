@@ -247,7 +247,7 @@ struct Processor
     typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
     typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
     typedef unisim::component::cxx::processor::arm::RegisterField<28,1> VRF; /* Overflow Integer Condition Flag */
-    //typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+    typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
 
     typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
 
@@ -263,7 +263,7 @@ struct Processor
 
     typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALLRF;
 
-    static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
+    static uint32_t const bg_mask = 0x00ff01c0; /* 23-20, GE[3:0], A, I, F, are not handled for now */
 
   private:
     PSR( PSR const& );
@@ -275,6 +275,7 @@ struct Processor
       , z(newRegRead(RegID("z"), ScalarType::BOOL))
       , c(newRegRead(RegID("c"), ScalarType::BOOL))
       , v(newRegRead(RegID("v"), ScalarType::BOOL))
+      , q(newRegRead(RegID("q"), ScalarType::BOOL))
       , itstate(ref.itstate >> 8 ? newRegRead(RegID("itstate"), ScalarType::U8) : U8(ref.itstate).expr )
       , bg(newRegRead(RegID("cpsr"), ScalarType::U32))
     {
@@ -287,6 +288,7 @@ struct Processor
     void   Set( RF const& _, U32 const& value )
     {
       unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+      unisim::util::symbolic::StaticAssert<(RF::pos > 27) or ((RF::pos + RF::size) <= 27)>::check(); // Q
       unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
       unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
       unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
@@ -298,6 +300,7 @@ struct Processor
     U32    Get( RF const& _ )
     {
       unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+      unisim::util::symbolic::StaticAssert<(RF::pos > 27) or ((RF::pos + RF::size) <= 27)>::check(); // Q
       unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
       unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
       unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
@@ -312,6 +315,7 @@ struct Processor
     void   Set( ZRF const& _, BOOL const& value ) { z = value.expr; }
     void   Set( CRF const& _, BOOL const& value ) { c = value.expr; }
     void   Set( VRF const& _, BOOL const& value ) { v = value.expr; }
+    void   Set( QRF const& _, BOOL const& value ) { q = value.expr; }
     void   Set( ERF const& _, U32 const& value ) { if (proc.Test(value != U32(bigendian))) proc.UnpredictableInsnBehaviour(); }
     void   Set( NZCVRF const& _, U32 const& value );
 
@@ -322,6 +326,7 @@ struct Processor
     U32    Get( ZRF const& _ ) { return U32(BOOL(z)); }
     U32    Get( CRF const& _ ) { return U32(BOOL(c)); }
     U32    Get( VRF const& _ ) { return U32(BOOL(v)); }
+    U32    Get( QRF const& _ ) { return U32(BOOL(q)); }
 
     /* ISetState */
     U32    Get( JRF const& _ ) { return U32(GetJ()); }
@@ -333,7 +338,7 @@ struct Processor
     // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
 
     Processor& proc;
-    Expr n, z, c, v, nthumb; /* TODO: should handle q */
+    Expr n, z, c, v, q, nthumb;
     U8 itstate;
     U32 bg;
   };
@@ -391,6 +396,8 @@ public:
       path->add_sink( newRegWrite( RegID("c"), cpsr.c ) );
     if (cpsr.v != ref.cpsr.v)
       path->add_sink( newRegWrite( RegID("v"), cpsr.v ) );
+    if (cpsr.q != ref.cpsr.q)
+      path->add_sink( newRegWrite( RegID("q"), cpsr.q ) );
     if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
       path->add_sink( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
@@ -849,7 +856,7 @@ public:
     cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 0, 1, 1, false );
     Branch( target, branch_type );
   }
-	
+
   void Branch( U32 const& target, branch_type_t branch_type )
   {
     SetNIA( target & U32(this->cpsr.GetT() ? -2 : -4), branch_type );
@@ -1010,7 +1017,7 @@ public:
       {
         NA = 0,
         r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr,
-        n, z, c, v, t, itstate, // q, ge0, ge1, ge2, ge3,
+        n, z, c, v, q, t, itstate, // q, ge0, ge1, ge2, ge3,
         cpsr, spsr,
         fpscr, fpexc,
         r8_fiq,
@@ -1063,6 +1070,7 @@ public:
         case          z: return "z";
         case          c: return "c";
         case          v: return "v";
+	case          q: return "q";
         case          t: return "t";
         case    itstate: return "itstate";
         case       cpsr: return "cpsr";
@@ -1911,6 +1919,7 @@ Processor::PSR::Set( NZCVRF const& _, U32 const& value )
   z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
   c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
   v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
+
 }
 
 Processor::U32
@@ -1921,6 +1930,7 @@ Processor::PSR::GetBits()
     (U32(BOOL(z)) << 30) |
     (U32(BOOL(c)) << 29) |
     (U32(BOOL(v)) << 28) |
+    (U32(BOOL(q)) << 27) |
     (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
     U32((uint32_t(GetJ()) << 24) | (uint32_t(GetT()) << 5) | uint32_t(mode)) |
     bg;
@@ -1933,6 +1943,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
   if (ZRF().Get(mask)) { z = BOOL( ZRF().Get(bits) ).expr; ZRF().Set(mask, 0u); }
   if (CRF().Get(mask)) { c = BOOL( CRF().Get(bits) ).expr; CRF().Set(mask, 0u); }
   if (VRF().Get(mask)) { v = BOOL( VRF().Get(bits) ).expr; VRF().Set(mask, 0u); }
+  if (QRF().Get(mask)) { q = BOOL( QRF().Get(bits) ).expr; QRF().Set(mask, 0u); }
 
   if (ITHIRF().Get(mask) or ITLORF().Get(mask))
     {

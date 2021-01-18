@@ -68,7 +68,7 @@ qadd.execute = {
   U32 satres = CondMove<U32>( of, pbound, uf, nbound, res );
 
   cpu.SetGPR( rd, satres );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -202,7 +202,7 @@ qsub.execute = {
   U32 satres = CondMove<U32>(of, pbound, uf, nbound, res);
 
   cpu.SetGPR( rd, satres );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -341,7 +341,7 @@ qdadd.execute = {
   q |= of | uf;
 
   cpu.SetGPR( rd, U32(res) );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -389,7 +389,7 @@ qdsub.execute = {
   q |= of | uf;
 
   cpu.SetGPR( rd, U32(res) );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -504,7 +504,7 @@ ssat.execute = {
   U32 res = CondMove<U32>(of, pbound, uf, nbound, src);
 
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -548,7 +548,7 @@ ssat16.execute = {
     }
 
   cpu.SetGPR( rd, res32 );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -587,7 +587,7 @@ usat.execute = {
   U32 res = CondMove<U32>(of, bound, uf, 0, src);
 
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( Q, U32(q | of | uf) );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -631,7 +631,7 @@ usat16.execute = {
     }
 
   cpu.SetGPR( rd, res32 );
-  cpu.CPSR().Set( Q, U32(q) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -1089,7 +1089,7 @@ usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rd) << ", " << DisasmRegi
 
 usad8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-	
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
 
@@ -1127,7 +1127,7 @@ usada8.disasm = {
 
 usada8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-	
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
 
@@ -1914,4 +1914,3 @@ uhsax.execute = {
 /*
  * end of uhsax instruction
  *******************************************************************/
-

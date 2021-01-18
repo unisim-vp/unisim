@@ -303,6 +303,7 @@ smlaxy.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
+  typedef typename ARCH::BOOL BOOL;
 
   S32 mop1( S16(cpu.GetGPR(rn) >> (16*n)) ),
       mop2( S16(cpu.GetGPR(rm) >> (16*m)) );
@@ -313,7 +314,7 @@ smlaxy.execute = {
       res = op1 + op2;
 
   U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
-  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
+  cpu.CPSR().Set( Q, BOOL(overflow | cpu.CPSR().Get( Q )) );
 
   cpu.SetGPR( rd, res );
 };
@@ -370,6 +371,7 @@ smlawy.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
+  typedef typename ARCH::BOOL BOOL;
 
   S64 mop1 = S64( S32( cpu.GetGPR(rn) ) ),
       mop2( S16(cpu.GetGPR(rm) >> (16*m)) );
@@ -379,7 +381,7 @@ smlawy.execute = {
       res = op1 + op2;
 
   U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
-  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
+  cpu.CPSR().Set( Q, BOOL(overflow | cpu.CPSR().Get( Q )) );
 
   cpu.SetGPR( rd, res );
 };
@@ -449,6 +451,7 @@ smlad.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
+  typedef typename ARCH::BOOL BOOL;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
@@ -459,7 +462,7 @@ smlad.execute = {
 
   U32 saturation( res != S64(S32(res)) );
 
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.CPSR().Set( Q, BOOL(saturation | cpu.CPSR().Get( Q )) );
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -541,6 +544,7 @@ smlsd.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
+  typedef typename ARCH::BOOL BOOL;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
@@ -551,7 +555,7 @@ smlsd.execute = {
 
   U32 saturation( res != S64(S32(res)) );
 
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.CPSR().Set( Q, BOOL(saturation | cpu.CPSR().Get( Q )) );
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -741,6 +745,7 @@ smuad.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
+  typedef typename ARCH::BOOL BOOL;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
   if (swap) op2 = RotateRight(op2,16);
@@ -751,7 +756,7 @@ smuad.execute = {
 
   U32 saturation( res != S64(S32(res)) );
 
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.CPSR().Set( Q, BOOL(saturation | cpu.CPSR().Get( Q )) );
   cpu.SetGPR( rd, U32(res) );
 };
 
@@ -797,4 +802,3 @@ smusd.execute = {
 /*
  * end of smusd instruction
  *******************************************************************/
-
