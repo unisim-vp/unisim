@@ -48,6 +48,10 @@ AArch64::AArch64()
   , ipb()
   , decoder()
   , gpr()
+  , vector_views()
+  , vectors()
+  , fpcr()
+  , fpsr()
   , sp_el()
   , el1()
   , pstate()
@@ -61,7 +65,6 @@ AArch64::AArch64()
   , CPACR()
   , bdaddr(0)
   , disasm(false)
-  , qes()
 {
 }
 
@@ -131,7 +134,7 @@ AArch64::Page::Free AArch64::Page::Free::nop;
 uint8_t*
 AArch64::IPB::get(AArch64& core, uint64_t vaddr)
 {
-  uint64_t address = core.translate_address(vaddr, mat_exec, LINE_SIZE);
+  uint64_t address = core.translate_address(vaddr, AArch64::mem_acc_type::exec, LINE_SIZE);
   uint64_t req_base_address = address & -LINE_SIZE;
   unsigned idx = vaddr % LINE_SIZE;
   if (base_address != req_base_address)
@@ -356,7 +359,7 @@ struct QuietAccess { static bool const DEBUG = true; static bool const VERBOSE =
 struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE = false; };
 
 uint64_t
-AArch64::translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size)
+AArch64::translate_address(uint64_t vaddr, mem_acc_type::Code mat, unsigned size)
 {
   if (not unisim::component::cxx::processor::arm::sctlr::M.Get(el1.SCTLR))
     return vaddr;
@@ -388,7 +391,7 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
 
 template <class POLICY>
 void
-AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size )
+AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat, unsigned size )
 {
   bool tbi, epd;
   unsigned grainsize, tsz;
@@ -604,18 +607,18 @@ AArch64::ExceptionReturn()
 }
 
 void
-AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
+AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type::Code mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
 {
   // ESR[target_el] = ec<5:0>:il:syndrome;
   get_el(target_el).ESR = U32(0)
-    | U32((mat == mat_exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
-    | U32(1) << 25 // IL
+    | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
+    | U32(1) << 25 // IL Instruction Length
     | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
     | U32(0,0b1111) << 10
-    | U32(0,0b1) << 9 // IsExternalAbort(fault)
-    | U32(0,0b1) << 8 // IN {AccType_DC, AccType_IC}
+    | U32(0) << 9 // IsExternalAbort(fault)
+    | U32(mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
-    | U32(mat == mat_write) << 6
+    | U32(mat == mem_acc_type::write or mat == mem_acc_type::cache_maintenance) << 6
     | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
   // FAR[target_el] = exception.vaddress;
   get_el(target_el).FAR = va;
@@ -1553,9 +1556,16 @@ AArch64::MemDump64(uint64_t addr)
   addr &= -8;
 
   std::cerr << std::hex << "virt: " << addr << ", ";
-  uint64_t paddr = translate_address(addr, mat_read, 8);
-
-  PMemDump64(paddr);
+  
+  try
+    {
+      uint64_t paddr = translate_address(addr, mem_acc_type::read, 8);
+      PMemDump64(paddr);
+    }
+  catch (DataAbort const&)
+    {
+      std::cerr << "<translation error>.\n";
+    }
 }
 
 void
@@ -1601,7 +1611,7 @@ AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
   struct Bad {};
   if (addr.ubits) raise( Bad() );
   if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
-  uint64_t paddr = translate_address(addr.value, mat_read, size);
+  uint64_t paddr = translate_address(addr.value, mem_acc_type::read, size);
 
   excmon.set(paddr, size);
 }
@@ -1612,7 +1622,7 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
   struct Bad {};
   if (addr.ubits) raise( Bad() );
   if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
-  uint64_t paddr = translate_address(addr.value, mat_write, size);
+  uint64_t paddr = translate_address(addr.value, mem_acc_type::write, size);
   bool passed = excmon.pass( paddr, size );
   excmon.clear();
   return passed;
@@ -1633,64 +1643,64 @@ AArch64::memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr,
   struct Bad {}; raise(Bad());
 }
 
-bool
-AArch64::QESCapture()
-{
-  VIOA vioa(*this,0);
+// bool
+// AArch64::QESCapture()
+// {
+//   VIOA vioa(*this,0);
 
-  std::cerr << "VIRTQ.ready => " << viodisk.rq.ready << "\n";
-  for (unsigned side = 0; side < 2; ++side)
-    {
-      uint64_t base = (side ? viodisk.rq.device_area : viodisk.rq.driver_area);
-      char const* name = (side ? "Device" : "Driver");
-      std::cerr << "pvirtq_event_suppress@" << std::hex << base << "(" << name << ")"
-                << "{ offset=" << std::dec << vioa.read(base + 0, 2)
-                << ", flags=0x" << std::hex << vioa.read(base + 2, 2)
-                << "}\n";
-      Page const& sur = access_page(base);
-      sur.dump_range(std::cerr << "  In: ");
-      std::cerr << std::endl;
-      Page before(sur.base, base-1), after(base+4,sur.last);
-      uint64_t mid = base - sur.base;
-      std::copy(sur.data_rel(0), sur.data_rel(mid), before.data_rel(0));
-      std::copy(sur.udat_rel(0), sur.udat_rel(mid), before.udat_rel(0));
-      std::copy(sur.data_rel(mid+4), sur.data_rel(sur.size()), after.data_rel(0));
-      std::copy(sur.udat_rel(mid+4), sur.udat_rel(sur.size()), after.udat_rel(0));
-      pages.erase(sur);
-      mem_map(std::move(after));
-      mem_map(std::move(before));
-      // insert the device
+//   std::cerr << "VIRTQ.ready => " << viodisk.rq.ready << "\n";
+//   for (unsigned side = 0; side < 2; ++side)
+//     {
+//       uint64_t base = (side ? viodisk.rq.device_area : viodisk.rq.driver_area);
+//       char const* name = (side ? "Device" : "Driver");
+//       std::cerr << "pvirtq_event_suppress@" << std::hex << base << "(" << name << ")"
+//                 << "{ offset=" << std::dec << vioa.read(base + 0, 2)
+//                 << ", flags=0x" << std::hex << vioa.read(base + 2, 2)
+//                 << "}\n";
+//       Page const& sur = access_page(base);
+//       sur.dump_range(std::cerr << "  In: ");
+//       std::cerr << std::endl;
+//       Page before(sur.base, base-1), after(base+4,sur.last);
+//       uint64_t mid = base - sur.base;
+//       std::copy(sur.data_rel(0), sur.data_rel(mid), before.data_rel(0));
+//       std::copy(sur.udat_rel(0), sur.udat_rel(mid), before.udat_rel(0));
+//       std::copy(sur.data_rel(mid+4), sur.data_rel(sur.size()), after.data_rel(0));
+//       std::copy(sur.udat_rel(mid+4), sur.udat_rel(sur.size()), after.udat_rel(0));
+//       pages.erase(sur);
+//       mem_map(std::move(after));
+//       mem_map(std::move(before));
+//       // insert the device
 
-      static struct : public Device::Effect
-      {
-        static char const* side(unsigned id) { return id ? "device" : "driver"; }
+//       static struct : public Device::Effect
+//       {
+//         static char const* side(unsigned id) { return id ? "device" : "driver"; }
          
-        void get_name(unsigned id, std::ostream& sink) const override { sink << side(id) << " event suppression"; }
+//         void get_name(unsigned id, std::ostream& sink) const override { sink << side(id) << " event suppression"; }
 
-        bool access(AArch64& arch, Device::Request& req) const override
-        {
-          req.location(std::cerr << "<=o=> " << side(req.dev) << " QES " << (req.write ? "write" : "read") << " @", req.addr, req.size);
-          std::cerr << '\n';
+//         bool access(AArch64& arch, Device::Request& req) const override
+//         {
+//           req.location(std::cerr << "<=o=> " << side(req.dev) << " QES " << (req.write ? "write" : "read") << " @", req.addr, req.size);
+//           std::cerr << '\n';
 
-          auto& qes = arch.qes[req.dev];
-          if (req.size == 2)
-            {
-              if (req.addr == 0) return req.access(qes.desc);
-              if (req.addr == 2) return req.access(qes.flags);
-              return false;
-            }
-          else if (req.size == 4)
-            {
-              if (req.addr == 0) return req.access(*(uint32_t*)&qes.desc);
-              return false;
-            }
+//           auto& qes = arch.qes[req.dev];
+//           if (req.size == 2)
+//             {
+//               if (req.addr == 0) return req.access(qes.desc);
+//               if (req.addr == 2) return req.access(qes.flags);
+//               return false;
+//             }
+//           else if (req.size == 4)
+//             {
+//               if (req.addr == 0) return req.access(*(uint32_t*)&qes.desc);
+//               return false;
+//             }
 
-          return false;
-        }
-      } qes_effect;
-      devices.insert( Device( base, base + 4, &qes_effect, side) );
-    }
+//           return false;
+//         }
+//       } qes_effect;
+//       devices.insert( Device( base, base + 4, &qes_effect, side) );
+//     }
 
-  return true;
-}
+//   return true;
+// }
 

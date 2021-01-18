@@ -256,8 +256,9 @@ struct AArch64
   //=                       Memory access methods                       =
   //=====================================================================
 
-  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
-  uint64_t translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size);
+  struct mem_acc_type { enum Code { write = 0, read, exec, cache_maintenance } code; };
+    
+  uint64_t translate_address(uint64_t vaddr, mem_acc_type::Code mat, unsigned size);
   struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
   void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
   
@@ -269,7 +270,7 @@ struct AArch64
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
-    uint64_t paddr = translate_address(addr.value, mat_read, size);
+    uint64_t paddr = translate_address(addr.value, mem_acc_type::read, size);
 
     try
       { return memory_pread<T>(paddr); }
@@ -329,7 +330,7 @@ struct AArch64
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
-    uint64_t paddr = translate_address(addr.value, mat_write, size);
+    uint64_t paddr = translate_address(addr.value, mem_acc_type::write, size);
 
     try
       { memory_pwrite(paddr, src); }
@@ -410,11 +411,15 @@ struct AArch64
 
   struct DataAbort : public Abort
   {
-    DataAbort(unisim::component::cxx::processor::arm::DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type_t _mat, unsigned _level, bool _ipavalid, bool _secondstage, bool _s2fs1walk)
-      : type(_type), va(_va), ipa(_ipa), mat(_mat), level(_level), ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
+    typedef unisim::component::cxx::processor::arm::DAbort DAbort;
+    DataAbort(DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type::Code _mat, unsigned _level,
+              bool _ipavalid, bool _secondstage, bool _s2fs1walk )
+      : type(_type), va(_va), ipa(_ipa), mat(_mat), level(_level),
+        ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
     {}
     virtual void proceed( AArch64& cpu ) const override;
-    unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type_t mat; unsigned level; bool ipavalid; bool secondstage; bool s2fs1walk;
+    unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
+    bool ipavalid, secondstage, s2fs1walk;
   };
   
   /* AArch32 obsolete arguments
@@ -426,7 +431,7 @@ struct AArch64
    */
   void TakePhysicalIRQException();
   void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
-  void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
+  void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type::Code mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
 
   void ExceptionReturn();
 
@@ -443,9 +448,8 @@ struct AArch64
   static unsigned const VECTORCOUNT = 32;
   struct Vector { uint8_t data[sizeof (U8)][VUConfig::BYTECOUNT]; };
 
-  unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
-  Vector vectors[VECTORCOUNT];
-
+  typedef unisim::component::cxx::vector::VUnion<VUConfig> VecView;
+  
   struct Zone
   {
     uint64_t hi() const { return last; }
@@ -730,7 +734,7 @@ struct AArch64
   };
 
   template <class POLICY>
-  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
+  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat, unsigned size );
 
   struct GIC
   {
@@ -842,6 +846,10 @@ public:
   Decoder  decoder;
 
   U64      gpr[32];
+  VecView  vector_views[VECTORCOUNT];
+  Vector   vectors[VECTORCOUNT];
+  U32      fpcr, fpsr;
+
   U64      sp_el[2];
   EL       el1;
   PState   pstate;
@@ -858,9 +866,9 @@ public:
   uint64_t bdaddr;
   bool     disasm;
 
-  /*QESCAPTURE*/
-  bool QESCapture();
-  struct QES { uint16_t desc; uint16_t flags; } qes[2];
+  // /*QESCAPTURE*/
+  // bool QESCapture();
+  // struct QES { uint16_t desc; uint16_t flags; } qes[2];
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

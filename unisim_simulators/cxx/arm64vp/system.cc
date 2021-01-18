@@ -256,7 +256,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           {
             if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             unsigned const zsize = 4 << cpu.ZID;
-            uint64_t paddr = cpu.translate_address(addr.value, mat_write, zsize);
+            uint64_t paddr = cpu.translate_address(addr.value, mem_acc_type::cache_maintenance, zsize);
             uint8_t buffer[zsize] = {0};
             if (cpu.modify_page(paddr).write(paddr & -zsize, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
@@ -625,7 +625,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (addr.ubits) { struct Bad {}; raise( Bad() ); }
             try
               {
-                uint64_t translation = cpu.translate_address(addr.value, op2 ? mat_write : mat_read, 1);
+                uint64_t translation = cpu.translate_address(addr.value, op2 ? mem_acc_type::write : mem_acc_type::read, 1);
                 cpu.el1.PAR = U64(translation & 0x000ffffffffff000ull, 0xfff0000000000380ull);
               }
             catch (AArch64::DataAbort const& x)
@@ -681,6 +681,26 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Interrupt Mask Bits"; }
           U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return cpu.pstate.GetDAIF(); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.pstate.SetDAIF(cpu,value); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0100,0b000): // FPCR, Floating-point Control Register
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPCR"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Floating-point Control Register"; }
+          U64  Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.fpcr); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpcr = U32(value); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0100,0b001): // FPSR, Floating-point Status Register
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPSR"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Floating-point Status Register"; }
+          U64  Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.fpsr); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpsr = U32(value); }
         } x; return &x;
       } break;
 
