@@ -286,6 +286,7 @@ struct AArch64
     struct Bad {};
     unsigned const size = sizeof (typename T::value_type);
     uint8_t dbuf[size], ubuf[size];
+    //checkvio(paddr, size);
     try
       {
         if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
@@ -491,6 +492,7 @@ struct AArch64
       page.udat = 0;
       page.free = &Free::nop;
     }
+    Page() : Zone(0,0), data(0), udat(0), free(&Free::nop) {}
     Page( Page const& ) = delete;
     ~Page();
 
@@ -592,11 +594,12 @@ struct AArch64
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
-  Page make_mem_page(uint64_t base, uint64_t last);
+  //  Page make_mem_page(uint64_t base, uint64_t last);
 
   void error_mem_overlap( Page const& a, Page const& b );
 
   bool mem_map(Page&& page);
+  void mem_unmap(uint64_t base, uint64_t size);
 
   void step_instruction();
   Operation* fetch_and_decode(uint64_t insn_addr);
@@ -869,6 +872,9 @@ public:
   // /*QESCAPTURE*/
   // bool QESCapture();
   // struct QES { uint16_t desc; uint16_t flags; } qes[2];
+  void viocapture(uint64_t base, uint64_t size);
+  void checkvio(uint64_t base, unsigned size);
+  std::set<Zone, Zone::Above> diskpages;
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

@@ -152,27 +152,42 @@ bool
 VIODisk::CheckStatus()
 {
   uint32_t status = Status;
-  std::cerr << "VIODisk is ";
-  if      (status & 1)
-    { std::cerr << "|ack"; status &= ~1; }
-  if (status & 2)
-    { std::cerr << "|don"; status &= ~2; }
-  if (status & 4)
-    { std::cerr << "|dok"; status &= ~4; }
-  if (status & 8)
-    { std::cerr << "|fok"; status &= ~8; }
+
+  static struct { uint32_t mask; char const* name; }
+  const fields[] =
+    {
+     {1,"acknowledged"},
+     {2,"driver found"}, {128,"failed"}, {8,"features ok"}, {4,"driver ok"}, {64,"driver needs reset"}
+    };
+
+  uint32_t handled = 0;
+  std::cerr << "VIODisk status: {";
+  char const* sep = "";
+  for (unsigned idx = sizeof (fields) / sizeof (fields[0]); idx-- > 0;)
+    {
+      if (status & fields[idx].mask)
+        {
+          std::cerr << sep << fields[idx].name;
+          sep = ", ";
+        }
+      handled |= fields[idx].mask;
+    }
+  std::cerr << "}\n";
+  
+  struct Bad {};
+  
   if (status & 128)
     {
-      std::cerr << "| <FAILED>\n";
-      return false;
-    }
-  if (status)
-    {
-      std::cerr << "| unhandled status bits: " << std::hex << status << ", Status=" << Status << "\n";
-      return false;
+      std::cerr << "unhandled <failed> status bit.\n";
+      throw Bad();
     }
   
-  std::cerr << "|\n";
+  if (status & ~handled)
+    {
+      std::cerr << "| unhandled status bits: " << std::hex << status << ", Status=" << Status << "\n";
+      throw Bad();
+    }
+
   return true;
 }
 
@@ -201,7 +216,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
     uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last)
     {
       uint32_t wlen = 0;
-      //bool is_write = VIOQFlags::WRITE.Get(flags);
+      // bool is_write = VIOQFlags::WRITE.Get(flags);
       bool is_write = flags & 2;
       std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
       struct Bad {};
@@ -212,9 +227,14 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
         {
         case Head:
           if (is_write or len != 16) { std::cerr << "error: expected 16 byte header\n"; throw Bad(); }
+          std::cerr << "VirtIO Block Header: {type=" << vioa.read(buf + 0, 4) << ", sector=" << vioa.read(buf + 8, 8) << "}\n";
           switch (type = Type(vioa.read(buf + 0, 4)))
             {
             default:
+              break;
+            case Flush:
+              /* No data, all work should be done here. */
+              /* Nothing to do for now */
               break;
             case In: case Out:
               disk.storage.seekg(512*vioa.read(buf + 8, 8));
@@ -232,6 +252,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               break;
             case In:
               if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
+              vioa.dcapture(buf, len);
               for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
                 disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
               wlen += len;
@@ -239,7 +260,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
             case Out:
               if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
               for (VIOAccess::Iterator itr(buf, len, false); itr.next(vioa);)
-                disk.storage.write((char*)itr.slice.bytes, itr.slice.size);
+                disk.storage.write((char const*)itr.slice.bytes, itr.slice.size);
               break;
             case Flush: std::cerr << "TODO: Flush\n"; throw Bad();
             case Discard: std::cerr << "TODO: Discard\n"; throw Bad();
@@ -305,7 +326,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
         }
 
       uint16_t id = vioa.read(desc_addr + 12, 2);
-      std::cerr << "ID:" << id << std::endl;
+      // std::cerr << "ID:" << id << std::endl;
 
       uint64_t tail_addr = rq.desc_addr(tail);
       vioa.write(tail_addr +  8, 4, wlen);
@@ -337,7 +358,8 @@ VIODisk::open(char const* filename)
 {
   storage.open(filename);
   if (not storage or not storage.is_open()) { struct Bad {}; throw Bad (); }
-  Capacity = storage.seekg( 0, std::ios::end ).tellg();
+  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
+  Capacity = size / 512;
 }
 
 uint64_t

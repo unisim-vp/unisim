@@ -723,6 +723,11 @@ AArch64::concretize(bool possible)
       return possible;
     }
 
+  if (current_insn_addr == 0xffffffc0100886d8)
+    {
+      return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
+    }
+
   // static struct { uint64_t address; bool result; }
   // exceptions [] =
   //   {
@@ -1020,6 +1025,8 @@ namespace {
   struct VIOA : public VIOAccess
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
+    void dcapture(uint64_t addr, uint64_t size) const override { core.viocapture(addr, addr + size - 1); }
+
     VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
     {
       AArch64::Page const& page = core.access_page(addr);
@@ -1054,8 +1061,8 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
-      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
-      std::cerr << '\n';
+      //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
+      //      std::cerr << '\n';
       
       VIODisk& viodisk = arch.viodisk;
       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
@@ -1584,17 +1591,19 @@ AArch64::PMemDump64(uint64_t paddr)
   std::cerr << "\t0x";
   for (unsigned byte = vsize; byte-- > 0;)
     {
-      uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
-      for (unsigned nibble = 2; nibble-- > 0;)
-        std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
+      Print(std::cerr, 2, 4, dbuf[byte], ubuf[byte] );
+      // uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
+      // for (unsigned nibble = 2; nibble-- > 0;)
+      //   std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
     }
 
   std::cerr << "\t0b";
   for (unsigned byte = vsize; byte-- > 0;)
     {
-      uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
-      for (unsigned bit = 8; bit-- > 0;)
-        std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
+      Print(std::cerr, 8, 1, dbuf[byte], ubuf[byte]);
+      // uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
+      // for (unsigned bit = 8; bit-- > 0;)
+      //   std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
     }
   std::cerr << "\t\"";
   for (unsigned byte = 0; byte < vsize; ++byte)
@@ -1643,6 +1652,43 @@ AArch64::memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr,
   struct Bad {}; raise(Bad());
 }
 
+void
+AArch64::mem_unmap(uint64_t base, uint64_t last)
+{
+  struct { void if_not_empty(Pages& m, Page&& p) { if (p.data_beg()) m.insert(std::move(p)); } } insert;
+
+  auto pi = pages.lower_bound(last);
+  if (pi == pages.end())
+    return;
+  
+  Page above;
+  if (pi->last > last)
+    {
+      new (&above) Page(last+1,pi->last);
+      std::copy(pi->data_abs(last+1), pi->data_end(), above.data_beg());
+      std::copy(pi->udat_abs(last+1), pi->udat_end(), above.udat_beg());
+    }
+
+  while (pi->base >= base)
+    {
+      pi = pages.erase(pi);
+      if (pi == pages.end())
+        { insert.if_not_empty(pages, std::move(above)); return; }
+    }
+
+  if (pi->last < base)
+    { insert.if_not_empty(pages, std::move(above)); return; }
+  
+  Page below(pi->base, base - 1);
+  std::copy(pi->data_beg(), pi->data_abs(base), below.data_beg());
+  std::copy(pi->udat_beg(), pi->udat_abs(base), below.udat_beg());
+
+  pi = pages.erase(pi);
+
+  insert.if_not_empty(pages, std::move(above));
+  pages.insert(pi, std::move(below));
+}
+
 // bool
 // AArch64::QESCapture()
 // {
@@ -1657,20 +1703,9 @@ AArch64::memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr,
 //                 << "{ offset=" << std::dec << vioa.read(base + 0, 2)
 //                 << ", flags=0x" << std::hex << vioa.read(base + 2, 2)
 //                 << "}\n";
-//       Page const& sur = access_page(base);
-//       sur.dump_range(std::cerr << "  In: ");
-//       std::cerr << std::endl;
-//       Page before(sur.base, base-1), after(base+4,sur.last);
-//       uint64_t mid = base - sur.base;
-//       std::copy(sur.data_rel(0), sur.data_rel(mid), before.data_rel(0));
-//       std::copy(sur.udat_rel(0), sur.udat_rel(mid), before.udat_rel(0));
-//       std::copy(sur.data_rel(mid+4), sur.data_rel(sur.size()), after.data_rel(0));
-//       std::copy(sur.udat_rel(mid+4), sur.udat_rel(sur.size()), after.udat_rel(0));
-//       pages.erase(sur);
-//       mem_map(std::move(after));
-//       mem_map(std::move(before));
+//       mem_unmap(base, base + 3);
+//
 //       // insert the device
-
 //       static struct : public Device::Effect
 //       {
 //         static char const* side(unsigned id) { return id ? "device" : "driver"; }
@@ -1704,3 +1739,42 @@ AArch64::memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr,
 //   return true;
 // }
 
+void
+AArch64::checkvio(uint64_t base, unsigned size)
+{
+  auto zi = diskpages.lower_bound(base+size-1);
+  if (zi == diskpages.end() or zi->last < base)
+    return;
+  std::cerr << "In VIO: " << std::hex << current_insn_addr << "\n";
+}
+
+void
+AArch64::viocapture(uint64_t base, uint64_t last)
+{
+  
+  struct Z : public Zone
+  {
+    AArch64& a;
+    Z(uint64_t base, uint64_t last, AArch64& _a) : Zone(base, last), a(_a) {}
+    ~Z() { a.diskpages.insert(*this); }
+  } zone(base, last, *this);
+  
+  auto zi = diskpages.lower_bound(last);
+  if (zi == diskpages.end())
+    return;
+  
+  if (zi->last > zone.last)
+    zone.last = zi->last;
+
+  while (zi->base >= zone.base)
+    {
+      zi = diskpages.erase(zi);
+      if (zi == diskpages.end())
+        return;
+    }
+
+  if (zi->last < zone.base)
+    return;
+  zone.base = zi->base;
+  zi = diskpages.erase(zi);
+}

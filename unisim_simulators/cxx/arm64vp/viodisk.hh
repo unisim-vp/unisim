@@ -41,9 +41,9 @@
 struct VIOAccess
 {
   virtual ~VIOAccess() {}
-
   struct Slice { uint8_t* bytes; uint64_t size; };
   virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
+  virtual void dcapture(uint64_t addr, uint64_t size) const = 0;
   virtual void notify() const = 0;
   
   struct Iterator : Slice

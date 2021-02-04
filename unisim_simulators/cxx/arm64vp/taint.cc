@@ -35,20 +35,24 @@
 #include <taint.hh>
 #include <iostream>
 
-void Print( std::ostream& sink, uint64_t vbits, uint64_t ubits )
+void PrintBin( std::ostream& sink, uint64_t vbits, uint64_t ubits ) { Print(sink << "0b", 0, 1, vbits, ubits); }
+
+void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t vbits, uint64_t ubits )
 {
   struct
   {
-    void recurse( std::ostream& sink, uint64_t vbits, uint64_t ubits )
+    void recurse( std::ostream& sink, unsigned left, unsigned bsz, uint64_t vbits, uint64_t ubits )
     {
       {
-        uint64_t _vbits = vbits >> 1, _ubits = ubits >> 1;
-        if (_vbits | _ubits)
-          recurse( sink, _vbits, _ubits );
+        uint64_t _vbits = vbits >> bsz, _ubits = ubits >> bsz;
+        left = left ? left - 1 : 0;
+        if (_vbits | _ubits | left)
+          recurse( sink, left, bsz, _vbits, _ubits );
       }
-      sink << "01XX"[2*(ubits & 1) | 1*(vbits & 1) ];
+      uint64_t mask = (1<<bsz)-1;
+      sink << (ubits & mask ? 'X' : "0123456789abcdef"[vbits & mask] );
     }
   } _;
   
-  _.recurse(sink << "0b", vbits, ubits);
+  _.recurse(sink, minlength, logradix, vbits, ubits);
 }
