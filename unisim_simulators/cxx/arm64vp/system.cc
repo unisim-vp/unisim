@@ -552,7 +552,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Current Exception Level"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
-            return U64(cpu.pstate.EL << 2);
+            return U64(cpu.pstate.GetEL() << 2);
             //return U64(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
           }
         } x; return &x;
@@ -712,7 +712,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64& GetSP(AArch64& cpu, unsigned op1) const
           {
             unsigned lvl = GetExceptionLevel(op1) - 1;
-            if (cpu.pstate.SP == 0 and lvl == 0)
+            if (cpu.pstate.GetSP() == 0 and lvl == 0)
               cpu.UndefinedInstruction();
             return cpu.sp_el[lvl];
           }
@@ -2570,7 +2570,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "SPSel"; }
           virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
           {
-            cpu.SetPStateSP(crm);
+            cpu.pstate.SetSP(cpu, crm);
           }
         } x; return &x;
       } break;

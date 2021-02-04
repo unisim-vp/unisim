@@ -184,7 +184,7 @@ AArch64::TODO()
  * @param imm     the "imm" field of the instruction code
  */
 void
-AArch64::CallSupervisor( uint32_t imm )
+AArch64::CallSupervisor( unsigned imm )
 {
   // if (verbose) {
   //   static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
@@ -203,9 +203,22 @@ AArch64::CallSupervisor( uint32_t imm )
   //   arm_linux_os.LogSystemCall( imm );
   // }
 
-  // we are executing on full system mode
-  //  throw SVCException();
-  struct Bad {}; raise( Bad() );
+  //  if UsingAArch32() then AArch32.ITAdvance();
+  // SSAdvance();
+  pstate.SS = 0;
+  
+  // route_to_el2 = AArch64.GeneralExceptionsToEL2();
+
+  // ReportException
+  unsigned const target_el = 1;
+  // ESR[target_el] = ec<5:0>:il:syndrome;
+  get_el(target_el).ESR = U32(0)
+    | U32(0x15) << 26 // exception class AArch64.SVC
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | U32(0,0b111111111) << 16 // Res0
+    | U32(imm);
+  
+  TakeException(1, 0x0, next_insn_addr);
 }
 
 /** CallHypervisor
@@ -385,8 +398,25 @@ AArch64::translate_address(uint64_t vaddr, mem_acc_type::Code mat, unsigned size
 void
 AArch64::DataAbort::proceed( AArch64& cpu ) const
 {
-  cpu.ReportException(1, type, va, ipa, mat, level, ipavalid, secondstage, s2fs1walk);
-  cpu.TakeException(1, 0x0, cpu.current_insn_addr);
+  // ReportException
+  unsigned const target_el = 1;
+  // ESR[target_el] = ec<5:0>:il:syndrome;
+  cpu.get_el(target_el).ESR = U32(0)
+    | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (cpu.pstate.GetEL() == target_el)) << 26 // exception class
+    | U32(1) << 25 // IL Instruction Length
+    | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
+    | U32(0,0b1111) << 10
+    | U32(0) << 9 // IsExternalAbort(fault)
+    | U32(mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
+    | U32(s2fs1walk) << 7
+    | U32(mat == mem_acc_type::write or mat == mem_acc_type::cache_maintenance) << 6
+    | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
+  // FAR[target_el] = exception.vaddress;
+  cpu.get_el(target_el).FAR = va;
+  //     if target_el == EL2 && exception.ipavalid then
+  //     HPFAR_EL2<39:4> = exception.ipaddress<47:12>;
+  
+  cpu.TakeException(target_el, 0x0, cpu.current_insn_addr);
 }
 
 template <class POLICY>
@@ -542,15 +572,15 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
   //           << " with vect_offset=0x" << std::hex << vect_offset
   //           << " at " << std::dec << insn_counter << '/' << insn_timer << "\n";
 
-  if (target_el > pstate.EL)
+  if (target_el > pstate.GetEL())
     vect_offset += 0x400; /* + 0x600 if lower uses AArch32 */
-  else if (pstate.SP)
+  else if (pstate.GetSP())
     vect_offset += 0x200;
 
   U32 spsr = GetPSRFromPSTATE();
 
-  pstate.EL = target_el;
-  SetPStateSP(1);
+  pstate.SetEL(*this, target_el);
+  pstate.SetSP(*this, 1);
 
   get_el(target_el).SPSR = spsr;
   get_el(target_el).ELR = U64(preferred_exception_return);
@@ -578,7 +608,7 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
 
   if (psr & 0x10) raise( Bad() ); /* No AArch32 */
   /* spsr checks causing an "Illegal return" */
-  if ((psr >> 2 & 3) > pstate.EL) raise( Bad() );
+  if ((psr >> 2 & 3) > pstate.GetEL()) raise( Bad() );
   if (psr & 2) raise( Bad() );
 
   // Return an SPSR value which represents thebits(32) spsr = Zeros();
@@ -589,41 +619,21 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
   pstate.A = psr >> 8;
   pstate.I = psr >> 7;
   pstate.F = psr >> 6;
-  pstate.EL = psr >> 2;
-  pstate.SP = psr >> 0;
+  pstate.SetEL(*this, psr >> 2);
+  pstate.SetSP(*this, psr >> 0);
 }
 
 
 void
 AArch64::ExceptionReturn()
 {
-  U32 spsr = get_el(pstate.EL).SPSR;
-  U64 elr = get_el(pstate.EL).ELR;
+  U32 spsr = get_el(pstate.GetEL()).SPSR;
+  U64 elr = get_el(pstate.GetEL()).ELR;
   SetPSTATEFromPSR(spsr);
   //  ClearExclusiveLocal();
   // SendEventLocal();
 
   BranchTo(elr, B_ERET);
-}
-
-void
-AArch64::ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type::Code mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk)
-{
-  // ESR[target_el] = ec<5:0>:il:syndrome;
-  get_el(target_el).ESR = U32(0)
-    | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (pstate.EL == target_el)) << 26 // exception class
-    | U32(1) << 25 // IL Instruction Length
-    | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
-    | U32(0,0b1111) << 10
-    | U32(0) << 9 // IsExternalAbort(fault)
-    | U32(mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
-    | U32(s2fs1walk) << 7
-    | U32(mat == mem_acc_type::write or mat == mem_acc_type::cache_maintenance) << 6
-    | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
-  // FAR[target_el] = exception.vaddress;
-  get_el(target_el).FAR = va;
-  //     if target_el == EL2 && exception.ipavalid then
-  //     HPFAR_EL2<39:4> = exception.ipaddress<47:12>;
 }
 
 void
@@ -689,7 +699,8 @@ AArch64::concretize(bool possible)
       return possible;
     }
 
-  if ((current_insn_addr | 0x380)  == 0xffffffc01008238c)
+  if ((current_insn_addr | 0x380)  == 0xffffffc01008238c or
+      (current_insn_addr | 0x180)  == 0xffffffc010082594)
     {
       // <vectors>:
       // ...

@@ -249,8 +249,8 @@ struct AArch64
   bool Test( bool cond ) { return cond; }
   // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
   bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(cond.value); return cond.value; }
-  void CallSupervisor( uint32_t imm );
-  void CallHypervisor( uint32_t imm );
+  void CallSupervisor( unsigned imm );
+  void CallHypervisor( unsigned imm );
 
   //=====================================================================
   //=                       Memory access methods                       =
@@ -432,7 +432,6 @@ struct AArch64
    */
   void TakePhysicalIRQException();
   void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
-  void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type::Code mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
 
   void ExceptionReturn();
 
@@ -601,7 +600,6 @@ struct AArch64
   bool mem_map(Page&& page);
   void mem_unmap(uint64_t base, uint64_t size);
 
-  void step_instruction();
   Operation* fetch_and_decode(uint64_t insn_addr);
 
   void run();
@@ -617,16 +615,8 @@ struct AArch64
 
   struct PState
   {
-    unsigned D  :  1;
-    unsigned A  :  1;
-    unsigned I  :  1;
-    unsigned F  :  1;
-    unsigned SS :  1;
-    unsigned IL :  1;
-    unsigned EL :  2;
-    unsigned SP :  1;
     PState() : D(1), A(1), I(1), F(1), SS(0), IL(0), EL(1), SP(1) {}
-
+    
     U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
     U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
     void SetDAIF(AArch64& cpu, U64 const& xt)
@@ -637,14 +627,33 @@ struct AArch64
     }
 
     uint32_t AsSPSR() const;
-  };
 
-  void SetPStateSP(unsigned sp)
-  {
-    pstate.selsp(*this) = gpr[31];
-    pstate.SP = sp;
-    gpr[31] = pstate.selsp(*this);
-  }
+    void SetSP(AArch64& cpu, unsigned sp)
+    {
+      selsp(cpu) = cpu.gpr[31];
+      SP = sp;
+      cpu.gpr[31] = selsp(cpu);
+    }
+    unsigned GetSP() const { return SP; }
+
+    void SetEL(AArch64& cpu, unsigned el)
+    {
+      selsp(cpu) = cpu.gpr[31];
+      EL = el;
+      cpu.gpr[31] = selsp(cpu);
+    }
+    unsigned GetEL() const { return EL; }
+
+    unsigned D  :  1;
+    unsigned A  :  1;
+    unsigned I  :  1;
+    unsigned F  :  1;
+    unsigned SS :  1;
+    unsigned IL :  1;
+  private:
+    unsigned EL :  2;
+    unsigned SP :  1;
+  };
 
   U32 GetPSRFromPSTATE() { return U32(nzcv) << 28 | U32(pstate.AsSPSR()); }
   void SetPSTATEFromPSR(U32 spsr);
