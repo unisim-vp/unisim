@@ -89,12 +89,12 @@ PyUnisimUtilDbgateDBGated_open(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 PyObject*
 PyUnisimUtilDbgateDBGated_close(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 {
-  int fd;
+  int cd;
 
-  if (!PyArg_ParseTuple(args, "i", &fd))
+  if (!PyArg_ParseTuple(args, "i", &cd))
     return 0;
 
-  self->obj->close(fd);
+  self->obj->close(cd);
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -103,14 +103,14 @@ PyUnisimUtilDbgateDBGated_close(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 PyObject* 
 PyUnisimUtilDbgateDBGated_write(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 {
-  int fd;
+  int cd;
   char const *buffer;
   Py_ssize_t size;
 
-  if (not PyArg_ParseTuple( args, "is#", &fd, &buffer, &size ))
+  if (not PyArg_ParseTuple( args, "is#", &cd, &buffer, &size ))
     return 0;
     
-  self->obj->write(fd, buffer, size);
+  self->obj->write(cd, buffer, size);
     
   Py_INCREF(Py_None);
   return Py_None;
@@ -119,8 +119,8 @@ PyUnisimUtilDbgateDBGated_write(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 static PyMethodDef PyUnisimUtilDbgateDBGated_methods[] =
   {
    {"open", (PyCFunction)PyUnisimUtilDbgateDBGated_open, METH_VARARGS, "open(name)\nopen a debug file and return its descriptor" },
-   {"close", (PyCFunction)PyUnisimUtilDbgateDBGated_close, METH_VARARGS, "close(fd)\nclose a debug file identified by its descriptor" },
-   {"write", (PyCFunction)PyUnisimUtilDbgateDBGated_write, METH_VARARGS, "write(fd, buf, size)\nwrite to a file identified by its descriptor" },
+   {"close", (PyCFunction)PyUnisimUtilDbgateDBGated_close, METH_VARARGS, "close(cd)\nclose a debug file identified by its descriptor" },
+   {"write", (PyCFunction)PyUnisimUtilDbgateDBGated_write, METH_VARARGS, "write(cd, buf, size)\nwrite to a file identified by its descriptor" },
    {NULL, NULL, 0, NULL}
   };
 
