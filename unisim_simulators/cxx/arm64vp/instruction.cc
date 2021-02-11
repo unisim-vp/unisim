@@ -54,7 +54,7 @@ AArch64::fetch_and_decode(uint64_t insn_addr)
 
   /* Decode current PC. TODO: should provide physical address for caching purpose */
   Operation* op = decoder.Decode(insn_addr, insn);
-  last_insns[insn_counter % histsize].assign(insn_addr, op);
+  last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
 
   return op;
 }

@@ -53,15 +53,14 @@ namespace arm {
    * fields, though some of them may not be present in a particular
    * ARM processor implementation
    */
-
   namespace sctlr
   {
-    RegisterField<31,1> const IE;      // Instruction Endianness
-    RegisterField<30,1> const TE;      // Thumb Exception enable
-    RegisterField<27,1> const NMFI;    // Non-maskable FIQ (NMFI) support
-    RegisterField<25,1> const EE;      // Exception Endianness.
+    RegisterField<31,1> const IE;      // Instruction Endianness (-v7)
+    RegisterField<30,1> const TE;      // Thumb Exception enable (-v7)
+    RegisterField<27,1> const NMFI;    // Non-maskable FIQ (NMFI) support (-v7)
+    RegisterField<25,1> const EE;      // Exception Endianness. (-v8)
     RegisterField<24,1> const VE;      // Interrupt Vectors Enable
-    RegisterField<22,1> const U;       // Alignment Model (up to ARMv6)
+    RegisterField<22,1> const U;       // Alignment Model (-v6)
     RegisterField<21,1> const FI;      // Fast interrupts configuration enable
     RegisterField<14,1> const RR;      // Round Robin select
     RegisterField<13,1> const V;       // Vectors bit

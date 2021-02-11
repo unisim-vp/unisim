@@ -4057,11 +4057,115 @@ sli_v2d2di.disasm = {
   sink << "sli\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(imm);
 };
 
+/*******************************************************************
+ * SMAXV
+ *
+ * Signed maximum across vector
+ */
+
+op smaxv_bvb( 0b0[1] : q[1] : 0b00111000110000101010[20] : rn[5] : rd[5] );
+smaxv_bvb.var format : {char const*} = {"2174"};
+
+smaxv_bvb.disasm = {
+  sink << "smaxv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+smaxv_bvb.execute = {
+  typedef typename ARCH::S8 S8;
+
+  S8 res = cpu.GetVS8(rn,0);
+  for (unsigned idx = 1, end=8<<q; idx < end; ++idx)
+    {
+      S8 elem = cpu.GetVS8(rn,idx);
+      if (cpu.Test(res < elem)) res = elem;
+    }
+  cpu.SetVS8(rd,res);
+};
+
+op smaxv_hvh( 0b0[1] : q[1] : 0b00111001110000101010[20] : rn[5] : rd[5] );
+smaxv_hvh.var format : {char const*} = {"2248"};
+
+smaxv_hvh.disasm = {
+  sink << "smaxv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+smaxv_hvh.execute = {
+  typedef typename ARCH::S16 S16;
+
+  S16 res = cpu.GetVS16(rn,0);
+  for (unsigned idx = 1, end=4<<q; idx < end; ++idx)
+    {
+      S16 elem = cpu.GetVS16(rn,idx);
+      if (cpu.Test(res < elem)) res = elem;
+    }
+  cpu.SetVS16(rd,res);
+};
+
 op smaxv_sv4s( 0b0100111010110000101010[22] : rn[5] : rd[5] );
 smaxv_sv4s.var format : {char const*} = {"2313"};
 
 smaxv_sv4s.disasm = {
   sink << "smaxv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
+};
+
+smaxv_sv4s.execute = {
+  typedef typename ARCH::S32 S32;
+
+  S32 res = cpu.GetVS32(rn,0);
+  for (unsigned idx = 1, end=2<<1; idx < end; ++idx)
+    {
+      S32 elem = cpu.GetVS32(rn,idx);
+      if (cpu.Test(res < elem)) res = elem;
+    }
+  cpu.SetVS32(rd,res);
+};
+
+/*
+ * end of SMAXV
+ *******************************************************************/
+
+/*******************************************************************
+ * SMINV
+ *
+ * Signed minimum across vector
+ */
+
+op sminv_bvb( 0b0[1] : q[1] : 0b00111000110001101010[20] : rn[5] : rd[5] );
+sminv_bvb.var format : {char const*} = {"2175"};
+
+sminv_bvb.disasm = {
+  sink << "sminv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+sminv_bvb.execute = {
+  typedef typename ARCH::S8 S8;
+
+  S8 res = cpu.GetVS8(rn,0);
+  for (unsigned idx = 1, end=8<<q; idx < end; ++idx)
+    {
+      S8 elem = cpu.GetVS8(rn,idx);
+      if (cpu.Test(res > elem)) res = elem;
+    }
+  cpu.SetVS8(rd,res);
+};
+
+op sminv_hvh( 0b0[1] : q[1] : 0b00111001110001101010[20] : rn[5] : rd[5] );
+sminv_hvh.var format : {char const*} = {"2249"};
+
+sminv_hvh.disasm = {
+  sink << "sminv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+sminv_hvh.execute = {
+  typedef typename ARCH::S16 S16;
+
+  S16 res = cpu.GetVS16(rn,0);
+  for (unsigned idx = 1, end=4<<q; idx < end; ++idx)
+    {
+      S16 elem = cpu.GetVS16(rn,idx);
+      if (cpu.Test(res > elem)) res = elem;
+    }
+  cpu.SetVS16(rd,res);
 };
 
 op sminv_sv4s( 0b0100111010110001101010[22] : rn[5] : rd[5] );
@@ -4070,6 +4174,156 @@ sminv_sv4s.var format : {char const*} = {"2314"};
 sminv_sv4s.disasm = {
   sink << "sminv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
 };
+
+sminv_sv4s.execute = {
+  typedef typename ARCH::S32 S32;
+
+  S32 res = cpu.GetVS32(rn,0);
+  for (unsigned idx = 1, end=2<<1; idx < end; ++idx)
+    {
+      S32 elem = cpu.GetVS32(rn,idx);
+      if (cpu.Test(res > elem)) res = elem;
+    }
+  cpu.SetVS32(rd,res);
+};
+
+/*
+ * end of SMINV
+ *******************************************************************/
+
+/*******************************************************************
+ * UMAXV
+ *
+ * Unsigned maximum across vector
+ */
+
+op umaxv_bvb( 0b0[1] : q[1] : 0b10111000110000101010[20] : rn[5] : rd[5] );
+umaxv_bvb.var format : {char const*} = {"2176"};
+
+umaxv_bvb.disasm = {
+  sink << "umaxv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+umaxv_bvb.execute = {
+  typedef typename ARCH::U8 U8;
+
+  U8 res = cpu.GetVU8(rn,0);
+  for (unsigned idx = 1, end=8<<q; idx < end; ++idx)
+    {
+      U8 elem = cpu.GetVU8(rn,idx);
+      if (cpu.Test(res < elem)) res = elem;
+    }
+  cpu.SetVU8(rd,res);
+};
+
+op umaxv_hvh( 0b0[1] : q[1] : 0b10111001110000101010[20] : rn[5] : rd[5] );
+umaxv_hvh.var format : {char const*} = {"2250"};
+
+umaxv_hvh.disasm = {
+  sink << "umaxv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+umaxv_hvh.execute = {
+  typedef typename ARCH::U16 U16;
+
+  U16 res = cpu.GetVU16(rn,0);
+  for (unsigned idx = 1, end=4<<q; idx < end; ++idx)
+    {
+      U16 elem = cpu.GetVU16(rn,idx);
+      if (cpu.Test(res < elem)) res = elem;
+    }
+  cpu.SetVU16(rd,res);
+};
+
+op umaxv_sv4s( 0b0110111010110000101010[22] : rn[5] : rd[5] );
+umaxv_sv4s.var format : {char const*} = {"2315"};
+
+umaxv_sv4s.disasm = {
+  sink << "umaxv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
+};
+
+umaxv_sv4s.execute = {
+  typedef typename ARCH::U32 U32;
+
+  U32 res = cpu.GetVU32(rn,0);
+  for (unsigned idx = 1, end=2<<1; idx < end; ++idx)
+    {
+      U32 elem = cpu.GetVU32(rn,idx);
+      if (cpu.Test(res < elem)) res = elem;
+    }
+  cpu.SetVU32(rd,res);
+};
+
+/*
+ * end of UMAXV
+ *******************************************************************/
+
+/*******************************************************************
+ * UMINV
+ *
+ * Unsigned minimum across vector
+ */
+
+op uminv_bvb( 0b0[1] : q[1] : 0b10111000110001101010[20] : rn[5] : rd[5] );
+uminv_bvb.var format : {char const*} = {"2177"};
+
+uminv_bvb.disasm = {
+  sink << "uminv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
+};
+
+uminv_bvb.execute = {
+  typedef typename ARCH::U8 U8;
+
+  U8 res = cpu.GetVU8(rn,0);
+  for (unsigned idx = 1, end=8<<q; idx < end; ++idx)
+    {
+      U8 elem = cpu.GetVU8(rn,idx);
+      if (cpu.Test(res > elem)) res = elem;
+    }
+  cpu.SetVU8(rd,res);
+};
+
+op uminv_hvh( 0b0[1] : q[1] : 0b10111001110001101010[20] : rn[5] : rd[5] );
+uminv_hvh.var format : {char const*} = {"2251"};
+
+uminv_hvh.disasm = {
+  sink << "uminv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
+};
+
+uminv_hvh.execute = {
+  typedef typename ARCH::U16 U16;
+
+  U16 res = cpu.GetVU16(rn,0);
+  for (unsigned idx = 1, end=4<<q; idx < end; ++idx)
+    {
+      U16 elem = cpu.GetVU16(rn,idx);
+      if (cpu.Test(res > elem)) res = elem;
+    }
+  cpu.SetVU16(rd,res);
+};
+
+op uminv_sv4s( 0b0110111010110001101010[22] : rn[5] : rd[5] );
+uminv_sv4s.var format : {char const*} = {"2316"};
+
+uminv_sv4s.disasm = {
+  sink << "uminv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
+};
+
+uminv_sv4s.execute = {
+  typedef typename ARCH::U32 U32;
+
+  U32 res = cpu.GetVU32(rn,0);
+  for (unsigned idx = 1, end=2<<1; idx < end; ++idx)
+    {
+      U32 elem = cpu.GetVU32(rn,idx);
+      if (cpu.Test(res > elem)) res = elem;
+    }
+  cpu.SetVU32(rd,res);
+};
+
+/*
+ * end of UMINV
+ *******************************************************************/
 
 op smlal2_v2dv4sv4s( 0b01001110101[11] : rm[5] : 0b100000[6] : rn[5] : rd[5] );
 smlal2_v2dv4sv4s.var format : {char const*} = {"977"};
@@ -6501,20 +6755,6 @@ ucvtf_v2d2di.var format : {char const*} = {"565"}, shift : {unsigned} = {64 - lr
 
 ucvtf_v2d2di.disasm = {
   sink << "ucvtf\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
-};
-
-op umaxv_sv4s( 0b0110111010110000101010[22] : rn[5] : rd[5] );
-umaxv_sv4s.var format : {char const*} = {"2315"};
-
-umaxv_sv4s.disasm = {
-  sink << "umaxv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
-};
-
-op uminv_sv4s( 0b0110111010110001101010[22] : rn[5] : rd[5] );
-uminv_sv4s.var format : {char const*} = {"2316"};
-
-uminv_sv4s.disasm = {
-  sink << "uminv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
 };
 
 op umlal2_v2dv4sv4s( 0b01101110101[11] : rm[5] : 0b100000[6] : rn[5] : rd[5] );
@@ -9329,20 +9569,6 @@ smaxp_vsvsvs.disasm = {
   sink << "smaxp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
-op smaxv_bvb( 0b0[1] : q[1] : 0b00111000110000101010[20] : rn[5] : rd[5] );
-smaxv_bvb.var format : {char const*} = {"2174"};
-
-smaxv_bvb.disasm = {
-  sink << "smaxv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
-};
-
-op smaxv_hvh( 0b0[1] : q[1] : 0b00111001110000101010[20] : rn[5] : rd[5] );
-smaxv_hvh.var format : {char const*} = {"2248"};
-
-smaxv_hvh.disasm = {
-  sink << "smaxv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
-};
-
 op smin_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
 smin_vbvbvb.var format : {char const*} = {"1323"};
 
@@ -9383,20 +9609,6 @@ sminp_vsvsvs.var format : {char const*} = {"1063"};
 
 sminp_vsvsvs.disasm = {
   sink << "sminp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
-};
-
-op sminv_bvb( 0b0[1] : q[1] : 0b00111000110001101010[20] : rn[5] : rd[5] );
-sminv_bvb.var format : {char const*} = {"2175"};
-
-sminv_bvb.disasm = {
-  sink << "sminv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
-};
-
-op sminv_hvh( 0b0[1] : q[1] : 0b00111001110001101010[20] : rn[5] : rd[5] );
-sminv_hvh.var format : {char const*} = {"2249"};
-
-sminv_hvh.disasm = {
-  sink << "sminv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
 };
 
 op sqabs_vbb( 0b0[1] : q[1] : 0b00111000100000011110[20] : rn[5] : rd[5] );
@@ -10131,20 +10343,6 @@ umaxp_vsvsvs.disasm = {
   sink << "umaxp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
 };
 
-op umaxv_bvb( 0b0[1] : q[1] : 0b10111000110000101010[20] : rn[5] : rd[5] );
-umaxv_bvb.var format : {char const*} = {"2176"};
-
-umaxv_bvb.disasm = {
-  sink << "umaxv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
-};
-
-op umaxv_hvh( 0b0[1] : q[1] : 0b10111001110000101010[20] : rn[5] : rd[5] );
-umaxv_hvh.var format : {char const*} = {"2250"};
-
-umaxv_hvh.disasm = {
-  sink << "umaxv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
-};
-
 op umin_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
 umin_vbvbvb.var format : {char const*} = {"1341"};
 
@@ -10185,20 +10383,6 @@ uminp_vsvsvs.var format : {char const*} = {"1083"};
 
 uminp_vsvsvs.disasm = {
   sink << "uminp\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmTV(rm,2<<q,2);
-};
-
-op uminv_bvb( 0b0[1] : q[1] : 0b10111000110001101010[20] : rn[5] : rd[5] );
-uminv_bvb.var format : {char const*} = {"2177"};
-
-uminv_bvb.disasm = {
-  sink << "uminv\t" << DisasmB(rd) << ", " << DisasmTV(rn,8<<q,0);
-};
-
-op uminv_hvh( 0b0[1] : q[1] : 0b10111001110001101010[20] : rn[5] : rd[5] );
-uminv_hvh.var format : {char const*} = {"2251"};
-
-uminv_hvh.disasm = {
-  sink << "uminv\t" << DisasmH(rd) << ", " << DisasmTV(rn,4<<q,1);
 };
 
 op uqadd_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b000011[6] : rn[5] : rd[5] );

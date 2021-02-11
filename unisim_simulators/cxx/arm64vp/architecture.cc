@@ -33,12 +33,17 @@
  */
 
 #include <architecture.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/aarch64.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
 
 AArch64::AArch64()
-  : devices()
+  : regmap()
+  , devices()
   , gic()
   , uart()
   , vt()
@@ -64,8 +69,116 @@ AArch64::AArch64()
   , TPIDR()
   , CPACR()
   , bdaddr(0)
+  , terminate(false)
   , disasm(false)
 {
+  for (int idx = 0; idx < 32; ++idx)
+    {
+      std::ostringstream regname;
+      regname << unisim::component::cxx::processor::arm::isa::arm64::DisasmGSXR(idx);
+      regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &gpr[idx].value);
+    }
+    
+  /** Specific Program Counter Register Debugging Accessor */
+  struct ProgramCounterRegister : public unisim::service::interfaces::Register
+  {
+    ProgramCounterRegister( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "pc"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t*)buffer) = cpu.current_insn_addr; }
+    virtual void SetValue( void const* buffer ) { cpu.BranchTo(U64(*(uint64_t const*)buffer), cpu.B_DBG); }
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() { /* Clear is meaningless for PC */ }
+    AArch64&        cpu;
+  };
+  
+  regmap["pc"] = new ProgramCounterRegister( *this );
+}
+
+AArch64::~AArch64()
+{
+  for (auto reg : regmap)
+    delete reg.second;
+}
+
+bool
+AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
+{
+  struct Bad {};
+    
+  uint64_t count = size;
+  uint8_t* ptr = static_cast<uint8_t*>(buffer);
+
+  while (count > 0)
+    {
+      MMU::TLB::Entry entry(addr);
+      translate_address(entry, mem_acc_type::debug, count);
+      Page const& page = access_page(entry.pa);
+      uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
+      uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
+      if (std::any_of(&udat[0], &udat[done], [](uint8_t b) { return b != 0; } )) throw Bad();
+      std::copy( &data[0], &data[done], ptr );
+      count -= done;
+      ptr += done;
+    }
+  
+  return true;
+}
+
+bool
+AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
+{
+  struct Bad {};
+    
+  uint64_t count = size;
+  uint8_t const* ptr = static_cast<uint8_t const*>(buffer);
+
+  while (count > 0)
+    {
+      MMU::TLB::Entry entry(addr);
+      translate_address(entry, mem_acc_type::debug, count);
+      Page const& page = modify_page(entry.pa);
+      uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
+      uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
+      std::fill(&udat[0], &udat[done], 0);
+      std::copy(&ptr[0], &ptr[done], data);
+      count -= done;
+      ptr += done;
+    }
+  
+  return true;
+}
+
+unisim::service::interfaces::Register*
+AArch64::GetRegister(char const* name)
+{
+  auto reg = regmap.find( name );
+  return (reg == regmap.end()) ? 0 : reg->second;
+}
+
+void
+AArch64::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+  // General purpose registers
+  for (unsigned reg = 0; reg < 31; ++reg)
+    {
+      std::ostringstream buf;
+      buf << 'x' << std::dec << reg;
+      scanner.Append( GetRegister( buf.str().c_str() ) );
+    }
+  scanner.Append( GetRegister("sp") );
+  scanner.Append( GetRegister("pc") );
+}
+
+bool
+AArch64::InjectReadMemory(uint64_t addr, void *buffer, unsigned size)
+{
+  return ReadMemory(addr, buffer, size);
+}
+
+bool
+AArch64::InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size)
+{
+  return WriteMemory(addr, buffer, size);
 }
 
 AArch64::Page::~Page()
@@ -187,20 +300,21 @@ void
 AArch64::CallSupervisor( unsigned imm )
 {
   // if (verbose) {
-  //   static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
+  // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
+  // {
+  //   typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
+  //   typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
+    
+  //   Arm64LinuxOS( AArch64* _cpu )
+  //     : ThisLinux( std::cerr, std::cerr, std::cerr, _cpu, _cpu, _cpu )
   //   {
-  //     typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
-
-  //     ArmLinuxOS( CPU* _cpu )
-  //       : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
-  //     {
-  //       SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
-  //     }
-  //     ~ArmLinuxOS() { delete GetTargetSystem(); }
-  //   } arm_linux_os( this );
-
-  //   logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
-  //   arm_linux_os.LogSystemCall( imm );
+  //     SetTargetSystem(new Arm64Target(*this));
+  //   }
+  //   ~Arm64LinuxOS() { delete GetTargetSystem(); }
+  // } arm64_linux_os( this );
+  
+  // std::cerr << "SVC@" << std::hex << current_insn_addr << ": ";
+  // arm64_linux_os.LogSystemCall( imm );
   // }
 
   //  if UsingAArch32() then AArch32.ITAdvance();
@@ -320,9 +434,8 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
     }
 }
 
-template <class POLICY>
 bool
-AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t vaddr, unsigned asid )
+AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t vaddr, unsigned asid, bool update )
 {
   unsigned rsh = 0, hit;
   uint64_t key = 0;
@@ -347,7 +460,7 @@ AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t va
   unsigned idx = indices[hit];
   Entry& entry = entries[idx];
 
-  if (not POLICY::DEBUG)
+  if (update)
     {
       // MRU sort
       for (unsigned idx = hit; idx > 0; idx -= 1)
@@ -371,19 +484,22 @@ struct DebugAccess { static bool const DEBUG = true; static bool const VERBOSE =
 struct QuietAccess { static bool const DEBUG = true; static bool const VERBOSE = false; };
 struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE = false; };
 
-uint64_t
-AArch64::translate_address(uint64_t vaddr, mem_acc_type::Code mat, unsigned size)
+void
+AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, mem_acc_type::Code mat, unsigned size)
 {
   if (not unisim::component::cxx::processor::arm::sctlr::M.Get(el1.SCTLR))
-    return vaddr;
+    return;
 
-  MMU::TLB::Entry entry;
+  uint64_t vaddr = entry.pa;
+  
   // Stage 1 MMU enabled
+  bool update = mat != mem_acc_type::debug;
   unsigned asid = mmu.GetASID();
-  if (unlikely(not mmu.tlb.GetTranslation<PlainAccess>( entry, vaddr, asid )))
+  if (unlikely(not mmu.tlb.GetTranslation( entry, vaddr, asid, update )))
     {
-      translation_table_walk<PlainAccess>( entry, vaddr, mat, size );
-      mmu.tlb.AddTranslation( entry, vaddr, asid );
+      translation_table_walk( entry, vaddr, mat, size );
+      if (update)
+        mmu.tlb.AddTranslation( entry, vaddr, asid );
     }
   // else {
   //   // Check if hit is coherent
@@ -392,7 +508,8 @@ AArch64::translate_address(uint64_t vaddr, mem_acc_type::Code mat, unsigned size
   //   if (tlbe_chk.pa != tlbe.pa)
   //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
   // }
-  return entry.pa;
+
+  CheckPermission(entry, vaddr, mat);
 }
 
 void
@@ -401,16 +518,20 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
   // ReportException
   unsigned const target_el = 1;
   // ESR[target_el] = ec<5:0>:il:syndrome;
-  cpu.get_el(target_el).ESR = U32(0)
+  U32 esr = U32(0)
     | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (cpu.pstate.GetEL() == target_el)) << 26 // exception class
     | U32(1) << 25 // IL Instruction Length
     | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
     | U32(0,0b1111) << 10
     | U32(0) << 9 // IsExternalAbort(fault)
-    | U32(mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
+    | U32(mat == mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
     | U32(mat == mem_acc_type::write or mat == mem_acc_type::cache_maintenance) << 6
     | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
+
+  // Print(std::cerr << "DataAbort: ", esr);
+  // std::cerr << std::endl;
+  cpu.get_el(target_el).ESR = esr;
   // FAR[target_el] = exception.vaddress;
   cpu.get_el(target_el).FAR = va;
   //     if target_el == EL2 && exception.ipavalid then
@@ -419,7 +540,6 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
   cpu.TakeException(target_el, 0x0, cpu.current_insn_addr);
 }
 
-template <class POLICY>
 void
 AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat, unsigned size )
 {
@@ -554,7 +674,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
   unsigned vaclr = 64 - direct_bits;
   entry.pa = (((desc >> direct_bits) << (direct_bits + 16)) >> 16) | ((vaddr << vaclr) >> vaclr);
   entry.blocksize = direct_bits;
-  entry.ap = (((desc >> 4) | (attr_table ^ 4) | 2) >> 1) & 7;
+  entry.ap = (((desc >> 5 ^ 2) | (attr_table >> 1) | 1) ^ 2) & 7;
   unsigned xperms = ((desc >> 53) | (attr_table ^ 3)) & 3;
   entry.xn = (xperms >> 1) & 1;
   entry.pxn = (xperms >> 0) & 1;
@@ -594,7 +714,9 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
   pstate.F = 1;
 
   // BranchTo(VBAR[]<63:11>:vect_offset<10:0>, BranchType_EXCEPTION);
-  BranchTo( (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset), B_EXC );
+  U64 target = (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset);
+  BranchTo( target, B_EXC );
+  //  std::cerr << "EXC: " << std::hex << target.value << std::endl;
 }
 
 void
@@ -630,6 +752,8 @@ AArch64::ExceptionReturn()
   U32 spsr = get_el(pstate.GetEL()).SPSR;
   U64 elr = get_el(pstate.GetEL()).ELR;
   SetPSTATEFromPSR(spsr);
+  // if (pstate.GetEL() == 0)
+  //   std::cerr << "ERET: 0x" << std::hex << elr.value << std::endl;
   //  ClearExclusiveLocal();
   // SendEventLocal();
 
@@ -737,6 +861,12 @@ AArch64::concretize(bool possible)
   if (current_insn_addr == 0xffffffc0100886d8)
     {
       return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
+    }
+
+  if (current_insn_addr == 0x7faa8aebec or
+      current_insn_addr == 0x7faa8aec18)
+    {
+      return possible;
     }
 
   // static struct { uint64_t address; bool result; }
@@ -1040,7 +1170,7 @@ namespace {
 
     VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
     {
-      AArch64::Page const& page = core.access_page(addr);
+      AArch64::Page const& page = write ? core.modify_page(addr) : core.access_page(addr);
       VIOAccess::Slice res{page.data_abs(addr), page.size_from(addr)};
       if      (res.size > size) res.size = size;
       else if (size > res.size) size = res.size;
@@ -1512,11 +1642,16 @@ AArch64::run()
               breakdance();
               // disasm = true;
             }
+          
+          if (terminate) { force_throw(); }
+          
           if (disasm)
             {
-              std::cerr << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
-              op->disasm( *this, std::cerr );
-              std::cerr << std::endl;
+              static std::ofstream dbgtrace("dbgtrace");
+              std::ostream& sink( dbgtrace );
+              sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
+              op->disasm( *this, sink );
+              sink << std::endl;
             }
 
           /* Execute instruction */
@@ -1568,6 +1703,12 @@ raise_breakpoint()
   std::cerr << "Raise BP\n";
 }
 
+void force_throw()
+{
+  struct Force {};
+  throw Force();
+}
+
 void
 AArch64::MemDump64(uint64_t addr)
 {
@@ -1577,8 +1718,9 @@ AArch64::MemDump64(uint64_t addr)
   
   try
     {
-      uint64_t paddr = translate_address(addr, mem_acc_type::read, 8);
-      PMemDump64(paddr);
+      MMU::TLB::Entry entry( addr );
+      translate_address(entry, mem_acc_type::read, 8);
+      PMemDump64(entry.pa);
     }
   catch (DataAbort const&)
     {
@@ -1789,3 +1931,44 @@ AArch64::viocapture(uint64_t base, uint64_t last)
   zone.base = zi->base;
   zi = diskpages.erase(zi);
 }
+
+// Function used for permission checking from AArch64 stage 1 translations
+void
+AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, mem_acc_type::Code mat)
+{
+  // AArch64
+  bool wxn = unisim::component::cxx::processor::arm::RegisterField<19,1>().Get(el1.SCTLR); // Cacheable
+
+  bool perm_r, perm_w, perm_x;
+
+  if (pstate.GetEL() == 0 /*or (pstate.GetEL() == 1 and acctype != AccType_UNPRIV)*/)
+    {
+      perm_r = (trans.ap & 2) == 2;
+      perm_w = (trans.ap & 6) == 2;
+      perm_x = not trans.xn and not (perm_w and wxn);
+    }
+  else /*if (pstate.GetEL() == 1)*/
+    {
+      perm_r = true;
+      perm_w = (trans.ap & 4) == 0;
+      perm_x = not trans.pxn and not (perm_w and wxn) and (trans.ap & 6) != 2;
+    }
+
+  bool fail;
+  switch (mat)
+    {
+    case mem_acc_type::read:               fail = not perm_r; break;
+    case mem_acc_type::cache_maintenance:
+    case mem_acc_type::write:              fail = not perm_w; break;
+    case mem_acc_type::exec:               fail = not perm_x; break;
+    case mem_acc_type::debug:              fail = false; break;
+    }
+  
+  if (fail)
+    {
+      struct Bad {};
+      throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Permission,
+                      vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
+    }
+}
+

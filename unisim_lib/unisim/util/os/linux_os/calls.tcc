@@ -1201,7 +1201,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(void *addr=0x" << std::hex << (SysCall::GetParam(lin, 0))
-             << ", size_t length=" << std::dec << int(SysCall::GetParam(lin, 1))
+             << ", size_t length=0x" << std::hex << (SysCall::GetParam(lin, 1))
              << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
              << ", int flags=0x" << std::hex << (SysCall::GetParam(lin, 3))
              << ", int fd=" << std::dec << int(SysCall::GetParam(lin, 4))
@@ -1244,7 +1244,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "mmap2"; }
-      void Describe( Linux& lin, std::ostream& sink ) const {
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
         sink << "(void *addr=0x" << std::hex << (SysCall::GetParam(lin, 0))
              << ", size_t length=0x" << std::hex << (SysCall::GetParam(lin, 1))
              << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))

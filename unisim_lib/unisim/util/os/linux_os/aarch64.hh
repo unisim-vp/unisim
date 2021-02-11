@@ -35,11 +35,15 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_AARCH64_HH__
 #define __UNISIM_UTIL_OS_LINUX_AARCH64_HH__
 
-#include <unisim/util/likely/likely.hh>
 #include <unisim/util/os/linux_os/errno.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/blob/blob.hh>
+#include <unisim/util/likely/likely.hh>
 
 #include <stdexcept>
+#include <string>
 #include <cerrno>
+#include <sstream>
 #include <cstdlib>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)

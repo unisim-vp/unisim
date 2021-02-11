@@ -153,7 +153,7 @@ struct TaintedValue
 template <typename T>
 struct TaintedTypeInfo
 {
-  enum { bytecount = sizeof (T) };
+  enum { bytecount = sizeof (typename T::ubits_type) };
   static void ToBytes( TaintedValue<uint8_t>* dst, T const& src )
   {
     //typedef typename TX<typename T::value_type>::as_mask bits_type;
@@ -204,8 +204,8 @@ UTP BitScanReverse( UTP const& value )
   return UTP( bit, (value.ubits >> bit) ? -1 : 0 );
 }
 
-extern void Print( std::ostream& sink, unsigned minlength, unsigned radix, uint64_t vbits, uint64_t dbits );
-extern void PrintBin( std::ostream& sink, uint64_t vbits, uint64_t dbits );
+extern void Print( std::ostream& sink, unsigned minlength, unsigned radix, uint64_t vbits, uint64_t ubits );
+extern void PrintBin( std::ostream& sink, uint64_t vbits, uint64_t ubits );
 
 template <typename T>
 void Print( std::ostream& sink, TaintedValue<T> const& tv )
@@ -214,5 +214,16 @@ void Print( std::ostream& sink, TaintedValue<T> const& tv )
   bits value = *reinterpret_cast<bits const*>(&tv.value);
   PrintBin(sink, value, tv.ubits);
 }
+
+extern void PrintHex( std::ostream& sink, unsigned ml, uint64_t vbits, uint64_t ubits );
+
+template <typename T>
+void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
+{
+  typedef typename TX<T>::as_mask bits;
+  bits value = *reinterpret_cast<bits const*>(&tv.value);
+  PrintHex(sink, ml, value, tv.ubits);
+}
+
 
 #endif /* __ARM64VP_TAINT_HH__ */

@@ -36,6 +36,7 @@
 #include <iostream>
 
 void PrintBin( std::ostream& sink, uint64_t vbits, uint64_t ubits ) { Print(sink << "0b", 0, 1, vbits, ubits); }
+void PrintHex( std::ostream& sink, unsigned ml, uint64_t vbits, uint64_t ubits ) { Print(sink << "0x", ml, 4, vbits, ubits); }
 
 void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t vbits, uint64_t ubits )
 {

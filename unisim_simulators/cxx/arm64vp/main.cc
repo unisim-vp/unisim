@@ -217,7 +217,7 @@ main(int argc, char *argv[])
       for (unsigned idx = 1; idx <= arch.histsize; ++idx)
         {
           auto const& insn = arch.last_insn(idx);
-          tail << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
+          tail << std::dec << insn.counter << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
           insn.op->disasm( arch, tail );
           tail << std::endl;
         }

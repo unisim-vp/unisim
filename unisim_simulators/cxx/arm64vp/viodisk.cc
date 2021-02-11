@@ -218,7 +218,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       uint32_t wlen = 0;
       // bool is_write = VIOQFlags::WRITE.Get(flags);
       bool is_write = flags & 2;
-      std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
+      //std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
       struct Bad {};
       
       if (state == Body and last) state = Status;
@@ -227,7 +227,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
         {
         case Head:
           if (is_write or len != 16) { std::cerr << "error: expected 16 byte header\n"; throw Bad(); }
-          std::cerr << "VirtIO Block Header: {type=" << vioa.read(buf + 0, 4) << ", sector=" << vioa.read(buf + 8, 8) << "}\n";
+          //std::cerr << "VirtIO Block Header: {type=" << vioa.read(buf + 0, 4) << ", sector=" << vioa.read(buf + 8, 8) << "}\n";
           switch (type = Type(vioa.read(buf + 0, 4)))
             {
             default:
