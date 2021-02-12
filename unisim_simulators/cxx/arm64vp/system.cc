@@ -255,10 +255,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
             if (addr.ubits) { struct Bad {}; raise( Bad () ); }
-            unsigned const zsize = 4 << cpu.ZID;
-            uint64_t paddr = cpu.translate_address(addr.value, mem_acc_type::write, zsize);
+            uint64_t const zsize = 4 << cpu.ZID;
+            // ZID value should be so MMU page bounds are not crossed
+            MMU::TLB::Entry entry(addr.value & -zsize);
+            cpu.translate_address(entry, cpu.pstate.GetEL(), mem_acc_type::write);
             uint8_t buffer[zsize] = {0};
-            if (cpu.modify_page(paddr).write(paddr & -zsize, &buffer[0], &buffer[0], zsize) != zsize)
+            if (cpu.modify_page(entry.pa).write(entry.pa, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
           }
         } x; return &x;
@@ -625,8 +627,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (addr.ubits) { struct Bad {}; raise( Bad() ); }
             try
               {
-                uint64_t translation = cpu.translate_address(addr.value, op2 ? mem_acc_type::write : mem_acc_type::read, 1);
-                cpu.el1.PAR = U64(translation & 0x000ffffffffff000ull, 0xfff0000000000380ull);
+                MMU::TLB::Entry entry(addr.value);
+                cpu.translate_address(entry, cpu.pstate.GetEL(), op2 ? mem_acc_type::write : mem_acc_type::read);
+                cpu.el1.PAR = U64(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
               }
             catch (AArch64::DataAbort const& x)
               {

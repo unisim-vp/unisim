@@ -113,6 +113,7 @@ struct AArch64
   InstructionInfo const& last_insn(int idx) const;
   void breakdance();
   void uninitialized_error(char const* rsrc);
+  void dump_last_insn(std::ostream& sink);
 
   void TODO();
 
@@ -355,58 +356,49 @@ struct AArch64
     } tlb;
   };
 
-  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat, unsigned size );
+  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat );
 
-  uint64_t translate_address(uint64_t vaddr, mem_acc_type::Code mat, unsigned size)
-  { MMU::TLB::Entry entry( vaddr ); translate_address(entry, mat, size); return entry.pa; }
+  void translate_address(MMU::TLB::Entry& entry, unsigned el, mem_acc_type::Code mat);
   
-  void translate_address(MMU::TLB::Entry& entry, mem_acc_type::Code mat, unsigned size);
-  
-  void CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, mem_acc_type::Code mat);
+  void CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat);
   
   struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
   void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
   
   template <typename T>
   T
-  memory_read(U64 addr)
+  memory_read(unsigned el, U64 addr)
   {
     struct Bad {};
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
-    uint64_t paddr = translate_address(addr.value, mem_acc_type::read, size);
+    MMU::TLB::Entry entry( addr.value );
+    translate_address(entry, el, mem_acc_type::read);
+    
+    uint8_t dbuf[size], ubuf[size];
 
     try
-      { return memory_pread<T>(paddr); }
-    catch (MemFault const& mf)
-      { memory_fault(mf, "read", addr.value, paddr, size); }
-    return T();
-  }
-  
-  template <typename T>
-  T
-  memory_pread(uint64_t paddr)
-  {
-    struct Bad {};
-    unsigned const size = sizeof (typename T::value_type);
-    uint8_t dbuf[size], ubuf[size];
-    //checkvio(paddr, size);
-    try
       {
-        if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
+        if (entry.size_after() < size or access_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
           {
             for (unsigned byte = 0; byte < size; ++byte)
-              if (not access_page(paddr+byte).read(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-                raise( Bad() );
+              {
+                U8 u8 = memory_read<U8>(el, U64(addr.value+byte));
+                dbuf[byte] = u8.value; ubuf[byte] = u8.ubits;
+              }
           }
       }
     catch (Device const& device)
       {
-        if (not device.read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
+        if (not device.read(*this, entry.pa - device.base, &dbuf[0], &ubuf[0], size))
           throw MemFault("device");
       }
-
+    catch (MemFault const& mf)
+      {
+        memory_fault(mf, "read", addr.value, entry.pa, size);
+      }
+    
     typedef typename T::value_type value_type;
     typedef typename TX<value_type>::as_mask bits_type;
 
@@ -416,45 +408,34 @@ struct AArch64
         value <<= 8; value |= bits_type( dbuf[idx] );
         ubits <<= 8; ubits |= bits_type( ubuf[idx] );
       }
+    
     return T(*reinterpret_cast<value_type const*>(&value), ubits);
   }
 
   void MemDump64(uint64_t addr);
   void PMemDump64(uint64_t addr);
-  U64 MemRead64(U64 addr) { return memory_read<U64>(addr); }
-  U32 MemRead32(U64 addr) { return memory_read<U32>(addr); }
-  U16 MemRead16(U64 addr) { return memory_read<U16>(addr); }
-  U8  MemRead8 (U64 addr) { return memory_read<U8> (addr); }
+  U64 MemRead64(U64 addr) { return memory_read<U64>(pstate.GetEL(), addr); }
+  U32 MemRead32(U64 addr) { return memory_read<U32>(pstate.GetEL(), addr); }
+  U16 MemRead16(U64 addr) { return memory_read<U16>(pstate.GetEL(), addr); }
+  U8  MemRead8 (U64 addr) { return memory_read<U8> (pstate.GetEL(), addr); }
 
   void MemRead( U8* buffer, U64 addr, unsigned size );
 
   template <typename T>
   void
-  memory_write(U64 addr, T src)
+  memory_write(unsigned el, U64 addr, T src)
   {
     struct Bad {};
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
-    uint64_t paddr = translate_address(addr.value, mem_acc_type::write, size);
+    MMU::TLB::Entry entry( addr.value );
+    translate_address(entry, el, mem_acc_type::write);
 
-    try
-      { memory_pwrite(paddr, src); }
-    catch(MemFault const& mf)
-      { memory_fault(mf, "write", addr.value, paddr, size); }
-  }
-
-  template <typename T>
-  void
-  memory_pwrite(uint64_t paddr, T src)
-  {
-    struct Bad {};
-    unsigned const size = sizeof (typename T::value_type);
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
     bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
     uint8_t dbuf[size], ubuf[size];
-
     for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
       {
         dbuf[idx] = value & 0xff; value >>= 8;
@@ -463,24 +444,23 @@ struct AArch64
 
     try
       {
-        if (modify_page(paddr).write(paddr,&dbuf[0],&ubuf[0],size) != size)
+        if (entry.size_after() < size or modify_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
           {
             for (unsigned byte = 0; byte < size; ++byte)
-              if (not modify_page(paddr+byte).write(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-                raise( Bad() );
+              memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
           }
       }
     catch (Device const& device)
       {
-        if (not device.write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          throw MemFault("device");
+        if (not device.write(*this, entry.pa - device.base, &dbuf[0], &ubuf[0], size))
+          memory_fault(MemFault("device"), "write", addr.value, entry.pa, size);
       }
   }
 
-  void MemWrite64(U64 addr, U64 val) { memory_write(addr, val); }
-  void MemWrite32(U64 addr, U32 val) { memory_write(addr, val); }
-  void MemWrite16(U64 addr, U16 val) { memory_write(addr, val); }
-  void MemWrite8 (U64 addr, U8  val) { memory_write(addr, val); }
+  void MemWrite64(U64 addr, U64 val) { memory_write(pstate.GetEL(), addr, val); }
+  void MemWrite32(U64 addr, U32 val) { memory_write(pstate.GetEL(), addr, val); }
+  void MemWrite16(U64 addr, U16 val) { memory_write(pstate.GetEL(), addr, val); }
+  void MemWrite8 (U64 addr, U8  val) { memory_write(pstate.GetEL(), addr, val); }
 
   void MemWrite( U64 addr, U8 const* buffer, unsigned size );
 
@@ -711,8 +691,8 @@ struct AArch64
 
   struct IPB
   {
-    static unsigned const LINE_SIZE = 32; //< IPB size
-    uint8_t  bytes[LINE_SIZE];             //< The IPB content
+    static uint64_t const LINE_SIZE = 32; //< IPB size
+    uint8_t  bytes[LINE_SIZE];            //< The IPB content
     uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
     IPB() : bytes(), base_address( -1 ) {}
     uint8_t* get(AArch64& core, uint64_t address);

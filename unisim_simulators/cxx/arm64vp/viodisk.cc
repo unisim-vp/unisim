@@ -208,17 +208,20 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
   
   struct Request
   {
-    Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type() {}
+    Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type(), diskpos(), status() {}
     enum { Head, Body, Status } state; VIOAccess const& vioa; VIODisk& disk;
     enum Type { In = 0, Out, Flush = 4, Discard = 11, WriteZeroes = 13 } type;
-    uint64_t sector;
-    enum { OK, IOERR, UNSUPP } status = OK;
+    uint64_t diskpos;
+    enum { OK, IOERR, UNSUPP } status;
+
     uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last)
     {
       uint32_t wlen = 0;
       // bool is_write = VIOQFlags::WRITE.Get(flags);
       bool is_write = flags & 2;
       //std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
+      
+      
       struct Bad {};
       
       if (state == Body and last) state = Status;
@@ -231,13 +234,15 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
           switch (type = Type(vioa.read(buf + 0, 4)))
             {
             default:
+              throw Bad();
               break;
             case Flush:
               /* No data, all work should be done here. */
               /* Nothing to do for now */
               break;
             case In: case Out:
-              disk.storage.seekg(512*vioa.read(buf + 8, 8));
+              diskpos = 512*vioa.read(buf + 8, 8);
+              disk.storage.seekg(diskpos);
               break;
             }
           
@@ -254,13 +259,19 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
               vioa.dcapture(buf, len);
               for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
-                disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
+                {
+                  disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
+                  diskpos += itr.slice.size;
+                }
               wlen += len;
               break;
             case Out:
               if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
               for (VIOAccess::Iterator itr(buf, len, false); itr.next(vioa);)
-                disk.storage.write((char const*)itr.slice.bytes, itr.slice.size);
+                {
+                  disk.storage.write((char const*)itr.slice.bytes, itr.slice.size);
+                  diskpos += itr.slice.size;
+                }
               break;
             case Flush: std::cerr << "TODO: Flush\n"; throw Bad();
             case Discard: std::cerr << "TODO: Discard\n"; throw Bad();

@@ -111,7 +111,7 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
   while (count > 0)
     {
       MMU::TLB::Entry entry(addr);
-      translate_address(entry, mem_acc_type::debug, count);
+      translate_address(entry, 1, mem_acc_type::debug);
       Page const& page = access_page(entry.pa);
       uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
       uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
@@ -135,7 +135,7 @@ AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
   while (count > 0)
     {
       MMU::TLB::Entry entry(addr);
-      translate_address(entry, mem_acc_type::debug, count);
+      translate_address(entry, 1, mem_acc_type::debug);
       Page const& page = modify_page(entry.pa);
       uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
       uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
@@ -247,13 +247,15 @@ AArch64::Page::Free AArch64::Page::Free::nop;
 uint8_t*
 AArch64::IPB::get(AArch64& core, uint64_t vaddr)
 {
-  uint64_t address = core.translate_address(vaddr, AArch64::mem_acc_type::exec, LINE_SIZE);
-  uint64_t req_base_address = address & -LINE_SIZE;
+  // LINE_SIZE should be so MMU page boundaries should not be crossed
+  MMU::TLB::Entry entry(vaddr & uint64_t(-LINE_SIZE));
+  core.translate_address(entry, core.pstate.GetEL(), AArch64::mem_acc_type::exec);
+  uint64_t req_base_address = entry.pa;
   unsigned idx = vaddr % LINE_SIZE;
   if (base_address != req_base_address)
     {
       uint8_t ubuf[LINE_SIZE];
-      if (core.access_page(address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
+      if (core.access_page(req_base_address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
         { struct Bad {}; raise( Bad() ); }
       if (not std::all_of( &ubuf[0], &ubuf[LINE_SIZE], [](unsigned char const byte) { return byte == 0; } ))
         { struct Bad {}; raise( Bad() ); }
@@ -485,7 +487,7 @@ struct QuietAccess { static bool const DEBUG = true; static bool const VERBOSE =
 struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE = false; };
 
 void
-AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, mem_acc_type::Code mat, unsigned size)
+AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, unsigned el, mem_acc_type::Code mat)
 {
   if (not unisim::component::cxx::processor::arm::sctlr::M.Get(el1.SCTLR))
     return;
@@ -497,7 +499,7 @@ AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, mem_acc_type::Code m
   unsigned asid = mmu.GetASID();
   if (unlikely(not mmu.tlb.GetTranslation( entry, vaddr, asid, update )))
     {
-      translation_table_walk( entry, vaddr, mat, size );
+      translation_table_walk( entry, vaddr, mat );
       if (update)
         mmu.tlb.AddTranslation( entry, vaddr, asid );
     }
@@ -509,7 +511,7 @@ AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, mem_acc_type::Code m
   //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
   // }
 
-  CheckPermission(entry, vaddr, mat);
+  CheckPermission(entry, vaddr, el, mat);
 }
 
 void
@@ -541,7 +543,7 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
 }
 
 void
-AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat, unsigned size )
+AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat )
 {
   bool tbi, epd;
   unsigned grainsize, tsz;
@@ -890,10 +892,15 @@ AArch64::concretize(bool possible)
 void
 AArch64::uninitialized_error( char const* rsrc )
 {
-  std::cerr << "Error: " << rsrc << " depends on unitialized value.\n";
-  DisasmState ds;
-  last_insn(0).op->disasm( ds, std::cerr << std::hex << current_insn_addr << ": " );
+  dump_last_insn(std::cerr << "Error: " << rsrc << " depends on unitialized value.\n");
   std::cerr << "\n";
+}
+
+void
+AArch64::dump_last_insn(std::ostream& sink)
+{
+  DisasmState ds;
+  last_insn(0).op->disasm( ds, sink << std::hex << current_insn_addr << ": " );
 }
 
 AArch64::GIC::GIC()
@@ -1181,6 +1188,12 @@ namespace {
       else if (std::any_of(&chunk_udat[0], &chunk_udat[res.size], [](uint8_t b) { return b != 0; } )) throw Bad();
       
       return res;
+    }
+
+    void flag(uint64_t addr) const override
+    {
+      AArch64::Page const& page = core.modify_page(addr);
+      *page.udat_abs(addr) = 0xff;
     }
 
     void notify() const override
@@ -1647,8 +1660,8 @@ AArch64::run()
           
           if (disasm)
             {
-              static std::ofstream dbgtrace("dbgtrace");
-              std::ostream& sink( dbgtrace );
+              //static std::ofstream dbgtrace("dbgtrace");
+              std::ostream& sink( std::cerr );
               sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
               op->disasm( *this, sink );
               sink << std::endl;
@@ -1718,8 +1731,9 @@ AArch64::MemDump64(uint64_t addr)
   
   try
     {
+      /* 8 bytes access should not cross MMU page boundaries. */
       MMU::TLB::Entry entry( addr );
-      translate_address(entry, mem_acc_type::read, 8);
+      translate_address(entry, 1, mem_acc_type::read);
       PMemDump64(entry.pa);
     }
   catch (DataAbort const&)
@@ -1772,10 +1786,12 @@ AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
 {
   struct Bad {};
   if (addr.ubits) raise( Bad() );
-  if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
-  uint64_t paddr = translate_address(addr.value, mem_acc_type::read, size);
-
-  excmon.set(paddr, size);
+  if ((size | addr.value) & (size - 1)) raise( Bad() );
+  /* TODO: should be an Alignment-related DataAbort */
+  MMU::TLB::Entry entry(addr.value);
+  translate_address(entry, pstate.GetEL(), mem_acc_type::read);
+  // By design, access cannot cross mmu page boundaries
+  excmon.set(entry.pa, size);
 }
 
 bool
@@ -1784,8 +1800,10 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
   struct Bad {};
   if (addr.ubits) raise( Bad() );
   if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
-  uint64_t paddr = translate_address(addr.value, mem_acc_type::write, size);
-  bool passed = excmon.pass( paddr, size );
+  MMU::TLB::Entry entry(addr.value);
+  translate_address(entry, pstate.GetEL(), mem_acc_type::write);
+  // By design, access cannot cross mmu page boundaries
+  bool passed = excmon.pass( entry.pa, size );
   excmon.clear();
   return passed;
 }
@@ -1934,25 +1952,16 @@ AArch64::viocapture(uint64_t base, uint64_t last)
 
 // Function used for permission checking from AArch64 stage 1 translations
 void
-AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, mem_acc_type::Code mat)
+AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat)
 {
   // AArch64
   bool wxn = unisim::component::cxx::processor::arm::RegisterField<19,1>().Get(el1.SCTLR); // Cacheable
 
-  bool perm_r, perm_w, perm_x;
+  unsigned ap = trans.ap | 2*(el != 0);
 
-  if (pstate.GetEL() == 0 /*or (pstate.GetEL() == 1 and acctype != AccType_UNPRIV)*/)
-    {
-      perm_r = (trans.ap & 2) == 2;
-      perm_w = (trans.ap & 6) == 2;
-      perm_x = not trans.xn and not (perm_w and wxn);
-    }
-  else /*if (pstate.GetEL() == 1)*/
-    {
-      perm_r = true;
-      perm_w = (trans.ap & 4) == 0;
-      perm_x = not trans.pxn and not (perm_w and wxn) and (trans.ap & 6) != 2;
-    }
+  bool perm_r = (ap & 2) == 2;
+  bool perm_w = (ap & 6) == 2;
+  bool perm_x = not (perm_w and wxn) and (el ? not trans.pxn and (trans.ap & 6) != 2 : trans.xn);
 
   bool fail;
   switch (mat)
@@ -1965,10 +1974,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, mem_ac
     }
   
   if (fail)
-    {
-      struct Bad {};
-      throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Permission,
-                      vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
-    }
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Permission,
+                    vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 
