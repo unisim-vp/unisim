@@ -755,8 +755,8 @@ AArch64::ExceptionReturn()
   U64 elr = get_el(pstate.GetEL()).ELR;
   SetPSTATEFromPSR(spsr);
   // if (pstate.GetEL() == 0)
-  //   std::cerr << "ERET: 0x" << std::hex << elr.value << std::endl;
-  //  ClearExclusiveLocal();
+  //   std::cerr << "ERET(" << pstate.GetEL() << ") " << std::hex << current_insn_addr << " => " << elr.value << std::endl;
+  // ClearExclusiveLocal();
   // SendEventLocal();
 
   BranchTo(elr, B_ERET);
@@ -1961,7 +1961,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
 
   bool perm_r = (ap & 2) == 2;
   bool perm_w = (ap & 6) == 2;
-  bool perm_x = not (perm_w and wxn) and (el ? not trans.pxn and (trans.ap & 6) != 2 : trans.xn);
+  bool perm_x = not ((perm_w and wxn) or (el ? trans.pxn or (trans.ap & 6) == 2 : trans.xn));
 
   bool fail;
   switch (mat)
