@@ -1481,7 +1481,28 @@ inline int BitScanReverse(unsigned long long n) { return BitScanReverse_C(n); }
 
 #endif
 
+#ifdef __GNUC__
 
+inline int PopCount(unsigned char v) { return __builtin_popcount(v); }
+inline int PopCount(unsigned short v) { return __builtin_popcount(v); }
+inline int PopCount(unsigned v) { return __builtin_popcount(v); }
+inline int PopCount(unsigned long v) { return __builtin_popcountl(v); }
+inline int PopCount(unsigned long long v) { return __builtin_popcountll(v); }
+
+#else /* ! __GNUC__ */
+
+int PopCount(uint64_t v)
+{
+  v = (v & 0xaaaaaaaaaaaaaaaaull) >>  1 + (v & 0x5555555555555555ull);
+  v = (v & 0xccccccccccccccccull) >>  2 + (v & 0x3333333333333333ull);
+  v = (v & 0xf0f0f0f0f0f0f0f0ull) >>  4 + (v & 0x0f0f0f0f0f0f0f0full);
+  v = (v & 0xff00ff00ff00ff00ull) >>  8 + (v & 0x00ff00ff00ff00ffull);
+  v = (v & 0xffff0000ffff0000ull) >> 16 + (v & 0x0000ffff0000ffffull);
+  v = (v & 0xffffffff00000000ull) >> 32 + (v & 0x00000000ffffffffull);
+  
+  return int(v);
+}
+#endif
 
 inline unsigned int CountLeadingZeros(uint32_t v)
 {

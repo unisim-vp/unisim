@@ -32,14 +32,12 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/util/arithmetic/arithmetic.hh>
-#include <limits>
-#include <iosfwd>
-#include <inttypes.h>
-
 #ifndef __ARM64VP_TAINT_HH__
 #define __ARM64VP_TAINT_HH__
 
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <limits>
+#include <iosfwd>
 #include <inttypes.h>
 
 template <typename Bool> struct AssertBool {};
@@ -225,5 +223,10 @@ void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
   PrintHex(sink, ml, value, tv.ubits);
 }
 
+TaintedValue<float> trunc( TaintedValue<float> const& _value );
+TaintedValue<double> trunc( TaintedValue<double> const& _value );
+
+template <typename T>
+TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
 
 #endif /* __ARM64VP_TAINT_HH__ */

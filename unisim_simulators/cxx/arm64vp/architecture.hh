@@ -37,6 +37,7 @@
 
 #include "taint.hh"
 #include "viodisk.hh"
+#include "debug.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
@@ -51,10 +52,7 @@
 #include <algorithm>
 #include <inttypes.h>
 
-void raise_breakpoint();
 void force_throw();
-
-template <typename E> void raise( E const& e ) { raise_breakpoint(); throw e; }
 
 struct AArch64
   : public unisim::service::interfaces::Registers
@@ -70,6 +68,9 @@ struct AArch64
   typedef TaintedValue< int32_t> S32;
   typedef TaintedValue< int64_t> S64;
 
+  typedef TaintedValue<   float> F32;
+  typedef TaintedValue<  double> F64;
+  
   typedef TaintedValue<  bool  > BOOL;
 
   typedef U64 UREG;
@@ -177,6 +178,8 @@ struct AArch64
   S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
   S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
   S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
+  F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<F32>(reg, sub); }
+  F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<F64>(reg, sub); }
 
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
@@ -192,6 +195,8 @@ struct AArch64
   void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
   void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
   void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+  void SetVF32( unsigned reg, unsigned sub, F32 value ) { vector_write( reg, sub, value ); }
+  void SetVF64( unsigned reg, unsigned sub, F64 value ) { vector_write( reg, sub, value ); }
 
   template <typename T>
   void vector_write(unsigned reg, T value )
@@ -207,7 +212,9 @@ struct AArch64
   void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
   void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
   void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
-
+  void SetVF32( unsigned reg, F32 value ) { vector_write(reg, value); }
+  void SetVF64( unsigned reg, F64 value ) { vector_write(reg, value); }
+  
   void ClearHighV( unsigned reg, unsigned bytes )
   {
     vector_views[reg].Truncate(bytes);
@@ -807,15 +814,40 @@ struct AArch64
   
   struct UART
   {
-    UART() : tx_count(), IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0) {}
+    UART();
+    static unsigned const qsize = 32;
+    enum { RX_INT = 0x10, TX_INT = 0x20 };
+    pthread_t rx_thread;
+    pthread_mutex_t rx_hang;
+    char rx_buf[qsize];
+    struct {
+    unsigned head :   16;
+    unsigned locked :  1;
+    unsigned pad :    15;
+    }        rx_source;
+    struct {
+    unsigned tail :   16;
+    unsigned locked :  1;
+    unsigned kill :    1;
+    unsigned pad :    14;
+    }        rx_sink;
+    unsigned rx_count() const { return rx_source.head - rx_sink.tail; }
+    /* tx writer */
     unsigned tx_count;
     uint16_t IBRD, FBRD, LCR, CR, IFLS, IMSC, RIS;
-    static unsigned ifls( unsigned );
-    void txpush(AArch64& arch, char ch);
-    bool txpop();
+    unsigned ifls( bool );
+    void tx_push(AArch64& arch, char ch);
+    void tx_pop();
+    void rx_pushchars(AArch64& arch);
+    bool rx_pop(char& ch);
+    void rx_update();
+    uint16_t flags() const;
+    uint16_t mis() const { return RIS & IMSC; }
   };
-  void uart_tx();
-  void map_uart(uint64_t base_addr);
+  void handle_uart();  /* synchronous check of asynchronous events */
+  void uart_tx();      /* synchronous tx update event */
+  void uart_rx();      /* synchronous rx update event */
+void map_uart(uint64_t base_addr);
 
   struct Timer
   {
@@ -839,28 +871,33 @@ struct AArch64
 
   void map_virtio_placeholder(unsigned id, uint64_t base_addr);
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
+  void map_virtio_console(uint64_t base_addr, unsigned irq);
   
+  /* Simulation state */
+public:
   typedef std::multimap<uint64_t, event_handler_t> Events;
-  void notify( uint64_t delay, event_handler_t method )
-  {
-    next_events.emplace(std::piecewise_construct, std::forward_as_tuple( insn_timer+delay ), std::forward_as_tuple( method ));
-    // reload_next_event();
-  }
-  void reload_next_event();
+  void notify( uint64_t delay, event_handler_t method );
 
-  /** Architectural state **/
 private:
+  struct NELock { NELock(AArch64& a); ~NELock(); pthread_mutex_t* m; };
+
+  event_handler_t pop_next_event();
+  void reload_next_event();
+  
   Events   next_events;
   uint64_t next_event;
-  std::map<std::string,unisim::service::interfaces::Register*> regmap;
+  pthread_mutex_t next_event_mutex;
   
+  /** Architectural state **/
 public:
-  Devices  devices;
-  GIC      gic;
-  UART     uart;
-  Timer    vt;
-  RTC      rtc;
-  VIODisk  viodisk;
+  std::map<std::string,unisim::service::interfaces::Register*> regmap;
+  Devices     devices;
+  GIC         gic;
+  UART        uart;
+  Timer       vt;
+  RTC         rtc;
+  VIODisk     viodisk;
+  VIOConsole  vioconsole; 
 
   Pages    pages;
   ExcMon   excmon;
@@ -888,6 +925,7 @@ public:
   uint32_t CPACR;
 
   uint64_t bdaddr;
+  uint32_t random;
   bool     terminate;
   bool     disasm;
 

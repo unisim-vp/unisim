@@ -119,9 +119,18 @@ main(int argc, char *argv[])
   arch.map_uart(0x49000000);
   arch.map_rtc(0x49010000);
 
-  for (unsigned int idx = 0; idx < 31; ++idx)
-    arch.map_virtio_placeholder(idx, 0x4a000000 + 0x200*idx);
-  arch.map_virtio_disk(disk_filename, 0x4a000000 + 0x200*31, 32 + 16 + 31);
+  for (unsigned int idx = 0; idx < 32; ++idx)
+    {
+      uint64_t base_addr = 0x4a000000 + 0x200*idx;
+      unsigned irq = 32 + 16 + idx;
+      switch (idx)
+        {
+        default: arch.map_virtio_placeholder(idx, base_addr); break;
+     // case 30: arch.map_virtio_console(base_addr, irq); break;
+        case 31: arch.map_virtio_disk(disk_filename, base_addr, irq); break;
+        }
+    }
+      
 
   // SETUP the VirtIO Hypervisor Emulator
   // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );

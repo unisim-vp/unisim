@@ -1939,8 +1939,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
                << ", const char *target=0x" << std::hex << target << " \"" << target_string << "\""
                << ", const char *filesystemtype=0x" << std::hex << filesystemtype << " \"" << filesystemtype_string << "\""
                << ", unsigned long mountflags=0x" << std::hex << mountflags
-               << ", const void *data=0x" << std::hex << data << " \"" << data_string << "\""
-               << " )" << std::dec;
+               << ", const void *data=0x" << std::hex << data;
+          if (data_valid)
+            sink << " \"" << data_string << "\"";
+          sink << " )" << std::dec;
         }
       };
       void Describe( Linux& lin, std::ostream& sink ) const { Args(lin, false).Describe(sink); }

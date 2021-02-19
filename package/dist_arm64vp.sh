@@ -18,6 +18,7 @@ import unisim/kernel/logger/xml_file || exit
 import unisim/kernel/logger/netstream || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/likely || exit
+import unisim/util/random || exit
 import unisim/service/trap_handler || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
@@ -49,6 +50,7 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 taint.cc \
+debug.cc \
 architecture.cc \
 viodisk.cc \
 system.cc \
@@ -59,6 +61,7 @@ debugger.cc \
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 taint.hh \
+debug.hh \
 architecture.hh \
 viodisk.hh \
 debugger.hh \

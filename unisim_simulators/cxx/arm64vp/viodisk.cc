@@ -33,6 +33,7 @@
  */
 
 #include <viodisk.hh>
+#include <debug.hh>
 #include <iostream>
 
 VIODisk::VIODisk()
@@ -84,7 +85,7 @@ namespace
       case 1: return BlockClaimed<32>::mask; // should be: 0x7, 0b111
       }
     struct Bad {};
-    throw Bad ();
+    raise( Bad() );
   
     return 0;
   }
@@ -135,13 +136,13 @@ VIODisk::UsedFeatures(uint32_t requested)
     {
       feat_list_msg(std::cerr, 32*DriverFeaturesSel, err, "Erroneous feature(s) activation: ");
       std::cerr << std::endl;
-      throw Bad();
+      raise( Bad() );
     }
   if (uint32_t err = claimed & ~requested)
     {
       feat_list_msg(std::cerr, 32*DriverFeaturesSel, err, "Unsupported feature(s) deactivation: ");
       std::cerr << std::endl;
-      throw Bad();
+      raise( Bad() );
     }
   
   return true;
@@ -179,13 +180,13 @@ VIODisk::CheckStatus()
   if (status & 128)
     {
       std::cerr << "unhandled <failed> status bit.\n";
-      throw Bad();
+      raise( Bad() );
     }
   
   if (status & ~handled)
     {
       std::cerr << "| unhandled status bits: " << std::hex << status << ", Status=" << Status << "\n";
-      throw Bad();
+      raise( Bad() );
     }
 
   return true;
@@ -210,7 +211,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
   {
     Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type(), diskpos(), status() {}
     enum { Head, Body, Status } state; VIOAccess const& vioa; VIODisk& disk;
-    enum Type { In = 0, Out, Flush = 4, Discard = 11, WriteZeroes = 13 } type;
+    enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
     uint64_t diskpos;
     enum { OK, IOERR, UNSUPP } status;
 
@@ -229,12 +230,15 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       switch (state)
         {
         case Head:
-          if (is_write or len != 16) { std::cerr << "error: expected 16 byte header\n"; throw Bad(); }
+          if (is_write or len != 16) { std::cerr << "error: expected 16 byte header\n"; raise( Bad() ); }
           //std::cerr << "VirtIO Block Header: {type=" << vioa.read(buf + 0, 4) << ", sector=" << vioa.read(buf + 8, 8) << "}\n";
           switch (type = Type(vioa.read(buf + 0, 4)))
             {
             default:
-              throw Bad();
+              raise( Bad() );
+              break;
+            case GetID:
+              /* TODO: support this command ? */
               break;
             case Flush:
               /* No data, all work should be done here. */
@@ -256,7 +260,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               status = UNSUPP;
               break;
             case In:
-              if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
+              if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
               vioa.dcapture(buf, len);
               for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
                 {
@@ -266,21 +270,21 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               wlen += len;
               break;
             case Out:
-              if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; throw Bad(); }
+              if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
               for (VIOAccess::Iterator itr(buf, len, false); itr.next(vioa);)
                 {
                   disk.storage.write((char const*)itr.slice.bytes, itr.slice.size);
                   diskpos += itr.slice.size;
                 }
               break;
-            case Flush: std::cerr << "TODO: Flush\n"; throw Bad();
-            case Discard: std::cerr << "TODO: Discard\n"; throw Bad();
-            case WriteZeroes: std::cerr << "TODO: WriteZeroes\n"; throw Bad();
+            case Flush: std::cerr << "TODO: Flush\n"; raise( Bad() );
+            case Discard: std::cerr << "TODO: Discard\n"; raise( Bad() );
+            case WriteZeroes: std::cerr << "TODO: WriteZeroes\n"; raise( Bad() );
             }
           break;
 
         case Status:
-          if (not is_write or len != 1) { std::cerr << "error: expected a 1 byte footer\n"; throw Bad(); }
+          if (not is_write or len != 1) { std::cerr << "error: expected a 1 byte footer\n"; raise( Bad() ); }
           vioa.write(buf, 1, status);
           wlen += 1;
           state = Head;
@@ -348,7 +352,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
         {
           switch (pqes >> 16 & 3)
             {
-            default: { std::cerr << "error: bad flag value.\n"; struct Bad {}; throw Bad (); }
+            default: { std::cerr << "error: bad flag value.\n"; struct Bad {}; raise( Bad() ); }
             case 0: /*  ENABLE */ notification = true; break;
             case 1: /* DISABLE */ break;
             case 2: /*    DESC */ notification = tail.idx() == (pqes & 0xffff); break;
@@ -368,7 +372,7 @@ void
 VIODisk::open(char const* filename)
 {
   storage.open(filename);
-  if (not storage or not storage.is_open()) { struct Bad {}; throw Bad (); }
+  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
   uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
   Capacity = size / 512;
 }

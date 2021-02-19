@@ -35,8 +35,8 @@
 #ifndef __ARM64VP_VIODISK_HH__
 #define __ARM64VP_VIODISK_HH__
 
-#include <inttypes.h>
 #include <fstream>
+#include <inttypes.h>
 
 struct VIOAccess
 {
@@ -85,6 +85,23 @@ struct VIOQueue
   DescIterator head;
 };
 
+struct VIOConsole
+{
+  // Generic Config
+  static uint32_t Vendor() { return 0x70767375; }
+  static uint32_t QueueNumMax() { return 1024; }
+  uint32_t ClaimedFeatures();
+  bool UsedFeatures(uint32_t);
+  bool CheckFeatures();
+  bool CheckStatus();
+  bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
+  bool ReadQueue(VIOAccess const& vioa);
+  bool SetupQueue(VIOAccess const& vioa);
+  
+  // Generic Config
+  //uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+  uint32_t DeviceFeaturesSel, DriverFeaturesSel, InterruptStatus;
+};
 
 struct VIODisk
 {
