@@ -1362,13 +1362,14 @@ AArch64::map_uart(uint64_t base_addr)
     virtual bool access(AArch64& arch, Device::Request& req) const override
     {
       AArch64::UART& uart = arch.uart;
+      
       if ((req.addr & -4) == 0x0)
         {
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
           char ch;
           if (not req.write and not uart.rx_pop( ch )) { U8 x(0,-1); return req.tainted_access(x);  }
           if (not req.access( ch )) return false;
-          if (    req.write) uart.tx_push( arch, ch );
+          if (    req.write) uart.tx_push( ch );
           return true;
         }
       
@@ -1422,38 +1423,48 @@ AArch64::map_uart(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 
   /* Start asynchronous reception loop */
-  struct RX { static void* loop(void* p) { auto arch = reinterpret_cast<AArch64*>(p); arch->uart.rx_pushchars(*arch); return 0; } };
+  uart.dterm.start();
+  handle_uart();
+}
+
+void
+AArch64::DirTerm::start()
+{
+  struct RX { static void* loop(void* p) { auto t = reinterpret_cast<DirTerm*>(p); t->ReceiveChars(); return 0; } };
   
-  if (pthread_create(&uart.rx_thread, 0, &RX::loop, reinterpret_cast<void*>(this)) != 0)
+  if (pthread_create(&rx_thread, 0, &RX::loop, reinterpret_cast<void*>(this)) != 0)
     { struct Bad {}; raise(Bad()); }
 }
+
 
 void
 AArch64::handle_uart()
 {
+  uart.rx_push();
+  uart.tx_pop();
+  
   if (uart.mis())
     {
       gic.set_interrupt(33);
       gic.program(*this);
     }
+
+  uint64_t const insns_per_char = 84000;
+  notify( insns_per_char, &AArch64::handle_uart );
 }
 
-void
-AArch64::uart_tx()
-{
-  uart.tx_pop();
-  handle_uart();
-}
+// void
+// AArch64::uart_tx()
+// {
+//   uart.tx_pop();
+//   handle_uart();
+// }
 
 void
-AArch64::UART::tx_push(AArch64& arch, char ch)
+AArch64::UART::tx_push(char ch)
 {
   tx_count += 1;
-  std::cout << ch;
-  std::cout.flush();
-  //uint64_t const insns_per_char = 84000;
-  uint64_t const insns_per_char = 256;
-  arch.notify( insns_per_char*tx_count, &AArch64::uart_tx );
+  dterm.PutChar(ch);
 }
 
 unsigned
@@ -1461,7 +1472,7 @@ AArch64::UART::ifls(bool is_rx)
 {
   if (is_rx) return 1;
   unsigned level = (IFLS >> (is_rx ? 3 : 0)) & 7;
-  
+
   switch (level)
     {
     default: { struct Bad {}; raise( Bad() ); }
@@ -1477,10 +1488,14 @@ AArch64::UART::ifls(bool is_rx)
 void
 AArch64::UART::tx_pop()
 {
-  struct Bad {};
-  if (tx_count == 0) raise( Bad() );
-  if (--tx_count <= ifls(false))
-    RIS |= TX_INT;
+  if (tx_count == 0)
+    return;
+  
+  dterm.FlushChars();
+
+  tx_count = 0;
+  //  if (tx_count <= ifls(false))
+  RIS |= TX_INT;
 }
 
 void
@@ -2040,9 +2055,8 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 
-AArch64::UART::UART()
-  : rx_thread(), rx_hang(), rx_buf(), rx_source(), rx_sink(), tx_count()
-  , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
+AArch64::DirTerm::DirTerm()
+  : rx_thread(), rx_hang(), rx_buf(), rx_source(), rx_sink()
 {
   pthread_mutex_init(&rx_hang,0);
   pthread_mutex_lock(&rx_hang);
@@ -2054,56 +2068,77 @@ AArch64::UART::UART()
   rx_sink.kill = 0;
 }
 
+AArch64::UART::UART()
+  : tx_count()
+  , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
+{
+}
+
+bool
+AArch64::UART::rx_push()
+{
+  if ((rx_valid = rx_valid or dterm.GetChar(rx_value)))
+    RIS |= RX_INT;
+  return rx_valid;
+}
+
 bool
 AArch64::UART::rx_pop(char& ch)
 {
+  if (not rx_push())
+    return false;
+  ch = rx_value;
+  rx_valid = false;
+  RIS &= ~RX_INT;
+  return true;
+}
+
+bool
+AArch64::DirTerm::GetChar(char& ch)
+{
   unsigned size = rx_count();
+  
   if (size <= 1 and rx_source.locked != rx_sink.locked)
     {
       rx_sink.locked ^= 1;
       pthread_mutex_unlock(&rx_hang);
     }
-  if (size <= ifls(true))
-    RIS &= ~RX_INT;
-  if (size == 0) return false;
+  
+  if (size == 0)
+    return false;
+  
   ch = rx_buf[rx_sink.tail % qsize];
   rx_sink.tail += 1;
   return true;
 }
 
 void
-AArch64::UART::rx_update()
+AArch64::DirTerm::PutChar(char ch)
 {
-  if (rx_count() >= ifls(true))
-    RIS |= RX_INT;
+  std::cout << ch;
 }
 
 void
-AArch64::uart_rx()
+AArch64::DirTerm::FlushChars()
 {
-  uart.rx_update();
-  handle_uart();
+  std::cout.flush();
 }
 
 void
-AArch64::UART::rx_pushchars( AArch64& arch )
+AArch64::DirTerm::ReceiveChars()
 {
-  for (char ch; not rx_sink.kill; rx_source.head += 1)
+  while (not rx_sink.kill)
     {
-      unsigned next_size = rx_count() + 1;
-      if (next_size > qsize)
+      if (rx_count() >= qsize)
         {
           rx_source.locked ^= 1;
           pthread_mutex_lock(&rx_hang);
         }
       
-      if (not std::cin.get(ch))
+      if (not std::cin.get(rx_buf[rx_source.head % qsize]))
         { struct BrokenPipe {}; raise( BrokenPipe() ); }
-      
-      if (next_size >= UART::ifls(true) and not (RIS & RX_INT))
-        arch.notify(1, &AArch64::uart_rx);
-      
-      rx_buf[rx_source.head % qsize] = ch;
+
+      rx_source.head += 1;
     }
 }
 
@@ -2144,11 +2179,9 @@ AArch64::notify( uint64_t delay, event_handler_t method )
 uint16_t
 AArch64::UART::flags() const
 {
-  unsigned rx_count = this->rx_count();
   return
     int(tx_count ==     0) << 7 |
-    int(rx_count == qsize) << 6 |
-    int(tx_count == qsize) << 5 |
-    int(rx_count ==     0) << 4 |
-    0;
+    int(tx_count >= qsize) << 5 |
+    int(rx_valid == false) << 4;
 }
+

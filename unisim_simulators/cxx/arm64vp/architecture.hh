@@ -811,15 +811,22 @@ struct AArch64
   };
   void map_rtc(uint64_t base_addr);
   void handle_rtc();
-  
-  struct UART
+
+  struct DirTerm
   {
-    UART();
+    DirTerm();
+    void ResetCharIO();
+    bool GetChar(char& c);
+    void PutChar(char c);
+    void FlushChars();
+    void start();
+    void ReceiveChars();
+    
     static unsigned const qsize = 32;
-    enum { RX_INT = 0x10, TX_INT = 0x20 };
     pthread_t rx_thread;
     pthread_mutex_t rx_hang;
     char rx_buf[qsize];
+    unsigned rx_count() const { return rx_source.head - rx_sink.tail; }
     struct {
     unsigned head :   16;
     unsigned locked :  1;
@@ -831,23 +838,29 @@ struct AArch64
     unsigned kill :    1;
     unsigned pad :    14;
     }        rx_sink;
-    unsigned rx_count() const { return rx_source.head - rx_sink.tail; }
-    /* tx writer */
-    unsigned tx_count;
-    uint16_t IBRD, FBRD, LCR, CR, IFLS, IMSC, RIS;
+  };
+  
+  struct UART
+  {
+    UART();
+    enum { RX_INT = 0x10, TX_INT = 0x20 };
+    static unsigned const qsize = 32;
     unsigned ifls( bool );
-    void tx_push(AArch64& arch, char ch);
-    void tx_pop();
-    void rx_pushchars(AArch64& arch);
-    bool rx_pop(char& ch);
-    void rx_update();
     uint16_t flags() const;
     uint16_t mis() const { return RIS & IMSC; }
+    bool rx_pop(char& ch);
+    bool rx_push();
+    void tx_push(char ch);
+    void tx_pop();
+    DirTerm dterm;
+    /* tx writer */
+    char rx_value;
+    bool rx_valid;
+    unsigned tx_count;
+    uint16_t IBRD, FBRD, LCR, CR, IFLS, IMSC, RIS;
   };
   void handle_uart();  /* synchronous check of asynchronous events */
-  void uart_tx();      /* synchronous tx update event */
-  void uart_rx();      /* synchronous rx update event */
-void map_uart(uint64_t base_addr);
+  void map_uart(uint64_t base_addr);
 
   struct Timer
   {
