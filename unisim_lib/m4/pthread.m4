@@ -6,7 +6,7 @@ AC_DEFUN([UNISIM_CHECK_PTHREAD], [
     # Check for pthread.h
     AC_CHECK_HEADER(pthread.h,, AC_MSG_ERROR([pthread.h not found.]))
 
-    # Check for functions wgetch in libncurses.a
+    # Check for functions pthread_create in libpthread.a
     UNISIM_CHECK_LIB(pthread, pthread_create, broken_pthread=no, broken_pthread=yes)
 
     if test "$broken_pthread" == "yes"; then

@@ -36,22 +36,28 @@
 #define __ARM64VP_ARCHITECTURE_HH__
 
 #include "taint.hh"
+#include "viodisk.hh"
+#include "debug.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
 #include <iosfwd>
 #include <set>
 #include <map>
 #include <algorithm>
 #include <inttypes.h>
 
-void raise_breakpoint();
-
-template <typename E> void raise( E const& e ) { raise_breakpoint(); throw e; }
+void force_throw();
 
 struct AArch64
+  : public unisim::service::interfaces::Registers
+  , public unisim::service::interfaces::Memory<uint64_t>
+  , unisim::service::interfaces::MemoryInjection<uint64_t>
 {
   typedef TaintedValue< uint8_t> U8;
   typedef TaintedValue<uint16_t> U16;
@@ -62,6 +68,9 @@ struct AArch64
   typedef TaintedValue< int32_t> S32;
   typedef TaintedValue< int64_t> S64;
 
+  typedef TaintedValue<   float> F32;
+  typedef TaintedValue<  double> F64;
+  
   typedef TaintedValue<  bool  > BOOL;
 
   typedef U64 UREG;
@@ -76,14 +85,28 @@ struct AArch64
 
   struct InstructionInfo
   {
-    void assign( uint64_t _addr, AArch64::Operation* _op ) { addr = _addr; op = _op; }
-    uint64_t addr;
+    void assign( uint64_t _addr, uint64_t _counter, AArch64::Operation* _op ) { addr = _addr; counter = _counter; op = _op; }
+    uint64_t addr, counter;
     Operation* op;
   };
 
   typedef void (AArch64::*event_handler_t)();
 
   AArch64();
+  ~AArch64();
+
+  // unisim::service::interfaces::Memory<uint64_t>
+  void ResetMemory() {}
+  bool ReadMemory(uint64_t addr, void* buffer, unsigned size);
+  bool WriteMemory(uint64_t addr, void const* buffer, unsigned size);
+  
+  // unisim::service::interfaces::Registers
+  unisim::service::interfaces::Register* GetRegister(char const* name);
+  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+  
+  // unisim::service::interfaces::MemoryInjection<ADDRESS>
+  bool InjectReadMemory(uint64_t addr, void *buffer, unsigned size);
+  bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size);
 
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
@@ -91,6 +114,7 @@ struct AArch64
   InstructionInfo const& last_insn(int idx) const;
   void breakdance();
   void uninitialized_error(char const* rsrc);
+  void dump_last_insn(std::ostream& sink);
 
   void TODO();
 
@@ -154,6 +178,8 @@ struct AArch64
   S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
   S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
   S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
+  F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<F32>(reg, sub); }
+  F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<F64>(reg, sub); }
 
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
@@ -169,6 +195,8 @@ struct AArch64
   void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
   void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
   void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+  void SetVF32( unsigned reg, unsigned sub, F32 value ) { vector_write( reg, sub, value ); }
+  void SetVF64( unsigned reg, unsigned sub, F64 value ) { vector_write( reg, sub, value ); }
 
   template <typename T>
   void vector_write(unsigned reg, T value )
@@ -184,7 +212,9 @@ struct AArch64
   void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
   void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
   void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
-
+  void SetVF32( unsigned reg, F32 value ) { vector_write(reg, value); }
+  void SetVF64( unsigned reg, F64 value ) { vector_write(reg, value); }
+  
   void ClearHighV( unsigned reg, unsigned bytes )
   {
     vector_views[reg].Truncate(bytes);
@@ -234,7 +264,7 @@ struct AArch64
   //=====================================================================
 
   /** Set the next Program Counter */
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET };
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET, B_DBG };
   void BranchTo( U64 addr, branch_type_t branch_type )
   {
     if (addr.ubits)
@@ -248,379 +278,15 @@ struct AArch64
   bool Test( bool cond ) { return cond; }
   // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
   bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(cond.value); return cond.value; }
-  void CallSupervisor( uint32_t imm );
-  void CallHypervisor( uint32_t imm );
+  void CallSupervisor( unsigned imm );
+  void CallHypervisor( unsigned imm );
 
   //=====================================================================
   //=                       Memory access methods                       =
   //=====================================================================
 
-  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
-  uint64_t translate_address(uint64_t vaddr, mem_acc_type_t mat, unsigned size);
-  void memory_fault(char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
-
-  template <typename T>
-  T
-  memory_read(U64 addr)
-  {
-    struct Bad {};
-    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
-
-    unsigned const size = sizeof (typename T::value_type);
-    uint64_t paddr = translate_address(addr.value, mat_read, size);
-
-    uint8_t dbuf[size], ubuf[size];
-    try
-      {
-        if (access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size)
-          {
-            for (unsigned byte = 0; byte < size; ++byte)
-              if (not access_page(paddr+byte).read(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-                raise( Bad() );
-          }
-      }
-    catch (Device const& device)
-      {
-        if (not device.read(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          memory_fault("device read", addr.value, paddr, size);
-      }
-    catch (PageFault const&)
-      {
-        memory_fault("read", addr.value, paddr, size);
-      }
-
-    typedef typename T::value_type value_type;
-    typedef typename TX<value_type>::as_mask bits_type;
-
-    bits_type value = 0, ubits = 0;
-    for (unsigned idx = size; idx-- > 0;)
-      {
-        value <<= 8; value |= bits_type( dbuf[idx] );
-        ubits <<= 8; ubits |= bits_type( ubuf[idx] );
-      }
-    return T(*reinterpret_cast<value_type const*>(&value), ubits);
-  }
-
-  void MemDump64(uint64_t addr);
-  U64 MemRead64(U64 addr) { return memory_read<U64>(addr); }
-  U32 MemRead32(U64 addr) { return memory_read<U32>(addr); }
-  U16 MemRead16(U64 addr) { return memory_read<U16>(addr); }
-  U8  MemRead8 (U64 addr) { return memory_read<U8> (addr); }
-
-  void MemRead( U8* buffer, U64 addr, unsigned size );
-
-  template <typename T>
-  void
-  memory_write(U64 addr, T src)
-  {
-    struct Bad {};
-    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
-
-    unsigned const size = sizeof (typename T::value_type);
-    uint64_t paddr = translate_address(addr.value, mat_write, size);
-
-    typedef typename TX<typename T::value_type>::as_mask bits_type;
-
-    bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
-    uint8_t dbuf[size], ubuf[size];
-
-    for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
-      {
-        dbuf[idx] = value & 0xff; value >>= 8;
-        ubuf[idx] = ubits & 0xff; ubits >>= 8;
-      }
-
-    try
-      {
-        if (modify_page(paddr).write(paddr,&dbuf[0],&ubuf[0],size) != size)
-          {
-            for (unsigned byte = 0; byte < size; ++byte)
-              if (not modify_page(paddr+byte).write(paddr+byte,&dbuf[byte],&ubuf[byte],1))
-                raise( Bad() );
-          }
-      }
-    catch (Device const& device)
-      {
-        if (not device.write(*this, paddr - device.base, &dbuf[0], &ubuf[0], size))
-          memory_fault("device write", addr.value, paddr, size);
-      }
-  }
-
-  void MemWrite64(U64 addr, U64 val) { memory_write(addr, val); }
-  void MemWrite32(U64 addr, U32 val) { memory_write(addr, val); }
-  void MemWrite16(U64 addr, U16 val) { memory_write(addr, val); }
-  void MemWrite8 (U64 addr, U8  val) { memory_write(addr, val); }
-
-  void MemWrite( U64 addr, U8 const* buffer, unsigned size );
-
-  void PrefetchMemory(unsigned op, U64 addr)
-  {
-    // No caches, nothing to do
-  };
-
-  void     SetExclusiveMonitors( U64 addr, unsigned size );
-  bool     ExclusiveMonitorsPass( U64 addr, unsigned size );
-  void     ClearExclusiveLocal(); /* TODO: handle global monitors */
-
-  struct ExcMon
-  {
-    ExcMon() : addr(), size(), valid(false) {}
-    void set(uint64_t _addr, unsigned _size) { valid = true; addr = _addr; size = _size; }
-    bool pass(uint64_t _addr, unsigned _size) { return valid and size >= _size and (_addr & -size) == addr; }
-    void clear() { valid = false; }
-
-    uint64_t addr;
-    uint8_t size;
-    bool    valid;
-  };
-
-  //=====================================================================
-  //=                            Exceptions                             =
-  //=====================================================================
-
-  struct Abort
-  {
-    virtual ~Abort() {}
-    virtual void proceed( AArch64& cpu ) const {}
-  };
-
-  struct DataAbort : public Abort
-  {
-    DataAbort(unisim::component::cxx::processor::arm::DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type_t _mat, unsigned _level, bool _ipavalid, bool _secondstage, bool _s2fs1walk)
-      : type(_type), va(_va), ipa(_ipa), mat(_mat), level(_level), ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
-    {}
-    virtual void proceed( AArch64& cpu ) const override;
-    unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type_t mat; unsigned level; bool ipavalid; bool secondstage; bool s2fs1walk;
-  };
-  
-  /* AArch32 obsolete arguments
-   * - bool taketohypmode
-   * - LDFSRformat
-   * AArch32 left over arguments:
-   * - domain    // Domain number, AArch32 only (UNKNOWN in AArch64)
-   * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
-   */
-  void TakePhysicalIRQException();
-  void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
-  void ReportException(unsigned target_el, unisim::component::cxx::processor::arm::DAbort type, uint64_t va, uint64_t ipa, mem_acc_type_t mat, unsigned level, bool ipavalid, bool secondstage, bool s2fs1walk);
-
-  void ExceptionReturn();
-
-  /**********************************************************************
-   ***                       Architectural state                      ***
-   **********************************************************************/
-
-  struct VUConfig
-  {
-    static unsigned const BYTECOUNT = 16;
-    template <typename T> using TypeInfo = TaintedTypeInfo<T>;
-    typedef U8 Byte;
-  };
-  static unsigned const VECTORCOUNT = 32;
-  struct Vector { uint8_t data[sizeof (U8)][VUConfig::BYTECOUNT]; };
-
-  unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
-  Vector vectors[VECTORCOUNT];
-
-  struct Zone
-  {
-    uint64_t hi() const { return last; }
-
-    // bool operator < (Zone const& p) const { return last < p.base; }
-    // bool operator > (Zone const& p) const { return p.last < base; }
-
-    struct Above
-    {
-      using is_transparent = void;
-      bool operator() (Zone const& a, Zone const& b) const { return a.base > b.last; }
-      bool operator() (Zone const& a, uint64_t b) const { return a.base > b; }
-    };
-
-    Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
-
-    uint64_t    base;
-    uint64_t    last;
-  };
-
-  struct Page : public Zone
-  {
-    struct Free
-    {
-      virtual ~Free() {};
-      virtual void free (Page&) const {};
-      static Free nop;
-    };
-    Page( Free*, uint64_t _base, uint64_t _last, uint8_t* _data, uint8_t* _udat, Free* _free )
-      : Zone(_base, _last), data(_data), udat(_udat), free(_free)
-    {}
-    Page( Page&& page )
-      : Zone(page), data(page.data), udat(page.udat), free(page.free)
-    {
-      page.data = 0;
-      page.udat = 0;
-      page.free = &Free::nop;
-    }
-    Page( Page const& ) = delete;
-    ~Page();
-
-    uint64_t write(uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const
-    {
-      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
-      std::copy( &dbuf[0], &dbuf[cnt], &data[start] );
-      std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
-      return cnt;
-    }
-    uint64_t read(uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const
-    {
-      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
-      std::copy( &data[start], &data[start+cnt], &dbuf[0] );
-      std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
-      return cnt;
-    }
-    bool has_data() const { return data; }
-    uint8_t const* get_data() const { return data; }
-    uint8_t const* get_data(uint64_t addr) const { return &data[addr-base]; }
-    void set_data(uint8_t* _data) { data = _data; }
-    bool has_udat() const { return data; }
-    uint8_t const* get_udat() const { return udat; }
-    void set_udat(uint8_t* _udat) { udat = _udat; }
-    uint64_t size() const { return last - base + 1; }
-
-    void dump_range(std::ostream&) const;
-
-  private:
-    uint8_t*    data;
-    uint8_t*    udat;
-    Page::Free* free;
-
-    void resize(uint64_t last);
-  };
-
-  struct Device : public Zone
-  {
-    struct Effect;
-
-    Device( uint64_t _base, uint64_t _last, Effect const* _effect )
-      : Zone( _base, _last )
-      , effect( _effect )
-    {}
-
-    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const;
-    bool read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const;
-
-    struct Request;
-
-    struct Effect
-    {
-      virtual ~Effect() {};
-      virtual bool access(AArch64& arch, Request& req) const = 0;
-      virtual void get_name(std::ostream& sink) const = 0;
-      bool error( char const* msg ) const;
-    };
-
-    Effect const* effect;
-  };
-
-
-  typedef std::set<Page, Page::Above> Pages;
-  typedef std::set<Device, Device::Above> Devices;
-
-  struct PageFault {};
-  Page const& access_page( uint64_t addr )
-  {
-    auto pi = pages.lower_bound(addr);
-    if (pi == pages.end() or pi->last < addr)
-      {
-        auto di = devices.lower_bound(addr);
-        if (di != devices.end() and addr <= di->last)
-          throw *di;
-        throw PageFault();
-      }
-    return *pi;
-  }
-  Page const& modify_page(uint64_t addr)
-  {
-    auto pi = pages.lower_bound(addr);
-    if (pi == pages.end() or pi->last < addr)
-      {
-        auto di = devices.lower_bound(addr);
-        if (di != devices.end() and addr <= di->last)
-          throw *di;
-        return alloc_page(pi, addr);
-      }
-    return *pi;
-  }
-
-  Page const& alloc_page(Pages::iterator pi, uint64_t addr);
-
-  void error_mem_overlap( Page const& a, Page const& b );
-
-  bool new_page(uint64_t addr, uint64_t size);
-  bool mem_map(Page&& page);
-
-  void step_instruction();
-  Operation* fetch_and_decode(uint64_t insn_addr);
-
-  void run();
-
-  struct IPB
-  {
-    static unsigned const LINE_SIZE = 32; //< IPB size
-    uint8_t  bytes[LINE_SIZE];             //< The IPB content
-    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
-    IPB() : bytes(), base_address( -1 ) {}
-    uint8_t* get(AArch64& core, uint64_t address);
-  };
-
-  struct PState
-  {
-    unsigned D  :  1;
-    unsigned A  :  1;
-    unsigned I  :  1;
-    unsigned F  :  1;
-    unsigned SS :  1;
-    unsigned IL :  1;
-    unsigned EL :  2;
-    unsigned SP :  1;
-    PState() : D(1), A(1), I(1), F(1), SS(0), IL(0), EL(1), SP(1) {}
-
-    U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
-    U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
-    void SetDAIF(AArch64& cpu, U64 const& xt)
-    {
-      if (xt.ubits) { struct Bad {}; raise( Bad() ); }
-      D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
-      cpu.gic.program(cpu);
-    }
-
-    uint32_t AsSPSR() const;
-  };
-
-  void SetPStateSP(unsigned sp)
-  {
-    pstate.selsp(*this) = gpr[31];
-    pstate.SP = sp;
-    gpr[31] = pstate.selsp(*this);
-  }
-
-  U32 GetPSRFromPSTATE() { return U32(nzcv) << 28 | U32(pstate.AsSPSR()); }
-  void SetPSTATEFromPSR(U32 spsr);
-
-  struct EL
-  {
-    EL() : SPSR(), ESR(), ELR(), VBAR(), PAR(), FAR(), SCTLR() {}
-    U32 SPSR, ESR;
-    U64 ELR, VBAR, PAR;
-    uint64_t FAR;
-    uint32_t SCTLR;
-    void SetSCTLR(AArch64& cpu, uint32_t value)
-    {
-      SCTLR = value;
-    }
-  };
-
-  EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
-
+  struct mem_acc_type { enum Code { write = 0, read, exec, cache_maintenance, debug } code; };
+    
   struct MMU
   {
     MMU() : MAIR_EL1(), TCR_EL1(), TTBR0_EL1(), TTBR1_EL1() {}
@@ -665,6 +331,10 @@ struct AArch64
         uint32_t level      : 2;  // 18
         uint32_t blocksize  : 6;  // 24
 
+        Entry() : pa(), sh(), attridx(), domain(), ap(), xn(), pxn(), NS(), nG(), level(), blocksize() {}
+        Entry( uint64_t addr ) : pa(addr) {}
+        uint64_t size_after() const { return -(uint64_t(-1) << blocksize | pa); }
+
         // uint32_t   asid     : 8;
         // Permissions perms,
         // bit nG,
@@ -675,7 +345,7 @@ struct AArch64
         // AddressDescriptor addrdesc
       };
 
-      template <class POLICY>  bool GetTranslation( Entry& tlbe, uint64_t vaddr, unsigned asid );
+      bool GetTranslation( Entry& tlbe, uint64_t vaddr, unsigned asid, bool update );
       void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
       enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
@@ -693,8 +363,407 @@ struct AArch64
     } tlb;
   };
 
-  template <class POLICY>
-  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type_t mat, unsigned size );
+  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat );
+
+  void translate_address(MMU::TLB::Entry& entry, unsigned el, mem_acc_type::Code mat);
+  
+  void CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat);
+  
+  struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
+  void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
+  
+  template <typename T>
+  T
+  memory_read(unsigned el, U64 addr)
+  {
+    struct Bad {};
+    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
+
+    unsigned const size = sizeof (typename T::value_type);
+    MMU::TLB::Entry entry( addr.value );
+    translate_address(entry, el, mem_acc_type::read);
+    
+    uint8_t dbuf[size], ubuf[size];
+
+    try
+      {
+        if (entry.size_after() < size or access_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+          {
+            for (unsigned byte = 0; byte < size; ++byte)
+              {
+                U8 u8 = memory_read<U8>(el, U64(addr.value+byte));
+                dbuf[byte] = u8.value; ubuf[byte] = u8.ubits;
+              }
+          }
+      }
+    catch (Device const& device)
+      {
+        if (not device.read(*this, entry.pa - device.base, &dbuf[0], &ubuf[0], size))
+          throw MemFault("device");
+      }
+    catch (MemFault const& mf)
+      {
+        memory_fault(mf, "read", addr.value, entry.pa, size);
+      }
+    
+    typedef typename T::value_type value_type;
+    typedef typename TX<value_type>::as_mask bits_type;
+
+    bits_type value = 0, ubits = 0;
+    for (unsigned idx = size; idx-- > 0;)
+      {
+        value <<= 8; value |= bits_type( dbuf[idx] );
+        ubits <<= 8; ubits |= bits_type( ubuf[idx] );
+      }
+    
+    return T(*reinterpret_cast<value_type const*>(&value), ubits);
+  }
+
+  void MemDump64(uint64_t addr);
+  void PMemDump64(uint64_t addr);
+  U64 MemRead64(U64 addr) { return memory_read<U64>(pstate.GetEL(), addr); }
+  U32 MemRead32(U64 addr) { return memory_read<U32>(pstate.GetEL(), addr); }
+  U16 MemRead16(U64 addr) { return memory_read<U16>(pstate.GetEL(), addr); }
+  U8  MemRead8 (U64 addr) { return memory_read<U8> (pstate.GetEL(), addr); }
+
+  void MemRead( U8* buffer, U64 addr, unsigned size );
+
+  template <typename T>
+  void
+  memory_write(unsigned el, U64 addr, T src)
+  {
+    struct Bad {};
+    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
+
+    unsigned const size = sizeof (typename T::value_type);
+    MMU::TLB::Entry entry( addr.value );
+    translate_address(entry, el, mem_acc_type::write);
+
+    typedef typename TX<typename T::value_type>::as_mask bits_type;
+
+    bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
+    uint8_t dbuf[size], ubuf[size];
+    for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
+      {
+        dbuf[idx] = value & 0xff; value >>= 8;
+        ubuf[idx] = ubits & 0xff; ubits >>= 8;
+      }
+
+    try
+      {
+        if (entry.size_after() < size or modify_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+          {
+            for (unsigned byte = 0; byte < size; ++byte)
+              memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
+          }
+      }
+    catch (Device const& device)
+      {
+        if (not device.write(*this, entry.pa - device.base, &dbuf[0], &ubuf[0], size))
+          memory_fault(MemFault("device"), "write", addr.value, entry.pa, size);
+      }
+  }
+
+  void MemWrite64(U64 addr, U64 val) { memory_write(pstate.GetEL(), addr, val); }
+  void MemWrite32(U64 addr, U32 val) { memory_write(pstate.GetEL(), addr, val); }
+  void MemWrite16(U64 addr, U16 val) { memory_write(pstate.GetEL(), addr, val); }
+  void MemWrite8 (U64 addr, U8  val) { memory_write(pstate.GetEL(), addr, val); }
+
+  void MemWrite( U64 addr, U8 const* buffer, unsigned size );
+
+  void PrefetchMemory(unsigned op, U64 addr)
+  {
+    // No caches, nothing to do
+  };
+
+  void     SetExclusiveMonitors( U64 addr, unsigned size );
+  bool     ExclusiveMonitorsPass( U64 addr, unsigned size );
+  void     ClearExclusiveLocal(); /* TODO: handle global monitors */
+
+  struct ExcMon
+  {
+    ExcMon() : addr(), size(), valid(false) {}
+    void set(uint64_t _addr, unsigned _size) { valid = true; addr = _addr; size = _size; }
+    bool pass(uint64_t _addr, unsigned _size) { return valid and size >= _size and (_addr & -size) == addr; }
+    void clear() { valid = false; }
+
+    uint64_t addr;
+    uint8_t size;
+    bool    valid;
+  };
+
+  //=====================================================================
+  //=                            Exceptions                             =
+  //=====================================================================
+
+  struct Abort
+  {
+    virtual ~Abort() {}
+    virtual void proceed( AArch64& cpu ) const {}
+  };
+
+  struct DataAbort : public Abort
+  {
+    typedef unisim::component::cxx::processor::arm::DAbort DAbort;
+    DataAbort(DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type::Code _mat, unsigned _level,
+              bool _ipavalid, bool _secondstage, bool _s2fs1walk )
+      : type(_type), va(_va), ipa(_ipa), mat(_mat), level(_level),
+        ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
+    {}
+    virtual void proceed( AArch64& cpu ) const override;
+    unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
+    bool ipavalid, secondstage, s2fs1walk;
+  };
+  
+  /* AArch32 obsolete arguments
+   * - bool taketohypmode
+   * - LDFSRformat
+   * AArch32 left over arguments:
+   * - domain    // Domain number, AArch32 only (UNKNOWN in AArch64)
+   * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
+   */
+  void TakePhysicalIRQException();
+  void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
+
+  void ExceptionReturn();
+
+  /**********************************************************************
+   ***                       Architectural state                      ***
+   **********************************************************************/
+
+  struct VUConfig
+  {
+    static unsigned const BYTECOUNT = 16;
+    template <typename T> using TypeInfo = TaintedTypeInfo<T>;
+    typedef U8 Byte;
+  };
+  static unsigned const VECTORCOUNT = 32;
+  struct Vector { uint8_t data[sizeof (U8)][VUConfig::BYTECOUNT]; };
+
+  typedef unisim::component::cxx::vector::VUnion<VUConfig> VecView;
+  
+  struct Zone
+  {
+    uint64_t hi() const { return last; }
+
+    // bool operator < (Zone const& p) const { return last < p.base; }
+    // bool operator > (Zone const& p) const { return p.last < base; }
+
+    struct Above
+    {
+      using is_transparent = void;
+      bool operator() (Zone const& a, Zone const& b) const { return a.base > b.last; }
+      bool operator() (Zone const& a, uint64_t b) const { return a.base > b; }
+    };
+
+    Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
+
+    uint64_t    base;
+    uint64_t    last;
+  };
+
+  struct Page : public Zone
+  {
+    struct Free
+    {
+      virtual ~Free() {};
+      virtual void free (Page&) const {};
+      static Free nop;
+    };
+    /* Standard buffer (de)allocation */
+    Page(uint64_t base, uint64_t last);
+    /* Custom buffer (de)allocation */
+    Page(uint64_t _base, uint64_t _last, uint8_t* _data, uint8_t* _udat, Free* _free)
+      : Zone(_base, _last), data(_data), udat(_udat), free(_free)
+    {}
+    Page(Page&& page)
+      : Zone(page), data(page.data), udat(page.udat), free(page.free)
+    {
+      page.data = 0;
+      page.udat = 0;
+      page.free = &Free::nop;
+    }
+    Page() : Zone(0,0), data(0), udat(0), free(&Free::nop) {}
+    Page( Page const& ) = delete;
+    ~Page();
+
+    uint64_t write(uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const
+    {
+      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+      std::copy( &dbuf[0], &dbuf[cnt], &data[start] );
+      std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
+      return cnt;
+    }
+    uint64_t read(uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const
+    {
+      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+      std::copy( &data[start], &data[start+cnt], &dbuf[0] );
+      std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
+      return cnt;
+    }
+
+    uint64_t size_from(uint64_t addr) const { return last - addr + 1; }
+    uint8_t* data_beg() const { return &data[0]; }
+    uint8_t* data_end() const { return &data[size()]; }
+    uint8_t* udat_beg() const { return &udat[0]; }
+    uint8_t* udat_end() const { return &udat[size()]; }
+    uint8_t* data_abs(uint64_t addr) const { return &data[addr-base]; }
+    uint8_t* udat_abs(uint64_t addr) const { return &udat[addr-base]; }
+    uint8_t* data_rel(uint64_t offset) const { return &data[offset]; }
+    uint8_t* udat_rel(uint64_t offset) const { return &udat[offset]; }
+    
+    bool has_data() const { return data; }
+    void set_data(uint8_t* _data) { data = _data; }
+    bool has_udat() const { return data; }
+    void set_udat(uint8_t* _udat) { udat = _udat; }
+    
+    uint64_t size() const { return last - base + 1; }
+
+    void dump_range(std::ostream&) const;
+
+  private:
+    uint8_t*    data;
+    uint8_t*    udat;
+    Page::Free* free;
+
+    void resize(uint64_t last);
+  };
+
+  struct Device : public Zone
+  {
+    struct Effect;
+
+    Device( uint64_t _base, uint64_t _last, Effect const* _effect, unsigned _id )
+      : Zone( _base, _last )
+      , effect( _effect ), id(_id)
+    {}
+
+    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const;
+    bool read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const;
+
+    struct Request;
+
+    struct Effect
+    {
+      virtual ~Effect() {};
+      virtual bool access(AArch64& arch, Request& req) const = 0;
+      virtual void get_name(unsigned dev_id, std::ostream& sink) const = 0;
+      bool error(unsigned dev_id, char const* msg) const;
+    };
+
+    Effect const* effect;
+    unsigned id;
+  };
+
+
+  typedef std::set<Page, Page::Above> Pages;
+  typedef std::set<Device, Device::Above> Devices;
+
+  Page const& access_page( uint64_t addr )
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end() or pi->last < addr)
+      {
+        auto di = devices.lower_bound(addr);
+        if (di != devices.end() and addr <= di->last)
+          throw *di;
+        throw MemFault();
+      }
+    return *pi;
+  }
+  Page const& modify_page(uint64_t addr)
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end() or pi->last < addr)
+      {
+        auto di = devices.lower_bound(addr);
+        if (di != devices.end() and addr <= di->last)
+          throw *di;
+        return alloc_page(pi, addr);
+      }
+    return *pi;
+  }
+
+  Page const& alloc_page(Pages::iterator pi, uint64_t addr);
+  //  Page make_mem_page(uint64_t base, uint64_t last);
+
+  void error_mem_overlap( Page const& a, Page const& b );
+
+  bool mem_map(Page&& page);
+  void mem_unmap(uint64_t base, uint64_t size);
+
+  Operation* fetch_and_decode(uint64_t insn_addr);
+
+  void run();
+
+  struct IPB
+  {
+    static uint64_t const LINE_SIZE = 32; //< IPB size
+    uint8_t  bytes[LINE_SIZE];            //< The IPB content
+    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
+    IPB() : bytes(), base_address( -1 ) {}
+    uint8_t* get(AArch64& core, uint64_t address);
+  };
+
+  struct PState
+  {
+    PState() : D(1), A(1), I(1), F(1), SS(0), IL(0), EL(1), SP(1) {}
+    
+    U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
+    U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
+    void SetDAIF(AArch64& cpu, U64 const& xt)
+    {
+      if (xt.ubits) { struct Bad {}; raise( Bad() ); }
+      D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
+      cpu.gic.program(cpu);
+    }
+
+    uint32_t AsSPSR() const;
+
+    void SetSP(AArch64& cpu, unsigned sp)
+    {
+      selsp(cpu) = cpu.gpr[31];
+      SP = sp;
+      cpu.gpr[31] = selsp(cpu);
+    }
+    unsigned GetSP() const { return SP; }
+
+    void SetEL(AArch64& cpu, unsigned el)
+    {
+      selsp(cpu) = cpu.gpr[31];
+      EL = el;
+      cpu.gpr[31] = selsp(cpu);
+    }
+    unsigned GetEL() const { return EL; }
+
+    unsigned D  :  1;
+    unsigned A  :  1;
+    unsigned I  :  1;
+    unsigned F  :  1;
+    unsigned SS :  1;
+    unsigned IL :  1;
+  private:
+    unsigned EL :  2;
+    unsigned SP :  1;
+  };
+
+  U32 GetPSRFromPSTATE() { return U32(nzcv) << 28 | U32(pstate.AsSPSR()); }
+  void SetPSTATEFromPSR(U32 spsr);
+
+  struct EL
+  {
+    EL() : SPSR(), ESR(), ELR(), VBAR(), PAR(), FAR(), SCTLR() {}
+    U32 SPSR, ESR;
+    U64 ELR, VBAR, PAR;
+    uint64_t FAR;
+    uint32_t SCTLR;
+    void SetSCTLR(AArch64& cpu, uint32_t value)
+    {
+      SCTLR = value;
+    }
+  };
+
+  EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
 
   struct GIC
   {
@@ -742,17 +811,55 @@ struct AArch64
   };
   void map_rtc(uint64_t base_addr);
   void handle_rtc();
+
+  struct DirTerm
+  {
+    DirTerm();
+    void ResetCharIO();
+    bool GetChar(char& c);
+    void PutChar(char c);
+    void FlushChars();
+    void start();
+    void ReceiveChars();
+    
+    static unsigned const qsize = 32;
+    pthread_t rx_thread;
+    pthread_mutex_t rx_hang;
+    char rx_buf[qsize];
+    unsigned rx_count() const { return rx_source.head - rx_sink.tail; }
+    struct {
+    unsigned head :   16;
+    unsigned locked :  1;
+    unsigned pad :    15;
+    }        rx_source;
+    struct {
+    unsigned tail :   16;
+    unsigned locked :  1;
+    unsigned kill :    1;
+    unsigned pad :    14;
+    }        rx_sink;
+  };
   
   struct UART
   {
-    UART() : tx_count(), IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0) {}
+    UART();
+    enum { RX_INT = 0x10, TX_INT = 0x20 };
+    static unsigned const qsize = 32;
+    unsigned ifls( bool );
+    uint16_t flags() const;
+    uint16_t mis() const { return RIS & IMSC; }
+    bool rx_pop(char& ch);
+    bool rx_push();
+    void tx_push(char ch);
+    void tx_pop();
+    DirTerm dterm;
+    /* tx writer */
+    char rx_value;
+    bool rx_valid;
     unsigned tx_count;
     uint16_t IBRD, FBRD, LCR, CR, IFLS, IMSC, RIS;
-    static unsigned ifls( unsigned );
-    void txpush(AArch64& arch, char ch);
-    bool txpop();
   };
-  void uart_tx();
+  void handle_uart();  /* synchronous check of asynchronous events */
   void map_uart(uint64_t base_addr);
 
   struct Timer
@@ -775,27 +882,35 @@ struct AArch64
   void handle_vtimer();
   uint64_t get_freq() const { return 1075200000; }
 
-  void map_virtio_placeholder(uint64_t base_addr);
-  void map_virtio_drive(uint64_t base_addr);
+  void map_virtio_placeholder(unsigned id, uint64_t base_addr);
+  void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
+  void map_virtio_console(uint64_t base_addr, unsigned irq);
   
+  /* Simulation state */
+public:
   typedef std::multimap<uint64_t, event_handler_t> Events;
-  void notify( uint64_t delay, event_handler_t method )
-  {
-    next_events.emplace(std::piecewise_construct, std::forward_as_tuple( insn_timer+delay ), std::forward_as_tuple( method ));
-    // reload_next_event();
-  }
-  void reload_next_event();
+  void notify( uint64_t delay, event_handler_t method );
 
-  /** Architectural state **/
 private:
+  struct NELock { NELock(AArch64& a); ~NELock(); pthread_mutex_t* m; };
+
+  event_handler_t pop_next_event();
+  void reload_next_event();
+  
   Events   next_events;
   uint64_t next_event;
+  pthread_mutex_t next_event_mutex;
+  
+  /** Architectural state **/
 public:
-  Devices  devices;
-  GIC      gic;
-  UART     uart;
-  Timer    vt;
-  RTC      rtc;
+  std::map<std::string,unisim::service::interfaces::Register*> regmap;
+  Devices     devices;
+  GIC         gic;
+  UART        uart;
+  Timer       vt;
+  RTC         rtc;
+  VIODisk     viodisk;
+  VIOConsole  vioconsole; 
 
   Pages    pages;
   ExcMon   excmon;
@@ -805,6 +920,10 @@ public:
   Decoder  decoder;
 
   U64      gpr[32];
+  VecView  vector_views[VECTORCOUNT];
+  Vector   vectors[VECTORCOUNT];
+  U32      fpcr, fpsr;
+
   U64      sp_el[2];
   EL       el1;
   PState   pstate;
@@ -819,7 +938,16 @@ public:
   uint32_t CPACR;
 
   uint64_t bdaddr;
+  uint32_t random;
+  bool     terminate;
   bool     disasm;
+
+  // /*QESCAPTURE*/
+  // bool QESCapture();
+  // struct QES { uint16_t desc; uint16_t flags; } qes[2];
+  void viocapture(uint64_t base, uint64_t size);
+  void checkvio(uint64_t base, unsigned size);
+  std::set<Zone, Zone::Above> diskpages;
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

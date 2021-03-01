@@ -424,11 +424,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t
   if ((    inject and not this->mem_inject_if_->InjectReadMemory(addr, buffer, size)) or
       (not inject and not              this->mem_if_->ReadMemory(addr, buffer, size)))
     {
-      this->debug_warning_stream
-        << "failed OS read memory" << (inject ? " (debug):" : ":") << std::endl
-        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size
-        << std::endl;
+      if (unlikely(this->verbose_))
+        {
+          this->debug_warning_stream
+            << "failed OS read memory" << (inject ? " (debug):" : ":") << std::endl
+            << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+            << "\tsize = " << size
+            << std::endl;
+        }
       
       return false;
     }
@@ -466,7 +469,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::st
       uint8_t buffer;
       if (not ReadMemory(tail, &buffer, 1, false))
         {
-          this->debug_error_stream << "Can't read memory at 0x" << std::hex << tail << std::endl;
+          if (unlikely(this->verbose_))
+            this->debug_error_stream << "Can't read memory at 0x" << std::hex << tail << std::endl;
           return false;
         }
       if (buffer == '\0') break;

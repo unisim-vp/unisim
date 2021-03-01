@@ -32,14 +32,12 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/util/arithmetic/arithmetic.hh>
-#include <limits>
-#include <iosfwd>
-#include <inttypes.h>
-
 #ifndef __ARM64VP_TAINT_HH__
 #define __ARM64VP_TAINT_HH__
 
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <limits>
+#include <iosfwd>
 #include <inttypes.h>
 
 template <typename Bool> struct AssertBool {};
@@ -153,7 +151,7 @@ struct TaintedValue
 template <typename T>
 struct TaintedTypeInfo
 {
-  enum { bytecount = sizeof (T) };
+  enum { bytecount = sizeof (typename T::ubits_type) };
   static void ToBytes( TaintedValue<uint8_t>* dst, T const& src )
   {
     //typedef typename TX<typename T::value_type>::as_mask bits_type;
@@ -204,14 +202,31 @@ UTP BitScanReverse( UTP const& value )
   return UTP( bit, (value.ubits >> bit) ? -1 : 0 );
 }
 
-extern void Print( std::ostream& sink, uint64_t vbits, uint64_t dbits );
+extern void Print( std::ostream& sink, unsigned minlength, unsigned radix, uint64_t vbits, uint64_t ubits );
+extern void PrintBin( std::ostream& sink, uint64_t vbits, uint64_t ubits );
 
 template <typename T>
 void Print( std::ostream& sink, TaintedValue<T> const& tv )
 {
   typedef typename TX<T>::as_mask bits;
   bits value = *reinterpret_cast<bits const*>(&tv.value);
-  Print(sink, value, tv.ubits);
+  PrintBin(sink, value, tv.ubits);
 }
+
+extern void PrintHex( std::ostream& sink, unsigned ml, uint64_t vbits, uint64_t ubits );
+
+template <typename T>
+void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
+{
+  typedef typename TX<T>::as_mask bits;
+  bits value = *reinterpret_cast<bits const*>(&tv.value);
+  PrintHex(sink, ml, value, tv.ubits);
+}
+
+TaintedValue<float> trunc( TaintedValue<float> const& _value );
+TaintedValue<double> trunc( TaintedValue<double> const& _value );
+
+template <typename T>
+TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
 
 #endif /* __ARM64VP_TAINT_HH__ */

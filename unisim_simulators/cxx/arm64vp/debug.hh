@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,32 +32,12 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <taint.hh>
-#include <iostream>
-#include <cmath>
+#ifndef __ARM64VP_DEBUG_HH__
+#define __ARM64VP_DEBUG_HH__
 
-void PrintBin( std::ostream& sink, uint64_t vbits, uint64_t ubits ) { Print(sink << "0b", 0, 1, vbits, ubits); }
-void PrintHex( std::ostream& sink, unsigned ml, uint64_t vbits, uint64_t ubits ) { Print(sink << "0x", ml, 4, vbits, ubits); }
+#include <inttypes.h>
 
-void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t vbits, uint64_t ubits )
-{
-  struct
-  {
-    void recurse( std::ostream& sink, unsigned left, unsigned bsz, uint64_t vbits, uint64_t ubits )
-    {
-      {
-        uint64_t _vbits = vbits >> bsz, _ubits = ubits >> bsz;
-        left = left ? left - 1 : 0;
-        if (_vbits | _ubits | left)
-          recurse( sink, left, bsz, _vbits, _ubits );
-      }
-      uint64_t mask = (1<<bsz)-1;
-      sink << (ubits & mask ? 'X' : "0123456789abcdef"[vbits & mask] );
-    }
-  } _;
-  
-  _.recurse(sink, minlength, logradix, vbits, ubits);
-}
+void raise_breakpoint();
+template <typename E> void raise( E const& e ) { raise_breakpoint(); throw e; }
 
-TaintedValue<float>  trunc( TaintedValue<float> const& v ) { return TaintedValue<float>(truncf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> trunc( TaintedValue<double> const& v)  { return TaintedValue<double>(trunc(v.value), v.ubits ? -1 : 0); }
+#endif /* __ARM64VP_DEBUG_HH__ */

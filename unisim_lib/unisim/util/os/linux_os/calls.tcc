@@ -1201,7 +1201,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(void *addr=0x" << std::hex << (SysCall::GetParam(lin, 0))
-             << ", size_t length=" << std::dec << int(SysCall::GetParam(lin, 1))
+             << ", size_t length=0x" << std::hex << (SysCall::GetParam(lin, 1))
              << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
              << ", int flags=0x" << std::hex << (SysCall::GetParam(lin, 3))
              << ", int fd=" << std::dec << int(SysCall::GetParam(lin, 4))
@@ -1244,7 +1244,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "mmap2"; }
-      void Describe( Linux& lin, std::ostream& sink ) const {
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
         sink << "(void *addr=0x" << std::hex << (SysCall::GetParam(lin, 0))
              << ", size_t length=0x" << std::hex << (SysCall::GetParam(lin, 1))
              << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
@@ -1938,8 +1939,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
                << ", const char *target=0x" << std::hex << target << " \"" << target_string << "\""
                << ", const char *filesystemtype=0x" << std::hex << filesystemtype << " \"" << filesystemtype_string << "\""
                << ", unsigned long mountflags=0x" << std::hex << mountflags
-               << ", const void *data=0x" << std::hex << data << " \"" << data_string << "\""
-               << " )" << std::dec;
+               << ", const void *data=0x" << std::hex << data;
+          if (data_valid)
+            sink << " \"" << data_string << "\"";
+          sink << " )" << std::dec;
         }
       };
       void Describe( Linux& lin, std::ostream& sink ) const { Args(lin, false).Describe(sink); }

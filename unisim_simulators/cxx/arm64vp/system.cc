@@ -255,10 +255,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
             if (addr.ubits) { struct Bad {}; raise( Bad () ); }
-            unsigned const zsize = 4 << cpu.ZID;
-            uint64_t paddr = cpu.translate_address(addr.value, mat_write, zsize);
+            uint64_t const zsize = 4 << cpu.ZID;
+            // ZID value should be so MMU page bounds are not crossed
+            MMU::TLB::Entry entry(addr.value & -zsize);
+            cpu.translate_address(entry, cpu.pstate.GetEL(), mem_acc_type::write);
             uint8_t buffer[zsize] = {0};
-            if (cpu.modify_page(paddr).write(paddr & -zsize, &buffer[0], &buffer[0], zsize) != zsize)
+            if (cpu.modify_page(entry.pa).write(entry.pa, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
           }
         } x; return &x;
@@ -552,7 +554,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Current Exception Level"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
-            return U64(cpu.pstate.EL << 2);
+            return U64(cpu.pstate.GetEL() << 2);
             //return U64(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
           }
         } x; return &x;
@@ -625,8 +627,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (addr.ubits) { struct Bad {}; raise( Bad() ); }
             try
               {
-                uint64_t translation = cpu.translate_address(addr.value, op2 ? mat_write : mat_read, 1);
-                cpu.el1.PAR = U64(translation & 0x000ffffffffff000ull, 0xfff0000000000380ull);
+                MMU::TLB::Entry entry(addr.value);
+                cpu.translate_address(entry, cpu.pstate.GetEL(), op2 ? mem_acc_type::write : mem_acc_type::read);
+                cpu.el1.PAR = U64(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
               }
             catch (AArch64::DataAbort const& x)
               {
@@ -684,6 +687,26 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b011,0b0100,0b0100,0b000): // FPCR, Floating-point Control Register
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPCR"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Floating-point Control Register"; }
+          U64  Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.fpcr); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpcr = U32(value); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0100,0b001): // FPSR, Floating-point Status Register
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPSR"; }
+          void Describe(Encoding, char const* prefix, std::ostream& sink) const override { sink << prefix << "Floating-point Status Register"; }
+          U64  Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.fpsr); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpsr = U32(value); }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0100,0b0001,0b000): // SP_EL0, Stack Pointer (EL0)
     case SYSENCODE(0b11,0b100,0b0100,0b0001,0b000): // SP_EL1, Stack Pointer (EL1)
     case SYSENCODE(0b11,0b110,0b0100,0b0001,0b000): // SP_EL2, Stack Pointer (EL2)
@@ -692,7 +715,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64& GetSP(AArch64& cpu, unsigned op1) const
           {
             unsigned lvl = GetExceptionLevel(op1) - 1;
-            if (cpu.pstate.SP == 0 and lvl == 0)
+            if (cpu.pstate.GetSP() == 0 and lvl == 0)
               cpu.UndefinedInstruction();
             return cpu.sp_el[lvl];
           }
@@ -932,7 +955,13 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "ESR_EL" << GetExceptionLevel(e.op1); }
           void Describe(Encoding e, char const* prefix, std::ostream& sink) const override { sink << prefix << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
-          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).ESR); }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
+          {
+            U64 value(cpu.get_el(GetExceptionLevel(op1)).ESR);
+            //            Print(std::cerr << "ESR=", value);
+            //            std::cerr << '@' << std::hex << cpu.current_insn_addr << std::endl;
+            return value;
+          }
           void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).ESR = U32(value); }
         } x; return &x;
       } break;
@@ -2550,7 +2579,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "SPSel"; }
           virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
           {
-            cpu.SetPStateSP(crm);
+            cpu.pstate.SetSP(cpu, crm);
           }
         } x; return &x;
       } break;
