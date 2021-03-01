@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -46,6 +46,8 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/util/netstreamer/netstreamer.hh>
+#include <hostterm.hh>
 #include <iosfwd>
 #include <set>
 #include <map>
@@ -812,48 +814,23 @@ struct AArch64
   void map_rtc(uint64_t base_addr);
   void handle_rtc();
 
-  struct DirTerm
-  {
-    DirTerm();
-    void ResetCharIO();
-    bool GetChar(char& c);
-    void PutChar(char c);
-    void FlushChars();
-    void start();
-    void ReceiveChars();
-    
-    static unsigned const qsize = 32;
-    pthread_t rx_thread;
-    pthread_mutex_t rx_hang;
-    char rx_buf[qsize];
-    unsigned rx_count() const { return rx_source.head - rx_sink.tail; }
-    struct {
-    unsigned head :   16;
-    unsigned locked :  1;
-    unsigned pad :    15;
-    }        rx_source;
-    struct {
-    unsigned tail :   16;
-    unsigned locked :  1;
-    unsigned kill :    1;
-    unsigned pad :    14;
-    }        rx_sink;
-  };
-  
   struct UART
   {
     UART();
-    enum { RX_INT = 0x10, TX_INT = 0x20 };
-    static unsigned const qsize = 32;
-    unsigned ifls( bool );
+    
     uint16_t flags() const;
     uint16_t mis() const { return RIS & IMSC; }
     bool rx_pop(char& ch);
     bool rx_push();
     void tx_push(char ch);
     void tx_pop();
-    DirTerm dterm;
-    /* tx writer */
+    
+    enum { RX_INT = 0x10, TX_INT = 0x20 };
+    static unsigned const qsize = 32;
+
+    typedef unisim::util::netstreamer::NetStreamer NetStreamer;
+    NetStreamer dterm;
+    //HostTerm dterm;
     char rx_value;
     bool rx_valid;
     unsigned tx_count;

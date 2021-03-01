@@ -276,7 +276,7 @@ struct CPU
   /**************************/
   
 protected:
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  virtual CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
   /**************************/
   /* CP15 Interface    END  */

@@ -46,7 +46,7 @@
 #define LOCATION \
   " - location = " \
   << __FUNCTION__ \
-  << ":unisim_lib/unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc:" \
+  << ":unisim_lib/unisim/component/tlm2/processor/arm/cortex_a9/cpu.tcc:" \
   << __LINE__
 #define TIME(X) \
   " - time = " \
@@ -126,10 +126,11 @@ namespace cortex_a9 {
 
 using namespace unisim::kernel::logger;
 
+template <class CPU_IMPL>
 CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
-  , unisim::component::cxx::processor::arm::vmsav7::CPU<CPU>(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav7::CPU<CPU_IMPL>(name, parent)
   , master_socket("master_socket")
   , check_external_event(false)
   , external_event("extevt")
@@ -170,10 +171,12 @@ CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   sensitive << nRESETm;
 }
 
+template <class CPU_IMPL>
 CPU::~CPU()
 {
 }
 
+template <class CPU_IMPL>
 void
 CPU::SetCycleTime( sc_core::sc_time const& cycle_time )
 {
@@ -183,6 +186,7 @@ CPU::SetCycleTime( sc_core::sc_time const& cycle_time )
   time_per_instruction = cpu_cycle_time / ipc;
 }
 
+template <class CPU_IMPL>
 void
 CPU::SetBusCycleTime( sc_core::sc_time const& cycle_time )
 {
@@ -195,6 +199,7 @@ CPU::SetBusCycleTime( sc_core::sc_time const& cycle_time )
  *
  * @return  true if the initialization suceeds, false otherwise
  */
+template <class CPU_IMPL>
 bool 
 CPU::EndSetup()
 {
@@ -223,6 +228,7 @@ CPU::EndSetup()
   return true;
 }
 
+template <class CPU_IMPL>
 void 
 CPU::Stop(int ret)
 {
@@ -235,6 +241,7 @@ CPU::Stop(int ret)
 /** Wait for a specific event and update CPU times
  */
 
+template <class CPU_IMPL>
 void
 CPU::Wait( sc_core::sc_event const& evt )
 {
@@ -255,6 +262,7 @@ CPU::Wait( sc_core::sc_event const& evt )
  * An example (an for the moment the only synchronization demanded by the CPU
  * implmentation) is the a synchronization demanded by the debugger.
  */
+template <class CPU_IMPL>
 void
 CPU::Sync()
 {
@@ -282,6 +290,7 @@ CPU::Sync()
  * Updates the cpu time to the next bus cycle. Additionally it updates the
  * quantum time and if necessary synchronizes with the global SystemC clock.
  */
+template <class CPU_IMPL>
 void 
 CPU::BusSynchronize() 
 {
@@ -335,6 +344,7 @@ CPU::BusSynchronize()
  * Also the quantum time is updated, and if it is bigger than the nice time, the
  * global SystemC time is updated.
  */
+template <class CPU_IMPL>
 void
 CPU::Run()
 {
@@ -411,11 +421,13 @@ CPU::Run()
   }
 }
 
+template <class CPU_IMPL>
 void 
 CPU::Reset()
 {
 }
 
+template <class CPU_IMPL>
 void 
 CPU::ResetMemory()
 {
@@ -432,6 +444,7 @@ CPU::ResetMemory()
  *
  * @return      the synchronization status
  */
+template <class CPU_IMPL>
 tlm::tlm_sync_enum 
 CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
 {
@@ -533,6 +546,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
  * @param start_range the start address of the memory range to remove
  * @param end_range   the end address of the memory range to remove
  */
+template <class CPU_IMPL>
 void 
 CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
@@ -540,6 +554,7 @@ CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_rang
 }
 
 /** nIRQm port handler */
+template <class CPU_IMPL>
 void
 CPU::IRQHandler()
 {
@@ -553,6 +568,7 @@ CPU::IRQHandler()
 }
 
 /** nFIQm port handler */
+template <class CPU_IMPL>
 void 
 CPU::FIQHandler()
 {
@@ -566,6 +582,7 @@ CPU::FIQHandler()
 }
   
 /** nRESETm port handler */
+template <class CPU_IMPL>
 void 
 CPU::ResetHandler()
 {
@@ -587,7 +604,7 @@ CPU::ResetHandler()
  * @param buffer   the buffer to copy the data to the read
  * @param size    the size of the read
  */
-
+template <class CPU_IMPL>
 bool 
 CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
@@ -620,6 +637,7 @@ CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
  * @param buffer  the buffer to write into the external memory
  * @param size    the size of the write
  */
+template <class CPU_IMPL>
 bool 
 CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
@@ -656,6 +674,7 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param buffer  the buffer to copy the data to read
  * @param size    the size of the read
  */
+template <class CPU_IMPL>
 bool
 CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
@@ -747,6 +766,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t
   return true;
 }
 
+template <class CPU_IMPL>
 bool
 CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
@@ -836,6 +856,7 @@ CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, u
 
 /** Resets Architectural Registers
  */
+template <class CPU_IMPL>
 void
 CPU::TakeReset()
 {
@@ -854,6 +875,7 @@ CPU::TakeReset()
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
+template <class CPU_IMPL>
 CPU::CP15Reg*
 CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
@@ -877,6 +899,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
 
 #undef CP15ENCODE
 
+template <class CPU_IMPL>
 void
 CPU::WaitForInterrupt()
 {
@@ -885,6 +908,7 @@ CPU::WaitForInterrupt()
   }
 }
 
+template <class CPU_IMPL>
 void
 CPU::SetExternalEvent()
 {
@@ -892,6 +916,7 @@ CPU::SetExternalEvent()
   external_event.notify( sc_core::SC_ZERO_TIME );
 }
 
+template <class CPU_IMPL>
 bool
 CPU::GetExternalEvent()
 {

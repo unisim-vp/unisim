@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -40,7 +40,10 @@
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
+#include <termios.h>
+#include <unistd.h>
 
+       
 AArch64::AArch64()
   : regmap()
   , devices()
@@ -1423,19 +1426,9 @@ AArch64::map_uart(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 
   /* Start asynchronous reception loop */
-  uart.dterm.start();
+  uart.dterm.Initialize();
   handle_uart();
 }
-
-void
-AArch64::DirTerm::start()
-{
-  struct RX { static void* loop(void* p) { auto t = reinterpret_cast<DirTerm*>(p); t->ReceiveChars(); return 0; } };
-  
-  if (pthread_create(&rx_thread, 0, &RX::loop, reinterpret_cast<void*>(this)) != 0)
-    { struct Bad {}; raise(Bad()); }
-}
-
 
 void
 AArch64::handle_uart()
@@ -1467,34 +1460,15 @@ AArch64::UART::tx_push(char ch)
   dterm.PutChar(ch);
 }
 
-unsigned
-AArch64::UART::ifls(bool is_rx)
-{
-  if (is_rx) return 1;
-  unsigned level = (IFLS >> (is_rx ? 3 : 0)) & 7;
-
-  switch (level)
-    {
-    default: { struct Bad {}; raise( Bad() ); }
-    case 0: return qsize*1/8;
-    case 1: return qsize*2/8;
-    case 2: return qsize*4/8;
-    case 3: return qsize*6/8;
-    case 4: return qsize*7/8;
-    }
-  return 0;
-}
-
 void
 AArch64::UART::tx_pop()
 {
   if (tx_count == 0)
     return;
   
-  dterm.FlushChars();
+  dterm.FlushOutput();
 
-  tx_count = 0;
-  //  if (tx_count <= ifls(false))
+  tx_count = 0; // Infinite throughput
   RIS |= TX_INT;
 }
 
@@ -2055,19 +2029,6 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 
-AArch64::DirTerm::DirTerm()
-  : rx_thread(), rx_hang(), rx_buf(), rx_source(), rx_sink()
-{
-  pthread_mutex_init(&rx_hang,0);
-  pthread_mutex_lock(&rx_hang);
-
-  rx_source.head = 0;
-  rx_source.locked = 0;
-  rx_sink.tail = 0;
-  rx_sink.locked = 0;
-  rx_sink.kill = 0;
-}
-
 AArch64::UART::UART()
   : tx_count()
   , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
@@ -2091,55 +2052,6 @@ AArch64::UART::rx_pop(char& ch)
   rx_valid = false;
   RIS &= ~RX_INT;
   return true;
-}
-
-bool
-AArch64::DirTerm::GetChar(char& ch)
-{
-  unsigned size = rx_count();
-  
-  if (size <= 1 and rx_source.locked != rx_sink.locked)
-    {
-      rx_sink.locked ^= 1;
-      pthread_mutex_unlock(&rx_hang);
-    }
-  
-  if (size == 0)
-    return false;
-  
-  ch = rx_buf[rx_sink.tail % qsize];
-  rx_sink.tail += 1;
-  return true;
-}
-
-void
-AArch64::DirTerm::PutChar(char ch)
-{
-  std::cout << ch;
-}
-
-void
-AArch64::DirTerm::FlushChars()
-{
-  std::cout.flush();
-}
-
-void
-AArch64::DirTerm::ReceiveChars()
-{
-  while (not rx_sink.kill)
-    {
-      if (rx_count() >= qsize)
-        {
-          rx_source.locked ^= 1;
-          pthread_mutex_lock(&rx_hang);
-        }
-      
-      if (not std::cin.get(rx_buf[rx_source.head % qsize]))
-        { struct BrokenPipe {}; raise( BrokenPipe() ); }
-
-      rx_source.head += 1;
-    }
 }
 
 AArch64::NELock::NELock(AArch64& a)

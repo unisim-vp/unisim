@@ -49,12 +49,12 @@ namespace processor {
 namespace arm {
 namespace cortex_a9 {
 
-class CPU
-	: public sc_core::sc_module
-	, public tlm::tlm_bw_transport_if<>
-	, public unisim::component::cxx::processor::arm::vmsav7::CPU<CPU>
+template <class CPU_IMPL>
+struct CPU
+  : public sc_core::sc_module
+  , public tlm::tlm_bw_transport_if<>
+  , public unisim::component::cxx::processor::arm::vmsav7::CPU<CPU_IMPL>
 {
-public:
   typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
   typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
   typedef tlm::tlm_sync_enum     sync_enum_type;
