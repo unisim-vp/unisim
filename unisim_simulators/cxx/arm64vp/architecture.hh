@@ -800,7 +800,7 @@ struct AArch64
   {
     RTC() : LR(0), MR(), load_insn_time(0), started(false), masked(true) {}
     uint32_t get_counter(AArch64& cpu) const { return LR + get_gap(cpu); }
-    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) * get_cntfrq() / cpu.get_freq(); }
+    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / (cpu.get_freq() / get_cntfrq()); }
     uint64_t get_cntfrq() const { return 1; }
     void     flush_lr(AArch64& cpu) { load_insn_time = cpu.insn_timer; }
     void     program(AArch64& cpu);
@@ -845,7 +845,7 @@ struct AArch64
     bool activated() const;
     void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
-    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer * get_cntfrq() / cpu.get_freq(); }
+    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / (cpu.get_freq() / get_cntfrq()); }
     uint64_t read_ctl(AArch64& cpu) const { return ctl | ((read_tval(cpu) <= 0) << 2); }
     void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; program(cpu); }
     void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; program(cpu); }
