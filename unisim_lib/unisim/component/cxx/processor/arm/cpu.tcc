@@ -881,7 +881,7 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ID_PFR0, Processor Feature Register 0"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override {
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override {
             /*        ARM              Thumb2         Jazelle         ThumbEE   */
             return (0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12);
           }
@@ -898,8 +898,8 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "SCTLR, System Control Register"; }
           /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.SCTLR; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t value) const override {
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.SCTLR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override {
             uint32_t old_ctlr = cpu.SCTLR;
             cpu.SCTLR = value;
             uint32_t diff = old_ctlr ^ value;
@@ -920,8 +920,8 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CPACR, Coprocessor Access Control Register"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.CPACR; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t value) const override {
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.CPACR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override {
             // bit 29 is Reserved, UNK/SBZP
             // cp0-cp9 and cp12-cp13 are not implemented
             value &= ~0x2f0fffffU;
@@ -943,8 +943,8 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CONTEXTIDR, Context ID Register"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.CONTEXTIDR; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t value) const override { cpu.CONTEXTIDR = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.CONTEXTIDR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override { cpu.CONTEXTIDR = value; }
         } x;
         return &x;
       } break;
@@ -955,8 +955,8 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRURW, User Read/Write Thread ID Register"; }
           unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.TPIDRURW; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t value) const override { cpu.TPIDRURW = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.TPIDRURW; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override { cpu.TPIDRURW = value; }
         } x;
         return &x;
       } break;
@@ -966,9 +966,9 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRURO, User Read-Only Thread ID Register"; }
-          void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, bool w) const override { return cpu.RequiresPL(w ? 1 : 0); }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.TPIDRURO; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t val) const override { cpu.TPIDRURO = val; }
+          void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, bool w) const override { return cpu.RequiresPL(w ? 1 : 0); }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.TPIDRURO; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t val) const override { cpu.TPIDRURO = val; }
         } x;
         return &x;
       } break;
@@ -978,8 +978,8 @@ CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t cr
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRPRW, PL1 only Thread ID Register"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override { return cpu.TPIDRPRW; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu, uint32_t val) const override { cpu.TPIDRPRW = val; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.TPIDRPRW; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t val) const override { cpu.TPIDRPRW = val; }
         } x;
         return &x;
       } break;

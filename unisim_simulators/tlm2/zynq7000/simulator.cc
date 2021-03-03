@@ -33,6 +33,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.tcc>
 #include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
@@ -48,6 +49,13 @@
 
 using unisim::component::cxx::processor::arm::RegisterField;
 
+CPU::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object(name, parent)
+  , PCPU(name, parent)
+  , l1d(*this)
+  , l1i(*this)
+{}
+  
 void
 ZynqRouter::relative_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
 {
@@ -1244,8 +1252,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CTR, Cache Type Register"; }
-          uint32_t Read( CP15CPU& _cpu )
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override
+          { sink << "CTR, Cache Type Register"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU& cpu) const override
           {
             /*        FORMAT          CWG         ERG      DminLine        L1Ip       IminLine */
             /*         ARMv7        8 words     8 words     8 words        PIPT        8 words */
@@ -1259,27 +1268,28 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
-          uint32_t Read( CP15CPU& _cpu )
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override
+          { sink << "CCSIDR, Cache Size ID Registers"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t,  CPU& cpu) const override
           {
             /* 2 L1 caches of 32kB: 32bytes/8words-lines, 128 sets of 4 ways ) */
-            CPU& cpu = static_cast<CPU&>( _cpu );
-            switch (cpu.csselr) {
-              /*              LNSZ      ASSOC       NUMSETS        POLICY      */
-            case 0:  return (1 << 0) | (1 << 3) | ( 127 << 13) | (0b0110 << 28); /* L1 dcache */
-            case 1:  return (1 << 0) | (3 << 3) | ( 127 << 13) | (0b0100 << 28); /* L1 icache */
-            case 2:  return (2 << 0) | (7 << 3) | (1023 << 13) | (0b0110 << 28); /* L2 ucache */
-            default: return 0;
-            }
+            switch (cpu.csselr)
+              {
+                /*              LNSZ      ASSOC       NUMSETS        POLICY      */
+              case 0:  return (1 << 0) | (1 << 3) | ( 127 << 13) | (0b0110 << 28); /* L1 dcache */
+              case 1:  return (1 << 0) | (3 << 3) | ( 127 << 13) | (0b0100 << 28); /* L1 icache */
+              case 2:  return (2 << 0) | (7 << 3) | (1023 << 13) | (0b0110 << 28); /* L2 ucache */
+              default: return 0;
+              }
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     }
   
   // Fall back to parent cpu CP15 registers
-  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+  return PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
 #undef CP15ENCODE

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -77,6 +77,11 @@
 #include <signal.h>
 #endif
 
+struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
+{
+  CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
+};
+
 class Simulator
   : public unisim::kernel::tlm2::Simulator
 {
@@ -91,7 +96,6 @@ class Simulator
  protected:
  private:
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
-  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   typedef unisim::service::os::linux_os::ArmLinux32 ArmLinux32;
 

@@ -372,14 +372,14 @@ public:
   struct CP15Reg
   {
     virtual         ~CP15Reg() {}
-    virtual void     CheckPermissions(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU& cpu, bool) const { cpu.RequiresPL(1); }
-    virtual void     Write(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU& cpu, uint32_t value) const
+    virtual void     CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, bool) const { cpu.RequiresPL(1); }
+    virtual void     Write(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, uint32_t value) const
     {
       cpu.logger << unisim::kernel::logger::DebugError << "Writing " << Description(crn, op1, crm, op2)
                  << " (pc=" << std::hex << cpu.current_insn_addr << std::dec << ")" << unisim::kernel::logger::EndDebugError;
       cpu.UnpredictableInsnBehaviour();
     }
-    virtual uint32_t Read(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU& cpu) const
+    virtual uint32_t Read(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU_IMPL& cpu) const
     {
       cpu.logger << unisim::kernel::logger::DebugError << "Reading " << Description(crn, op1, crm, op2)
                  << " (pc=" << std::hex << cpu.current_insn_addr << std::dec << ")" << unisim::kernel::logger::EndDebugError;
@@ -399,8 +399,8 @@ public:
     };
   };
   
-  static CP15Reg*      CP15GetRegister(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2);
-  void                 CP15ResetRegisters();
+  static CP15Reg* CP15GetRegister(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2);
+  void            CP15ResetRegisters();
     
   /**************************/
   /* CP15 Interface     END */

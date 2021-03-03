@@ -61,25 +61,25 @@ namespace processor {
 namespace arm {
 namespace vmsav7 {
 
-using unisim::kernel::Object;
-using unisim::kernel::Client;
-using unisim::kernel::Service;
-using unisim::service::interfaces::MemoryInjection;
-using unisim::service::interfaces::TrapReporting;
-using unisim::service::interfaces::Disassembly;
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::LinuxOS;
-using unisim::service::interfaces::SymbolTableLookup;
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::util::endian::E_LITTLE_ENDIAN;
-using unisim::util::endian::BigEndian2Host;
-using unisim::util::endian::LittleEndian2Host;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
+// using unisim::kernel::Object;
+// using unisim::kernel::Client;
+// using unisim::kernel::Service;
+// using unisim::service::interfaces::MemoryInjection;
+// using unisim::service::interfaces::TrapReporting;
+// using unisim::service::interfaces::Disassembly;
+// using unisim::service::interfaces::Memory;
+// using unisim::service::interfaces::LinuxOS;
+// using unisim::service::interfaces::SymbolTableLookup;
+// using unisim::util::endian::E_BIG_ENDIAN;
+// using unisim::util::endian::E_LITTLE_ENDIAN;
+// using unisim::util::endian::BigEndian2Host;
+// using unisim::util::endian::LittleEndian2Host;
+// using unisim::kernel::logger::DebugInfo;
+// using unisim::kernel::logger::EndDebugInfo;
+// using unisim::kernel::logger::DebugWarning;
+// using unisim::kernel::logger::EndDebugWarning;
+// using unisim::kernel::logger::DebugError;
+// using unisim::kernel::logger::EndDebugError;
 
 namespace {
   template <unsigned NIBBLES>
@@ -108,19 +108,19 @@ struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE 
  * @param parent the parent object of this object
  */
 template <class CPU_IMPL>
-CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
+CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
   : unisim::kernel::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL>(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
   , Client<unisim::service::interfaces::DebugYielding>(name, parent)
-  , Client<TrapReporting>(name, parent)
+  , Client<unisim::service::interfaces::TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
   , Client< Memory<uint32_t> >(name, parent)
-  , Client<LinuxOS>(name, parent)
-  , Client<SymbolTableLookup<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::LinuxOS>(name, parent)
+  , Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >(name, parent)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
@@ -897,10 +897,10 @@ CPU<CPU_IMPL>::Disasm(uint32_t addr, uint32_t& next_addr)
             buffer << "??";
             return buffer.str();
           }
-        if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
-          insn = BigEndian2Host(insn);
+        if (GetEndianness() == util::endian::E_BIG_ENDIAN)
+          insn = util::endian::BigEndian2Host(insn);
         else
-          insn = LittleEndian2Host(insn);
+          insn = util::endian::LittleEndian2Host(insn);
 
         struct OP {
           OP() : ptr(0) {} isa::arm32::Operation<CPU_IMPL>* ptr;
@@ -1661,11 +1661,6 @@ template <class CPU_IMPL>
 typename CPU<CPU_IMPL>::CP15Reg*
 CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
-  struct util
-  {
-    static CPU& up(CP15CPU& cpu) { return static_cast<CPU&>(cpu); }
-  };
-
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
     case CP15ENCODE( 0, 0, 0, 1 ):
@@ -1673,7 +1668,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CTR, Cache Type Register"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu) const override
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& _cpu) const override
           {
             /*        FORMAT          CWG         ERG      DminLine        L1Ip       IminLine */
             /*         ARMv7        8 words     8 words     8 words        PIPT        8 words */
@@ -1688,9 +1683,9 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CCSIDR, Cache Size ID Registers"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override
           {
-            switch (util::up(cpu).csselr)
+            switch (cpu.csselr)
               {
                 /*              LNSZ      ASSOC       NUMSETS        POLICY      */
               case 0:  return (1 << 0) | (3 << 3) | ( 255 << 13) | (0b0110 << 28); /* L1 dcache */
@@ -1708,7 +1703,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CLIDR, Cache Level ID Register"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu) const override
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& _cpu) const override
           {
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
@@ -1727,7 +1722,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ID_MMFR0, Memory Model Feature Register 0"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu) const override { return 0x3; /* vmsav7 */ }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& _cpu) const override { return 0x3; /* vmsav7 */ }
         } x;
         return &x;
       } break;
@@ -1737,8 +1732,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CSSELR, Cache Size Selection Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ util::up(cpu).csselr = value; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).csselr; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ cpu.csselr = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.csselr; }
         } x;
         return &x;
       } break;
@@ -1749,12 +1744,10 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "SCTLR, System Control Register"; }
           /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return static_cast<CPU&>( cpu ).SCTLR; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.SCTLR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             /* Checking bits values */
-
             sctlr::HA.Set( value, 0 ); // No Hardware Access flag management
             if (sctlr::AFE.Get( value ))
               cpu.Stop(-1); // Software Access Flag management not supported
@@ -1780,8 +1773,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TTBR0, Translation Table Base Register 0"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ util::up(cpu).mmu.ttbr0 = value; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).mmu.ttbr0; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ cpu.mmu.ttbr0 = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.mmu.ttbr0; }
         } x;
         return &x;
       } break;
@@ -1792,8 +1785,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TTBR1, Translation Table Base Register 1"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ util::up(cpu).mmu.ttbr1 = value; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).mmu.ttbr1; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ cpu.mmu.ttbr1 = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.mmu.ttbr1; }
         } x;
         return &x;
       } break;
@@ -1803,8 +1796,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TTBCR, Translation Table Base Control Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ util::up(cpu).mmu.ttbcr = value; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).mmu.ttbcr; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ cpu.mmu.ttbcr = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.mmu.ttbcr; }
         } x;
         return &x;
       } break;
@@ -1815,10 +1808,9 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DACR, Domain Access Control Register"; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).mmu.dacr; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.mmu.dacr; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             cpu.mmu.dacr = value;
             if (cpu.verbose)
               cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
@@ -1835,9 +1827,9 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DFSR, Data Fault Status Register"; }
-          static uint32_t& reg( CP15CPU& cpu ) { return util::up(cpu).DFSR; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return reg( cpu ); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ reg( cpu ) = value; }
+          static uint32_t& reg( CPU_IMPL& cpu ) { return cpu.DFSR; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return reg( cpu ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ reg( cpu ) = value; }
         } x;
         return &x;
       } break;
@@ -1847,9 +1839,9 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "IFSR, Instruction Fault Status Register"; }
-          static uint32_t& reg( CP15CPU& cpu ) { return util::up(cpu).IFSR; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return reg( cpu ); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ reg( cpu ) = value; }
+          static uint32_t& reg( CPU_IMPL& cpu ) { return cpu.IFSR; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return reg( cpu ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ reg( cpu ) = value; }
         } x;
         return &x;
       } break;
@@ -1859,9 +1851,9 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DFAR, Data Fault Status Register"; }
-          static uint32_t& reg( CP15CPU& cpu ) { return util::up(cpu).DFAR; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return reg( cpu ); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ reg( cpu ) = value; }
+          static uint32_t& reg( CPU_IMPL& cpu ) { return cpu.DFAR; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return reg( cpu ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ reg( cpu ) = value; }
         } x;
         return &x;
       } break;
@@ -1871,9 +1863,9 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "IFAR, Instruction Fault Status Register"; }
-          static uint32_t& reg( CP15CPU& cpu ) { return util::up(cpu).IFAR; }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return reg( cpu ); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{ reg( cpu ) = value; }
+          static uint32_t& reg( CPU_IMPL& cpu ) { return cpu.IFAR; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return reg( cpu ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{ reg( cpu ) = value; }
         } x;
         return &x;
       } break;
@@ -1886,7 +1878,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ICIALLU, Invalidate all instruction caches to PoU"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1899,7 +1891,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ICIMVAU, Clean data* cache line by MVA to PoU"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1912,7 +1904,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "BPIALL, Invalidate all branch predictors"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No branch predictor, basically nothing to do */
             //cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1925,7 +1917,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCIMVAC, Invalidate data* cache line by MVA to PoC"; }
-          void Write( CP15CPU& cpu, uint32_t value )
+          void Write( CPU_IMPL& cpu, uint32_t value )
           {
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "DCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
@@ -1939,7 +1931,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCISW, Invalidate data* cache line by set/way"; }
-          void Write( CP15CPU& cpu, uint32_t value )
+          void Write( CPU_IMPL& cpu, uint32_t value )
           {
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "CDISW <- " << std::hex << value << std::dec << EndDebugWarning;
@@ -1953,7 +1945,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCMVAC, Clean data* cache line by MVA to PoC"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1966,7 +1958,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCMVAU, Clean data* cache line by MVA to PoU"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1979,7 +1971,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1992,7 +1984,7 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, uint32_t value) const override{
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override{
             /* No cache, basically nothing to do */
             //cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -2008,9 +2000,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TLBIALL, invalidate unified TLB"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
             cpu.tlb.InvalidateAll();
@@ -2024,9 +2015,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TLBIMVA, invalidate unified TLB entry by MVA and ASID"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIMVA(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
 
@@ -2044,9 +2034,8 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TLBIASID, invalidate unified TLB by ASID match"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIASID(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
 
@@ -2067,14 +2056,13 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "PRRR, Primary Region Remap Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             MMU& mmu( cpu.mmu );
             mmu.prrr = value;
             mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
           }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).mmu.prrr; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.mmu.prrr; }
         } x;
         return &x;
       } break;
@@ -2084,14 +2072,13 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "NMRR, Normal Memory Remap Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t value) const override
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override
           {
-            CPU& cpu( util::up(_cpu) );
             MMU& mmu( cpu.mmu );
             mmu.nmrr = value;
             mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
           }
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu) const override { return util::up(cpu).mmu.nmrr; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.mmu.nmrr; }
         } x;
         return &x;
       } break;
@@ -2105,18 +2092,16 @@ CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         static struct : public CP15Reg
         {
           void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRURO, User Read-Only Thread ID Register (with linux_os emulation)"; }
-          void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& cpu, bool w) const override { return cpu.RequiresPL(w ? 1 : 0); }
+          void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, bool w) const override { return cpu.RequiresPL(w ? 1 : 0); }
           /* When using linux os emulation, this register overrides the base one */
-          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu) const override
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override
           {
-            CPU& cpu(util::up(_cpu));
             return cpu.linux_os_import ? cpu.MemRead32( 0xffff0ff0 ) : cpu.TPIDRURO;
           }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CP15CPU& _cpu, uint32_t val) const override
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t val) const override
           {
-            CPU& cpu(util::up(_cpu));
             if (cpu.linux_os_import) { struct Bad {}; throw Bad(); }
-            util::up(cpu).TPIDRURO = val;
+            cpu.TPIDRURO = val;
           }
         } x;
         return &x;
