@@ -226,6 +226,9 @@ void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
 TaintedValue<float> trunc( TaintedValue<float> const& _value );
 TaintedValue<double> trunc( TaintedValue<double> const& _value );
 
+TaintedValue<float> fabs( TaintedValue<float> const& _value );
+TaintedValue<double> fabs( TaintedValue<double> const& _value );
+
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
 

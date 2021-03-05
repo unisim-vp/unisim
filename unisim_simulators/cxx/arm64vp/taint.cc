@@ -59,5 +59,8 @@ void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t 
   _.recurse(sink, minlength, logradix, vbits, ubits);
 }
 
-TaintedValue<float>  trunc( TaintedValue<float> const& v ) { return TaintedValue<float>(truncf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> trunc( TaintedValue<double> const& v)  { return TaintedValue<double>(trunc(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  trunc(TaintedValue<float> const& v) { return TaintedValue<float>(truncf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> trunc(TaintedValue<double> const& v)  { return TaintedValue<double>(trunc(v.value), v.ubits ? -1 : 0); }
+
+TaintedValue<float>  fabs(TaintedValue<float> const& v) { return TaintedValue<float>(fabsf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> fabs(TaintedValue<double> const& v)  { return TaintedValue<double>(fabs(v.value), v.ubits ? -1 : 0); }
