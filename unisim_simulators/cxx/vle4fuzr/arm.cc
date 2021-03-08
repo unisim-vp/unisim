@@ -342,7 +342,7 @@ ArmProcessor::Step( Decoder& decoder )
   // Monitor
   if (this->disasm)
     {
-      op->disasm(*this, std::cerr << std::hex << insn_addr << ": (" << ("AT"[AMO<Decoder>::thumb]) << ") " );
+      op->disasm(std::cerr << std::hex << insn_addr << ": (" << ("AT"[AMO<Decoder>::thumb]) << ") " );
       std::cerr << std::endl;
     }
 
@@ -383,7 +383,7 @@ ArmProcessor::Disasm( Decoder& decoder )
   if (Operation* op = page.ops[insn_offset])
     {
       std::ostringstream buf;
-      op->disasm(*this, buf);
+      op->disasm(buf);
       std::cerr << std::endl;
       asmbuf = buf.str();
     }
@@ -429,7 +429,7 @@ ArmProcessor::ReadInsn(uint32_t address)
 void
 ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn )
 {
-  insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
+  insn->disasm(std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
   std::cerr << std::endl;
   abort("ProcessorException('undefined instruction')");
 }
@@ -437,7 +437,7 @@ ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa:
 void
 ArmProcessor::UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn )
 {
-  insn->disasm(*this, std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
+  insn->disasm(std::cerr << "Undefined instruction @" << std::hex << current_insn_addr << std::dec << ": " );
   std::cerr << std::endl;
   abort("ProcessorException('undefined instruction')");
 }

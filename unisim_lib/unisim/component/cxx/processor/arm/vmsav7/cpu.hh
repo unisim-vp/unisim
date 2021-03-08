@@ -145,7 +145,7 @@ struct CPU
 
   typedef CPU this_type;
   typedef unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL> PCPU;
-  typedef unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL> CP15CPU;
+  typedef typename PCPU::CP15Reg CP15Reg;
 
   using PCPU::cpsr;
   using PCPU::verbose;
@@ -156,8 +156,6 @@ struct CPU
   using PCPU::GetEndianness;
   using PCPU::USER_MODE;
   using PCPU::HYPERVISOR_MODE;
-
-  typedef typename CP15CPU::CP15Reg CP15Reg;
 
   struct AddressDescriptor
   {
@@ -191,7 +189,7 @@ struct CPU
   //=                    Constructor/Destructor                         =
   //=====================================================================
 
-  CPU( const char *name, Object *parent = 0 );
+  CPU(const char* name, unisim::kernel::Object* parent = 0);
   ~CPU();
 
   //=====================================================================
@@ -366,9 +364,10 @@ protected:
   /**************************/
   /* CP15 Interface   START */
   /**************************/
-
+public:
   static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
 
+protected:
   /**************************/
   /* CP15 Interface    END  */
   /**************************/

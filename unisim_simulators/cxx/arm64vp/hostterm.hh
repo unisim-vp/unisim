@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018-2021,
+ *  Copyright (c) 2019-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,35 +32,41 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64VP_DEBUGGER_HH__
-#define __ARM64VP_DEBUGGER_HH__
-#include <unisim/service/debug/debugger/debugger.hh>
-#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-//#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#ifndef __ARM64VP_HOSTTERM_HH__
+#define __ARM64VP_HOSTTERM_HH__
+
+#include <pthread.h>
 #include <inttypes.h>
 
-struct Arch;
-
-struct Debugger
+struct HostTerm
 {
-  struct DEBUGGER_CONFIG
-  {
-    typedef uint64_t ADDRESS;
-    static const unsigned int NUM_PROCESSORS = 1;
-    /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 1;
-  };
+  HostTerm();
   
-  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
-  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
-  //  typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
-  
-  DebugHub debug_hub;
-  //  GDBServer gdb_server;
-  InlineDebugger inline_debugger;
-
-  Debugger(Arch&, char const*);
-  ~Debugger();
+  void ResetCharIO();
+  bool GetChar(char& c);
+  void PutChar(char c);
+  void FlushChars();
+  void ReceiveChars();
+  void Start();
+  void Kill();
+    
+  static unsigned const qsize = 32;
+    
+  pthread_t rx_thread;
+  pthread_mutex_t rx_hang;
+  char rx_buf[qsize];
+  unsigned rx_count() const { return rx_source.head - rx_sink.tail; }
+  struct {
+    unsigned head :   16;
+    unsigned locked :  1;
+    unsigned pad :    15;
+  }        rx_source;
+  struct {
+    unsigned tail :   16;
+    unsigned locked :  1;
+    unsigned kill :    1;
+    unsigned pad :    14;
+  }        rx_sink;
 };
-
-#endif // __ARM64VP_LINUX_DEBUGGER_HH__
+  
+#endif /* __ARM64VP_HOSTTERM_HH__ */

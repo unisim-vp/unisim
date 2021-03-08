@@ -1,6 +1,7 @@
 /*
- *  Copyright (c) 2010, Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2010-2021,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -32,6 +33,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.tcc>
 #include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
@@ -43,6 +45,11 @@ bool debug_enabled;
 using namespace std;
 
 bool Simulator::enable_monitor = false;
+
+CPU::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object(name, parent)
+  , unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>(name, parent)
+{}
 
 Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   : unisim::kernel::tlm2::Simulator(name, argc, argv, Simulator::DefaultConfiguration)

@@ -32,6 +32,9 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_TCC__
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_TCC__
+
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/psr.hh>
@@ -46,7 +49,7 @@
 #define LOCATION \
   " - location = " \
   << __FUNCTION__ \
-  << ":unisim_lib/unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc:" \
+  << ":unisim_lib/unisim/component/tlm2/processor/arm/cortex_a9/cpu.tcc:" \
   << __LINE__
 #define TIME(X) \
   " - time = " \
@@ -126,10 +129,11 @@ namespace cortex_a9 {
 
 using namespace unisim::kernel::logger;
 
-CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::CPU( sc_core::sc_module_name const& name, unisim::kernel::Object* parent )
   : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
-  , unisim::component::cxx::processor::arm::vmsav7::CPU<CPU>(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav7::CPU<CPU_IMPL>(name, parent)
   , master_socket("master_socket")
   , check_external_event(false)
   , external_event("extevt")
@@ -170,12 +174,14 @@ CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   sensitive << nRESETm;
 }
 
-CPU::~CPU()
+template <class CPU_IMPL>
+CPU<CPU_IMPL>::~CPU()
 {
 }
 
+template <class CPU_IMPL>
 void
-CPU::SetCycleTime( sc_core::sc_time const& cycle_time )
+CPU<CPU_IMPL>::SetCycleTime( sc_core::sc_time const& cycle_time )
 {
   /* Setting main cpu clock */
   cpu_cycle_time = cycle_time;
@@ -183,8 +189,9 @@ CPU::SetCycleTime( sc_core::sc_time const& cycle_time )
   time_per_instruction = cpu_cycle_time / ipc;
 }
 
+template <class CPU_IMPL>
 void
-CPU::SetBusCycleTime( sc_core::sc_time const& cycle_time )
+CPU<CPU_IMPL>::SetBusCycleTime( sc_core::sc_time const& cycle_time )
 {
   bus_cycle_time = cycle_time;
 }
@@ -195,8 +202,9 @@ CPU::SetBusCycleTime( sc_core::sc_time const& cycle_time )
  *
  * @return  true if the initialization suceeds, false otherwise
  */
+template <class CPU_IMPL>
 bool 
-CPU::EndSetup()
+CPU<CPU_IMPL>::EndSetup()
 {
   if (not PCPU::EndSetup())
   {
@@ -223,8 +231,9 @@ CPU::EndSetup()
   return true;
 }
 
+template <class CPU_IMPL>
 void 
-CPU::Stop(int ret)
+CPU<CPU_IMPL>::Stop(int ret)
 {
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
@@ -235,8 +244,9 @@ CPU::Stop(int ret)
 /** Wait for a specific event and update CPU times
  */
 
+template <class CPU_IMPL>
 void
-CPU::Wait( sc_core::sc_event const& evt )
+CPU<CPU_IMPL>::Wait( sc_core::sc_event const& evt )
 {
   //if (quantum_time != SC_ZERO_TIME)
   // Sync();
@@ -255,45 +265,49 @@ CPU::Wait( sc_core::sc_event const& evt )
  * An example (an for the moment the only synchronization demanded by the CPU
  * implmentation) is the a synchronization demanded by the debugger.
  */
+template <class CPU_IMPL>
 void
-CPU::Sync()
+CPU<CPU_IMPL>::Sync()
 {
   if ( unlikely(verbose_tlm) )
-  {
-    PCPU::logger << DebugInfo
-      << "Sync" << std::endl
-      << " - cpu_time     = " << cpu_time << std::endl
-      << " - quantum_time = " << quantum_time
-      << EndDebugInfo;
-  }
+    {
+      this->logger << DebugInfo
+                   << "Sync" << std::endl
+                   << " - cpu_time     = " << cpu_time << std::endl
+                   << " - quantum_time = " << quantum_time
+                   << EndDebugInfo;
+    }
   wait(quantum_time);
   cpu_time = sc_core::sc_time_stamp();
   quantum_time = sc_core::SC_ZERO_TIME;
   
   if (unlikely(verbose_tlm))
-    PCPU::logger << DebugInfo
-                      << "Resuming after wait" << std::endl
-                      << " - cpu_time     = " << cpu_time << std::endl
-                      << " - nice_time     = " << nice_time << std::endl
-                      << EndDebugInfo;
+    {
+      this->logger << DebugInfo
+                   << "Resuming after wait" << std::endl
+                   << " - cpu_time     = " << cpu_time << std::endl
+                   << " - nice_time     = " << nice_time << std::endl
+                   << EndDebugInfo;
+    }
 }
 
 /** Updates the cpu time to the next bus cycle.
  * Updates the cpu time to the next bus cycle. Additionally it updates the
  * quantum time and if necessary synchronizes with the global SystemC clock.
  */
+template <class CPU_IMPL>
 void 
-CPU::BusSynchronize() 
+CPU<CPU_IMPL>::BusSynchronize() 
 {
   if ( unlikely(verbose_tlm) )
-  {
-    PCPU::logger << DebugInfo
-      << "Bus Synchronize:" << std::endl
-      << " - bus_time     = " << bus_time << std::endl
-      << " - cpu_time     = " << cpu_time << std::endl
-      << " - quantum_time = " << quantum_time
-      << EndDebugInfo;
-  }
+    {
+      this->logger << DebugInfo
+                   << "Bus Synchronize:" << std::endl
+                   << " - bus_time     = " << bus_time << std::endl
+                   << " - cpu_time     = " << cpu_time << std::endl
+                   << " - quantum_time = " << quantum_time
+                   << EndDebugInfo;
+    }
   // Note: this needs to be better tested, but in order to avoid 
   //   multiplications and divisions with sc_time we do a loop expecting
   //   it will not loop too much. An idea of the operation to perform to
@@ -318,14 +332,14 @@ CPU::BusSynchronize()
   if (quantum_time > nice_time)
     Sync();
   if (unlikely(verbose_tlm))
-  {
-    PCPU::logger << DebugInfo
-      << "Bus is now Synchronized:" << std::endl
-      << " - bus_time     = " << bus_time << std::endl
-      << " - cpu_time     = " << cpu_time << std::endl
-      << " - quantum_time = " << quantum_time
-      << EndDebugInfo;
-  }
+    {
+      this->logger << DebugInfo
+                   << "Bus is now Synchronized:" << std::endl
+                   << " - bus_time     = " << bus_time << std::endl
+                   << " - cpu_time     = " << cpu_time << std::endl
+                   << " - quantum_time = " << quantum_time
+                   << EndDebugInfo;
+    }
   
   return;
 }
@@ -335,12 +349,13 @@ CPU::BusSynchronize()
  * Also the quantum time is updated, and if it is bigger than the nice time, the
  * global SystemC time is updated.
  */
+template <class CPU_IMPL>
 void
-CPU::Run()
+CPU<CPU_IMPL>::Run()
 {
-  if ( unlikely(verbose) )
+  if (unlikely(this->verbose))
     {
-      PCPU::logger << DebugInfo
+      this->logger << DebugInfo
                         << "Starting CPU::Run loop" << std::endl
                         << " - cpu_time     = " << cpu_time << std::endl
                         << " - nice_time = " << nice_time << std::endl
@@ -362,29 +377,29 @@ CPU::Run()
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
         if (exception_taken) {
-          if (trap_reporting_import)
-            trap_reporting_import->ReportTrap(*this,"irq or fiq");
+          if (auto tri = this->trap_reporting_import)
+            tri->ReportTrap(*this,"irq or fiq");
         }
       }
     }
     
     if (unlikely(verbose_tlm))
     {
-      PCPU::logger << DebugInfo
+      this->logger << DebugInfo
         << "Starting instruction:" << std::endl
         << " - cpu_time     = " << cpu_time << std::endl
         << " - quantum_time = " << quantum_time
         << EndDebugInfo;
     }
     
-    uint32_t cpsr_cleared_bits = GetCPSR();
-    StepInstruction();
+    uint32_t cpsr_cleared_bits = this->GetCPSR();
+    this->StepInstruction();
     quantum_time += time_per_instruction;
-    cpsr_cleared_bits &= ~GetCPSR();
+    cpsr_cleared_bits &= ~this->GetCPSR();
     
     if ( unlikely(verbose_tlm) )
     {
-      PCPU::logger << DebugInfo
+      this->logger << DebugInfo
         << "Instruction finished:" << std::endl
         << " - cpu_time     = " << cpu_time << std::endl
         << " - quantum_time = " << quantum_time
@@ -397,9 +412,9 @@ CPU::Run()
       {
         SetExternalEvent();
         if (unlikely(verbose_tlm))
-          PCPU::logger << DebugInfo
+          this->logger << DebugInfo
                             << "Syncing due to exception being unmasked" << std::endl
-                            << " - PC = 0x" << std::hex << current_insn_addr << std::dec << std::endl
+                            << " - PC = 0x" << std::hex << this->current_insn_addr << std::dec << std::endl
                             << " - cpsr_cleared_bits = 0x" << std::hex << cpsr_cleared_bits << std::dec << std::endl
                             << " - cpu_time     = " << cpu_time << std::endl
                             << " - quantum_time = " << quantum_time
@@ -411,13 +426,15 @@ CPU::Run()
   }
 }
 
+template <class CPU_IMPL>
 void 
-CPU::Reset()
+CPU<CPU_IMPL>::Reset()
 {
 }
 
+template <class CPU_IMPL>
 void 
-CPU::ResetMemory()
+CPU<CPU_IMPL>::ResetMemory()
 {
 }
 
@@ -432,20 +449,21 @@ CPU::ResetMemory()
  *
  * @return      the synchronization status
  */
+template <class CPU_IMPL>
 tlm::tlm_sync_enum 
-CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
+CPU<CPU_IMPL>::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
 {
   sync_enum_type ret = tlm::TLM_ACCEPTED;
 
   if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
   {
-    PCPU::logger << DebugWarning << "Received nb_transport_bw on master socket" 
+    this->logger << DebugWarning << "Received nb_transport_bw on master socket" 
                  << ", with an ignore, which the cpu doesn't know how to handle" 
                  << std::endl << TIME(time)
                  << std::endl << PHASE(phase)
                  << std::endl;
-    TRANS(PCPU::logger, trans);
-    PCPU::logger << EndDebug;
+    TRANS(this->logger, trans);
+    this->logger << EndDebug;
     return ret;
   }
 
@@ -456,14 +474,14 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
       /* The cpu should not receive the BEGIN_REQ (as it is the cpu which 
        * generates cpu requests), neither END_RESP (as it is the cpu which
        * ends responses) */
-      PCPU::logger << DebugError << "Received nb_transport_bw on master_socket" 
+      this->logger << DebugError << "Received nb_transport_bw on master_socket" 
                    << ", with unexpected phase"
                    << std::endl << LOCATION
                    << std::endl << TIME(time)
                    << std::endl << PHASE(phase)
                    << std::endl;
-      TRANS(PCPU::logger, trans);
-      PCPU::logger << EndDebug;
+      TRANS(this->logger, trans);
+      this->logger << EndDebug;
       Stop(-1);
       break;
     case tlm::END_REQ:
@@ -491,12 +509,12 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
       trans.acquire();
       if (trans.is_write())
       {
-        PCPU::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << std::endl
+        this->logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << std::endl
           << LOCATION << std::endl
           << TIME(time) << std::endl 
           << PHASE(phase) << std::endl;
-        TRANS(PCPU::logger, trans);
-        PCPU::logger << EndDebug;
+        TRANS(this->logger, trans);
+        this->logger << EndDebug;
         Stop(-1);
         break;
       }
@@ -512,13 +530,13 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
 
   /* this code should never be executed, if you are here something is wrong 
    *   above :( */
-  PCPU::logger << DebugError 
+  this->logger << DebugError 
     << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << std::endl
     << LOCATION << std::endl
     << TIME(time) << std::endl
     << PHASE(phase) << std::endl;
-  TRANS(PCPU::logger, trans);
-  PCPU::logger << EndDebug;
+  TRANS(this->logger, trans);
+  this->logger << EndDebug;
   Stop(-1);
   // useless return to avoid compiler warnings/errors
   return ret;
@@ -533,19 +551,21 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
  * @param start_range the start address of the memory range to remove
  * @param end_range   the end address of the memory range to remove
  */
+template <class CPU_IMPL>
 void 
-CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
+CPU<CPU_IMPL>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
   dmi_region_cache.Invalidate(start_range, end_range);
 }
 
 /** nIRQm port handler */
+template <class CPU_IMPL>
 void
-CPU::IRQHandler()
+CPU<CPU_IMPL>::IRQHandler()
 {
   SetExternalEvent();
   if (verbose_tlm)
-    PCPU::logger << DebugInfo
+    this->logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
                       << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
@@ -553,12 +573,13 @@ CPU::IRQHandler()
 }
 
 /** nFIQm port handler */
+template <class CPU_IMPL>
 void 
-CPU::FIQHandler()
+CPU<CPU_IMPL>::FIQHandler()
 {
   SetExternalEvent();
   if (verbose_tlm)
-    PCPU::logger << DebugInfo
+    this->logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
                       << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
@@ -566,12 +587,13 @@ CPU::FIQHandler()
 }
   
 /** nRESETm port handler */
+template <class CPU_IMPL>
 void 
-CPU::ResetHandler()
+CPU<CPU_IMPL>::ResetHandler()
 {
   SetExternalEvent();
   if (verbose_tlm)
-    PCPU::logger << DebugInfo
+    this->logger << DebugInfo
                       << "RESET level change:" << std::endl
                       << " - nRESETm = " << nRESETm << std::endl
                       << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
@@ -587,9 +609,9 @@ CPU::ResetHandler()
  * @param buffer   the buffer to copy the data to the read
  * @param size    the size of the read
  */
-
+template <class CPU_IMPL>
 bool 
-CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
+CPU<CPU_IMPL>::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
   if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
   {
@@ -620,8 +642,9 @@ CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
  * @param buffer  the buffer to write into the external memory
  * @param size    the size of the write
  */
+template <class CPU_IMPL>
 bool 
-CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
+CPU<CPU_IMPL>::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
   if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
   {
@@ -656,11 +679,12 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param buffer  the buffer to copy the data to read
  * @param size    the size of the read
  */
+template <class CPU_IMPL>
 bool
-CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs)
+CPU<CPU_IMPL>::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
-  if ( unlikely(verbose_tlm) )
-    PCPU::logger << DebugInfo
+  if (unlikely(verbose_tlm))
+    this->logger << DebugInfo
       << "Starting PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
@@ -737,8 +761,8 @@ CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t
     }
   }
 
-  if ( unlikely(verbose_tlm) )
-    PCPU::logger << DebugInfo
+  if (unlikely(verbose_tlm))
+    this->logger << DebugInfo
       << "Finished PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
@@ -747,16 +771,18 @@ CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t
   return true;
 }
 
+template <class CPU_IMPL>
 bool
-CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
+CPU<CPU_IMPL>::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
-  if ( unlikely(verbose_tlm) )
-    PCPU::logger << DebugInfo
-      << "Starting PhysicalWriteMemory:" << std::endl
-      << " - cpu_time     = " << cpu_time << std::endl
-      << " - quantum_time = " << quantum_time
-      << EndDebugInfo;
-
+  if (unlikely(verbose_tlm))
+    {
+      this->logger << DebugInfo
+                   << "Starting PhysicalWriteMemory:" << std::endl
+                   << " - cpu_time     = " << cpu_time << std::endl
+                   << " - quantum_time = " << quantum_time
+                   << EndDebugInfo;
+    }
   /* Use blocking transactions.
    * Steps:
    * 1 - check when the request can be send (synchronize with the bus)
@@ -825,7 +851,7 @@ CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, u
   }
 
   if ( unlikely(verbose_tlm) )
-    PCPU::logger << DebugInfo
+    this->logger << DebugInfo
       << "Finished PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
@@ -836,12 +862,13 @@ CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, u
 
 /** Resets Architectural Registers
  */
+template <class CPU_IMPL>
 void
-CPU::TakeReset()
+CPU<CPU_IMPL>::TakeReset()
 {
   this->PCPU::TakeReset();
   // Implementation defined values for SCTLR
-  cxx::processor::arm::sctlr::V.Set( SCTLR, VINITHI );
+  cxx::processor::arm::sctlr::V.Set( this->SCTLR, VINITHI );
 }
     
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
@@ -854,8 +881,9 @@ CPU::TakeReset()
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
-CPU::CP15Reg*
-CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+template <class CPU_IMPL>
+typename CPU<CPU_IMPL>::CP15Reg*
+CPU<CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
@@ -863,8 +891,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "MIDR, Main ID Register"; }
-          uint32_t Read( CP15CPU& cpu ) { return 0x414fc090; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "MIDR, Main ID Register"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& _cpu) const override { return 0x414fc090; }
         } x;
         return &x;
       } break;
@@ -877,23 +905,26 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
 
 #undef CP15ENCODE
 
+template <class CPU_IMPL>
 void
-CPU::WaitForInterrupt()
+CPU<CPU_IMPL>::WaitForInterrupt()
 {
   if (not check_external_event and nIRQm and nFIQm) {
     Wait( external_event );
   }
 }
 
+template <class CPU_IMPL>
 void
-CPU::SetExternalEvent()
+CPU<CPU_IMPL>::SetExternalEvent()
 {
   check_external_event = true;
   external_event.notify( sc_core::SC_ZERO_TIME );
 }
 
+template <class CPU_IMPL>
 bool
-CPU::GetExternalEvent()
+CPU<CPU_IMPL>::GetExternalEvent()
 {
   if (not check_external_event)
     return false;
@@ -909,12 +940,10 @@ CPU::GetExternalEvent()
 } // end of namespace component
 } // end of namespace unisim
 
-template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::simfloat::FP,
-                                                            unisim::component::tlm2::processor::arm::cortex_a9::CPU>;
-template struct unisim::component::cxx::processor::arm::vmsav7::CPU<unisim::component::tlm2::processor::arm::cortex_a9::CPU>;
-
 #undef LOCATION
 #undef TIME
 #undef PHASE
 #undef TRANS
+#undef ETRANS
 
+#endif // __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_TCC__

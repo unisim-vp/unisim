@@ -83,19 +83,13 @@ struct MSSConfig
 };
 
 struct CPU
-  : public unisim::component::tlm2::processor::arm::cortex_a9::CPU
+  : public unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
   , public unisim::util::cache::MemorySubSystem<MSSConfig, CPU>
 {
-  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU PCPU;
-  typedef PCPU::CP15CPU CP15CPU;
-  typedef PCPU::CP15Reg CP15Reg;
+  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU> PCPU;
+  typedef typename PCPU::CP15Reg CP15Reg;
   
-  CPU(const sc_core::sc_module_name& name, Object* parent = 0)
-    : unisim::kernel::Object(name, parent)
-    , PCPU(name, parent)
-    , l1d(*this)
-    , l1i(*this)
-  {}
+  CPU(const sc_core::sc_module_name& name, Object* parent = 0);
   
   typedef CPU CACHE_CPU;
 
@@ -275,8 +269,8 @@ struct CPU
   /* CP15 Interface   START */
   /**************************/
   
-protected:
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+public:
+  static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
   /**************************/
   /* CP15 Interface    END  */

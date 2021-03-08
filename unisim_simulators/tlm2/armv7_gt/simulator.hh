@@ -76,6 +76,11 @@ struct Router : public unisim::component::tlm2::interconnect::generic_router::Ro
   Router( char const* name, unisim::kernel::Object* parent = 0 );
 };
 
+struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
+{
+  CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
+};
+
 struct Simulator : public unisim::kernel::Simulator
 {
   Simulator( int argc, char **argv );
@@ -92,7 +97,6 @@ struct Simulator : public unisim::kernel::Simulator
   
  private:
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
-  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
   typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
