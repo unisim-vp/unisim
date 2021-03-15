@@ -72,4 +72,5 @@ impl {
 } // end of impl
 
 include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm64/simd_fp.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
