@@ -2379,7 +2379,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 						break;
 						
 					case CLASSIC_FILTER: // classic filter
-						match = (id & fid2) == (id & fid2);
+						match = (id & fid2) == (fid1 & fid2);
 						break;
 						
 					default: // reserved

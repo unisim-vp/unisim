@@ -1677,7 +1677,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	
 	if(halt)
 	{
-		Stop(-1, /* asynchronous */ true);
+		Stop(0, /* asynchronous */ true);
 	}
 	
 	return send_status;

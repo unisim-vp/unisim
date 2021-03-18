@@ -1763,10 +1763,10 @@ bool JSON_ConfigReader::ParseRootMember(std::istream& stream)
 	MemberType member_type = ( member_name == "verbose"              ) ? VERBOSE            :
 	                         ((member_name == "binary"               ) ? BINARY             :
 	                         ((member_name == "sources"              ) ? SOURCES            :
-	                         ((member_name == "suppress-types"       ) ? SUPPRESS_TYPES     :
-	                         ((member_name == "suppress-functions"   ) ? SUPPRESS_FUNCTIONS :
-	                         ((member_name == "output-dir"           ) ? OUTPUT_DIR         :
-	                         ((member_name == "dwarf-html-output-dir") ? DWARF_HTML_OUTPUT_DIR : UNKNOWN))))));
+	                         ((member_name == "suppress_types"       ) ? SUPPRESS_TYPES     :
+	                         ((member_name == "suppress_functions"   ) ? SUPPRESS_FUNCTIONS :
+	                         ((member_name == "output_dir"           ) ? OUTPUT_DIR         :
+	                         ((member_name == "dwarf_html_output_dir") ? DWARF_HTML_OUTPUT_DIR : UNKNOWN))))));
 	
 	if(member_type == UNKNOWN)
 	{
