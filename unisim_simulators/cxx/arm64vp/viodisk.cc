@@ -38,7 +38,7 @@
 
 VIODisk::VIODisk()
   : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
-  , rq(), storage(), Capacity(837212), WriteBack(1)
+  , rq(), storage(), Capacity(0), WriteBack(1)
 {}
 
 void
@@ -261,7 +261,6 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               break;
             case In:
               if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              vioa.dcapture(buf, len);
               for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
                 {
                   disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
@@ -413,3 +412,30 @@ VIOAccess::Iterator::next(VIOAccess const& vioa)
   slice = vioa.access(ptr, left, write);
   return true;
 }
+
+void
+VIOQueue::sync(SnapShot& snapshot)
+{
+  snapshot.sync(size);
+  snapshot.sync(ready);
+  for (auto reg : {&desc_area, &driver_area, &device_area})
+    snapshot.sync(*reg);
+  head.sync(snapshot);
+}
+
+void
+VIODisk::sync(SnapShot& snapshot)
+{
+  for (auto reg : {&Status, &Features, &DeviceFeaturesSel, &DriverFeaturesSel, &ConfigGeneration, &InterruptStatus})
+    snapshot.sync(*reg);
+  rq.sync(snapshot);
+  snapshot.sync(WriteBack);
+}
+
+void
+VIOQueue::DescIterator::sync(SnapShot& snapshot)
+{
+  snapshot.sync(index);
+  snapshot.sync(wrap);
+}
+

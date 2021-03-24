@@ -38,6 +38,7 @@
 #include "taint.hh"
 #include "viodisk.hh"
 #include "debug.hh"
+#include "snapshot.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
@@ -88,6 +89,8 @@ struct AArch64
   struct InstructionInfo
   {
     void assign( uint64_t _addr, uint64_t _counter, AArch64::Operation* _op ) { addr = _addr; counter = _counter; op = _op; }
+    void dump(std::ostream& sink) const;
+    friend std::ostream& operator << (std::ostream& sink, InstructionInfo const& ii) { ii.dump(sink); return sink; }
     uint64_t addr, counter;
     Operation* op;
   };
@@ -116,7 +119,6 @@ struct AArch64
   InstructionInfo const& last_insn(int idx) const;
   void breakdance();
   void uninitialized_error(char const* rsrc);
-  void dump_last_insn(std::ostream& sink);
 
   void TODO();
 
@@ -298,6 +300,7 @@ struct AArch64
     uint64_t TTBR0_EL1;
     uint64_t TTBR1_EL1;
 
+    void sync(SnapShot&);
     unsigned GetASID() const
     {
       return (unisim::component::cxx::processor::arm::vmsav8::tcr::A1.Get(TCR_EL1) ? TTBR1_EL1 : TTBR0_EL1) >> 48;
@@ -334,7 +337,7 @@ struct AArch64
         uint32_t blocksize  : 6;  // 24
 
         Entry() : pa(), sh(), attridx(), domain(), ap(), xn(), pxn(), NS(), nG(), level(), blocksize() {}
-        Entry( uint64_t addr ) : pa(addr) {}
+        Entry( uint64_t addr ) : pa(addr), sh(), attridx(), domain(), ap(), xn(), pxn(), NS(), nG(), level(), blocksize(48) {}
         uint64_t size_after() const { return -(uint64_t(-1) << blocksize | pa); }
 
         // uint32_t   asid     : 8;
@@ -560,6 +563,8 @@ struct AArch64
 
     Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
 
+    uint64_t size() const { return last - base + 1; }
+
     uint64_t    base;
     uint64_t    last;
   };
@@ -587,8 +592,11 @@ struct AArch64
     }
     Page() : Zone(0,0), data(0), udat(0), free(&Free::nop) {}
     Page( Page const& ) = delete;
+    Page( SnapShot& snapshot ) : Zone(0,0), data(0), udat(0), free(&Free::nop)  { sync(snapshot); }
     ~Page();
 
+    void sync( SnapShot& );
+    void save( SnapShot& ) const;
     uint64_t write(uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const
     {
       uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
@@ -619,8 +627,6 @@ struct AArch64
     bool has_udat() const { return data; }
     void set_udat(uint8_t* _udat) { udat = _udat; }
     
-    uint64_t size() const { return last - base + 1; }
-
     void dump_range(std::ostream&) const;
 
   private:
@@ -700,11 +706,11 @@ struct AArch64
 
   struct IPB
   {
-    static uint64_t const LINE_SIZE = 32; //< IPB size
+    static unsigned const LINE_SIZE = 32; //< IPB size
     uint8_t  bytes[LINE_SIZE];            //< The IPB content
     uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
     IPB() : bytes(), base_address( -1 ) {}
-    uint8_t* get(AArch64& core, uint64_t address);
+    uint8_t* access(AArch64& core, uint64_t address);
   };
 
   struct PState
@@ -737,6 +743,7 @@ struct AArch64
       cpu.gpr[31] = selsp(cpu);
     }
     unsigned GetEL() const { return EL; }
+    void sync(SnapShot&);
 
     unsigned D  :  1;
     unsigned A  :  1;
@@ -772,6 +779,7 @@ struct AArch64
     enum { ITLinesNumber = 2, ITLinesCount = 32*(ITLinesNumber+1) };
     GIC();
 
+    void sync( SnapShot& );
     bool activated(AArch64& cpu) const;
     void program(AArch64& cpu);
     unsigned HighestPriorityPendingInterrupt() const { return ScanPendingInterruptsFor( C_PMR, 0 ); }
@@ -799,6 +807,7 @@ struct AArch64
   struct RTC
   {
     RTC() : LR(0), MR(), load_insn_time(0), started(false), masked(true) {}
+    void     sync(SnapShot&);
     uint32_t get_counter(AArch64& cpu) const { return LR + get_gap(cpu); }
     uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / (cpu.get_freq() / get_cntfrq()); }
     uint64_t get_cntfrq() const { return 1; }
@@ -808,8 +817,8 @@ struct AArch64
 
     uint32_t LR, MR;
     uint64_t load_insn_time;
-    uint32_t started : 1;
-    uint32_t masked : 1;
+    bool started;
+    bool masked;
   };
   void map_rtc(uint64_t base_addr);
   void handle_rtc();
@@ -818,6 +827,7 @@ struct AArch64
   {
     UART();
     
+    void sync( SnapShot& );
     uint16_t flags() const;
     uint16_t mis() const { return RIS & IMSC; }
     bool rx_pop(char& ch);
@@ -842,6 +852,7 @@ struct AArch64
   struct Timer
   {
     Timer() : kctl(0), ctl(0), cval(0) {}
+    void sync( SnapShot& );
     bool activated() const;
     void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
@@ -861,7 +872,11 @@ struct AArch64
 
   void map_virtio_placeholder(unsigned id, uint64_t base_addr);
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
-  void map_virtio_console(uint64_t base_addr, unsigned irq);
+  //  void map_virtio_console(uint64_t base_addr, unsigned irq);
+
+  void sync( SnapShot& );
+  void save_snapshot( char const* );
+  void load_snapshot( char const* );
   
   /* Simulation state */
 public:
@@ -869,14 +884,14 @@ public:
   void notify( uint64_t delay, event_handler_t method );
 
 private:
-  struct NELock { NELock(AArch64& a); ~NELock(); pthread_mutex_t* m; };
+  //  struct NELock { NELock(AArch64& a); ~NELock(); pthread_mutex_t* m; };
 
   event_handler_t pop_next_event();
   void reload_next_event();
   
   Events   next_events;
   uint64_t next_event;
-  pthread_mutex_t next_event_mutex;
+  //pthread_mutex_t next_event_mutex;
   
   /** Architectural state **/
 public:
@@ -887,7 +902,7 @@ public:
   Timer       vt;
   RTC         rtc;
   VIODisk     viodisk;
-  VIOConsole  vioconsole; 
+  //VIOConsole  vioconsole; 
 
   Pages    pages;
   ExcMon   excmon;
@@ -922,9 +937,9 @@ public:
   // /*QESCAPTURE*/
   // bool QESCapture();
   // struct QES { uint16_t desc; uint16_t flags; } qes[2];
-  void viocapture(uint64_t base, uint64_t size);
-  void checkvio(uint64_t base, unsigned size);
-  std::set<Zone, Zone::Above> diskpages;
+  // void viocapture(uint64_t base, uint64_t size);
+  // void checkvio(uint64_t base, unsigned size);
+  // std::set<Zone, Zone::Above> diskpages;
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

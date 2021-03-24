@@ -35,6 +35,7 @@
 #ifndef __ARM64VP_VIODISK_HH__
 #define __ARM64VP_VIODISK_HH__
 
+#include "snapshot.hh"
 #include <fstream>
 #include <inttypes.h>
 
@@ -44,7 +45,6 @@ struct VIOAccess
   struct Slice { uint8_t* bytes; uint64_t size; };
   virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
   virtual void flag(uint64_t addr) const = 0;
-  virtual void dcapture(uint64_t addr, uint64_t size) const = 0;
   virtual void notify() const = 0;
   
   struct Iterator : Slice
@@ -65,20 +65,22 @@ struct VIOQueue
   struct DescIterator
   {
     DescIterator() : index(0), wrap(1) {}
-    unsigned wrap_counter() const { return index >> 15 & 1; }
-    uint64_t get_offset() const { return (index & 0x7fff); }
+    void sync(SnapShot& snapshot);
     void next(VIOQueue const& vq) { if (++index < vq.size) return; index = 0; wrap ^= 1;  }
     bool available(uint16_t flags) const { return (flags >> 15 ^ wrap) & ~(flags >> 7 ^ wrap) & 1; }
     uint16_t used(bool write) const { return wrap << 15 | wrap << 7 | int(write) << 1; }
     uint16_t idx() const { return (index & 0x7fff) | (wrap << 15); }
-    unsigned index : 16;
-    unsigned wrap  :  1;
+    unsigned offset() const { return 16*index; }
+  private:
+    uint16_t index;
+    uint16_t wrap;
   };
 
   //enum { NEXT=1, WRITE=2, INDIRECT=4 };
 
   VIOQueue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0), head() {}
-  uint64_t desc_addr(DescIterator const& desc) const { return desc_area + 16*desc.index; }
+  void sync(SnapShot& snapshot);
+  uint64_t desc_addr(DescIterator const& desc) const { return desc_area + desc.offset(); }
 
   uint32_t size, ready;
   uint64_t desc_area, driver_area, device_area;
@@ -106,6 +108,7 @@ struct VIOConsole
 struct VIODisk
 {
   VIODisk();
+  void sync(SnapShot& snapshot);
   void reset();
   void open(char const* filename);
   

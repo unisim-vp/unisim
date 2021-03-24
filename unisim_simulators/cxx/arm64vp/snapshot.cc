@@ -32,32 +32,53 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <architecture.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
-#include <iostream>
-#include <iomanip>
+#include <snapshot.hh>
+#include <zlib.h>
 
-template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
-
-AArch64::Operation*
-AArch64::fetch_and_decode(uint64_t insn_addr)
+void
+SnapShot::sync( uint8_t* buf, uintptr_t size )
 {
-  // Instruction Fetch Decode and Execution (may generate exceptions
-  // known as synchronous aborts since their occurences are a direct
-  // consequence of the instruction execution).
+  if (is_load())
+    load(buf,size);
+  else
+    save(buf,size);
+}
 
-  // Fetch
-  MMU::TLB::Entry entry(insn_addr);
-  translate_address(entry, pstate.GetEL(), AArch64::mem_acc_type::exec);
+
+std::unique_ptr<SnapShot> SnapShot::gzsave(char const* filename)
+{
+  struct SaveSnapShot : public SnapShot
+  {
+    SaveSnapShot( char const* filename ) : SnapShot(false), gz_file( gzopen( filename, "w" ) ) {}
+    ~SaveSnapShot() { gzclose(gz_file); }
+    struct Bad {};
+    void load(uint8_t*, uintptr_t size) override { throw Bad(); }
+    void save(uint8_t const* bytes, uintptr_t size) override
+    {
+      if (uintptr_t(gzwrite( gz_file, bytes, size)) != size)
+        throw Bad();
+    }
+    gzFile gz_file;
+  };
   
-  unisim::component::cxx::processor::arm::isa::arm64::CodeType insn = 0;
-  for (uint8_t *beg = ipb.access(*this, entry.pa), *itr = &beg[4]; --itr >= beg;)
-    insn = insn << 8 | *itr;
+  return std::make_unique<SaveSnapShot>( filename );
+}
 
-  /* Decode current PC. TODO: should provide physical address for caching purpose */
-  Operation* op = decoder.Decode(entry.pa, insn);
-  last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
+std::unique_ptr<SnapShot> SnapShot::gzload(char const* filename)
+{
+  struct LoadSnapShot : public SnapShot
+  {
+    LoadSnapShot( char const* filename ) : SnapShot(true), gz_file( gzopen( filename, "r" ) ) {}
+    ~LoadSnapShot() { gzclose(gz_file); }
+    struct Bad {};
+    void load(uint8_t* bytes, uintptr_t size) override
+    {
+      if (uintptr_t(gzread( gz_file, bytes, size )) != size)
+        throw Bad();
+    }
+    void save(uint8_t const*, uintptr_t size) override { throw Bad(); }
+    gzFile gz_file;
+  };
 
-  return op;
+  return std::make_unique<LoadSnapShot>( filename );
 }

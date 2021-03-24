@@ -52,6 +52,7 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 taint.cc \
 debug.cc \
 architecture.cc \
+snapshot.cc \
 hostterm.cc \
 viodisk.cc \
 system.cc \
@@ -64,6 +65,7 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 taint.hh \
 debug.hh \
 architecture.hh \
+snapshot.hh \
 hostterm.hh \
 viodisk.hh \
 debugger.hh \

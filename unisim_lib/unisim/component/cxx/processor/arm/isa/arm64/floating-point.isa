@@ -546,12 +546,11 @@ fcmpe_dz.execute =
  * end of FCMPE
  *******************************************************************/
 
-op fcsel_d( 0b00011110011[11] : rm[5] : cond[4] : 0b11[2] : rn[5] : rd[5] );
-fcsel_d.var format : {char const*} = {"265"};
-
-fcsel_d.disasm = {
-  sink << "fcsel\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmCond(cond);
-};
+/*******************************************************************
+ * FCSEL
+ *
+ * Floating-point conditional select (scalar): Vd = if cond then Vn else Vm
+ */
 
 op fcsel_s( 0b00011110001[11] : rm[5] : cond[4] : 0b11[2] : rn[5] : rd[5] );
 fcsel_s.var format : {char const*} = {"284"};
@@ -559,6 +558,25 @@ fcsel_s.var format : {char const*} = {"284"};
 fcsel_s.disasm = {
   sink << "fcsel\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmCond(cond);
 };
+
+fcsel_s.execute = {
+  cpu.SetVF32(rd, cpu.GetVF32(CheckCondition(cpu, cond) ? rn : rm, 0));
+};
+
+op fcsel_d( 0b00011110011[11] : rm[5] : cond[4] : 0b11[2] : rn[5] : rd[5] );
+fcsel_d.var format : {char const*} = {"265"};
+
+fcsel_d.disasm = {
+  sink << "fcsel\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmCond(cond);
+};
+
+fcsel_d.execute = {
+  cpu.SetVF64(rd, cpu.GetVF64(CheckCondition(cpu, cond) ? rn : rm, 0));
+};
+
+/*
+ * end of FCSEL
+ *******************************************************************/
 
 op fcvt_dh( 0b0001111011100010110000[22] : rn[5] : rd[5] );
 fcvt_dh.var format : {char const*} = {"2220"};

@@ -53,11 +53,11 @@ struct MMapped : AArch64::Page::Free
         perror("open error");
       }
   }
-  ~MMapped() { close(fd); }
   void free (AArch64::Page& page) const override
   {
     munmap((void*)page.data_beg(), page.size());
     munmap((void*)page.udat_beg(), page.size());
+    delete this;
   }
   bool get(struct stat& res)
   {
@@ -88,31 +88,102 @@ struct MMapped : AArch64::Page::Free
 
   char const* filename; // For logging purpose
   int fd;
+
+private:
+  ~MMapped() { close(fd); }
 };
+
+bool
+load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
+{
+  MMapped* linux_image  = new MMapped( img_filename );
+
+  if (linux_image->fd < 0) return false;
+
+  MMapped* device_tree = new MMapped( dt_filename );
+
+  if (device_tree->fd < 0) return false;
+
+  {
+    struct stat f_stat;
+    if (not linux_image->get(f_stat))
+      return 1;
+    uint64_t size = f_stat.st_size;
+    // Memory map will be rounded up to page boundary. We round up to
+    // AArch64 ZVA boundary which should always be less than host page
+    // boundary.
+    size = (size + 63) & uint64_t(-64);
+
+    struct
+    {
+      uint8_t buf[8];
+      uint64_t read(int fd)
+      {
+        uint64_t res = 0;
+        if (::read(fd, &buf[0], sizeof (buf)) != sizeof (buf)) throw *this;
+        for (unsigned idx = sizeof (buf); idx-- > 0;) res = res << 8 | buf[idx];
+        return res;
+      }
+    } le64;
+    lseek(linux_image->fd,8,SEEK_SET);
+    uint64_t base = le64.read(linux_image->fd), kernel_size = le64.read(linux_image->fd);
+    lseek(linux_image->fd,0,SEEK_SET);
+    if (base % 64) { std::cerr << "Bad size: " << std::hex << base << std::endl; return 1; }
+    if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
+    AArch64::Page page(base,base+size-1,0,0,linux_image);
+    linux_image->dump_load( std::cerr, "linux image", page );
+    if (not linux_image->get(page))
+      return 1;
+    arch.mem_map(std::move(page));
+    arch.BranchTo(AArch64::U64(base),arch.B_JMP);
+    // If kernel_size is greater than mapped file size, we need to reserve extra space with unitialized data
+    uint64_t xbase = base + size, xlast = base + kernel_size - 1;
+    if (xbase <= xlast)
+      {
+        AArch64::Page extra(xbase, xlast);
+        std::fill(extra.udat_beg(), extra.udat_end(), -1);
+        arch.mem_map(std::move(extra));
+      }
+    arch.MemDump64(base);
+  }
+
+  {
+    struct stat f_stat;
+    if (not device_tree->get(f_stat))
+      return 1;
+    uint64_t base = arch.pages.begin()->last + 1, size = f_stat.st_size;
+    size = (size + 63) & uint64_t(-64);
+    if (base % 64) { std::cerr << "Bad base: " << std::hex << base << std::endl; return 1; }
+    // The device tree blob (dtb) must be placed on an 8-byte boundary
+    AArch64::Page page(base,base+size-1,0,0,device_tree);
+    device_tree->dump_load( std::cerr, "device tree", page );
+    if (not device_tree->get(page))
+      return 1;
+    arch.mem_map(std::move(page));
+    /* Primary CPU general-purpose register settings
+     * x0 = physical address of device tree blob (dtb) in system RAM.
+     * x1 = 0 (reserved for future use)
+     * x2 = 0 (reserved for future use)
+     * x3 = 0 (reserved for future use)
+     */
+    arch.SetGSR(0, AArch64::U64(base));
+    for (unsigned idx = 1; idx < 4; ++idx)
+      arch.SetGSR(idx, 0/*AArch64::U64(0xdeadbeefbadfeed0 + idx,-1)*/);
+  }
+
+  return true;
+}
+// Docs & Notes:
+//  [AArch64 boot info] https://www.kernel.org/doc/Documentation/arm64/booting.txt
+//  [Yocto dtb generation] runqemu qemuparams="-machine dumpdtb=device_tree_from_qemu.dtb"
 
 int
 main(int argc, char *argv[])
 {
-  char const* img_filename = "Image";
-  char const* dt_filename = "device_tree.dtb";
   char const* disk_filename = "rootfs.ext4";
-  
-  // Booting an AArch64 system
-  //
-  // Docs & Notes: 
-  //  [arm64 boot info] https://www.kernel.org/doc/Documentation/arm64/booting.txt
-  //  [yocto dtb generation] runqemu qemuparams="-machine dumpdtb=device_tree_from_qemu.dtb"
-  
+
   // Loading image
 
-  MMapped linux_image( img_filename );
-
-  if (linux_image.fd < 0) return 1;
-
-  MMapped device_tree( dt_filename );
-    
-  if (device_tree.fd < 0) return 1;
-  
   AArch64 arch;
 
   arch.map_gic(0x48000000);
@@ -130,82 +201,9 @@ main(int argc, char *argv[])
         case 31: arch.map_virtio_disk(disk_filename, base_addr, irq); break;
         }
     }
-      
 
-  // SETUP the VirtIO Hypervisor Emulator
-  // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
-  // cpu.SetLinuxOS( &linux32 );
-  // linux32.Setup( simargs, envs );
-  
-  //  arch.m_disasm = false;
-  
-  {
-    struct stat f_stat;
-    if (not linux_image.get(f_stat))
-      return 1;
-    uint64_t size = f_stat.st_size;
-    // Memory map will be rounded up to page boundary. We round up to
-    // AArch64 ZVA boundary which should always be less than host page
-    // boundary.
-    size = (size + 63) & uint64_t(-64);
-    
-    struct 
-    {
-      uint8_t buf[8];
-      uint64_t read(int fd)
-      {
-        uint64_t res = 0;
-        if (::read(fd, &buf[0], sizeof (buf)) != sizeof (buf)) throw *this;
-        for (unsigned idx = sizeof (buf); idx-- > 0;) res = res << 8 | buf[idx];
-        return res;
-      }
-    } le64;
-    lseek(linux_image.fd,8,SEEK_SET);
-    uint64_t base = le64.read(linux_image.fd), kernel_size = le64.read(linux_image.fd);
-    lseek(linux_image.fd,0,SEEK_SET);
-    if (base % 64) { std::cerr << "Bad size: " << std::hex << base << std::endl; return 1; }
-    if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
-    AArch64::Page page(base,base+size-1,0,0,&linux_image);
-    linux_image.dump_load( std::cerr, "linux image", page );
-    if (not linux_image.get(page))
-      return 1;
-    arch.mem_map(std::move(page));
-    arch.BranchTo(AArch64::U64(base),arch.B_JMP);
-    // If kernel_size is greater than mapped file size, we need to reserve extra space with unitialized data
-    uint64_t xbase = base + size, xlast = base + kernel_size - 1;
-    if (xbase <= xlast)
-      {
-        AArch64::Page extra(xbase, xlast);
-        std::fill(extra.udat_beg(), extra.udat_end(), -1);
-        arch.mem_map(std::move(extra));
-      }
-    arch.MemDump64(base);
-  }
-
-  {
-    struct stat f_stat;
-    if (not device_tree.get(f_stat))
-      return 1;
-    uint64_t base = arch.pages.begin()->last + 1, size = f_stat.st_size;
-    size = (size + 63) & uint64_t(-64);
-    if (base % 64) { std::cerr << "Bad base: " << std::hex << base << std::endl; return 1; }
-    // The device tree blob (dtb) must be placed on an 8-byte boundary
-    AArch64::Page page(base,base+size-1,0,0,&device_tree);
-    device_tree.dump_load( std::cerr, "device tree", page );
-    if (not device_tree.get(page))
-      return 1;
-    arch.mem_map(std::move(page));
-    /* Primary CPU general-purpose register settings
-     * x0 = physical address of device tree blob (dtb) in system RAM.
-     * x1 = 0 (reserved for future use)
-     * x2 = 0 (reserved for future use)
-     * x3 = 0 (reserved for future use)
-     */
-    arch.SetGSR(0, AArch64::U64(base));
-    for (unsigned idx = 1; idx < 4; ++idx)
-      arch.SetGSR(idx, 0/*AArch64::U64(0xdeadbeefbadfeed0 + idx,-1)*/);
-  }
-
+  // load_linux(arch, "Image", "device_tree.dtb");
+  arch.load_snapshot("toto.shot");
   
   // // ffffffc010eb5198 0x20000
   // AArch64::Page const& logbuf = arch.modify_page(0xeb5198);
@@ -224,16 +222,12 @@ main(int argc, char *argv[])
       std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
       std::ofstream tail("tail");
       for (unsigned idx = 1; idx <= arch.histsize; ++idx)
-        {
-          auto const& insn = arch.last_insn(idx);
-          tail << std::dec << insn.counter << "@" << std::hex << insn.addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn.op->GetEncoding() << "; ";
-          insn.op->disasm( arch, tail );
-          tail << std::endl;
-        }
+        if (arch.last_insn(idx).op)
+          tail << arch.last_insn(idx) << std::endl;
       throw;
     }
 
-  
+
   return 0;
 }
 

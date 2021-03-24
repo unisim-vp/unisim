@@ -251,13 +251,11 @@ AArch64::Page::Page(uint64_t base, uint64_t last)
 AArch64::Page::Free AArch64::Page::Free::nop;
 
 uint8_t*
-AArch64::IPB::get(AArch64& core, uint64_t vaddr)
+AArch64::IPB::access(AArch64& core, uint64_t paddr)
 {
-  // LINE_SIZE should be so MMU page boundaries should not be crossed
-  MMU::TLB::Entry entry(vaddr & uint64_t(-LINE_SIZE));
-  core.translate_address(entry, core.pstate.GetEL(), AArch64::mem_acc_type::exec);
-  uint64_t req_base_address = entry.pa;
-  unsigned idx = vaddr % LINE_SIZE;
+  // LINE_SIZE should be so MMU page boundaries cannot be crossed
+  uint64_t req_base_address = paddr & -uint64_t(LINE_SIZE);
+  unsigned idx = paddr % LINE_SIZE;
   if (base_address != req_base_address)
     {
       uint8_t ubuf[LINE_SIZE];
@@ -905,15 +903,16 @@ AArch64::concretize(bool possible)
 void
 AArch64::uninitialized_error( char const* rsrc )
 {
-  dump_last_insn(std::cerr << "Error: " << rsrc << " depends on unitialized value.\n");
-  std::cerr << "\n";
+  std::cerr << "Error: " << rsrc << " depends on unitialized value.\n" << last_insn(0) << '\n';
 }
 
 void
-AArch64::dump_last_insn(std::ostream& sink)
+AArch64::InstructionInfo::dump(std::ostream& sink) const
 {
+  sink << std::dec << counter << "@" << std::hex << addr << ',' << op->GetAddr() << ": "
+       << std::hex << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
   DisasmState ds;
-  last_insn(0).op->disasm( ds, sink << std::hex << current_insn_addr << ": " );
+  op->disasm( ds, sink );
 }
 
 AArch64::GIC::GIC()
@@ -1118,7 +1117,7 @@ AArch64::map_rtc(uint64_t base_addr)
           uint32_t masked = rtc.masked;
           if (not req.write) return req.ro(masked);
           if (not req.access(masked)) return false;
-          if (masked & ~rtc.masked) arch.handle_rtc();
+          if (masked and not rtc.masked) arch.handle_rtc();
           rtc.masked = masked;
           return true;
         }
@@ -1180,7 +1179,6 @@ namespace {
   struct VIOA : public VIOAccess
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
-    void dcapture(uint64_t addr, uint64_t size) const override { core.viocapture(addr, addr + size - 1); }
 
     VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
     {
@@ -1211,61 +1209,61 @@ namespace {
   };
 }
 
-void
-AArch64::map_virtio_console(uint64_t base_addr, unsigned irq)
-{
-  static struct : public Device::Effect
-  {
-    virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Virtio Block Device (console)"; }
+// void
+// AArch64::map_virtio_console(uint64_t base_addr, unsigned irq)
+// {
+//   static struct : public Device::Effect
+//   {
+//     virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Virtio Block Device (console)"; }
 
-    virtual bool access(AArch64& arch, Device::Request& req) const override
-    {
-      //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
-      //      std::cerr << '\n';
-      VIOConsole& vioconsole = arch.vioconsole;
-      if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
-        return false;
+//     virtual bool access(AArch64& arch, Device::Request& req) const override
+//     {
+//       //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
+//       //      std::cerr << '\n';
+//       VIOConsole& vioconsole = arch.vioconsole;
+//       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
+//         return false;
 
-      if (req.size == 4)
-        {
-          //          uint32_t tmp;
-          switch (req.addr)
-            {
-            case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
-            case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
-            case 0x08: return req.ro<uint32_t>(3);                       /* Virtio Subsystem Device ID: block device */
-            case 0x0c: return req.ro(vioconsole.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
-            // case 0x10: return req.ro(vioconsole.ClaimedFeatures());         /* features supported by the device */
-            // case 0x14: return req.wo(vioconsole.DeviceFeaturesSel);         /* Device (host) features word selection. */
-            // case 0x20: return req.wo(tmp) and vioconsole.UsedFeatures(tmp); /* features used by the driver  */
-            // case 0x24: return req.wo(vioconsole.DriverFeaturesSel);         /* Activated (guest) features word selection */
-            // case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
-            // case 0x34: return req.ro(vioconsole.QueueNumMax());             /* Maximum virtual queue size */
-            // case 0x38: return req.wo(vioconsole.rq.size);                   /* Virtual queue size */
-            // case 0x44: return req.access(vioconsole.rq.ready)               /* Virtual queue ready bit */
-            //     and (not req.write or vioconsole.SetupQueue(vioa));
-            // case 0x50: return req.wo(tmp) and vioconsole.ReadQueue(vioa);   /* Queue notifier */
-            // case 0x60: return req.ro(vioconsole.InterruptStatus);           /* Interrupt status */
-            // case 0x64: return req.wo(tmp) and vioconsole.InterruptAck(tmp); /* Interrupt status */
-            // case 0x70: return req.access(vioconsole.Status)                 /* Device status */
-            //     and (not req.write or vioconsole.CheckStatus());
-            // case 0x80:
-            // case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.desc_area))[req.addr >> 2 & 1]);
-            // case 0x90:
-            // case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.driver_area))[req.addr >> 2 & 1]);
-            // case 0xa0:
-            // case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
-            // case 0xfc: return req.ro(viodisk.ConfigGeneration);
-            }
-        }
+//       if (req.size == 4)
+//         {
+//           //          uint32_t tmp;
+//           switch (req.addr)
+//             {
+//             case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
+//             case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
+//             case 0x08: return req.ro<uint32_t>(3);                       /* Virtio Subsystem Device ID: block device */
+//             case 0x0c: return req.ro(vioconsole.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
+//             // case 0x10: return req.ro(vioconsole.ClaimedFeatures());         /* features supported by the device */
+//             // case 0x14: return req.wo(vioconsole.DeviceFeaturesSel);         /* Device (host) features word selection. */
+//             // case 0x20: return req.wo(tmp) and vioconsole.UsedFeatures(tmp); /* features used by the driver  */
+//             // case 0x24: return req.wo(vioconsole.DriverFeaturesSel);         /* Activated (guest) features word selection */
+//             // case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
+//             // case 0x34: return req.ro(vioconsole.QueueNumMax());             /* Maximum virtual queue size */
+//             // case 0x38: return req.wo(vioconsole.rq.size);                   /* Virtual queue size */
+//             // case 0x44: return req.access(vioconsole.rq.ready)               /* Virtual queue ready bit */
+//             //     and (not req.write or vioconsole.SetupQueue(vioa));
+//             // case 0x50: return req.wo(tmp) and vioconsole.ReadQueue(vioa);   /* Queue notifier */
+//             // case 0x60: return req.ro(vioconsole.InterruptStatus);           /* Interrupt status */
+//             // case 0x64: return req.wo(tmp) and vioconsole.InterruptAck(tmp); /* Interrupt status */
+//             // case 0x70: return req.access(vioconsole.Status)                 /* Device status */
+//             //     and (not req.write or vioconsole.CheckStatus());
+//             // case 0x80:
+//             // case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.desc_area))[req.addr >> 2 & 1]);
+//             // case 0x90:
+//             // case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.driver_area))[req.addr >> 2 & 1]);
+//             // case 0xa0:
+//             // case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
+//             // case 0xfc: return req.ro(viodisk.ConfigGeneration);
+//             }
+//         }
 
-      return false;
-    }
+//       return false;
+//     }
 
-  } virtio_console_effect;
+//   } virtio_console_effect;
 
-  devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_console_effect, irq) );
-}
+//   devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_console_effect, irq) );
+// }
 
 void
 AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
@@ -1688,6 +1686,12 @@ AArch64::run()
 {
   for (;;)
     {
+      // if (insn_counter == 222800)
+      // if (insn_counter == 2228000000)
+      //   {
+      //     save_snapshot("toto.shot");
+      //     return;
+      //   }
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
@@ -1914,96 +1918,6 @@ AArch64::mem_unmap(uint64_t base, uint64_t last)
   pages.insert(pi, std::move(below));
 }
 
-// bool
-// AArch64::QESCapture()
-// {
-//   VIOA vioa(*this,0);
-
-//   std::cerr << "VIRTQ.ready => " << viodisk.rq.ready << "\n";
-//   for (unsigned side = 0; side < 2; ++side)
-//     {
-//       uint64_t base = (side ? viodisk.rq.device_area : viodisk.rq.driver_area);
-//       char const* name = (side ? "Device" : "Driver");
-//       std::cerr << "pvirtq_event_suppress@" << std::hex << base << "(" << name << ")"
-//                 << "{ offset=" << std::dec << vioa.read(base + 0, 2)
-//                 << ", flags=0x" << std::hex << vioa.read(base + 2, 2)
-//                 << "}\n";
-//       mem_unmap(base, base + 3);
-//
-//       // insert the device
-//       static struct : public Device::Effect
-//       {
-//         static char const* side(unsigned id) { return id ? "device" : "driver"; }
-
-//         void get_name(unsigned id, std::ostream& sink) const override { sink << side(id) << " event suppression"; }
-
-//         bool access(AArch64& arch, Device::Request& req) const override
-//         {
-//           req.location(std::cerr << "<=o=> " << side(req.dev) << " QES " << (req.write ? "write" : "read") << " @", req.addr, req.size);
-//           std::cerr << '\n';
-
-//           auto& qes = arch.qes[req.dev];
-//           if (req.size == 2)
-//             {
-//               if (req.addr == 0) return req.access(qes.desc);
-//               if (req.addr == 2) return req.access(qes.flags);
-//               return false;
-//             }
-//           else if (req.size == 4)
-//             {
-//               if (req.addr == 0) return req.access(*(uint32_t*)&qes.desc);
-//               return false;
-//             }
-
-//           return false;
-//         }
-//       } qes_effect;
-//       devices.insert( Device( base, base + 4, &qes_effect, side) );
-//     }
-
-//   return true;
-// }
-
-void
-AArch64::checkvio(uint64_t base, unsigned size)
-{
-  auto zi = diskpages.lower_bound(base+size-1);
-  if (zi == diskpages.end() or zi->last < base)
-    return;
-  std::cerr << "In VIO: " << std::hex << current_insn_addr << "\n";
-}
-
-void
-AArch64::viocapture(uint64_t base, uint64_t last)
-{
-
-  struct Z : public Zone
-  {
-    AArch64& a;
-    Z(uint64_t base, uint64_t last, AArch64& _a) : Zone(base, last), a(_a) {}
-    ~Z() { a.diskpages.insert(*this); }
-  } zone(base, last, *this);
-
-  auto zi = diskpages.lower_bound(last);
-  if (zi == diskpages.end())
-    return;
-
-  if (zi->last > zone.last)
-    zone.last = zi->last;
-
-  while (zi->base >= zone.base)
-    {
-      zi = diskpages.erase(zi);
-      if (zi == diskpages.end())
-        return;
-    }
-
-  if (zi->last < zone.base)
-    return;
-  zone.base = zi->base;
-  zi = diskpages.erase(zi);
-}
-
 // Function used for permission checking from AArch64 stage 1 translations
 void
 AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat)
@@ -2033,7 +1947,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
 }
 
 AArch64::UART::UART()
-  : tx_count()
+  : dterm(), rx_value('\0'), rx_valid(false), tx_count()
   , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
 {
 }
@@ -2041,8 +1955,8 @@ AArch64::UART::UART()
 bool
 AArch64::UART::rx_push()
 {
-  if ((rx_valid = rx_valid or dterm.GetChar(rx_value)))
-    RIS |= RX_INT;
+  rx_valid |= dterm.GetChar(rx_value);
+  if (rx_valid) RIS |= RX_INT;
   return rx_valid;
 }
 
@@ -2057,21 +1971,21 @@ AArch64::UART::rx_pop(char& ch)
   return true;
 }
 
-AArch64::NELock::NELock(AArch64& a)
-  : m(&a.next_event_mutex)
-{
-  pthread_mutex_lock(m);
-}
+// AArch64::NELock::NELock(AArch64& a)
+//   : m(&a.next_event_mutex)
+// {
+//   pthread_mutex_lock(m);
+// }
 
-AArch64::NELock::~NELock()
-{
-  pthread_mutex_unlock(m);
-}
+// AArch64::NELock::~NELock()
+// {
+//   pthread_mutex_unlock(m);
+// }
 
 AArch64::event_handler_t
 AArch64::pop_next_event()
 {
-  NELock nel(*this);
+  //  NELock nel(*this);
   event_handler_t method = event_handler_t();
   auto evt = next_events.begin();
   if (evt != next_events.end())
@@ -2086,7 +2000,7 @@ AArch64::pop_next_event()
 void
 AArch64::notify( uint64_t delay, event_handler_t method )
 {
-  NELock nel(*this);
+  //  NELock nel(*this);
   next_events.emplace(std::piecewise_construct, std::forward_as_tuple( insn_timer+delay ), std::forward_as_tuple( method ));
   reload_next_event();
 }
@@ -2100,3 +2014,196 @@ AArch64::UART::flags() const
     int(rx_valid == false) << 4;
 }
 
+void
+AArch64::save_snapshot( char const* filename )
+{
+  std::unique_ptr<SnapShot> snapshot = SnapShot::gzsave(filename);
+
+  sync( *snapshot );
+}
+
+void
+AArch64::load_snapshot( char const* filename )
+{
+  std::unique_ptr<SnapShot> snapshot = SnapShot::gzload(filename);
+
+  sync( *snapshot );
+}
+
+void
+AArch64::PState::sync(SnapShot& snapshot)
+{
+  uint8_t d = D; snapshot.sync(d); D = d;
+  uint8_t a = A; snapshot.sync(a); A = a;
+  uint8_t i = I; snapshot.sync(i); I = i;
+  uint8_t f = F; snapshot.sync(f); F = f;
+  uint8_t ss = SS; snapshot.sync(ss); SS = ss;
+  uint8_t il = IL; snapshot.sync(il); IL = il;
+  uint8_t el = EL; snapshot.sync(el); EL = el;
+  uint8_t sp = SP; snapshot.sync(sp); SP = sp;
+}
+
+void
+AArch64::Page::sync(SnapShot& snapshot)
+{
+  snapshot.sync(base);
+  snapshot.sync(last);
+  if (snapshot.is_load())
+    {
+      Page pg(base, last);
+      std::swap(pg.data,data);
+      std::swap(pg.udat,udat);
+      std::swap(pg.free,free);
+    }
+  snapshot.sync(data, size());
+  snapshot.sync(udat, size());
+}
+
+void
+AArch64::Page::save(SnapShot& snapshot) const
+{
+  if (snapshot.is_load()) throw 0;
+  const_cast<AArch64::Page*>(this)->sync(snapshot);
+}
+
+void
+AArch64::RTC::sync(SnapShot& snapshot)
+{
+  snapshot.sync(LR);
+  snapshot.sync(MR);
+  snapshot.sync(load_insn_time);
+  snapshot.sync(started);
+  snapshot.sync(masked);
+}
+
+void
+AArch64::Timer::sync(SnapShot& snapshot)
+{
+  snapshot.sync(kctl);
+  snapshot.sync(ctl);
+  snapshot.sync(cval);
+}
+
+void
+AArch64::UART::sync(SnapShot& snapshot)
+{
+  for (auto reg : {&IBRD, &FBRD, &LCR, &CR, &IFLS, &IMSC, &RIS})
+    snapshot.sync(*reg);
+}
+
+void
+AArch64::GIC::sync(SnapShot& snapshot)
+{
+  snapshot.sync(C_CTLR);
+  snapshot.sync(C_PMR);
+  snapshot.sync(D_CTLR);
+  for (unsigned idx = ITLinesCount/32; idx-->0;)
+    {
+      snapshot.sync(D_IENABLE[idx]);
+      snapshot.sync(D_IPENDING[idx]);
+      snapshot.sync(D_IACTIVE[idx]);
+    }
+  snapshot.sync(&D_IPRIORITYR[0], ITLinesCount);
+  for (unsigned idx = ITLinesCount/16; idx-->0;)
+    snapshot.sync(D_ICFGR[idx]);
+}
+
+void
+AArch64::MMU::sync(SnapShot& snapshot)
+{
+  for (auto reg : {&MAIR_EL1, &TCR_EL1, &TTBR0_EL1, &TTBR1_EL1})
+    snapshot.sync(*reg);
+}
+
+namespace
+{
+  template <typename T> void tvsync(SnapShot& snapshot, TaintedValue<T>& tv)
+  {
+    snapshot.sync(tv.value);
+    snapshot.sync(tv.ubits);
+  }
+}
+
+void
+AArch64::sync(SnapShot& snapshot)
+{
+  //  NELock nel(*this);
+
+  for (auto evt = next_events.begin();;++evt)
+    {
+      uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
+      snapshot.sync(date);
+      if (not date) break;
+      std::array<event_handler_t,5> methods = {&AArch64::wfi, &AArch64::handle_rtc, &AArch64::handle_uart,
+                                               &AArch64::handle_vtimer, &AArch64::handle_irqs};
+      if (snapshot.is_load())
+        {
+          int mid; snapshot.sync(mid);
+          evt = next_events.emplace_hint( evt, std::piecewise_construct,
+                                    std::forward_as_tuple( date ), std::forward_as_tuple( methods[mid] ));
+        }
+      else
+        {
+          auto itr = std::find(methods.begin(), methods.end(), evt->second);
+          if (itr == methods.end()) { struct Bad{}; raise( Bad() ); }
+          int mid = itr - methods.begin();
+          snapshot.sync(mid);
+        }
+    }
+
+  gic.sync(snapshot);
+  uart.sync(snapshot);
+  vt.sync(snapshot);
+  rtc.sync(snapshot);
+  viodisk.sync(snapshot);
+
+  if (snapshot.is_save())
+    {
+      snapshot.save(pages.size());
+      for (auto const& pg : pages)
+        pg.save(snapshot);
+    }
+  else
+    {
+      uint64_t page_count; snapshot.sync(page_count);
+      while (page_count-->0)
+        pages.insert(pages.end(), snapshot);
+    }
+
+  snapshot.sync(excmon.addr);
+  snapshot.sync(excmon.size);
+  snapshot.sync(excmon.valid);
+
+  mmu.sync(snapshot);
+    
+  for (unsigned reg = 0; reg < 32; ++reg)
+    tvsync(snapshot, gpr[reg]);
+
+  for (unsigned reg = 0; reg < 32; ++reg)
+    for (unsigned idx = 0; idx < 2; ++idx)
+      tvsync(snapshot, (vector_views[reg].GetStorage(&vectors[reg], U64(), VUConfig::BYTECOUNT))[idx]);
+
+  tvsync(snapshot, fpcr);
+  tvsync(snapshot, fpsr);
+  tvsync(snapshot, fpcr);
+  tvsync(snapshot, sp_el[0]);
+  tvsync(snapshot, sp_el[1]);
+
+  for (auto reg : {&el1.SPSR, &el1.ESR})
+    tvsync(snapshot, *reg);
+  for (auto reg : {&el1.ELR, &el1.VBAR, &el1.PAR})
+    tvsync(snapshot, *reg);
+  snapshot.sync(el1.FAR);
+  snapshot.sync(el1.SCTLR);
+  
+  pstate.sync(snapshot);
+  
+  tvsync(snapshot, nzcv);
+  for (auto reg : {&current_insn_addr, &next_insn_addr, &insn_counter, &insn_timer})
+    snapshot.sync(*reg);
+  tvsync(snapshot, TPIDR[0]);
+  tvsync(snapshot, TPIDR[1]);
+  tvsync(snapshot, TPIDRRO);
+  snapshot.sync(CPACR);
+  snapshot.sync(random);
+}
