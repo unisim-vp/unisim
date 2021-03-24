@@ -296,17 +296,17 @@ public:
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
-  U32 MemLoad( U32 const&, Expr const& addr ) { return U32(Expr( new Load(addr, 2, 2, false) ) ); }
-  U16 MemLoad( U16 const&, Expr const& addr ) { return U16(Expr( new Load(addr, 1, 1, false) ) ); }
-  U8  MemLoad( U8  const&, Expr const& addr ) { return  U8(Expr( new Load(addr, 0, 0, false) ) ); }
-  S32 MemLoad( S32 const&, Expr const& addr ) { return S32( U32(Expr( new Load(addr, 2, 2, false) ) ) ); }
-  S16 MemLoad( S16 const&, Expr const& addr ) { return S16( U16(Expr( new Load(addr, 1, 1, false) ) ) ); }
-  S8  MemLoad( S8  const&, Expr const& addr ) { return  S8(  U8(Expr( new Load(addr, 0, 0, false) ) ) ); }
+  U32 MemLoad( U32 const&, Expr const& addr ) { return U32(Expr( new Load(addr, 4, 2, false) ) ); }
+  U16 MemLoad( U16 const&, Expr const& addr ) { return U16(Expr( new Load(addr, 2, 1, false) ) ); }
+  U8  MemLoad( U8  const&, Expr const& addr ) { return  U8(Expr( new Load(addr, 1, 0, false) ) ); }
+  S32 MemLoad( S32 const&, Expr const& addr ) { return S32( U32(Expr( new Load(addr, 4, 2, false) ) ) ); }
+  S16 MemLoad( S16 const&, Expr const& addr ) { return S16( U16(Expr( new Load(addr, 2, 1, false) ) ) ); }
+  S8  MemLoad( S8  const&, Expr const& addr ) { return  S8(  U8(Expr( new Load(addr, 1, 0, false) ) ) ); }
   template <class T> T MemRead( U32 const& addr ) { return MemLoad( T(), addr.expr ); }
   
-  void MemStore( Expr const& addr, U32 const& value ) { stores.insert( new Store( addr, value.expr, 2, 2, false ) ); }
-  void MemStore( Expr const& addr, U16 const& value ) { stores.insert( new Store( addr, value.expr, 1, 1, false ) ); }
-  void MemStore( Expr const& addr, U8  const& value ) { stores.insert( new Store( addr, value.expr, 0, 0, false ) ); }
+  void MemStore( Expr const& addr, U32 const& value ) { stores.insert( new Store( addr, value.expr, 4, 2, false ) ); }
+  void MemStore( Expr const& addr, U16 const& value ) { stores.insert( new Store( addr, value.expr, 2, 1, false ) ); }
+  void MemStore( Expr const& addr, U8  const& value ) { stores.insert( new Store( addr, value.expr, 1, 0, false ) ); }
   template <typename U> void MemWrite( U32 const& addr, U value ) { return MemStore( addr.expr, value ); }
     
   void AtomicBegin(U32 const&) { }

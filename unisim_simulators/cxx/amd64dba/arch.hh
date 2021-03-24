@@ -90,41 +90,13 @@ struct ProcessorBase
   typedef unisim::util::symbolic::ScalarType ScalarType;
 
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
+  typedef unisim::util::symbolic::binsec::Load         Load;
+  typedef unisim::util::symbolic::binsec::Store        Store;
   typedef unisim::util::symbolic::binsec::Branch       Br;
 
   ProcessorBase();
 
   /*** MEMORY ***/
-
-  template <typename dstT>
-  struct Load : public unisim::util::symbolic::binsec::Load
-  {
-    typedef Load<dstT> this_type;
-    typedef unisim::util::symbolic::binsec::Load Super;
-    Load( unsigned bytes, unsigned segment, Expr const& addr )
-      : Super(addr, bytes, 1, false)
-    {
-      if (segment >= 4) /*FS|GS relative addressing*/
-        throw Unimplemented();
-    }
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<dstT>::GetType(); }
-    virtual int cmp( ExprNode const& rhs ) const override { return Super::compare( dynamic_cast<Super const&>( rhs ) ); }
-  };
-
-  struct Store : public unisim::util::symbolic::binsec::Store
-  {
-    typedef unisim::util::symbolic::binsec::Store Super;
-    Store( unsigned bytes, unsigned segment, Expr const& addr, Expr const& value )
-      : Super(addr, value, bytes, 1, false)
-    {
-      if (segment >= 4) /*FS|GS relative addressing*/
-        throw Unimplemented();
-    }
-    virtual Store* Mutate() const override { return new Store( *this ); }
-    virtual int cmp( ExprNode const& rhs ) const override { return Super::compare( dynamic_cast<Super const&>(rhs) ); }
-  };
-
   std::set<Expr> stores;
 
   /*** INTEGER REGISTERS ***/
@@ -354,15 +326,19 @@ struct Processor : public ProcessorBase
   struct OpHeader { OpHeader( nat_addr_t _address ) : address( _address ) {} nat_addr_t address; };
 
   /*** MEMORY ***/
-  template <typename dstT> Expr PerformLoad( dstT const&, unsigned bytes, unsigned segment, addr_t const& addr )
+  Expr PerformLoad( unsigned bytes, unsigned segment, addr_t const& addr )
   {
     //interface.memaccess( addr.expr, false );
-    return new Load<dstT>( bytes, segment, addr.expr );
+    if (segment >= 4) /*FS|GS relative addressing*/
+      throw Unimplemented();
+    return new Load( addr.expr, bytes, 0, false );
   }
   void PerformStore( unsigned bytes, unsigned segment, addr_t const& addr, Expr const& value )
   {
     //interface.memaccess( addr.expr, true );
-    stores.insert( Expr( new Store( bytes, segment, addr.expr, value ) ) );
+    if (segment >= 4) /*FS|GS relative addressing*/
+      throw Unimplemented();
+    stores.insert( Expr( new Store( addr.expr, value, bytes, 0, false ) ) );
   }
 
   template<unsigned OPSIZE>
@@ -370,8 +346,7 @@ struct Processor : public ProcessorBase
   memread( unsigned seg, addr_t const& addr )
   {
     typedef typename TypeFor<Processor,OPSIZE>::u u_type;
-    typedef typename u_type::value_type uval_type;
-    return u_type( PerformLoad( uval_type(), OPSIZE/8, seg, addr.expr ) );
+    return u_type( PerformLoad( OPSIZE/8, seg, addr.expr ) );
   }
 
   template <unsigned OPSIZE>
@@ -381,13 +356,13 @@ struct Processor : public ProcessorBase
     PerformStore( OPSIZE/8, seg, addr, val.expr );
   }
 
-  void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { PerformStore(  4, seg, addr, val.expr ); }
-  void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { PerformStore(  8, seg, addr, val.expr ); }
-  void                        fmemwrite80( unsigned seg, addr_t const& addr, f80_t val ) { PerformStore( 10, seg, addr, val.expr ); }
+  void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { throw Unimplemented(); }
+  void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { throw Unimplemented(); }
+  void                        fmemwrite80( unsigned seg, addr_t const& addr, f80_t val ) { throw Unimplemented(); }
 
-  f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { return f32_t( PerformLoad( (float)0,        4, seg, addr ) ); }
-  f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { return f64_t( PerformLoad( (double)0,       8, seg, addr ) ); }
-  f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { return f80_t( PerformLoad( (long double)0, 10, seg, addr ) ); }
+  f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { throw Unimplemented(); return f32_t(); }
+  f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { throw Unimplemented(); return f64_t(); }
+  f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { throw Unimplemented(); return f80_t(); }
 
   /*** CONTROL FLOW ***/
 
@@ -503,9 +478,8 @@ struct Processor : public ProcessorBase
   typename TypeFor<Processor,OPSIZE>::f
   fpmemread( unsigned seg, addr_t const& addr )
   {
-    typedef typename TypeFor<Processor,OPSIZE>::f f_type;
-    typedef typename f_type::value_type f_ctype;
-    return f_type( PerformLoad( f_ctype(), OPSIZE/8, seg, addr ) );
+    throw Unimplemented();
+    return typename TypeFor<Processor,OPSIZE>::f();
   }
 
   template <unsigned OPSIZE>
@@ -521,7 +495,7 @@ struct Processor : public ProcessorBase
   void
   fpmemwrite( unsigned seg, addr_t const& addr, typename TypeFor<Processor,OPSIZE>::f const& value )
   {
-    PerformStore( OPSIZE/8, seg, addr, value.expr );
+    throw Unimplemented();
   }
 
   template <unsigned OPSIZE>
@@ -724,10 +698,10 @@ Processor<MODE>::eregread( unsigned reg, unsigned size, unsigned pos )
     {
       switch (sz) {
       default: throw 0;
-      case 1: return new unisim::util::symbolic::CastNode<uint8_t,gr_type>( src );
-      case 2: return new unisim::util::symbolic::CastNode<uint16_t,gr_type>( src );
-      case 4: return new unisim::util::symbolic::CastNode<uint32_t,gr_type>( src );
-      case 8: return new unisim::util::symbolic::CastNode<uint64_t,gr_type>( src );
+      case 1: return new unisim::util::symbolic::CastNode<uint8_t,nat_gr_type>( src );
+      case 2: return new unisim::util::symbolic::CastNode<uint16_t,nat_gr_type>( src );
+      case 4: return new unisim::util::symbolic::CastNode<uint32_t,nat_gr_type>( src );
+      case 8: return new unisim::util::symbolic::CastNode<uint64_t,nat_gr_type>( src );
       }
       return 0;
     }

@@ -508,12 +508,6 @@ namespace binsec {
     return 8*bytecount();
   }
 
-  void
-  Load::Repr( std::ostream& sink ) const
-  {
-    sink << "[" << addr << ',' << bytecount() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
-  }
-  
   int
   Store::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
@@ -523,9 +517,16 @@ namespace binsec {
   }
 
   void
+  MemAccess::Repr( std::ostream& sink ) const
+  {
+    sink << "[" << addr << ',' << bytecount() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
+  }
+
+  void
   Store::Repr( std::ostream& sink ) const
   {
-    sink << "[" << addr << ',' << size << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "] := " << value;
+    MemAccess::Repr( sink );
+    sink << " := " << value;
   }
 
   namespace {

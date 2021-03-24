@@ -61,7 +61,7 @@ namespace symbolic {
   
   struct ScalarType
   {
-    enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64, F80 };
     
     static id_t IntegerType( bool is_signed, unsigned bits )
     {
@@ -92,6 +92,7 @@ namespace symbolic {
         case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
         case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
         case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
+        case F80:  bitsize = 80; is_integer = false; is_signed = true;  name = "F80"; break;
         }
     }
     char const* name;
@@ -236,6 +237,13 @@ namespace symbolic {
     enum { BYTECOUNT = 8 };
     static unsigned bitsize() { return 64; }
     static ScalarType::id_t GetType() { return ScalarType::F64; }
+  };
+  template <> struct TypeInfo<long double>
+  {
+    static void Repr( std::ostream& sink, double v ) { sink << "F80( " << v << " )"; }
+    enum { BYTECOUNT = 10 };
+    static unsigned bitsize() { return 80; }
+    static ScalarType::id_t GetType() { return ScalarType::F80; }
   };
   
   struct ConstNodeBase : public ExprNode

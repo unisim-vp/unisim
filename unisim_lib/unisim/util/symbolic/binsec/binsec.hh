@@ -206,34 +206,6 @@ namespace binsec {
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
   };
-    
-  struct Load : public ASExprNode
-  {
-    Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
-      : addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
-    {}
-    virtual Load* Mutate() const { return new Load( *this ); }
-    
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, 8*bytecount()); }
-    unsigned bytecount() const { return 1<<size; }
-    virtual void Repr( std::ostream& sink ) const;
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
-    int compare( Load const& rhs ) const
-    {
-      if (int delta = int(size) - int(rhs.size)) return delta;
-      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
-      return (int(bigendian) - int(rhs.bigendian));
-    }
-    virtual unsigned SubCount() const { return 1; }
-    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
-    
-    Expr addr;
-    uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
-    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
-    uint32_t bigendian :  1; // 0=little-endian
-    uint32_t reserved  : 23; // reserved
-  };
 
   struct BitFilter : public ASExprNode
   {
@@ -263,31 +235,54 @@ namespace binsec {
     uint64_t sxtend   :  1;
   };
 
-  struct Store : public ASExprNode
+  struct MemAccess : public ASExprNode
+  {
+    MemAccess(Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian)
+      : addr(_addr), lastbyte(_size-1), alignment(_alignment), bigendian(_bigendian)
+    {}
+    unsigned bytecount() const { return lastbyte+1; }
+    virtual void Repr( std::ostream& sink ) const;
+    int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<MemAccess const&>( rhs ) ); }
+    int compare( MemAccess const& rhs ) const
+    {
+      if (int delta = int(lastbyte) - int(rhs.lastbyte)) return delta;
+      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
+      return (int(bigendian) - int(rhs.bigendian));
+    }
+    
+    Expr addr;
+    uint32_t lastbyte  : 16; // size in bytes [1,..;65536]
+    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t bigendian :  1; // 0=little-endian
+    uint32_t reserved  : 11; // reserved
+  };
+    
+  struct Load : public MemAccess
+  {
+    Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
+      : MemAccess(_addr, _size, _alignment, _bigendian)
+    {}
+    virtual Load* Mutate() const { return new Load(*this); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, 8*bytecount()); }
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const { MemAccess::Repr(sink); }
+    virtual unsigned SubCount() const { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+  };
+
+  struct Store : public MemAccess
   {
     Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
-      : value(_value), addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
+      : MemAccess(_addr, _size, _alignment, _bigendian), value(_value)
     {}
-    virtual Store* Mutate() const { return new Store( *this ); }
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    unsigned bytecount() const { return 1<<size; }
+    virtual Store* Mutate() const { return new Store(*this); }
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
-    int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
-    int compare( Store const& rhs ) const
-    {
-      if (int delta = int(size) - int(rhs.size)) return delta;
-      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
-      return int(bigendian) - int(rhs.bigendian);
-    }
     virtual unsigned SubCount() const { return 2; }
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
       
-    Expr value, addr;
-    uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
-    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
-    uint32_t bigendian :  1; // 0=little-endian
-    uint32_t reserved  : 23; // reserved
+    Expr value;
   };
     
 } /* end of namespace binsec */

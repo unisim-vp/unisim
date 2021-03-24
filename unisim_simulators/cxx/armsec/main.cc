@@ -99,6 +99,7 @@ struct Processor
 
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
   typedef unisim::util::symbolic::binsec::Store        Store;
+  typedef unisim::util::symbolic::binsec::Load         Load;
   typedef unisim::util::symbolic::binsec::Branch       Br;
 
   template <typename RID>
@@ -211,12 +212,6 @@ struct Processor
 
   typedef std::map<std::pair<uint8_t,uint32_t>,Expr> ForeignRegisters;
 
-  struct Load : public unisim::util::symbolic::binsec::Load
-  {
-    Load( Expr const& addr, unsigned size, unsigned alignment, bool bigendian )
-      : unisim::util::symbolic::binsec::Load(addr, size, alignment, bigendian)
-    {}
-  };
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
@@ -880,17 +875,17 @@ public:
   //   =                       Memory access methods                       =
   //   =====================================================================
 
-  U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
-  U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
-  U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 2, false ) ) ); }
-  U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 1, false ) ) ); }
-  U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( addr.expr, 0, 0, false ) ) ); }
+  U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, 0, false ) ) ); }
+  U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
+  U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, 2, false ) ) ); }
+  U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 2, 1, false ) ) ); }
+  U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
 
-  void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
-  void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
-  void MemWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 2, false ) ); }
-  void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 1, false ) ); }
-  void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( addr.expr, value.expr, 0, 0, false ) ); }
+  void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 4, 0, false ) ); }
+  void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
+  void MemWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 4, 2, false ) ); }
+  void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 1, false ) ); }
+  void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
 
   void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
   bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
