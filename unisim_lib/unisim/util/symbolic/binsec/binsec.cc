@@ -231,6 +231,7 @@ namespace binsec {
               case Op::Add:     sink << " + "; break;
               case Op::Sub:     sink << " - "; break;
               case Op::Mul:     sink << " * "; break;
+              case Op::Mod:     sink << " modu "; break;
         
               case Op::Xor:     sink << " xor "; break;
               case Op::Or:      sink << " or "; break;
@@ -268,7 +269,6 @@ namespace binsec {
               case Op::Lsr:     sink << " rshiftu "; rhs = fixsh( rhs, retsz ); break;
               case Op::Ror:     sink << " rrotate "; rhs = fixsh( rhs, retsz ); break;
                  
-                // case Op::Mod: break;
                 // case Op::Div: break;
               }
 
