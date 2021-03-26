@@ -185,6 +185,8 @@ struct AArch64
   F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<F32>(reg, sub); }
   F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<F64>(reg, sub); }
 
+  U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value);
+  
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
   {

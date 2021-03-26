@@ -7911,60 +7911,30 @@ suqadd_vss.disasm = {
   sink << "suqadd\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
 };
 
-op tbl_vb1( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
-tbl_vb1.var format : {char const*} = {"1364"};
+op tbl( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0[1] : len[2] : 0[3] : rn[5] : rd[5] );
 
-tbl_vb1.disasm = {
-  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,1,16,0) << ", " << DisasmTV(rm,8<<q,0);
+tbl.disasm = {
+  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,len+1,16,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
-op tbl_vb2( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001000[6] : rn[5] : rd[5] );
-tbl_vb2.var format : {char const*} = {"1362"};
-
-tbl_vb2.disasm = {
-  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,2,16,0) << ", " << DisasmTV(rm,8<<q,0);
+tbl.execute = {
+  unsigned elements=8<<q, regs = len+1;
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU8(rd, e, cpu.GetTVU8(rn, 16, regs, cpu.GetVU8(rm, e), typename ARCH::U8(0)));
+  cpu.ClearHighV(rd,8<<q);
 };
 
-op tbl_vb3( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
-tbl_vb3.var format : {char const*} = {"1360"};
+op tbx( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0[1] : len[2] : 4[3] : rn[5] : rd[5] );
 
-tbl_vb3.disasm = {
-  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,3,16,0) << ", " << DisasmTV(rm,8<<q,0);
+tbx.disasm = {
+  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,len+1,16,0) << ", " << DisasmTV(rm,8<<q,0);
 };
 
-op tbl_vb4( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011000[6] : rn[5] : rd[5] );
-tbl_vb4.var format : {char const*} = {"1358"};
-
-tbl_vb4.disasm = {
-  sink << "tbl\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,4,16,0) << ", " << DisasmTV(rm,8<<q,0);
-};
-
-op tbx_vb1( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b000100[6] : rn[5] : rd[5] );
-tbx_vb1.var format : {char const*} = {"1365"};
-
-tbx_vb1.disasm = {
-  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,1,16,0) << ", " << DisasmTV(rm,8<<q,0);
-};
-
-op tbx_vb2( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001100[6] : rn[5] : rd[5] );
-tbx_vb2.var format : {char const*} = {"1363"};
-
-tbx_vb2.disasm = {
-  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,2,16,0) << ", " << DisasmTV(rm,8<<q,0);
-};
-
-op tbx_vb3( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b010100[6] : rn[5] : rd[5] );
-tbx_vb3.var format : {char const*} = {"1361"};
-
-tbx_vb3.disasm = {
-  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,3,16,0) << ", " << DisasmTV(rm,8<<q,0);
-};
-
-op tbx_vb4( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011100[6] : rn[5] : rd[5] );
-tbx_vb4.var format : {char const*} = {"1359"};
-
-tbx_vb4.disasm = {
-  sink << "tbx\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmBunch(rn,4,16,0) << ", " << DisasmTV(rm,8<<q,0);
+tbx.execute = {
+  unsigned elements=8<<q, regs = len+1;
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU8(rd, e, cpu.GetTVU8(rn, 16, regs, cpu.GetVU8(rm, e), cpu.GetVU8(rd, e)));
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op trn1_vbvbvb( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );

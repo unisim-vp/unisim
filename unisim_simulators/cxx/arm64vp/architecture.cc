@@ -2108,6 +2108,15 @@ AArch64::GIC::sync(SnapShot& snapshot)
     snapshot.sync(D_ICFGR[idx]);
 }
 
+AArch64::U8
+AArch64::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value)
+{
+  struct Bad {};
+  if (index.ubits) raise( Bad() );
+  unsigned e = index.value % elements, r = index.value / elements;
+  return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
+}
+
 void
 AArch64::MMU::sync(SnapShot& snapshot)
 {

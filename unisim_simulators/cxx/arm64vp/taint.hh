@@ -172,7 +172,7 @@ struct TaintedTypeInfo
     typedef typename T::ubits_type ubits_type;
 
     ubits_type value = 0, ubits = 0;
-    for (unsigned idx = sizeof (T); idx-- > 0;)
+    for (unsigned idx = sizeof (ubits_type); idx-- > 0;)
       {
         value <<= 8; value |= ubits_type( src[idx].value );
         ubits <<= 8; ubits |= ubits_type( src[idx].ubits );
