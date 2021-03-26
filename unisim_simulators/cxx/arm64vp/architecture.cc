@@ -1425,7 +1425,7 @@ AArch64::map_uart(uint64_t base_addr)
 
   /* Start asynchronous reception loop */
   uart.dterm.tcp_port = 1234;
-  uart.dterm.verbose = true;
+  //  uart.dterm.verbose = true;
   uart.dterm.filter_null_character = true;
   uart.dterm.Initialize();
   handle_uart();

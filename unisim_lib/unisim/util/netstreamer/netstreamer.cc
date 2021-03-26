@@ -333,7 +333,10 @@ void NetStreamer::WaitForConnectionClose()
 
 void NetStreamer::CloseConnection()
 {
-	log << log_prefix << "Closing connection" << std::endl;
+	if(verbose)
+	{
+		log << log_prefix << "Closing connection" << std::endl;
+	}
 	
 	if(unlikely(debug))
 	{
