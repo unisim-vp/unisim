@@ -1422,34 +1422,6 @@ ldr_qxxs.execute = {
  * end of LDR (register, SIMD&FP)
  *******************************************************************/
 
-op mov_bvb( 0b01011110000[11] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
-mov_bvb.var format : {char const*} = {"1819"};
-
-mov_bvb.disasm = {
-  sink << "mov\t" << DisasmB(rd) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
-};
-
-op mov_dvd( 0b01011110000[11] : index[1] : 0b1000000001[10] : rn[5] : rd[5] );
-mov_dvd.var format : {char const*} = {"2036"};
-
-mov_dvd.disasm = {
-  sink << "mov\t" << DisasmD(rd) << ", " << DisasmTV(rn,0,3) << DisasmSubscript(index);
-};
-
-op mov_hvh( 0b01011110000[11] : index[3] : 0b10000001[8] : rn[5] : rd[5] );
-mov_hvh.var format : {char const*} = {"1923"};
-
-mov_hvh.disasm = {
-  sink << "mov\t" << DisasmH(rd) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
-};
-
-op mov_svs( 0b01011110000[11] : index[2] : 0b100000001[9] : rn[5] : rd[5] );
-mov_svs.var format : {char const*} = {"2012"};
-
-mov_svs.disasm = {
-  sink << "mov\t" << DisasmS(rd) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
-};
-
 op mov_vbii( 0b01101110000[11] : index1[4] : 0b10[2] : index2[4] : 0b1[1] : rn[5] : rd[5] );
 mov_vbii.var format : {char const*} = {"439"};
 
@@ -6425,6 +6397,91 @@ cnt_vbb.execute = {
   cpu.ClearHighV(rd,8<<q);
 };
 
+/*******************************************************************
+ * DUP (element)
+ * Duplicate vector element to vector or scalar.
+ */
+
+op mov_bvb( 0b01011110000[11] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
+mov_bvb.var format : {char const*} = {"1819"};
+
+mov_bvb.disasm = {
+  sink << "mov\t" << DisasmB(rd) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
+};
+
+op mov_hvh( 0b01011110000[11] : index[3] : 0b10000001[8] : rn[5] : rd[5] );
+mov_hvh.var format : {char const*} = {"1923"};
+
+mov_hvh.disasm = {
+  sink << "mov\t" << DisasmH(rd) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
+};
+
+op mov_svs( 0b01011110000[11] : index[2] : 0b100000001[9] : rn[5] : rd[5] );
+mov_svs.var format : {char const*} = {"2012"};
+
+mov_svs.disasm = {
+  sink << "mov\t" << DisasmS(rd) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
+};
+
+op mov_dvd( 0b01011110000[11] : index[1] : 0b1000000001[10] : rn[5] : rd[5] );
+mov_dvd.var format : {char const*} = {"2036"};
+
+mov_dvd.disasm = {
+  sink << "mov\t" << DisasmD(rd) << ", " << DisasmTV(rn,0,3) << DisasmSubscript(index);
+};
+
+op dup_vbvb( 0b0[1] : q[1] : 0b001110000[9] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
+dup_vbvb.var format : {char const*} = {"1822"};
+
+dup_vbvb.disasm = {
+  sink << "dup\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
+};
+
+dup_vbvb.execute = {
+  typename ARCH::U8 element( cpu.GetVU8(rn,index) );
+  for (unsigned e=0, end=8<<q; e < end; ++e)
+    cpu.SetVU8(rd,e,element);
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op dup_vhvh( 0b0[1] : q[1] : 0b001110000[9] : index[3] : 0b10000001[8] : rn[5] : rd[5] );
+dup_vhvh.var format : {char const*} = {"1924"};
+
+dup_vhvh.disasm = {
+  sink << "dup\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
+};
+
+dup_vhvh.execute = {
+  typename ARCH::U16 element( cpu.GetVU16(rn,index) );
+  for (unsigned e=0, end=4<<q; e < end; ++e)
+    cpu.SetVU16(rd,e,element);
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op dup_vsvs( 0b0[1] : q[1] : 0b001110000[9] : index[2] : 0b100000001[9] : rn[5] : rd[5] );
+dup_vsvs.var format : {char const*} = {"2013"};
+
+dup_vsvs.disasm = {
+  sink << "dup\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
+};
+
+dup_vsvs.execute = {
+  typename ARCH::U32 element( cpu.GetVU32(rn,index) );
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd,e,element);
+  cpu.ClearHighV(rd,8<<q);
+};
+
+/*
+ * end of DUP (element)
+ *******************************************************************/
+
+/*******************************************************************
+ * DUP (general)
+ * 
+ * Duplicate general-purpose register to vector. 
+ */
+
 op dup_vb( 0b0[1] : q[1] : 0b001110000[9] : ?[4] : 0b1000011[7] : rn[5] : rd[5] );
 dup_vb.var format : {char const*} = {"1823"};
 
@@ -6437,13 +6494,6 @@ dup_vb.execute = {
   for (unsigned e=0, end=8<<q; e < end; ++e)
     cpu.SetVU8(rd,e,element);
   cpu.ClearHighV(rd,8<<q);
-};
-
-op dup_vbvb( 0b0[1] : q[1] : 0b001110000[9] : index[4] : 0b1000001[7] : rn[5] : rd[5] );
-dup_vbvb.var format : {char const*} = {"1822"};
-
-dup_vbvb.disasm = {
-  sink << "dup\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
 };
 
 op dup_vh( 0b0[1] : q[1] : 0b001110000[9] : ?[3] : 0b10000011[8] : rn[5] : rd[5] );
@@ -6460,13 +6510,6 @@ dup_vh.execute = {
   cpu.ClearHighV(rd,8<<q);
 };
 
-op dup_vhvh( 0b0[1] : q[1] : 0b001110000[9] : index[3] : 0b10000001[8] : rn[5] : rd[5] );
-dup_vhvh.var format : {char const*} = {"1924"};
-
-dup_vhvh.disasm = {
-  sink << "dup\t" << DisasmTV(rd,4<<q,1) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
-};
-
 op dup_vs( 0b0[1] : q[1] : 0b001110000[9] : ?[2] : 0b100000011[9] : rn[5] : rd[5] );
 dup_vs.var format : {char const*} = {"2014"};
 
@@ -6481,12 +6524,9 @@ dup_vs.execute = {
   cpu.ClearHighV(rd,8<<q);
 };
 
-op dup_vsvs( 0b0[1] : q[1] : 0b001110000[9] : index[2] : 0b100000001[9] : rn[5] : rd[5] );
-dup_vsvs.var format : {char const*} = {"2013"};
-
-dup_vsvs.disasm = {
-  sink << "dup\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
-};
+/*
+ * end of DUP (general)
+ *******************************************************************/
 
 op eor_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 eor_vbvbvb.var format : {char const*} = {"1310"};
@@ -6502,10 +6542,19 @@ eor_vbvbvb.execute = {
 };
 
 op ext_vb( 0b0[1] : q[1] : 0b101110000[9] : rm[5] : 0b0[1] : index[4] : 0b0[1] : rn[5] : rd[5] );
-ext_vb.var format : {char const*} = {"374"};
+ext_vb.var reject : {Reject} = {(q == 0) and (index & 8)};
 
 ext_vb.disasm = {
   sink << "ext\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0) << ", " << DisasmTV(rm,8<<q,0) << ", " << DisasmI(index);
+};
+
+ext_vb.execute = {
+  unsigned ed = 0, end = 8<<q;
+  for (unsigned es = index; es < end; ++es, ++ed)
+    cpu.SetVU8(rd, ed, cpu.GetVU8(rn, es));
+  for (unsigned es = 0; ed < end; ++es, ++ed)
+    cpu.SetVU8(rd, ed, cpu.GetVU8(rm, es));
+  cpu.ClearHighV(rd,8<<q);
 };
 
 op fabd_vsvsvs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
@@ -7130,6 +7179,12 @@ rbit_vbb.disasm = {
   sink << "rbit\t" << DisasmTV(rd,8<<q,0) << ", " << DisasmTV(rn,8<<q,0);
 };
 
+/*******************************************************************
+ * REV<x> (vector)
+ *
+ * Reverse elements in <x>-bit words (vector). 
+ */
+
 op rev16_vbb( 0b0[1] : q[1] : 0b00111000100000000110[20] : rn[5] : rd[5] );
 rev16_vbb.var format : {char const*} = {"2551"};
 
@@ -7171,6 +7226,10 @@ rev64_vss.var format : {char const*} = {"2436"};
 rev64_vss.disasm = {
   sink << "rev64\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
 };
+
+/*
+ * end of REV<x> (vector)
+ *******************************************************************/
 
 op saba_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
 saba_vbvbvb.var format : {char const*} = {"1317"};

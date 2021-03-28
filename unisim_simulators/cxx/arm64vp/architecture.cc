@@ -1686,8 +1686,7 @@ AArch64::run()
 {
   for (;;)
     {
-      // if (insn_counter == 222800)
-      // if (insn_counter == 2228000000)
+      // if (insn_counter == 9463597000)
       //   {
       //     save_snapshot("toto.shot");
       //     return;
