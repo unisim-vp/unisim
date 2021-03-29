@@ -2027,7 +2027,7 @@ struct ShldCL : public Operation<ARCH>
     u8_t shift = arch.regread( GOb(), 1 );
     u_type result = eval_shl( arch, arch.rmread( OP(), rmop ), shift );
     shift &= shift_counter<ARCH,u_type>::mask();
-    if (arch.Cond(shift != u8_t(0)))
+    if (arch.Test(shift != u8_t(0)))
       result |= arch.regread( OP(), gn ) >> (u8_t(OP::SIZE) - shift);
     arch.rmwrite( OP(), rmop, result );
   }
@@ -2065,7 +2065,7 @@ struct ShrdCL : public Operation<ARCH>
     u8_t shift = arch.regread( GOb(), 1 );
     u_type result = eval_shr( arch, arch.rmread( OP(), rmop ), shift );
     shift &= shift_counter<ARCH,u_type>::mask();
-    if (arch.Cond(shift != u8_t(0)))
+    if (arch.Test(shift != u8_t(0)))
       result |= arch.regread( OP(), gn ) << (u8_t(OP::SIZE) - shift);
     arch.rmwrite( OP(), rmop, result );
   }
@@ -2127,7 +2127,7 @@ struct BitScan : public Operation<ARCH>
     
     bit_t src_is_zero = (src == u_type( 0 ));
     arch.flagwrite( ARCH::FLAG::ZF, src_is_zero );
-    if (arch.Cond( src_is_zero )) return;
+    if (arch.Test( src_is_zero )) return;
     
     u_type res = LEAD ? (BitScanReverse( src )) : BitScanForward( src );
     
@@ -2151,7 +2151,7 @@ struct CountZeros : public Operation<ARCH>
     bit_t src_is_zero = (src == u_type( 0 ));
     arch.flagwrite( ARCH::FLAG::CF, src_is_zero );
     
-    if (arch.Cond( src_is_zero )) {
+    if (arch.Test( src_is_zero )) {
       res = u_type( OP::SIZE );
       arch.flagwrite( ARCH::FLAG::ZF, bit_t(0) );
     }

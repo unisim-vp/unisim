@@ -364,6 +364,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token)
 			token->SetValue(C_LOC_EXPR);
 			return true;
 	}
+	debug_warning_stream << token->GetLocation() << ", unknown ID" << std::endl;
 	return false;
 }
 

@@ -1395,7 +1395,7 @@ namespace PCmpStrUtil
   void explicit_validity( typename ARCH::bit_t(&result)[COUNT], ARCH& arch, unsigned reg )
   {
     typename ARCH::gr_type count = arch.regread( typename ARCH::GR(), reg );
-    if (arch.Cond(count < typename ARCH::gr_type(0))) count = -count;
+    if (arch.Test(count < typename ARCH::gr_type(0))) count = -count;
     for (unsigned idx = 0; idx < COUNT; ++idx)
       result[idx] = typename ARCH::gr_type(idx) < count;
   }
@@ -1514,12 +1514,12 @@ struct PCmpStr : public Operation<ARCH>
         break;
       case MaskLSB:
         for (unsigned idx = 0; idx < count; ++idx)
-          if (arch.Cond( intres[idx] ))
+          if (arch.Test( intres[idx] ))
             arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
         break;
       case MaskMSB:
         for (int idx = count; --idx >= 0;)
-          if (arch.Cond( intres[idx] ))
+          if (arch.Test( intres[idx] ))
             arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
         break;
       }

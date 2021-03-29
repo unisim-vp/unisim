@@ -1,3 +1,37 @@
+/*
+ *  Copyright (c) 2009-2020,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <aarch64dec.tcc>
@@ -30,27 +64,15 @@ struct Processor
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
   typedef unisim::util::symbolic::binsec::Store        Store;
+  typedef unisim::util::symbolic::binsec::Load         Load;
   typedef unisim::util::symbolic::binsec::Branch       Branch;
   
-  struct Input { Input( Processor& _proc ) : proc( _proc ) {} Processor& proc; };
-  
-  static Processor* FindRoot( unisim::util::symbolic::Expr const& expr )
-  {
-    if (Input const* node = dynamic_cast<Input const*>( expr.node ))
-      return &node->proc;
-    
-    for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-      if (Processor* found = FindRoot( expr->GetSub(idx)))
-        return found;
-    return 0;
-  }
-    
   template <typename RID>
-  struct RegRead : public unisim::util::symbolic::binsec::RegRead, Input
+  struct RegRead : public unisim::util::symbolic::binsec::RegRead
   {
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    RegRead( Processor& p, RID _id, ScalarType::id_t _tp ) : Super(), Input(p), tp(_tp), id(_id) {}
+    RegRead( RID _id, ScalarType::id_t _tp ) : Super(), tp(_tp), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const override { return tp; }
     virtual void GetRegName( std::ostream& sink ) const override { sink << id.c_str(); }
@@ -63,7 +85,7 @@ struct Processor
   };
 
   template <typename RID>
-  static Expr newRegRead( Processor& p, RID id, ScalarType::id_t tp ) { return new RegRead<RID>( p, id, tp ); }
+  static Expr newRegRead( RID id, ScalarType::id_t tp ) { return new RegRead<RID>( id, tp ); }
 
   template <typename RID>
   struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
@@ -81,7 +103,6 @@ struct Processor
       Expr nvalue( ASExprNode::Simplify( value ) );
       return nvalue != value ? new RegWrite<RID>( id, nvalue ) : this;
     }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     
     RID id;
   };
@@ -90,19 +111,23 @@ struct Processor
   static RegWrite<RID>* newRegWrite( RID id, Expr const& value )
   { return new RegWrite<RID>( id, value ); }
   
-  struct PCWrite : public unisim::util::symbolic::binsec::Branch
+  struct Goto : public unisim::util::symbolic::binsec::Branch
   {
-    PCWrite( Expr const& value, unisim::util::symbolic::binsec::Branch::type_t bt ) : Branch( value, bt ) {}
-    virtual PCWrite* Mutate() const override { return new PCWrite(*this); }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    Goto( Expr const& value ) : unisim::util::symbolic::binsec::Branch( value ) {}
+    virtual Goto* Mutate() const override { return new Goto( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
-    virtual Expr Simplify() const override
-    {
-      Expr nvalue( ASExprNode::Simplify(value) );
-      return nvalue != value ? new PCWrite( nvalue, type ) : this;
-    }
+    virtual void annotate(std::ostream& sink) const override { return; }
   };
-  
+
+  struct Call : public Goto
+  {
+    Call( Expr const& value, uint32_t ra ) : Goto( value ), return_address( ra ) {}
+    virtual Call* Mutate() const override { return new Call( *this ); }
+    virtual void annotate(std::ostream& sink) const override { sink << " // call (" << unisim::util::symbolic::binsec::dbx(4,return_address) << ",0)"; }
+
+    uint32_t return_address;
+  };
+
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
@@ -119,21 +144,24 @@ struct Processor
     , flags()
     , current_instruction_address(insn_addr)
     , next_instruction_address(insn_addr + U64(4))
-    , branch_type(Branch::Jump)
+    , branch_type(B_JMP)
     , stores()
     , unpredictable( false )
   {
     for (GPR reg; reg.next();)
-      gpr[reg.idx()] = newRegRead(*this, reg, ScalarType::U64);
+      gpr[reg.idx()] = newRegRead(reg, ScalarType::U64);
     for (Flag flag; flag.next();)
-      flags[flag.idx()] = newRegRead(*this, flag, ScalarType::BOOL);
+      flags[flag.idx()] = newRegRead(flag, ScalarType::BOOL);
   }
   
   bool
-  close( Processor const& ref )
+  close( Processor const& ref, uint64_t linear_nia )
   {
     bool complete = path->close();
-    path->sinks.insert( Expr( new PCWrite( next_instruction_address.expr, branch_type ) ) );
+    if (branch_type == B_CALL)
+      path->sinks.insert( Expr( new Call( next_instruction_address.expr, linear_nia ) ) );
+    else
+      path->sinks.insert( Expr( new Goto( next_instruction_address.expr ) ) );
     if (unpredictable)
       {
         path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
@@ -161,43 +189,25 @@ struct Processor
   template <typename OPER>
   void UndefinedInstruction(OPER const*) { throw unisim::component::cxx::processor::arm::isa::Reject(); }
     
-  bool Choose( Expr const& cexp )
+  bool concretize( Expr cexp )
   {
+    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
+      return cnode->Get( bool() );
+
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );
     return predicate;
   }
   
   template <typename T>
-  bool Choose( unisim::util::symbolic::SmartValue<T> const& cond )
+  bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
   {
     if (not cond.expr.good())
       throw std::logic_error( "Not a valid condition" );
 
-    Expr cexp( BOOL(cond).expr );
-    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
-
-    return Choose( cexp );
+    return concretize( BOOL(cond).expr );
   }
   
-  template <typename T>
-  static bool Concretize( unisim::util::symbolic::SmartValue<T> const& cond )
-  {
-    if (not cond.expr.good())
-      throw std::logic_error( "Not a valid condition" );
-
-    Expr cexp( BOOL(cond).expr );
-    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
-
-    Processor* proc = Processor::FindRoot(cexp);
-    if (not proc)
-      throw std::logic_error( "No root processor in variable expression" );
-
-    return proc->Choose( cexp );
-  }
-    
   // template <typename T>
   // bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )
   // {
@@ -280,11 +290,20 @@ struct Processor
   U64  GetPC() const { return current_instruction_address; }
   U64  GetNPC() const { return next_instruction_address; }
 
+  struct SysReg
+  {
+    void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, Processor& cpu, U64 value) const  { throw 0; }
+    U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, Processor& cpu) const  { throw 0; return U64(); }
+    void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
+    void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
+  };
+
+  static SysReg const* GetSystemRegister(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2)
+  {
+    static SysReg sr; return &sr;
+  }
+  
   void        CheckSystemAccess( uint8_t op1 ) { throw 0; }
-  U64         ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return U64(); }
-  void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, U64 value ) { throw 0; }
-  char const* DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return "???"; }
-  char const* NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return "???"; }
   
   //   =====================================================================
   //   =                      Control Transfer methods                     =
@@ -294,40 +313,37 @@ struct Processor
   void BranchTo(U64 const& npc, branch_type_t bt)
   {
     next_instruction_address = npc;
-    branch_type = (bt == B_CALL) ? Branch::Call : (bt == B_RET) ? Branch::Return : Branch::Jump;
+    branch_type = bt;
   }
   
-  void CallSupervisor( uint16_t imm ) { throw 0;  }
+  void CallSupervisor( uint32_t imm ) { throw 0; }
+  void CallHypervisor( uint32_t imm ) { throw 0; }
+  void ExceptionReturn() { throw 0; }
   
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
   
-  struct Load : public unisim::util::symbolic::binsec::Load, Input
-  {
-    Load( Processor& p, Expr const& addr, unsigned size, unsigned alignment, bool bigendian )
-      : unisim::util::symbolic::binsec::Load(addr, size, alignment, bigendian), Input( p )
-    {}
-  };
-  
-  U64  MemRead64(U64 addr) { return U64( Expr( new Load( *this, addr.expr, 3, 0, false ) ) ); }
-  U32  MemRead32(U64 addr) { return U32( Expr( new Load( *this, addr.expr, 2, 0, false ) )); }
-  U16  MemRead16(U64 addr) { return U16( Expr( new Load( *this, addr.expr, 1, 0, false ) ) ); }
-  U8   MemRead8 (U64 addr) { return U8 ( Expr( new Load( *this, addr.expr, 0, 0, false ) ) ); }
+  U64  MemRead64(U64 addr) { return U64( Expr( new Load( addr.expr, 8, 0, false ) ) ); }
+  U32  MemRead32(U64 addr) { return U32( Expr( new Load( addr.expr, 4, 0, false ) )); }
+  U16  MemRead16(U64 addr) { return U16( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
+  U8   MemRead8 (U64 addr) { return U8 ( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
     
-  void MemWrite64(U64 addr, U64 value) { stores.insert( new Store( addr.expr, value.expr, 3, 0, false ) ); }
-  void MemWrite32(U64 addr, U32 value) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
-  void MemWrite16(U64 addr, U16 value) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
-  void MemWrite8 (U64 addr, U8  value) { stores.insert( new Store( addr.expr, value.expr, 0, 0, false ) ); }
+  void MemWrite64(U64 addr, U64 value) { stores.insert( new Store( addr.expr, value.expr, 8, 0, false ) ); }
+  void MemWrite32(U64 addr, U32 value) { stores.insert( new Store( addr.expr, value.expr, 4, 0, false ) ); }
+  void MemWrite16(U64 addr, U16 value) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
+  void MemWrite8 (U64 addr, U8  value) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
     
   void ClearExclusiveLocal() { throw 0; }
   void SetExclusiveMonitors( U64, unsigned size ) { throw 0; }
   bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw 0; }
+
+  void PrefetchMemory(unsigned, U64) { throw 0; }
   
   //   =====================================================================
   //   =                         Processor Storage                         =
   //   =====================================================================
-  
+
   struct GPR : public unisim::util::identifier::Identifier<GPR>
   {
     enum Code
@@ -371,7 +387,7 @@ struct Processor
   Expr             flags[Flag::end];
   U64              current_instruction_address;
   U64              next_instruction_address;
-  Branch::type_t   branch_type;
+  branch_type_t    branch_type;
   std::set<Expr>   stores;
   bool             unpredictable;
 };
@@ -440,7 +456,7 @@ struct Translator
             Processor state( reference );
             state.path = coderoot;
             instruction->execute( state );
-            end = state.close( reference );
+            end = state.close( reference, addr + 4 );
           }
         coderoot->simplify();
         coderoot->commit_stats();

@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/processor/intel/disasm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/simple_register.hh>
@@ -628,9 +629,9 @@ struct Arch
     this->ExecuteSystemCall( this->regread( GR(), 0 ) );
   }
 
-  void                        interrupt( uint8_t _exc )
+  void                        interrupt( uint8_t op, uint8_t code )
   {
-    std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( _exc ) << ").\n";
+    std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( op ) << ", 0x" << unsigned( code ) << ").\n";
     exit( 0 );
   }
   
@@ -805,11 +806,11 @@ public:
   struct VUConfig
   {
     static unsigned const BYTECOUNT = 32;
-    template <typename T> using TypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+    template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
     typedef u8_t Byte;
   };
-
-  unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[16];
+  
+  unisim::component::cxx::vector::VUnion<VUConfig> umms[16];
   
   uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
   uint32_t mxcsr;
@@ -900,7 +901,7 @@ public:
   bool do_disasm;
   uint64_t instruction_count;
 
-  bool Cond( bool b ) const { return b; }
+  bool Test( bool b ) const { return b; }
 
   // struct GDBChecker
   // {

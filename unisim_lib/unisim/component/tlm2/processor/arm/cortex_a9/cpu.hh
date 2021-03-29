@@ -49,19 +49,18 @@ namespace processor {
 namespace arm {
 namespace cortex_a9 {
 
-class CPU
-	: public sc_core::sc_module
-	, public tlm::tlm_bw_transport_if<>
-	, public unisim::component::cxx::processor::arm::vmsav7::CPU
+template <class CPU_IMPL>
+struct CPU
+  : public sc_core::sc_module
+  , public tlm::tlm_bw_transport_if<>
+  , public unisim::component::cxx::processor::arm::vmsav7::CPU<CPU_IMPL>
 {
-public:
   typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
   typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
   typedef tlm::tlm_sync_enum     sync_enum_type;
 	
-  typedef unisim::component::cxx::processor::arm::vmsav7::CPU PCPU;
-  typedef PCPU::CP15CPU CP15CPU;
-  typedef PCPU::CP15Reg CP15Reg;
+  typedef unisim::component::cxx::processor::arm::vmsav7::CPU<CPU_IMPL> PCPU;
+  typedef typename unisim::component::cxx::processor::arm::vmsav7::CPU<CPU_IMPL>::CP15Reg CP15Reg;
 
   /**************************************************************************
    * Port to the bus and its virtual methods to handle                START *
@@ -120,10 +119,9 @@ private:
 
 public:
   SC_HAS_PROCESS(CPU);
-  CPU(const sc_core::sc_module_name& name, Object *parent = 0);
+  CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
   virtual ~CPU();
 
-public:
   virtual void Stop(int ret);
   virtual void Sync();
   void Wait( sc_core::sc_event const& evt );
@@ -142,6 +140,18 @@ public:
   virtual bool PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs);
   virtual bool PhysicalFetchMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs) { return PhysicalReadMemory(addr, paddr, buffer, size, attrs); }
 	
+  void             TakeReset();
+  
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
+  
+  static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  
+  /**************************/
+  /* CP15 Interface    END  */
+  /**************************/
+
   void SetCycleTime( sc_core::sc_time const& cycle_time );
   void SetBusCycleTime( sc_core::sc_time const& cycle_time );
 
@@ -227,18 +237,6 @@ protected:
   /* Configuration pins  END  */
   /****************************/
     
-  /**************************/
-  /* CP15 Interface   START */
-  /**************************/
-  
-protected:
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  virtual void     CP15ResetRegisters();
-  
-  /**************************/
-  /* CP15 Interface    END  */
-  /**************************/
-
 };
 
 } // end of namespace cortex_a9

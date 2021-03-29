@@ -197,8 +197,8 @@ RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
   for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
     if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() )) {
       SDInstance const* sdinstance = sobf->sdinstance;
-      SDClass const* sdclass = sdinstance->m_sdclass;
-      SourceCode const* tpscheme =  sdinstance->m_template_scheme;
+      SDClass const* sdclass = sdinstance->sdclass;
+      SourceCode const* tpscheme =  sdinstance->template_scheme;
       
       _product.code( "%s = %s::sub_decode", sobf->symbol.str(), sdclass->qd_namespace().str() );
       if (tpscheme)

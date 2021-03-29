@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -124,14 +125,16 @@ namespace intel {
     {
       this->ExecuteSystemCall( m_regs[0] );
     }
-    void                        interrupt( uint8_t _exc )
+    void                        interrupt( uint8_t op, uint8_t code )
     {
-      switch (_exc) {
-      case 0x80: {
-        this->ExecuteSystemCall( m_regs[0] );
-      } break;
+      switch (code)
+        {
+        case 0x80: {
+          this->ExecuteSystemCall( m_regs[0] );
+        } break;
+      
       default:
-        std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";
+        std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( op ) << ", 0x" << uint32_t( code ) << ").\n";
         exit( 0 );
       }
     }
@@ -708,7 +711,7 @@ namespace intel {
     
     void unimplemented() { throw std::runtime_error("unimplemented"); }
     
-    bool Cond( bool b ) const { return b; }
+    bool Test( bool b ) const { return b; }
     
     // Debug methods
   protected:
@@ -721,11 +724,11 @@ namespace intel {
     struct VUConfig
     {
       static unsigned const BYTECOUNT = 32;
-      template <typename T> using TypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+      template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
       typedef u8_t Byte;
     };
 
-    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[8];
+    unisim::component::cxx::vector::VUnion<VUConfig> umms[8];
     uint8_t vmm_storage[8][VUConfig::BYTECOUNT];
     uint32_t mxcsr;
 
@@ -769,22 +772,22 @@ namespace intel {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
-  
+    
     void vmm_memwrite( unsigned seg, u64_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, u64_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, u64_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
-
+    
     // void vmm_memwrite( unsigned seg, u64_t addr, u8_t  const& e ) { return memwrite< 8>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u16_t const& e ) { return memwrite<16>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u32_t const& e ) { return memwrite<32>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u64_t const& e ) { return memwrite<64>( seg, addr, e ); }
-  
+    
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
-      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
     
     template <class VR, class ELEM>
@@ -792,9 +795,8 @@ namespace intel {
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
-      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
-
   };
   
 

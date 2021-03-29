@@ -623,7 +623,7 @@ struct CmpXchg : public Operation<ARCH>
     auto mem_operand = arch.rmread( OP(), rm );
     typename ARCH::bit_t equal = (arch.regread( OP(), 0 ) == mem_operand);
     arch.flagwrite( ARCH::FLAG::ZF, equal );
-    if (arch.Cond( equal )) arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
+    if (arch.Test( equal )) arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
     else                 arch.regwrite( OP(), 0, mem_operand );
   }
 };
@@ -784,7 +784,7 @@ struct Cmovcc : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::u valtype;
-    valtype res = (arch.Cond( eval_cond( arch, cc ) )) ? arch.rmread( OP(), rm ) : arch.regread( OP(), gn );
+    valtype res = (arch.Test( eval_cond( arch, cc ) )) ? arch.rmread( OP(), rm ) : arch.regread( OP(), gn );
     arch.regwrite( OP(), gn, res );
   }
 };
@@ -885,6 +885,32 @@ struct BtcRM : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "btc " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
   typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
   typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
+
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+    typedef typename ARCH::addr_t addr_t;
+
+    enum { BITSHIFT = SB<OP::SIZE>::begin, LOGOPBYTES = SB<OP::SIZE/8>::begin };
+
+    typename TypeFor<ARCH,OP::SIZE>::s str_bit( arch.regread( OP(), gn ) );
+
+    addr_t offset = addr_t((str_bit >> BITSHIFT) << LOGOPBYTES);
+    u_type opr_bit = u_type(str_bit) % u_type(OP::SIZE);
+    u_type str_opr = rm.is_memory_operand() ? arch.vmm_memread( rm->segment, rm->effective_address( arch ) + offset, u_type() ) : arch.regread( OP(), rm.ereg() );
+
+    arch.flagwrite( ARCH::FLAG::CF, typename ARCH::bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+
+    u_type next_str_opr = str_opr ^ (u_type( 1 ) << opr_bit);
+    if (rm.is_memory_operand()) {
+      arch.vmm_memwrite( rm->segment, rm->effective_address( arch ) + offset, next_str_opr );
+    } else {
+      arch.regwrite( OP(), rm.ereg(), next_str_opr );
+    }
+
+  }
+
+
   // void execute( ARCH& arch ) const {
   //   s_type str_bit = s_type( arch.regread( OP(), _gn ) );
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OP::SIZE>::logsize) * (OPSIZE / 8) );
@@ -938,9 +964,35 @@ template <class ARCH, class OP>
 struct BtrRM : public Operation<ARCH>
 {
   BtrRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "btc " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
+  void disasm( std::ostream& sink ) const { sink << "btr " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
   typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
   typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
+
+
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+    typedef typename ARCH::addr_t addr_t;
+
+    enum { BITSHIFT = SB<OP::SIZE>::begin, LOGOPBYTES = SB<OP::SIZE/8>::begin };
+
+    typename TypeFor<ARCH,OP::SIZE>::s str_bit( arch.regread( OP(), gn ) );
+
+    addr_t offset = addr_t((str_bit >> BITSHIFT) << LOGOPBYTES);
+    u_type opr_bit = u_type(str_bit) % u_type(OP::SIZE);
+    u_type str_opr = rm.is_memory_operand() ? arch.vmm_memread( rm->segment, rm->effective_address( arch ) + offset, u_type() ) : arch.regread( OP(), rm.ereg() );
+
+    arch.flagwrite( ARCH::FLAG::CF, typename ARCH::bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+
+    u_type next_str_opr = str_opr & (~(u_type( 1 ) << opr_bit));
+    if (rm.is_memory_operand()) {
+      arch.vmm_memwrite( rm->segment, rm->effective_address( arch ) + offset, next_str_opr );
+    } else {
+      arch.regwrite( OP(), rm.ereg(), next_str_opr );
+    }
+
+  }
+
   // void execute( ARCH& arch ) const {
   //   s_type str_bit = s_type( arch.regread( OP(), _gn ) );
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OP::SIZE>::logsize) * (OPSIZE / 8) );
@@ -994,9 +1046,35 @@ template <class ARCH, class OP>
 struct BtsRM : public Operation<ARCH>
 {
   BtsRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "btc " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
+  void disasm( std::ostream& sink ) const { sink << "bts " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
   typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
   typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
+
+
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+    typedef typename ARCH::addr_t addr_t;
+
+    enum { BITSHIFT = SB<OP::SIZE>::begin, LOGOPBYTES = SB<OP::SIZE/8>::begin };
+
+    typename TypeFor<ARCH,OP::SIZE>::s str_bit( arch.regread( OP(), gn ) );
+
+    addr_t offset = addr_t((str_bit >> BITSHIFT) << LOGOPBYTES);
+    u_type opr_bit = u_type(str_bit) % u_type(OP::SIZE);
+    u_type str_opr = rm.is_memory_operand() ? arch.vmm_memread( rm->segment, rm->effective_address( arch ) + offset, u_type() ) : arch.regread( OP(), rm.ereg() );
+
+    arch.flagwrite( ARCH::FLAG::CF, typename ARCH::bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+
+    u_type next_str_opr = str_opr | (u_type( 1 ) << opr_bit);
+    if (rm.is_memory_operand()) {
+      arch.vmm_memwrite( rm->segment, rm->effective_address( arch ) + offset, next_str_opr );
+    } else {
+      arch.regwrite( OP(), rm.ereg(), next_str_opr );
+    }
+
+  }
+
   // void execute( ARCH& arch ) const {
   //   s_type str_bit = s_type( arch.regread( OP(), _gn ) );
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OP::SIZE>::logsize) * (OPSIZE / 8) );

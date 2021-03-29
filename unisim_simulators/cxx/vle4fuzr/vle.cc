@@ -9,35 +9,53 @@
  */
 
 #include "vle.hh"
-#include "top_vle.hh"
+#include "top_vle_concrete.hh"
+#include "top_vle_branch.hh"
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
 
 namespace vle {
+namespace branch {
+  Processor::Processor( ActionNode& root, uint32_t addr, uint32_t length )
+    : path(&root), reg_values(), cia(addr), nia(addr+length), has_branch(false)
+  {}
+  
+} // end of namespace branch
 namespace concrete {
   
   Processor::Processor()
-  {     
-    for (unsigned reg = 0; reg < 32; ++reg)
-      reg_values[reg] = U32();
-  }
-
-  void
-  Processor::ProcessException( char const* msg )
-  {
-    std::cerr << "exception(" << msg << ")\n";
-    throw TODO();
-  }
+    : reg_values(), cia(), nia()
+  {}
 
   Processor::RegView const*
-  Processor::get_reg(char const* id, uintptr_t size)
+  Processor::get_reg(char const* id, uintptr_t size, int regid)
   {
     if (regname("gpr",id,size))
       {
         static struct : public RegView
         {
-          void write( EmuProcessor& proc, int id, uint8_t const* bytes ) const { Self(proc).SetGPR(id, unisim::util::endian::ByteSwap(*(uint32_t*)bytes)); }
-          void read( EmuProcessor& proc, int id, uint8_t* bytes ) const { *(uint32_t*)bytes = Self(proc).GetGPR(id); }
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(id, value); }
+          void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetGPR(id); }
+        } _;
+        return &_;
+      }
+
+    if (regname("lr",id,size))
+      {
+        static struct : public RegView
+        {
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).GetLR() = value; }
+          void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetLR(); }
+        } _;
+        return &_;
+      }
+
+    if (regname("pc",id,size))
+      {
+        static struct : public RegView
+        {
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).DebugBranch(value); }
+          void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetCIA(); }
         } _;
         return &_;
       }
@@ -46,30 +64,39 @@ namespace concrete {
     return 0;
   }
 
-  int
-  Processor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count )
+  char const*
+  Processor::get_asm()
   {
-    if (timeout)
+    uint32_t insn_addr = this->cia, insn_idx = insn_addr/2,
+      insn_tag = insn_idx / Processor::OPPAGESIZE,
+      insn_offset = insn_idx % Processor::OPPAGESIZE;
+    
+    if (Operation* op = insn_cache[insn_tag].ops[insn_offset])
       {
-        std::cerr << "Error: timeout unimplemented." << timeout << std::endl;
-        throw 0;
+        std::ostringstream buf;
+        op->disasm(this, buf);
+        std::cerr << std::endl;
+        asmbuf = buf.str();
       }
-    
-    // std::cerr << "until: " << until << std::endl;
-    // std::cerr << "count: " << count << std::endl;
-    
-    this->Branch(begin);
-    this->bblock = true;
-  
-    while (this->nia != until)
-      {
-        /* go to the next instruction */
-        this->cia = this->nia;
-        
-        uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
-        CodeType insn;
-        insn = this->Fetch(insn_addr);
+    else
+      asmbuf = "?";
+    return asmbuf.c_str();
+  }
 
+  void
+  Processor::run( uint64_t begin, uint64_t until, uint64_t count )
+  {
+    this->Branch(begin);
+
+    do
+      {
+        // Go to the next instruction
+        uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
+        
+        // Fetch
+        CodeType insn = this->Fetch(insn_addr);
+
+        // Decode
         uint32_t insn_idx = insn_addr/2,
           insn_tag = insn_idx / Processor::OPPAGESIZE, insn_offset = insn_idx % Processor::OPPAGESIZE;
         
@@ -81,7 +108,25 @@ namespace concrete {
           {
             delete op;
             static Decoder decoder;
-            decoder.NCDecode(insn_addr, insn);
+            op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
+            insn_length = op->GetLength() / 8;
+            
+            {
+              static branch::Decoder bdecoder;
+              auto bop = bdecoder.NCDecode( insn_addr, insn );
+          
+              branch::ActionNode root;
+              for (bool end = false; not end;)
+                {
+                  branch::Processor bp( root, insn_addr, insn_length );
+                  bop->execute( &bp );
+                  op->branch.update( bp.has_branch, bp.nia );
+                  end = bp.path->close();
+                }
+    
+              delete bop;
+            }
+            
           }
         
         // Monitor
@@ -98,13 +143,21 @@ namespace concrete {
         /* execute the instruction */
         if (not op->execute(this))
           {
-            std::cerr << "Something went wrong with instruction execution.\n";
-            throw TODO();
+            /* Process exceptions */
+            std::cerr << "Pending exceptions.\n";
+            abort("ProcessorException()");
           }
+
+        if (debug_branch != uint64_t(-1))
+          {
+            this->bblock = true;
+            Branch(debug_branch);
+            DebugBranch(-1);
+          }
+        else
+          this->bblock = (op->branch.target != op->branch.BNone);
       }
-    
-    //  std::cerr << "Stopped: current=0x" << std::hex << current_insn_addr << ", next: " << std::hex << next_insn_addr << std::dec << std::endl;
-    return 0;
+    while (this->nia != until and --count != 0);
   }
   
 } // end of namespace concrete

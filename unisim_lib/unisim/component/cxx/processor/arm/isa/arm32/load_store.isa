@@ -1006,12 +1006,12 @@ ldm_usr.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Concretize(runmode == U32(cpu.HYPERVISOR_MODE)) ))
+  if (unlikely( cpu.Test(runmode == U32(cpu.HYPERVISOR_MODE)) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Concretize((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -1039,12 +1039,12 @@ ldm_rfe.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Concretize( runmode == U32(ARCH::HYPERVISOR_MODE) ) ))
+  if (unlikely( cpu.Test( runmode == U32(ARCH::HYPERVISOR_MODE) ) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Concretize((runmode == U32(ARCH::USER_MODE)) or (runmode == U32(ARCH::SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(ARCH::USER_MODE)) or (runmode == U32(ARCH::SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -1062,7 +1062,7 @@ ldm_rfe.execute = {
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   // Cannot return to Hyp mode and ThumbEE state
-  if (unlikely( cpu.Concretize((cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
+  if (unlikely( cpu.Test((cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
                                (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1))) ))
     cpu.UnpredictableInsnBehaviour();
   
@@ -1091,12 +1091,12 @@ stm_usr.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Concretize(runmode == U32(cpu.HYPERVISOR_MODE)) ))
+  if (unlikely( cpu.Test(runmode == U32(cpu.HYPERVISOR_MODE)) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Concretize((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -1124,6 +1124,7 @@ stm_usr.execute = {
  */
 
 op swp( cond[4]: 0b00010000[8]: rn[4]: rt[4]: 0b0000[4]: 0b1001[4]: rt2[4] );
+swp.var reject : {Reject} = {(rt == 15) or (rt2 == 15) or (rn == 15) or (rn == rt) or (rn == rt2)};
 
 swp.disasm = {
   buffer << "swp" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -1153,6 +1154,7 @@ swp.execute = {
  */
 
 op swpb( cond[4]: 0b00010100[8]: rn[4]: rt[4]: 0b0000[4]: 0b1001[4]: rt2[4] );
+swpb.var reject : {Reject} = {(rt == 15) or (rt2 == 15) or (rn == 15) or (rn == rt) or (rn == rt2)};
 
 swpb.disasm = {
   buffer << "swpb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "

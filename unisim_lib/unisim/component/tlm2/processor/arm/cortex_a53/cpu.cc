@@ -53,7 +53,7 @@ using namespace unisim::kernel::logger;
 CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
-  , unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav8::CPU<CPU>(name, parent)
   , master_socket("master_socket")
   , cpu_time(sc_core::SC_ZERO_TIME)
   , bus_time(sc_core::SC_ZERO_TIME)
@@ -119,7 +119,6 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
                  // << std::endl << TIME(time)
                  // << std::endl << PHASE(phase)
                  << std::endl;
-    //TRANS(PCPU::logger, trans);
     PCPU::logger << EndDebug;
     return ret;
   }
@@ -133,11 +132,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
        * ends responses) */
       PCPU::logger << DebugError << "Received nb_transport_bw on master_socket" 
                    << ", with unexpected phase"
-                   // << std::endl << LOCATION
-                   // << std::endl << TIME(time)
-                   // << std::endl << PHASE(phase)
                    << std::endl;
-      //TRANS(PCPU::logger, trans);
       PCPU::logger << EndDebug;
       Stop(-1);
       break;
@@ -167,11 +162,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
       if (trans.is_write())
       {
         PCPU::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction"
-                     // << std::endl << LOCATION
-                     // << std::endl << TIME(time)
-                     // << std::endl << PHASE(phase)
                      << std::endl;
-        //TRANS(PCPU::logger, trans);
         PCPU::logger << EndDebug;
         Stop(-1);
         break;
@@ -190,11 +181,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
    *   above :( */
   PCPU::logger << DebugError 
                << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN"
-               // << std::endl << LOCATION
-               // << std::endl << TIME(time)
-               // << std::endl << PHASE(phase)
                << std::endl;
-  //TRANS(PCPU::logger, trans);
   PCPU::logger << EndDebug;
   Stop(-1);
   // useless return to avoid compiler warnings/errors
@@ -421,8 +408,6 @@ CPU::PhysicalReadMemory( uint64_t addr, uint8_t* buffer, unsigned size )
   return true;
 }
 
-  
-
 bool
 CPU::PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
@@ -510,6 +495,19 @@ CPU::PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
   return true;
 }
 
+void
+CPU::dc_zva(uint64_t addr)
+{
+  uint8_t buffer[64] = {0};
+  PhysicalWriteMemory( addr & -(sizeof buffer), buffer, sizeof buffer );
+}
+
+void
+CPU::PrefetchMemory(unsigned op, uint64_t addr)
+{
+  /* TODO: */
+}
+
 /**
  * Virtual method implementation to handle non intrusive reads performed by the inherited
  * cpu to perform external memory accesses.
@@ -576,6 +574,36 @@ CPU::ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
   return (trans->is_response_ok() and (write_size == size));
 }
 
+#define SYSENCODE( OP0, OP1, CRN, CRM, OP2 ) ((OP0 << 16) | (OP1 << 12) | (CRN << 8) | (CRM << 4) | (OP2 << 0))
+
+/** Get the Internal representation of the CP15 Register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param op1     the "op1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param op2     the "op2" field of the instruction code
+ * @return        an internal System Register
+ */
+CPU::SysReg const*
+CPU::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 )
+{
+  switch (SYSENCODE( op0, op1, crn, crm, op2 ))
+    {
+    case SYSENCODE(0b11,0b011,0b0000,0b0000,0b111): // 2.23: DCZID_EL0, Data Cache Zero ID register
+      {
+        static struct : public SysReg {
+          char const* Name() const { return "DCZID_EL0"; }
+          char const* Describe() const { return "Data Cache Zero ID register"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU& cpu) const override
+          { return 4; /* TODO: DZP should depend on SCTLR_EL1 and HCR_EL2 */ }
+        } x; return &x;
+      } break;
+
+    }
+  
+  return PCPU::GetSystemRegister( op0, op1, crn, crm, op2 );
+}
+
 } // end of namespace cortex_a53
 } // end of namespace arm
 } // end of namespace processor
@@ -583,8 +611,4 @@ CPU::ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
 } // end of namespace component
 } // end of namespace unisim
 
-#undef LOCATION
-#undef TIME
-#undef PHASE
-#undef TRANS
 

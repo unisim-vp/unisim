@@ -60,7 +60,7 @@ struct Fabs : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     f64_t val = arch.fread( 0 );
-    if (arch.Cond( val < f64_t( 0.0 ) ))
+    if (arch.Test( val < f64_t( 0.0 ) ))
       val = -val;
     arch.fwrite( 0, val );
   }
@@ -220,7 +220,7 @@ struct Fcmovcc : public Operation<ARCH>
     case 6: ok = arch.flagread( ARCH::FLAG::PF ); break; // fcmovu
     case 7: ok = not arch.flagread( ARCH::FLAG::PF ); break; // fcmovnu
     }
-    if (arch.Cond( ok ))
+    if (arch.Test( ok ))
       arch.fwrite( 0, arch.fread( stidx ) );
   }
 };

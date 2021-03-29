@@ -17,7 +17,6 @@
 
 #include <ciscgenerator.hh>
 #include <product.hh>
-#include <main.hh>
 #include <isa.hh>
 #include <scanner.hh>
 #include <operation.hh>
@@ -493,8 +492,8 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
       if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() ))
         {
           SDInstance const* sdinstance = sobf->sdinstance;
-          SDClass const* sdclass = sdinstance->m_sdclass;
-          SourceCode const* tpscheme =  sdinstance->m_template_scheme;
+          SDClass const* sdclass = sdinstance->sdclass;
+          SourceCode const* tpscheme =  sdinstance->template_scheme;
       
           _product.code( "{\n" );
           _product.code( "%s::CodeType _subcode_;\n", sdclass->qd_namespace().str() );

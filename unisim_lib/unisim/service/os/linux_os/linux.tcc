@@ -420,6 +420,7 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
   bool terminated = false;
   int return_status = 0;
+  //linuxlib_->LogSystemCall(id);
   linuxlib_->ExecuteSystemCall(id, terminated, return_status);
   if(terminated) Object::Stop(return_status);
 }

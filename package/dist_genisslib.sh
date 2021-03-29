@@ -52,9 +52,6 @@ errtools.cc \
 
 UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
-UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-"
-
 GENISSLIB_EXTERNAL_HEADERS="\
 cassert \
 cctype \
@@ -120,14 +117,9 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 done
 
 mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/m4
 
 # Some imported files (m4 macros) impact configure generation
 has_to_build_genisslib_configure=no
-
-for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/${file}" && has_to_build_genisslib_configure=yes
-done
 
 # GENISSLIB
 
@@ -138,7 +130,6 @@ if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0"; then
 	echo "Generating GENISSLIB configure.ac"
 	cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
 AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
-AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
@@ -165,20 +156,18 @@ if has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
 	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
-ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 ${GILINSTALL}_PROGRAMS = genisslib
 genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
 genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
 noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
-EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 EOF
 	has_to_build_genisslib_configure=yes
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

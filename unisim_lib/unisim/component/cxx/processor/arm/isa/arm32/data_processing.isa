@@ -1093,6 +1093,7 @@ mvn_reg_shift.execute = {
 
 { ARCH::Config::insns5T }: \
 op clz( cond[4]: 0b00010110[8]: 0b1111[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
+clz.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 clz.disasm = {
   buffer << "clz" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -1103,7 +1104,7 @@ clz.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 val = cpu.GetGPR( rm );
-  if (unlikely( cpu.Concretize(val == U32(0)) ))
+  if (unlikely( cpu.Test(val == U32(0)) ))
     val = U32(32);
   else
     val = U32(31) - BitScanReverse( cpu.GetGPR( rm ) );

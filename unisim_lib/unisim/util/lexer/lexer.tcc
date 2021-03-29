@@ -1,4 +1,4 @@
- /*
+/*
  *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.

@@ -3,10 +3,10 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,7 +14,7 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -25,13 +25,13 @@
  *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_R5F_CPU_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_R5F_CPU_HH__
 
@@ -72,7 +72,7 @@ namespace cortex_r5f {
     tlm::tlm_initiator_socket<32> master_socket;
 	
     void WaitForInterrupt();
-    
+
   private:
     // virtual method implementation to handle backward path of
     //   transactions sent through the master_port
@@ -89,10 +89,10 @@ namespace cortex_r5f {
 private:
   void SetExternalEvent();
   bool GetExternalEvent();
-  
+
   bool        check_external_event;
   sc_core::sc_event external_event;
-  
+
     /**************************************************************************
      * Interrupt ports and their handles                                START *
      **************************************************************************/
@@ -110,7 +110,7 @@ private:
     sc_core::sc_in<sc_dt::sc_uint<32> > IRQADDRm; // Address of the IRQ. Stable when IRQADDRVm is asserted.
     // Master port for the IRQACKm signal
     sc_core::sc_out<bool> IRQACKm; // Acknowledges interrupt.
-    
+
   private:
     /** nIRQm port handler */
     void IRQHandler();
@@ -148,7 +148,7 @@ private:
 	
 	virtual void ResetMemory();
 	
-    // cache interface implemented by the arm processor to get the request from 
+    // cache interface implemented by the arm processor to get the request from
     //   the caches
     virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
     virtual bool PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs);
@@ -160,9 +160,9 @@ private:
     virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
     /** Event used to signalize the end of a read transaction.
-     * Method PhysicalReadMemory waits for this event once the read transaction has been 
-     *   sent, and the nb_transport_bw notifies on it when the read transaction 
-     *   is finished. 
+     * Method PhysicalReadMemory waits for this event once the read transaction has been
+     *   sent, and the nb_transport_bw notifies on it when the read transaction
+     *   is finished.
      */
     sc_core::sc_event end_read_rsp_event;
 	
@@ -179,9 +179,9 @@ private:
       transaction_type& operator * () { return *t; }
       transaction_type* t;
     };
-  
+
     /** A temporary variable used anywhere in the code to compute a time.
-     * A temporary variable that can be used anywhere in the code to compute a 
+     * A temporary variable that can be used anywhere in the code to compute a
      *   time.
      *   Should be initialized everytime it is used.
      */
@@ -198,7 +198,7 @@ private:
     bool enable_dmi;
 	
     unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cpu_time;
-  
+
     struct CpuCycleTimeParam : public unisim::kernel::variable::Parameter<sc_core::sc_time>
     {
       CpuCycleTimeParam(char const* name, Object *owner, CPU& _cpu, const char *description)
@@ -219,13 +219,13 @@ private:
     bool verbose_tlm;
     unisim::kernel::variable::Parameter<bool> param_verbose_tlm;
     inline bool VerboseTLM();
-    
+
     /*************************************************************************
      * Logger, verbose and trap parameters/methods/ports                 END *
      *************************************************************************/
-    
+
     unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
-    
+
     /****************************/
     /* Configuration pins START */
     /****************************/
@@ -233,18 +233,19 @@ private:
     bool VINITHI; unisim::kernel::variable::Parameter<bool> param_VINITHI;
     bool CFGEE;   unisim::kernel::variable::Parameter<bool> param_CFGEE;
     bool TEINIT;  unisim::kernel::variable::Parameter<bool> param_TEINIT;
-    
+
     /****************************/
     /* Configuration pins  END  */
     /****************************/
+
+  public:
+    void     TakeReset();
     
     /**************************/
     /* CP15 Interface   START */
     /**************************/
-  protected:    
-    virtual void     CP15ResetRegisters();
-    virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-    
+    static CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+
     /* */
     uint32_t ACTLR;         //< Auxiliary Control Register
     uint32_t SACTLR;        //< Secondary Auxiliary Control Register
@@ -269,12 +270,12 @@ private:
     uint32_t ADFSR;         //< Auxiliary Data Fault Status Register
     uint32_t AIFSR;         //< Auxiliary Instruction Fault Status Register
     uint32_t CFLR;          //<  CorrectableFault Location Register
-    
+
     /**************************/
     /* CP15 Interface    END  */
     /**************************/
   };
-  
+
 } // end of namespace cortex_r5f
 } // end of namespace arm
 } // end of namespace processor

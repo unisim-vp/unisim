@@ -166,62 +166,6 @@ caspl_x.disasm = {
   sink << "caspl\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rs|1) << ", " << DisasmGZXR(rt) << ", " << DisasmGZXR(rt|1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
-op crc32b_www( 0b00011010110[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
-crc32b_www.var format : {char const*} = {"base,1461"};
-
-crc32b_www.disasm = {
-  sink << "crc32b\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
-};
-
-op crc32cb_www( 0b00011010110[11] : rm[5] : 0b010100[6] : rn[5] : rd[5] );
-crc32cb_www.var format : {char const*} = {"base,1462"};
-
-crc32cb_www.disasm = {
-  sink << "crc32cb\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
-};
-
-op crc32ch_www( 0b00011010110[11] : rm[5] : 0b010101[6] : rn[5] : rd[5] );
-crc32ch_www.var format : {char const*} = {"base,1463"};
-
-crc32ch_www.disasm = {
-  sink << "crc32ch\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
-};
-
-op crc32cw_www( 0b00011010110[11] : rm[5] : 0b010110[6] : rn[5] : rd[5] );
-crc32cw_www.var format : {char const*} = {"base,1464"};
-
-crc32cw_www.disasm = {
-  sink << "crc32cw\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
-};
-
-op crc32cx_wwx( 0b10011010110[11] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
-crc32cx_wwx.var format : {char const*} = {"base,1474"};
-
-crc32cx_wwx.disasm = {
-  sink << "crc32cx\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZXR(rm);
-};
-
-op crc32h_www( 0b00011010110[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
-crc32h_www.var format : {char const*} = {"base,1465"};
-
-crc32h_www.disasm = {
-  sink << "crc32h\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
-};
-
-op crc32w_www( 0b00011010110[11] : rm[5] : 0b010010[6] : rn[5] : rd[5] );
-crc32w_www.var format : {char const*} = {"base,1466"};
-
-crc32w_www.disasm = {
-  sink << "crc32w\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
-};
-
-op crc32x_wwx( 0b10011010110[11] : rm[5] : 0b010011[6] : rn[5] : rd[5] );
-crc32x_wwx.var format : {char const*} = {"base,1475"};
-
-crc32x_wwx.disasm = {
-  sink << "crc32x\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZXR(rm);
-};
-
 op ldadd_w( 0b10111000001[11] : rs[5] : 0b000000[6] : rn[5] : rt[5] );
 ldadd_w.var reject : {Reject} = {rt==31}, format : {char const*} = {"base,1548"};
 

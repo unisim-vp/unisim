@@ -52,16 +52,23 @@ qadd.disasm = {
 
 qadd.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = op1 + op2;
-  
-  U32 saturation = SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
-  
-  cpu.SetGPR( rd, U32(res) );
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int32_t const nbound = -1 << 31, pbound = ~nbound;
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q ));
+  S32 op1 = S32(cpu.GetGPR(rn)), op2 = S32(cpu.GetGPR(rm)), res = op1 + op2;
+
+  // n is the observed negative flag and sbn is what this flag should be
+  BOOL n = res < S32(0), sbn = op1 <= S32(~op2), of = not sbn and n, uf = sbn and not n;
+  U32 satres = CondMove<U32>( of, pbound, uf, nbound, res );
+
+  cpu.SetGPR( rd, satres );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -70,7 +77,7 @@ qadd.execute = {
 
 /*******************************************************************
  * qadd16 (Saturating Add 16) instruction
- * 
+ *
  * QADD16 performs two 16-bit integer additions, saturates the results
  * to the 16-bit signed integer range -2^15 <= x <= 2^15-1, and writes
  * the results to the destination register.
@@ -87,16 +94,26 @@ qadd16.disasm = {
 
 qadd16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<16>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
-  
-  SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<16>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int16_t const nbound = -1 << 15, pbound = ~nbound;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 2; ++idx)
+    {
+      S16 op1 = S16(opn >> 16*idx), op2 = S16(opm >> 16*idx), res = op1 + op2;
+
+      // n is the observed negative flag and sbn is what this flag should be
+      BOOL n = res < S16(0), sbn = op1 <= S16(~op2), of = not sbn and n, uf = sbn and not n;
+      res32 |= U32(CondMove<U16>(of, pbound, uf, nbound, res)) << 16*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -123,16 +140,26 @@ qadd8.disasm = {
 
 qadd8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<8>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
-  
-  SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<8>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int8_t const nbound = -1 << 7, pbound = ~nbound;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 4; ++idx)
+    {
+      S8 op1 = S8(opn >> 8*idx), op2 = S8(opm >> 8*idx), res = op1 + op2;
+
+      // n is the observed negative flag and sbn is what this flag should be
+      BOOL n = res < S8(0), sbn = op1 <= S8(~op2), of = not sbn and n, uf = sbn and not n;
+      res32 |= U32(CondMove<U8>(of, pbound, uf, nbound, res)) << 8*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -141,7 +168,7 @@ qadd8.execute = {
 
 /*******************************************************************
  * qsub (Saturating Subtract) instruction
- * 
+ *
  * QSUB subtracts one register value from another register value,
  * saturates the result to the 32-bit signed integer range -2^31 <= x
  * <= 2^31-1, and writes the result to the destination register. If
@@ -159,16 +186,23 @@ qsub.disasm = {
 
 qsub.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
-  U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn), res = op1 - op2;
-  
-  U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
-  
-  cpu.SetGPR( rd, U32(res) );
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int32_t const nbound = -1 << 31, pbound = ~nbound;
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q ));
+  S32 op1 = S32(cpu.GetGPR(rn)), op2 = S32(cpu.GetGPR(rm)), res = op1 - op2;
+
+  // n is the observed negative flag and sbn is what this flag should be
+  BOOL n = res < S32(0), sbn = op1 < op2, of = not sbn and n, uf = sbn and not n;
+  U32 satres = CondMove<U32>(of, pbound, uf, nbound, res);
+
+  cpu.SetGPR( rd, satres );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -194,16 +228,26 @@ qsub16.disasm = {
 
 qsub16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<16>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
 
-  SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<16>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int16_t const nbound = -1 << 15, pbound = ~nbound;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 2; ++idx)
+    {
+      S16 op1 = S16(opn >> 16*idx), op2 = S16(opm >> 16*idx), res = op1 - op2;
+
+      // n is the observed negative flag and sbn is what this flag should be
+      BOOL n = res < S16(0), sbn = op1 < op2, of = not sbn and n, uf = sbn and not n;
+      res32 |= U32(CondMove<U16>(of, pbound, uf, nbound, res)) << 16*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -229,16 +273,26 @@ qsub8.disasm = {
 
 qsub8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<8>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
 
-  SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<8>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int8_t const nbound = -1 << 7, pbound = ~nbound;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 4; ++idx)
+    {
+      S8 op1 = S8(opn >> 8*idx), op2 = S8(opm >> 8*idx), res = op1 - op2;
+
+      // n is the observed negative flag and sbn is what this flag should be
+      BOOL n = res < S8(0), sbn = op1 < op2, of = not sbn and n, uf = sbn and not n;
+      res32 |= U32(CondMove<U8>(of, pbound, uf, nbound, res)) << 8*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -260,20 +314,34 @@ qdadd.disasm = {
 
 qdadd.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::S32 S32;
   typedef typename ARCH::U32 U32;
-  
-  U32 saturation = cpu.CPSR().Get( Q );
-  
-  U32 op1 = cpu.GetGPR(rn), tmp = op1 + op1;
-  saturation |= SignedSat( tmp, ~op1 & tmp, op1 & ~tmp, SWP<32>() );
-  
-  U32 op2 = U32(cpu.GetGPR(rm)), res = op2 + tmp;
-  saturation |= SignedSat( res, ~op2 & ~tmp & res, op2 & tmp & ~res, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation );
-  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int32_t const nbound = -1 << 31, pbound = ~nbound;
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q )), n, sbn, of, uf;
+  S32 opn = S32(cpu.GetGPR(rn)), opm = S32(cpu.GetGPR(rm)), op1, op2, res;
+
+  // First operation doubles opn
+  op1 = opn; op2 = opn; res = op1 + op2;
+  // n is the observed negative flag and sbn is what this flag should be
+  n = res < S32(0); sbn = op1 <= S32(~op2); of = not sbn and n; uf = sbn and not n;
+  res = CondMove<S32>(of, pbound, uf, nbound, res);
+  q |= of | uf;
+
+  // Second operation adds to opm
+  op1 = opm; op2 = res; res = op1 + op2;
+  // n is the observed negative flag and sbn is what this flag should be
+  n = res < S32(0); sbn = op1 <= S32(~op2); of = not sbn and n; uf = sbn and not n;
+  res = CondMove<S32>(of, pbound, uf, nbound, res);
+  q |= of | uf;
+
   cpu.SetGPR( rd, U32(res) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -295,20 +363,33 @@ qdsub.disasm = {
 
 qdsub.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
-  U32 saturation = cpu.CPSR().Get( Q );
-  
-  U32 op1 = cpu.GetGPR(rn), tmp = op1 + op1;
-  saturation |= SignedSat( tmp, ~op1 & tmp, op1 & ~tmp, SWP<32>() );
-  
-  U32 op2 = cpu.GetGPR(rm), res = op2 - tmp;
-  saturation |= SignedSat( res, ~op2 & tmp & res, op2 & ~tmp & ~res, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation );
-  
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int32_t const nbound = -1 << 31, pbound = ~nbound;
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q )), n, sbn, of, uf;
+  S32 opn = S32(cpu.GetGPR(rn)), opm = S32(cpu.GetGPR(rm)), op1, op2, res;
+
+  // First operation doubles opn
+  op1 = opn; op2 = opn; res = op1 + op2;
+  // n is the observed negative flag and sbn is what this flag should be
+  n = res < S32(0); sbn = op1 <= S32(~op2); of = not sbn and n; uf = sbn and not n;
+  res = CondMove<S32>(of, pbound, uf, nbound, res);
+  q |= of | uf;
+
+  // Second operation subtracts from opm
+  op1 = opm; op2 = res; res = op1 - op2;
+  // n is the observed negative flag and sbn is what this flag should be
+  n = res < S32(0); sbn = op1 < op2; of = not sbn and n; uf = sbn and not n;
+  res = CondMove<S32>(of, pbound, uf, nbound, res);
+  q |= of | uf;
+
   cpu.SetGPR( rd, U32(res) );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -334,14 +415,14 @@ pkh.disasm = {
 
 pkh.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = ComputeImmShift( cpu, cpu.GetGPR(rm), tb, imm ), res(0);
-  
+
   if (tb) res = (op1 & U32(0xffff0000)) | (op2 & U32(0x0000ffff));
   else    res = (op2 & U32(0xffff0000)) | (op1 & U32(0x0000ffff));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -366,13 +447,13 @@ sel.disasm = {
 
 sel.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
-  
+
   U32 rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm );
   U32 word_mask(0);
-  
+
   {
     U8 cpsr_ge( cpu.CPSR().Get( GE ) );
     for (unsigned byte_index = 0; byte_index < 4; byte_index++) {
@@ -382,7 +463,7 @@ sel.execute = {
   }
 
   U32 res = (rnval & ~word_mask) | (rmval & word_mask);
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -392,7 +473,7 @@ sel.execute = {
 
 /*******************************************************************
  * ssat (Signed Saturate) instruction
- * 
+ *
  * SSAT saturates an optionally-shifted signed value to a selectable
  * signed range.  The Q flag is set if the operation saturates.
  */
@@ -408,22 +489,22 @@ ssat.disasm = {
 
 ssat.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  unsigned const ra = (31-sat_imm); // Right alignment
-  
-  U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
-      res = src << ra;
-  
-  S32 const bound = S32(-1 << sat_imm);
-  U32 of = U32(S32(src) > ~bound) << 31, uf = U32(S32(src) < bound) << 31;
-  
-  U32 saturation = SignedSat( res, of, uf, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
-  
-  cpu.SetGPR( rd, U32(S32(res) >> ra) );
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative bound
+  int32_t const nbound = -1 << sat_imm, pbound = ~nbound;
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q ));
+  S32 src = S32(ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ));
+
+  BOOL of = src > S32(pbound), uf = src < S32(nbound);
+  U32 res = CondMove<U32>(of, pbound, uf, nbound, src);
+
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -432,7 +513,7 @@ ssat.execute = {
 
 /*******************************************************************
  * ssat16 (Signed Saturate 16) instruction
- * 
+ *
  * SSAT16 saturates two signed 16-bit values to a selected signed
  * range.  The Q flag is set if the operation saturates.
  */
@@ -446,24 +527,28 @@ ssat16.disasm = {
 
 ssat16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
+
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::S16 S16;
-  unsigned const ra = (15-sat_imm); // Right alignment
-  
-  U32 src = cpu.GetGPR(rn), res = src << ra;
-  
-  S16 const bound = S16(-1 << sat_imm);
-  U32 of = (U32(S16(src) > ~bound) << 15) | (U32(S16(src >> 16) > ~bound) << 31),
-      uf = (U32(S16(src) < bound) << 15) | (U32(S16(src >> 16) < bound) << 31);
-  
-  U32 saturation = SignedSat( res, of, uf, SWP<16>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
-  
-  // undo right aligment and signed extend both halfword
-  cpu.SetGPR( rd, (U32(U16(S16(res>>16) >> ra)) << 16) | U32(U16(S16(res) >> ra)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int16_t const nbound = -1 << sat_imm, pbound = ~nbound;
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q ));
+
+  U32 opn = cpu.GetGPR(rn), res32 = U32(0);
+  for (unsigned idx = 0; idx < 2; ++idx)
+    {
+      S16 src = S16(opn >> 16*idx);
+      BOOL of = src > S16(pbound), uf = src < S16(nbound);
+      res32 |= U32(CondMove<U16>(of,pbound,uf,nbound,src)) << 16*idx;
+      q |= of | uf;
+    }
+
+  cpu.SetGPR( rd, res32 );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -472,7 +557,7 @@ ssat16.execute = {
 
 /*******************************************************************
  * usat (Unsigned Saturate) instruction
- * 
+ *
  * USAT saturates an optionally-shifted unsigned value to a selectable
  * unsigned range.  The Q flag is set if the operation saturates.
  */
@@ -488,26 +573,21 @@ usat.disasm = {
 
 usat.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  // ra is Right alignment minus one (because shifts by 32 are
-  // unpredictable)
-  unsigned const ra = (31-sat_imm); 
-  
-  U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
-      res = (src << ra) << 1;
-  
-  S32 const bound = S32(~(-1 << sat_imm));
-  U32 of = U32(S32(src) > bound) << 31, uf = U32(S32(src) < S32(0)) << 31;
-  
-  U32 saturation = cpu.CPSR().Get( Q );
-  saturation |= UnsignedPSat( res, of, SWP<32>() );
-  saturation |= UnsignedNSat( res, ~uf, SWP<32>() );
-  
-  cpu.CPSR().Set( Q, saturation );
-  
-  cpu.SetGPR( rd, (res >> 1) >> ra );
+  typedef typename ARCH::BOOL BOOL;
+
+  int32_t const bound = ~(-1 << sat_imm);
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q ));
+  S32 src = S32(ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ));
+
+  BOOL of = src > S32(bound), uf = src < S32(0);
+  U32 res = CondMove<U32>(of, bound, uf, 0, src);
+
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( Q, BOOL(q | of | uf) );
 };
 
 /*
@@ -516,7 +596,7 @@ usat.execute = {
 
 /*******************************************************************
  * usat16 (Unsigned Saturate 16) instruction
- * 
+ *
  * USAT16 saturates two signed 16-bit values to a selected unsigned
  * range.  The Q flag is set if the operation saturates.
  */
@@ -530,26 +610,28 @@ usat16.disasm = {
 
 usat16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
+
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::S16 S16;
-  unsigned const ra = (16-sat_imm); // Right alignment
-  
-  U32 src = cpu.GetGPR(rn), res = src << ra;
-  
-  S16 const bound = S16(~(-1 << sat_imm));
-  U32 of = (U32(S16(src) > bound) << 15) | (U32(S16(src >> 16) > bound) << 31),
-      uf = (U32(S16(src) < S16(0)) << 15) | (U32(S16(src >> 16) < S16(0)) << 31);
-  
-  U32 saturation = cpu.CPSR().Get( Q );
-  saturation |= UnsignedPSat( res, of, SWP<16>() );
-  saturation |= UnsignedNSat( res, ~uf, SWP<16>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
-  
-  // undo right aligment and zero extend both halfword
-  cpu.SetGPR( rd, (U32(U16(res >> 16) >> ra) << 16) | U32(U16(res) >> ra) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+
+  // negative and positive bounds
+  int16_t const bound = ~(-1 << sat_imm);
+
+  BOOL q = BOOL(cpu.CPSR().Get( Q ));
+
+  U32 opn = cpu.GetGPR(rn), res32 = U32(0);
+  for (unsigned idx = 0; idx < 2; ++idx)
+    {
+      S16 src = S16(opn >> 16*idx);
+      BOOL of = src > S16(bound), uf = src < S16(0);
+      res32 |= U32(CondMove<U16>(of,bound,uf,0,src)) << 16*idx;
+      q |= of | uf;
+    }
+
+  cpu.SetGPR( rd, res32 );
+  cpu.CPSR().Set( Q, BOOL(q) );
 };
 
 /*
@@ -558,7 +640,7 @@ usat16.execute = {
 
 /*******************************************************************
  * uadd16 (Unsigned Add 16) instruction
- * 
+ *
  * UADD16 performs two 16-bit unsigned integer additions, and writes
  * the results to the dest ination register.  It sets the APSR.GE bits
  * according to the results of the additions.
@@ -575,14 +657,14 @@ uadd16.disasm = {
 
 uadd16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
       gev = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, res );
   cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
 };
@@ -593,7 +675,7 @@ uadd16.execute = {
 
 /*******************************************************************
  * uadd8 (unsigned add 8) instruction
- * 
+ *
  * UADD8 performs four unsigned 8-bit integer additions, and writes
  * the results to the destination register. It sets the APSR.GE bits
  * according to the results of the additions.
@@ -610,14 +692,14 @@ uadd8.disasm = {
 
 uadd8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
       gev = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, res );
   cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
 };
@@ -628,7 +710,7 @@ uadd8.execute = {
 
 /*******************************************************************
  * usub16 (Unsigned Subtract 16) instruction
- * 
+ *
  * USUB16 performs two 16-bit unsigned integer subtractions, and
  * writes the results to the destination register. It sets the APSR.GE
  * bits according to the results of the subtractions.
@@ -645,14 +727,14 @@ usub16.disasm = {
 
 usub16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
       gev = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, U32(res) );
   cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
 };
@@ -680,14 +762,14 @@ usub8.disasm = {
 
 usub8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
       gev = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, U32(res) );
   cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
 };
@@ -715,14 +797,14 @@ sadd16.disasm = {
 
 sadd16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
       gev = (((op1 & op2 & ~res) | (~op1 & ~op2 & res)) ^ ~res) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, res );
   cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
 };
@@ -750,14 +832,14 @@ sadd8.disasm = {
 
 sadd8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
       gev = (((op1 & op2 & ~res) | (~op1 & ~op2 & res)) ^ ~res) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, res );
   cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
 };
@@ -785,14 +867,14 @@ ssub16.disasm = {
 
 ssub16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
       gev = (((op1 & ~op2 & ~res) | (~op1 & op2 & res)) ^ ~res) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, U32(res) );
   cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
 };
@@ -820,14 +902,14 @@ ssub8.disasm = {
 
 ssub8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
       gev = (((op1 & ~op2 & ~res) | (~op1 & op2 & res)) ^ ~res) & U32(msbs); //< GE vector
-  
+
   cpu.SetGPR( rd, U32(res) );
   cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
 };
@@ -838,7 +920,7 @@ ssub8.execute = {
 
 /*******************************************************************
  * uqadd16 (Unsigned Saturating Add 16) instruction
- * 
+ *
  * UQADD16 performs two unsigned 16-bit integer additions, saturates
  * the results to the 16-bit unsigned integer range 0 <= x <= 2^16-1,
  * and writes the results to the destination register.
@@ -855,17 +937,22 @@ uqadd16.disasm = {
 
 uqadd16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<16>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
-  
-  UnsignedPSat( res, ((op1 & op2) | (~res & (op1 | op2))), SWP<16>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+
+  uint16_t const bound = -1;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 2; ++idx)
+    {
+      U16 op1 = U16(opn >> 16*idx), op2 = U16(opm >> 16*idx), res = op1 + op2;
+      res32 |= U32(CondMove<U16>(op1 > U16(~op2), bound, res)) << 16*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
+
 
 /*
  * end of uqadd16 instruction
@@ -873,7 +960,7 @@ uqadd16.execute = {
 
 /*******************************************************************
  * uqadd8 (Unsigned Saturating Add 8) instruction
- * 
+ *
  * UQADD8 performs four unsigned 8-bit integer additions, satura tes
  * the results to the 8-bit unsigned integer range 0 <= x <= 2^8-1,
  * and writes the results to the destination register
@@ -890,16 +977,20 @@ uqadd8.disasm = {
 
 uqadd8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<8>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
-  
-  UnsignedPSat( res, ((op1 & op2) | (~res & (op1 | op2))), SWP<8>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+
+  uint8_t const bound = -1;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 4; ++idx)
+    {
+      U8 op1 = U8(opn >> 8*idx), op2 = U8(opm >> 8*idx), res = op1 + op2;
+      res32 |= U32(CondMove<U8>(op1 > U8(~op2), bound, res)) << 8*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -908,7 +999,7 @@ uqadd8.execute = {
 
 /*******************************************************************
  * uqsub16 (Unsigned Saturating Subtract 16) instruction
- * 
+ *
  * UQSUB16 performs two unsigned 16-bit integer subtractions,
  * saturates the results to the 16-bit unsigned integer range 0 <= x
  * <= 2^16-1, and writes the results to the destination register.
@@ -925,16 +1016,18 @@ uqsub16.disasm = {
 
 uqsub16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<16>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
-  
-  UnsignedNSat( res, ((op1 & ~op2) | (~res & (op1 | ~op2))), SWP<16>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 2; ++idx)
+    {
+      U16 op1 = U16(opn >> 16*idx), op2 = U16(opm >> 16*idx), res = op1 - op2;
+      res32 |= U32(CondMove<U16>(op1 < op2, 0, res)) << 16*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -943,7 +1036,7 @@ uqsub16.execute = {
 
 /*******************************************************************
  * uqsub8 (Unsigned Saturating Subtract 8) instruction
- * 
+ *
  * UQSUB8 performs four unsigned 8-bit integer
  * subtractions, saturates the results to the 8-bit unsigned integer
  * range 0 <= x < 255, and writes the results to the destination
@@ -961,16 +1054,18 @@ uqsub8.disasm = {
 
 uqsub8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
+  typedef typename ARCH::U8 U8;
   typedef typename ARCH::U32 U32;
-  uint32_t const msbs(SWP<8>::msbmask);
-  
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
-  
-  UnsignedNSat( res, ((op1 & ~op2) | (~res & (op1 | ~op2))), SWP<8>() );
-  
-  cpu.SetGPR( rd, U32(res) );
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  for (unsigned idx = 0; idx < 4; ++idx)
+    {
+      U8 op1 = U8(opn >> 8*idx), op2 = U8(opm >> 8*idx), res = op1 - op2;
+      res32 |= U32(CondMove<U8>(op1 < op2, 0, res)) << 8*idx;
+    }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -994,19 +1089,19 @@ usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rd) << ", " << DisasmRegi
 
 usad8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-	
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res(0);
-  
+
   for (unsigned byte = 0; byte < 4; byte++) {
     U32 a = (op1 >> (8*byte)) & U32(0xff), b = (op2 >> (8*byte)) & U32(0xff), d = a - b;
     // Compute abs by arithetic means
     U32 neg( S32(d) >> 8 );
     res += ((d ^ neg) + (neg & U32(1)));
   }
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1032,19 +1127,19 @@ usada8.disasm = {
 
 usada8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-	
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = cpu.GetGPR(ra);
-  
+
   for (unsigned byte = 0; byte < 4; byte++) {
     U32 a = (op1 >> (8*byte)) & U32(0xff), b = (op2 >> (8*byte)) & U32(0xff), d = a - b;
     // Compute abs by arithetic means
     U32 neg( S32(d) >> 8 );
     res += ((d ^ neg) + (neg & U32(1)));
   }
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1054,7 +1149,7 @@ usada8.execute = {
 
 /*******************************************************************
  * uhadd16 (Unsigned Halving Add 16) instruction
- * 
+ *
  * UHADD16 erforms two unsigned 16-bit integer additions, halves the
  * results, and writes the results to the destination register.
  */
@@ -1070,13 +1165,13 @@ uhadd16.disasm = {
 
 uhadd16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = (((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1086,7 +1181,7 @@ uhadd16.execute = {
 
 /*******************************************************************
  * uhadd8 (Unsigned Halving Add 8) instruction
- * 
+ *
  * UHADD8 performs four un signed 8-bit integer additions, halves the
  * results, and writes the results to the destination register.
  */
@@ -1102,13 +1197,13 @@ uhadd8.disasm = {
 
 uhadd8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = (((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1134,13 +1229,13 @@ shadd16.disasm = {
 
 shadd16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs))) ^ ((op1 ^ op2) & U32(msbs));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1166,13 +1261,13 @@ shadd8.disasm = {
 
 shadd8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs))) ^ ((op1 ^ op2) & U32(msbs));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1198,13 +1293,13 @@ uhsub16.disasm = {
 
 uhsub16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs))) ^ U32(msbs);
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1230,13 +1325,13 @@ uhsub8.disasm = {
 
 uhsub8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs))) ^ U32(msbs);
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1262,13 +1357,13 @@ shsub16.disasm = {
 
 shsub16.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = (((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs)))) ^ ((~op1 ^ op2) & U32(msbs));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1294,13 +1389,13 @@ shsub8.disasm = {
 
 shsub8.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
-  
+
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs))) ^ ((~op1 ^ op2) & U32(msbs));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1310,7 +1405,7 @@ shsub8.execute = {
 
 /*******************************************************************
  * qasx (Saturating Add and Subtract with Exchange) instruction
- * 
+ *
  * QASX exchanges the two halfwords of the second operand, performs
  * one 16-bit integer addition and one 16-bit subtraction, saturates
  * the results to the 16-bit signed integer range -2^15 <= x <=
@@ -1328,26 +1423,30 @@ qasx.disasm = {
 
 qasx.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
+
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
 
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
-  S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
-  S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
-  
-  S32 const bound( -1 << 15 );
-  U32 uf = (U32(sum <  bound) << 31) | (U32(diff <  bound) << 15);
-  U32 of = (U32(sum > ~bound) << 31) | (U32(diff > ~bound) << 15);
-  
-  U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
-  
-  SignedSat( res, of, uf, SWP<16>() );
-  
-  cpu.SetGPR( rd, res );
+  // negative and positive bounds
+  int16_t const nbound = -1 << 15, pbound = ~nbound;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  {
+    S16 op1 = S16(opn), op2 = S16(opm >> 16), res = op1 - op2;
+    // n is the observed negative flag and sbn is what this flag should be
+    BOOL n = res < S16(0), sbn = op1 < op2, of = not sbn and n, uf = sbn and not n;
+    res32 |= U32(CondMove<U16>(of, pbound, uf, nbound, res)) << 0;
+  }
+  {
+    S16 op1 = S16(opn >> 16), op2 = S16(opm), res = op1 + op2;
+    // n is the observed negative flag and sbn is what this flag should be
+    BOOL n = res < S16(0), sbn = op1 <= S16(~op2), of = not sbn and n, uf = sbn and not n;
+    res32 |= U32(CondMove<U16>(of, pbound, uf, nbound, res)) << 16;
+  }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -1356,7 +1455,7 @@ qasx.execute = {
 
 /*******************************************************************
  * qsax (Saturating Subtract and Add with Exchange) instruction
- * 
+ *
  * QSAX exchanges the two halfwords of the second operand, performs
  * one 16-bit integer subtraction and one 16- bit addition, saturates
  * the results to the 16-bit signed integer range -2^15 <= x <=
@@ -1374,26 +1473,30 @@ qsax.disasm = {
 
 qsax.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
+
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
 
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
-  S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
-  S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
-  
-  S32 const bound( -1 << 15 );
-  U32 uf = (U32(diff <  bound) << 31) | (U32(sum <  bound) << 15);
-  U32 of = (U32(diff > ~bound) << 31) | (U32(sum > ~bound) << 15);
-  
-  U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
-  
-  SignedSat( res, of, uf, SWP<16>() );
-  
-  cpu.SetGPR( rd, res );
+  // negative and positive bounds
+  int16_t const nbound = -1 << 15, pbound = ~nbound;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  {
+    S16 op1 = S16(opn), op2 = S16(opm >> 16), res = op1 + op2;
+    // n is the observed negative flag and sbn is what this flag should be
+    BOOL n = res < S16(0), sbn = op1 <= S16(~op2), of = not sbn and n, uf = sbn and not n;
+    res32 |= U32(CondMove<U16>(of, pbound, uf, nbound, res)) << 0;
+  }
+  {
+    S16 op1 = S16(opn >> 16), op2 = S16(opm), res = op1 - op2;
+    // n is the observed negative flag and sbn is what this flag should be
+    BOOL n = res < S16(0), sbn = op1 < op2, of = not sbn and n, uf = sbn and not n;
+    res32 |= U32(CondMove<U16>(of, pbound, uf, nbound, res)) << 16;
+  }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -1402,7 +1505,7 @@ qsax.execute = {
 
 /*******************************************************************
  * uqasx (Unsigned Saturating Add and Subtract with Exchange) instruction
- * 
+ *
  * UQASX exchanges the two halfwords of the second operand, performs
  * one unsigned 16-bit integer addi tion and one unsigned 16-bit
  * subtraction, saturates the results to the 16-bit unsigned integer
@@ -1421,26 +1524,23 @@ uqasx.disasm = {
 
 uqasx.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
-  typedef typename ARCH::U16 U16;
 
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
-  S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
-  S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
-  
-  S32 const bound( ~(-1 << 16) );
-  U32 nuf = (U32(sum >= S32(0)) << 31) | (U32(diff >= S32(0)) << 15);
-  U32 of =  (U32(sum > bound) << 31) | (U32(diff > bound) << 15);
-  
-  U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
-  
-  UnsignedPSat( res, of, SWP<16>() );
-  UnsignedNSat( res, nuf, SWP<16>() );
-  
-  cpu.SetGPR( rd, res );
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+
+  uint16_t const bound = -1;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  {
+    U16 op1 = U16(opn), op2 = U16(opm >> 16), res = op1 - op2;
+    res32 |= U32(CondMove<U16>(op1 < op2, 0, res)) << 0;
+  }
+  {
+    U16 op1 = U16(opn >> 16), op2 = U16(opm), res = op1 + op2;
+    res32 |= U32(CondMove<U16>(op1 > U16(~op2), bound, res)) << 16;
+  }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -1449,7 +1549,7 @@ uqasx.execute = {
 
 /*******************************************************************
  * uqsax (Unsigned Saturating Subtract and Add with Exchange) instruction
- * 
+ *
  * UQSAX exchanges the two halfwords of the second operand, performs
  * one unsigned 16-bit integer subt raction and one unsigned 16- bit
  * addition, saturates the results to the 16-bit unsigned integer
@@ -1468,26 +1568,23 @@ uqsax.disasm = {
 
 uqsax.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
-  typedef typename ARCH::U16 U16;
 
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
-  S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
-  S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
-  
-  S32 const bound( ~(-1 << 16) );
-  U32 nuf = (U32(diff >= S32(0)) << 31) | (U32(sum >= S32(0)) << 15);
-  U32 of =  (U32(diff > bound) << 31) | (U32(sum > bound) << 15);
-  
-  U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
-  
-  UnsignedPSat( res, of, SWP<16>() );
-  UnsignedNSat( res, nuf, SWP<16>() );
-  
-  cpu.SetGPR( rd, res );
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+
+  uint16_t const bound = -1;
+
+  U32 opn = cpu.GetGPR(rn), opm = cpu.GetGPR(rm), res32 = U32(0);
+  {
+    U16 op1 = U16(opn), op2 = U16(opm >> 16), res = op1 + op2;
+    res32 |= U32(CondMove<U16>(op1 > U16(~op2), bound, res)) << 0;
+  }
+  {
+    U16 op1 = U16(opn >> 16), op2 = U16(opm), res = op1 - op2;
+    res32 |= U32(CondMove<U16>(op1 < op2, 0, res)) << 16;
+  }
+
+  cpu.SetGPR( rd, res32 );
 };
 
 /*
@@ -1496,7 +1593,7 @@ uqsax.execute = {
 
 /*******************************************************************
  * sasx (Signed Add and Subtract with Exchange) instruction
- * 
+ *
  * SASX exchanges the tw o halfwords of the second operand, performs
  * one 16-bit integer addition and one 16-bit subtraction, and writes
  * the results to the destination register.  It sets the APSR.GE bits
@@ -1514,20 +1611,20 @@ sasx.disasm = {
 
 sasx.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
   S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
-  
+
   U32 gev = (U32(sum >= S32(0)) * U32(0xc)) | (U32(diff >= S32(0)) * U32(0x3));
   U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
-  
+
   cpu.CPSR().Set( GE, gev );
   cpu.SetGPR( rd, res );
 };
@@ -1556,20 +1653,20 @@ ssax.disasm = {
 
 ssax.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
   S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
-  
+
   U32 gev = (U32(diff >= S32(0)) * U32(0xc)) | (U32(sum >= S32(0)) * U32(0x3));
   U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
-  
+
   cpu.CPSR().Set( GE, gev );
   cpu.SetGPR( rd, res );
 };
@@ -1598,19 +1695,19 @@ uasx.disasm = {
 
 uasx.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
   S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
-  
+
   U32 gev = (U32(sum >= S32(0x10000)) * U32(0xc)) | (U32(diff >= S32(0)) * U32(0x3));
   U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
-  
+
   cpu.CPSR().Set( GE, gev );
   cpu.SetGPR( rd, res );
 };
@@ -1639,19 +1736,19 @@ usax.disasm = {
 
 usax.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
   S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
-  
+
   U32 gev = (U32(diff >= S32(0)) * U32(0xc)) | (U32(sum >= S32(0x10000)) * U32(0x3));
   U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
-  
+
   cpu.CPSR().Set( GE, gev );
   cpu.SetGPR( rd, res );
 };
@@ -1662,7 +1759,7 @@ usax.execute = {
 
 /*******************************************************************
  * shasx (Signed Halving Add and Subtract with Exchange) instruction
- * 
+ *
  * SHASX exchanges the two halfwords of the second operand, performs
  * one signed 16-bit integer addition and one signed 16-bit
  * subtraction, halves the results, and writes the results to the
@@ -1680,19 +1777,19 @@ shasx.disasm = {
 
 shasx.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
   S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
-  
+
   U32 res = (U32(U16(sum >> 1)) << 16) | U32(U16(diff >> 1));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1720,19 +1817,19 @@ shsax.disasm = {
 
 shsax.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
   S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
-  
+
   U32 res = (U32(U16(diff >> 1)) << 16) | U32(U16(sum >> 1));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1760,18 +1857,18 @@ uhasx.disasm = {
 
 uhasx.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
   S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
-  
+
   U32 res = (U32(U16(sum >> 1)) << 16) | U32(U16(diff >> 1));
-  
+
   cpu.SetGPR( rd, res );
 };
 
@@ -1799,22 +1896,21 @@ uhsax.disasm = {
 
 uhsax.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U16 U16;
 
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
-  
+
   S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
   S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
-  
+
   U32 res = (U32(U16(diff >> 1)) << 16) | U32(U16(sum >> 1));
-  
+
   cpu.SetGPR( rd, res );
 };
 
 /*
  * end of uhsax instruction
  *******************************************************************/
-

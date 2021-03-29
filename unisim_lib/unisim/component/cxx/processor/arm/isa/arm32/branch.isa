@@ -73,7 +73,7 @@ bl.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() );
+  cpu.SetGPR( 14, cpu.GetNIA() );
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_CALL );
 };
 
@@ -138,7 +138,7 @@ blx_pcrel.disasm = {
 
 blx_pcrel.execute = {
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() );
+  cpu.SetGPR( 14, cpu.GetNIA() );
   cpu.BranchExchange( (cpu.GetGPR( 15 ) + U32(imm)) | U32(1), ARCH::B_CALL );
 };
 
@@ -154,7 +154,7 @@ blx_reg.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 rm_value = cpu.GetGPR(rm);
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() );
+  cpu.SetGPR( 14, cpu.GetNIA() );
   cpu.BranchExchange( rm_value, ARCH::B_CALL );
 };
 

@@ -17,6 +17,8 @@ import std/map
 import std/vector
 
 import m4/pthread
+import m4/python_dev
+import m4/endian
 
 copy source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation

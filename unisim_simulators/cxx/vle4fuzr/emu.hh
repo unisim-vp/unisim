@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019,
+ *  Copyright (c) 2019-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -14,6 +14,7 @@
 #include <iosfwd>
 #include <set>
 #include <vector>
+#include <string>
 #include <cassert>
 #include <cstdint>
 
@@ -23,203 +24,285 @@ struct Processor
   
   virtual ~Processor();
 
-  struct Abort { virtual ~Abort() {}; virtual void dump(std::ostream&); };
+  virtual void run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
+  virtual unsigned endian_mask(unsigned size) const = 0;
 
   struct Page
   {
-    std::vector<uint8_t> storage;
-    uint32_t base;
-    unsigned perms;
+    typedef void* (*hook_t)(void* uc, unsigned access_type, uint64_t address, unsigned size, unsigned endianness, uint64_t* value);
+    typedef void (*info_t)(uint64_t first, uint64_t last, unsigned perms, unsigned hooks);
+    
+    uint64_t hi() const { return last; }
 
-    uint32_t hi() const { return base + storage.size(); }
-
-    bool operator < (Page const& p) const { return hi() <= p.base; }
-    bool operator > (Page const& p) const { return p.hi() <= base; }
+    bool operator < (Page const& p) const { return last < p.base; }
+    bool operator > (Page const& p) const { return p.last < base; }
 
     struct Above
     {
       using is_transparent = void;
       bool operator() (Page const& a, Page const& b) const { return a > b; }
-      bool operator() (Page const& a, unsigned b) const { return b < a.base; }
+      bool operator() (Page const& a, uint64_t b) const { return a.base > b; }
     };
-
-    Page( uint32_t addr, uint32_t size, unsigned _perms )
-      : storage( size ), base(addr), perms(_perms)
+    Page( Page&& page )
+      : base(page.base), last(page.last), data(page.data)
+      , rhook(page.rhook), whook(page.whook), xhook(page.xhook), perms(page.perms)
+    {
+      page.data = 0;
+    }
+    Page( Page const& ) = delete;
+    Page( uint64_t addr, uint64_t _size, unsigned _perms, hook_t _rhook, hook_t _whook, hook_t _xhook )
+      : base(addr), last(addr+_size-1), data(_perms ? new uint8_t[_size] : 0)
+      , rhook(_rhook), whook(_whook), xhook(_xhook), perms(_perms)
     {}
-    uint32_t len() const { return storage.size(); }
-    uint32_t write(uint32_t addr, uint8_t const* bytes, uint32_t size) const
+    ~Page()
     {
-      if (addr < base) throw 0;
-      addr -= base;
-      if (addr > len()) throw 0;
-      uint32_t count = std::min(len()-addr,size);
-      std::copy( &bytes[0], &bytes[count], at(addr) );
-      return count;
+      delete [] data;
     }
-    uint32_t read(uint32_t addr, uint8_t* bytes, uint32_t size) const
+    uint64_t write(uint64_t addr, uint8_t const* bytes, uint64_t count) const
     {
-      if (addr < base) throw 0;
-      addr -= base;
-      if (addr > len()) throw 0;
-      uint32_t count = std::min(len()-addr,size);
-      std::copy( at(addr), at(addr+count), &bytes[0] );
-      return count;
+      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+      std::copy( &bytes[0], &bytes[cnt], &data[start] );
+      return cnt;
     }
-    uint8_t* at(uint32_t x) const { return const_cast<uint8_t*>(&storage[x]); }
-    void chperms(unsigned new_perms) const { const_cast<unsigned&>(perms) = new_perms; }
+    bool write(uint64_t addr, unsigned count, unsigned endianness, uint64_t value) const
+    {
+      uint8_t bytes[8];
+      for (unsigned idx = 0; idx < count; ++idx)
+        { bytes[idx^endianness] = value; value >>= 8; }
+      return write( addr, &bytes[0], count ) == count;
+    }
+    bool phys_write(Processor* p, uint64_t addr, unsigned count, unsigned endianness, uint64_t value) const
+    {
+      if (data and access( Write ))
+        {
+          if (whook and whook(p, 1, addr, count, endianness, &value)) return false;
+          return write(addr, count, endianness, value);
+        }
+      return whook and not whook(p, 1, addr, count, endianness, &value);
+    }
+    uint64_t read(uint64_t addr, uint8_t* bytes, uint64_t count) const
+    {
+      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+      std::copy( &data[start], &data[start+cnt], &bytes[0] );
+      return cnt;
+    }
+    bool read(uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
+    {
+      uint8_t bytes[8];
+      if (read(addr, &bytes[0], count) != count) return false;
+      uint64_t res = 0;
+      for (unsigned idx = count; idx-- != 0;)
+        { res <<= 8; res |= bytes[idx^endianness]; }
+      *value = res;
+      return true;
+    }
+    bool phys_read(Processor* p, uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
+    {
+      if (data and access( Read ))
+        {
+          if (not read(addr, count, endianness, value)) return false;
+          return not rhook or not rhook(p, 0, addr, count, endianness, value);
+        }
+      return rhook and not rhook(p, 0, addr, count, endianness, value);
+    }
+    bool phys_fetch(Processor* p, uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
+    {
+      if (data and access( Execute ))
+        {
+          if (not read(addr, count, endianness, value)) return false;
+          return not xhook or not xhook(p, 2, addr, count, endianness, value);
+        }
+      return xhook and not xhook(p, 2, addr, count, endianness, value);
+    }
+    
+    bool chperms(unsigned new_perms) const { if (not perms) return false; const_cast<unsigned&>(perms) = new_perms; return true; }
+    void chhook(unsigned access_type, hook_t new_hook) const { const_cast<hook_t&>(*hookptr(access_type)) = new_hook; }
     enum Permision { Read = 1, Write = 2, Execute = 4 };
-    void access(unsigned _perms) const { if ((_perms & perms) != _perms) throw Abort(); }
+    bool access(unsigned _perms) const { return (_perms & perms) == _perms; }
+    bool has_data() const { return data; }
 
     void dump(std::ostream&) const;
     friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
+
+    void info( info_t sink ) const { (*sink)( base, last, perms, bool(rhook)*1 | bool(whook)*2 | bool(xhook)*4 ); }
+    
+  public:
+    uint64_t  base;
+    uint64_t  last;
+  private:
+    uint8_t*  data;
+    hook_t    rhook,whook,xhook;
+    unsigned  perms;
+
+    hook_t const* hookptr(unsigned i) const { switch(i) { case 0: return &rhook; case 1: return &whook; case 2: return &xhook; } return 0; }
+    void resize(uint64_t last);
   };
   
   typedef std::set<Page, Page::Above> Pages;
   Pages pages;
+  Page  failpage;
 
-  Pages::iterator mem_page(uint32_t addr, uint32_t size)
-  {
-    auto pi = pages.lower_bound(addr);
-    if (pi == pages.end())
-      pi = mem_pagemiss(0, addr, (pages.size() ? (--pi)->base : 0)-1);
-    else if (pi->hi() <= addr)
-      pi = mem_pagemiss(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
-    return pi;
-  }
+  void MemoryException(unsigned mtype, uint64_t address, std::string _msg);
 
-  Pages::iterator mem_pagemiss(uint32_t lo, uint32_t addr, uint32_t hi)
-  {
-    uint32_t const page_size = 4096;
-    uint32_t page_lo = std::max(addr & (0u-page_size), lo);
-    uint32_t page_hi = std::min(addr | (page_size-1u), hi);
-    auto pi = mem_map(page_lo,page_hi-page_lo+1,7);
-    assert( pi != pages.end() );
-    return pi;
-  }
+  void error_mem_overlap( Page const& a, Page const& b );
 
-  void mem_overlap_error( Page const& a, Page const& b );
-  
-  Pages::iterator mem_map(uint32_t addr, uint32_t size, unsigned perms)
+  bool mem_map(uint64_t addr, uint64_t size, unsigned perms, Page::hook_t rhook, Page::hook_t whook, Page::hook_t xhook)
   {
-    Page page(addr, size, perms);
+    Page page(addr, size, perms, rhook, whook, xhook);
     auto below = pages.lower_bound(page);
     if (below != pages.end() and not (*below < page))
       {
-        mem_overlap_error(page, *below);
-        return pages.end();
+        error_mem_overlap(page, *below);
+        return false;
       }
     if (pages.size() and below != pages.begin() and not (page < *std::prev(below)))
       {
-        mem_overlap_error(page, *std::prev(below));
-        return pages.end();
+        error_mem_overlap(page, *std::prev(below));
+        return false;
       }
     
-    return pages.insert(below,std::move(page));
+    pages.insert(below,std::move(page));
+    return true;
   }
 
-  int
-  mem_prot(uint32_t addr, unsigned perms)
+  void error_at( char const* issue, uint64_t addr );
+  
+  bool mem_unmap(uint64_t addr)
   {
     auto page = pages.lower_bound(addr);
-    if (page == pages.end() or page->hi() <= addr)
-      return -1;
-    page->chperms( perms );
-    return 0;
+    if (page == pages.end() or page->last < addr)
+      return error_at("no", addr), false;
+    pages.erase(page);
+    return true;
   }
 
-  int
-  mem_write(uint32_t addr, uint8_t const* bytes, uint32_t size)
+  bool page_info(Page::info_t sink, uint64_t addr)
   {
-    for (auto pi = pages.lower_bound(addr); pi != pages.end(); --pi)
+    auto page = pages.lower_bound(addr);
+    if (page == pages.end() or page->last < addr)
+      return error_at("no", addr), false;
+    page->info(sink);
+    return true;
+  }
+  
+  bool pages_info(Page::info_t sink)
+  {
+    for (Page const& page : pages)
+      page.info(sink);
+    return true;
+  }
+  
+  bool  mem_chprot(uint64_t addr, unsigned perms);
+  bool  mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook);
+  bool  mem_exc_chhook(unsigned access_type, Page::hook_t hook);
+  
+  bool
+  mem_write(uint64_t addr, uint8_t const* bytes, uint64_t size)
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end()) return error_at("no", addr), false;
+    for (;;)
       {
+        if (not pi->has_data())
+          return error_at("cannot write hooked", addr), false;
         uintptr_t count = pi->write(addr, bytes, size);
-        if (count >= size)
-          return 0;
+        if (count >= size)       return true;
         addr += count;
         bytes += count;
         size -= count;
+        if (pi == pages.begin()) break;
+        --pi;
       }
-    
-    throw 0;
-    return 0;
+    return error_at("no", addr), false;
   }
 
-  int
-  mem_read(uint32_t addr, uint8_t* bytes, uint32_t size)
+  bool
+  mem_read(uint64_t addr, uint8_t* bytes, uint64_t size)
   {
-    for (auto pi = pages.lower_bound(addr); pi != pages.end(); --pi)
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end()) return error_at("no", addr), false;
+    for (;;)
       {
+        if (not pi->has_data())
+          return error_at("cannot read hooked", addr), false;
         uintptr_t count = pi->read(addr, bytes, size);
-        if (count >= size)
-          return 0;
+        if (count >= size)       return true;
         addr += count;
         bytes += count;
         size -= count;
+        if (pi == pages.begin()) break;
+        --pi;
       }
-       
-    throw 0;
-    return 0;
+    return error_at("no", addr), false;
   }
 
-  bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size )
+  Page const& AccessPage( uint64_t addr )
   {
-    auto pi = mem_page(addr, size);
-    if (pi == pages.end()) return false;
-    pi->access(pi->Write);
-    uint32_t pos = addr - pi->base;
-    std::copy(&buffer[0], &buffer[size], pi->at(pos));
-    return true;
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end() or pi->last < addr)
+      return failpage;
+    return *pi;
   }
 
-  bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+  void PhysicalWriteMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t value )
   {
-    auto pi = mem_page(addr, size);
-    if (pi == pages.end()) return false;
-    pi->access(pi->Read);
-    uint32_t pos = addr - pi->base;
-    std::copy(pi->at(pos), pi->at(pos+size), buffer);
-    return true;
+    Page const& page = AccessPage(addr);
+    if (not page.phys_write(this, addr, size, endianness, value))
+      { error_at("cannot write", addr); MemoryException(1,addr,"protection fault"); }
   }
-  bool PhysicalFetchMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+
+  void PhysicalReadMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
-    auto pi = mem_page(addr, size);
-    if (pi == pages.end()) return false;
-    pi->access(pi->Execute);
-    uint32_t pos = addr - pi->base;
-    std::copy(pi->at(pos), pi->at(pos+size), buffer);
-    return true;
+    Page const& page = AccessPage(addr);
+    if (not page.phys_read(this, addr, size, endianness, value))
+      { error_at("cannot read", addr); MemoryException(0,addr,"protection fault"); }
   }
+  
+  void PhysicalFetchMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
+  {
+    Page const& page = AccessPage(addr);
+    if (not page.phys_fetch(this, addr, size, endianness, value))
+      { error_at("cannot fetch", addr); MemoryException(2,addr,"protection fault"); }
+  }
+  
   struct RegView
   {
     virtual ~RegView() {}
-    virtual void write( Processor& proc, int id, uint8_t const* bytes ) const = 0;
-    virtual void read( Processor& proc, int id, uint8_t* bytes ) const = 0;
+    virtual void write( Processor& proc, int id, uint64_t bytes ) const = 0;
+    virtual void read( Processor& proc, int id, uint64_t* bytes ) const = 0;
   };
 
-  virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
+  virtual RegView const* get_reg(char const* id, uintptr_t size, int regid) = 0;
   
-  int
-  reg_write(char const* id, uintptr_t size, int regid, uint8_t const* bytes)
+  bool NoSuchRegister() { error = "NoSuchRegister()"; return false; }
+  
+  bool
+  reg_write(char const* id, uintptr_t size, int regid, uint64_t value)
   {
-    RegView const* rv = get_reg(id, size);
-    if (not rv) return -1;
-    rv->write(*this, regid, bytes);
-    return 0;
+    if (RegView const* rv = get_reg(id, size, regid))
+      rv->write(*this, regid, value);
+    else
+      return NoSuchRegister();
+    return true;
   }
   
-  int
-  reg_read(char const* id, uintptr_t size, int regid, uint8_t* bytes)
+  bool
+  reg_read(char const* id, uintptr_t size, int regid, uint64_t* value)
   {
-    RegView const* rv = get_reg(id, size);
-    if (not rv) return -1;
-    rv->read(*this, regid, bytes);
-    return 0;
+    if (RegView const* rv = get_reg(id, size, regid))
+      rv->read(*this, regid, value);
+    else
+      return NoSuchRegister();
+    return true;
   }
+  
+  struct Abort {};
+  
+  void abort(std::string _error) { error=_error; throw Abort(); }
   
   struct Hook
   {
-    typedef void (*cb_code)(void* uc, uint64_t address, uint32_t size);
-    typedef void (*cb_intr)(void* uc, uint32_t intno);
+    typedef void (*cb_code)(void* uc, uint64_t address, unsigned size);
     
     Hook(unsigned _types, void* cb, uint64_t _begin, uint64_t _end)
       : types(_types), begin(_begin), end(_end), callback(cb), insn()
@@ -231,17 +314,7 @@ struct Processor
        // INSN = 1 ILLEGAL, // Hook a particular instruction - only a very small subset of instructions supported here
        CODE = 2, // Hook a range of code
        BLOCK = 3, // Hook basic blocks
-       MEM_READ_UNMAPPED = 4, // Hook for memory read on unmapped memory
-       MEM_WRITE_UNMAPPED = 5, // Hook for invalid memory write events
-       MEM_FETCH_UNMAPPED = 6, // Hook for invalid memory fetch for execution events
-       MEM_READ_PROT = 7, // Hook for memory read on read-protected memory
-       MEM_WRITE_PROT = 8, // Hook for memory write on write-protected memory
-       MEM_FETCH_PROT = 9, // Hook for memory fetch on non-executable memory
-       MEM_READ = 10, // Hook memory read events.
-       MEM_WRITE = 11, // Hook memory write events.
-       MEM_FETCH = 12, // Hook memory fetch for execution events
-       MEM_READ_AFTER = 13, // Hook memory after successful read events.
-       INSN_INVALID = 14, // Hook invalid instructions exceptions.
+       MEM = 4, // Hook for memory access on unmapped memory or protected memory
        TYPE_COUNT
       };
     
@@ -266,48 +339,60 @@ struct Processor
     }
     void release( int tp ) { release(type_t(tp)); }
 
-    bool bound_check(uint32_t addr) { return (addr >= begin and addr <= end) or begin > end; }
+    bool bound_check(uint64_t addr) { return (addr >= begin and addr <= end) or begin > end; }
     
-  private:
-    uintptr_t refs;
+  // private:
+  //   uintptr_t refs;
     
   public:
     unsigned types;
     uint64_t begin, end;
     void* callback;
-    void* user_data;
     int insn;
   };
 
-  bool add( Hook* hook );
-  void insn_hooks(uint64_t addr, uint64_t len);
+  bool add_hook( int types, void* callback, uint64_t begin, uint64_t end );
+  void insn_hooks(uint64_t addr, unsigned len);
+  void syscall_hooks(uint64_t addr, unsigned num);
+  
+  void DebugBranch( uint64_t target ) { debug_branch = target; }
+  uint64_t debug_branch;
+  
+  void set_disasm(bool _disasm) { disasm = _disasm; }
+  std::string asmbuf;
+  
+  virtual char const* get_asm() = 0;
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
+  std::string error;
   bool disasm;
   bool bblock;
-  
-  void set_disasm(bool _disasm) { disasm = _disasm; }
-  virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;
+  //bool terminated;
 };
 
-struct Branch
+struct BranchInfo
 {
-  Branch() : address(), target(BNone), pass(false) {}
   enum { BNone = 0, Direct, Indirect };
-  uint32_t address;
+  
+  BranchInfo() : address(), target(BNone), pass(false) {}
+  template <class X> void update( bool branch, X const& x ) { update( branch, x.determined, x.value ); }
+  void update( bool branch, bool known, uint64_t target );
+  
+  uint64_t address;
   unsigned target : 2;
   unsigned pass : 1;
 };
 
-template <class ARCH> struct InsnBranch : public Branch {};
-
-template <class OP, uint32_t SZ>
+template <class OP, uint64_t SZ>
 struct OpPage
 {
   enum { size = SZ };
   OP* ops[SZ];
   OpPage() : ops() {}
+  OP** begin() { return &ops[0]; }
+  OP** end() { return &ops[SZ]; }
+  ~OpPage() { for (OP* o : *this) delete o;  }
 };
 
 template <unsigned N>

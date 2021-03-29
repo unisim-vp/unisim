@@ -263,7 +263,7 @@ namespace intel {
     u8_t lsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), rsh = u8_t( bitsize ) - lsh;
 
     INT res;
-    if (arch.Cond(lsh != u8_t(0)))
+    if (arch.Test(lsh != u8_t(0)))
       {
         res = (arg1 << lsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh >> 1) | (arg1 >> 1 >> rsh);
         arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> rsh) & INT(1) ) );
@@ -290,7 +290,7 @@ namespace intel {
     u8_t rsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), lsh = u8_t( bitsize ) - rsh;
     
     INT res;
-    if (arch.Cond(rsh != u8_t(0)))
+    if (arch.Test(rsh != u8_t(0)))
       {
         res = (arg1 >> rsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh) | (arg1 << 1 << lsh);
         arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 << lsh) & msb ) );
@@ -323,7 +323,7 @@ namespace intel {
     u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     res = arg1 << sharg;
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
@@ -346,7 +346,7 @@ namespace intel {
     u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     res = arg1 >> sharg;
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( arg1 & msb ) );
       
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
@@ -369,7 +369,7 @@ namespace intel {
     u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     res = INT( (typename atpinfo<ARCH,INT>::stype( arg1 )) >> sharg );
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
       
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
@@ -401,7 +401,7 @@ namespace intel {
   template <class ARCH, typename INT>
   void eval_div( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
-    if (arch.Cond(divisor == INT(0))) arch._DE();
+    if (arch.Test(divisor == INT(0))) arch._DE();
     
     typedef typename atpinfo<ARCH,INT>::utype utype;
     typedef typename atpinfo<ARCH,INT>::twice twice;
@@ -500,11 +500,11 @@ namespace intel {
     
     f64_t res;
     f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
-    if (arch.Cond( (modulus * threshold) > dividend ))
+    if (arch.Test( (modulus * threshold) > dividend ))
       {
         f64_t quotient = firound( dividend / modulus, intel::x87frnd_nearest );
         res = fmodulo( dividend, modulus );
-        u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
+        u64_t uq = (arch.Test( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
         arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
         arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
         arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
@@ -514,7 +514,7 @@ namespace intel {
       {
         f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
         f64_t pmodulus = modulus;
-        while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
+        while (arch.Test( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
         res = fmodulo( dividend, pmodulus );
         arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
       }
@@ -531,11 +531,11 @@ namespace intel {
     
     f64_t res;
     f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
-    if (arch.Cond( (modulus * threshold) > dividend ))
+    if (arch.Test( (modulus * threshold) > dividend ))
       {
         f64_t quotient = firound( dividend / modulus, intel::x87frnd_toward0 );
         res = fmodulo( dividend, modulus );
-        u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
+        u64_t uq = (arch.Test( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
         arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
         arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
         arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
@@ -545,7 +545,7 @@ namespace intel {
       {
         f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
         f64_t pmodulus = modulus;
-        while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
+        while (arch.Test( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
         res = fmodulo( dividend, pmodulus );
         arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
       }

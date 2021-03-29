@@ -160,17 +160,6 @@ build_top_configure_cross
 
 # Simulator
 
-SIM_VERSION_MAJOR=$(printf "${SIMULATOR_VERSION}" | cut -f 1 -d .)
-SIM_VERSION_MINOR=$(printf "${SIMULATOR_VERSION}" | cut -f 2 -d .)
-SIM_VERSION_PATCH=$(printf "${SIMULATOR_VERSION}" | cut -f 3 -d .)
-SIM_VERSION="${SIMULATOR_VERSION}"
-SIM_VERSION_CODENAME="Triumphalis Tarraco"
-SIM_AUTHOR="Yves Lhuillier (yves.lhuillier@cea.fr)"
-SIM_PROGRAM_NAME="UNISIM Arm_Simtest"
-SIM_LICENSE="BSD (See file COPYING)"
-SIM_COPYRIGHT="Copyright (C) 2007-2017, Commissariat a l'Energie Atomique"
-SIM_DESCRIPTION="UNISIM ARM SELF SIMULATOR TEST GENERATION"
-SIM_SCHEMATIC="arm_simtest/fig_schematic.pdf"
 output_simulator_configure_ac <(cat << EOF
 AC_INIT([UNISIM ARMv7-GT C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])

@@ -49,7 +49,7 @@ struct CLI
   virtual void           options();
 
   virtual void           parse( Args& _args ) = 0;
-  virtual void           description() = 0;
+  virtual void           description() const = 0;
 };
 
 #endif // __CLI_HH__

@@ -39,9 +39,6 @@
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
-#include <unisim/component/cxx/processor/arm/hostfloat.hh>
-#include <unisim/component/cxx/processor/arm/simfloat.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
@@ -65,15 +62,14 @@ namespace arm {
  * different methods to handle them.
  */
 
-template <typename CONFIG>
+template <typename FP_IMPL, typename CPU_IMPL>
 struct CPU
   : public virtual unisim::kernel::Object
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
 {
-  typedef CONFIG Config;
-  typedef simfloat::FP FP;
-  typedef FP::F64  F64;
-  typedef FP::F32  F32;
+  typedef FP_IMPL FP;
+  typedef typename FP::F64  F64;
+  typedef typename FP::F32  F32;
   typedef uint8_t  U8;
   typedef uint16_t U16;
   typedef uint32_t U32;
@@ -88,10 +84,10 @@ struct CPU
    * ARM architecture constants
    */
     
-  /* specific register indices */
-  static unsigned int const PC_reg = 15;
-  static unsigned int const LR_reg = 14;
-  static unsigned int const SP_reg = 13;
+  // /* specific register indices */
+  // static unsigned int const PC_reg = 15;
+  // static unsigned int const LR_reg = 14;
+  // static unsigned int const SP_reg = 13;
 
   /* masks for the different running modes */
   static uint32_t const USER_MODE = 0b10000;
@@ -257,7 +253,7 @@ struct CPU
    * @return the endian being used
    */
   unisim::util::endian::endian_type
-  GetEndianness()
+  GetEndianness() const
   {
     return (this->cpsr.Get( E ) == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
   }
@@ -265,12 +261,12 @@ struct CPU
   /** Determine wether the processor instruction stream is inside an
    * IT block.
    */
-  bool itblock() const { return CONFIG::insnsT2 ? cpsr.InITBlock() : false; }
+  bool itblock() const { return CPU_IMPL::Config::insnsT2 ? cpsr.InITBlock() : false; }
   
   /** Return the current condition associated to the IT state of the
    * processor.
    */
-  uint32_t itcond() const { return CONFIG::insnsT2 ? cpsr.ITGetCondition() : COND_AL; }
+  uint32_t itcond() const { return CPU_IMPL::Config::insnsT2 ? cpsr.ITGetCondition() : COND_AL; }
   
   bool m_isit; /* determines wether current instruction is an IT one. */
   void ITSetState( uint32_t cond, uint32_t mask )
@@ -348,9 +344,9 @@ struct CPU
   /************************************************************************/
 
 public:
-  bool     Concretize( bool cond ) { return cond; }
-  void     UnpredictableInsnBehaviour();
-  void     CallSupervisor( uint16_t imm );
+  bool     Test( bool cond ) { return cond; }
+  virtual void UnpredictableInsnBehaviour();
+  void     CallSupervisor( uint32_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   virtual void WaitForInterrupt() {}; // Implementation-defined
   
@@ -373,29 +369,38 @@ protected:
   /**************************/
 
 public:
-  uint32_t    CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value );
-  char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  
-protected:
   struct CP15Reg
   {
-    virtual            ~CP15Reg() {}
-    virtual unsigned    RequiredPL() { return 1; }
-    virtual void        Write( CPU& cpu, uint32_t value ) {
-      cpu.logger << unisim::kernel::logger::DebugWarning << "Writing " << Describe() << unisim::kernel::logger::EndDebugWarning;
+    virtual         ~CP15Reg() {}
+    virtual void     CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, bool) const { cpu.RequiresPL(1); }
+    virtual void     Write(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, uint32_t value) const
+    {
+      cpu.logger << unisim::kernel::logger::DebugError << "Writing " << Description(crn, op1, crm, op2)
+                 << " (pc=" << std::hex << cpu.current_insn_addr << std::dec << ")" << unisim::kernel::logger::EndDebugError;
       cpu.UnpredictableInsnBehaviour();
     }
-    virtual uint32_t    Read( CPU& cpu ) {
-      cpu.logger << unisim::kernel::logger::DebugWarning << "Reading " << Describe() << unisim::kernel::logger::EndDebugWarning;
+    virtual uint32_t Read(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, CPU_IMPL& cpu) const
+    {
+      cpu.logger << unisim::kernel::logger::DebugError << "Reading " << Description(crn, op1, crm, op2)
+                 << " (pc=" << std::hex << cpu.current_insn_addr << std::dec << ")" << unisim::kernel::logger::EndDebugError;
       cpu.UnpredictableInsnBehaviour();
       return 0;
     }
-    virtual char const* Describe() = 0;
+    virtual void Describe(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, std::ostream& sink) const
+    {
+      sink << Description(crn, op1, crm, op2);
+    }
+    struct Description
+    {
+      Description(uint8_t _crn, uint8_t _op1, uint8_t _crm, uint8_t _op2) : crn(_crn), op1(_op1), crm(_crm), op2(_op2) {}
+      friend std::ostream& operator << (std::ostream& sink, Description const& d)
+      { return sink << "CR15{crn=" << int(d.crn) << ", op1=" << int(d.op1) << ", crm=" << int(d.crm) << ", op2=" << int(d.op2) << "}"; }
+      uint8_t crn; uint8_t op1; uint8_t crm; uint8_t op2;
+    };
   };
   
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  virtual void     CP15ResetRegisters();
+  static CP15Reg* CP15GetRegister(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2);
+  void            CP15ResetRegisters();
     
   /**************************/
   /* CP15 Interface     END */
@@ -508,7 +513,5 @@ protected:
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__

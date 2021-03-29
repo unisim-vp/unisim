@@ -18,7 +18,6 @@
 #ifndef __GENERATOR_HH__
 #define __GENERATOR_HH__
 
-#include <main.hh>
 #include <fwd.hh>
 #include <conststr.hh>
 #include <map>

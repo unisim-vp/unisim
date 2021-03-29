@@ -67,18 +67,49 @@ namespace arm {
     DAbort_Domain,
     DAbort_Permission,
     DAbort_Translation,
+    DAbort_AddressSize,
     DAbort_SyncExternal,
-    DAbort_SyncExternalonWalk,
+    DAbort_SyncExternalOnWalk,
     DAbort_SyncParity,
-    DAbort_SyncParityonWalk,
+    DAbort_SyncParityOnWalk,
     DAbort_AsyncParity,
     DAbort_AsyncExternal,
-    DAbort_DebugEvent,
+    DAbort_Debug,
     DAbort_TLBConflict,
     DAbort_Lockdown,
     DAbort_Coproc,
     DAbort_ICacheMaint
   };
+
+// EncodeLDFSC()
+// =============
+// Function that gives the Long-descriptor FSC code for types of Fault
+  
+inline unsigned EncodeLDFSC(DAbort type, unsigned level)
+{
+  unsigned result;
+  switch (type)
+    {
+    case DAbort_AddressSize:        return 0b000000 | level;
+    case DAbort_Translation:        return 0b000100 | level;
+    case DAbort_AccessFlag:         return 0b001000 | level;
+    case DAbort_Permission:         return 0b001100 | level;
+    case DAbort_SyncExternal:       return 0b010000;
+    case DAbort_SyncExternalOnWalk: return 0b010100 | level;
+    case DAbort_SyncParity:         return 0b011000;
+    case DAbort_SyncParityOnWalk:   return 0b011100 | level;
+    case DAbort_AsyncParity:        return 0b011001;
+    case DAbort_AsyncExternal:      return 0b010001;
+    case DAbort_Alignment:          return 0b100001;
+    case DAbort_Debug:              return 0b100010;
+    case DAbort_TLBConflict:        return 0b110000;
+    case DAbort_Lockdown:           return 0b110100;
+    case DAbort_Coproc:             return 0b111010;
+    default: { struct Bad{}; throw Bad(); }
+    }
+  return result;
+}
+  
 
 } // end of namespace arm
 } // end of namespace processor

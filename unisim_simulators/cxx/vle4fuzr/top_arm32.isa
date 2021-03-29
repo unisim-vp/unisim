@@ -10,10 +10,11 @@
 
 include "unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
+set withcache_p false;
+
 decl {
   #include <emu.hh>
 }
 
-var branch : {InsnBranch<ARCH>};
+var branch : {typename ARCH::InsnBranch};
 
-set withcache_p false;

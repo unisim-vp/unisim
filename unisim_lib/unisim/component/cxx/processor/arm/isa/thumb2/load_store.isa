@@ -414,8 +414,8 @@ ldrsb_reg.execute = {
 
 op ldrd( 0b1110100[7]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]:> <: rt1[4]: rt2[4]: shl<2> offset[8] );
 ldrd.var imm : {int32_t} = {u?offset:-offset};
-ldrd.var reject : {Reject} = {((not p) and (not w)) or (rn == 15) or (w and ((rt1 == rn) or (rt2 == rn))) or
-                              (rt1 == 13) or (rt1 == 15) or (rt2 == 13) or (rt2 == 15)};
+ldrd.var reject : {Reject} = {(not p and not w) or (rn == 15) or (w and ((rt1 == rn) or (rt2 == rn))) or
+                              (rt1 == 13) or (rt1 == 15) or (rt2 == 13) or (rt2 == 15) or (rt1 == rt2)};
 
 ldrd.disasm = {
   buffer << "ldrd\t" << DisasmRegister(rt1) << ", " << DisasmRegister(rt2) << ", " << DisasmMemoryRI( rn, imm, p, w );

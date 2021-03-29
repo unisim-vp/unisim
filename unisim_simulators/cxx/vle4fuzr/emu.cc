@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019,
+ *  Copyright (c) 2019-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -10,13 +10,14 @@
 
 #include "emu.hh"
 #include <iostream>
+#include <sstream>
 #include <set>
 #include <vector>
 #include <cassert>
 #include <cstdint>
 
 Processor::Processor()
-  : pages(), hooks(), disasm(true), bblock(true)
+  : pages(), failpage(0,0,0,0,0,0), debug_branch(-1), hooks(), disasm(true), bblock(true)
 {}
 
 Processor::~Processor()
@@ -35,28 +36,22 @@ bool
 Processor::Hook::check_types()
 {
   if (not ( Is<INTR>()           ).check(types)) return false; // uc_cb_hookintr_t
-  //      if (not ( Is<INSN>()           ).check(types)) return false; // unimplemented
   if (not ( Is<CODE>() |
             Is<BLOCK>()          ).check(types)) return false; // uc_cb_hookcode_t
-  if (not ( Is<MEM_READ_UNMAPPED>() |
-            Is<MEM_WRITE_UNMAPPED>() |
-            Is<MEM_FETCH_UNMAPPED>() |
-            Is<MEM_READ_PROT>() |
-            Is<MEM_WRITE_PROT>() |
-            Is<MEM_FETCH_PROT>() ).check(types)) return false; // uc_cb_eventmem_t
-  if (not ( Is<MEM_READ>() |
-            Is<MEM_WRITE>() |
-            Is<MEM_FETCH>() |
-            Is<MEM_READ_AFTER>() ).check(types)) return false; // uc_cb_hookmem_t
-  if (not ( Is<INSN_INVALID>()   ).check(types)) return false; // uc_cb_hookinsn_invalid_t
   return true;
 }
     
 bool
-Processor::add( Processor::Hook* hook )
+Processor::add_hook( int types, void* callback, uint64_t begin, uint64_t end )
 {
+  Processor::Hook* hook = new Processor::Hook(types, callback, begin, end);
+  
   if (not hook->check_types())
-    return false;
+    {
+      std::cerr << "Hook typing error: " << std::hex << types << std::endl;
+      delete hook;
+      return false;
+    }
   for (int idx = 0; idx < int(Hook::TYPE_COUNT); ++idx)
     {
       if (hook->has_type(Hook::type_t(idx)))
@@ -68,7 +63,7 @@ Processor::add( Processor::Hook* hook )
 }
 
 void
-Processor::insn_hooks(uint64_t addr, uint64_t insn_length)
+Processor::insn_hooks(uint64_t addr, unsigned insn_length)
 {
   if (this->bblock)
     {
@@ -85,23 +80,119 @@ Processor::insn_hooks(uint64_t addr, uint64_t insn_length)
     }
 }
 
-void Processor::Abort::dump(std::ostream& sink)
+void
+Processor::syscall_hooks(uint64_t insn_addr, unsigned  intno)
 {
-  sink << "Abort";
+  bool catched = false;
+  for (auto h : hooks[Hook::INTR])
+    {
+      if (not h->bound_check(insn_addr))
+        continue;
+      catched = true;
+      h->cb<Hook::cb_code>()(this, insn_addr, intno);
+    }
+
+  if (not catched)
+    abort("ProcessorException('syscall')");
 }
 
-void
-Processor::mem_overlap_error( Page const& a, Page const& b )
+bool
+Processor::mem_chprot(uint64_t addr, unsigned perms)
 {
-  std::cerr << "error: inserted " << a << " overlaps " << b << "\n";
+  auto page = pages.lower_bound(addr);
+  if (page == pages.end() or page->last < addr)
+    return error_at("no", addr), false;
+  page->chperms( perms );
+  return true;
+}
+
+namespace
+{
+  bool check_access_type(Processor& proc, unsigned access_type)
+  {
+    if (access_type < 3)
+      return true;
+    
+    std::cerr << "Illegal access_type " << access_type << ", should be (0:read, 1: write, 2: fetch).\n";
+    proc.error = "InvalidArgument()";
+    return false;
+  }
+}
+
+bool
+Processor::mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook)
+{
+  if (not check_access_type(*this, access_type))
+    return false;
+  auto page = pages.lower_bound(addr);
+  if (page == pages.end() or page->last < addr)
+    return error_at("no", addr), false;
+  page->chhook( access_type, hook );
+  return true;
+}
+
+bool
+Processor::mem_exc_chhook(unsigned access_type, Page::hook_t hook)
+{
+  if (not check_access_type(*this,access_type))
+    return false;
+  failpage.chhook( access_type, hook );
+  return true;
 }
 
 void
 Processor::Page::dump(std::ostream& sink) const
 {
-  std::cerr << "Page[0x" << std::hex << base << " .. 0x" << (hi()-1) << "]("
+  std::cerr << "Page[0x" << std::hex << base << " .. 0x" << hi() << "]("
             << ("r "[not (perms & Read)])
             << ("w "[not (perms & Write)])
             << ("x "[not (perms & Execute)])
             << ")";
+}
+
+void
+BranchInfo::update( bool branch, bool known, uint64_t naddress )
+{
+  if (not branch)
+    { pass = true; }
+  else if (not known)
+    {
+      if (target == Direct)
+        { throw *this; }
+      target = Indirect;
+    }
+  else if (target == BNone)
+    {
+      target = Direct;
+      address = naddress;
+    }
+  else if (target != Direct or address != naddress)
+    { throw *this; }
+}
+
+
+void
+Processor::error_mem_overlap( Page const& a, Page const& b )
+{
+  std::cerr << "error: inserted " << a << " overlaps " << b << "\n";
+  std::ostringstream buf;
+  buf << "OverlapError('" << a << "', '" << b << "')";
+  error = buf.str();
+}
+
+void
+Processor::error_at( char const* issue, uint64_t addr )
+{
+  std::cerr << "error: " << issue << " page at 0x" << std::hex << addr << ".\n";
+  std::ostringstream buf;
+  buf << "PageError('" << issue << " page', 0x" << std::hex << addr << ")";
+  error = buf.str();
+}
+
+void
+Processor::MemoryException(unsigned mtype, uint64_t address, std::string _msg)
+{
+  std::ostringstream buf;
+  buf << "MemoryException(" << std::dec << mtype << ", 0x" << std::hex << address << ", '" << _msg << "')";
+  abort(buf.str());
 }

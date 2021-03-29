@@ -57,6 +57,44 @@ UnsignedMultiplyHigh64( ARCH&, typename ARCH::U64 opl, typename ARCH::U64 opr )
   return (((lolo >> 32) + U64(U32(hilo)) + U64(U32(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
 }
 
+template <class ARCH>
+typename ARCH::S64
+SignedMultiplyHigh64( ARCH&, typename ARCH::S64 opl, typename ARCH::S64 opr )
+{
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U32 l[4], r[4];
+  for (int idx = 0; idx < 4; ++idx)
+    {
+      l[idx] = U32(opl); opl >>= 32;
+      r[idx] = U32(opr); opr >>= 32;
+    }
+  U64 p[4][4];
+  for (int lidx = 0; lidx < 4; ++lidx)
+    for (int ridx = 0, rend = 4 - lidx; ridx < rend; ++ridx)
+      p[lidx][ridx] = U64(l[lidx])*U64(r[ridx]);
+
+  U64 res = (p[1][0] + p[0][1] + U64(p[0][0] >> 32)) >> 32;
+  res += p[2][0] + p[1][1] + p[0][2];
+  res += (U64(p[3][0]) + U64(p[2][1]) + U64(p[1][2]) + U64(p[0][3])) << 32;
+  
+  return typename ARCH::S64(res);
+}
+
+// Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
+template <typename OUT, unsigned S, typename IN>
+OUT PolyMod2(IN value, uint32_t _poly)
+{
+  IN poly(_poly);
+  
+  for (unsigned bit = 0; bit < S; ++bit)
+    value = (value >> 1) ^ poly*(value & IN(1));
+  
+  return OUT(value);
+}
+
+  
 
 } // end of namespace arm64
 } // end of namespace isa

@@ -18,7 +18,6 @@
 #ifndef __ISA_HH__
 #define __ISA_HH__
 
-#include <main.hh>
 #include <fwd.hh>
 #include <vect.hh>
 #include <conststr.hh>
@@ -27,6 +26,29 @@
 #include <memory>
 #include <iosfwd>
 #include <referencecounting.hh>
+
+#include <conststr.hh>
+#include <vector>
+
+// external options (environ, command-line...)
+struct Opts
+{
+  Opts(char const*);
+  
+  char const*             outputprefix;
+  unsigned int            verbosity;
+  char const*             expandname;
+  char const*             depfilename;
+  unsigned int            minwordsize;
+  bool                    sourcelines;
+  bool                    privatemembers;
+  bool                    specialization;
+  bool                    comments;
+  
+  virtual ConstStr        locate( char const* _name ) const = 0;
+  virtual char const*     appname() const = 0;
+  virtual char const*     appversion() const = 0;
+};
 
 struct Isa
 {

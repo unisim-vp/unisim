@@ -31,10 +31,10 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <simulator.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.tcc>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <unisim/service/debug/debugger/debugger.tcc>
-#include <simulator.hh>
 #include <stdexcept>
 #include <iostream>
 #include <inttypes.h>
@@ -64,6 +64,11 @@ Router::Router(const char* name, unisim::kernel::Object* parent)
   // this->mapping[2].output_port = 0;
   // this->mapping[2].translation = 0x00002000;
 }
+
+CPU::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object(name, parent)
+  , unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>(name, parent)
+{}
 
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::Simulator(argc, argv, Simulator::DefaultConfiguration)

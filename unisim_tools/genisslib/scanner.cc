@@ -540,7 +540,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                     if (SDInstance const* sdinstance = isa.sdinstance( symbol ))
                       {
                         symfl.err( "error: subdecoder instance `%s' redefined", symbol.str() );
-                        sdinstance->m_fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
+                        sdinstance->fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
                         throw CLex::Scanner::Unexpected();
                       }
 

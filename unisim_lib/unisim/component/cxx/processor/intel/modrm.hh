@@ -39,7 +39,6 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/disasm.hh>
 #include <iosfwd>
-#include <iostream>
 #include <inttypes.h>
 
 namespace unisim {
@@ -72,7 +71,7 @@ namespace intel {
     MOp<ARCH> const* operator -> () const { return mop; }
     // operator MOp<ARCH> const* () const { return mop; }
     MOp<ARCH> const* memop() const { return mop; }
-    MOp<ARCH> const* release() { MOp<ARCH> const* res = 0; std::swap( mop, res ); return res; }
+    MOp<ARCH> const* release() { MOp<ARCH> const* res = mop; mop = 0; return res; }
     unsigned ereg() const { return unsigned( uintptr_t( mop ) ); }
   };
   

@@ -1,4 +1,4 @@
- /*
+/*
  *  Copyright (c) 2015-2016,
  *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
  *  All rights reserved.

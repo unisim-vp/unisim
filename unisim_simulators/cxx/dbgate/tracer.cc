@@ -35,6 +35,7 @@
 #include <unisim/util/dbgate/dbgate.hh>
 #include <tracee.hh>
 #include <iostream>
+#include <cstdlib>
 #include <cassert>
 
 int
@@ -58,7 +59,7 @@ main(int argc, char** argv)
       return 1;
     }
 
-  unisim::util::dbgate::DBGated server(12345, 0);
+  unisim::util::dbgate::DBGated server(12345, getenv("DBGATEDROOT"));
   std::cerr << "DBGate server started in " << server.root << " at localhost:" << server.port << "\n";
 
   for (DBGateMethodID method; (method = tracee.nextcall()).good();)

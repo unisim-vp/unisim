@@ -61,11 +61,13 @@ namespace symbolic {
   
   struct ScalarType
   {
-    enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64, F80 };
+    
     static id_t IntegerType( bool is_signed, unsigned bits )
     {
       switch (bits) {
       default: throw VOID;
+      case 1:  return BOOL;
       case 8:  return is_signed ? S8 :  U8;
       case 16: return is_signed ? S16 : U16;
       case 32: return is_signed ? S32 : U32;
@@ -90,6 +92,7 @@ namespace symbolic {
         case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
         case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
         case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
+        case F80:  bitsize = 80; is_integer = false; is_signed = true;  name = "F80"; break;
         }
     }
     char const* name;
@@ -235,12 +238,19 @@ namespace symbolic {
     static unsigned bitsize() { return 64; }
     static ScalarType::id_t GetType() { return ScalarType::F64; }
   };
+  template <> struct TypeInfo<long double>
+  {
+    static void Repr( std::ostream& sink, double v ) { sink << "F80( " << v << " )"; }
+    enum { BYTECOUNT = 10 };
+    static unsigned bitsize() { return 80; }
+    static ScalarType::id_t GetType() { return ScalarType::F80; }
+  };
   
   struct ConstNodeBase : public ExprNode
   {
-    virtual unsigned SubCount() const { return 0; };
+    virtual unsigned SubCount() const override { return 0; };
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const override { return this; }
-    ConstNodeBase const* AsConstNode() const { return this; };
+    ConstNodeBase const* AsConstNode() const override { return this; };
     virtual ConstNodeBase* apply( Op op, ConstNodeBase const** args ) const = 0;
     virtual float Get( float ) const = 0;
     virtual double Get( double ) const = 0;
@@ -311,6 +321,7 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalRotateRight( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateRight for this type" ); }
   uint32_t   EvalRotateRight( uint32_t v, uint8_t shift );
+  uint64_t   EvalRotateRight( uint64_t v, uint8_t shift );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
   uint32_t   EvalRotateLeft( uint32_t v, uint8_t shift );
@@ -377,9 +388,9 @@ namespace symbolic {
   
   struct OpNodeBase : public ExprNode
   {
-    OpNodeBase( Op _op ) : op(_op) { if (op.code == op.end) throw 0; }
-    virtual OpNodeBase const* AsOpNode() const { return this; }
-    virtual ScalarType::id_t GetType() const
+    OpNodeBase( Op _op ) : op(_op) { if (op.code == op.end) { struct Bad {}; throw Bad(); } }
+    virtual OpNodeBase const* AsOpNode() const override { return this; }
+    virtual ScalarType::id_t GetType() const override
     {
       switch (op.code)
         {
@@ -410,7 +421,7 @@ namespace symbolic {
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<OpNodeBase const&>( rhs ) ); }
     int compare( OpNodeBase const& rhs ) const { return op.cmp( rhs.op ); }
     
-    virtual void Repr( std::ostream& sink ) const
+    virtual void Repr( std::ostream& sink ) const override
     {
       sink << op.c_str() << "( ";
       char const* sep = "";
@@ -428,14 +439,14 @@ namespace symbolic {
     typedef ConstNode<VALUE_TYPE> this_type;
     
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual this_type* Mutate() const { return new this_type( *this ); };
+    virtual this_type* Mutate() const override { return new this_type( *this ); };
     
-    virtual void Repr( std::ostream& sink ) const { TypeInfo<VALUE_TYPE>::Repr( sink, value ); }
+    virtual void Repr( std::ostream& sink ) const override { TypeInfo<VALUE_TYPE>::Repr( sink, value ); }
     
     static VALUE_TYPE GetValue( ConstNodeBase const* cnb );
   
     ConstNodeBase*
-    apply( Op op, ConstNodeBase const** args ) const
+    apply( Op op, ConstNodeBase const** args ) const override
     {
       switch (op.code)
         {
@@ -488,19 +499,19 @@ namespace symbolic {
       warn() << "Unhandled unary operation: " << op.c_str() << "\n";
       return 0;
     }
-    float Get( float ) const { return value; }
-    double Get( double ) const { return value; }
-    long double Get( long double ) const { return value; }
-    bool Get( bool ) const { return value; }
-    uint8_t Get( uint8_t ) const { return value; }
-    uint16_t Get( uint16_t ) const { return value; }
-    uint32_t Get( uint32_t ) const { return value; }
-    uint64_t Get( uint64_t ) const { return value; }
-    int8_t Get( int8_t ) const { return value; }
-    int16_t Get( int16_t ) const { return value; }
-    int32_t Get( int32_t ) const { return value; }
-    int64_t Get( int64_t ) const { return value; }
-    ScalarType::id_t GetType() const { return TypeInfo<VALUE_TYPE>::GetType(); }
+    float Get( float ) const override { return value; }
+    double Get( double ) const override { return value; }
+    long double Get( long double ) const override { return value; }
+    bool Get( bool ) const override { return value; }
+    uint8_t Get( uint8_t ) const override { return value; }
+    uint16_t Get( uint16_t ) const override { return value; }
+    uint32_t Get( uint32_t ) const override { return value; }
+    uint64_t Get( uint64_t ) const override { return value; }
+    int8_t Get( int8_t ) const override { return value; }
+    int16_t Get( int16_t ) const override { return value; }
+    int32_t Get( int32_t ) const override { return value; }
+    int64_t Get( int64_t ) const override { return value; }
+    ScalarType::id_t GetType() const override { return TypeInfo<VALUE_TYPE>::GetType(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0; }
   };
@@ -517,12 +528,12 @@ namespace symbolic {
     typedef OpNode<SUBCOUNT> this_type;
     
     OpNode( Op _op ) : OpNodeBase(_op) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
 
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return cnbs[0]->apply( op, &cnbs[0] ); }
     
-    virtual unsigned SubCount() const { return SUBCOUNT; };
-    virtual Expr const& GetSub(unsigned idx) const
+    virtual unsigned SubCount() const override { return SUBCOUNT; };
+    virtual Expr const& GetSub(unsigned idx) const override
     {
       if (idx >= SUBCOUNT)
         return ExprNode::GetSub(idx);
@@ -536,9 +547,9 @@ namespace symbolic {
   {
     CastNodeBase( Expr const& _src ) : OpNodeBase( Op::Cast ), src(_src) {}
     virtual ScalarType::id_t GetSrcType() const = 0;
-    virtual unsigned SubCount() const { return 1; };
-    virtual Expr const& GetSub(unsigned idx) const { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
-    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( GetType() ).name; sink << "( " << src << " )"; }
+    virtual unsigned SubCount() const override { return 1; };
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
+    virtual void Repr( std::ostream& sink ) const override { sink << ScalarType( GetType() ).name; sink << "( " << src << " )"; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<CastNodeBase const&>( rhs ) ); }
     int compare( CastNodeBase const& rhs ) const { return 0; }
     
@@ -550,9 +561,9 @@ namespace symbolic {
   {
     typedef CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> this_type;
     CastNode( Expr const& _src ) : CastNodeBase( _src ) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ScalarType::id_t GetSrcType() const { return TypeInfo<SRC_VALUE_TYPE>::GetType(); }
-    virtual ScalarType::id_t GetType() const { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
+    virtual ScalarType::id_t GetType() const override { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return new ConstNode<DST_VALUE_TYPE>( cnbs[0]->Get( DST_VALUE_TYPE() ) ); }
   };
   
@@ -577,6 +588,7 @@ namespace symbolic {
   {
     typedef VALUE_TYPE value_type;
     typedef SmartValue<value_type> this_type;
+    static ScalarType::id_t GetType() { return TypeInfo<value_type>::GetType(); }
     
     Expr expr;
     
@@ -690,10 +702,10 @@ namespace symbolic {
     struct DefaultNaNNode : public ExprNode
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
-      virtual DefaultNaNNode* Mutate() const { return new DefaultNaNNode( *this ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
-      virtual unsigned SubCount() const { return 0; };
-      virtual ScalarType::id_t GetType() const { return fsz==32 ? TypeInfo<float>::GetType() : TypeInfo<double>::GetType(); }
+      virtual DefaultNaNNode* Mutate() const override { return new DefaultNaNNode( *this ); }
+      virtual void Repr( std::ostream& sink ) const override { sink << "DefaultNaN()"; }
+      virtual unsigned SubCount() const override { return 0; };
+      virtual ScalarType::id_t GetType() const override { return fsz==32 ? TypeInfo<float>::GetType() : TypeInfo<double>::GetType(); }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<DefaultNaNNode const&>( rhs ) ); }
       int compare( DefaultNaNNode const& rhs ) const { return fsz - rhs.fsz; }
     };
@@ -729,13 +741,13 @@ namespace symbolic {
     struct IsNaNNode : public ExprNode
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
-      virtual IsNaNNode* Mutate() const { return new IsNaNNode( *this ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "IsNaN(" << src << ")"; }
+      virtual IsNaNNode* Mutate() const override { return new IsNaNNode( *this ); }
+      virtual void Repr( std::ostream& sink ) const override { sink << "IsNaN(" << src << ")"; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<IsNaNNode const&>( rhs ) ); }
       int compare( IsNaNNode const& rhs ) const { return int(signaling) - int(rhs.signaling); }
-      virtual unsigned SubCount() const { return 1; };
-      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; };
-      virtual ScalarType::id_t GetType() const { return ScalarType::BOOL; }
+      virtual unsigned SubCount() const override { return 1; };
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; };
+      virtual ScalarType::id_t GetType() const override { return ScalarType::BOOL; }
     };
     
     template <typename FLOAT> static
@@ -781,13 +793,13 @@ namespace symbolic {
       MulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
         : acc( _acc ), left( _left ), right( _right )
       {} Expr acc, left, right;
-      virtual MulAddNode* Mutate() const { return new MulAddNode( *this ); }
+      virtual MulAddNode* Mutate() const override { return new MulAddNode( *this ); }
       
-      virtual unsigned SubCount() const { return 3; };
-      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
+      virtual unsigned SubCount() const override { return 3; };
+      virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
-      virtual void Repr( std::ostream& sink ) const { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }
-      virtual ScalarType::id_t GetType() const { return GetSub(0)->GetType(); }
+      virtual void Repr( std::ostream& sink ) const override { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual ScalarType::id_t GetType() const override { return GetSub(0)->GetType(); }
       
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<MulAddNode const&>( rhs ) ); }
       int compare( MulAddNode const& rhs ) const { return 0; }
@@ -804,13 +816,13 @@ namespace symbolic {
       IsInvalidMulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
         : acc( _acc ), left( _left ), right( _right )
       {} Expr acc, left, right;
-      virtual IsInvalidMulAddNode* Mutate() const { return new IsInvalidMulAddNode( *this ); }
-      virtual ScalarType::id_t GetType() const { return ScalarType::BOOL; }
+      virtual IsInvalidMulAddNode* Mutate() const override { return new IsInvalidMulAddNode( *this ); }
+      virtual ScalarType::id_t GetType() const override { return ScalarType::BOOL; }
       
-      virtual unsigned SubCount() const { return 3; };
-      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
+      virtual unsigned SubCount() const override { return 3; };
+      virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
-      virtual void Repr( std::ostream& sink ) const { sink << "IsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "IsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
       
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<IsInvalidMulAddNode const&>( rhs ) ); }
       int compare( IsInvalidMulAddNode const& rhs ) const { return 0; }
@@ -837,15 +849,17 @@ namespace symbolic {
       FtoFNode( Expr const& _src, int _ssz, int _dsz )
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
-      virtual FtoFNode* Mutate() const { return new FtoFNode( *this ); }
+      virtual FtoFNode* Mutate() const override { return new FtoFNode( *this ); }
       
-      virtual void Repr( std::ostream& sink ) const { sink << "FtoF( " << src << " )"; }
-      virtual unsigned SubCount() const { return 1; }
-      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
-      virtual ScalarType::id_t GetType() const
+      virtual void Repr( std::ostream& sink ) const override { sink << "FtoF( " << src << " )"; }
+      virtual unsigned SubCount() const override { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+      virtual ScalarType::id_t GetType() const override
       {
         switch (dsz) { case 32: return ScalarType::F32; case 64: return ScalarType::F64; }
-        throw 0; return ScalarType::F32;
+        struct Bad {};
+        throw Bad();
+        return ScalarType::F32;
       }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FtoFNode const&>( rhs ) ); }
       int compare( FtoFNode const& rhs ) const
@@ -865,12 +879,12 @@ namespace symbolic {
     struct FtoINode : public ExprNode
     {
       FtoINode( Expr const& _src, int _fb ) : src( _src ), fb( _fb ) {} Expr src; int fb;
-      virtual FtoINode* Mutate() const { return new FtoINode( *this ); }
-      virtual ScalarType::id_t GetType() const { return TypeInfo<intT>::GetType(); }
+      virtual FtoINode* Mutate() const override { return new FtoINode( *this ); }
+      virtual ScalarType::id_t GetType() const override { return TypeInfo<intT>::GetType(); }
       
-      virtual void Repr( std::ostream& sink ) const { sink << "FtoI( " << src << " )"; }
-      virtual unsigned SubCount() const { return 1; }
-      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "FtoI( " << src << " )"; }
+      virtual unsigned SubCount() const override { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FtoINode const&>( rhs ) ); }
       int compare( FtoINode const& rhs ) const { return fb - rhs.fb; }
     };
@@ -943,7 +957,6 @@ namespace symbolic {
     Conditional() : Choice<T>(), cond() {}
 
     bool  proceed( Expr const& _cond );
-    bool  close();
   
     Expr  cond;
   };
@@ -955,7 +968,7 @@ namespace symbolic {
     if (not cond.good()) cond = _cond;
     else if (cond != _cond) throw cond;
 
-    return proceed();
+    return Choice<T>::proceed();
   }
   
   template <class PoolT, typename Merger>

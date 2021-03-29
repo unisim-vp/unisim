@@ -81,7 +81,7 @@ struct _StringEngine : public StringEngine<ARCH>
   ModM<ARCH,OP::SIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
-  bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.regread( OP(), 1 ) != uaddr_type( 0 )); }
+  bool tstcounter( ARCH& arch ) const { return arch.Test( arch.regread( OP(), 1 ) != uaddr_type( 0 )); }
   void deccounter( ARCH& arch ) const { arch.regwrite( OP(), 1, arch.regread( OP(), 1 ) - uaddr_type( 1 ) ); }
   
   StrOp getdst() const { return StrOp( &dst ); }
@@ -129,7 +129,7 @@ struct Movs : public Operation<ARCH>
     
     arch.rmwrite( OP(), str->getdst(), arch.rmread( OP(), str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
+    int32_t step = arch.Test( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->addsrc( arch, step );
     str->adddst( arch, step );
     
@@ -176,7 +176,7 @@ struct Stos : public Operation<ARCH>
     
     arch.rmwrite( OP(), str->getdst(), arch.regread( OP(), 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
+    int32_t step = arch.Test( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
@@ -226,13 +226,13 @@ struct Cmps : public Operation<ARCH>
     
     eval_sub( arch, arch.rmread( OP(), str->getsrc( segment ) ), arch.rmread( OP(), str->getdst() ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
+    int32_t step = arch.Test( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->adddst( arch, step );
     str->addsrc( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
+      if (arch.Test( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
@@ -292,12 +292,12 @@ struct Scas : public Operation<ARCH>
     
     eval_sub( arch, arch.rmread( OP(), str->getdst() ), arch.regread( OP(), 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
+    int32_t step = arch.Test( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
+      if (arch.Test( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
@@ -353,7 +353,7 @@ struct Lods : public Operation<ARCH>
     
     arch.regwrite( OP(), 0, arch.rmread( OP(), str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
+    int32_t step = arch.Test( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->addsrc( arch, step );
     
     if (REP) {

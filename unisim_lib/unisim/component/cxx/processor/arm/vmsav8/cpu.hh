@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -53,6 +54,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <iosfwd>
 #include <inttypes.h>
 
 namespace unisim {
@@ -62,44 +64,12 @@ namespace processor {
 namespace arm {
 namespace vmsav8 {
   
-  template <typename T>
-  struct VectorTypeInfo
-  {
-    enum { bytecount = sizeof (T) };
-    static void ToBytes( uint8_t* dst, T src )
-    {
-      for (unsigned idx = 0; idx < sizeof (T); ++idx)
-        { dst[idx] = src & 0xff; src >>= 8; }
-    }
-    static void FromBytes( T& dst, uint8_t const* src )
-    {
-      T tmp = 0;
-      for (unsigned idx = sizeof (T); idx-- > 0;)
-        { tmp <<= 8; tmp |= unsigned( src[idx] ); }
-      dst = tmp;
-    }
-  };
-
-  template <> struct VectorTypeInfo<float>
-  {
-    enum bytecount_t { bytecount = 4 };
-    static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
-    static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
-  };
-
-  template <> struct VectorTypeInfo<double>
-  {
-    enum bytecount_t { bytecount = 8 };
-    static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
-    static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
-  };
-
 /** Armv8 cpu
  *
  * Defines and implements architectural state of armv8 processors.
  */
 
-template <typename CONFIG>
+template <typename CPU_IMPL>
 struct CPU
   : public virtual unisim::kernel::Object
   , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
@@ -114,7 +84,8 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
-  typedef CONFIG Config;
+  typedef CPU<CPU_IMPL> this_type;
+  
   // typedef simfloat::FP FP;
   // typedef FP::F64  F64;
   // typedef FP::F32  F32;
@@ -127,6 +98,11 @@ struct CPU
   typedef int32_t  S32;
   typedef int64_t  S64;
   typedef bool     BOOL;
+
+  typedef U64      UREG;
+  typedef S64      SREG;
+  
+  typedef this_type DisasmState;
   
   /**********************************************************************
    ***                   Constructors / Destructors                   ***
@@ -195,7 +171,8 @@ struct CPU
     
   void StepInstruction();
 
-  void UndefinedInstruction( isa::arm64::Operation<CPU>* insn );
+  void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL> const* insn );
+  void UndefinedInstruction();
   
   bool Cond( bool cond ) { return cond; }
   
@@ -247,34 +224,55 @@ struct CPU
   //=                 Special  Registers access methods                 
   //====================================================================
 
-  U8  GetVU8 ( unsigned reg, unsigned sub ) { return VectorStorage<U8> (reg)[sub]; }
-  U16 GetVU16( unsigned reg, unsigned sub ) { return VectorStorage<U16>(reg)[sub]; }
-  U32 GetVU32( unsigned reg, unsigned sub ) { return VectorStorage<U32>(reg)[sub]; }
-  U64 GetVU64( unsigned reg, unsigned sub ) { return VectorStorage<U64>(reg)[sub]; }
-  S8  GetVS8 ( unsigned reg, unsigned sub ) { return VectorStorage<S8> (reg)[sub]; }
-  S16 GetVS16( unsigned reg, unsigned sub ) { return VectorStorage<S16>(reg)[sub]; }
-  S32 GetVS32( unsigned reg, unsigned sub ) { return VectorStorage<S32>(reg)[sub]; }
-  S64 GetVS64( unsigned reg, unsigned sub ) { return VectorStorage<S64>(reg)[sub]; }
+  template <typename T>
+  T vector_read(unsigned reg, unsigned sub)
+  {
+    return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
+  }
   
-  void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { VectorStorage<U8> (reg)[sub] = value; }
-  void SetVU16( unsigned reg, unsigned sub, U16 value ) { VectorStorage<U16>(reg)[sub] = value; }
-  void SetVU32( unsigned reg, unsigned sub, U32 value ) { VectorStorage<U32>(reg)[sub] = value; }
-  void SetVU64( unsigned reg, unsigned sub, U64 value ) { VectorStorage<U64>(reg)[sub] = value; }
-  void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { VectorStorage<S8> (reg)[sub] = value; }
-  void SetVS16( unsigned reg, unsigned sub, S16 value ) { VectorStorage<S16>(reg)[sub] = value; }
-  void SetVS32( unsigned reg, unsigned sub, S32 value ) { VectorStorage<S32>(reg)[sub] = value; }
-  void SetVS64( unsigned reg, unsigned sub, S64 value ) { VectorStorage<S64>(reg)[sub] = value; }
+  U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
+  U16 GetVU16( unsigned reg, unsigned sub ) { return vector_read<U16>(reg, sub); }
+  U32 GetVU32( unsigned reg, unsigned sub ) { return vector_read<U32>(reg, sub); }
+  U64 GetVU64( unsigned reg, unsigned sub ) { return vector_read<U64>(reg, sub); }
+  S8  GetVS8 ( unsigned reg, unsigned sub ) { return vector_read<S8> (reg, sub); }
+  S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
+  S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
+  S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
   
-  void SetVU8 ( unsigned reg, U8 value )  { VectorZeroedStorage<U8> (reg)[0] = value; }
-  void SetVU16( unsigned reg, U16 value ) { VectorZeroedStorage<U16>(reg)[0] = value; }
-  void SetVU32( unsigned reg, U32 value ) { VectorZeroedStorage<U32>(reg)[0] = value; }
-  void SetVU64( unsigned reg, U64 value ) { VectorZeroedStorage<U64>(reg)[0] = value; }
-  void SetVS8 ( unsigned reg, S8 value )  { VectorZeroedStorage<S8> (reg)[0] = value; }
-  void SetVS16( unsigned reg, S16 value ) { VectorZeroedStorage<S16>(reg)[0] = value; }
-  void SetVS32( unsigned reg, S32 value ) { VectorZeroedStorage<S32>(reg)[0] = value; }
-  void SetVS64( unsigned reg, S64 value ) { VectorZeroedStorage<S64>(reg)[0] = value; }
+  template <typename T>
+  void vector_write(unsigned reg, unsigned sub, T value )
+  {
+    (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
+  }
   
-  void ClearHighV( unsigned reg, unsigned bytes ) { for (unsigned idx = bytes; idx < VUnion::BYTECOUNT; idx+=1 ) vector_data[reg][idx] = 0; }
+  void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
+  void SetVU16( unsigned reg, unsigned sub, U16 value ) { vector_write( reg, sub, value ); }
+  void SetVU32( unsigned reg, unsigned sub, U32 value ) { vector_write( reg, sub, value ); }
+  void SetVU64( unsigned reg, unsigned sub, U64 value ) { vector_write( reg, sub, value ); }
+  void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { vector_write( reg, sub, value ); }
+  void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
+  void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
+  void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+
+  template <typename T>
+  void vector_write(unsigned reg, T value )
+  {
+    *(vector_views[reg].GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
+  }
+  
+  void SetVU8 ( unsigned reg, U8 value )  { vector_write(reg, value); }
+  void SetVU16( unsigned reg, U16 value ) { vector_write(reg, value); }
+  void SetVU32( unsigned reg, U32 value ) { vector_write(reg, value); }
+  void SetVU64( unsigned reg, U64 value ) { vector_write(reg, value); }
+  void SetVS8 ( unsigned reg, S8 value )  { vector_write(reg, value); }
+  void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
+  void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
+  void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
+  
+  void ClearHighV( unsigned reg, unsigned bytes )
+  {
+    vector_views[reg].Truncate(bytes);
+  }
 
   //=====================================================================
   //=              Special/System Registers access methods              =
@@ -300,12 +298,22 @@ struct CPU
   
   /** Get the next Program Counter */
   uint64_t GetNPC() { return next_insn_addr; }
+
+  /** Manage System Registers **/
+  struct SysReg
+  {
+    virtual char const* Name() const { return 0; };
+    virtual char const* Describe() const { return 0; };
+    virtual char const* ReadOperation() const { return "mrs"; }
+    virtual char const* WriteOperation() const { return "msr"; };
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const;
+    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
+  };
   
+  static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   void        CheckSystemAccess( uint8_t op1 );
-  uint64_t    ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint64_t value );
-  char const* DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  char const* NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   
   //=====================================================================
   //=                      Control Transfer methods                     =
@@ -314,8 +322,9 @@ struct CPU
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
-  
-  void CallSupervisor( uint16_t imm );
+  bool Test( bool cond ) { return cond; }
+  void CallSupervisor( uint32_t imm );
+  void CallHypervisor( uint32_t imm );
   
   //=====================================================================
   //=                       Memory access methods                       =
@@ -400,110 +409,47 @@ protected:
 
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register
   
-  struct SysReg
-  {
-    virtual            ~SysReg() {}
-    virtual void        Write( CPU& cpu, uint64_t value ) {
-      cpu.logger << unisim::kernel::logger::DebugWarning << "Writing " << Describe() << unisim::kernel::logger::EndDebugWarning;
-      throw 0; // cpu.UnpredictableInsnBehaviour();
-    }
-    virtual uint64_t    Read( CPU& cpu ) {
-      cpu.logger << unisim::kernel::logger::DebugWarning << "Reading " << Describe() << unisim::kernel::logger::EndDebugWarning;
-      throw 0; // cpu.UnpredictableInsnBehaviour();
-      return 0;
-    }
-    virtual char const* Describe() = 0;
-    virtual char const* Name() { return 0; }
-  };
-  
-  virtual SysReg&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  virtual void     ResetSystemRegisters();
+  virtual void          ResetSystemRegisters();
   
   static unsigned const VECTORCOUNT = 32;
-  
-  struct VUnion
+
+  struct VUConfig
   {
     static unsigned const BYTECOUNT = 16;
-    
-    typedef void (*arrangement_t)( uint8_t* storage );
-    arrangement_t arrangement;
-    
-    template <typename T>
-    static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
-    
-    template <typename T>
-    static void ToBytes( uint8_t* storage )
-    {
-      T const* vec = reinterpret_cast<T const*>( storage );
-      
-      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-        T val = vec[idx];
-        VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
-      }
-    }
-
-    template <typename T>
-    T*
-    GetStorage( uint8_t* storage )
-    {
-      T* res = reinterpret_cast<T*>( storage );
-
-      arrangement_t current = &ToBytes<T>;
-      if (arrangement != current) {
-        arrangement( storage );
-        
-        for (int idx = ItemCount<T>(); --idx >= 0;) {
-          T val;
-          VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
-          res[idx] = val;
-        }
-        arrangement = current;
-      }
-      
-      return res;
-    }
-    
-    template <typename T>
-    T*
-    GetZeroedStorage( uint8_t* storage )
-    {
-      T* res = reinterpret_cast<T*>( storage );
-      arrangement = &ToBytes<T>;
-      for (int idx = ItemCount<T>(); --idx >= 0;)
-        res[idx] = T();
-      return res;
-    }
-      
-    VUnion() : arrangement( &ToBytes<uint8_t> ) {}
-  } vector_view[VECTORCOUNT];
-    
-  uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
+    template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
+    typedef U8 Byte;
+  };
+  unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
   
-  template <typename T> T* VectorStorage( unsigned reg ) { return vector_view[reg].template GetStorage<T>( &vector_data[reg][0] ); }
-  template <typename T> T* VectorZeroedStorage( unsigned reg ) { return vector_view[reg].template GetZeroedStorage<T>( &vector_data[reg][0] ); }
+  uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
   
-private:
+protected:
   virtual void Sync() = 0;
   
   //=====================================================================
   //=                          Memory Accesses                          =
   //=====================================================================
-  static unsigned const IPB_LINE_SIZE = 32; //< IPB: Instruction prefetch buffer
-  uint8_t ipb_bytes[IPB_LINE_SIZE];  //< The instruction prefetch buffer
-  uint32_t ipb_base_address;         //< base address of IPB content (cache line size aligned if valid)
+
+  struct IPB
+  {
+    static unsigned const LINE_SIZE = 32; //< IPB: Instruction prefetch buffer
+    uint8_t bytes[LINE_SIZE];             //< The instruction prefetch buffer
+    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
+    IPB() : bytes(), base_address( -1 ) {}
+    uint8_t* get(this_type& core, U64 address);
+  } ipb;
   
-  bool RefillInsnPrefetchBuffer( uint64_t base_address );
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
   
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU> decoder;
+  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU_IMPL> decoder;
   
-  // Intrusive memory accesses
-  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
-  // Non-intrusive memory accesses
-  virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // // Intrusive memory accesses
+  // virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  // virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // // Non-intrusive memory accesses
+  // virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  // virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
 
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported

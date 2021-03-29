@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2019,
+ *  Copyright (c) 2010-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,7 +39,7 @@
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -49,6 +49,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/variable/variable.hh>
+#include <unisim/util/likely/likely.hh>
 #include <string>
 #include <inttypes.h>
 
@@ -59,28 +60,58 @@ namespace processor {
 namespace arm {
 namespace vmsav7 {
 
-struct ARMv7emu
+struct TLB
 {
-  //=====================================================================
-  //=                  ARM architecture model description               =
-  //=====================================================================
+  struct Entry
+  {
+    uint32_t   pa;
+    uint32_t   __       : 2;
+    uint32_t   memattrs : 6;
+    uint32_t   domain   : 4;
+    uint32_t   NS       : 1;
+    uint32_t   xn       : 1;
+    uint32_t   pxn      : 1;
+    uint32_t   nG       : 1;
+    uint32_t   asid     : 8;
+    uint32_t   ap       : 3;
+    uint32_t   lsb      : 5;
+  };
+
+  static unsigned const ENTRY_CAPACITY = 128;
+  /* KEY:
+   * 31 .. 12: tag
+   * 11 ..  5: idx
+   *  4 ..  0: lsb
+   */
   
-  // Following a standard armv7 configuration
-  static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
-  static bool const     insns4T = true;
-  static bool const     insns5E = true;
-  static bool const     insns5J = true;
-  static bool const     insns5T = true;
-  static bool const     insns6  = true;
-  static bool const     insnsRM = true;
-  static bool const     insnsT2 = true;
-  static bool const     insns7  = true;
-  static bool const     hasVFP  = true;
-  static bool const     hasAdvSIMD = false;
+  TLB();
+
+  template <class POLICY>
+  bool GetTranslation( Entry& tad, uint32_t mva, uint32_t asid );
+  void AddTranslation( uint32_t mva, Entry const& tad );
+  void InvalidateAll() { entry_count = 0; }
+
+  struct Iterator
+  {
+    Iterator( TLB& _tlb );
+    bool Next();
+    void Invalidate();
+    bool MatchMVA( uint32_t mva ) const;
+    bool IsGlobal() const;
+    bool MatchASID( uint32_t asid ) const;
+  private:
+    TLB& tlb;
+    unsigned idx, next;
+  };
+
+  unsigned      entry_count;
+  uint32_t      keys[ENTRY_CAPACITY];
+  Entry         vals[ENTRY_CAPACITY];
 };
 
+template <class CPU_IMPL>
 struct CPU
-  : public unisim::component::cxx::processor::arm::CPU<ARMv7emu>
+  : public unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
@@ -92,12 +123,40 @@ struct CPU
   , public unisim::kernel::Client<unisim::service::interfaces::LinuxOS>
   , public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >
 {
+  struct Config
+  {
+    //=====================================================================
+    //=                  ARM architecture model description               =
+    //=====================================================================
+
+    // Following a standard armv7 configuration
+    static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
+    static bool const     insns4T = true;
+    static bool const     insns5E = true;
+    static bool const     insns5J = true;
+    static bool const     insns5T = true;
+    static bool const     insns6  = true;
+    static bool const     insnsRM = true;
+    static bool const     insnsT2 = true;
+    static bool const     insns7  = true;
+    static bool const     hasVFP  = true;
+    static bool const     hasAdvSIMD = false;
+  };
+
   typedef CPU this_type;
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> PCPU;
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> CP15CPU;
-  typedef typename CP15CPU::CP15Reg CP15Reg;
-  
-  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  typedef unisim::component::cxx::processor::arm::CPU<simfloat::FP,CPU_IMPL> PCPU;
+  typedef typename PCPU::CP15Reg CP15Reg;
+
+  using PCPU::cpsr;
+  using PCPU::verbose;
+  using PCPU::logger;
+  using PCPU::current_insn_addr;
+  using PCPU::next_insn_addr;
+  using PCPU::SCTLR;
+  using PCPU::GetEndianness;
+  using PCPU::USER_MODE;
+  using PCPU::HYPERVISOR_MODE;
+
   struct AddressDescriptor
   {
     uint32_t address;
@@ -105,7 +164,7 @@ struct CPU
 
     AddressDescriptor( uint32_t addr ) : address(addr), attributes(0) {}
   };
-  
+
 
   //=====================================================================
   //=                  public service imports/exports                   =
@@ -125,12 +184,12 @@ struct CPU
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
   bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
-  
+
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
 
-  CPU( const char *name, Object *parent = 0 );
+  CPU(const char* name, unisim::kernel::Object* parent = 0);
   ~CPU();
 
   //=====================================================================
@@ -174,13 +233,13 @@ struct CPU
   //=====================================================================
 
   virtual std::string Disasm(uint32_t addr, uint32_t& next_addr);
-  
+
   //=====================================================================
   //=                   LinuxOSInterface methods                        =
   //=====================================================================
 	
   virtual void PerformExit(int ret);
-  
+
   /**************************************************************/
   /* Memory access methods       START                          */
   /**************************************************************/
@@ -188,7 +247,7 @@ struct CPU
   virtual bool PhysicalWriteMemory( uint32_t addr, uint32_t paddr, uint8_t const* buffer, uint32_t size, uint32_t attrs ) = 0;
   virtual bool PhysicalReadMemory( uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
   virtual bool PhysicalFetchMemory( uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
-  
+
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
   uint32_t MemURead16( uint32_t address ) { return PerformUReadAccess( address, 2 ); }
@@ -199,41 +258,43 @@ struct CPU
   void     MemUWrite16( uint32_t address, uint16_t value ) { PerformUWriteAccess( address, 2, value ); }
   void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
   void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
-  
+
   void     PerformPrefetchAccess( uint32_t addr );
   void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformReadAccess( uint32_t addr, uint32_t size );
   void     PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
-  
+
   void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
-  
+
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
-    if (requires_memory_access_reporting and memory_access_reporting_import)
+    if (unlikely(requires_memory_access_reporting))
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
-  
-  struct AddressDescriptor;
+
+  //  struct AddressDescriptor;
   void RefillInsnPrefetchBuffer( uint32_t mva, AddressDescriptor const& line_loc );
-  
+
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
-  
+
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
-	
+
+  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+
   /**************************************************/
   /* Software Exceptions                     START  */
   /**************************************************/
 	
-  void CallSupervisor( uint16_t imm );
+  void CallSupervisor( uint32_t imm );
   void BKPT( uint32_t imm );
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<CPU>* insn );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU_IMPL>* insn );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<CPU_IMPL>* insn );
   void DataAbort(uint32_t va, uint64_t ipa,
                  unsigned domain, int level, mem_acc_type_t mat,
                  DAbort type, bool taketohypmode, bool s2abort,
@@ -242,13 +303,13 @@ struct CPU
   /**************************************************/
   /* Software Exceptions                      END   */
   /**************************************************/
-  
+
 protected:
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU_IMPL> arm32_decoder;
   /** Decoder for the THUMB instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
-  
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU_IMPL> thumb_decoder;
+
   /***************************
    * Cache Interface   START *
    ***************************/
@@ -258,17 +319,17 @@ protected:
   // Cache icache;
   // /** Data cache */
   // Cache dcache;
-  
+
   /***************************
    * Cache Interface    END  *
    ***************************/
-  
+
   /*************************/
   /* MMU Interface   START */
   /*************************/
-  
+
   uint32_t DFSR, IFSR, DFAR, IFAR;
-  
+
   struct MMU
   {
     MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
@@ -286,70 +347,27 @@ protected:
 
   template <class POLICY>
   void  TranslateAddress( AddressDescriptor& ad, bool ispriv, mem_acc_type_t mat, unsigned size );
-  
-  struct TLB
-  {
-    struct Entry
-    {
-      uint32_t   pa;
-      uint32_t   __       : 2;
-      uint32_t   memattrs : 6;
-      uint32_t   domain   : 4;
-      uint32_t   NS       : 1;
-      uint32_t   xn       : 1;
-      uint32_t   pxn      : 1;
-      uint32_t   nG       : 1;
-      uint32_t   asid     : 8;
-      uint32_t   ap       : 3;
-      uint32_t   lsb      : 5;
-    };
-  
-    static unsigned const ENTRY_CAPACITY = 128;
-    /* KEY:
-     * 31 .. 12: tag
-     * 11 ..  5: idx
-     *  4 ..  0: lsb
-     */
-    unsigned      entry_count;
-    uint32_t      keys[ENTRY_CAPACITY];
-    Entry         vals[ENTRY_CAPACITY];
-    
-    TLB();
-    template <class POLICY>
-    bool GetTranslation( Entry& tad, uint32_t mva, uint32_t asid );
-    void AddTranslation( uint32_t mva, Entry const& tad );
-    void InvalidateAll() { entry_count = 0; }
-    
-    struct Iterator
-    {
-      Iterator( TLB& _tlb );
-      bool Next();
-      void Invalidate();
-      bool MatchMVA( uint32_t mva ) const;
-      bool IsGlobal() const;
-      bool MatchASID( uint32_t asid ) const;
-    private:
-      TLB& tlb;
-      unsigned idx, next;
-    };
-  } tlb;
-  
-  template <class POLICY>
-  void      TranslationTableWalk( TLB::Entry& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
 
-  uint32_t  GetASID() const { return CONTEXTIDR & 0xff; }
-  
+  TLB tlb;
+
+  template <class POLICY>
+  void      TranslationTableWalk( typename TLB::Entry& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
+
+  uint32_t  GetASID() const { return this->CONTEXTIDR & 0xff; }
+
   /*************************/
   /* MMU Interface    END  */
   /*************************/
+
+  void      TakeReset();
   
   /**************************/
   /* CP15 Interface   START */
   /**************************/
-  
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  virtual void     CP15ResetRegisters();
-    
+public:
+  static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+
+protected:
   /**************************/
   /* CP15 Interface    END  */
   /**************************/
@@ -363,10 +381,10 @@ protected:
   //=               Instruction prefetch buffer                         =
   //=====================================================================
   static unsigned const IPB_LINE_SIZE = 32;
-  
+
   uint8_t ipb_bytes[IPB_LINE_SIZE];  //!< The instruction prefetch buffer
   uint32_t ipb_base_address;         //!< base address of IPB content (cache line size aligned if valid)
-  
+
   /*************************/
   /* LINUX PRINTK SNOOPING */
   /*************************/
@@ -383,7 +401,7 @@ protected:
   /**********************************************************/
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
-  
+
   /** UNISIM Parameter to set/unset verbose mode. */
   unisim::kernel::variable::Parameter<bool> param_verbose;
   /** UNISIM Parameter to set traps on instruction counter. */

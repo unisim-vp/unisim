@@ -95,12 +95,12 @@ namespace arm {
       U16((          (N xor V)).tt), // lt; signed less than
       U16((not(Z or (N xor V))).tt), // gt; signed greater than
       U16((   (Z or (N xor V))).tt), // le; signed less than or equal
-      U16(                  0xffff),    // al; always
-      U16(                  0x0000),    // <und>; never (illegal)
+      U16(                  0xffff), // al; always
+      U16(                  0xffff), // when allowed, acts as 'al' (15)
     };
-    if (cond >= 15) throw std::logic_error("invalid condition code");
+    if (cond >= 16) throw std::logic_error("invalid condition code");
     U8 nzcv( core.GetNZCV() );
-    return core.Concretize( ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0) );
+    return core.Test( ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0) );
   }
   
   template <typename coreT>
@@ -260,65 +260,19 @@ namespace arm {
     static uint32_t const lsbmask = msbmask >> msb2lsb;
   };
 
-  template <typename U32T, typename SWPT>
-  U32T
-  SignedSat(U32T& res, U32T const& overflow, U32T const& underflow, SWPT const& )
+  template <typename VT, typename CT, typename V0T, typename V1T, typename VDT>
+  VT CondMove( CT c0, V0T v0, CT c1, V1T v1, VDT vd )
   {
-    // In the following we saturate (if needed) the packed res value
-    // by arithmetic and logic means. BIC masks represent bits that
-    // should be cleared, and BIS masks represent bits that should be
-    // set. The caller provides overflow (respectively underflow)
-    // value that should have its packed MSB set in case of overflow
-    // (respectively underflow).
-    
-    U32T of_bic = overflow & U32T(SWPT::msbmask);
-    U32T of_bis = (((of_bic ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | of_bic) - U32T(SWPT::lsbmask);
-    
-    U32T uf_bis = underflow & U32T(SWPT::msbmask);
-    U32T uf_bic = (((uf_bis ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bis) - U32T(SWPT::lsbmask);
-    
-    res = (res | (of_bis | uf_bis)) & ~(of_bic | uf_bic);
-    
-    return U32T((of_bic | uf_bis) != U32T(0));
-  }
+    VT mnc0 = VT(c0) - VT(1), mnc1 = VT(c1) - VT(1);
+    return (mnc0 & mnc1 & VT(vd)) | (~mnc0 & VT(v0)) | (~mnc1 & VT(v1));
+  }  
   
-  template <typename U32T, typename SWPT>
-  U32T
-  UnsignedPSat(U32T& res, U32T const& overflow, SWPT const& )
+  template <typename VT, typename CT, typename V0T, typename VDT>
+  VT CondMove( CT c0, V0T v0, VDT vd )
   {
-    // In the following we saturate (if needed) the packed res value
-    // by arithmetic and logic means. BIC masks represent bits that
-    // should be cleared, and BIS masks represent bits that should be
-    // set. The caller provides overflow (respectively underflow)
-    // value that should have its packed MSB set in case of overflow
-    // (respectively underflow).
-    
-    U32T of_bis = overflow & U32T(SWPT::msbmask);
-    of_bis |= (((of_bis ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | of_bis) - U32T(SWPT::lsbmask);
-    
-    res |= of_bis;
-    
-    return U32T(of_bis != U32T(0));
-  }
-  
-  template <typename U32T, typename SWPT>
-  U32T
-  UnsignedNSat(U32T& res, U32T const& no_uflow, SWPT const& )
-  {
-    // In the following we saturate (if needed) the packed res value
-    // by arithmetic and logic means. BIC masks represent bits that
-    // should be cleared, and BIS masks represent bits that should be
-    // set. The caller provides overflow (respectively underflow)
-    // value that should have its packed MSB set in case of overflow
-    // (respectively underflow).
-    
-    U32T uf_bam = no_uflow & U32T(SWPT::msbmask);
-    uf_bam |= (((uf_bam ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bam) - U32T(SWPT::lsbmask);
-    
-    res &= uf_bam;
-    
-    return U32T(uf_bam != U32T(-1));
-  }
+    VT mnc0 = VT(c0) - VT(1);
+    return (mnc0 & VT(vd)) | (~mnc0 & VT(v0));
+  }  
   
   template <typename coreT>
   void
@@ -340,19 +294,19 @@ namespace arm {
 
     BOOL privileged = core.CPSR().Get(M) != U32(core.USER_MODE);
     
-    if (A.Get( psr_mask ) and not core.Concretize
+    if (A.Get( psr_mask ) and not core.Test
         (privileged and (is_secure or  scr_aw or have_virt_ext)))
       A.Set( psr_mask, 0u );
     
-    if (I.Get( psr_mask ) and not core.Concretize
+    if (I.Get( psr_mask ) and not core.Test
         (privileged))
       I.Set( psr_mask, 0u );
     
-    if (F.Get( psr_mask ) and not core.Concretize
+    if (F.Get( psr_mask ) and not core.Test
         (privileged and (not nmfi or not BOOL(F.Get( psr_bits ))) and (is_secure or scr_fw or have_virt_ext)))
       F.Set( psr_mask, 0u );
     
-    if (M.Get( psr_mask ) and not core.Concretize
+    if (M.Get( psr_mask ) and not core.Test
         (privileged))
       M.Set( psr_mask, 0u );
     
@@ -447,7 +401,7 @@ namespace arm {
   void FPProcessException( ARCH& arch, RegisterField<posT,1> const& rf, FPCTRL const& fpscr_val )
   {
     RegisterField<posT+8,1> const enable;
-    if (arch.Concretize(enable.Get( fpscr_val )))
+    if (arch.Test(enable.Get( fpscr_val )))
       arch.FPTrap( posT );
     else
       rf.Set( arch.FPSCR, 1u );
@@ -484,7 +438,7 @@ namespace arm {
         FPProcessException( arch, IOC /*InvalidOp*/, fpscr_val );
       }
       
-      if (arch.Concretize( DN.Get( fpscr_val ) )) {
+      if (arch.Test( DN.Get( fpscr_val ) )) {
         ARCH::FP::SetDefaultNan( acc );
       }
       
@@ -496,12 +450,12 @@ namespace arm {
     bool append( operT const& op )
     {
       if (hasNaN == hasSNaN) return false;
-      if (arch.Concretize( ARCH::FP::IsSNaN( op ) )) {
+      if (arch.Test( ARCH::FP::IsSNaN( op ) )) {
         hasNaN = hasSNaN;
         return true;
       }
       if (hasNaN == hasQNaN) return false;
-      if (arch.Concretize( ARCH::FP::IsQNaN( op ) )) {
+      if (arch.Test( ARCH::FP::IsQNaN( op ) )) {
         hasNaN = hasQNaN;
         return true;
       }
@@ -522,14 +476,14 @@ namespace arm {
   void
   FPFlushToZero( operT& op, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( ARCH::FP::FlushToZero( op, fpscr_val ) ))
+    if (arch.Test( ARCH::FP::FlushToZero( op, fpscr_val ) ))
       FPProcessException( arch, IDC /* InputDenorm */, fpscr_val );
   }
 
   template <typename operT, typename ARCH, typename FPCTRL>
   void FPAdd( operT& acc, operT& op2, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( acc, arch, fpscr_val );
       FPFlushToZero( op2, arch, fpscr_val );
     }
@@ -541,7 +495,7 @@ namespace arm {
   template <typename operT, typename ARCH, typename FPCTRL>
   void FPSub( operT& acc, operT& op2, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( acc, arch, fpscr_val );
       FPFlushToZero( op2, arch, fpscr_val );
     }
@@ -553,7 +507,7 @@ namespace arm {
   template <typename operT, typename ARCH, typename FPCTRL>
   void FPDiv( operT& acc, operT& op2, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( acc, arch, fpscr_val );
       FPFlushToZero( op2, arch, fpscr_val );
     }
@@ -565,7 +519,7 @@ namespace arm {
   template <typename operT, typename ARCH, typename FPCTRL>
   void FPMul( operT& acc, operT& op2, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( acc, arch, fpscr_val );
       FPFlushToZero( op2, arch, fpscr_val );
     }
@@ -577,7 +531,7 @@ namespace arm {
   template <typename operT, typename ARCH, typename FPCTRL>
   void FPMulAdd( operT& acc, operT& op1, operT& op2, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( acc, arch, fpscr_val );
       FPFlushToZero( op1, arch, fpscr_val );
       FPFlushToZero( op2, arch, fpscr_val );
@@ -587,7 +541,7 @@ namespace arm {
     typename ARCH::BOOL doubleNaN = ARCH::FP::IsInvalidMulAdd( acc, op1, op2, fpscr_val );
     bool done = (FPProcessNaN( arch, fpscr_val, acc ) << op1 << op2);
     
-    if (arch.Concretize( doubleNaN )) {
+    if (arch.Test( doubleNaN )) {
       ARCH::FP::SetDefaultNan( acc );
       FPProcessException( arch, IOC /* InvalidOp */, fpscr_val );
     }
@@ -600,7 +554,7 @@ namespace arm {
   template <typename operT, typename ARCH, typename FPCTRL>
   void FPSqrt( operT& acc, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( acc, arch, fpscr_val );
     }
     if (FPProcessNaN( arch, fpscr_val, acc )) return;
@@ -611,11 +565,11 @@ namespace arm {
   template <typename INT, typename FPT, typename ARCH, typename FPCTRL>
   void FPToInt( INT& res, FPT& src, int fracbits, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( src, arch, fpscr_val );
     }
     
-    if (arch.Concretize(ARCH::FP::IsSNaN( src ) or ARCH::FP::IsQNaN( src ))) {
+    if (arch.Test(ARCH::FP::IsSNaN( src ) or ARCH::FP::IsQNaN( src ))) {
       res = INT(0);
       FPProcessException( arch, IOC /* InvalidOp */, fpscr_val );
       return;
@@ -627,7 +581,7 @@ namespace arm {
   template <typename FPDST, typename FPSRC, typename ARCH, typename FPCTRL>
   void FPToFP( FPDST& res, FPSRC& src, ARCH& arch, FPCTRL const& fpscr_val )
   {
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( src, arch, fpscr_val );
     }
 
@@ -643,24 +597,24 @@ namespace arm {
     typedef typename ARCH::S32 S32;
     typedef typename ARCH::U32 U32;
     
-    if (arch.Concretize( FZ.Get( fpscr_val ) )) {
+    if (arch.Test( FZ.Get( fpscr_val ) )) {
       FPFlushToZero( op1, arch, fpscr_val );
       FPFlushToZero( op2, arch, fpscr_val );
     }
     BOOL hasSNaN = ARCH::FP::IsSNaN( op1 ) or ARCH::FP::IsSNaN( op2 );
     BOOL hasQNaN = ARCH::FP::IsQNaN( op1 ) or ARCH::FP::IsQNaN( op2 );
-    if (arch.Concretize(hasSNaN or hasQNaN)) {
+    if (arch.Test(hasSNaN or hasQNaN)) {
       NZCV.Set( arch.FPSCR, U32(3) ); /* N=0,Z=0,C=1,V=1 */
-      if (arch.Concretize(hasSNaN) or quiet_nan_exc)
+      if (arch.Test(hasSNaN) or quiet_nan_exc)
         FPProcessException( arch, IOC /* InvalidOp */, fpscr_val );
     }
     else {
       S32 fc = ARCH::FP::Compare( op1, op2, fpscr_val );
       S32 const zero(0);
       
-      if      (arch.Concretize( fc == zero ))
+      if      (arch.Test( fc == zero ))
         NZCV.Set( arch.FPSCR, U32(6) ); /* N=0,Z=1,C=1,V=0 */
-      else if (arch.Concretize( fc < zero ))
+      else if (arch.Test( fc < zero ))
         NZCV.Set( arch.FPSCR, U32(8) ); /* N=1,Z=0,C=0,V=0 */
       else  /* fc > zero */
         NZCV.Set( arch.FPSCR, U32(2) ); /* N=0,Z=0,C=1,V=0 */

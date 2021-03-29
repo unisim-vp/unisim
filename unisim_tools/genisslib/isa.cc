@@ -16,7 +16,6 @@
  ***************************************************************************/
 
 #include <isa.hh>
-#include <main.hh>
 #include <operation.hh>
 #include <subdecoder.hh>
 #include <strtools.hh>
@@ -34,6 +33,20 @@
 #include <iostream>
 #include <riscgenerator.hh>
 #include <ciscgenerator.hh>
+
+/**
+ * Construct for Opts (Default global options) */
+Opts::Opts(char const* _outprefix)
+  : outputprefix(_outprefix)
+  , verbosity( 1 )
+  , expandname( 0 )
+  , depfilename( 0 )
+  , minwordsize( 32 )
+  , sourcelines( true )
+  , privatemembers( true )
+  , specialization( true )
+  , comments( true )
+{}
 
 /** Constructor of Isa instance 
  */
@@ -399,7 +412,7 @@ SDInstance const*
 Isa::sdinstance( ConstStr _symbol ) const
 {
   for (Vector<SDInstance>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi) {
-    if( (**sdi).m_symbol == _symbol ) return *sdi;
+    if( (**sdi).symbol == _symbol ) return *sdi;
   }
   return 0;
 }

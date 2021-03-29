@@ -46,7 +46,7 @@
 
 struct GIL : public CLI, public Opts
 {
-  void description() { std::cerr << "Generator of instruction set simulators." << std::endl; }
+  void description() const override { std::cerr << "Generator of instruction set simulators." << std::endl; }
   
   void version()
   {
@@ -58,8 +58,13 @@ struct GIL : public CLI, public Opts
   }
   
   GIL()
-    : inputname( 0 )
+    : CLI(), Opts(DEFAULT_OUTPUT), inputname( 0 ), lookupdirs()
   {}
+
+  virtual char const* appname() const override { return GENISSLIB; }
+  virtual char const* appversion() const override { return GENISSLIB_VERSION; }
+  virtual ConstStr locate( char const* _name ) const override;
+  bool add_lookupdir( char const* _dir );
   
   bool setminwordsize( char const* _arg )
   {
@@ -82,7 +87,7 @@ struct GIL : public CLI, public Opts
     return true;
   }
   
-  void parse( CLI::Args& _args )
+  void parse( CLI::Args& _args ) override
   {
     if (_args.match( "-I", "<directory>", "Adds the directory <directory> "
                      "to the search paths for include directives." ))
@@ -187,6 +192,7 @@ struct GIL : public CLI, public Opts
   }
 
   char const*      inputname;
+  std::vector<ConstStr>   lookupdirs;
 };
 
 int
@@ -259,20 +265,8 @@ GIL_MAIN (int argc, char** argv, char** envp)
   return 0;
 }
 
-Opts::Opts()
-  : outputprefix( DEFAULT_OUTPUT )
-  , verbosity( 1 )
-  , expandname( 0 )
-  , depfilename( 0 )
-  , minwordsize( 32 )
-  , sourcelines( true )
-  , privatemembers( true )
-  , specialization( true )
-  , comments( true )
-{}
-
 bool
-Opts::add_lookupdir( char const* _dir )
+GIL::add_lookupdir( char const* _dir )
 {
   if (not _dir)
     return false;
@@ -340,11 +334,11 @@ Opts::add_lookupdir( char const* _dir )
 }
 
 ConstStr
-Opts::locate( char const* _name )
+GIL::locate( char const* _name ) const
 {
-  for (std::vector<ConstStr>::iterator iter = lookupdirs.begin(); iter != lookupdirs.end(); iter++)
+  for (auto const& dir : lookupdirs)
     {
-      std::string buffer = std::string() + iter->str() + "/" + _name;
+      std::string buffer = std::string() + dir.str() + "/" + _name;
       if (access( buffer.c_str(), R_OK ) != 0) continue;
       return buffer.c_str();
     }

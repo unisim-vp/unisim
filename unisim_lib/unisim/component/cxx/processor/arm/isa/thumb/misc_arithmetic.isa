@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 /*******************************************************************
  * sxtb (Signed Extend Byte) instruction
  *
@@ -47,7 +47,7 @@ sxtb.disasm = {
 
 sxtb.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S8  S8;
@@ -73,7 +73,7 @@ sxth.disasm = {
 
 sxth.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
@@ -99,7 +99,7 @@ uxtb.disasm = {
 
 uxtb.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
   cpu.SetGPR( rd, U32( U8( cpu.GetGPR( rm ) ) ) );
@@ -124,7 +124,7 @@ uxth.disasm = {
 
 uxth.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
   cpu.SetGPR( rd, U32( U16( cpu.GetGPR( rm ) ) ) );

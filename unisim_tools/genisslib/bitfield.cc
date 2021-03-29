@@ -22,6 +22,20 @@
 #include <scanner.hh>
 #include <cassert>
 
+int
+BitField::cmp( BitField const& lhs, BitField const& rhs )
+{
+  /* First compare actual types */
+  const std::type_info* til = &typeid(lhs);
+  const std::type_info* tir = &typeid(rhs);
+  if (til < tir) return -1;
+  if (til > tir) return +1;
+
+  /* Same types, call derived comparator */
+  return lhs.cmp(rhs);
+}
+
+
 /** Create an opcode bitfield object
     @param _size size in bits
     @param _value value of the opcode
@@ -155,20 +169,20 @@ SubOpBitField::SubOpBitField( SubOpBitField const& _src )
 void
 SubOpBitField::fills( std::ostream& sink ) const
 {
-  sink << symbol << '[' << sdinstance->m_symbol << ']';
+  sink << symbol << '[' << sdinstance->symbol << ']';
 }
 
 uintptr_t
-SubOpBitField::sizes() const { return sdinstance->m_sdclass->m_insnsizes.size(); }
+SubOpBitField::sizes() const { return sdinstance->sdclass->m_insnsizes.size(); }
 
 void
 SubOpBitField::sizes( unsigned int* _sizes ) const
 {
-  std::copy( sdinstance->m_sdclass->m_insnsizes.begin(), sdinstance->m_sdclass->m_insnsizes.end(), _sizes );
+  std::copy( sdinstance->sdclass->m_insnsizes.begin(), sdinstance->sdclass->m_insnsizes.end(), _sizes );
 }
 
-unsigned int SubOpBitField::minsize() const { return sdinstance->m_sdclass->minsize(); }
-unsigned int SubOpBitField::maxsize() const { return sdinstance->m_sdclass->maxsize(); }
+unsigned int SubOpBitField::minsize() const { return sdinstance->sdclass->minsize(); }
+unsigned int SubOpBitField::maxsize() const { return sdinstance->sdclass->maxsize(); }
 
 
 /**

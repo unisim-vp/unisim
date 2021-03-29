@@ -111,8 +111,8 @@ struct BankedMode : public CORE::Mode
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
-template <class CONFIG>
-CPU<CONFIG>::CPU(const char *name, Object *parent)
+template <class FP_IMPL, class CPU_IMPL>
+CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
   : unisim::kernel::Object(name, parent)
   , Service<Registers>(name, parent)
   , logger(*this)
@@ -338,7 +338,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     variable_register_pool.insert( var_reg );
   }
     
-  this->CPU<CONFIG>::CP15ResetRegisters();
+  CP15ResetRegisters();
 }
 
 /** Destructor.
@@ -346,8 +346,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
  * Takes care of releasing:
  *  - Debug Registers
  */
-template <class CONFIG>
-CPU<CONFIG>::~CPU()
+template <class FP_IMPL, class CPU_IMPL>
+CPU<FP_IMPL,CPU_IMPL>::~CPU()
 {
   /* Debug registers may be referenced more than once (by different
    * names).  Thus we must keep track of deleted registers in order
@@ -373,9 +373,9 @@ CPU<CONFIG>::~CPU()
  * @param bits the value of the modified bits
  * @param mask the location of the modified bits
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::SetCPSR( uint32_t bits, uint32_t mask )
+CPU<FP_IMPL,CPU_IMPL>::SetCPSR( uint32_t bits, uint32_t mask )
 {
   uint32_t old_psr = cpsr.m_value;
   uint32_t new_psr = (old_psr & ~mask) | (bits & mask);
@@ -397,9 +397,9 @@ CPU<CONFIG>::SetCPSR( uint32_t bits, uint32_t mask )
  *
  * @return a pointer to the RegisterInterface corresponding to name
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 unisim::service::interfaces::Register*
-CPU<CONFIG>::GetRegister(const char *name)
+CPU<FP_IMPL,CPU_IMPL>::GetRegister(const char *name)
 {
   RegistersRegistry::iterator itr = registers_registry.find( name );
   if (itr != registers_registry.end())
@@ -412,9 +412,9 @@ CPU<CONFIG>::GetRegister(const char *name)
  *
  * Returns the current privilege level according to the running mode.
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 unsigned
-CPU<CONFIG>::GetPL()
+CPU<FP_IMPL,CPU_IMPL>::GetPL()
 {
   /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
   switch (cpsr.Get(M))
@@ -443,9 +443,9 @@ CPU<CONFIG>::GetPL()
  * Throws if the current privilege level according to the running mode
  * is not sufficient.
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::RequiresPL(unsigned rpl)
+CPU<FP_IMPL,CPU_IMPL>::RequiresPL(unsigned rpl)
 {
   if (GetPL() < rpl)
     UnpredictableInsnBehaviour();
@@ -456,9 +456,9 @@ CPU<CONFIG>::RequiresPL(unsigned rpl)
  *  Allows clients of the Registers interface to scan available
  * register by providing a suitable RegisterScanner interface.
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+CPU<FP_IMPL,CPU_IMPL>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
   scanner.Append( this->GetRegister( "r0" ) );
   scanner.Append( this->GetRegister( "r1" ) );
@@ -484,9 +484,9 @@ CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanne
 /** Software Interrupt
  *  This method is called by SWI instructions to handle software interrupts.
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::CallSupervisor( uint16_t imm )
+CPU<FP_IMPL,CPU_IMPL>::CallSupervisor( uint32_t imm )
 {
   throw SVCException();
 }
@@ -502,9 +502,9 @@ CPU<CONFIG>::CallSupervisor( uint16_t imm )
  * @param exception the A|I|F exception vector (as in CPSR)
  * @return the exception vector corresponding to the processed esception
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 uint32_t
-CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
+CPU<FP_IMPL,CPU_IMPL>::HandleAsynchronousException( uint32_t exceptions )
 {
   // Asynchronous exceptions
   // - Asynchronous Abort
@@ -538,18 +538,18 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
   return 0;
 }
 
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 uint32_t
-CPU<CONFIG>::ExcVectorBase()
+CPU<FP_IMPL,CPU_IMPL>::ExcVectorBase()
 {
   return sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
 }
 
 /** Take Reset Exception
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::TakeReset()
+CPU<FP_IMPL,CPU_IMPL>::TakeReset()
 {
   //   Enter Supervisor mode and (if relevant) Secure state, and reset
   // CP15.  This affects the Banked versions and values of various
@@ -558,9 +558,8 @@ CPU<CONFIG>::TakeReset()
   
   cpsr.Set( M, SUPERVISOR_MODE );
   //if HaveSecurityExt() then SCR.NS = '0';
-  
-  //this->CP14ResetRegisters();
-  this->CP15ResetRegisters();
+
+  CP15ResetRegisters();
   
   //if HaveAdvSIMDorVFP() then FPEXC.EN = '0'; SUBARCHITECTURE_DEFINED further resetting;
   //if HaveThumbEE() then TEECR.XED = '0';
@@ -583,12 +582,42 @@ CPU<CONFIG>::TakeReset()
   Branch(ExcVectorBase() + 0, B_EXC);
 }
 
+
 /** Take Undefined Exception
  *  Implements how the processor takes the undefined exception
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::TakeUndefInstrException()
+CPU<FP_IMPL,CPU_IMPL>::CP15ResetRegisters()
+{
+  // Base default values for SCTLR (may be overwritten by memory architectures)
+  SCTLR = 0x00c50058; // SBO mask
+  sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
+  sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
+  sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
+  sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
+  sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
+  sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
+  sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
+  sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
+  sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
+  sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
+  sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+  sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
+  sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
+  sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
+  sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
+  sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
+  
+  CPACR = 0x0;
+}
+
+/** Take Undefined Exception
+ *  Implements how the processor takes the undefined exception
+ */
+template <class FP_IMPL, class CPU_IMPL>
+void
+CPU<FP_IMPL,CPU_IMPL>::TakeUndefInstrException()
 {
   //   Determine return information.  SPSR is to be the current CPSR,
   // and LR is to be the current instruction address +4 for ARM or +2
@@ -642,9 +671,9 @@ CPU<CONFIG>::TakeUndefInstrException()
  *
  * Implements how the processor takes the data abort exception
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
+CPU<FP_IMPL,CPU_IMPL>::TakeDataOrPrefetchAbortException( bool isdata )
 {
   //   Determine return information.  SPSR is to be the current CPSR,
   // and LR is to be the current instruction address +8 for data abort
@@ -712,9 +741,9 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
 
 /** Take Reset Exception
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::TakeSVCException()
+CPU<FP_IMPL,CPU_IMPL>::TakeSVCException()
 {
   //   Determine return information.  SPSR is to be the current CPSR,
   // after changing the IT[] bits to give them the correct values for
@@ -768,9 +797,9 @@ CPU<CONFIG>::TakeSVCException()
  *
  * @param isIRQ   whether the Exception is an IRQ (true) or an FIQ (false)
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
+CPU<FP_IMPL,CPU_IMPL>::TakePhysicalFIQorIRQException( bool isIRQ )
 {
   //   Determine return information.  SPSR is to be the current CPSR,
   // and LR is to be the aborted instruction address + 4.  Thus
@@ -813,69 +842,22 @@ CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
   if (sctlr::VE.Get( SCTLR ))
     BranchToFIQorIRQvector( isIRQ );              //< Virtual method, Implementation defined
   else
-    CPU<CONFIG>::BranchToFIQorIRQvector( isIRQ ); //< Static method, default behavior
+    CPU<FP_IMPL,CPU_IMPL>::BranchToFIQorIRQvector( isIRQ ); //< Static method, default behavior
 }
 
 /** Branch to Physical FIQ or IRQ vector
  * This method provides default behavior when branching to physical FIQ or IRQ vector
  * @param isIRQ   whether the Exception is an IRQ (true) or an FIQ (false)
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void
-CPU<CONFIG>::BranchToFIQorIRQvector( bool isIRQ )
+CPU<FP_IMPL,CPU_IMPL>::BranchToFIQorIRQvector( bool isIRQ )
 {
   uint32_t vect_offset = isIRQ ? 0x18 : 0x1c;
   Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
-/** Read the value of a CP15 coprocessor register
- *
- * @param crn     the "crn" field of the instruction code
- * @param opcode1 the "opcode1" field of the instruction code 
- * @param crm     the "crm" field of the instruction code
- * @param opcode2 the "opcode2" field of the instruction code
- * @return        the read value
- */
-template <class CONFIG>
-uint32_t
-CPU<CONFIG>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
-{
-  CP15Reg& reg = CP15GetRegister( crn, opcode1, crm, opcode2 );
-  RequiresPL(reg.RequiredPL());
-  return reg.Read( *this );
-}
-
-/** Write a value in a CP15 coprocessor register
- * 
- * @param crn     the "crn" field of the instruction code
- * @param opcode1 the "opcode1" field of the instruction code
- * @param crm     the "crm" field of the instruction code
- * @param opcode2 the "opcode2" field of the instruction code
- * @param val     value to be written to the register
- */
-template <class CONFIG>
-void
-CPU<CONFIG>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value )
-{
-  CP15Reg& reg = CP15GetRegister( crn, opcode1, crm, opcode2 ); 
-  RequiresPL(reg.RequiredPL());
-  reg.Write( *this, value );
-}
-
-/** Describe the nature of a CP15 coprocessor register
- * 
- * @param crn     the "crn" field of the instruction code
- * @param opcode1 the "opcode1" field of the instruction code
- * @param crm     the "crm" field of the instruction code
- * @param opcode2 the "opcode2" field of the instruction code
- * @return        a C string describing the CP15 register
- */
-template <class CONFIG>
-char const*
-CPU<CONFIG>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
-{
-  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe();
-}
+#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 /** Get the Internal representation of the CP15 Register
  * 
@@ -885,11 +867,10 @@ CPU<CONFIG>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, ui
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
-template <class CONFIG>
-typename CPU<CONFIG>::CP15Reg&
-CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+template <class FP_IMPL, class CPU_IMPL>
+typename CPU<FP_IMPL,CPU_IMPL>::CP15Reg*
+CPU<FP_IMPL,CPU_IMPL>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
-
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
       /****************************
@@ -899,13 +880,13 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
-          uint32_t Read( CPU& cpu ) {
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "ID_PFR0, Processor Feature Register 0"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override {
             /*        ARM              Thumb2         Jazelle         ThumbEE   */
             return (0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12);
           }
         } x;
-        return x;
+        return &x;
       } break;
       
       /****************************
@@ -915,10 +896,10 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "SCTLR, System Control Register"; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "SCTLR, System Control Register"; }
           /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
-          uint32_t Read( CPU& cpu ) { return cpu.SCTLR; }
-          void Write( CPU& cpu, uint32_t value ) {
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.SCTLR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override {
             uint32_t old_ctlr = cpu.SCTLR;
             cpu.SCTLR = value;
             uint32_t diff = old_ctlr ^ value;
@@ -931,16 +912,16 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
             }
           }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 1, 0, 0, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CPACR, Coprocessor Access Control Register"; }
-          uint32_t Read( CPU& cpu ) { return cpu.CPACR; }
-          void Write( CPU& cpu, uint32_t value ) {
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CPACR, Coprocessor Access Control Register"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.CPACR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override {
             // bit 29 is Reserved, UNK/SBZP
             // cp0-cp9 and cp12-cp13 are not implemented
             value &= ~0x2f0fffffU;
@@ -950,7 +931,7 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
             cpu.CPACR = value;
           }
         } x;
-        return x;
+        return &x;
       } break;
       
       /***********************************/
@@ -961,99 +942,63 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
-          uint32_t Read( CPU& cpu ) { return cpu.CONTEXTIDR; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.CONTEXTIDR = value; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "CONTEXTIDR, Context ID Register"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.CONTEXTIDR; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override { cpu.CONTEXTIDR = value; }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 13, 0, 0, 2 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TPIDRURW, User Read/Write Thread ID Register"; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRURW, User Read/Write Thread ID Register"; }
           unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
-          uint32_t Read( CPU& cpu ) { return cpu.TPIDRURW; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.TPIDRURW = value; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.TPIDRURW; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t value) const override { cpu.TPIDRURW = value; }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 13, 0, 0, 3 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
-          unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
-          uint32_t Read( CPU& cpu ) { return cpu.TPIDRURO; }
-          void Write( CPU& cpu, uint32_t val ) { cpu.RequiresPL(1); cpu.TPIDRURO = val; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRURO, User Read-Only Thread ID Register"; }
+          void CheckPermissions(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, bool w) const override { return cpu.RequiresPL(w ? 1 : 0); }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.TPIDRURO; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t val) const override { cpu.TPIDRURO = val; }
         } x;
-        return x;
+        return &x;
       } break;
       
     case CP15ENCODE( 13, 0, 0, 4 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TPIDRPRW, PL1 only Thread ID Register"; }
-          uint32_t Read( CPU& cpu ) { return cpu.TPIDRPRW; }
-          void Write( CPU& cpu, uint32_t val ) { cpu.TPIDRPRW = val; }
+          void Describe(uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "TPIDRPRW, PL1 only Thread ID Register"; }
+          uint32_t Read(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu) const override { return cpu.TPIDRPRW; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, uint32_t val) const override { cpu.TPIDRPRW = val; }
         } x;
-        return x;
+        return &x;
       } break;
       
     }
 
-  logger << DebugError << "Unknown CP15 register"
-         << ": CRn=" << unsigned(crn)
-         << ", opc1=" << unsigned(opcode1)
-         << ", CRm=" << unsigned(crm)
-         << ", opc2=" << unsigned(opcode2)
-         << ", pc=" << std::hex << current_insn_addr << std::dec
-         << EndDebugError;
-  
-  static struct CP15Error : public CP15Reg {
-    char const* Describe() { return "Unknown CP15 register"; }
-  } err;
-  return err;
+  static CP15Reg err;
+  return &err;
 }
 
-/** Resets the internal values of corresponding CP15 Registers
- */
-template <class CONFIG>
-void
-CPU<CONFIG>::CP15ResetRegisters()
-{
-  // Base default values for SCTLR (may be overwritten by memory architectures)
-  SCTLR = 0x00c50058; // SBO mask
-  sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
-  sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
-  sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
-  sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
-  sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
-  sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
-  sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
-  sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
-  sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
-  sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
-  sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-  sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
-  sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
-  sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
-  sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
-  sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
-  
-  CPACR = 0x0;
-}
-    
+#undef CP15ENCODE
+
 /** Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
  *   notifiy the processor.
  */
-template <class CONFIG>
+template <class FP_IMPL, class CPU_IMPL>
 void 
-CPU<CONFIG>::UnpredictableInsnBehaviour()
+CPU<FP_IMPL,CPU_IMPL>::UnpredictableInsnBehaviour()
 {
   logger << DebugWarning
          << unisim::util::backtrace::BackTrace()

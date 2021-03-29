@@ -1,4 +1,5 @@
 #!/bin/bash
+
 SIMPKG=armemu
 SIMPKG_SRCDIR=tlm2/armemu
 SIMPKG_DSTDIR=armemu
@@ -54,7 +55,8 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 $(files header) \
-$(files template)"
+$(files template) \
+"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
@@ -79,12 +81,7 @@ ChangeLog \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
-COPYING \
-README \
-INSTALL \
-AUTHORS \
-NEWS \
-ChangeLog \
+${UNISIM_SIMULATOR_PKG_DATA_FILES}\
 "
 
 UNISIM_SIMULATOR_FILES="\
@@ -131,7 +128,7 @@ build_top_configure_cross
 
 # Simulator
 
-output_simulator_configure_ac <(cat << EOF
+output_simulator_configure_ac <(cat <<EOF
 AC_INIT([UNISIM ARMemu C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
@@ -191,7 +188,7 @@ libunisim_${AM_SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-u
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\

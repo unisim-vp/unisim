@@ -219,6 +219,7 @@ CPU::SetCycleTime(sc_core::sc_time const& cycle_time)
 bool 
 CPU::EndSetup()
 {
+  this->TakeReset();
   if (not PCPU::EndSetup())
   {
     PCPU::logger << DebugError
@@ -883,13 +884,12 @@ CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, ui
   return true;
 }
 
-/** Resets the internal values of corresponding CP15 Registers
+/** Resets the architectural registers
  */
 void
-CPU::CP15ResetRegisters()
+CPU::TakeReset()
 {
-  this->PCPU::CP15ResetRegisters();
-  
+  this->PCPU::TakeReset();
   // Implementation defined values for SCTLR
   cxx::processor::arm::sctlr::V.Set( SCTLR, VINITHI );
   cxx::processor::arm::sctlr::EE.Set( SCTLR, CFGEE );

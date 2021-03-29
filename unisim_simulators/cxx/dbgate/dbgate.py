@@ -63,11 +63,11 @@ def call( callstr ):
     if not match:
         raise Exception( "malformed %r" % callstr )
     fun, args = match.groups()
-    fd = None
+    cd = None
     if '@' in args:
         before, path, after = args.split( '@', 2 )
-        fd = open(path)
-        args = '%s%d%s' % (before,fd,after)
+        cd = open(path)
+        args = '%s%d%s' % (before,cd,after)
 
     gdb.execute('break %s' % fun)
     try:
@@ -77,6 +77,6 @@ def call( callstr ):
             raise
     gdb.execute('cont')
 
-    if fd is not None:
-        close(fd)
+    if cd is not None:
+        close(cd)
 
