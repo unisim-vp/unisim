@@ -1545,12 +1545,11 @@ fdiv_v2dv2dv2d.disasm = {
   sink << "fdiv\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
-op fmadd_d( 0b00011111010[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
-fmadd_d.var format : {char const*} = {"154"};
-
-fmadd_d.disasm = {
-  sink << "fmadd\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmD(ra);
-};
+/*******************************************************************
+ * FMADD
+ *
+ * Floating-point fused Multiply-Add (scalar)
+ */
 
 op fmadd_s( 0b00011111000[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
 fmadd_s.var format : {char const*} = {"158"};
@@ -1558,6 +1557,25 @@ fmadd_s.var format : {char const*} = {"158"};
 fmadd_s.disasm = {
   sink << "fmadd\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmS(ra);
 };
+
+fmadd_s.execute = {
+  cpu.SetVF32(rd, FPMulAdd(cpu, cpu.GetVF32(ra, 0), cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+};
+
+op fmadd_d( 0b00011111010[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
+fmadd_d.var format : {char const*} = {"154"};
+
+fmadd_d.disasm = {
+  sink << "fmadd\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmD(ra);
+};
+
+fmadd_d.execute = {
+  cpu.SetVF64(rd, FPMulAdd(cpu, cpu.GetVF64(ra, 0), cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
+};
+
+/*
+ * end of FMADD
+ *******************************************************************/
 
 op fmax_ddd( 0b00011110011[11] : rm[5] : 0b010010[6] : rn[5] : rd[5] );
 fmax_ddd.var format : {char const*} = {"722"};

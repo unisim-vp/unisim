@@ -1397,6 +1397,10 @@ ldr_qxxs.execute = {
  * end of LDR (register, SIMD&FP)
  *******************************************************************/
 
+/*******************************************************************
+ * Mov
+ */
+
 op mov_vbii( 0b01101110000[11] : index1[4] : 0b10[2] : index2[4] : 0b1[1] : rn[5] : rd[5] );
 mov_vbii.var format : {char const*} = {"439"};
 
@@ -1404,11 +1408,8 @@ mov_vbii.disasm = {
   sink << "mov\t" << DisasmTV(rd, 0, 0) << DisasmSubscript(index1) << ", " << DisasmTV(rn, 0, 0) << DisasmSubscript(index2);
 };
 
-op mov_vdii( 0b01101110000[11] : index1[1] : 0b10000[5] : index2[1] : ?[3] : 0b1[1] : rn[5] : rd[5] );
-mov_vdii.var format : {char const*} = {"1785"};
-
-mov_vdii.disasm = {
-  sink << "mov\t" << DisasmTV(rd, 0, 3) << DisasmSubscript(index1) << ", " << DisasmTV(rn, 0, 3) << DisasmSubscript(index2);
+mov_vbii.execute = {
+  cpu.SetVU8(rd, index1, cpu.GetVU8(rn, index2));
 };
 
 op mov_vhii( 0b01101110000[11] : index1[3] : 0b100[3] : index2[3] : ?[1] : 0b1[1] : rn[5] : rd[5] );
@@ -1418,11 +1419,30 @@ mov_vhii.disasm = {
   sink << "mov\t" << DisasmTV(rd, 0, 1) << DisasmSubscript(index1) << ", " << DisasmTV(rn, 0, 1) << DisasmSubscript(index2);
 };
 
+mov_vhii.execute = {
+  cpu.SetVU16(rd, index1, cpu.GetVU16(rn, index2));
+};
+
 op mov_vsii( 0b01101110000[11] : index1[2] : 0b1000[4] : index2[2] : ?[2] : 0b1[1] : rn[5] : rd[5] );
 mov_vsii.var format : {char const*} = {"686"};
 
 mov_vsii.disasm = {
   sink << "mov\t" << DisasmTV(rd, 0, 2) << DisasmSubscript(index1) << ", " << DisasmTV(rn, 0, 2) << DisasmSubscript(index2);
+};
+
+mov_vsii.execute = {
+  cpu.SetVU32(rd, index1, cpu.GetVU32(rn, index2));
+};
+
+op mov_vdii( 0b01101110000[11] : index1[1] : 0b10000[5] : index2[1] : ?[3] : 0b1[1] : rn[5] : rd[5] );
+mov_vdii.var format : {char const*} = {"1785"};
+
+mov_vdii.disasm = {
+  sink << "mov\t" << DisasmTV(rd, 0, 3) << DisasmSubscript(index1) << ", " << DisasmTV(rn, 0, 3) << DisasmSubscript(index2);
+};
+
+mov_vdii.execute = {
+  cpu.SetVU64(rd, index1, cpu.GetVU64(rn, index2));
 };
 
 /*******************************************************************
@@ -1994,20 +2014,6 @@ shrn_v8b8hi.var format : {char const*} = {"1985"}, shift : {unsigned} = {8 - lro
 
 shrn_v8b8hi.disasm = {
   sink << "shrn\t" << DisasmTV(rd, 8, 0) << ", " << DisasmTV(rn, 8, 1) << ", " << DisasmI(shift);
-};
-
-op sli_ddi( 0b0111111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
-sli_ddi.var format : {char const*} = {"539"};
-
-sli_ddi.disasm = {
-  sink << "sli\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op sli_v2d2di( 0b0110111101[10] : imm[6] : 0b010101[6] : rn[5] : rd[5] );
-sli_v2d2di.var format : {char const*} = {"557"};
-
-sli_v2d2di.disasm = {
-  sink << "sli\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmI(imm);
 };
 
 /*******************************************************************
@@ -7510,26 +7516,80 @@ shsub_vsvsvs.disasm = {
   sink << "shsub\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
-op sli_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : imm[3] : 0b010101[6] : rn[5] : rd[5] );
+/*******************************************************************
+ * SLI
+ *
+ * Shift Left and Insert (immediate).
+ */
+
+op sli_ddi( 0b0111111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
+sli_ddi.var format : {char const*} = {"539"};
+
+sli_ddi.disasm = {
+  sink << "sli\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+};
+
+sli_ddi.execute = {
+  cpu.SetVU64(rd, (cpu.GetVU64(rn, 0) << shift) | (cpu.GetVU64(rd, 0) & typename ARCH::U64((1ull<<shift)-1)));
+};
+
+op sli_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : shift[3] : 0b010101[6] : rn[5] : rd[5] );
 sli_vbbi.var format : {char const*} = {"1971"};
 
 sli_vbbi.disasm = {
-  sink << "sli\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmI(imm);
+  sink << "sli\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmI(shift);
 };
 
-op sli_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : imm[4] : 0b010101[6] : rn[5] : rd[5] );
+sli_vbbi.execute = {
+  unsigned const elements = 8<<q;
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU8(rd, e, (cpu.GetVU8(rn, e) << shift) | (cpu.GetVU8(rd, e) & typename ARCH::U8((1<<shift)-1)));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op sli_vhhi( 0b0[1] : q[1] : 0b1011110001[10] : shift[4] : 0b010101[6] : rn[5] : rd[5] );
 sli_vhhi.var format : {char const*} = {"1838"};
 
 sli_vhhi.disasm = {
-  sink << "sli\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmI(imm);
+  sink << "sli\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmI(shift);
 };
 
-op sli_vssi( 0b0[1] : q[1] : 0b101111001[9] : imm[5] : 0b010101[6] : rn[5] : rd[5] );
+sli_vhhi.execute = {
+  unsigned const elements = 4<<q;
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU16(rd, e, (cpu.GetVU16(rn, e) << shift) | (cpu.GetVU16(rd, e) & typename ARCH::U16((1<<shift)-1)));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op sli_vssi( 0b0[1] : q[1] : 0b101111001[9] : shift[5] : 0b010101[6] : rn[5] : rd[5] );
 sli_vssi.var format : {char const*} = {"1007"};
 
 sli_vssi.disasm = {
-  sink << "sli\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmI(imm);
+  sink << "sli\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmI(shift);
 };
+
+sli_vssi.execute = {
+  unsigned const elements = 2<<q;
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU32(rd, e, (cpu.GetVU32(rn, e) << shift) | (cpu.GetVU32(rd, e) & typename ARCH::U32((1<<shift)-1)));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op sli_v2d2di( 0b0110111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
+sli_v2d2di.var format : {char const*} = {"557"};
+
+sli_v2d2di.disasm = {
+  sink << "sli\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmI(shift);
+};
+
+sli_v2d2di.execute = {
+  for (unsigned e=0; e < 2; e += 1)
+    cpu.SetVU64(rd, e, (cpu.GetVU64(rn, e) << shift) | (cpu.GetVU64(rd, e) & typename ARCH::U64((1ull<<shift)-1)));
+};
+
+/*
+ * end of SLI
+ *******************************************************************/
 
 op smax_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011001[6] : rn[5] : rd[5] );
 smax_vbvbvb.var format : {char const*} = {"1321"};

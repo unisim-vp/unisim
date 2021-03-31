@@ -944,4 +944,10 @@ public:
   // std::set<Zone, Zone::Above> diskpages;
 };
 
+template <typename T>
+T FPMulAdd(AArch64& cpu, T const& acc, T const& op1, T const& op2)
+{
+  return acc + (op1 * op2);
+}
+
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */
