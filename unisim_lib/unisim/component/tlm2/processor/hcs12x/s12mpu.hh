@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2008, 2012
  *  Commissariat a l'Energie Atomique (CEA)
@@ -55,21 +54,21 @@
 
 #include <systemc>
 
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 //#include "tlm_utils/multi_passthrough_target_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -78,6 +77,8 @@
 #include <unisim/component/cxx/processor/hcs12x/s12mpu_if.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
 namespace component {
@@ -91,21 +92,21 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::VariableBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -118,7 +119,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::TOWNER;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -156,6 +157,8 @@ public:
 	static const uint8_t MPU_DESC_BANKS_OFFSET = 0x0C;	// This offset is used to instruments all descriptors
 	static const uint8_t MPU_DESC_WINDOW_SIZE = 6;
 
+	static const unsigned int MEMORY_MAP_SIZE = 12;
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
@@ -169,6 +172,8 @@ public:
 	S12MPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12MPU();
 
+	virtual void Reset();
+	
 	virtual bool validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size, bool isWrite, bool isExecute);
 	virtual void assertInterrupt();
 
@@ -189,7 +194,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
+	virtual void ResetMemory();
 
 
 	//=====================================================================
@@ -209,8 +214,9 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
-
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+	
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
@@ -237,9 +243,9 @@ private:
 	Parameter<bool>	param_debug_enabled;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	// =============================================
 	// =            Registers                      =

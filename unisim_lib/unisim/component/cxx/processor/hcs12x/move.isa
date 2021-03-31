@@ -48,6 +48,8 @@ movb_0B.execute = {
 	physical_address_t addr = opr16a;
 
 	cpu->memWrite8(addr,ii);
+
+	return getCycles();
 }
 
 op movb_08(0x18[8]:0x08[8]:> <:*xb[XB]:> <:ii[8])
@@ -66,6 +68,8 @@ movb_08.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);
 
 	cpu->memWrite8(addr,ii);
+
+	return getCycles();
 }
 
 
@@ -86,6 +90,8 @@ movb_0C.execute = {
 
 	uint8_t tmp = cpu->memRead8(addrsrc);
 	cpu->memWrite8(addrdst, tmp);
+
+	return getCycles();
 }
 
 op movb_09(0x18[8]:0x09[8]:> <:*xb[XB]:> <:opr16asrc[16])
@@ -105,6 +111,8 @@ movb_09.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
 	uint8_t tmp = cpu->memRead8(opr16asrc);
 	cpu->memWrite8(addr, tmp);
+
+	return getCycles();
 }
 
 op movb_0D(0x18[8]:0x0D[8]:> <:*xb[XB]:> <:opr16a[16])
@@ -126,6 +134,8 @@ movb_0D.execute = {
 
 	uint8_t tmp = cpu->memRead8(addrxb);
 	cpu->memWrite8(addropr16a, tmp);
+
+	return getCycles();
 }
 
 op movb_0A(0x18[8]:0x0A[8]:> <:*xbsrc[XB]:> <:*xbdst[XB])
@@ -158,6 +168,8 @@ movb_0A.execute = {
 	uint16_t addrdst = xbdst->getEAddr(cpu);
 	uint8_t  tmp = cpu->memRead8(addrsrc);
 	cpu->memWrite8(addrdst, tmp);
+
+	return getCycles();
 }
 
 // ---------
@@ -177,6 +189,8 @@ movw_03.execute = {
 	physical_address_t addr = opr16a;
 
 	cpu->memWrite16(addr,opr16i);
+
+	return getCycles();
 }
 
 op movw_04(0x18[8]:0x04[8]:> <:opr16asrc[16]:opr16adst[16])
@@ -196,6 +210,8 @@ movw_04.execute = {
 
 	uint16_t tmp = cpu->memRead16(addrsrc);
 	cpu->memWrite16(addrdst, tmp);
+
+	return getCycles();
 }
 
 // Movw_18_00 IDX IDX1 IDX2 [D,IDX] [IDX2]
@@ -214,6 +230,8 @@ movw_00.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);
 
 	cpu->memWrite16(addr,opr16i);
+
+	return getCycles();
 }
 
 
@@ -239,6 +257,8 @@ movw_01.execute = {
 
 	uint16_t tmp = cpu->memRead16(addrsrc);
 	cpu->memWrite16(addr, tmp);
+
+	return getCycles();
 }
 
 
@@ -261,6 +281,8 @@ movw_05.execute = {
 
 	uint16_t tmp = cpu->memRead16(addrxb);
 	cpu->memWrite16(addrdst, tmp);
+
+	return getCycles();
 }
 
 op movw_02(0x18[8]:0x02[8]:> <:*xbsrc[XB]:> <:*xbdst[XB])
@@ -294,4 +316,6 @@ movw_02.execute = {
 	
 	uint16_t  tmp = cpu->memRead16(addrsrc);
 	cpu->memWrite16(addrdst, tmp);
+
+	return getCycles();
 }

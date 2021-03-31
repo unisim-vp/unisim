@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <map>
 #include <vector>
 #include <stack>
@@ -280,7 +279,9 @@ public:
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	bool debug;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	
 	bool RememberState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc);
 	bool RestoreState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc);

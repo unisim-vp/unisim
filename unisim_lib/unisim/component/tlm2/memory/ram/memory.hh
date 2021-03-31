@@ -35,13 +35,11 @@
 #ifndef __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_HH__
 #define __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_HH__
 
-#include <systemc.h>
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
+#include <systemc>
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
-#include <tlm_utils/tlm_quantumkeeper.h>
-#include <tlm_utils/peq_with_get.h>
-#include "unisim/component/cxx/memory/ram/memory.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
+#include <unisim/component/cxx/memory/ram/memory.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -51,11 +49,10 @@ namespace memory {
 namespace ram {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::logger::Logger;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
 
 typedef uint64_t DEFAULT_ADDRESS;
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
@@ -70,7 +67,7 @@ const bool DEFAULT_DEBUG = false; // no debug
  */
 template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class Memory :
-	public sc_module,
+	public sc_core::sc_module,
 	public unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>,
 	public tlm::tlm_fw_transport_if<>
 {
@@ -87,19 +84,19 @@ public:
 	 * @param name the name of the module
 	 * @param parent the parent service
 	 */
-	Memory(const sc_module_name& name, Object *parent = 0);
+	Memory(const sc_core::sc_module_name& name, Object *parent = 0);
 	/**
 	 * Destructor
 	 */
 	virtual ~Memory();
 
 	/* Service methods */
-	virtual void Reset();
+	virtual void ResetMemory();
 
 	/** BeginSetup
 	 * Initializes the service interface. */
 	virtual bool BeginSetup();
-	
+
 	/**
 	 * TLM2 Slave methods
 	 */
@@ -112,32 +109,33 @@ protected:
 	/**
 	 * Check the verbosity
 	 */
-	inline bool IsVerbose() { return (DEBUG && verbose); }
-
-	/** Logger */
-	Logger logger;
+	inline bool IsVerbose() { return (DEBUG && this->verbose); }
 
 	uint64_t read_counter;
 	uint64_t write_counter;
 
 
 private:
-	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
+	void UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::sc_time& t);
 
-	/** Verbosity */
-	bool verbose;
 	/** The cycle time */
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 	/** Latencies */
-	sc_time read_latency;
-	sc_time write_latency;
+	sc_core::sc_time read_latency;
+	sc_core::sc_time write_latency;
+	/** read-only flag */
+	bool read_only;
+	/** enable-dmi flag */
+	bool enable_dmi;
 	/** The parameter to set frequency */
-	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 	/** The parameters to set the latencies */
-	Parameter<sc_time> param_read_latency;
-	Parameter<sc_time> param_write_latency;
-	/** The parameter to set the verbosity */
-	Parameter<bool> param_verbose;
+	Parameter<sc_core::sc_time> param_read_latency;
+	Parameter<sc_core::sc_time> param_write_latency;
+	/** The parameter to set read-only */
+	Parameter<bool> param_read_only;
+	/** The parameter to set enable-dmi */
+	Parameter<bool> param_enable_dmi;
 
 	Statistic<uint64_t> stat_read_counter;
 	Statistic<uint64_t> stat_write_counter;

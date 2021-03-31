@@ -59,31 +59,7 @@ Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename unisim::util::de
 }
 
 template <class T>
-const char *Symbol<T>::GetName() const
-{
-	return name.c_str();
-}
-
-template <class T>
-T Symbol<T>::GetAddress() const
-{
-	return addr;
-}
-
-template <class T>
-T Symbol<T>::GetSize() const
-{
-	return size;
-}
-
-template <class T>
-typename unisim::util::debug::Symbol<T>::Type Symbol<T>::GetType() const
-{
-	return type;
-}
-
-template <class T>
-string Symbol<T>::GetFriendlyName(T addr) const
+std::string Symbol<T>::GetFriendlyName(T addr) const
 {
 	stringstream sstr;
 	

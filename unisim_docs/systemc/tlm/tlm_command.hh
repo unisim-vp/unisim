@@ -1,4 +1,4 @@
-namespace enum {
+namespace tlm {
 	
 enum tlm_command {
 	TLM_READ_COMMAND,
@@ -6,4 +6,4 @@ enum tlm_command {
 	TLM_IGNORE_COMMAND
 };
 
-} // namespace enum
+} // namespace tlm

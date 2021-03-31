@@ -51,6 +51,7 @@
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
 #include <unisim/util/debug/dwarf/frame.hh>
 #include <unisim/util/debug/dwarf/data_object.hh>
+#include <unisim/util/debug/dwarf/subprogram.hh>
 
 #include <unisim/util/debug/dwarf/addr_range.tcc>
 #include <unisim/util/debug/dwarf/attr.tcc>
@@ -70,6 +71,7 @@
 #include <unisim/util/debug/dwarf/stmt_vm.tcc>
 #include <unisim/util/debug/dwarf/frame.tcc>
 #include <unisim/util/debug/dwarf/data_object.tcc>
+#include <unisim/util/debug/dwarf/subprogram.tcc>
 
 namespace unisim {
 namespace util {
@@ -141,7 +143,7 @@ template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_CIE<uin
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_CompilationUnit<uint64_t>&);
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_DIE<uint64_t>&);
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_FDE<uint64_t>&);
-template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_Frame<uint64_t>&);
+template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_RegSet<uint64_t>&);
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_LocListEntry<uint64_t>&);
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_MacInfoListEntry<uint64_t>&);
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_Pub<uint64_t>&);

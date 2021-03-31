@@ -38,7 +38,8 @@
 #include <unisim/component/cxx/isa/types.hh>
 #include <unisim/service/interfaces/keyboard.hh>
 #include <unisim/service/interfaces/mouse.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <list>
 #include <vector>
@@ -53,12 +54,12 @@ using std::list;
 using std::vector;
 using unisim::component::cxx::isa::isa_address_t;
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 
 using unisim::service::interfaces::Keyboard;
 using unisim::service::interfaces::Mouse;

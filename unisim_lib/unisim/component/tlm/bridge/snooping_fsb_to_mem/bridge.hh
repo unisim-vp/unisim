@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__
 #define __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/component/tlm/message/snooping_fsb.hh"
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
@@ -50,12 +50,12 @@ namespace tlm {
 namespace bridge {
 namespace snooping_fsb_to_mem {
 
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;

@@ -35,19 +35,21 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_MMC_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_MMC_HH__
 
+#include <unisim/kernel/variable/variable.hh>
 #include <inttypes.h>
 #include <iostream>
 #include <cmath>
 #include <map>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
 #include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/singleton/singleton.hh"
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -60,20 +62,20 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::Singleton;
 
 using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
@@ -96,10 +98,10 @@ public:
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
 	//==============================================================================
 
-	static const uint8_t DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
-	static const uint8_t RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
-	static const uint8_t EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
-	static const uint8_t FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
+	static const unsigned int DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
+	static const unsigned int RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
+	static const unsigned int EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
+	static const unsigned int FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
 
 	static const uint16_t DIRECT_PAGE_SIZE	= 0x100;
 	static const uint16_t RAM_PAGE_SIZE		= 0x1000;
@@ -168,7 +170,7 @@ public:
 
 	enum {MMCCTL0,	MODE, GPAGE, DIRECT, MMCCTL1, RPAGE, EPAGE, PPAGE, RAMWPC, RAMXGU, RAMSHL, RAMSHU};
 
-	static const uint8_t MMC_MEMMAP_SIZE = 12;
+	static const unsigned int MMC_MEMMAP_SIZE = 12;
 	static address_t MMC_REGS_ADDRESSES[MMC_MEMMAP_SIZE];
 
 
@@ -252,6 +254,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 	void splitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);
@@ -267,7 +270,7 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
-
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             Internal Registers Access methods                     =
@@ -346,9 +349,9 @@ private:
 	Parameter<address_t> param_ppage_address;
 
 	// Registers map
-	std::map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 };
 

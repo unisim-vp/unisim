@@ -17,67 +17,26 @@
 
 #include <conststr.hh>
 #include <cstring>
+#include <ostream>
 
-ConstStr_t::ConstStr_t( char const* _string )
-  : m_instance( _string ? (new Instance( _string ))->retain() : 0 )
-{}
-  
-ConstStr_t::ConstStr_t( char const* _string, Set& _set )
-  : m_instance( 0 )
+ConstStr::Pool ConstStr::default_pool;
+
+int
+ConstStr::cmp( ConstStr const& rhs ) const
 {
-  if( not _string ) return;
-  Set::iterator iter = _set.find( _string );
-  Instance* inst = 0;
-  if( iter != _set.end() ) {
-    inst = iter->second.m_instance;
-  } else {
-    inst = new Instance( _string );
-    _set[inst->m_string].init( inst );
-  }
-  m_instance = inst->retain();
+  if (c_string == rhs.c_string) return 0;
+  if (not c_string) return -1;
+  if (not rhs.c_string) return 1;
+  return strcmp( c_string, rhs.c_string );
 }
 
-ConstStr_t::ConstStr_t( ConstStr_t const& _ref )
-  : m_instance( _ref.m_instance->retain() )
-{}
-
-ConstStr_t&
-ConstStr_t::init( Instance* _instance ) {
-  m_instance->release();
-  m_instance = _instance->retain();
-  return *this;
-}
-  
-ConstStr_t::~ConstStr_t() {
-  m_instance->release();
-}
-
-ConstStr_t&
-ConstStr_t::operator=( ConstStr_t const& _ref ) {
-  m_instance->release();
-  m_instance = _ref.m_instance->retain();
-  return *this;
-}
-  
-ConstStr_t::Instance::Instance( char const* _string )
-  : m_string( 0 ), m_refcount( 0 )
+std::ostream&
+operator << ( std::ostream& sink, ConstStr const& rhs )
 {
-  intptr_t len = strlen( _string );
-  //std::cout << "Creating: " << _string << "\n";
-  char* storage = new char[len+1];
-  strcpy( storage, _string );
-  m_string = storage;
-    
-}
-
-ConstStr_t::Instance::~Instance () {
-  //std::cout << "Deleting: " << m_string << "\n";
-  delete [] m_string;
-}
+  if (not rhs.c_string)
+    sink << "<none>";
+  else
+    sink.write( rhs.c_string, strlen( rhs.c_string ) );
   
-void
-ConstStr_t::Instance::release() {
-  if( not this ) return;
-  if( (--m_refcount) > 0 ) return;
-  delete this;
+  return sink;
 }

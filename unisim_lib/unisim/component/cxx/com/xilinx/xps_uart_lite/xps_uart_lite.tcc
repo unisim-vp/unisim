@@ -105,17 +105,29 @@ bool XPS_UARTLite<CONFIG>::BeginSetup()
 }
 
 template <class CONFIG>
-void XPS_UARTLite<CONFIG>::Reset()
+void XPS_UARTLite<CONFIG>::ResetRegs()
 {
 	rx_fifo.Clear();
 	tx_fifo.Clear();
 	stat_reg = CONFIG::STAT_REG_RESET_VALUE;
 	tx_fifo_becomes_empty = false;
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::Reset()
+{
+	ResetRegs();
 	
 	if(char_io_import)
 	{
-		char_io_import->Reset();
+		char_io_import->ResetCharIO();
 	}
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::ResetMemory()
+{
+	ResetRegs();
 }
 
 template <class CONFIG>

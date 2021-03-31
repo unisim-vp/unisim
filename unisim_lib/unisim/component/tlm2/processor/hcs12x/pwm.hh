@@ -42,24 +42,26 @@
 #include <string>
 #include <map>
 
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
 namespace component {
@@ -73,21 +75,21 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::SignalArray;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::variable::SignalArray;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -143,9 +145,11 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
+	virtual void Reset();
+	
 	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
-    void refresh_channel(uint8_t channel_number);
+//    void refresh_channel(uint8_t channel_number);
 
     void	start();
     void	pwm7in_ChangeStatus(bool pwm7in_status);
@@ -176,13 +180,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -197,6 +201,7 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -216,6 +221,9 @@ protected:
 
 		if (value != output[channel_index]) {
 			channel_output_reg[channel_index] = value;
+
+			refreshOutput(output);
+
 		}
 
 	};
@@ -237,6 +245,8 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
+	sc_event pwm_bw_event;
+
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
@@ -247,9 +257,9 @@ private:
 //	Parameter<bool>	param_debug_enabled;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	sc_time clockVector[8];
 	sc_time clockA, clockB, clockSA, clockSB;

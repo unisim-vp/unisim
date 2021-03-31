@@ -35,18 +35,18 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_BLOB_HH__
 #define __UNISIM_SERVICE_INTERFACES_BLOB_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/service/interfaces/interface.hh>
+#include <unisim/util/blob/blob.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template <class MEMORY_ADDR>
-class Blob : public unisim::kernel::service::ServiceInterface
+class Blob : public ServiceInterface
 {
 public:
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const = 0;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const = 0;
 };
 
 	

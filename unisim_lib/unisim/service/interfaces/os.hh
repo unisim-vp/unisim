@@ -29,19 +29,19 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_INTERFACES_OS_INTERFACE_HH__
 #define __UNISIM_SERVICE_INTERFACES_OS_INTERFACE_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
   
-  class OS : public unisim::kernel::service::ServiceInterface{
+  class OS : public ServiceInterface{
   public:
     /**
      * Execute an os system call.

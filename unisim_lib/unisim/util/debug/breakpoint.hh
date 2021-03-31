@@ -43,19 +43,19 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class ADDRESS> class Breakpoint;
+template <typename ADDRESS> class Breakpoint;
 
-template <class ADDRESS>
+template <typename ADDRESS>
 std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp);
 
-template <class ADDRESS>
+template <typename ADDRESS>
 class Breakpoint : public Event<ADDRESS>
 {
 public:
-	Breakpoint(ADDRESS addr)
+	Breakpoint(ADDRESS _addr)
 		: Event<ADDRESS>(Event<ADDRESS>::EV_BREAKPOINT)
+		, addr(_addr)
 	{
-		this->addr = addr;
 	}
 
 	inline ADDRESS GetAddress() const { return addr; }
@@ -65,10 +65,10 @@ private:
 	ADDRESS addr;
 };
 
-template <class ADDRESS>
+template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp)
 {
-	os << "breakpoint at 0x" << std::hex << brkp.addr << std::dec;
+	os << "breakpoint at 0x" << std::hex << brkp.addr << std::dec << " for processor #" << brkp.GetProcessorNumber() << " and front-end #" << brkp.GetFrontEndNumber();
 	
 	return os;
 }

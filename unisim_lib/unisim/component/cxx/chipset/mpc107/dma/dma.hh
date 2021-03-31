@@ -37,7 +37,8 @@
 
 #include <inttypes.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/buffer.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/register.hh"
@@ -50,11 +51,11 @@ namespace chipset {
 namespace mpc107 {
 namespace dma {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceImport;
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG = false>

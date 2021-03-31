@@ -29,10 +29,10 @@ namespace hcs12x {
 /* Constructor */
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
-S12XEETX(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "this module implements a memory")
+S12XEETX(const sc_module_name& name, Object *parent)
+	: Object(name, parent, "this module implements a memory")
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
 
 	, registers_export("registers_export", this)
 
@@ -75,7 +75,7 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 
 {
 
-	param_oscillator_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_oscillator_cycle_time_int.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &S12XEETX::read_write);
@@ -99,16 +99,6 @@ S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 	xint_payload->release();
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -152,7 +142,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		// wait command launch by clearing ESTAT::CBEIF flag
 		while (((estat_reg & 0x80) != 0) /*|| cmd_queue.empty()*/) {
-			wait(command_launch_event);
+			sc_module::wait(command_launch_event);
 		}
 
 		fetchCommand();
@@ -218,7 +208,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		// isn't sector_erase_abort
 		if ((ecmd_reg & 0x7F) != 0x47) {
-			wait(bus_cycle_time * 4);
+			sc_module::wait(bus_cycle_time * 4);
 		}
 
 		// set CBEIF flag when address, data, command buffers are empty. This enable new write sequence.
@@ -266,7 +256,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	 * If the EEPROM block is erased,
 	 * the BLANK flag in the ESTAT register will set upon command completion
 	 */
-	wait(bus_cycle_time * (inherited::bytesize/2 + 14));
+	sc_module::wait(bus_cycle_time * (inherited::bytesize/2 + 14));
 
 	// is all words erased successfully ?
 	if ((rand() % 101) > (erase_fail_ratio * 100)) {
@@ -304,7 +294,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2)) {
 
-		wait(bus_cycle_time * (1 + 14));
+		sc_module::wait(bus_cycle_time * (1 + 14));
 	}
 
 	inherited::write_counter++;
@@ -351,7 +341,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1)) {
 
-			wait(bus_cycle_time);
+			sc_module::wait(bus_cycle_time);
 
 		}
 	}
@@ -362,7 +352,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	inherited::write_counter++;
 
-	wait(bus_cycle_time * 14);
+	sc_module::wait(bus_cycle_time * 14);
 
 	sector_erase_modify_active = false;
 
@@ -391,7 +381,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	inherited::write_counter++;
 
-	wait(bus_cycle_time * (inherited::bytesize/2 + 14));
+	sc_module::wait(bus_cycle_time * (inherited::bytesize/2 + 14));
 
 }
 
@@ -407,7 +397,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	sector_erase_abort_active = true;
 
-	wait(bus_cycle_time * (1 + 14));
+	sc_module::wait(bus_cycle_time * (1 + 14));
 
 	sector_erase_abort_active = false;
 
@@ -454,7 +444,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1)) {
 
-			wait(bus_cycle_time);
+			sc_module::wait(bus_cycle_time);
 		}
 	}
 
@@ -464,7 +454,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		// program word at global_address while byte address bit 0 is ignored
 		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2)) {
 
-			wait(bus_cycle_time * (14 + 1));
+			sc_module::wait(bus_cycle_time * (14 + 1));
 		}
 	}
 
@@ -618,75 +608,63 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 {
-	char buf[80];
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ECLKDIV", &eclkdiv_reg));
 
-	sprintf(buf, "%s.ECLKDIV",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eclkdiv_reg);
-
-	unisim::kernel::service::Register<uint8_t> *eclkdiv_var = new unisim::kernel::service::Register<uint8_t>("ECLKDIV", this, eclkdiv_reg, "EEPROM Clock Divider Register (ECLKDIV)");
+	unisim::kernel::variable::Register<uint8_t> *eclkdiv_var = new unisim::kernel::variable::Register<uint8_t>("ECLKDIV", this, eclkdiv_reg, "EEPROM Clock Divider Register (ECLKDIV)");
 	extended_registers_registry.push_back(eclkdiv_var);
 	eclkdiv_var->setCallBack(this, ECLKDIV, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved1_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RESERVED1", &reserved1_reg));
 
-	unisim::kernel::service::Register<uint8_t> *reserved1_var = new unisim::kernel::service::Register<uint8_t>("RESERVED1", this, reserved1_reg, "RESERVED1");
+	unisim::kernel::variable::Register<uint8_t> *reserved1_var = new unisim::kernel::variable::Register<uint8_t>("RESERVED1", this, reserved1_reg, "RESERVED1");
 	extended_registers_registry.push_back(reserved1_var);
 	reserved1_var->setCallBack(this, RESERVED1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved2_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RESERVED2", &reserved2_reg));
 
-	unisim::kernel::service::Register<uint8_t> *reserved2_var = new unisim::kernel::service::Register<uint8_t>("RESERVED2", this, reserved2_reg, "RESERVED2");
+	unisim::kernel::variable::Register<uint8_t> *reserved2_var = new unisim::kernel::variable::Register<uint8_t>("RESERVED2", this, reserved2_reg, "RESERVED2");
 	extended_registers_registry.push_back(reserved2_var);
 	reserved2_var->setCallBack(this, RESERVED2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ECNFG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecnfg_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ECNFG", &ecnfg_reg));
 
-	unisim::kernel::service::Register<uint8_t> *ecnfg_var = new unisim::kernel::service::Register<uint8_t>("ECNFG", this, ecnfg_reg, "EEPROM Configuration Register (ECNFG)");
+	unisim::kernel::variable::Register<uint8_t> *ecnfg_var = new unisim::kernel::variable::Register<uint8_t>("ECNFG", this, ecnfg_reg, "EEPROM Configuration Register (ECNFG)");
 	extended_registers_registry.push_back(ecnfg_var);
 	ecnfg_var->setCallBack(this, ECNFG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EPROT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eprot_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".EPROT", &eprot_reg));
 
-	unisim::kernel::service::Register<uint8_t> *eprot_var = new unisim::kernel::service::Register<uint8_t>("EPROT", this, eprot_reg, "EEPROM Protection Register (EPROT)");
+	unisim::kernel::variable::Register<uint8_t> *eprot_var = new unisim::kernel::variable::Register<uint8_t>("EPROT", this, eprot_reg, "EEPROM Protection Register (EPROT)");
 	extended_registers_registry.push_back(eprot_var);
 	eprot_var->setCallBack(this, EPROT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ESTAT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &estat_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ESTAT", &estat_reg));
 
-	unisim::kernel::service::Register<uint8_t> *estat_var = new unisim::kernel::service::Register<uint8_t>("ESTAT", this, estat_reg, "EEPROM Status Register (ESTAT)");
+	unisim::kernel::variable::Register<uint8_t> *estat_var = new unisim::kernel::variable::Register<uint8_t>("ESTAT", this, estat_reg, "EEPROM Status Register (ESTAT)");
 	extended_registers_registry.push_back(estat_var);
 	estat_var->setCallBack(this, ESTAT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ECMD",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecmd_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ECMD", &ecmd_reg));
 
-	unisim::kernel::service::Register<uint8_t> *ecmd_var = new unisim::kernel::service::Register<uint8_t>("ECMD", this, ecmd_reg, "EEPROM Command Register (ECMD)");
+	unisim::kernel::variable::Register<uint8_t> *ecmd_var = new unisim::kernel::variable::Register<uint8_t>("ECMD", this, ecmd_reg, "EEPROM Command Register (ECMD)");
 	extended_registers_registry.push_back(ecmd_var);
 	ecmd_var->setCallBack(this, ECMD, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved3_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RESERVED3", &reserved3_reg));
 
-	unisim::kernel::service::Register<uint8_t> *reserved3_var = new unisim::kernel::service::Register<uint8_t>("RESERVED3", this, reserved3_reg, "RESERVED3");
+	unisim::kernel::variable::Register<uint8_t> *reserved3_var = new unisim::kernel::variable::Register<uint8_t>("RESERVED3", this, reserved3_reg, "RESERVED3");
 	extended_registers_registry.push_back(reserved3_var);
 	reserved3_var->setCallBack(this, RESERVED3, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EADDR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &eaddr_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".EADDR", &eaddr_reg));
 
-	unisim::kernel::service::Register<uint16_t> *eaddr_var = new unisim::kernel::service::Register<uint16_t>("EADDR", this, eaddr_reg, "EEPROM Address Register");
+	unisim::kernel::variable::Register<uint16_t> *eaddr_var = new unisim::kernel::variable::Register<uint16_t>("EADDR", this, eaddr_reg, "EEPROM Address Register");
 	extended_registers_registry.push_back(eaddr_var);
 	eaddr_var->setCallBack(this, EADDRHI, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EDATA",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &edata_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".EDATA", &edata_reg));
 
-	unisim::kernel::service::Register<uint16_t> *edata_var = new unisim::kernel::service::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register");
+	unisim::kernel::variable::Register<uint16_t> *edata_var = new unisim::kernel::variable::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register");
 	extended_registers_registry.push_back(edata_var);
 	edata_var->setCallBack(this, EDATAHI, &CallBackObject::write, NULL);
 
@@ -896,7 +874,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 //=====================================================================
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ADDRESS addr, void *buffer, uint32_t size)
 {
 	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 		service_address_t offset = addr-baseAddress;
@@ -954,7 +932,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 //}
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
 {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
@@ -1013,11 +991,13 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 Register * S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
 
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
 
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) {
+	
+	registers_registry.ScanRegisters(scanner);
 }
 
 //=====================================================================

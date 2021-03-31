@@ -50,15 +50,15 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 	
 template <unsigned int NUM_SWITCHES>
-GPIO_Switches<NUM_SWITCHES>::GPIO_Switches(const sc_module_name& name, Object *parent)
+GPIO_Switches<NUM_SWITCHES>::GPIO_Switches(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, Client<Keyboard>(name, parent)
 	, keyboard_import("keyboard-import", this)
 	, logger(*this)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-	, polling_period(10, SC_MS)
+	, polling_period(10, sc_core::SC_MS)
 	, param_polling_period("polling-period", this, polling_period, "Polling period of host keyboard")
 	, gpio_payload_fabric()
 {
@@ -247,7 +247,7 @@ void GPIO_Switches<NUM_SWITCHES>::Poll()
 
 					gpio_payload->SetValue(pin_level);
 					
-					sc_time t(SC_ZERO_TIME);
+					sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
 					
 					(*gpio_master_sock[pin])->nb_transport_fw(*gpio_payload, phase, t);

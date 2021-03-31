@@ -7,9 +7,9 @@
 
 // COP - coprocessor operation
 
-op cop(0b111[3]:0b00[2]:op_6_5[2]:0b11010[5]:op_4_1[4]:><:cp[3]:op_0[1]:cRd[4]:cRx[4]:cRy[4])
+op cop(0b111[3]:0b00[2]:shl<5>op_6_5[2]:0b11010[5]:shl<1>op_4_1[4]:><:cp[3]:op_0[1]:cRd[4]:cRx[4]:cRy[4])
 
-cop.var _op :{uint8_t} = {(op_6_5<<5) | (op_4_1 << 4) | op_0}
+cop.var _op :{uint8_t} = { op_6_5 | op_4_1 | op_0 }
 
 cop.disasm={
 
@@ -41,9 +41,9 @@ ldc_d_c.disasm={
 
 //LDC0_D - load compressor 0
 
-op ldc0_d(0b111[3]:0b1001[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRd_3_1[3]:0b0[1]:disp_7_0[8])
+op ldc0_d(0b111[3]:0b1001[4]:0b11010[5]:rp[4]:><:shl<8>disp_11_8[4]:cRd_3_1[3]:0b0[1]:disp_7_0[8])
 
-ldc0_d.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
+ldc0_d.var disp:{uint16_t}={ disp_11_8 | disp_7_0 }
 
 ldc0_d.disasm={
 	os << "ldc0_d " << (unsigned int) cRd_3_1 << "," << (unsigned int) rp << "[" << (unsigned int) disp << "]";
@@ -76,9 +76,9 @@ ldc_w_c.disasm={
 
 // LDC0_W
 
-op ldc0_w(0b111[3]:0b1000[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRd[4]:disp_7_0[8])
+op ldc0_w(0b111[3]:0b1000[4]:0b11010[5]:rp[4]:><:shl<8>disp_11_8[4]:cRd[4]:disp_7_0[8])
 
-ldc0_w.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
+ldc0_w.var disp:{uint16_t}={ disp_11_8 | disp_7_0 }
 
 ldc0_w.disasm={
 	os << "ldc0_w " << (unsigned int) cRd << "," << (unsigned int) rp << "[" << (unsigned int) disp << "]";
@@ -166,9 +166,9 @@ stc_d_c.disasm={
 
 // STC0_D - store coprocessor 0 register
 
-op stc0_d(0b111[3]:0b1011[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRs[3]:0b0[1]:disp_7_0[8])
+op stc0_d(0b111[3]:0b1011[4]:0b11010[5]:rp[4]:><:shl<8>disp_11_8[4]:cRs[3]:0b0[1]:disp_7_0[8])
 
-stc0_d.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
+stc0_d.var disp:{uint16_t}={ disp_11_8 | disp_7_0 }
 
 stc0_d.disasm={
 	os << "stc0_d " << (unsigned int) rp << "[" << (unsigned int) disp << "]," << (unsigned int) cRs;
@@ -198,9 +198,9 @@ stc_w_c.disasm={
 
 //STCO_W
 
-op stc0_w(0b111[3]:0b1010[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRs[4]:disp_7_0[8])
+op stc0_w(0b111[3]:0b1010[4]:0b11010[5]:rp[4]:><:shl<8>disp_11_8[4]:cRs[4]:disp_7_0[8])
 
-stc0_w.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
+stc0_w.var disp:{uint16_t}={ disp_11_8 | disp_7_0 }
 
 stc0_w.disasm={
 	os << "stc0_w " << (unsigned int) rp << "[" << (unsigned int) disp << "]," << (unsigned int) cRs ;

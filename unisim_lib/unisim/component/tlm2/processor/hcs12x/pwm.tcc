@@ -49,10 +49,10 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Service<Registers>(name, parent),
-	unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Client<TrapReporting>(name, parent),
+	unisim::kernel::Service<Memory<physical_address_t> >(name, parent),
+	unisim::kernel::Service<Registers>(name, parent),
+	unisim::kernel::Client<Memory<physical_address_t> >(name, parent),
+	unisim::kernel::Client<TrapReporting>(name, parent),
 
 	master_sock("master_socket"),
 	slave_socket("slave_socket"),
@@ -75,7 +75,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	param_interruptOffset("interrupt-offset", this, interruptOffset)
 {
 
-	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	uint8_t channel_number;
 
@@ -95,6 +95,8 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 		output[i] = false;
 	}
 
+	channel_output_reg.SetMutable(true);
+
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
 
@@ -104,7 +106,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	bus_clock_socket.register_b_transport(this, &PWM::updateBusClock);
 
 	xint_payload = xint_payload_fabric.allocate();
-	pwm_payload = payload_fabric.allocate();
+//	pwm_payload = payload_fabric.allocate();
 
 	Reset();
 
@@ -114,16 +116,6 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::~PWM() {
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -131,7 +123,7 @@ PWM<PWM_SIZE>::~PWM() {
 	}
 
 	xint_payload->release();
-	pwm_payload->release();
+//	pwm_payload->release();
 
 }
 
@@ -273,7 +265,8 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload,
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			pwm_payload.release();
+			//pwm_payload.release();
+			pwm_bw_event.notify();
 			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
@@ -288,7 +281,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload,
 	return (TLM_ACCEPTED);
 }
 
-
+/*
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 
@@ -301,33 +294,35 @@ void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 	refreshOutput(pwmChannelOutput);
 
 }
-
+*/
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
 
-	pwm_payload->acquire();
+	PWM_Payload<PWM_SIZE>* pwm_payload = payload_fabric.allocate();
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwm_payload->pwmChannel[i] = pwmValue[i];
 	}
 
-	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
-	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+//	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
-	sc_time local_time = quantumkeeper.get_local_time();
+//	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
 
 	if (debug_enabled) {
 		cout << sc_object::name() << ":: send " << *pwm_payload << " - " << sc_time_stamp() << endl;
 	}
 
-
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*pwm_payload, phase, local_time);
 
 	pwm_payload->release();
 	
+	wait(pwm_bw_event);
+
 	switch(ret)
 	{
 		case TLM_ACCEPTED:
@@ -346,6 +341,9 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
+
+	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 
@@ -709,126 +707,121 @@ template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::BeginSetup() {
 
 
-	char buf[80];
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWME", &pwme_register));
 
-	sprintf(buf, "%s.PWME",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwme_register);
-
-	unisim::kernel::service::Register<uint8_t> *pwme_var = new unisim::kernel::service::Register<uint8_t>("PWME", this, pwme_register, "PWM Enable Register (PWME)");
+	unisim::kernel::variable::Register<uint8_t> *pwme_var = new unisim::kernel::variable::Register<uint8_t>("PWME", this, pwme_register, "PWM Enable Register (PWME)");
 	extended_registers_registry.push_back(pwme_var);
 	pwme_var->setCallBack(this, PWME, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMPOL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmpol_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMPOL", &pwmpol_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmpol_var = new unisim::kernel::service::Register<uint8_t>("PWMPOL", this, pwmpol_register, "PWM Polarity Register (PWMPOL)");
+	unisim::kernel::variable::Register<uint8_t> *pwmpol_var = new unisim::kernel::variable::Register<uint8_t>("PWMPOL", this, pwmpol_register, "PWM Polarity Register (PWMPOL)");
 	extended_registers_registry.push_back(pwmpol_var);
 	pwmpol_var->setCallBack(this, PWMPOL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMCLK",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmclk_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMCLK", &pwmclk_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmclk_var = new unisim::kernel::service::Register<uint8_t>("PWMCLK", this, pwmclk_register, "PWM Clock Select Register (PWMCLK)");
+	unisim::kernel::variable::Register<uint8_t> *pwmclk_var = new unisim::kernel::variable::Register<uint8_t>("PWMCLK", this, pwmclk_register, "PWM Clock Select Register (PWMCLK)");
 	extended_registers_registry.push_back(pwmclk_var);
 	pwmclk_var->setCallBack(this, PWMCLK, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMPRCLK",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmprclk_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMPRCLK", &pwmprclk_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmprclk_var = new unisim::kernel::service::Register<uint8_t>("PWMPRCLK", this, pwmprclk_register, "PWM Prescale Clock Select Register (PWMPRCLK)");
+	unisim::kernel::variable::Register<uint8_t> *pwmprclk_var = new unisim::kernel::variable::Register<uint8_t>("PWMPRCLK", this, pwmprclk_register, "PWM Prescale Clock Select Register (PWMPRCLK)");
 	extended_registers_registry.push_back(pwmprclk_var);
 	pwmprclk_var->setCallBack(this, PWMPRCLK, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMCAE",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmcae_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMCAE", &pwmcae_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmcae_var = new unisim::kernel::service::Register<uint8_t>("PWMCAE", this, pwmcae_register, "PWM Center Align Enable Register (PWMCAE)");
+	unisim::kernel::variable::Register<uint8_t> *pwmcae_var = new unisim::kernel::variable::Register<uint8_t>("PWMCAE", this, pwmcae_register, "PWM Center Align Enable Register (PWMCAE)");
 	extended_registers_registry.push_back(pwmcae_var);
 	pwmcae_var->setCallBack(this, PWMCAE, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMCTL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmctl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMCTL", &pwmctl_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmctl_var = new unisim::kernel::service::Register<uint8_t>("PWMCTL", this, pwmctl_register, "PWM Control Register (PWMCTL)");
+	unisim::kernel::variable::Register<uint8_t> *pwmctl_var = new unisim::kernel::variable::Register<uint8_t>("PWMCTL", this, pwmctl_register, "PWM Control Register (PWMCTL)");
 	extended_registers_registry.push_back(pwmctl_var);
 	pwmctl_var->setCallBack(this, PWMCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMTST",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmtst_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMTST", &pwmtst_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmtst_var = new unisim::kernel::service::Register<uint8_t>("PWMTST", this, pwmtst_register, "Reserved Register (PWMTST)");
+	unisim::kernel::variable::Register<uint8_t> *pwmtst_var = new unisim::kernel::variable::Register<uint8_t>("PWMTST", this, pwmtst_register, "Reserved Register (PWMTST)");
 	extended_registers_registry.push_back(pwmtst_var);
 	pwmtst_var->setCallBack(this, PWMTST, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMPRSC",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmprsc_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMPRSC", &pwmprsc_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmprsc_var = new unisim::kernel::service::Register<uint8_t>("PWMPRSC", this, pwmprsc_register, "Reserved Register (PWMPRSC)");
+	unisim::kernel::variable::Register<uint8_t> *pwmprsc_var = new unisim::kernel::variable::Register<uint8_t>("PWMPRSC", this, pwmprsc_register, "Reserved Register (PWMPRSC)");
 	extended_registers_registry.push_back(pwmprsc_var);
 	pwmprsc_var->setCallBack(this, PWMCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMSCLA",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscla_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCLA", &pwmscla_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmscla_var = new unisim::kernel::service::Register<uint8_t>("PWMSCLA", this, pwmscla_register, "PWM Scale A Register (PWMSCLA)");
+	unisim::kernel::variable::Register<uint8_t> *pwmscla_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCLA", this, pwmscla_register, "PWM Scale A Register (PWMSCLA)");
 	extended_registers_registry.push_back(pwmscla_var);
 	pwmscla_var->setCallBack(this, PWMSCLA, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMSCLB",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsclb_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCLB", &pwmsclb_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmsclb_var = new unisim::kernel::service::Register<uint8_t>("PWMSCLB", this, pwmsclb_register, "PWM Scale B Register (PWMSCLB)");
+	unisim::kernel::variable::Register<uint8_t> *pwmsclb_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCLB", this, pwmsclb_register, "PWM Scale B Register (PWMSCLB)");
 	extended_registers_registry.push_back(pwmsclb_var);
 	pwmsclb_var->setCallBack(this, PWMSCLB, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMSCNTA",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscnta_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCNTA", &pwmscnta_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmscnta_var = new unisim::kernel::service::Register<uint8_t>("PWMSCNTA", this, pwmscnta_register, "Reserved Registers (PWMSCNTA)");
+	unisim::kernel::variable::Register<uint8_t> *pwmscnta_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCNTA", this, pwmscnta_register, "Reserved Registers (PWMSCNTA)");
 	extended_registers_registry.push_back(pwmscnta_var);
 	pwmscnta_var->setCallBack(this, PWMSCNTA, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PWMSCNTB",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscntb_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSCNTB", &pwmscntb_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmscntb_var = new unisim::kernel::service::Register<uint8_t>("PWMSCNTB", this, pwmscntb_register, "Reserved Registers (PWMSCNTB)");
+	unisim::kernel::variable::Register<uint8_t> *pwmscntb_var = new unisim::kernel::variable::Register<uint8_t>("PWMSCNTB", this, pwmscntb_register, "Reserved Registers (PWMSCNTB)");
 	extended_registers_registry.push_back(pwmscntb_var);
 	pwmscntb_var->setCallBack(this, PWMSCNTB, &CallBackObject::write, NULL);
 
-	char shortName[20];
-
 	for (int i=0; i<PWM_SIZE; i++) {
+		
+		std::stringstream sstr;
+		sstr << "PWMCNT" << i;
+		std::string shortName(sstr.str());
 
-		sprintf(shortName, "PWMCNT%d", i);
-		sprintf(buf, "%s.%s", sc_object::name(), shortName);
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmcnt16_register[i]);
-
-		unisim::kernel::service::Register<uint8_t> *pwmcnt0_var = new unisim::kernel::service::Register<uint8_t>(shortName, this, pwmcnt16_register[i], "PWM Channel Counter Register");
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &pwmcnt16_register[i]));
+		
+		unisim::kernel::variable::Register<uint8_t> *pwmcnt0_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, pwmcnt16_register[i], "PWM Channel Counter Register");
 		extended_registers_registry.push_back(pwmcnt0_var);
 		pwmcnt0_var->setCallBack(this, PWMCNT0+i, &CallBackObject::write, NULL);
+	}
+	
+	for (int i=0; i<PWM_SIZE; i++) {
+		
+		std::stringstream sstr;
+		sstr << "PWMPER" << i;
+		std::string shortName(sstr.str());
+	
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &pwmper16_register[i]));
 
-		sprintf(shortName, "PWMPER%d", i);
-		sprintf(buf, "%s.%s", sc_object::name(), shortName);
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmper16_register[i]);
-
-		unisim::kernel::service::Register<uint8_t> *pwmper0_var = new unisim::kernel::service::Register<uint8_t>(shortName, this, pwmper16_register[i], "PWM Channel Period Register");
+		unisim::kernel::variable::Register<uint8_t> *pwmper0_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, pwmper16_register[i], "PWM Channel Period Register");
 		extended_registers_registry.push_back(pwmper0_var);
 		pwmper0_var->setCallBack(this, PWMPER0+i, &CallBackObject::write, NULL);
+	}
 
-		sprintf(shortName, "PWMDTY%d", i);
-		sprintf(buf, "%s.%s", sc_object::name(), shortName);
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmdty16_register_value[i]);
+	for (int i=0; i<PWM_SIZE; i++) {
+		
+		std::stringstream sstr;
+		sstr << "PWMDTY" << i;
+		std::string shortName(sstr.str());
+		
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &pwmdty16_register_value[i]));
 
-		unisim::kernel::service::Register<uint8_t> *pwmdty0_var = new unisim::kernel::service::Register<uint8_t>(shortName, this, pwmdty16_register_value[i], "PWM Channel Duty Register");
+		unisim::kernel::variable::Register<uint8_t> *pwmdty0_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, pwmdty16_register_value[i], "PWM Channel Duty Register");
 		extended_registers_registry.push_back(pwmdty0_var);
 		pwmdty0_var->setCallBack(this, PWMDTY0+i, &CallBackObject::write, NULL);
 
 	}
 
-	sprintf(buf, "%s.PWMSDN",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsdn_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWMSDN", &pwmsdn_register));
 
-	unisim::kernel::service::Register<uint8_t> *pwmsdn_var = new unisim::kernel::service::Register<uint8_t>("PWMSDN", this, pwmsdn_register, "PWM Shutdown Register (PWMSDN)");
+	unisim::kernel::variable::Register<uint8_t> *pwmsdn_var = new unisim::kernel::variable::Register<uint8_t>("PWMSDN", this, pwmsdn_register, "PWM Shutdown Register (PWMSDN)");
 	extended_registers_registry.push_back(pwmsdn_var);
 	pwmsdn_var->setCallBack(this, PWMSDN, &CallBackObject::write, NULL);
 
@@ -860,11 +853,13 @@ bool PWM<PWM_SIZE>::EndSetup() {
 template <uint8_t PWM_SIZE>
 Register* PWM<PWM_SIZE>::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
 
+template <uint8_t PWM_SIZE>
+void PWM<PWM_SIZE>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <uint8_t PWM_SIZE>
@@ -890,6 +885,13 @@ void PWM<PWM_SIZE>::Reset() {
 	}
 
 	pwmsdn_register = 0;
+
+}
+
+template <uint8_t PWM_SIZE>
+void PWM<PWM_SIZE>::ResetMemory() {
+
+	Reset();
 
 }
 
@@ -1004,7 +1006,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 				setOutput(false);
 		}
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1016,7 +1018,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setOutput(true);
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1027,7 +1029,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setOutput(false);
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1046,7 +1048,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	setOutput(!getOutput());
 
-	pwmParent->refresh_channel(channel_index);
+//	pwmParent->refresh_channel(channel_index);
 
 	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
 	{
@@ -1066,7 +1068,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 			setOutput(!getOutput());
 
-			pwmParent->refresh_channel(channel_index);
+//			pwmParent->refresh_channel(channel_index);
 
 			if (isCenterAligned) {
 

@@ -73,7 +73,7 @@ private:
 	
 	public:
 		
-	PCIDevIde(const sc_module_name &name, Object *parent = 0);
+	PCIDevIde(const sc_core::sc_module_name &name, Object *parent = 0);
 	~PCIDevIde();
 	virtual bool BeginSetup ();
 };

@@ -45,7 +45,7 @@
 //#include <types.h>
 //#include <utility.h>
 //#include <common.h>
-//#include <systemc.h>
+//#include <systemc>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>

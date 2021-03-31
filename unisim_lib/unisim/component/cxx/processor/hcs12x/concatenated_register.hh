@@ -36,9 +36,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <string>
 #include <sstream>
+#include <memory>
 #include <stdexcept>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -50,10 +51,10 @@ namespace processor {
 namespace hcs12x {
 
 using std::string;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
-using unisim::kernel::service::TCallBack;
-using unisim::kernel::service::CallBackObject;
+using unisim::kernel::variable::TCallBack;
+using unisim::kernel::variable::CallBackObject;
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 class ConcatenatedRegister : public Register
@@ -120,11 +121,11 @@ int ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetSize() const
 // ***********************************************
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-class ConcatenatedRegisterView : public unisim::kernel::service::VariableBase
+class ConcatenatedRegisterView : public unisim::kernel::VariableBase
 {
 public:
 
-	ConcatenatedRegisterView(const char *name, unisim::kernel::service::Object *owner, SUB_REGISTER_TYPE *_regHigh, SUB_REGISTER_TYPE *_regLow, const char *description);
+	ConcatenatedRegisterView(const char *name, unisim::kernel::Object *owner, SUB_REGISTER_TYPE *_regHigh, SUB_REGISTER_TYPE *_regLow, const char *description);
 	virtual ~ConcatenatedRegisterView();
 	virtual const char *GetDataTypeName() const;
 	virtual unsigned int GetBitSize() const;
@@ -133,35 +134,27 @@ public:
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator std::string () const;
-	virtual unisim::kernel::service::VariableBase& operator = (bool value);
-	virtual unisim::kernel::service::VariableBase& operator = (long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (double value);
-	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+	virtual unisim::kernel::VariableBase& operator = (bool value);
+	virtual unisim::kernel::VariableBase& operator = (long long value);
+	virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::VariableBase& operator = (double value);
+	virtual unisim::kernel::VariableBase& operator = (const char * value);
 
 	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int), bool (CallBackObject::*_read)(unsigned int, const void*, unsigned int)) {
 		m_callback.reset(new TCallBack<REGISTER_TYPE>(owner, offset, _write, _read));
 	}
 
 protected:
-	bool WriteBack(REGISTER_TYPE storage) {
-
-		CallBackObject *cb = m_callback.get();
-		if (cb != NULL) {
-			return (((TCallBack<REGISTER_TYPE>&) *m_callback).Write(storage));
-		}
-
-		return (false);
+	bool WriteBack(REGISTER_TYPE storage)
+	{
+		bool status = m_callback.get() and m_callback->Write(storage);
+		if (status) this->NotifyListeners(); 
+		return status;
 	}
 
-	bool ReadBack(REGISTER_TYPE& storage) const {
-
-		CallBackObject *cb = m_callback.get();
-		if (cb != NULL) {
-			return (((TCallBack<REGISTER_TYPE>&) *m_callback).Read(storage));
-		}
-
-		return (false);
+	bool ReadBack(REGISTER_TYPE& storage) const
+	{
+		return m_callback.get() and m_callback->Read(storage);
 	}
 
 	const CallBackObject& callback() const { return (*m_callback); }
@@ -172,13 +165,17 @@ private:
 	SUB_REGISTER_TYPE* regHigh;
 	SUB_REGISTER_TYPE* regLow;
 
-	std::auto_ptr<CallBackObject> m_callback;
+#if __cplusplus < 201103L // before C++11
+	std::auto_ptr<TCallBack<REGISTER_TYPE> > m_callback;
+#else // C++11 and later
+	std::unique_ptr<TCallBack<REGISTER_TYPE> > m_callback;
+#endif
 };
 
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::ConcatenatedRegisterView(const char *name, unisim::kernel::service::Object *owner, SUB_REGISTER_TYPE *_regHigh, SUB_REGISTER_TYPE *_regLow, const char *description) :
-	unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::ConcatenatedRegisterView(const char *name, unisim::kernel::Object *owner, SUB_REGISTER_TYPE *_regHigh, SUB_REGISTER_TYPE *_regLow, const char *description) :
+	unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
 	, regHigh(_regHigh)
 	, regLow(_regLow)
 {
@@ -329,7 +326,7 @@ ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator std::string
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (bool value) {
+unisim::kernel::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (bool value) {
 //	if(IsMutable())
 //	{
 //		*regHigh = 0;
@@ -353,7 +350,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (long long value) {
+unisim::kernel::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (long long value) {
 //	if(IsMutable())
 //	{
 //		*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
@@ -378,7 +375,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (unsigned long long value) {
+unisim::kernel::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (unsigned long long value) {
 //	if(IsMutable())
 //	{
 //		*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
@@ -402,7 +399,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (double value) {
+unisim::kernel::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (double value) {
 //	if(IsMutable())
 //	{
 //		*regHigh = (int64_t) value >> (8 * sizeof(SUB_REGISTER_TYPE));
@@ -426,7 +423,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (const char * value) {
+unisim::kernel::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (const char * value) {
 //	if(IsMutable())
 //	{
 //		uint64_t v = (uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));

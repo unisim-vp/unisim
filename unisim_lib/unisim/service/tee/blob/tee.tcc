@@ -55,7 +55,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
 Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
-	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the statement lookup capability of several services that individually provides their own statement lookup capability" )
+	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the blob interface of several services that individually provides their own blob interface" )
 	, Client<Blob<ADDRESS> >(name, parent)
 	, Service<Blob<ADDRESS> >(name, parent)
 	, blob_export("blob-export", this)
@@ -69,6 +69,8 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
 		sstr << "blob-import[" << i << "]";
 		string import_name = sstr.str();
 		blob_import[i] = new ServiceImport<Blob<ADDRESS> >(import_name.c_str(), this);
+		
+		blob_export.SetupDependsOn(*blob_import[i]);
 	}
 }
 
@@ -112,7 +114,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 {
 	if(blob) return true;
 
-	blob = new unisim::util::debug::blob::Blob<ADDRESS>();
+	blob = new unisim::util::blob::Blob<ADDRESS>();
 	blob->Catch();
 	
 	unsigned int i;
@@ -122,7 +124,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 		{
 			if(*blob_import[i])
 			{
-				const unisim::util::debug::blob::Blob<ADDRESS> *lower_blob = (*blob_import[i])->GetBlob();
+				const unisim::util::blob::Blob<ADDRESS> *lower_blob = (*blob_import[i])->GetBlob();
 				if(lower_blob)
 				{
 					blob->AddBlob(lower_blob);
@@ -135,7 +137,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::blob::Blob<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBlob() const
+const unisim::util::blob::Blob<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBlob() const
 {
 	return blob;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2015-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,11 +29,12 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <inttypes.h>
 #include <iostream>
+#include <sstream>
 
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/psr.hh"
@@ -51,9 +52,6 @@ namespace arm {
     return sink;
   }
 
-  static char const* const  conds_dis[] =
-    {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "<und>"};
-  
   /* Condition opcode bytes disassembling method */
   void DisasmCondition::operator() ( std::ostream& sink ) const
   {
@@ -65,7 +63,7 @@ namespace arm {
     if  ((m_cond == 14) and (m_explicit_always == implicit_always))
       return;
     
-    sink << conds_dis[m_cond];
+    sink << Condition(Condition::Code(m_cond)).c_str();
   }
 
   /* Immediate disassembly */
@@ -174,6 +172,12 @@ namespace arm {
     sink << register_dis[m_reg];
   }
   
+  /* Coprocessor Register disassembling method */
+  void DisasmCPR::operator() ( std::ostream& sink ) const
+  {
+    sink << "cr" << m_reg;
+  }
+  
   /* Register list disassembling method */
   void DisasmRegList::operator() ( std::ostream& sink ) const
   {
@@ -228,6 +232,30 @@ namespace arm {
       pseudo_psr.ITAdvance();
     } while (pseudo_psr.InITBlock());
   }
+  
+  std::ostream&
+  operator << ( std::ostream& sink, PSR const& psr )
+  {
+    std::ostringstream oss;
+    oss << std::hex
+        <<    "N=" << psr.Get(N)
+        <<  ", Z=" << psr.Get(Z)
+        <<  ", C=" << psr.Get(C)
+        <<  ", V=" << psr.Get(V)
+        <<  ", Q=" << psr.Get(Q)
+        << ", GE=" << psr.Get(GE)
+        <<  ", E=" << psr.Get(E)
+        <<  ", J=" << psr.Get(J)
+        <<  ", T=" << psr.Get(T)
+        << ", IT=" << psr.ITGetState()
+        <<  ", A=" << psr.Get(A)
+        <<  ", I=" << psr.Get(I)
+        <<  ", F=" << psr.Get(F)
+        <<  ", M=" << psr.Get(M);
+    sink << oss.str();
+    return sink;
+  }
+  
 
 } // end of namespace arm
 } // end of namespace processor

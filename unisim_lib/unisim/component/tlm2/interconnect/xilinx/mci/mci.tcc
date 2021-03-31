@@ -52,14 +52,14 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
-MCI<CONFIG>::MCI(const sc_module_name& name, Object *parent)
+MCI<CONFIG>::MCI(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "A Memory Controller Interface (MCI)")
 	, unisim::component::cxx::interconnect::xilinx::mci::MCI<CONFIG>(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, mci_slave_sock("mci-slave-sock")
 	, mci_master_sock("mci-master-sock")
 	, dcr_slave_sock("dcr-slave-sock")
-	, cycle_time(SC_ZERO_TIME)
+	, cycle_time(sc_core::SC_ZERO_TIME)
 	, burst_latency_lut()
 	, param_cycle_time("cycle-time", this, cycle_time, "Enable/Disable verbosity")
 {
@@ -120,9 +120,9 @@ MCI<CONFIG>::~MCI()
 template <class CONFIG>
 bool MCI<CONFIG>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
+	if(cycle_time == sc_core::SC_ZERO_TIME)
 	{
-		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << sc_core::SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
 	
@@ -142,7 +142,7 @@ tlm::tlm_sync_enum MCI<CONFIG>::nb_transport_fw(unsigned int intf, tlm::tlm_gene
 				case inherited::IF_SLAVE_MCI:
 				case inherited::IF_DCR:
 					{
-						sc_time notify_time_stamp(sc_time_stamp());
+						sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 						notify_time_stamp += t;
 						Event *event = schedule.AllocEvent();
 						event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp);
@@ -174,14 +174,14 @@ void MCI<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& paylo
 		case inherited::IF_SLAVE_MCI:
 		case inherited::IF_DCR:
 			{
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				Event *event = schedule.AllocEvent();
-				sc_event ev_completed;
+				sc_core::sc_event ev_completed;
 				event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp, &ev_completed);
 				schedule.Notify(event);
 				wait(ev_completed);
-				t = SC_ZERO_TIME;
+				t = sc_core::SC_ZERO_TIME;
 			}
 			break;
 		default:
@@ -241,7 +241,7 @@ tlm::tlm_sync_enum MCI<CONFIG>::nb_transport_bw(unsigned int intf, tlm::tlm_gene
 			{
 				case inherited::IF_MASTER_MCI:
 					{
-						sc_time notify_time_stamp(sc_time_stamp());
+						sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 						notify_time_stamp += t;
 						Event *event = schedule.AllocEvent();
 						event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp);
@@ -276,7 +276,7 @@ void MCI<CONFIG>::invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint64 sta
 template <class CONFIG>
 void MCI<CONFIG>::ProcessEvents()
 {
-	const sc_time& time_stamp = sc_time_stamp();
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
@@ -337,9 +337,9 @@ void MCI<CONFIG>::Process()
 template <class CONFIG>
 void MCI<CONFIG>::ProcessForwardEvent(Event *event)
 {
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::MCI_WIDTH - 1) / CONFIG::MCI_WIDTH));
+	sc_core::sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::MCI_WIDTH - 1) / CONFIG::MCI_WIDTH));
 	
 	if(inherited::GetMI_CONTROL_ENABLE())
 	{
@@ -395,14 +395,14 @@ void MCI<CONFIG>::ProcessBackwardEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
 	
-	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::MCI_WIDTH - 1) / CONFIG::MCI_WIDTH));
+	sc_core::sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::MCI_WIDTH - 1) / CONFIG::MCI_WIDTH));
 
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << "Backward payload @0x" << std::hex << payload->get_address() << std::dec << EndDebugInfo;
 	}
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(t);
@@ -513,14 +513,14 @@ void MCI<CONFIG>::ProcessDCREvent(Event *event)
 	payload->set_response_status(status);
 	payload->set_dmi_allowed(false);
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(cycle_time);
 	}
 	else
 	{
-		sc_time t(cycle_time);
+		sc_core::sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
 		dcr_slave_sock->nb_transport_bw(*payload, phase, t);

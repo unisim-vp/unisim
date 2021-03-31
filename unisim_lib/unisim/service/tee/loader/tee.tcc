@@ -61,6 +61,8 @@ Tee<MAX_IMPORTS>::Tee(const char *name, Object *parent)
 		sstr << "loader-import[" << i << "]";
 		string import_name = sstr.str();
 		loader_import[i] = new ServiceImport<Loader>(import_name.c_str(), this);
+		
+		loader_export.SetupDependsOn(*loader_import[i]);
 	}
 }
 

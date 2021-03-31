@@ -37,9 +37,10 @@
 #define __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
 
 #include <inttypes.h>
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/hash_table/hash_table.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace component {
@@ -47,8 +48,12 @@ namespace cxx {
 namespace memory {
 namespace ram {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::MemoryPage(PHYSICAL_ADDR _key, uint8_t initial_byte_value) :
@@ -73,31 +78,46 @@ inline const std::string u32toa(uint32_t v)
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
-	: Object(name, parent, "this module implements a memory")
-	, Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
+Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "this module implements a memory")
+	, unisim::kernel::Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
 	, memory_export("memory-export", this)
 	, org(0)
 	, bytesize(0)
 	, lo_addr(0)
 	, hi_addr(0)
 	, memory_usage(0)
+	, verbose(false)
+	, logger(*this)
 	, hash_table()
 	, param_org("org", this, org, "memory origin/base address")
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 	, stat_memory_usage("memory-usage", this, memory_usage, (std::string("target memory usage in bytes (page granularity of ") + u32toa(PAGE_SIZE) + " bytes)").c_str())
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, initial_byte_value(0x00)
-	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
-
+	, param_initial_byte_value("initial-byte-value", this, initial_byte_value, "initial value for all bytes of memory")
+	, input_filename()
+	, param_input_filename("input-filename", this, input_filename, "Input filename")
+	, output_filename()
+	, param_output_filename("output-filename", this, output_filename, "output filename")
+	, output_file(0)
 {
-	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_initial_byte_value.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
+	stat_memory_usage.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_memory_usage.SetVisible(false);
+
+	param_bytesize.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_initial_byte_value.SetFormat(unisim::kernel::VariableBase::FMT_HEX);
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::~Memory()
 {
+	SaveToOutputFile();
+	
+	if(output_file)
+	{
+		delete output_file;
+	}
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -122,16 +142,18 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::BeginSetup()
 {
 	lo_addr = org;
 	hi_addr = org + (bytesize - 1);
-	Reset();
+	ResetMemory();
 	return true;
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::ResetMemory()
 {
 	hash_table.Reset();
 	memory_usage = 0;
 
+	LoadFromInputFile();
+	SaveToOutputFile();
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -161,6 +183,10 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
+			if(unlikely(output_file))
+			{
+				UpdateOutputFile(key * PAGE_SIZE, page->storage, PAGE_SIZE);
+			}
 		}
 	
 		max_copy_size = PAGE_SIZE - ((addr + copied) & (PAGE_SIZE - 1));
@@ -174,6 +200,11 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 		       &((uint8_t *)buffer)[copied],
 		       copy_size);
 	
+		if(unlikely(output_file))
+		{
+			UpdateOutputFile(addr + copied, &page->storage[(addr + copied) & (PAGE_SIZE - 1)], copy_size);
+		}
+		
 		copied += copy_size;
 	} while(copied != size);
 	
@@ -207,15 +238,19 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
+			if(unlikely(output_file))
+			{
+				UpdateOutputFile(key * PAGE_SIZE, page->storage, PAGE_SIZE);
+			}
 		}
 	
 		max_copy_size = PAGE_SIZE - ((addr + copied) & (PAGE_SIZE - 1));
 	
 		if(size - copied > max_copy_size)
-		copy_size = max_copy_size;
+			copy_size = max_copy_size;
 		else
-		copy_size = size - copied;
-	
+			copy_size = size - copied;
+
 		memcpy(&((uint8_t *)buffer)[copied], 
 		       &page->storage[(addr + copied) & (PAGE_SIZE - 1)],
 		       copy_size);
@@ -259,6 +294,10 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
+			if(unlikely(output_file))
+			{
+				UpdateOutputFile(key * PAGE_SIZE, page->storage, PAGE_SIZE);
+			}
 		}
 	
 		max_page_copy_size = PAGE_SIZE - ((addr + offset) & (PAGE_SIZE - 1));
@@ -296,7 +335,12 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 			}
 			else
 			{
-				memcpy(&((uint8_t *)buffer)[copied], &page->storage[page_offset], copy_size);
+				memcpy(&page->storage[page_offset], &((uint8_t *)buffer)[copied], copy_size);
+			}
+
+			if(unlikely(output_file))
+			{
+				UpdateOutputFile(addr + offset, &page->storage[page_offset], copy_size);
 			}
 
 			offset += copy_size;
@@ -309,13 +353,13 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 			{
 				// Restart from the initial address
 				offset = 0;
-				if(addr / PAGE_SIZE != key)
+				if((addr / PAGE_SIZE) != key)
 				{
 					// Force another page lookup
 					break;
 				}
 			}
-		} while(copied != size && max_page_copy_size); // Loop until some bytes remain
+		} while((copied != size) && max_page_copy_size); // Loop until some bytes remain
 	} while(copied != size);
 	
 	return true;
@@ -354,6 +398,10 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
+			if(unlikely(output_file))
+			{
+				UpdateOutputFile(key * PAGE_SIZE, page->storage, PAGE_SIZE);
+			}
 		}
 	
 		max_page_copy_size = PAGE_SIZE - ((addr + offset) & (PAGE_SIZE - 1));
@@ -379,7 +427,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			{
 				uint8_t *src = &page->storage[page_offset];
 				uint8_t *dst = &((uint8_t *)buffer)[copied];
-
+				uint32_t copy_left = copy_size;
 				do
 				{
 					uint8_t mask = byte_enable[byte_enable_offset];
@@ -387,11 +435,11 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 					*dst = ((*dst) & ~mask) | ((*src) & mask);
 					// cycle through the byte enable buffer
 					if(++byte_enable_offset >= byte_enable_length) byte_enable_offset = 0;
-				} while(++src, ++dst, --copy_size);
+				} while (++src, ++dst, --copy_left);
 			}
 			else
 			{
-				memcpy(&page->storage[page_offset], &((uint8_t *)buffer)[copied], copy_size);
+				memcpy(&((uint8_t *)buffer)[copied], &page->storage[page_offset], copy_size);
 			}
 
 			offset += copy_size;
@@ -404,13 +452,13 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			{
 				// Restart from the initial address
 				offset = 0;
-				if(addr / PAGE_SIZE != key)
+				if((addr / PAGE_SIZE) != key)
 				{
 					// Force another page lookup
 					break;
 				}
 			}
-		} while(copied != size && max_page_copy_size); // Loop until some bytes remain
+		} while((copied != size) && max_page_copy_size); // Loop until some bytes remain
 	} while(copied != size);
 	
 	return true;
@@ -448,6 +496,145 @@ void *Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetDirectAccess(PHYSICAL_ADDR physical_a
 	return page->storage;
 }
 
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::LoadFromInputFile()
+{
+	if(!input_filename.empty())
+	{
+		std::ifstream input_file(input_filename.c_str(), std::ios_base::binary);
+		
+		if(input_file.is_open())
+		{
+			input_file.seekg(0, input_file.end);
+			
+			if(input_file.bad())
+			{
+				logger << DebugWarning << "I/O error while seeking to end of \"" << input_filename << "\"" << EndDebugWarning;
+			}
+			else
+			{
+				std::streampos file_length = input_file.tellg();
+				
+				input_file.seekg(0, input_file.beg);
+				
+				if(input_file.bad())
+				{
+					logger << DebugWarning << "I/O error while seeking to begin of \"" << input_filename << "\"" << EndDebugWarning;
+				}
+				else
+				{
+					std::streamsize rem_file_length = file_length;
+					
+					if(verbose)
+					{
+						logger << DebugInfo << "Loading " << file_length << " bytes from \"" << input_filename << "\"" << EndDebugInfo;
+					}
+				
+					PHYSICAL_ADDR file_offset = 0;
+					
+					do
+					{
+						PHYSICAL_ADDR key = (org + file_offset) / PAGE_SIZE;
+						MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page = hash_table.Find(key);
+						if(!page)
+						{
+							page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
+							hash_table.Insert(page);
+							memory_usage += PAGE_SIZE;
+						}
+						
+						std::streamsize n = (rem_file_length > PAGE_SIZE) ? PAGE_SIZE : rem_file_length;
+						
+						input_file.read((char *) page->storage, n);
+					
+						if(input_file.bad())
+						{
+							logger << DebugWarning << "I/O error while reading from \"" << input_filename << "\"" << EndDebugWarning;
+							break;
+						}
+						
+						rem_file_length -= n;
+						file_offset += n;
+					}
+					while(rem_file_length > 0);
+
+					if(verbose)
+					{
+						logger << DebugInfo << file_offset << " bytes loaded from \"" << input_filename << "\"" << EndDebugInfo;
+					}
+				}
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Can't open for input \"" << input_filename << "\"" << EndDebugWarning;
+		}
+	}
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::SaveToOutputFile()
+{
+	if(!output_filename.empty())
+	{
+		if(!output_file)
+		{
+			output_file = new std::ofstream(output_filename.c_str(), std::ios_base::binary);
+		}
+
+		if(output_file->is_open())
+		{
+			std::map<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *> map = (std::map<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *>) hash_table;
+			typename std::map<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *>::const_iterator it;
+			
+			for(it = map.begin(); it != map.end(); it++)
+			{
+				MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page = (*it).second;
+				
+				UpdateOutputFile(page->key * PAGE_SIZE, page->storage, PAGE_SIZE);
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Can't open for output \"" << output_filename << "\"" << EndDebugWarning;
+			delete output_file;
+			output_file = 0;
+			unisim::kernel::Object::Stop(-1);
+		}
+	}
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::UpdateOutputFile(PHYSICAL_ADDR addr, const void *buffer, unsigned int length)
+{
+	if(output_file)
+	{
+		uint64_t offset = addr - org;
+		
+		output_file->seekp(offset, std::ios_base::beg);
+		
+		if(output_file->bad())
+		{
+			logger << DebugWarning << "I/O error while seeking in \"" << output_filename << "\"" << EndDebugWarning;
+			return;
+		}
+
+		if(verbose)
+		{
+			logger << DebugInfo << "Writing " << length << " bytes at offset 0x" << std::hex << offset << std::dec << " to \"" << output_filename << "\"" << EndDebugInfo;
+		}
+
+		output_file->write((const char *) buffer, length);
+		
+		if(output_file->bad())
+		{
+			logger << DebugWarning << "I/O error while writing to \"" << output_filename << "\"" << EndDebugWarning;
+			return;
+		}
+		
+		output_file->flush();
+	}
+}
 
 } // end of namespace ram
 } // end of namespace memory

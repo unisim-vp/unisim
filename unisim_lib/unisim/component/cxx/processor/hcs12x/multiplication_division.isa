@@ -54,6 +54,8 @@ emul.execute = {
 	if ((result & 0x00008000) == 0x00008000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 // EMULS: 16 by 16 Bit Multiply (signed) (D) x (Y) => Y:D
@@ -89,7 +91,7 @@ emuls.execute = {
  */
 	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
-	
+	return getCycles();
 }
 
 // MUL: 8 by 8 Bit Multiply (unsigned) (A) x (B) => A:B
@@ -110,6 +112,8 @@ mul.execute = {
 	cpu->setRegD(result);
 
 	if ((result & 0x0080) == 0x0080) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
+
+	return getCycles();
 }
 
 // EDIV: 32 by 16 bit to 16 bit divide (unsigned) (Y:D) div (X) => Y remainder => D
@@ -165,6 +169,7 @@ ediv.execute = {
 
 	}
 
+	return getCycles();
 }
 
 // EDIVS: 32 by 16 bit to 16 bit divide (signed)  (Y:D) div (X) => Y remainder => D
@@ -211,6 +216,8 @@ edivs.execute = {
 		if ((((uint16_t) quotion) & 0x8000) == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	}
+
+	return getCycles();
 }
 
 // FDIV: 16 by 16 fractional divide
@@ -249,6 +256,8 @@ fdiv.execute = {
 	cpu->setRegX(quotion);
 	cpu->setRegD(remind);
 	if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
+
+	return getCycles();
 }
 
 // IDIV: 16 by 16 integer divide (unsigned)
@@ -284,6 +293,8 @@ and the remainder is indeterminate. */
 	cpu->setRegX(quotion);
 	cpu->setRegD(remind);
 	if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
+
+	return getCycles();
 }
 
 // IDIVS: 16 by 16 integer divide (signed)
@@ -326,6 +337,8 @@ and the remainder is indeterminate. */
 	if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(); } else { cpu->ccr->clrV();}
 	if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
 	if ((quotion & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+
+	return getCycles();
 }
 
 
@@ -384,6 +397,7 @@ emacs.execute = {
 	 * Indicates a carry from low word to high word of the result occurred
 	 */
 	if ((((accOpr & 0x00008000) & (inter & 0x00008000)) | ((inter & 0x00008000) & ~(result & 0x00008000)) | (~(result & 0x00008000) & (accOpr & 0x00008000))) >> 15) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
-	 
+
+	return getCycles();
 }
 

@@ -173,7 +173,7 @@
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 
 // Includes for services
@@ -283,7 +283,7 @@ using unisim::service::os::linux_os::LinuxOS;
 
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::ServiceManager;
 
 
 

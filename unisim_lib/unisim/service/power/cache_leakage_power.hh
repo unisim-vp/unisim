@@ -36,7 +36,7 @@
 #ifndef __UNISIM_SERVICE_POWER_CACHE_LEAKAGE_POWER_HH__
 #define __UNISIM_SERVICE_POWER_CACHE_LEAKAGE_POWER_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/time.hh"
 #include "unisim/service/power/cache_profile.hh"
 #include <map>
@@ -53,16 +53,17 @@ public:
 	CacheLeakagePower(const double *_time_stamp,
 			CacheProfile **_current_profile,
 			const map<CacheProfileKey, CacheProfile *> *_profiles,
-			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import);
+			unisim::kernel::ServiceImport<unisim::service::interfaces::Time> *_time_import);
 	~CacheLeakagePower();
 
-	double GetLeakagePower();
+	double GetLeakagePower() const;
+	bool operator != ( CacheLeakagePower const& clp ) const { return GetLeakagePower() != clp.GetLeakagePower(); }
 
 private:
 	const double *time_stamp;
 	CacheProfile **current_profile;
 	const map<CacheProfileKey, CacheProfile *> *profiles;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *time_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Time> *time_import;
 };
 
 } // end of namespace power

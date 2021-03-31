@@ -50,20 +50,26 @@ template class MultiFormatLoader<uint64_t>;
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 typedef unisim::service::loader::multiformat_loader::AddressRange<uint64_t> AddressRange64;
 	
 template <> Variable<AddressRange64 >::Variable(const char *_name, Object *_object, AddressRange64 & _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Initialize();
 }
 
 template <>
 const char *Variable<AddressRange64 >::GetDataTypeName() const
 {
 	return "64-bit address range";
+}
+
+template <>
+VariableBase::DataType Variable<AddressRange64>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>
@@ -92,7 +98,7 @@ template <> Variable<AddressRange64 >::operator double () const
 	return (double) storage->GetAmplitude();
 }
 
-template <> Variable<AddressRange64 >::operator string () const
+template <> Variable<AddressRange64 >::operator std::string () const
 {
 	return storage->ToString();
 }
@@ -199,11 +205,11 @@ template <> VariableBase& Variable<AddressRange64 >::operator = (const char *val
 			std::string str_rest = str.substr(pos + 1);
 			str = str.substr(0, pos);
 			
-			stringstream range_low_str;
+			std::stringstream range_low_str;
 			range_low_str << str;
 			range_low_str >> std::hex >> tmp.low >> std::dec;
 			
-			stringstream range_high_str;
+			std::stringstream range_high_str;
 			range_high_str << str_rest;
 			range_high_str >> std::hex >> tmp.high >> std::dec;
 		}
@@ -213,6 +219,6 @@ template <> VariableBase& Variable<AddressRange64 >::operator = (const char *val
 	return *this;
 }
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

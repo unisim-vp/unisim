@@ -640,7 +640,8 @@ std::ostream& DWARF_CIE<MEMORY_ADDR>::to_XML(std::ostream& os) const
 	os << "\"";
 	if((dw_fst == FST_EH_FRAME) && (*augmentation == 'z') && augmentation_data)
 	{
-		os << "augmentation_data=\"" << c_string_to_HTML(os, augmentation_data->to_string().c_str()) << "\"";
+		os << "augmentation_data=\"";
+		c_string_to_HTML(os, augmentation_data->to_string().c_str()) << "\"";
 	}
 	os << " initial_call_frame_program=\"";
 	std::stringstream sstr;

@@ -37,13 +37,14 @@
 
 #include <inttypes.h>
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/device/register.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <string>
 #include <vector>
-#include <unisim/util/debug/netstub.hh>
+#include <unisim/util/netstub/netstub.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -73,15 +74,15 @@ using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
-using unisim::util::debug::NetStub;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
+using unisim::util::netstub::NetStub;
 using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::Registers;
 
@@ -138,10 +139,12 @@ public:
 	virtual bool ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
 	virtual bool ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
 
+	virtual void ResetMemory();
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual void ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
+	virtual bool ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length);
+	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	virtual void Trap();
 private:
 	BreakpointRegistry<ADDRESS> breakpoint_registry;

@@ -66,6 +66,19 @@ void Random::Seed(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w
 	carry = 0;
 }
 
+int32_t const& Random::State(unsigned idx) const
+{
+	switch (idx)
+	{
+	case 0: return x;
+	case 1: return y;
+	case 2: return z;
+	case 3: return w;
+	}
+	return carry;
+}
+
+  
 int32_t Random::Generate()
 {
 	int32_t b;

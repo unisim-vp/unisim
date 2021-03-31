@@ -135,6 +135,8 @@ sbr.execute = {
 	if (branch) {
 		cpu->setRegPC(cpu->getRegPC() + rel8);
 	}
+
+	return getCycles();
 }
 
 /* ******** Long Branch Instructions ******* */
@@ -230,6 +232,8 @@ lbr.execute = {
 	if (branch) {
 		cpu->setRegPC(cpu->getRegPC() + rel16);
 	}
+
+	return getCycles();
 }
 
 /* ******** Bit Condition Branch instructions *********** */
@@ -267,6 +271,8 @@ br_clr_set_dir.execute = {
 		
 	 	// TODO: Refill the instruction queue with three program words from the new address		
 	}
+
+	return getCycles();
 }
 
 op br_clr_set_ext(0xF[7]:b[1]:> <:opr16a[16]:msk8[8]:sext<8> rel8[8])
@@ -298,6 +304,8 @@ br_clr_set_ext.execute = {
 	if ((opr16aVal & msk8) == 0) {
 		cpu->setRegPC(cpu->getRegPC() + rel8);
 	}
+
+	return getCycles();
 }
 
 op br_clr_set_idx(0x07[7]:b[1]:> <:*xb[XB]:> <:msk8[8]:sext<8> rel8[8])
@@ -343,6 +351,8 @@ br_clr_set_idx.execute = {
 	if ((xbVal & msk8) == 0) {
 		cpu->setRegPC(cpu->getRegPC() + rel8);
 	}
+
+	return getCycles();
 }
 
 /* ********** Jump and subroutine instructions ******** */
@@ -373,6 +383,8 @@ bsr.execute = {
 	cpu->memWrite16(addr, cpu->getRegPC());
 	
 	cpu->setRegPC(cpu->getRegPC() + rel8);
+
+	return getCycles();
 }
 
 // CALL: Call subroutine in Expanded Memory
@@ -413,6 +425,7 @@ call_ext.execute = {
 	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], page);
 	cpu->setRegPC(opr16a);
 
+	return getCycles();
 }
 
 // I have to decode indexed-indirect addressing here, 
@@ -462,6 +475,7 @@ call_16offset_idx_ind.execute = {
 	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
 	cpu->setRegPC(subAddr);
 
+	return getCycles();
 }
 
 op call_accD_offset_idx_ind(0x4B[8]:> <:0b111[3]:rr[2]:0b111[3])
@@ -507,6 +521,8 @@ call_accD_offset_idx_ind.execute = {
 
 	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
 	cpu->setRegPC(subAddr);
+
+	return getCycles();
 }
 
 op call_idx(0x4B[8]:> <:*xb[XB]:> <:page[8])
@@ -563,6 +579,8 @@ call_idx.execute = {
 
 	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], page);
 	cpu->setRegPC(callAddr);
+
+	return getCycles();
 }
 
 // JMP: JUMP
@@ -580,6 +598,8 @@ jmp_ext.disasm = {
 
 jmp_ext.execute = {
 	cpu->setRegPC(opr16a);
+
+	return getCycles();
 }
 
 op jmp_idx(0x05[8]:> <:*xb[XB])
@@ -609,6 +629,8 @@ jmp_idx.disasm = {
 
 jmp_idx.execute = {
 	cpu->setRegPC(xb->getEAddr(cpu));
+
+	return getCycles();
 }
 
 // JSR: Jump to subroutine
@@ -641,6 +663,8 @@ jsr_dir.execute = {
 	direct_reg = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::DIRECT]);
 	addr = ((uint16_t) direct_reg << 8) | opr8a;
 	cpu->setRegPC(addr);
+
+	return getCycles();
 }
 
 op jsr_ext(0x16[8]:> <:opr16a[16])
@@ -665,6 +689,7 @@ jsr_ext.execute = {
 	
 	cpu->setRegPC(opr16a);
 
+	return getCycles();
 }
 
 op jsr_idx(0x15[8]:> <:*xb[XB])
@@ -703,6 +728,7 @@ jsr_idx.execute = {
 	
 	cpu->setRegPC(jsrAddr);
 
+	return getCycles();
 }
 
 // RTC: Return from call
@@ -737,6 +763,8 @@ rtc.execute = {
 	 cpu->setRegPC(cpu->memRead16(addr));
 	 
 	 cpu->setRegSP(addr + 2);
+
+	return getCycles();
 }
 
 // RTS: Return from subroutine
@@ -759,7 +787,8 @@ rts.execute = {
 	cpu->setRegPC(cpu->memRead16(addr));
 
 	cpu->setRegSP(addr + 2);
-	 
+
+	return getCycles();
 }
 
 
@@ -920,6 +949,7 @@ loop.execute = {
 	if (isBranch) {
 		cpu->setRegPC(branchAddr);
 	}
-	
+
+	return getCycles();
 }
 

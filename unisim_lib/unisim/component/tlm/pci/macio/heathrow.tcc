@@ -57,9 +57,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Object *parent)
+Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>(name, parent)
 	, bus_port("bus_port")
 	, cpu_irq_port("cpu_irq_port")
@@ -77,7 +77,7 @@ Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Obje
 		stringstream sstr_irq_listener_name;
 		sstr_port_name << "irq_port[" << i << "]";
 		sstr_irq_listener_name << "irq_listener[" << i << "]";
-		irq_port[i] = new sc_export<TlmSendIf<InterruptRequest> >(sstr_port_name.str().c_str());
+		irq_port[i] = new sc_core::sc_export<TlmSendIf<InterruptRequest> >(sstr_port_name.str().c_str());
 		irq_listener[i] = new InterruptRequestListener(sstr_irq_listener_name.str().c_str(), i, this);
 //			(*irq_port[i])(*this);
 		(*irq_port[i])(*irq_listener[i]);
@@ -118,7 +118,7 @@ bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq
 					inherited::Read(pci_addr, pci_rsp->read_data, pci_req_size);
 				
 					message->rsp = pci_rsp;
-					sc_event *rsp_ev = message->GetResponseEvent();
+					sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 					rsp_ev->notify(pci_bus_cycle_time);
 				}
 				break;
@@ -159,7 +159,7 @@ bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq
 						}
 					
 						message->rsp = pci_rsp;
-						sc_event *rsp_ev = message->GetResponseEvent();
+						sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 						rsp_ev->notify(pci_bus_cycle_time);
 					}
 					break;
@@ -210,8 +210,8 @@ template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup()
 {
 	if(!inherited::BeginSetup()) return false;
-	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
-	bus_cycle_time = sc_time(1.0 / (double) (*this)["bus-frequency"], SC_US);
+	pci_bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["pci-bus-frequency"], sc_core::SC_US);
+	bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["bus-frequency"], sc_core::SC_US);
 	return true;
 }
 
@@ -227,13 +227,13 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt(bool in_level)
 	if(level != in_level)
 	{
 		level = in_level;
-		set_irq_ev.notify(SC_ZERO_TIME);
+		set_irq_ev.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::InterruptRequestListener::InterruptRequestListener(const sc_module_name& name, unsigned int _int_num, unisim::component::tlm::pci::macio::Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE> *_heathrow) :
-	sc_module(name),
+Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::InterruptRequestListener::InterruptRequestListener(const sc_core::sc_module_name& name, unsigned int _int_num, unisim::component::tlm::pci::macio::Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE> *_heathrow) :
+	sc_core::sc_module(name),
 	int_num(_int_num),
 	heathrow(_heathrow)
 {

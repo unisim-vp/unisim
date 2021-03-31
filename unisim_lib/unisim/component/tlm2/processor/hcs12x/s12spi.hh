@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2008, 2012
  *  Commissariat a l'Energie Atomique (CEA)
@@ -47,20 +46,14 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_S12SPI_HH_
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_S12SPI_HH_
 
-#include <inttypes.h>
-#include <iostream>
-#include <cmath>
-#include <map>
-
-#include <systemc>
-
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
+#include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/kernel/logger/logger.hh>
@@ -70,7 +63,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -78,6 +71,17 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
+
+#include <systemc>
+
+#include <iostream>
+#include <queue>
+#include <map>
+#include <cmath>
+#include <inttypes.h>
+
 
 namespace unisim {
 namespace component {
@@ -91,22 +95,22 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::VariableBase;
 
 using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -118,7 +122,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -129,6 +133,26 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+template <unsigned int SPI_VERSION>
+struct S12SPI_CONFIG
+{
+};
+
+template <>
+struct S12SPI_CONFIG<4>
+{
+	static const bool IS_16BITS = false;
+	typedef uint8_t DATA_TYPE;
+};
+
+template <>
+struct S12SPI_CONFIG<5>
+{
+	static const bool IS_16BITS = true;
+	typedef uint16_t DATA_TYPE;
+};
+
+template <unsigned int SPI_VERSION>
 class S12SPI :
 	public sc_module
 	, public CallBackObject
@@ -154,6 +178,8 @@ public:
 	static const uint8_t RESERVED2	= 0x06; // 1 bytes
 	static const uint8_t RESERVED3	= 0x07; // 1 bytes
 
+	static const unsigned int MEMORY_MAP_SIZE = 8;
+
 	enum STATUS {IDLE, ACTIVE};
 
 	ServiceImport<TrapReporting > trap_reporting_import;
@@ -168,8 +194,13 @@ public:
 	tlm_utils::simple_target_socket<S12SPI> slave_socket;
 	tlm_utils::simple_target_socket<S12SPI> bus_clock_socket;
 
+	tlm_utils::simple_initiator_socket<S12SPI> tx_socket;
+	tlm_utils::simple_target_socket<S12SPI> rx_socket;
+
 	S12SPI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SPI();
+
+	virtual void Reset();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
@@ -187,6 +218,17 @@ public:
 
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
+	// target method
+//	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload&, tlm_phase& phase, sc_core::sc_time& t);
+//	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data);
+	virtual void rx_b_transport(tlm::tlm_generic_payload&, sc_core::sc_time& t);
+
+	// master method
+//	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload&, tlm_phase& phase, sc_core::sc_time& t);
+
+//	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
+
+
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
@@ -196,13 +238,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -216,7 +258,8 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -229,19 +272,21 @@ protected:
 
 private:
 
-	static const uint16_t frameLength = 8;
+	uint16_t frameLength;
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
-	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 	XINT_Payload *xint_payload;
+
+	PayloadFabric<tlm::tlm_generic_payload> spi_payload_fabric;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
 	sc_time		spi_baud_rate;
+	sc_time		telnet_process_input_period;
 
 	sc_event tx_run_event, rx_run_event, tx_load_event;
 
@@ -255,10 +300,15 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	// Registers map
-	map<string, Register *> registers_registry;
+	bool	tx_debug_enabled;
+	Parameter<bool>	param_tx_debug_enabled;
+	bool	rx_debug_enabled;
+	Parameter<bool>	param_rx_debug_enabled;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	// Registers map
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	STATUS state;
 	bool abortTransmission;
@@ -266,16 +316,16 @@ private:
 	bool validFrameWaiting;
 
 	bool mosi;
-	unisim::kernel::service::Signal<bool> mosi_pin;
+	unisim::kernel::variable::Signal<bool> mosi_pin;
 
 	bool miso;
-	unisim::kernel::service::Signal<bool> miso_pin;
+	unisim::kernel::variable::Signal<bool> miso_pin;
 
 	bool ss;
-	unisim::kernel::service::Signal<bool> ss_pin;
+	unisim::kernel::variable::Signal<bool> ss_pin;
 
 	bool sck;
-	unisim::kernel::service::Signal<bool> sck_pin;
+	unisim::kernel::variable::Signal<bool> sck_pin;
 
 	// =============================================
 	// =            Registers                      =
@@ -285,9 +335,11 @@ private:
 	uint8_t spicr2_register;	// 1 byte
 	uint8_t spibr_register; // 1 byte
 	uint8_t spisr_register; // 1 byte
-	uint8_t spidr_register; // 1 bytes
 
-	uint8_t /*spidr_tx_buffer,*/ spidr_rx_buffer;;
+	typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr_register; // 2 bytes
+
+	typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr_rx_buffer;
+	sc_event rx_buffer_event;
 
 	inline void ComputeBaudRate();
 
@@ -344,6 +396,8 @@ private:
 	}
 
 	inline bool isLSBFirst() { return ((spicr1_register & 0x01) != 0); }
+
+	inline bool is16bitsMode() { return S12SPI_CONFIG<SPI_VERSION>::IS_16BITS && ((spicr2_register & 0x40) != 0); }
 	inline bool isOutputBufferEnabled() { return ((spicr2_register & 0x08) != 0); }
 	inline bool isClkStopInWait() { return ((spicr2_register & 0x02) != 0); }
 
@@ -424,7 +478,7 @@ private:
 
 	inline bool isValideFrameWaiting() { return (validFrameWaiting); }
 	inline void setValideFrameWaiting(bool b) { validFrameWaiting = b; }
-	inline void setSPIDR(uint8_t spidr) {
+	inline void setSPIDR(typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr) {
 		if (isSPIF()) {
 			validFrameWaiting = true;
 		} else {
@@ -433,6 +487,7 @@ private:
 		}
 	}
 
+	inline void setSSLow(bool val) {  ss = val; }
 	inline bool isSSLow() { return (!ss); }
 
 	inline void startTransmission() {
@@ -460,7 +515,7 @@ private:
 	std::queue<uint8_t> telnet_tx_fifo;
 	sc_event telnet_rx_event, telnet_tx_event;
 
-	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
 	    buffer_queue.push(data);
 	    event.notify();
 	}
@@ -487,7 +542,7 @@ private:
 	    return (buffer_queue.size());
 	}
 
-	inline void TelnetSendString(const char *msg) {
+	inline void TelnetSendString(const unsigned char *msg) {
 
 		while (*msg != 0)
 			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
@@ -495,31 +550,33 @@ private:
 		TelnetProcessOutput(true);
 	}
 
-	inline void TelnetProcessInput()
-	{
-		if(char_io_import)
-		{
-			char c;
-			uint8_t v;
+//	inline void TelnetProcessInput()
+//	{
+//		if(char_io_import)
+//		{
+//			char c;
+//			uint8_t v;
+//
+//			if(!char_io_import->GetChar(c)) return;
+//
+//			v = (uint8_t) c;
+//			if(debug_enabled)
+//			{
+//				logger << DebugInfo << "Receiving ";
+//				if(v >= 32)
+//					logger << "character '" << c << "'";
+//				else
+//					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+//				logger << " from telnet client" << EndDebugInfo;
+//			}
+//
+//			add(telnet_rx_fifo, v, telnet_rx_event);
+//		} else {
+//			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+//		}
+//	}
 
-			if(!char_io_import->GetChar(c)) return;
-
-			v = (uint8_t) c;
-			if(debug_enabled)
-			{
-				logger << DebugInfo << "Receiving ";
-				if(v >= 32)
-					logger << "character '" << c << "'";
-				else
-					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
-				logger << " from telnet client" << EndDebugInfo;
-			}
-
-			add(telnet_rx_fifo, v, telnet_rx_event);
-		} else {
-			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
-		}
-	}
+	void TelnetProcessInput();
 
 	inline void TelnetProcessOutput(bool flush_telnet_output)
 	{
@@ -560,6 +617,9 @@ private:
 
 
 }; /* end class S12SPI */
+
+typedef S12SPI<4> S12SPIV4;
+typedef S12SPI<5> S12SPIV5;
 
 } // end of namespace hcs12x
 } // end of namespace processor

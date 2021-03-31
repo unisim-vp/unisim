@@ -38,11 +38,12 @@
 #include <inttypes.h>
 #include <string>
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/blob.hh"
-#include "unisim/util/debug/blob/blob.hh"
+#include "unisim/util/blob/blob.hh"
 
 namespace unisim {
 namespace service {
@@ -51,45 +52,45 @@ namespace raw_loader {
 
 template <class MEMORY_ADDR>
 class RawLoader
-	: public unisim::kernel::service::Service<
+	: public unisim::kernel::Service<
 		unisim::service::interfaces::Loader>
-	, public unisim::kernel::service::Service<
+	, public unisim::kernel::Service<
 		unisim::service::interfaces::Blob<MEMORY_ADDR> >
-	, public unisim::kernel::service::Client<
+	, public unisim::kernel::Client<
 	  	unisim::service::interfaces::Memory<MEMORY_ADDR> >
 {
 public:
-	unisim::kernel::service::ServiceExport<
+	unisim::kernel::ServiceExport<
 		unisim::service::interfaces::Loader> loader_export;
-	unisim::kernel::service::ServiceExport<
+	unisim::kernel::ServiceExport<
 		unisim::service::interfaces::Blob<MEMORY_ADDR> > blob_export;
-	unisim::kernel::service::ServiceImport<
+	unisim::kernel::ServiceImport<
 		unisim::service::interfaces::Memory<MEMORY_ADDR> > memory_import;
 
-	RawLoader(const char *name, unisim::kernel::service::Object *parent = 0);
+	RawLoader(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~RawLoader();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(unisim::kernel::service::ServiceExportBase *srv_export);
+	virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 private:
 	bool SetupBlob();
 	bool SetupLoad();
 
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	std::string filename;
 	MEMORY_ADDR base_addr;
 	MEMORY_ADDR size;
-	uint32_t verbose;
+	bool verbose;
 	
-	unisim::kernel::service::Parameter<std::string> param_filename;
-	unisim::kernel::service::Parameter<MEMORY_ADDR> param_base_addr;
-	unisim::kernel::service::Parameter<MEMORY_ADDR> param_size;
-	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<std::string> param_filename;
+	unisim::kernel::variable::Parameter<MEMORY_ADDR> param_base_addr;
+	unisim::kernel::variable::Parameter<MEMORY_ADDR> param_size;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 
 	unisim::kernel::logger::Logger logger;
 };

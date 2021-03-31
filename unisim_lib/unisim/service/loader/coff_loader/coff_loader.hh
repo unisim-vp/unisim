@@ -39,7 +39,8 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/blob.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 namespace unisim {
@@ -47,15 +48,15 @@ namespace service {
 namespace loader {
 namespace coff_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Blob;
@@ -82,7 +83,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -95,12 +96,12 @@ private:
 	unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR> *coff_loader;
 	
 	// Run-time parameters
-	string filename;
+	std::string filename;
 	bool dump_headers;
 	bool verbose;
 
 	// Run-time parameters (accessors)
-	Parameter<string> param_filename;
+	Parameter<std::string> param_filename;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 

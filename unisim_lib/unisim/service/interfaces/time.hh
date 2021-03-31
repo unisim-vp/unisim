@@ -30,20 +30,20 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_INTERFACE_TIME_HH__
 #define __UNISIM_SERVICE_INTERFACE_TIME_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <inttypes.h>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Time : public unisim::kernel::service::ServiceInterface
+class Time : public ServiceInterface
 {
 public:
 	virtual double GetTime() = 0; // in seconds

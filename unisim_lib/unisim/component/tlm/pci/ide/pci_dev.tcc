@@ -49,9 +49,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDev(const sc_module_name &name, Object *parent):
+PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDev(const sc_core::sc_module_name &name, Object *parent):
 	Object(name, parent, "PCI device"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	intr_device_request(),
 	pciDev(0),
 	logger(*this),
@@ -162,7 +162,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 		
 		
 		if(message->HasResponseEvent())
-				message->GetResponseEvent()->notify(sc_time(1.0 / (double) 33, SC_US));
+				message->GetResponseEvent()->notify(sc_core::sc_time(1.0 / (double) 33, sc_core::SC_US));
 		}
 		break;
 	case unisim::component::cxx::pci::TT_WRITE: {
@@ -211,8 +211,8 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Send (const PMsgType &message) {
 		ret = false;
 		}
 	}
-	dispatch_event.notify(sc_time(1.0 / (double) 33, SC_US));
-	intr_dispatch_event.notify(sc_time(1.0 / (double) 33, SC_US));
+	dispatch_event.notify(sc_core::sc_time(1.0 / (double) 33, sc_core::SC_US));
+	intr_dispatch_event.notify(sc_core::sc_time(1.0 / (double) 33, sc_core::SC_US));
 	return ret;
 }
 
@@ -229,7 +229,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaRead(ADDRESS_TYPE addr, int size, u
 	
 		PReqType req = new(req) ReqType();
 		PMsgType message = new(message) MsgType(req);
-		sc_event pci_event;
+		sc_core::sc_event pci_event;
 		message->PushResponseEvent(pci_event);
 		req->addr = addr + size_done;
 		req->type = unisim::component::cxx::pci::TT_READ;
@@ -280,7 +280,7 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::postInt(int irqId){
 	Pointer<InterruptRequest> irq = new (irq) InterruptRequest();
 	irq->level = true;
 	irq->serial_id = 0;
-//	sc_event ack_ev;
+//	sc_core::sc_event ack_ev;
 	message->req = irq;
 //	message->PushResponseEvent(ack_ev);
 	
@@ -301,7 +301,7 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::clearInt(int irqId){
 	Pointer<InterruptRequest> irq = new (irq) InterruptRequest();
 	irq->level = false;
 	irq->serial_id = 0;
-//	sc_event ack_ev;
+//	sc_core::sc_event ack_ev;
 	message->req = irq;
 //	message->PushResponseEvent(ack_ev);
 	
@@ -310,13 +310,13 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::clearInt(int irqId){
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::notify() {
-	dispatch_event.notify(SC_ZERO_TIME);
+	dispatch_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::schedule(unisim::component::cxx::pci::ide::Event *ev) {
 		event_stack.push_back(ev);
-		dispatch_event.notify(SC_ZERO_TIME);
+		dispatch_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
@@ -324,7 +324,7 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::EventDispatch() {
 	while(1) {
 		if (event_stack.empty()) {
 			wait(dispatch_event);
-				//wait(1.0, SC_FS);
+				//wait(1.0, sc_core::SC_FS);
 		} else {
 			//TODO PC: Event and PCIDev should be one level up in the hierarchy
 			unisim::component::cxx::pci::ide::Event * ev = event_stack.front();
@@ -342,7 +342,7 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::IntrDispatch() {
 		if (intr_device_request.used) {
 			Pointer<TlmMessage<InterruptRequest> > message = intr_device_request.message;
 			while(!(irq_port->Send(message))) {
-				wait(1.0, SC_FS);
+				wait(1.0, sc_core::SC_FS);
 			}
 /* 	  		if(message->HasResponseEvent()) {
 				wait(message->GetResponseEvent());

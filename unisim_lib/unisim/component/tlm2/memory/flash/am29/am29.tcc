@@ -53,11 +53,11 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::AM29(const sc_module_name& name, Object *parent)
+AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::AM29(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>(name, parent)
-	, cycle_time(SC_ZERO_TIME)
+	, cycle_time(sc_core::SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 {
 	slave_sock(*this);
@@ -103,7 +103,7 @@ unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_
 		{
 			// streaming is not supported
 			inherited::logger << DebugError << LOCATION
-				<< sc_time_stamp()
+				<< sc_core::sc_time_stamp()
 				<< ": streaming width of " << streaming_width << " bytes is unsupported"
 				<< EndDebugError;
 			Object::Stop(-1);
@@ -113,7 +113,7 @@ unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_
 		{
 			// byte enable is not supported
 			inherited::logger << DebugError << LOCATION
-				<< sc_time_stamp()
+				<< sc_core::sc_time_stamp()
 				<< ": byte enable is unsupported"
 				<< EndDebugError;
 			Object::Stop(-1);
@@ -127,7 +127,7 @@ unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp()
+					<< sc_core::sc_time_stamp()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -140,7 +140,7 @@ unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp()
+					<< sc_core::sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -187,7 +187,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 					{
 						// streaming is not supported
 						inherited::logger << DebugError << LOCATION
-							<< (sc_time_stamp() + t)
+							<< (sc_core::sc_time_stamp() + t)
 							<< ": streaming width of " << streaming_width << " bytes is unsupported"
 							<< EndDebugError;
 						Object::Stop(-1);
@@ -197,7 +197,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 					{
 						// byte enable is not supported
 						inherited::logger << DebugError << LOCATION
-							<< (sc_time_stamp() + t)
+							<< (sc_core::sc_time_stamp() + t)
 							<< ": byte enable is unsupported"
 							<< EndDebugError;
 						Object::Stop(-1);
@@ -213,7 +213,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 						if(inherited::IsVerbose())
 						{
 							inherited::logger << DebugInfo << LOCATION
-								<< sc_time_stamp().to_string()
+								<< sc_core::sc_time_stamp().to_string()
 								<< ": received a TLM_READ_COMMAND payload at 0x"
 								<< std::hex << addr << std::dec
 								<< " of " << data_length << " bytes in length" << std::endl
@@ -228,7 +228,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 						if(inherited::IsVerbose())
 						{
 							inherited::logger << DebugInfo << LOCATION
-								<< sc_time_stamp().to_string()
+								<< sc_core::sc_time_stamp().to_string()
 								<< ": received a TLM_WRITE_COMMAND payload at 0x"
 								<< std::hex << addr << std::dec
 								<< " of " << data_length << " bytes in length" << std::endl
@@ -239,7 +239,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 						break;
 					case tlm::TLM_IGNORE_COMMAND:
 						inherited::logger << DebugError << LOCATION
-								<< (sc_time_stamp() + t).to_string() 
+								<< (sc_core::sc_time_stamp() + t).to_string() 
 								<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 								<< EndDebugError;
 						Object::Stop(-1);

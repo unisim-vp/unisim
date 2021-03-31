@@ -9,6 +9,7 @@
 #define CONVERT_HH_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <iostream>
 #include <sstream>
@@ -16,6 +17,9 @@
 #include <vector>
 #include <typeinfo>
 #include <stdexcept>
+#include <map>
+
+#include <unisim/util/endian/endian.hh>
 
 class BadConversion : public std::runtime_error {
 public:
@@ -77,9 +81,9 @@ inline uint8_t hexChar2Nibble(char ch)
 	return (0);
 }
 
-inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
+inline void number2HexString(uint8_t* value, size_t size, std::string& hex, std::string endian) {
 
-	unsigned int i;
+	ssize_t i;
 	char c[2];
 	c[1] = 0;
 
@@ -87,65 +91,119 @@ inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex
 
 	if(endian == "big")
 	{
+//#if BYTE_ORDER == BIG_ENDIAN
+//		for(i = 0; i < size; i++)
+//#else
+//		for(i = size - 1; i >= 0; i--)
+//#endif
+
 #if BYTE_ORDER == BIG_ENDIAN
-		for(i = 0; i < size; i++)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0; i--)
+		i = size - 1;
 #endif
+
+		for (size_t j=0; j<size; j++)
 		{
 			c[0] = nibble2HexChar(value[i] >> 4);
 			hex += c;
 			c[0] = nibble2HexChar(value[i] & 0xf);
 			hex += c;
+
+#if BYTE_ORDER == BIG_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 	else
 	{
+//#if BYTE_ORDER == LITTLE_ENDIAN
+//		for(i = 0; i < size; i++)
+//#else
+//		for(i = size - 1; i >= 0; i--)
+//#endif
+
 #if BYTE_ORDER == LITTLE_ENDIAN
-		for(i = 0; i < size; i++)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0; i--)
+		i = size - 1;
 #endif
+		for (size_t j=0; j<size; j++)
 		{
 			c[0] = nibble2HexChar(value[i] >> 4);
 			hex += c;
 			c[0] = nibble2HexChar(value[i] & 0xf);
 			hex += c;
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 
 }
 
-inline bool hexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
+inline bool hexString2Number(const std::string& hex, void* value, size_t size, std::string endian) {
 
-	unsigned int i;
-	unsigned int len = hex.length();
-	unsigned int pos = 0;
+	ssize_t i;
+	size_t len = hex.length();
+	size_t pos = 0;
 
 	if(endian == "big")
 	{
+//#if BYTE_ORDER == BIG_ENDIAN
+//		for(i = 0; i < size && pos < len; i++, pos += 2)
+//#else
+//		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+//#endif
+
 #if BYTE_ORDER == BIG_ENDIAN
-		for(i = 0; i < size && pos < len; i++, pos += 2)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+		i = size - 1;
 #endif
+
+		for (size_t j = 0; j < size && pos < len; j++, pos += 2)
 		{
 			if(!isHexChar(hex[pos]) || !isHexChar(hex[pos + 1])) return (false);
 
 			((uint8_t*) value)[i] = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
+
+#if BYTE_ORDER == BIG_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 	else
 	{
+//#if BYTE_ORDER == LITTLE_ENDIAN
+//		for(i = 0; i < size && pos < len; i++, pos += 2)
+//#else
+//		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+//#endif
+
 #if BYTE_ORDER == LITTLE_ENDIAN
-		for(i = 0; i < size && pos < len; i++, pos += 2)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+		i = size - 1;
 #endif
+		for(size_t j = 0; j < size && pos < len; j++, pos += 2)
 		{
 			if(!isHexChar(hex[pos]) || !isHexChar(hex[pos + 1])) return (false);
 
 			((uint8_t*) value)[i] = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 
@@ -153,9 +211,9 @@ inline bool hexString2Number(const std::string& hex, void* value, unsigned int s
 
 }
 
-inline void textToHex(const char *s, int count, std::string& packet)
+inline void textToHex(const char *s, size_t count, std::string& packet)
 {
-	int i;
+	size_t i;
 	std::stringstream strm;
 
 	for(i = 0; (i<count); i++)
@@ -169,9 +227,9 @@ inline void textToHex(const char *s, int count, std::string& packet)
 
 }
 
-inline void hexToText(const char *s, int count, std::string& packet)
+inline void hexToText(const char *s, size_t count, std::string& packet)
 {
-	int i;
+	size_t i;
 	std::stringstream strm;
 	uint8_t c;
 
@@ -186,24 +244,46 @@ inline void hexToText(const char *s, int count, std::string& packet)
 
 inline void stringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
 {
-	size_t cutAt;
+	size_t cutAt = 0;
 
-	do {
+	while ((cutAt != str.npos) && !str.empty()) {
 
 		cutAt = str.find_first_of(delim);
 
-		if (cutAt > 0) {
+		if (cutAt == str.npos) {
+			results.push_back(str);
+		} else {
 			results.push_back(str.substr(0,cutAt));
+			str = str.substr(cutAt+1);
 		}
-
-		str = str.substr(cutAt+1);
-
-	} while (cutAt != str.npos);
-
-	if(str.length() > 0)
-	{
-		results.push_back(str);
 	}
+
+}
+
+inline void splitCharStr2Array(char* str, const char * delimiters, int *count, char** *res) {
+
+	char *  p    = strtok (str, delimiters);
+	int n_spaces = 0;
+
+	/* split string and append tokens to 'res' */
+
+	while (p) {
+	  (*res) = (char**) realloc ((*res), sizeof (char*) * ++n_spaces);
+
+	  if ((*res) == NULL)
+	    exit (-1); /* memory allocation failed */
+
+	  (*res)[n_spaces-1] = p;
+
+	  p = strtok (NULL, " ");
+	}
+
+//	/* print the result */
+//
+//	for (i = 0; i < (n_spaces); ++i)
+//	  printf ("res[%d] = %s\n", i, (*res)[i]);
+
+	*count = n_spaces;
 
 }
 
@@ -223,10 +303,10 @@ inline bool getParity(T n)
 }
 
 template <typename T>
-bool ParseHex(const std::string& s, unsigned int& pos, T& value)
+inline bool ParseHex(const std::string& s, size_t& pos, T& value)
 {
-	unsigned int len = s.length();
-	unsigned int n = 0;
+	size_t len = s.length();
+	size_t n = 0;
 
 	value = 0;
 	while(pos < len && n < 2 * sizeof(T))
@@ -240,6 +320,80 @@ bool ParseHex(const std::string& s, unsigned int& pos, T& value)
 		n++;
 	}
 	return (n > 0);
+}
+
+inline const char* getOsName() {
+
+	#ifndef __OSNAME__
+	#if defined(_WIN32) || defined(_WIN64)
+			const char* osName = "Windows";
+	#else
+	#ifdef __linux
+			const char* osName = "Linux";
+	#else
+			const char* osName = "Unknown";
+	#endif
+	#endif
+	#endif
+
+    return (osName);
+}
+
+/*
+ * Expand environment variables
+ * Windows:
+ *    - ExpandEnvironmentStrings(%PATH%): Expands environment-variable strings and replaces them with the values defined for the current user
+ *    - PathUnExpandEnvStrings: To replace folder names in a fully qualified path with their associated environment-variable strings
+ *    - Example Get system informations :
+ *      url: http://msdn.microsoft.com/en-us/library/ms724426%28v=vs.85%29.aspx
+ *
+ * Linux/Posix:
+ *   url: http://stackoverflow.com/questions/1902681/expand-file-names-that-have-environment-variables-in-their-path
+ *
+ */
+
+#include <cstdlib>
+#include <string>
+
+inline std::string expand_environment_variables( std::string s ) {
+    if( s.find( "$(" ) == std::string::npos ) return s;
+
+    std::string pre  = s.substr( 0, s.find( "$(" ) );
+    std::string post = s.substr( s.find( "$(" ) + 2 );
+
+    if( post.find( ')' ) == std::string::npos ) return s;
+
+    std::string variable = post.substr( 0, post.find( ')' ) );
+    std::string value    = "";
+
+    post = post.substr( post.find( ')' ) + 1 );
+
+    if( getenv( variable.c_str() ) != NULL ) value = std::string( getenv( variable.c_str() ) );
+
+    return expand_environment_variables( pre + value + post );
+}
+
+inline std::string expand_path_variables( std::string s , std::map<std::string, std::string> env_vars) {
+    if( s.find( "$(" ) == std::string::npos ) return s;
+
+    std::string pre  = s.substr( 0, s.find( "$(" ) );
+    std::string post = s.substr( s.find( "$(" ) + 2 );
+
+    if( post.find( ')' ) == std::string::npos ) return s;
+
+    std::string variable = post.substr( 0, post.find( ')' ) );
+    std::string value    = "";
+
+    post = post.substr( post.find( ')' ) + 1 );
+
+	std::map<std::string, std::string>::iterator it = env_vars.find(variable);
+	if (it == env_vars.end()) {
+		if( getenv( variable.c_str() ) != NULL ) value = std::string( getenv( variable.c_str() ) );
+	} else {
+		value = it->second;
+	}
+
+    return expand_environment_variables( pre + value + post );
 }
 
 #endif /* CONVERT_HH_ */

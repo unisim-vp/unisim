@@ -85,7 +85,7 @@ void PIMThread::run(){
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetSignals(lst);
+	Simulator::Instance()->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 

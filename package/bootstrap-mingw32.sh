@@ -25,13 +25,13 @@ case $(lsb_release -s -i) in
 esac
 
 #BUILD=i686-pc-linux-gnu
-SDL_VERSION=1.2.14
+SDL_VERSION=1.2.15
 LIBXML2_VERSION=2.7.8
 EXPAT_VERSION=2.1.0-1 #2.0.1
 CROSS_GDB_VERSION=7.6.2
 CROSS_GDB_ARCHITECTURES="powerpc-440fp-linux-gnu powerpc-7450-linux-gnu armel-linux-gnu m6811-elf"
-ZLIB_VERSION=1.2.5
-BOOST_VERSION=1_47_0
+ZLIB_VERSION=1.2.7
+BOOST_VERSION=1_60_0 # 1_47_0
 TCLTK_VERSION=8.5.11
 GPERF_VERSION=3.0.4
 
@@ -315,6 +315,7 @@ case ${CMD} in
 		if [ ! -e ${PACKAGES_DIR}/boost_${BOOST_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
 			Download boost_${BOOST_VERSION} boost_${BOOST_VERSION}.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_${BOOST_VERSION}.tar.bz2
+			Patch boost_${BOOST_VERSION} ${HERE}/boost-${BOOST_VERSION}-mingw-context.patch
 			InstallBinArchive zlib-${ZLIB_VERSION}-mingw32.tar.bz2 '' zlib-${ZLIB_VERSION}
 			cd ${BUILD_DIR}/boost_${BOOST_VERSION}
 			mkdir -p ${INSTALL_DIR}/boost_${BOOST_VERSION}

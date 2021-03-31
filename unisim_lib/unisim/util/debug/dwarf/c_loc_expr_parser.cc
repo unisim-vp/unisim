@@ -60,13 +60,6 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
 std::ostream& operator << (std::ostream& os, const CLocType& c_loc_type)
 {
 	switch(c_loc_type)
@@ -84,13 +77,20 @@ CLocOperationStream::CLocOperationStream(Notation _notation)
 {
 }
 
+CLocOperationStream::CLocOperationStream(const CLocOperationStream& c_loc_operation_stream)
+	: notation(c_loc_operation_stream.notation)
+	, storage()
+{
+	std::deque<const CLocOperation *>::const_iterator it;
+	for(it = c_loc_operation_stream.storage.begin(); it != c_loc_operation_stream.storage.end(); it++)
+	{
+		storage.push_back((*it)->Clone());
+	}
+}
+
 CLocOperationStream::~CLocOperationStream()
 {
-	std::deque<const CLocOperation *>::iterator it;
-	for(it = storage.begin(); it != storage.end(); it++)
-	{
-		delete *it;
-	}
+	Clear();
 }
 
 void CLocOperationStream::Push(const CLocOperation *op)
@@ -129,6 +129,16 @@ Notation CLocOperationStream::GetNotation() const
 	return notation;
 }
 
+void CLocOperationStream::Clear()
+{
+	std::deque<const CLocOperation *>::iterator it;
+	for(it = storage.begin(); it != storage.end(); it++)
+	{
+		delete *it;
+	}
+	storage.clear();
+}
+
 std::ostream& operator << (std::ostream& os, const CLocOperationStream& c_loc_operation_stream)
 {
 	std::deque<const CLocOperation *>::const_iterator const_it;
@@ -142,9 +152,11 @@ std::ostream& operator << (std::ostream& os, const CLocOperationStream& c_loc_op
 	return os;
 }
 
-CLocExprParser::CLocExprParser(std::istream *stream, unisim::kernel::logger::Logger& _logger, bool _debug)
-	: unisim::util::parser::Parser<CLocType>(stream, _logger, _debug)
-	, logger(_logger)
+CLocExprParser::CLocExprParser(std::istream *stream, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, bool _debug)
+	: unisim::util::parser::Parser<CLocType>(stream, _debug_info_stream, _debug_warning_stream, _debug_error_stream, _debug)
+	, debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, c_loc_operation_stream(0)
 {
 	EnableToken("*");
@@ -169,7 +181,7 @@ unisim::util::parser::Token<CLocType> *CLocExprParser::CreateToken(const char *t
 {
 	if(debug)
 	{
-		logger << DebugInfo << "Creating Token \"" << text << "\"" << EndDebugInfo;
+		debug_info_stream << "Creating Token \"" << text << "\"" << std::endl;
 	}
 	switch(id)
 	{
@@ -205,7 +217,7 @@ bool CLocExprParser::Parse(CLocOperationStream& _c_loc_operation_stream)
 		}
 	}
 	
-	ast->GenerateGraphviz("ast.dot");
+	//ast->GenerateGraphviz("ast.dot");
 
 	c_loc_operation_stream = &_c_loc_operation_stream;
 	unisim::util::parser::DepthFirstSearchTraversalOrder order = unisim::util::parser::DFS_PRE_ORDER;
@@ -237,14 +249,14 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			// loc_expr <- loc_expr '[' arith_expr ']'
 			if(debug)
 			{
-				logger << DebugInfo << "loc_expr <- loc_expr '[' arith_expr ']'" << EndDebugInfo;
+				debug_info_stream << "loc_expr <- loc_expr '[' arith_expr ']'" << std::endl;
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
-				logger << DebugError << token->GetLocation() << ", subscripted value is neither array nor pointer" << EndDebugError;
+				debug_error_stream << token->GetLocation() << ", subscripted value is neither array nor pointer" << std::endl;
 				return false;
 			}
 			if(right->GetToken()->GetValue() != C_LOC_ARITH)
@@ -252,9 +264,9 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
-				logger << DebugError << token->GetLocation() << ", expected array subscript" ;
-				if(token) logger << " before '" << right->GetToken()->GetText() << "'";
-				logger << EndDebugError;
+				debug_error_stream << token->GetLocation() << ", expected array subscript" ;
+				if(token) debug_error_stream << " before '" << right->GetToken()->GetText() << "'";
+				debug_error_stream << std::endl;
 				return false;
 			}
 			token->SetValue(C_LOC_EXPR);
@@ -263,7 +275,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			// loc_expr <- loc_expr '.' lit_ident
 			if(debug)
 			{
-				logger << DebugInfo << "loc_expr <- loc_expr '.' lit_ident" << EndDebugInfo;
+				debug_info_stream << "loc_expr <- loc_expr '.' lit_ident" << std::endl;
 			}
 			if(right->GetToken()->GetId() != TOK_IDENT)
 			{
@@ -275,7 +287,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
-				logger << DebugError << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a structure" << EndDebugError;
+				debug_error_stream << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a structure" << std::endl;
 				return false;
 			}
 			token->SetValue(C_LOC_EXPR);
@@ -284,7 +296,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			// loc_expr <- loc_expr '->' lit_ident
 			if(debug)
 			{
-				logger << DebugInfo << "loc_expr <- loc_expr '->' lit_ident" << EndDebugInfo;
+				debug_info_stream << "loc_expr <- loc_expr '->' lit_ident" << std::endl;
 			}
 			if(right->GetToken()->GetId() != TOK_IDENT)
 			{
@@ -296,7 +308,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
-				logger << DebugError << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a pointed structure" << EndDebugError;
+				debug_error_stream << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a pointed structure" << std::endl;
 				return false;
 			}
 			token->SetValue(C_LOC_EXPR);
@@ -314,14 +326,14 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			// loc_expr <- '*' loc_expr
 			if(debug)
 			{
-				logger << DebugInfo << "loc_expr <- '*' loc_expr" << EndDebugInfo;
+				debug_info_stream << "loc_expr <- '*' loc_expr" << std::endl;
 			}
 			if(child->GetToken()->GetValue() != C_LOC_EXPR)
 			{
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
-				logger << DebugError << token->GetLocation() << ", dereferencing \"" << child->GetToken()->GetText() << "\" which is not a pointer" << EndDebugError;
+				debug_error_stream << token->GetLocation() << ", dereferencing \"" << child->GetToken()->GetText() << "\" which is not a pointer" << std::endl;
 				return false;
 			}
 			token->SetValue(C_LOC_EXPR);
@@ -339,7 +351,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token)
 			// arith_expr <- lit_int
 			if(debug)
 			{
-				logger << DebugInfo << "arith_expr <- lit_int" << EndDebugInfo;
+				debug_info_stream << "arith_expr <- lit_int" << std::endl;
 			}
 			token->SetValue(C_LOC_ARITH);
 			return true;
@@ -347,11 +359,12 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token)
 			// loc_expr <- lit_ident
 			if(debug)
 			{
-				logger << DebugInfo << "loc_expr <- lit_ident" << EndDebugInfo;
+				debug_info_stream << "loc_expr <- lit_ident" << std::endl;
 			}
 			token->SetValue(C_LOC_EXPR);
 			return true;
 	}
+	debug_warning_stream << token->GetLocation() << ", unknown ID" << std::endl;
 	return false;
 }
 
@@ -392,6 +405,11 @@ CLocOperation::CLocOperation(CLocOpcode _opcode)
 
 CLocOperation::~CLocOperation()
 {
+}
+
+CLocOperation *CLocOperation::Clone() const
+{
+	return new CLocOperation(opcode);
 }
 
 CLocOpcode CLocOperation::GetOpcode() const
@@ -436,6 +454,11 @@ int CLocOpLiteralInteger::GetValue() const
 	return value;
 }
 
+CLocOperation *CLocOpLiteralInteger::Clone() const
+{
+	return new CLocOpLiteralInteger(value);
+}
+
 CLocOpLiteralIdentifier::CLocOpLiteralIdentifier(const char *_identifier)
 	: CLocOperation(OP_LIT_IDENT)
 	, identifier(_identifier)
@@ -447,6 +470,10 @@ const char *CLocOpLiteralIdentifier::GetIdentifier() const
 	return identifier.c_str();
 }
 
+CLocOperation *CLocOpLiteralIdentifier::Clone() const
+{
+	return new CLocOpLiteralIdentifier(identifier.c_str());
+}
 
 } // end of namespace dwarf
 } // end of namespace debug

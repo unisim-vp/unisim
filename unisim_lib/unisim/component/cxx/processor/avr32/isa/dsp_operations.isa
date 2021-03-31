@@ -439,7 +439,7 @@ satrnds.execute={
 		temp= (int32_t)temp + (int32_t)rnd;
 	}
 	
-	if( (temp == SignExtend(temp,bp5)) || (bp5 == 0))
+	if( (temp == (uint32_t) SignExtend(temp,bp5)) || (bp5 == 0))
 	{
 		result = temp;
 	}
@@ -478,7 +478,7 @@ satrndu.execute={
 	}
 	
 	uint32_t mask = (1UL << bp5)-1 ;
-	if( (temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
+	if( ((uint32_t) temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
 	{
 		result = temp;
 	}
@@ -512,7 +512,7 @@ sats.execute={
 	uint8_t q = cpu->GetSR_Q();                                              // get last saturation flag
 	
 
-	if( (temp == SignExtend(temp,bp5)) || (bp5 == 0) )
+	if( (temp == (uint32_t) SignExtend(temp,bp5)) || (bp5 == 0) )
 	{
 		result = temp;
 	}
@@ -547,7 +547,7 @@ satu.execute={
 	uint8_t q=cpu->GetSR_Q();                // get last saturation flag
 	
 	uint32_t mask = (1UL << bp5)-1 ;
-	if( (temp == (temp & mask)) || (bp5 == 0) )
+	if( ((uint32_t) temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
 	{
 		result = temp;
 	}
@@ -742,7 +742,7 @@ mulsatrndwh_w.execute={
 	uint32_t result;
 	uint8_t q=cpu->GetSR_Q();                       // get last saturation flag
 
-	if((op1 == 0x80000000) && ((uint16_t)op2 == 0x8000)) // if op1=op2=-1
+	if(((uint32_t)op1 == 0x80000000) && ((uint16_t)op2 == 0x8000)) // if op1=op2=-1
 	{
 		result = 0x7FFFFFFF;                          // saturation occurs
 		q=1;
@@ -779,7 +779,7 @@ mulsatwh_w.execute={
 	uint32_t result;
 	uint8_t q=cpu->GetSR_Q();                                    // get last Q
 
-	if( (op1 == 0x80000000) && ((uint16_t)op2 == 0x8000) )// if op1=op2=-1
+	if( ((uint32_t)op1 == 0x80000000) && ((uint16_t)op2 == 0x8000) )// if op1=op2=-1
 	{
 		result = 0x7FFFFFFF;
 		q=1;

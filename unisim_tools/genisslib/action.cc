@@ -22,8 +22,6 @@
 #include <strtools.hh>
 #include <iostream>
 
-using namespace std;
-
 /** Constructor
     @param operation an operation object to which belong the action
     @param actionproto an action prototype object which is the prototype of this action
@@ -32,23 +30,25 @@ using namespace std;
     @param filename a filename object where the action was found
     @param lineno a line number where the action was found
 */
-Action_t::Action_t( ActionProto_t const* _actionproto, SourceCode_t* _source_code,
-                    Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
+Action::Action( ActionProto const* _actionproto, SourceCode* _source_code, Vector<Comment> const& _comments, FileLoc const& _fileloc )
   : m_operation( 0 ), m_actionproto( _actionproto ), m_source_code( _source_code ),
     m_comments( _comments ), m_fileloc( _fileloc )
 {}
 
 /** Destructor
 */
-Action_t::~Action_t() {}
+Action::~Action() {}
 
 /** Dump an action object into a stream
     @param action an action object to dump
     @param _sink a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, Action_t const& _act ) {
-  return (_sink << _act.m_operation->m_symbol << '.' << _act.m_actionproto->m_symbol << " = " << (*_act.m_source_code) << '\n');
+operator<<( std::ostream& sink, Action const& action )
+{
+  sink << action.m_operation->symbol << '.' << action.m_actionproto->m_symbol << " = " << (*action.m_source_code);
+  
+  return sink;
 }
 
 
@@ -62,43 +62,45 @@ operator<<( std::ostream& _sink, Action_t const& _act ) {
     @param filename a filename object where the action prototype was found
     @param lineno a line number where the action prototype was found
 */
-ActionProto_t::ActionProto_t( ActionProto_t::type_t _type, ConstStr_t _symbol, SourceCode_t* _returns,
-                              Vect_t<CodePair_t>& _params, bool _constness, SourceCode_t* _defaultcode,
-                              Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
+ActionProto::ActionProto( ActionProto::type_t _type, ConstStr _symbol, SourceCode* _returns,
+                              Vector<CodePair>& _params, bool _constness, SourceCode* _defaultcode,
+                              Vector<Comment>& _comments, FileLoc const& _fileloc )
   : m_type( _type ), m_symbol( _symbol ), m_returns( _returns ),
     m_params( _params ), m_constness( _constness ), m_defaultcode( _defaultcode ),
     m_comments( _comments ), m_fileloc( _fileloc )
 {}
 
 /** Dump an action prototype object into a stream
-    @param _sink a stream
+    @param sink a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, ActionProto_t const& _ap ) {
-  switch( _ap.m_type ) {
-  case ActionProto_t::Constructor:  _sink << "constructor "; break;
-  case ActionProto_t::Static:       _sink << "static "; break;
-  case ActionProto_t::Destructor:   _sink << "destructor "; break;
-  case ActionProto_t::Common:       /* do nothing */ break;
+operator << ( std::ostream& sink, ActionProto const& proto )
+{
+  switch( proto.m_type ) {
+  case ActionProto::Constructor:  sink << "constructor "; break;
+  case ActionProto::Static:       sink << "static "; break;
+  case ActionProto::Destructor:   sink << "destructor "; break;
+  case ActionProto::Common:       /* do nothing */ break;
   }
   
-  _sink << "action ";
+  sink << "action ";
   
-  if( _ap.m_returns ) _sink << (*_ap.m_returns) << ' ';
+  if (proto.m_returns) sink << (*proto.m_returns) << ' ';
 
-  _sink << _ap.m_symbol << "(";
+  sink << proto.m_symbol << "(";
   char const* sep = "";
-  for( Vect_t<CodePair_t>::const_iterator codepair = _ap.m_params.begin(); codepair < _ap.m_params.end(); sep = ", ", ++ codepair )
-    _sink << sep << *(*codepair);
+  for (Vector<CodePair>::const_iterator codepair = proto.m_params.begin(); codepair < proto.m_params.end(); sep = ", ", ++ codepair)
+    sink << sep << *(*codepair);
   
-  _sink << ") " << (_ap.m_constness ? "const " : "")<< (*_ap.m_defaultcode) << '\n';
-  return _sink;
+  sink << ") " << (proto.m_constness ? "const " : "")<< (*proto.m_defaultcode) << '\n';
+  return sink;
 }
 
-ActionProto_t::~ActionProto_t() {}
+ActionProto::~ActionProto() {}
 
 char const*
-ActionProto_t::returntype() const {
-  if( m_returns ) return m_returns->m_content.str();
+ActionProto::returntype() const
+{
+  if (m_returns) return m_returns->content.str();
   return "void";
 }

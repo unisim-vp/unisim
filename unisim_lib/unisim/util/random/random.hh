@@ -47,11 +47,14 @@ namespace random {
 class Random
 {
 public:
-	static const long Max = +2147483647L;
-	static const long Min = -Max - 1L;
+	static const int32_t Max = +2147483647L;
+	static const int32_t Min = -Max - 1L;
+	static const uint64_t Amplitude = 4294967296ULL;
 	Random();
 	Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
 	void Seed(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
+	int32_t const& State(unsigned idx) const;
+        int32_t& State(unsigned idx) { return const_cast<int32_t&>( const_cast<Random const*>(this)->State(idx) ); };
 	int32_t Generate();
 	int32_t Generate(uint32_t radius);
 private:

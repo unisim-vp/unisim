@@ -66,7 +66,7 @@ public:
 
 	static inline KEY Hash(KEY key) ALWAYS_INLINE;
 
-	inline ELEMENT *Find(KEY key) ALWAYS_INLINE;
+	inline ELEMENT *Find(KEY key) const ALWAYS_INLINE;
 
 	inline void Insert(ELEMENT *element) ALWAYS_INLINE;
 
@@ -76,8 +76,8 @@ public:
 
 	operator std::map<KEY, ELEMENT *>() const;
 private:
-	ELEMENT *mru_element;
-	ELEMENT *hash_table[NUM_HASH_TABLE_ENTRIES];
+	mutable ELEMENT *mru_element;
+	mutable ELEMENT *hash_table[NUM_HASH_TABLE_ENTRIES];
 };
 
 template <class KEY, class ELEMENT>
@@ -164,7 +164,7 @@ inline void HashTable<KEY, ELEMENT>::Remove(ELEMENT *element)
 }
 
 template <class KEY, class ELEMENT>
-inline ELEMENT *HashTable<KEY, ELEMENT>::Find(KEY key)
+inline ELEMENT *HashTable<KEY, ELEMENT>::Find(KEY key) const
 {
 	if(mru_element && mru_element->key == key) return mru_element;
 	ELEMENT *prev, *cur;

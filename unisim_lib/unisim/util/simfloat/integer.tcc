@@ -58,53 +58,9 @@ namespace Numerics { namespace Integer {
 namespace Details {
 
 template <class IntegerTraits>
-#ifndef __BORLANDC__
-typename TBigCellInt<IntegerTraits>::ComparisonResult
-#else
-Integer::Details::Access::ComparisonResult
-#endif
-TBigCellInt<IntegerTraits>::compare(const thisType& biSource) const {
-   ComparisonResult crResult = CREqual;
-   register int uIndex = inherited::querySize();
-   if (uIndex < biSource.inherited::querySize())
-      uIndex = biSource.inherited::querySize();
-      
-   while ((--uIndex >= 0) && (crResult == CREqual)) {
-      if (array(uIndex) < biSource.array(uIndex))
-         crResult = CRLess;
-      else if (array(uIndex) > biSource.array(uIndex))
-         crResult = CRGreater;
-   };
-   return crResult;
-}
-
-template <class IntegerTraits>
-bool
-TBigCellInt<IntegerTraits>::isZero() const {
-   register bool fResult = true;
-   for (register int uIndex = inherited::querySize(); fResult && (--uIndex >= 0); )
-      fResult = array(uIndex) == 0;
-   return fResult;
-}
-
-template <class IntegerTraits>
-bool
-TBigCellInt<IntegerTraits>::hasZero(int uShift) const {
-   register bool fResult = true;
-   if (uShift > 0) {
-      for (register int uIndex = uShift/(8*sizeof(unsigned int)); fResult && (--uIndex >= 0); )
-         fResult = array(uIndex) == 0;
-      if (fResult && (uShift % (8*sizeof(unsigned int)) != 0))
-         fResult = ((array(uShift/(8*sizeof(unsigned int)))
-                     << ((8*sizeof(unsigned int))-(uShift% (8*sizeof(unsigned int))))) == 0);
-   };
-   return fResult;
-}
-
-template <class IntegerTraits>
 bool
 TBigCellInt<IntegerTraits>::verifyAtomicity() const {
-   for (register int uIndex = 1; uIndex < inherited::querySize(); ++uIndex)
+   for (int uIndex = 1; uIndex < inherited::querySize(); ++uIndex)
       if (array(uIndex) != 0U)
          return false;
    return true;
@@ -117,7 +73,7 @@ TBigCellInt<IntegerTraits>::add(const thisType& biSource) {
    if (inherited::querySize() < biSource.inherited::querySize())
       inherited::adjustSize(biSource.inherited::querySize());
    for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex) {
-      register unsigned int uOldCell = array(uIndex);
+      unsigned int uOldCell = array(uIndex);
       array(uIndex) += biSource.array(uIndex);
       if (cCarry.hasCarry()) {
          ++array(uIndex);
@@ -125,25 +81,6 @@ TBigCellInt<IntegerTraits>::add(const thisType& biSource) {
       }
       else
          cCarry.setCarry(array(uIndex) < uOldCell);
-   };
-   return cCarry;
-}
-
-template <class IntegerTraits>
-typename TBigCellInt<IntegerTraits>::Carry
-TBigCellInt<IntegerTraits>::sub(const thisType& biSource) {
-   Carry cCarry;
-   if (inherited::querySize() < biSource.inherited::querySize())
-      inherited::adjustSize(biSource.inherited::querySize());
-   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex) {
-      register unsigned int uOldCell = array(uIndex);
-      array(uIndex) -= biSource.array(uIndex);
-      if (cCarry.hasCarry()) {
-         --array(uIndex);
-         cCarry.setCarry(array(uIndex) >= uOldCell);
-      }
-      else
-         cCarry.setCarry(array(uIndex) > uOldCell);
    };
    return cCarry;
 }
@@ -171,7 +108,7 @@ TBigCellInt<IntegerTraits>::inc() {
 template <class IntegerTraits>
 typename TBigCellInt<IntegerTraits>::Carry
 TBigCellInt<IntegerTraits>::multAssign(unsigned int uSource) {
-   register unsigned int uCarry, uThisLow, uThisHigh, uSourceLow, uSourceHigh;
+   unsigned int uCarry, uThisLow, uThisHigh, uSourceLow, uSourceHigh;
    uCarry = 0;
    uSourceHigh = uSource >> (sizeof(unsigned int)*4);
    uSourceLow = uSource & ~(~0U << (sizeof(unsigned int)*4));
@@ -193,7 +130,7 @@ TBigCellInt<IntegerTraits>::multAssign(unsigned int uSource) {
 template <class IntegerTraits>
 void
 TBigCellInt<IntegerTraits>::mult(const thisType& biSource, MultResult& mrResult) const {
-   register unsigned int uCarry, uThisLow, uThisHigh, uSourceLow, uSourceHigh;
+   unsigned int uCarry, uThisLow, uThisHigh, uSourceLow, uSourceHigh;
    for (int uSourceIndex = 0; uSourceIndex < biSource.inherited::querySize(); ++uSourceIndex) {
       uCarry = 0;
       uSourceHigh = biSource.array(uSourceIndex) >> (sizeof(unsigned int)*4);
@@ -217,9 +154,9 @@ template <class IntegerTraits>
 TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator<<=(int uShift) {
    assert(uShift >= 0);
-   register int uShiftIndex = uShift / (sizeof(unsigned int)*8);
-   register int uLocalShift = uShift % (sizeof(unsigned int)*8);
-   register int uWriteIndex = inherited::querySize();
+   int uShiftIndex = uShift / (sizeof(unsigned int)*8);
+   int uLocalShift = uShift % (sizeof(unsigned int)*8);
+   int uWriteIndex = inherited::querySize();
    while (--uWriteIndex >= uShiftIndex) {
       unsigned int uTemp = array(uWriteIndex-uShiftIndex);
       array(uWriteIndex) = uTemp << uLocalShift;
@@ -236,9 +173,9 @@ template <class IntegerTraits>
 TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator>>=(int uShift) {
    assert(uShift >= 0);
-   register int uShiftIndex = uShift / (sizeof(unsigned int)*8);
-   register int uLocalShift = uShift % (sizeof(unsigned int)*8);
-   register int uWriteIndex;
+   int uShiftIndex = uShift / (sizeof(unsigned int)*8);
+   int uLocalShift = uShift % (sizeof(unsigned int)*8);
+   int uWriteIndex;
    
    for (uWriteIndex = 0; uWriteIndex < inherited::querySize()-uShiftIndex; ++uWriteIndex) {
       unsigned int uTemp = array(uWriteIndex+uShiftIndex);
@@ -257,7 +194,7 @@ TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator|=(const thisType& biSource) {
    if (inherited::querySize() < biSource.inherited::querySize())
       inherited::adjustSize(biSource.inherited::querySize());
-   for (register int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
+   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
       array(uIndex) |= biSource.array(uIndex);
    return *this;
 }
@@ -267,7 +204,7 @@ TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator^=(const thisType& biSource) {
    if (inherited::querySize() < biSource.inherited::querySize())
       inherited::adjustSize(biSource.inherited::querySize());
-   for (register int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
+   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
       array(uIndex) ^= biSource.array(uIndex);
    return *this;
 }
@@ -275,7 +212,7 @@ TBigCellInt<IntegerTraits>::operator^=(const thisType& biSource) {
 template <class IntegerTraits>
 TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator&=(const thisType& biSource) {
-   for (register int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
+   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
       array(uIndex) &= biSource.array(uIndex);
    return *this;
 }
@@ -283,7 +220,7 @@ TBigCellInt<IntegerTraits>::operator&=(const thisType& biSource) {
 template <class IntegerTraits>
 TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::neg() {
-   for (register int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
+   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex)
       array(uIndex) = ~array(uIndex);
    return *this;
 }
@@ -293,10 +230,10 @@ TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::neg(int uShift) {
    if (uShift >= 0) {
       int uSize = uShift/(8*sizeof(unsigned int));
-      for (register int uIndex = 0; uIndex < uSize; ++uIndex)
+      for (int uIndex = 0; uIndex < uSize; ++uIndex)
          array(uIndex) = ~array(uIndex);
       if (uShift % (8*sizeof(unsigned int)) != 0) {
-         register int uNeg = uShift - 8*sizeof(unsigned int)*uSize;
+         int uNeg = uShift - 8*sizeof(unsigned int)*uSize;
          array(uSize) = (array(uSize) & (~0U << uNeg)) | (~array(uSize) & ~(~0U << uNeg));
       };
    };
@@ -306,7 +243,7 @@ TBigCellInt<IntegerTraits>::neg(int uShift) {
 template <class IntegerTraits>
 unsigned int
 TBigCellInt<IntegerTraits>::log_base_2() const {
-   register int uIndex = inherited::querySize();
+   int uIndex = inherited::querySize();
    while ((uIndex > 0) && (array(--uIndex) == 0U));
    if (array(uIndex) == 0U)
       return 1;
@@ -317,10 +254,10 @@ template <class IntegerTraits>
 unsigned int
 TBigCellInt<IntegerTraits>::retrieveSignificantMidDivide(int uLogBase2, bool& fExact) const {
    assert(uLogBase2 > 0);
-   register int uIndex = (uLogBase2-1) / (8*sizeof(unsigned int));
+   int uIndex = (uLogBase2-1) / (8*sizeof(unsigned int));
    assert(array(uIndex) != 0U);
    
-   register int uBitIndex = ((uLogBase2-1) % (8*sizeof(unsigned int)))+1;
+   int uBitIndex = ((uLogBase2-1) % (8*sizeof(unsigned int)))+1;
    unsigned int uResult = 0U;
    if (uBitIndex >= (int)(sizeof(unsigned int)*4)) {
       uResult = array(uIndex) >> (uBitIndex - sizeof(unsigned int)*4);
@@ -349,7 +286,7 @@ TBigCellInt<IntegerTraits>::retrieveSignificantMidDivideNormalized(bool& fExact)
       | (1U << (sizeof(unsigned int)*4-1));
    fExact = (~(~0U << (sizeof(unsigned int)*4+1)) & array(inherited::querySize()-1)) == 0U;
 
-   for (register int uIndex = inherited::querySize()-1; fExact && (--uIndex >= 0); )
+   for (int uIndex = inherited::querySize()-1; fExact && (--uIndex >= 0); )
       fExact = (array(uIndex) == 0U);
    return uResult;
 }
@@ -360,7 +297,7 @@ TBigCellInt<IntegerTraits>::divAssign(unsigned int uDivide) {
    assert((uDivide > 0) && (uDivide < (1U << (sizeof(unsigned int)*4))));
    unsigned int uRemainder = 0U;
 
-   register int uIndex = inherited::querySize();
+   int uIndex = inherited::querySize();
    while ((uIndex > 0) && (array(--uIndex) == 0U));
    if (array(uIndex) == 0U)
       return AtomicDivisionResult();
@@ -441,9 +378,9 @@ TBigCellInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResu
       
    biDenominator.assertSize(uMaxSize);
    biNumerator.assertSize(uMaxSize);
-   for (register int uNumeratorIndex = 0; uNumeratorIndex < inherited::querySize(); ++uNumeratorIndex)
+   for (int uNumeratorIndex = 0; uNumeratorIndex < inherited::querySize(); ++uNumeratorIndex)
      biNumerator[uNumeratorIndex] = array(uNumeratorIndex);
-   for (register int uDenominatorIndex = 0; uDenominatorIndex < biSource.inherited::querySize(); ++uDenominatorIndex)
+   for (int uDenominatorIndex = 0; uDenominatorIndex < biSource.inherited::querySize(); ++uDenominatorIndex)
      biDenominator[uDenominatorIndex] = biSource[uDenominatorIndex];
 
    int uSizeQuotient = 2*drResult.quotient().querySize();
@@ -474,7 +411,7 @@ TBigCellInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResu
    };
    biNumerator -= biDenominator;
    if ((uShiftDenominator-uRemainderShift) % (4*sizeof(unsigned int)) != 0) {
-      register int uLocalShift = 4*sizeof(unsigned int)-(uShiftDenominator-uRemainderShift) % (4*sizeof(unsigned int));
+      int uLocalShift = 4*sizeof(unsigned int)-(uShiftDenominator-uRemainderShift) % (4*sizeof(unsigned int));
       uRemainderShift -= uLocalShift;
       biDenominator <<= uLocalShift;
       biNumerator <<= uLocalShift;
@@ -522,7 +459,7 @@ TBigCellInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResu
    else
       biNumerator >>= -uRemainderShift;
 
-   register int uRemainderIndex = biNumerator.querySize();
+   int uRemainderIndex = biNumerator.querySize();
    while (--uRemainderIndex >= 0 && (biNumerator[uRemainderIndex] == 0U));
    if (uRemainderIndex >= 0) {
       do {
@@ -581,9 +518,9 @@ TBigCellInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDi
       
    biDenominator.assertSize(uMaxSize);
    biNumerator.assertSize(uMaxSize);
-   for (register int uNumeratorIndex = 0; uNumeratorIndex < inherited::querySize(); ++uNumeratorIndex)
+   for (int uNumeratorIndex = 0; uNumeratorIndex < inherited::querySize(); ++uNumeratorIndex)
      biNumerator[uNumeratorIndex] = array(uNumeratorIndex);
-   for (register int uDenominatorIndex = 0; uDenominatorIndex < biSource.inherited::querySize(); ++uDenominatorIndex)
+   for (int uDenominatorIndex = 0; uDenominatorIndex < biSource.inherited::querySize(); ++uDenominatorIndex)
      biDenominator[uDenominatorIndex] = biSource[uDenominatorIndex];
 
    biDenominator[biSource.inherited::querySize()] |= 1U;
@@ -636,18 +573,18 @@ TBigCellInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDi
    else
       biNumerator >>= uRemainderShift;
 
-   for (register int uRemainderIndex = 0; uRemainderIndex < drResult.remainder().querySize(); ++uRemainderIndex)
+   for (int uRemainderIndex = 0; uRemainderIndex < drResult.remainder().querySize(); ++uRemainderIndex)
      drResult.remainder()[uRemainderIndex] = biNumerator[uRemainderIndex];
 }
 
 template <class IntegerTraits>
 void
 TBigCellInt<IntegerTraits>::writeFullBinary(std::ostream& osOut, const FormatParameters& pParams) const {
-   register int uIndex = ((pParams.queryLength()-1) / (sizeof(unsigned int)*8)) + 1;
-   register int uBitIndex = ((pParams.queryLength()-1) % (sizeof(unsigned int)*8)) + 1;
+   int uIndex = ((pParams.queryLength()-1) / (sizeof(unsigned int)*8)) + 1;
+   int uBitIndex = ((pParams.queryLength()-1) % (sizeof(unsigned int)*8)) + 1;
    
    while (--uIndex >= 0) {
-      register unsigned int uValue = array(uIndex) << (sizeof(unsigned int)*8 - uBitIndex);
+      unsigned int uValue = array(uIndex) << (sizeof(unsigned int)*8 - uBitIndex);
       while (--uBitIndex >= 0) {
          osOut.put(((uValue & (1U << (sizeof(unsigned int)*8-1))) == 0) ? '0' : '1');
          uValue <<= 1;
@@ -659,13 +596,13 @@ TBigCellInt<IntegerTraits>::writeFullBinary(std::ostream& osOut, const FormatPar
 template <class IntegerTraits>
 void
 TBigCellInt<IntegerTraits>::writeFullHexaDecimal(std::ostream& osOut, const FormatParameters& pParams) const {
-   register int uIndex = ((pParams.queryLength()-1) / (sizeof(unsigned int)*8)) + 1;
-   register int uHexaIndex = ((pParams.queryLength()-1) % (sizeof(unsigned int)*2)) + 1;
+   int uIndex = ((pParams.queryLength()-1) / (sizeof(unsigned int)*8)) + 1;
+   int uHexaIndex = ((pParams.queryLength()-1) % (sizeof(unsigned int)*2)) + 1;
    
    while (--uIndex >= 0) {
-      register unsigned int uValue = array(uIndex) << (sizeof(unsigned int)*2 - uHexaIndex);
+      unsigned int uValue = array(uIndex) << (sizeof(unsigned int)*2 - uHexaIndex);
       while (--uHexaIndex >= 0) {
-         register unsigned int uShow = (uValue & (15U << (sizeof(unsigned int)*8-4)));
+         unsigned int uShow = (uValue & (15U << (sizeof(unsigned int)*8-4)));
          osOut.put((uShow < 10) ? (char) (uShow + '0') : (char) (uShow-10 + 'a'));
          uValue <<= 4;
       };
@@ -676,14 +613,14 @@ TBigCellInt<IntegerTraits>::writeFullHexaDecimal(std::ostream& osOut, const Form
 template <class IntegerTraits>
 void
 TBigCellInt<IntegerTraits>::writeCells(std::ostream& osOut, const FormatParameters& pParams) const {
-   register int uIndex = inherited::querySize();
+   int uIndex = inherited::querySize();
    while ((uIndex > 0) && (array(--uIndex) == 0U));
    if (array(uIndex) == 0U)
       osOut.put('0');
    else {
       if (pParams.isBinary()) {
-         register unsigned int uValue = array(uIndex);
-         register int uBitIndex = 0;
+         unsigned int uValue = array(uIndex);
+         int uBitIndex = 0;
          while ((uValue & (1U << (sizeof(unsigned int)*8-1))) == 0) {
             uValue <<= 1;
             ++uBitIndex;
@@ -700,8 +637,8 @@ TBigCellInt<IntegerTraits>::writeCells(std::ostream& osOut, const FormatParamete
          osOut << (int) array(uIndex);
       while (--uIndex >= 0) {
          if (pParams.isBinary()) {
-            register unsigned int uValue = array(uIndex);
-            register int uBitIndex = sizeof(unsigned int)*8;
+            unsigned int uValue = array(uIndex);
+            int uBitIndex = sizeof(unsigned int)*8;
             while (--uBitIndex >= 0) {
                osOut.put(((uValue & (1U << (sizeof(unsigned int)*8-1))) == 0) ? '0' : '1');
                uValue <<= 1;
@@ -734,7 +671,7 @@ typename TBigCellInt<IntegerTraits>::HexaChars TBigCellInt<IntegerTraits>::hcHex
 template <class IntegerTraits>
 void
 TBigCellInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pParams) {
-   for (register int uCellIndex = 0; uCellIndex < inherited::querySize(); ++uCellIndex)
+   for (int uCellIndex = 0; uCellIndex < inherited::querySize(); ++uCellIndex)
       array(uCellIndex) = 0U;
    int uChar;
    while (isspace(uChar = isIn.get()));
@@ -742,12 +679,12 @@ TBigCellInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pPa
       if (pParams.isBinary() || pParams.isFullHexaDecimal()) {
          while (uChar == '0')
             uChar = isIn.get();
-         register unsigned int uValue = 0;
+         unsigned int uValue = 0;
          if (!pParams.isFullHexaDecimal()) {
             if (uChar == '1') {
                while ((uChar == '0') || (uChar == '1')) {
                   uValue = ((uChar == '1') ? 1U : 0U);
-                  register int uBitIndex = 0;
+                  int uBitIndex = 0;
                   while ((++uBitIndex < (int) sizeof(unsigned int)*8)
                            && (((uChar = isIn.get()) == '0') || (uChar == '1'))) {
                      uValue <<= 1;
@@ -763,7 +700,7 @@ TBigCellInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pPa
          else { // pParams.isFullHexaDecimal()
             while (hcHexaChars.acceptChar(uChar)) {
                uValue = hcHexaChars.queryValue(uChar);
-               register int uHexaIndex = 0;
+               int uHexaIndex = 0;
                while ((++uHexaIndex < (int) sizeof(unsigned int)*2)
                         && hcHexaChars.acceptChar(uChar = isIn.get())) {
                   uValue <<= 4;
@@ -781,7 +718,7 @@ TBigCellInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pPa
             if (uChar == ' ')
                uChar = isIn.get();
             if ((uChar >= '0') && (uChar <= '9')) {
-               register unsigned int uValue = uChar - '0';
+               unsigned int uValue = uChar - '0';
                while (((uChar = isIn.get()) >= '0') && (uChar <= '9')) {
                   uValue *= 10;
                   uValue += (uChar-'0');
@@ -818,7 +755,7 @@ TBigInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResult) 
       int uShift = (8*sizeof(unsigned int)-drResult.quotient().lastCellSize());
       unsigned int uDivLeft = adrResult.quotient()[0] & ~(~0U << uShift);
       TBigCellInt<typename ArrayCells::QuotientResult> quotient;
-      memcpy((typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, &adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
+      memcpy((void *)(typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, (const void *)&adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
       quotient >>= uShift;
 
       ArrayCells acNewRemainder(biSource.cells());
@@ -829,16 +766,16 @@ TBigInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResult) 
       assert(!cCarry.hasCarry() && ((acNewRemainder[0] & ~(~0U << uShift)) == 0));
 #endif
       acNewRemainder >>= uShift;
-      for (register int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
+      for (int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
          drResult.quotient()[uQuotientIndex] = quotient[uQuotientIndex];
-      for (register int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
+      for (int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
          drResult.remainder()[uRemainderIndex] = acNewRemainder[uRemainderIndex];
       drResult.comma() = adrResult.comma();
    }
    else {
-      for (register int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
+      for (int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
          drResult.quotient()[uQuotientIndex] = adrResult.quotient()[uQuotientIndex];
-      for (register int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
+      for (int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
          drResult.remainder()[uRemainderIndex] = adrResult.remainder()[uRemainderIndex];
       drResult.comma() = adrResult.comma();
    };
@@ -852,10 +789,10 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       ArrayCells acThis, acSource;
       acThis.assertSize(querySize()/(8*sizeof(unsigned int))+1);
       acSource.assertSize(biSource.querySize()/(8*sizeof(unsigned int))+1);
-      for (register int uNumeratorIndex = 0; uNumeratorIndex <= inherited::lastCellIndex(); ++uNumeratorIndex)
+      for (int uNumeratorIndex = 0; uNumeratorIndex <= inherited::lastCellIndex(); ++uNumeratorIndex)
          acThis[uNumeratorIndex] = (*this)[uNumeratorIndex];
       acThis.setTrueBitArray(querySize());
-      for (register int uDenominatorIndex = 0; uDenominatorIndex <= biSource.inherited::lastCellIndex(); ++uDenominatorIndex)
+      for (int uDenominatorIndex = 0; uDenominatorIndex <= biSource.inherited::lastCellIndex(); ++uDenominatorIndex)
          acSource[uDenominatorIndex] = biSource[uDenominatorIndex];
       acSource.setTrueBitArray(biSource.querySize());
 
@@ -863,7 +800,7 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       int uShift = (8*sizeof(unsigned int)-drResult.quotient().lastCellSize());
       unsigned int uDivLeft = adrResult.quotient()[0] & ~(~0U << uShift);
       TBigCellInt<typename ArrayCells::QuotientResult> quotient;
-      memcpy((typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, &adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
+      memcpy((void *)(typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, (const void *)&adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
       quotient >>= uShift;
 
       typename ArrayCells::Carry cMult = acSource.multAssign(uDivLeft);
@@ -873,9 +810,9 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       acSource >>= uShift;
       if (cMult.hasCarry())
          acSource[acSource.querySize()-1] |= (cMult.carry() << biSource.lastCellSize());
-      for (register int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
+      for (int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
          drResult.quotient()[uQuotientIndex] = quotient[uQuotientIndex];
-      for (register int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
+      for (int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
          drResult.remainder()[uRemainderIndex] = acSource[uRemainderIndex];
       drResult.comma() = adrResult.comma();
    }
@@ -883,9 +820,9 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       assert(biSource.inherited::isComplete());
       typename ArrayCells::NormalizedDivisionResult adrResult;
       cells().divNormalized(biSource.cells(), adrResult);
-      for (register int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
+      for (int uQuotientIndex = 0; uQuotientIndex <= drResult.quotient().lastCellIndex(); ++uQuotientIndex)
          drResult.quotient()[uQuotientIndex] = adrResult.quotient()[uQuotientIndex];
-      for (register int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
+      for (int uRemainderIndex = 0; uRemainderIndex <= drResult.remainder().lastCellIndex(); ++uRemainderIndex)
          drResult.remainder()[uRemainderIndex] = adrResult.remainder()[uRemainderIndex];
       drResult.comma() = adrResult.comma();
    };

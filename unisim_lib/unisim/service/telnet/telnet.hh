@@ -36,7 +36,8 @@
 #define __UNISIM_SERVICE_TELNET_TELNET_HH__
 
 #include <unisim/service/interfaces/char_io.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <inttypes.h>
 #include <string>
@@ -46,13 +47,13 @@ namespace unisim {
 namespace service {
 namespace telnet {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::service::interfaces::CharIO;
 	
 class Telnet : public Service<CharIO>
@@ -64,17 +65,16 @@ public:
 	virtual ~Telnet();
 
 	virtual bool EndSetup();
-	virtual void Reset();
+	virtual void ResetCharIO();
 	virtual bool GetChar(char& c);
 	virtual void PutChar(char c);
 	virtual void FlushChars();
 private:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
-	std::string guest_os;
 	bool enable_negotiation;
-	bool remove_null_character;
-	bool remove_line_feed;
+	bool filter_null_character;
+	bool filter_line_feed;
 
 	int telnet_tcp_port;
 	int telnet_sock;
@@ -84,8 +84,9 @@ private:
 
 	Parameter<bool> param_verbose;
 	Parameter<int> param_telnet_tcp_port;
-	Parameter<std::string> param_guest_os;
 	Parameter<bool> param_enable_negotiation;
+	Parameter<bool> param_filter_null_character;
+	Parameter<bool> param_filter_line_feed;
 
 	unsigned int telnet_input_buffer_size;
 	unsigned int telnet_input_buffer_index;

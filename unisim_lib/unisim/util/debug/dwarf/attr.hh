@@ -69,7 +69,7 @@ class DWARF_Address : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Address(MEMORY_ADDR addr);
-	~DWARF_Address();
+	virtual ~DWARF_Address();
 	MEMORY_ADDR GetValue() const;
 	virtual std::string to_string() const;
 private:
@@ -81,7 +81,7 @@ class DWARF_Block : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Block(uint64_t length, const uint8_t *value);
-	~DWARF_Block();
+	virtual ~DWARF_Block();
 	uint64_t GetLength() const;
 	const uint8_t *GetValue() const;
 	virtual std::string to_string() const;
@@ -95,6 +95,7 @@ class DWARF_Constant : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Constant(unsigned int dw_class);
+	virtual ~DWARF_Constant() {}
 	bool IsSigned() const;
 	virtual int64_t to_int() const = 0;
 	virtual uint64_t to_uint() const = 0;

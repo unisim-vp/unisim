@@ -8,7 +8,7 @@
 
 \mode<presentation>{
 \begin{frame}
-	\frametitle{SystemC Basic \& Cycle Level Modeling with SystemC}
+	\frametitle{\small VP3: SystemC Basic \& Cycle Level Modeling with SystemC}
 	Outline
 	\begin{itemize}
 		\item<1->Principles
@@ -100,8 +100,9 @@ Process~P5 of module~M5 has signals~S4~and~S5 in its sensitivity list, and produ
 			\end{itemize}
 			\item<1->But:
 			\begin{itemize}
+				\item<1->SystemC can model parallelism
 				\item<1->Host machine execution model is sequential
-				\item<1->SystemC can model parallelism but underlying C++ language is sequential
+				\item<1->Underlying C++ language is sequential
 				\item<1->Simulation behavior should not depend on process scheduling
 			\end{itemize}
 			\item<1->(1) $\rightarrow$ SystemC model of computation: Discrete event
@@ -381,6 +382,7 @@ This initilization ends when no more signals have changed, and thus the system i
 }
 
 \section{Exercise}
+\label{clm_exercise}
 
 \mode<presentation>{
 	\begin{frame}
@@ -523,7 +525,7 @@ This was the first step toward more abstract modeling styles such as transaction
 			\lstinputlisting{systemc_cycle/advanced_wait.cc}
 		\end{figure}
 		\begin{figure}[h]
-			\includegraphics[width=10.0cm]{systemc_cycle/dynamic_sensitivity.pdf}
+			\includegraphics[width=8.0cm]{systemc_cycle/dynamic_sensitivity.pdf}
 		\end{figure}
 	\end{frame}
 }
@@ -552,6 +554,48 @@ Figure~\ref{fig:dynamic_sensitivity} shows the use of dynamic sensitivity. Proce
 \end{figure}
 
 }
+
+\subsection{Dynamic Processes}
+
+\mode<presentation>{
+	\begin{frame}
+		\frametitle{Dynamic Processes}
+		\begin{itemize}
+			\item<1->Hardware is static, thus corresponding SystemC process are created at elaboration time
+			\item<1->Problem: Modeling dynamic software processes?
+			\item<2->SystemC 2.0 introduces spawning threads at simulation time:
+			\begin{itemize}
+				\item<3->\texttt{sc\_spawn} \ldots
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	\begin{frame}
+		\frametitle{Dynamic Process Example}
+
+		\begin{figure}[h]
+			\lstinputlisting{systemc_cycle/dynamic_process.cc}
+		\end{figure}
+		
+	\end{frame}
+}
+
+\mode<article>{
+
+In earlier version of SystemC, processes were defined only at elaboration time in module constructor.
+The main reason of that limitation is that hardware is mostly static or the number of pieces of hardware is easily defined at design.
+The needs for modeling dynamic software processes, i.e. spawning processes at simulation time, has been addressed by later versions of SystemC by introducing a primitive to spawn a thread at simulation time.
+Figure~\ref{fig:dynamic_process_example} shows an example of use of dynamic processes. Process \texttt{Process} spawns one instance of Process \texttt{spawned\_thread}.
+
+\begin{figure}[h]
+\begin{center}
+\lstinputlisting{systemc_cycle/dynamic_process.cc}
+\end{center}
+\vspace{-0.5cm}
+\caption{\label{fig:dynamic_process_example} Example of dynamic process spawning at simulation time.}
+\end{figure}
+
+}
+
 
 \subsection{Abstract communication channels}
 

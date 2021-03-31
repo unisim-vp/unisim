@@ -41,8 +41,6 @@ namespace tlm {
 namespace message {
 
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const InterruptRequest& req) {
-	typedef InterruptRequest ReqType;
-	
 	os << "- level = " << req.level << std::endl;
 	os << "- serial_id = " << req.serial_id;
 	return os;

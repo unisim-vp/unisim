@@ -9,7 +9,6 @@
 #define SOCKETREADER_HPP_
 
 #include "BlockingQueue.hpp"
-#include "BlockingQueue.tcc"
 #include "GenericThread.hpp"
 
 namespace unisim {

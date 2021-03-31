@@ -105,6 +105,9 @@ Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	memory_export.SetupDependsOn(mci_memory_import);
+	memory_export.SetupDependsOn(mplb_memory_import);
+	
 	Reset();
 	
 	std::stringstream sstr_description;
@@ -177,6 +180,12 @@ void Crossbar<CONFIG>::Reset()
 	misc_plbm = CONFIG::MISC_PLBM_RESET_VALUE;
 	cmd_sniff_plbm = CONFIG::CMD_SNIFF_PLBM_RESET_VALUE;
 	cmd_sniffa_plbm = CONFIG::CMD_SNIFFA_PLBM_RESET_VALUE;
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::ResetMemory()
+{
+	Reset();
 }
 
 template <class CONFIG>

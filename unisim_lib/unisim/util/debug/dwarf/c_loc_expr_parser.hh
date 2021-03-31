@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_C_LOC_EXPR_PARSER_HH__
 
 #include <unisim/util/parser/parser.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <deque>
 
 namespace unisim {
@@ -67,6 +66,7 @@ class CLocOperation
 public:
 	CLocOperation(CLocOpcode opcode);
 	virtual ~CLocOperation();
+	virtual CLocOperation *Clone() const;
 	CLocOpcode GetOpcode() const;
 private:
 	CLocOpcode opcode;
@@ -79,6 +79,7 @@ class CLocOpLiteralInteger : public CLocOperation
 public:
 	CLocOpLiteralInteger(int value);
 	int GetValue() const;
+	virtual CLocOperation *Clone() const;
 private:
 	int value;
 };
@@ -88,6 +89,7 @@ class CLocOpLiteralIdentifier : public CLocOperation
 public:
 	CLocOpLiteralIdentifier(const char *identifier);
 	const char *GetIdentifier() const;
+	virtual CLocOperation *Clone() const;
 private:
 	std::string identifier;
 };
@@ -105,14 +107,15 @@ class CLocOperationStream
 {
 public:
 	CLocOperationStream(Notation notation);
+	CLocOperationStream(const CLocOperationStream& c_loc_operation_stream);
 	virtual ~CLocOperationStream();
-	
 	void Push(const CLocOperation *op);
 	const CLocOperation *Pop();
 	const CLocOperation *PopBack();
 	unsigned int Size() const;
 	bool Empty() const;
 	Notation GetNotation() const;
+	void Clear();
 	
 	friend std::ostream& operator << (std::ostream& os, const CLocOperationStream& c_loc_operation_stream);
 private:
@@ -130,7 +133,7 @@ typedef enum
 class CLocExprParser : public unisim::util::parser::Parser<CLocType>, public unisim::util::parser::Visitor<CLocType>
 {
 public:
-	CLocExprParser(std::istream *stream, unisim::kernel::logger::Logger& logger, bool debug = false);
+	CLocExprParser(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
 	virtual ~CLocExprParser();
 
 	bool Parse(CLocOperationStream& c_loc_operation_stream);
@@ -149,7 +152,9 @@ private:
 		TOK_ARROW,
 	};
 	
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	CLocOperationStream *c_loc_operation_stream;
 };
 

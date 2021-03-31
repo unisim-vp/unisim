@@ -51,6 +51,7 @@ decl {
 #include <iosfwd>
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 

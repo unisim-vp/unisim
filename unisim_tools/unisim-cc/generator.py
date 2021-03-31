@@ -136,7 +136,7 @@ def createMain(simulator, g_system):
 	str  = "#include <systemc.h>\n"
 	#	# we must include the unisim::kernel::service if it is used by the application
 	#	if "unisim::kernel::service" in g_system.lib_db:
-	#		str += "#include \"unisim/kernel/service/service.hh\"\n"
+	#		str += "#include \"unisim/kernel/kernel.hh\"\n"
 	# check files that need to be included from the simulator instantiations
 	modules = []
 	if len(simulator.modules_instances) != 0:
@@ -182,11 +182,11 @@ def createMain(simulator, g_system):
 	# launch the setup if necessary
 	if "unisim::kernel::service" in g_system.lib_db:
 		str  = "\n"
-		str += "\t*(unisim::kernel::service::ServiceManager::GetParameter(\"kernel_logger.std_out\")) = true;\n"
-		str += "\t*(unisim::kernel::service::ServiceManager::GetParameter(\"kernel_logger.std_out_color\")) = true;\n"
+		str += "\t*(unisim::kernel::ServiceManager::GetParameter(\"kernel_logger.std_out\")) = true;\n"
+		str += "\t*(unisim::kernel::ServiceManager::GetParameter(\"kernel_logger.std_out_color\")) = true;\n"
 		str += "\n"
 		str += "\t/* launch initial setup start */\n"
-		str += "\tif(!unisim::kernel::service::ServiceManager::Setup())\n"
+		str += "\tif(!unisim::kernel::ServiceManager::Setup())\n"
 		str += "\t\treturn -1;\n"
 		str += "\t/* launch initial setup end */\n"
 		f.write(str)

@@ -34,9 +34,10 @@
  
 #include <unisim/service/telnet/telnet.hh>
 
-#include <errno.h>
+#include <cerrno>
+#include <cstring>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -86,10 +87,9 @@ Telnet::Telnet(const char *name, Object *parent)
 	, char_io_export("char-io-export", this)
 	, logger(*this)
 	, verbose(false)
-	, guest_os("unknown")
 	, enable_negotiation(true)
-	, remove_null_character(false)
-	, remove_line_feed(false)
+	, filter_null_character(false)
+	, filter_line_feed(false)
 	, telnet_tcp_port(23)
 	, telnet_sock(-1)
 	, state(0)
@@ -97,12 +97,15 @@ Telnet::Telnet(const char *name, Object *parent)
 	, sb_params_vec()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_telnet_tcp_port("telnet-tcp-port", this, telnet_tcp_port, "TCP/IP port of telnet")
-	, param_guest_os("guest-os", this, guest_os, "Guest operating system")
 	, param_enable_negotiation("enable-negotiation", this, enable_negotiation, "Enable negotiation with client")
+	, param_filter_null_character("filter-null-character", this, filter_null_character, "Whether to filter null character")
+	, param_filter_line_feed("filter-line-feed", this, filter_line_feed, "Whether to filter line feed")
+	, telnet_input_buffer_size(0)
+	, telnet_input_buffer_index(0)
+	, telnet_output_buffer_size(0)
+
 {
-	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_guest_os.AddEnumeratedValue("unknown");
-	param_guest_os.AddEnumeratedValue("linux");
+	param_telnet_tcp_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 Telnet::~Telnet()
@@ -110,7 +113,7 @@ Telnet::~Telnet()
 	if(telnet_sock >= 0)
 	{
 		TelnetFlushOutput();
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(telnet_sock);
 #else
 		close(telnet_sock);
@@ -120,17 +123,6 @@ Telnet::~Telnet()
 
 bool Telnet::EndSetup()
 {
-	if(guest_os.compare("linux") == 0)
-	{
-		remove_null_character = true;
-		remove_line_feed = true;
-	}
-	else
-	{
-		remove_null_character = false;
-		remove_line_feed = false;
-	}
-	
 	if(telnet_sock >= 0) return true;
 	
 	struct sockaddr_in addr;
@@ -161,7 +153,7 @@ bool Telnet::EndSetup()
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
 		logger << DebugError << "Bind failed. TCP Port #" << telnet_tcp_port << " may be already in use. Please specify another port in " << param_telnet_tcp_port.GetName() << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -172,7 +164,7 @@ bool Telnet::EndSetup()
 	if(listen(server_sock, 1))
 	{
 		logger << DebugError << "Listen failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -180,10 +172,10 @@ bool Telnet::EndSetup()
 		return false;
 	}
 
-#if defined(WIN32) || defined(WIN64)
-		int addr_len;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	int addr_len;
 #else
-		socklen_t addr_len;
+	socklen_t addr_len;
 #endif
 
 	logger << DebugInfo << "Listening on TCP port " << telnet_tcp_port << EndDebugInfo;
@@ -193,7 +185,7 @@ bool Telnet::EndSetup()
 	if(telnet_sock < 0)
 	{
 		logger << DebugError << "accept failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -206,7 +198,7 @@ bool Telnet::EndSetup()
 		logger << DebugInfo << "Connection with telnet client established" << EndDebugInfo;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	u_long NonBlock = 1;
 	if(ioctlsocket(telnet_sock, FIONBIO, &NonBlock) != 0)
 	{
@@ -239,7 +231,7 @@ bool Telnet::EndSetup()
 	}
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	closesocket(server_sock);
 #else
 	close(server_sock);
@@ -277,7 +269,7 @@ void Telnet::TelnetFlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = send(telnet_sock, (const char *)(telnet_output_buffer + index), telnet_output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -313,7 +305,7 @@ bool Telnet::TelnetGet(uint8_t& v)
 	{
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = recv(telnet_sock, (char *) telnet_input_buffer, sizeof(telnet_input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -321,7 +313,7 @@ bool Telnet::TelnetGet(uint8_t& v)
 			if(r <= 0)
 #endif
 			{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)
@@ -351,7 +343,7 @@ bool Telnet::IsVerbose() const
 	return verbose;
 }
 
-void Telnet::Reset()
+void Telnet::ResetCharIO()
 {
 	telnet_input_buffer_size = 0;
 	telnet_input_buffer_index = 0;
@@ -473,8 +465,8 @@ bool Telnet::GetChar(char& c)
 					state = 1;
 					break;
 				}
-				if((v == 0) && remove_null_character) break; // filter null character
-				if((v == 10) && remove_line_feed) break; // filter line feed
+				if((v == 0) && filter_null_character) break; // filter null character
+				if((v == 10) && filter_line_feed) break; // filter line feed
 				c = (char) v;
 				if(IsVerbose())
 				{
@@ -557,6 +549,8 @@ bool Telnet::GetChar(char& c)
 		}
 	}
 	while(1);
+
+	return false;
 }
 
 void Telnet::PutChar(char c)

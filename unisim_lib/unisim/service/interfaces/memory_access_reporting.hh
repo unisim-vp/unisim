@@ -30,7 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
@@ -38,7 +38,7 @@
 
 #include <inttypes.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/interface.hh"
 #include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
@@ -46,21 +46,28 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class MemoryAccessReporting : public unisim::kernel::service::ServiceInterface
+class MemoryAccessReporting : public ServiceInterface
 {
 public:
 	typedef unisim::util::debug::MemoryAccessType MemoryAccessType;
 	typedef unisim::util::debug::MemoryType MemoryType;
 
-	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr) = 0;
+	virtual bool ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
+	virtual void ReportFetchInstruction(ADDRESS next_addr) = 0;
+	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length /* in bytes */) = 0;
 };
 
-class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
+enum MemoryAccessReportingType
+{
+	REPORT_MEM_ACCESS  = 0,
+	REPORT_FETCH_INSN  = 1,
+	REPORT_COMMIT_INSN = 2
+};
+
+class MemoryAccessReportingControl : public ServiceInterface
 {
 public:
-	virtual void RequiresMemoryAccessReporting(bool report) = 0;
-	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
+	virtual void RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report) = 0;
 };
 
 } // end of namespace interfaces

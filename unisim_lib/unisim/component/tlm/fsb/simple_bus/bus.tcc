@@ -46,7 +46,7 @@ namespace simple_bus {
 #define LOCATION "in file " << __FILE__ << ", function " << __FUNCTION__ << ", line #" << __LINE__
 
 using std::stringstream;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;

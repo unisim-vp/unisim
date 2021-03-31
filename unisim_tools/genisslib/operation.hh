@@ -27,33 +27,36 @@
 #include <iosfwd>
 
 /** An operation object */
-struct Operation_t : virtual ReferenceCounter {
-  ConstStr_t                    m_symbol;            /**< The associated symbol */
-  Vect_t<BitField_t>            m_bitfields;         /**< The bit field list of the operation */
-  Vect_t<Action_t>              m_actions;           /**< The list of actions of the operation */
-  Vect_t<Comment_t>             m_comments;          /**< The list of the C comment associated with the operation */
-  Vect_t<Variable_t>            m_variables;         /**< The list of variables associated with the operation */
-  Ptr_t<SourceCode_t>           m_condition;         /**< The condition associated with the operation */
-  FileLoc_t                     m_fileloc;           /**< The file location where the operation was declared */
+struct Operation : virtual ReferenceCounter
+{
+  Operation( ConstStr _symbol,
+             Vector<BitField> const& _bitfields, Vector<Comment> const& _comments,
+             SourceCode* _op_condition, FileLoc const& _fileloc );
+  ~Operation();
   
-  Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
-               SourceCode_t* _op_condition, FileLoc_t const& _fileloc );
-  ~Operation_t();
-  
-  void                          add( Action_t* _action );
-  Action_t const*               action( ActionProto_t const* _actionproto ) const;
+  void                        add( Action* _action );
+  Action const*               action( ActionProto const* _actionproto ) const;
+
+  ConstStr                    symbol;            /**< The associated symbol */
+  Vector<BitField>            bitfields;         /**< The bit field list of the operation */
+  Vector<Action>              actions;           /**< The list of actions of the operation */
+  Vector<Comment>             comments;          /**< The list of the C comment associated with the operation */
+  Vector<Variable>            variables;         /**< The list of variables associated with the operation */
+  Ptr<SourceCode>             condition;         /**< The condition associated with the operation */
+  FileLoc                   fileloc;           /**< The file location where the operation was declared */
 };
 
-std::ostream& operator<<( std::ostream& _sink, Operation_t const& _op );
+std::ostream& operator<<( std::ostream& _sink, Operation const& _op );
 
 /** A group object */
-struct Group_t : virtual ReferenceCounter {
-  ConstStr_t                    m_symbol;         /**< The associated symbol */
-  Vect_t<Operation_t>           m_operations;     /**< an operation node list object containing the operations of the group */
-  FileLoc_t                     m_fileloc;        /**< The file location where the group was declared */
+struct Group : virtual ReferenceCounter
+{
+  Group( ConstStr _symbol, Vector<Operation>& _operations, FileLoc const& _fileloc );
+  Group( ConstStr _symbol, FileLoc const& _fileloc );
 
-  Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _operations, FileLoc_t const& _fileloc );
-  Group_t( ConstStr_t _symbol, FileLoc_t const& _fileloc );
+  ConstStr                    symbol;         /**< The associated symbol */
+  Vector<Operation>           operations;     /**< an operation node list object containing the operations of the group */
+  FileLoc                   fileloc;        /**< The file location where the group was declared */
 };
 
 #endif // __OPERATION_HH__

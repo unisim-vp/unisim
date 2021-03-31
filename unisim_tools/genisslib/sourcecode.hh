@@ -25,25 +25,28 @@
 #include <iosfwd>
 
 /** A C source code object */
-struct SourceCode_t : virtual ReferenceCounter {
-  ConstStr_t                  m_content;    /**< the string containing the C source code */
-  FileLoc_t                   m_fileloc;    /**< the file location where was found the C source code */
+struct SourceCode : virtual ReferenceCounter
+{
+  ConstStr              content;    /**< the string containing the C source code */
+  FileLoc               fileloc;    /**< the file location where was found the C source code */
   
-  SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc );
+  SourceCode( ConstStr _content, FileLoc const& _fileloc );
   
-  static SourceCode_t const*  s_last_srccode;
+  static SourceCode const*  s_last_srccode;
 };
 
-std::ostream& operator<<( std::ostream& _sink, SourceCode_t const& _sc );
+std::ostream& operator<<( std::ostream& _sink, SourceCode const& _sc );
 
 /** A C/C++ Code object object */
-struct CodePair_t : virtual ReferenceCounter {
-  Ptr_t<SourceCode_t>        m_ctype;        /**< The C type of the parameter */
-  Ptr_t<SourceCode_t>        m_csymbol;      /**< The C symbol of the parameter */
+struct CodePair : virtual ReferenceCounter
+{
+  Ptr<SourceCode>       ctype;        /**< The C type of the parameter */
+  Ptr<SourceCode>       csymbol;      /**< The C symbol of the parameter */
   
-  CodePair_t( SourceCode_t* _ctype, SourceCode_t* _csymbol );
-  ~CodePair_t();
+  CodePair( SourceCode* _ctype, SourceCode* _csymbol );
+  ~CodePair();
 };
 
-std::ostream& operator<<( std::ostream& _sink, CodePair_t const& _cp );
+std::ostream& operator<<( std::ostream& _sink, CodePair const& _cp );
+
 #endif // __SOURCECODE_HH__

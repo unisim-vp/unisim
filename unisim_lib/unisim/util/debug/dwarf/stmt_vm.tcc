@@ -1,4 +1,4 @@
- /*
+/*
  *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
@@ -43,17 +43,12 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-
 template <class MEMORY_ADDR>
 DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, logger(_dw_handler->GetLogger())
+	, debug_info_stream(_dw_handler->GetDebugInfoStream())
+	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
+	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 	, debug(false)
 	, address(0)
 	, op_index(0)
@@ -80,7 +75,7 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 template <class MEMORY_ADDR>
 bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	// filename starts with '/' or 'drive letter':\ or 'driver letter':/
 	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
 #else
@@ -90,7 +85,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
+void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
 {
 	if(dw_cu && !dw_cu->HasOverlap(address, 1)) return; // do not insert row if address is not in current compilation unit
 	
@@ -110,7 +105,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 				{
 					if(debug)
 					{
-						logger << DebugWarning << "Directory index is out of range in line number program" << EndDebugInfo;
+						debug_warning_stream << "Directory index is out of range in line number program" << std::endl;
 					}
 					
 					return;
@@ -121,13 +116,25 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 	// At this point, if dirname is null we know that source filename is an absolute path or it is relative to the current directory of the compilation
 	
 	// Check that there's no duplicated entry in the statement matrix
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
+	std::pair<typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator, typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator> stmt_matrix_equal_range = stmt_matrix.equal_range(address);
 	
-	// If there's already a row, I suppose that overwritting it is the correct behavior
-	if(stmt_matrix_iter != stmt_matrix.end())
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix_equal_range.first;
+	
+	while(stmt_matrix_iter != stmt_matrix_equal_range.second)
 	{
-		delete (*stmt_matrix_iter).second;
-		stmt_matrix.erase(stmt_matrix_iter);
+		typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator next_stmt_matrix_iter = stmt_matrix_iter;
+		next_stmt_matrix_iter++;
+		
+		const Statement<MEMORY_ADDR> *existing_stmt = (*stmt_matrix_iter).second;
+		
+		if(existing_stmt->GetDiscriminator() == discriminator)
+		{
+			// If there's already a row, I suppose that overwritting it is the correct behavior
+			delete (*stmt_matrix_iter).second;
+			stmt_matrix.erase(stmt_matrix_iter);
+		}
+			
+		stmt_matrix_iter = next_stmt_matrix_iter;
 	}
 	
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, is_stmt, basic_block, dirname, filename, line, column, isa, discriminator);
@@ -135,7 +142,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
+bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
 {
 	// Initialize machine state
 	address = 0;
@@ -183,7 +190,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									logger << DebugError << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+									debug_error_stream << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
 								}
 								return false;
 							}
@@ -197,7 +204,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						{
 							if(debug)
 							{
-								logger << DebugError << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+								debug_error_stream << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
 							}
 							return false;
 						}
@@ -346,7 +353,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				{
 					if(debug)
 					{
-						logger << DebugError << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << EndDebugError;
+						debug_error_stream << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << std::endl;
 					}
 					return false;
 				}
@@ -406,7 +413,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 								default:
 									if(debug)
 									{
-										logger << DebugError << "DW_LNE_set_address: unsupported address size" << EndDebugError;
+										debug_error_stream << "DW_LNE_set_address: unsupported address size" << std::endl;
 									}
 									return false;
 							}
@@ -424,7 +431,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									logger << DebugError << "DW_LNE_define_file: bad DWARF filename entry" << EndDebugError;
+									debug_error_stream << "DW_LNE_define_file: bad DWARF filename entry" << std::endl;
 								}
 								return false;
 							}
@@ -441,7 +448,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									logger << DebugError << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << EndDebugError;
+									debug_error_stream << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << std::endl;
 								}
 								return false;
 							}
@@ -452,7 +459,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					default:
 						if(debug)
 						{
-							logger << DebugError << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << EndDebugError;
+							debug_error_stream << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
 						}
 						return false;
 				}

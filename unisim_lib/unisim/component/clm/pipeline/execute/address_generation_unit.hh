@@ -43,7 +43,7 @@
 #define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_HH__
 
 /*
-#include <systemc.h>
+#include <systemc>
 #include <types.h>
 #include <utility.h>
 #include <common.h>

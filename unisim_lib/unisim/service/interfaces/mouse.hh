@@ -35,14 +35,14 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_MOUSE_HH__
 #define __UNISIM_SERVICE_INTERFACES_MOUSE_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <inttypes.h>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Mouse : public unisim::kernel::service::ServiceInterface
+class Mouse : public ServiceInterface
 {
 public:
 	typedef struct

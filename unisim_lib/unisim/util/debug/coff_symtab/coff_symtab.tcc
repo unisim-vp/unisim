@@ -42,16 +42,11 @@ namespace util {
 namespace debug {
 namespace coff_symtab {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-
 template <class MEMORY_ADDR>
-Coff_SymtabHandler<MEMORY_ADDR>::Coff_SymtabHandler(unisim::kernel::logger::Logger& _logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
-	: logger(_logger)
+Coff_SymtabHandler<MEMORY_ADDR>::Coff_SymtabHandler(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
+	: debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, blob(_blob)
 	, symbol_table(0)
 {
@@ -106,11 +101,11 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 	
 	unisim::util::endian::endian_type file_endianness = blob->GetFileEndian();
 	
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *symtab_section = blob->FindSection(unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_COFF_SYMTAB);
+	const unisim::util::blob::Section<MEMORY_ADDR> *symtab_section = blob->FindSection(unisim::util::blob::Section<MEMORY_ADDR>::TY_COFF_SYMTAB);
 	
 	if(!symtab_section) return;
 	
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *strtab_section = blob->FindSection(unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB);
+	const unisim::util::blob::Section<MEMORY_ADDR> *strtab_section = blob->FindSection(unisim::util::blob::Section<MEMORY_ADDR>::TY_STRTAB);
 	
 	if(!strtab_section) return;
 	
@@ -129,7 +124,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 	{
 		if(dump_headers)
 		{
-			logger << DebugInfo << "[" << i << "] ";
+			debug_info_stream << "[" << i << "] ";
 		}
 
 		if(numaux)
@@ -144,8 +139,8 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 				if(dump_headers)
 				{
-					logger << "FCNAUX: ";
-					logger << "size=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize) << ",linenoptr=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_lnnoptr) << ", nextentry_index=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_endndx);
+					debug_info_stream << "FCNAUX: ";
+					debug_info_stream << "size=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize) << ",linenoptr=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_lnnoptr) << ", nextentry_index=" << unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_endndx);
 				}
 
 				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, unisim::util::endian::Target2Host(file_endianness, fcn_aux->x_fsize) * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FUNC, memory_atom_size);
@@ -156,8 +151,8 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 				if(dump_headers)
 				{
-					logger << "SCNAUX: ";
-					logger << "length=" << unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen);
+					debug_info_stream << "SCNAUX: ";
+					debug_info_stream << "length=" << unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen);
 				}
 
 				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, unisim::util::endian::Target2Host(file_endianness, scn_aux->x_scnlen) * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_SECTION, memory_atom_size);
@@ -184,8 +179,8 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 				if(dump_headers)
 				{
-					logger << "FILAUX: ";
-					logger << "filename=" << filename;
+					debug_info_stream << "FILAUX: ";
+					debug_info_stream << "filename=" << filename;
 				}
 
 				symbol_table->AddSymbol(filename, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, 0, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_FILE, memory_atom_size);
@@ -196,8 +191,8 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 				if(dump_headers)
 				{
-					logger << "ARYAUX: ";
-					logger << "length=" << unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen) << ", dim1=" << unisim::util::endian::Target2Host(file_endianness, ary_aux->x_dim[0]);
+					debug_info_stream << "ARYAUX: ";
+					debug_info_stream << "length=" << unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen) << ", dim1=" << unisim::util::endian::Target2Host(file_endianness, ary_aux->x_dim[0]);
 				}
 
 				symbol_table->AddSymbol(sym_name, unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) * memory_atom_size, basic_type_sizes[basic_type] * unisim::util::endian::Target2Host(file_endianness, ary_aux->x_arylen) * memory_atom_size, unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_OBJECT, memory_atom_size);
@@ -206,7 +201,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 			{
 				if(dump_headers)
 				{
-					logger << "AUX: <?>";
+					debug_info_stream << "AUX: <?>";
 				}
 			}
 
@@ -237,14 +232,14 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 			if(dump_headers)
 			{
-				logger << "SYMBOL: ";
-				logger << "name=\"" << sym_name << "\", value=0x" << std::hex << unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) << std::dec;
-				logger << ", storage class=" << GetStorageClassName(sclass) << " (" << GetStorageClassFriendlyName(sclass) << ")";
-				logger << ", type=" << GetTypeName(type);
+				debug_info_stream << "SYMBOL: ";
+				debug_info_stream << "name=\"" << sym_name << "\", value=0x" << std::hex << unisim::util::endian::Target2Host(file_endianness, coff_sym->e_value) << std::dec;
+				debug_info_stream << ", storage class=" << GetStorageClassName(sclass) << " (" << GetStorageClassFriendlyName(sclass) << ")";
+				debug_info_stream << ", type=" << GetTypeName(type);
 
 				if(numaux)
 				{
-					logger << ", " << (unsigned int) numaux << " aux entries follow";
+					debug_info_stream << ", " << (unsigned int) numaux << " aux entries follow";
 				}
 			}
 
@@ -260,7 +255,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 
 		if(dump_headers)
 		{
-			logger << EndDebugInfo;
+			debug_info_stream << std::endl;
 		}
 	}
 }

@@ -38,7 +38,7 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -53,12 +53,13 @@
 #include <unisim/service/pim/network/SocketServerThread.hpp>
 #include <unisim/service/pim/pim_thread.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 
 #include <string>
 #include <vector>
@@ -69,6 +70,7 @@
 #include <unisim/util/converter/convert.hh>
 
 #include <unisim/service/pim/gdbthread.hh>
+#include <unisim/service/interfaces/monitor_if.hh>
 
 namespace unisim {
 namespace service {
@@ -77,7 +79,7 @@ namespace pim {
 using std::string;
 using std::vector;
 
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::Disassembly;
@@ -89,23 +91,24 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
 using unisim::service::interfaces::StatementLookup;
+using unisim::service::interfaces::Monitor_if;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBaseListener;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Simulator;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBaseListener;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
@@ -119,8 +122,8 @@ typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
 
 template <class ADDRESS>
-class PIMServer :
-	public Service<DebugControl<ADDRESS> >
+class PIMServer
+	: public Service<DebugYielding>
 	, public Service<TrapReporting>
 	, public Client<Memory<ADDRESS> >
 	, public Client<Disassembly<ADDRESS> >
@@ -129,12 +132,12 @@ class PIMServer :
 	, public Client<Registers>
 	, public Service<DebugEventListener<ADDRESS> >
 	, public Client<DebugEventTrigger<ADDRESS> >
-
+	, public Client<Monitor_if<ADDRESS> >
 	, public VariableBaseListener
 
 {
 public:
-	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
+	ServiceExport<DebugYielding> debug_yielding_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
@@ -148,19 +151,21 @@ public:
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
 
+	ServiceImport<Monitor_if<ADDRESS> > monitor_import;
+
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
-
-	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
+	
+	virtual void DebugYield();
 	virtual void ReportTrap();
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 							const std::string &str);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 							const char *c_str);
 
 	// DebugEventListener
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event);
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
@@ -180,7 +185,6 @@ public:
 	inline GDBEndian GetEndian() const { return (endian); }
 
 protected:
-	vector<SocketThread*> protocolHandlers;
 
 	SocketServerThread *socketServer;
 
@@ -224,7 +228,6 @@ private:
 
 	bool killed;
 	bool trap;
-	bool synched;
 	const Watchpoint<ADDRESS> *watchpoint_hit;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
@@ -247,6 +250,7 @@ private:
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
 
+	double local_time;
 };
 
 } // end of namespace pim

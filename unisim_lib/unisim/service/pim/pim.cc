@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
@@ -36,7 +35,7 @@ xmlChar *convertInput(const char *in, const char *encoding);
 
 using namespace std;
 
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::VariableBase;
 
 using unisim::service::pim::PIMThread;
 
@@ -48,8 +47,8 @@ PIM::PIM(const char *name, Object *parent) :
 
 }
 
-PIM::~PIM() {
-
+PIM::~PIM()
+{
 	for (unsigned int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
 	}
@@ -79,7 +78,7 @@ void PIM::generatePimFile() {
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetSignals(lst);
+	Simulator::Instance()->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -386,7 +385,7 @@ void parseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *compo
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetRegisters(lst);
+	Simulator::Instance()->GetRegisters(lst);
 
 	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
 

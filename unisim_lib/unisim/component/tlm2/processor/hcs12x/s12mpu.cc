@@ -19,10 +19,10 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -55,7 +55,7 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 
 	slave_socket.register_b_transport(this, &S12MPU::read_write);
 
-	SC_HAS_PROCESS(S12MPU);
+// 	SC_HAS_PROCESS(S12MPU);
 
 }
 
@@ -63,16 +63,6 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 S12MPU::~S12MPU() {
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -146,7 +136,7 @@ void S12MPU::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -211,7 +201,7 @@ bool S12MPU::write(unsigned int offset, const void *buffer, unsigned int data_le
 	switch (offset) {
 		case MPUFLG: {
 			// only AEF is writable, the rest of flags are automatically update when next violation occur
-			uint8_t val = ~(*((uint8_t *) buffer) & 0x80) && mpuflg_register;
+			uint8_t val = ~(*((uint8_t *) buffer) & 0x80) & mpuflg_register;
 			mpuflg_register = val;
 		} break;
 		case MPUASTAT0: break;
@@ -329,54 +319,49 @@ bool S12MPU::BeginSetup() {
 
 	Reset();
 
-	char buf[80];
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUFLG", &mpuflg_register));
 
-	sprintf(buf, "%s.MPUFLG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mpuflg_register);
-
-	unisim::kernel::service::Register<uint8_t> *mpuflg_var = new unisim::kernel::service::Register<uint8_t>("MPUFLG", this, mpuflg_register, "MPU Flag register (MPUFLG)");
+	unisim::kernel::variable::Register<uint8_t> *mpuflg_var = new unisim::kernel::variable::Register<uint8_t>("MPUFLG", this, mpuflg_register, "MPU Flag register (MPUFLG)");
 	extended_registers_registry.push_back(mpuflg_var);
 	mpuflg_var->setCallBack(this, MPUFLG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.MPUASTAT0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mpuastat0_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUASTAT0", &mpuastat0_register));
 
-	unisim::kernel::service::Register<uint8_t> *mpuastat0_var = new unisim::kernel::service::Register<uint8_t>("MPUASTAT0", this, mpuastat0_register, "MPU Address Status register 0 (MPUASTAT0)");
+	unisim::kernel::variable::Register<uint8_t> *mpuastat0_var = new unisim::kernel::variable::Register<uint8_t>("MPUASTAT0", this, mpuastat0_register, "MPU Address Status register 0 (MPUASTAT0)");
 	extended_registers_registry.push_back(mpuastat0_var);
 	mpuastat0_var->setCallBack(this, MPUASTAT0, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.MPUASTAT1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mpuastat1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUASTAT1", &mpuastat1_register));
 
-	unisim::kernel::service::Register<uint8_t> *mpuastat1_var = new unisim::kernel::service::Register<uint8_t>("MPUASTAT1", this, mpuastat1_register, "MPU Address Status register 1 (MPUASTAT1)");
+	unisim::kernel::variable::Register<uint8_t> *mpuastat1_var = new unisim::kernel::variable::Register<uint8_t>("MPUASTAT1", this, mpuastat1_register, "MPU Address Status register 1 (MPUASTAT1)");
 	extended_registers_registry.push_back(mpuastat1_var);
 	mpuastat1_var->setCallBack(this, MPUASTAT1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.MPUASTAT2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mpuastat2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUASTAT2", &mpuastat2_register));
 
-	unisim::kernel::service::Register<uint8_t> *mpuastat2_var = new unisim::kernel::service::Register<uint8_t>("MPUASTAT2", this, mpuastat2_register, "MPU Address Status register 2 (MPUASTAT2)");
+	unisim::kernel::variable::Register<uint8_t> *mpuastat2_var = new unisim::kernel::variable::Register<uint8_t>("MPUASTAT2", this, mpuastat2_register, "MPU Address Status register 2 (MPUASTAT2)");
 	extended_registers_registry.push_back(mpuastat2_var);
 	mpuastat2_var->setCallBack(this, MPUASTAT2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.MPUSEL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mpusel_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUSEL", &mpusel_register));
 
-	unisim::kernel::service::Register<uint8_t> *mpusel_var = new unisim::kernel::service::Register<uint8_t>("MPUSEL", this, mpusel_register, "MPU Descriptor select register (MPUSEL)");
+	unisim::kernel::variable::Register<uint8_t> *mpusel_var = new unisim::kernel::variable::Register<uint8_t>("MPUSEL", this, mpusel_register, "MPU Descriptor select register (MPUSEL)");
 	extended_registers_registry.push_back(mpusel_var);
 	mpusel_var->setCallBack(this, MPUSEL, &CallBackObject::write, NULL);
 
 //	static const uint8_t MPU_DESC_BANKS_OFFSET = 0x0C;	// This offset is used to instruments all descriptors
 //	static const uint8_t MPU_DESC_WINDOW_SIZE = 6;
 
-	for (uint8_t i=0; i<MPU_DESC_NUMBER; i++) {
-		for (uint8_t j=0; j<MPU_DESC_WINDOW_SIZE; j++) {
-			char shortName[80];
-			sprintf(shortName, "MPUDESC%d_%d", j, i);
-			sprintf(buf, "%s.%s",sc_object::name(), shortName);
-			registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(mpudesc[i][j]));
+	for (unsigned int i=0; i<MPU_DESC_NUMBER; i++) {
+		for (unsigned int j=0; j<MPU_DESC_WINDOW_SIZE; j++) {
+			
+			std::stringstream sstr;
+			sstr << "MPUDESC" << j << '_' << i;
+			std::string shortName(sstr.str());
+			
+			registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + '.' + shortName, &(mpudesc[i][j])));
 
-			unisim::kernel::service::Register<uint8_t> *mpudesc_var = new unisim::kernel::service::Register<uint8_t>(shortName, this, mpudesc[i][j], "MPU Descriptor register");
+			unisim::kernel::variable::Register<uint8_t> *mpudesc_var = new unisim::kernel::variable::Register<uint8_t>(shortName.c_str(), this, mpudesc[i][j], "MPU Descriptor register");
 			extended_registers_registry.push_back(mpudesc_var);
 			mpusel_var->setCallBack(this, MPU_DESC_BANKS_OFFSET + (i * MPU_DESC_WINDOW_SIZE) + j, &CallBackObject::write, NULL);
 		}
@@ -399,13 +384,13 @@ bool S12MPU::EndSetup() {
 
 Register* S12MPU::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
-
+	return registers_registry.GetRegister(name);
 }
 
+void S12MPU::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
 
 void S12MPU::OnDisconnect() {
 }
@@ -433,6 +418,11 @@ void S12MPU::Reset() {
 
 }
 
+void S12MPU::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =
@@ -441,7 +431,7 @@ void S12MPU::Reset() {
 
 bool S12MPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+12))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -471,7 +461,7 @@ bool S12MPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool S12MPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+12))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);

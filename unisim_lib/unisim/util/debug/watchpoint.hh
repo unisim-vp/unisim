@@ -46,29 +46,37 @@ namespace util {
 namespace debug {
 
 
-template <class ADDRESS> class Watchpoint;
+template <typename ADDRESS> class Watchpoint;
 
-template <class ADDRESS>
+template <typename ADDRESS>
 std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp);
 
-template <class ADDRESS>
+template <typename ADDRESS>
 class Watchpoint : public Event<ADDRESS>
 {
 public:
 
-	Watchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+	Watchpoint(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, bool _overlook)
 		: Event<ADDRESS>(Event<ADDRESS>::EV_WATCHPOINT)
+		, mat(_mat)
+		, mt(_mt)
+		, addr(_addr)
+		, size(_size)
+		, overlook(_overlook)
 	{
-		this->mat = mat;
-		this->mt = mt;
-		this->addr = addr;
-		this->size = size;
 	}
 
 	inline typename unisim::util::debug::MemoryAccessType GetMemoryAccessType() const { return mat; }
 	inline typename unisim::util::debug::MemoryType GetMemoryType() const { return mt; }
 	inline ADDRESS GetAddress() const { return addr; }
 	inline uint32_t GetSize() const { return size; }
+	inline bool Overlooks() const { return overlook; }
+	inline bool HasOverlap(ADDRESS addr) const
+	{
+		ADDRESS a_lo = this->addr;
+		ADDRESS a_hi = this->addr + this->size - 1;
+		return (addr >= a_lo) && (addr <= a_hi);
+	}
 	inline bool HasOverlap(ADDRESS addr, uint32_t size) const
 	{
 		ADDRESS a_lo = this->addr;
@@ -80,6 +88,10 @@ public:
 		
 		return ovl_lo <= ovl_hi;
 	}
+	inline bool Equals(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size)
+	{
+		return (mat == _mat) && (mt == _mt) && (addr = _addr) && (size = _size);
+	}
 	
 	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Watchpoint<ADDRESS>& wp);
 private:
@@ -87,9 +99,10 @@ private:
 	typename unisim::util::debug::MemoryType mt;
 	ADDRESS addr;
 	uint32_t size;
+	bool overlook;
 };
 
-template <class ADDRESS>
+template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp)
 {
 	switch(wp.mt)
@@ -114,7 +127,7 @@ inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& w
 	{
 		os << "read";
 	}
-	os << " at 0x" << std::hex << wp.addr << std::dec << " (" << wp.size << " bytes) watchpoint";
+	os << " at 0x" << std::hex << wp.addr << std::dec << " (" << wp.size << " bytes) watchpoint for processor #" << wp.GetProcessorNumber() << " and front-end #" << wp.GetFrontEndNumber() << " (" << (wp.overlook ? "with" : "without") << " overlook)";
 	
 	return os;
 }

@@ -20,11 +20,11 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Client<CharIO>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Client<CharIO>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 	, char_io_import("char_io_import", this)
@@ -55,6 +55,8 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 
 	, txd(true)
 	, txd_output_pin("TXD", this, txd, "TXD output")
+	, txd_pin_enable(true)
+	, param_txd_pin_enable("txd-pin-enable", this, txd_pin_enable, "param txd pin enable")
 	, rxd(true)
 	, rxd_input_pin("RXD", this, rxd, "RXD input")
 
@@ -69,6 +71,9 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, scisr2_register(0x00)
 	, scidrh_register(0x00)
 	, scidrl_register(0x00)
+
+	, tx_shift_register(0x0000)
+	, rx_shift_register(0x0000)
 
 	, telnet_enabled(false)
 	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
@@ -91,6 +96,8 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(RunTx);
 
+	SC_THREAD(TelnetProcessInput);
+
 	xint_payload = xint_payload_fabric.allocate();
 
 }
@@ -101,16 +108,6 @@ S12SCI::~S12SCI() {
 	xint_payload->release();
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -307,6 +304,48 @@ void S12SCI::RunRx() {
 
 // *** From Now ***
 
+void S12SCI::TelnetProcessInput()
+{
+	while (telnet_enabled) {
+
+		while (!isReceiverEnabled() && telnet_enabled) {
+
+			wait(rx_run_event);
+		}
+
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!char_io_import->GetChar(c)) {
+				wait(telnet_process_input_period);
+
+				continue;
+			} else {
+				v = (uint8_t) c;
+				if(rx_debug_enabled)
+				{
+					logger << DebugInfo << "Receiving ";
+					if(v >= 32)
+						logger << "character '" << c << "'";
+					else
+						logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+					logger << " from telnet client" << EndDebugInfo;
+				}
+
+				add(telnet_rx_fifo, v, telnet_rx_event);
+			}
+
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+		}
+
+	}
+
+}
+
+
 inline bool S12SCI::getRXD() {
 
 	static uint16_t telnet_charin_mask = 0x00;
@@ -325,7 +364,7 @@ inline bool S12SCI::getRXD() {
 		if (telnet_enabled) {
 
 			if (index >= frameLength) {
-				TelnetProcessInput();
+//				TelnetProcessInput();
 
 				if (isEmpty(telnet_rx_fifo)) {
 					bufferin = buildFrame(0xFF, 0xFF, SCIIDLE);
@@ -508,18 +547,21 @@ inline void S12SCI::txShiftOut(SCIMSG msgType)
 			} break;
 			case SCIIDLE: {
 
-				TelnetSendString("\r\nIDLE\r\n");
+				TelnetSendString((const unsigned char*) "\r\nIDLE\r\n");
 
 			} break;
 			case SCIBREAK: {
 
-				TelnetSendString("\r\nBREAK\r\n");
+				TelnetSendString((const unsigned char*) "\r\nBREAK\r\n");
 
 			} break;
 			default: break;
 		}
 
-	} else {
+	}
+//	else
+	if (txd_pin_enable)
+	{
 
 		uint8_t length = 0;
 		switch (msgType) {
@@ -581,7 +623,7 @@ void S12SCI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 8))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -723,6 +765,7 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 		} break;
 
 		case (SCIBDL | SCIACR1): {
+
 			if ((scisr2_register & 0x80) == 0) {
 				 scibdl_register = *((uint8_t *) buffer);
 				 ComputeBaudRate();
@@ -927,8 +970,9 @@ void S12SCI::ComputeBaudRate() {
 	if (!isInfraredEnabled()) {
 		// SCI baud rate = SCI bus clock / (16 x SBR[12:0])
 		uint16_t sbr12_0 = ((scibdh_register & 0x1F) << 8) | scibdl_register;
+
 		if (sbr12_0 != 0) {
-			sci_baud_rate = bus_cycle_time /(16 * sbr12_0);
+			sci_baud_rate = bus_cycle_time * (16 * sbr12_0);
 		} else {
 			sci_baud_rate = sc_time(-1, SC_PS);
 		}
@@ -937,12 +981,16 @@ void S12SCI::ComputeBaudRate() {
 		// SCIbaud rate = SCI bus clock / (32 x SBR[12:1])
 		uint16_t sbr12_1 = ((scibdh_register & 0x1F) << 7) | (scibdl_register >> 1);
 		if (sbr12_1 != 0) {
-			sci_baud_rate = bus_cycle_time /(32 * sbr12_1);
+			sci_baud_rate = bus_cycle_time * (32 * sbr12_1);
 		} else {
 			sci_baud_rate = sc_time(-1, SC_PS);
 		}
 
 	}
+
+//	telnet_process_input_period = sc_time(1, SC_MS);
+	telnet_process_input_period = sci_baud_rate * 8 * 8;
+
 }
 
 //=====================================================================
@@ -952,82 +1000,69 @@ void S12SCI::ComputeBaudRate() {
 
 bool S12SCI::BeginSetup() {
 
-	char buf[80];
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIBDH", &scibdh_register));
 
-	sprintf(buf, "%s.SCIBDH",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scibdh_register);
-
-	unisim::kernel::service::Register<uint8_t> *scibdh_var = new unisim::kernel::service::Register<uint8_t>("SCIBDH", this, scibdh_register, "SCI Baud Rate Registers High byte (SCIBDH)");
+	unisim::kernel::variable::Register<uint8_t> *scibdh_var = new unisim::kernel::variable::Register<uint8_t>("SCIBDH", this, scibdh_register, "SCI Baud Rate Registers High byte (SCIBDH)");
 	extended_registers_registry.push_back(scibdh_var);
 	scibdh_var->setCallBack(this, SCIBDH_BANK_OFFSET, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCIBDL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scibdl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIBDL", &scibdl_register));
 
-	unisim::kernel::service::Register<uint8_t> *scibdl_var = new unisim::kernel::service::Register<uint8_t>("SCIBDL", this, scibdl_register, "SCI Baud Rate Registers Low byte (SCIBDL)");
+	unisim::kernel::variable::Register<uint8_t> *scibdl_var = new unisim::kernel::variable::Register<uint8_t>("SCIBDL", this, scibdl_register, "SCI Baud Rate Registers Low byte (SCIBDL)");
 	extended_registers_registry.push_back(scibdl_var);
 	scibdl_var->setCallBack(this, SCIBDL_BANK_OFFSET, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCICR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scicr1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCICR1", &scicr1_register));
 
-	unisim::kernel::service::Register<uint8_t> *scicr1_var = new unisim::kernel::service::Register<uint8_t>("SCICR1", this, scicr1_register, "SCI Control Register 1 (SCICR1)");
+	unisim::kernel::variable::Register<uint8_t> *scicr1_var = new unisim::kernel::variable::Register<uint8_t>("SCICR1", this, scicr1_register, "SCI Control Register 1 (SCICR1)");
 	extended_registers_registry.push_back(scicr1_var);
 	scicr1_var->setCallBack(this, SCICR1_BANK_OFFSET, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCIASR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &sciasr1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIASR1", &sciasr1_register));
 
-	unisim::kernel::service::Register<uint8_t> *sciasr1_var = new unisim::kernel::service::Register<uint8_t>("SCIASR1", this, sciasr1_register, "SCI Alternative Status Register 1 (SCIASR1)");
+	unisim::kernel::variable::Register<uint8_t> *sciasr1_var = new unisim::kernel::variable::Register<uint8_t>("SCIASR1", this, sciasr1_register, "SCI Alternative Status Register 1 (SCIASR1)");
 	extended_registers_registry.push_back(sciasr1_var);
 	sciasr1_var->setCallBack(this, SCIASR1_BANK_OFFSET, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCIACR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &sciacr1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIACR1", &sciacr1_register));
 
-	unisim::kernel::service::Register<uint8_t> *sciacr1_var = new unisim::kernel::service::Register<uint8_t>("SCIACR1", this, sciacr1_register, "SCI Alternative Control Register (SCIACR1)");
+	unisim::kernel::variable::Register<uint8_t> *sciacr1_var = new unisim::kernel::variable::Register<uint8_t>("SCIACR1", this, sciacr1_register, "SCI Alternative Control Register (SCIACR1)");
 	extended_registers_registry.push_back(sciacr1_var);
 	sciacr1_var->setCallBack(this, SCIACR1_BANK_OFFSET, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCIACR2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &sciacr2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIACR2", &sciacr2_register));
 
-	unisim::kernel::service::Register<uint8_t> *sciacr2_var = new unisim::kernel::service::Register<uint8_t>("SCIACR2", this, sciacr2_register, "SCI Alternative Control Register 2 (SCIACR2)");
+	unisim::kernel::variable::Register<uint8_t> *sciacr2_var = new unisim::kernel::variable::Register<uint8_t>("SCIACR2", this, sciacr2_register, "SCI Alternative Control Register 2 (SCIACR2)");
 	extended_registers_registry.push_back(sciacr2_var);
 	sciacr2_var->setCallBack(this, SCIACR2_BANK_OFFSET, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCICR2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scicr2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCICR2", &scicr2_register));
 
-	unisim::kernel::service::Register<uint8_t> *scicr2_var = new unisim::kernel::service::Register<uint8_t>("SCICR2", this, scicr2_register, "SCI Control Register 2 (SCICR2)");
+	unisim::kernel::variable::Register<uint8_t> *scicr2_var = new unisim::kernel::variable::Register<uint8_t>("SCICR2", this, scicr2_register, "SCI Control Register 2 (SCICR2)");
 	extended_registers_registry.push_back(scicr2_var);
 	scicr2_var->setCallBack(this, SCICR2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCISR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scisr1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCISR1", &scisr1_register));
 
-	unisim::kernel::service::Register<uint8_t> *scisr1_var = new unisim::kernel::service::Register<uint8_t>("SCISR1", this, scisr1_register, "SCI Status Register 1 (SCISR1)");
+	unisim::kernel::variable::Register<uint8_t> *scisr1_var = new unisim::kernel::variable::Register<uint8_t>("SCISR1", this, scisr1_register, "SCI Status Register 1 (SCISR1)");
 	extended_registers_registry.push_back(scisr1_var);
 	scisr1_var->setCallBack(this, SCISR1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCISR2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scisr2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCISR2", &scisr2_register));
 
-	unisim::kernel::service::Register<uint8_t> *scisr2_var = new unisim::kernel::service::Register<uint8_t>("SCISR2", this, scisr2_register, "SCI Status Register 2 (SCISR2)");
+	unisim::kernel::variable::Register<uint8_t> *scisr2_var = new unisim::kernel::variable::Register<uint8_t>("SCISR2", this, scisr2_register, "SCI Status Register 2 (SCISR2)");
 	extended_registers_registry.push_back(scisr2_var);
 	scisr2_var->setCallBack(this, SCISR2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCIDRH",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scidrh_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIDRH", &scidrh_register));
 
-	unisim::kernel::service::Register<uint8_t> *scidrh_var = new unisim::kernel::service::Register<uint8_t>("SCIDRH", this, scidrh_register, "SCI Data Registers High byte (SCIDRH)");
+	unisim::kernel::variable::Register<uint8_t> *scidrh_var = new unisim::kernel::variable::Register<uint8_t>("SCIDRH", this, scidrh_register, "SCI Data Registers High byte (SCIDRH)");
 	extended_registers_registry.push_back(scidrh_var);
 	scidrh_var->setCallBack(this, SCIDRH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SCIDRL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scidrl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIDRL", &scidrl_register));
 
-	unisim::kernel::service::Register<uint8_t> *scidrl_var = new unisim::kernel::service::Register<uint8_t>("SCIDRL", this, scidrl_register, "SCI Data Registers Low byte (SCIDRL)");
+	unisim::kernel::variable::Register<uint8_t> *scidrl_var = new unisim::kernel::variable::Register<uint8_t>("SCIDRL", this, scidrl_register, "SCI Data Registers Low byte (SCIDRL)");
 	extended_registers_registry.push_back(scidrl_var);
 	scidrl_var->setCallBack(this, SCIDRL, &CallBackObject::write, NULL);
 
@@ -1052,13 +1087,13 @@ bool S12SCI::EndSetup() {
 
 Register* S12SCI::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
-
+	return registers_registry.GetRegister(name);
 }
 
+void S12SCI::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
 
 void S12SCI::OnDisconnect() {
 }
@@ -1080,11 +1115,16 @@ void S12SCI::Reset() {
 
 	if(char_io_import)
 	{
-		char_io_import->Reset();
+		char_io_import->ResetCharIO();
 	}
 
 }
 
+void S12SCI::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =
@@ -1096,7 +1136,7 @@ bool S12SCI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
 	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+8))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -1165,7 +1205,7 @@ bool S12SCI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
 	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+8))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);

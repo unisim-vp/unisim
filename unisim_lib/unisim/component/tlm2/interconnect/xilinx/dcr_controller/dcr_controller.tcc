@@ -52,11 +52,11 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
-DCRController<CONFIG>::DCRController(const sc_module_name& name, Object *parent)
+DCRController<CONFIG>::DCRController(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "A Device Control Register bus controller")
 	, unisim::component::cxx::interconnect::xilinx::dcr_controller::DCRController<CONFIG>(name, parent)
-	, sc_module(name)
-	, cycle_time(SC_ZERO_TIME)
+	, sc_core::sc_module(name)
+	, cycle_time(sc_core::SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 {
 	unsigned int num_slave;
@@ -118,9 +118,9 @@ DCRController<CONFIG>::~DCRController()
 template <class CONFIG>
 bool DCRController<CONFIG>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
+	if(cycle_time == sc_core::SC_ZERO_TIME)
 	{
-		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << sc_core::SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
 	return true;
@@ -131,15 +131,15 @@ void DCRController<CONFIG>::b_transport(unsigned int num_master, tlm::tlm_generi
 {
 	if(num_master < CONFIG::NUM_MASTERS)
 	{
-		sc_time notify_time_stamp(sc_time_stamp());
+		sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 		notify_time_stamp += t;
 		Event *event = schedule.AllocEvent();
-		sc_event ev_completed;
+		sc_core::sc_event ev_completed;
 		int intf = inherited::GetMasterInterface(num_master);
 		event->Initialize(&payload, intf, notify_time_stamp, &ev_completed);
 		schedule.Notify(event);
 		wait(ev_completed);
-		t = SC_ZERO_TIME;
+		t = sc_core::SC_ZERO_TIME;
 	}
 	else
 	{
@@ -156,7 +156,7 @@ tlm::tlm_sync_enum DCRController<CONFIG>::nb_transport_fw(unsigned int num_maste
 		case tlm::BEGIN_REQ:
 			if(num_master < CONFIG::NUM_MASTERS)
 			{
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				Event *event = schedule.AllocEvent();
 				int intf = inherited::GetMasterInterface(num_master);
@@ -203,7 +203,7 @@ tlm::tlm_sync_enum DCRController<CONFIG>::nb_transport_bw(unsigned int num_slave
 		case tlm::BEGIN_RESP:
 			if(num_slave < CONFIG::NUM_SLAVES)
 			{
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				Event *event = schedule.AllocEvent();
 				int intf = inherited::GetSlaveInterface(num_slave);
@@ -233,7 +233,7 @@ void DCRController<CONFIG>::invalidate_direct_mem_ptr(unsigned int num_slave, sc
 template <class CONFIG>
 void DCRController<CONFIG>::ProcessEvents()
 {
-	const sc_time& time_stamp = sc_time_stamp();
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
@@ -413,8 +413,8 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 						Object::Stop(-1);
 				}
 
-				sc_time t(cycle_time);
-				sc_event *ev_completed = event->GetCompletionEvent();
+				sc_core::sc_time t(cycle_time);
+				sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 				
 				if(ev_completed)
 				{
@@ -447,12 +447,12 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 				if((dcrn != (inherited::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ADDRESS_REGISTER)) &&
 				   (dcrn != (inherited::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ACCESS_REGISTER)))
 				{
-					sc_time t(cycle_time);
-					sc_time notify_time_stamp(sc_time_stamp());
+					sc_core::sc_time t(cycle_time);
+					sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 					notify_time_stamp += t;
 					Event *indirect_event = schedule.AllocEvent();
 					int intf = -1;
-					sc_event *ev_completed = event->GetCompletionEvent();
+					sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 					indirect_event->Initialize(indirect_payload, intf, notify_time_stamp, ev_completed);
 					schedule.Notify(indirect_event);
 					BindIndirectAccess(payload, indirect_payload, num_master);
@@ -509,9 +509,9 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 		}
 	}
 
-	sc_time t(cycle_time);
+	sc_core::sc_time t(cycle_time);
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
 
@@ -581,7 +581,7 @@ void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 	event = (*it).second;
 	pending_requests.erase(it);
 	int src_if = event->GetInterface();
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	
 	unsigned int num_master;
 	
@@ -603,7 +603,7 @@ void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 	}
 	else
 	{
-		sc_time t(cycle_time);
+		sc_core::sc_time t(cycle_time);
 		
 		if(ev_completed)
 		{
@@ -622,7 +622,7 @@ void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 }
 
 template <class CONFIG>
-void DCRController<CONFIG>::DoTimeOutAccess(unsigned int num_master, sc_event *ev_completed, tlm::tlm_generic_payload *payload)
+void DCRController<CONFIG>::DoTimeOutAccess(unsigned int num_master, sc_core::sc_event *ev_completed, tlm::tlm_generic_payload *payload)
 {
 	uint32_t addr = payload->get_address();
 	uint32_t dcrn = addr / 4;
@@ -647,7 +647,7 @@ void DCRController<CONFIG>::DoTimeOutAccess(unsigned int num_master, sc_event *e
 	
 	payload->set_response_status(tlm::TLM_OK_RESPONSE);
 
-	sc_time t(cycle_time);
+	sc_core::sc_time t(cycle_time);
 	
 	if(ev_completed)
 	{

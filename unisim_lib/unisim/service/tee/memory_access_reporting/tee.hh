@@ -37,7 +37,7 @@
 #define __UNISIM_SERVICE_TEE_MEMORY_ACCESS_REPORTING_TEE_HH__
 
 #include <inttypes.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
 
 namespace unisim {
@@ -45,11 +45,11 @@ namespace service {
 namespace tee {
 namespace memory_access_reporting {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 
@@ -69,18 +69,17 @@ public:
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
+	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
-	
-//	virtual void RequiresMemoryAccessReporting(bool report);
-//	virtual void RequiresFinishedInstructionReporting(bool report);
+	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length /* in bytes */);
+	virtual void ReportFetchInstruction(ADDRESS next_addr);
 
 private:
 	ControlSelector<MAX_IMPORTS> *control_selector[MAX_IMPORTS];
 	bool requires_memory_access_reporting[MAX_IMPORTS];
-	bool requires_finished_instruction_reporting[MAX_IMPORTS];
+	bool requires_fetch_instruction_reporting[MAX_IMPORTS];
+	bool requires_commit_instruction_reporting[MAX_IMPORTS];
 };
 
 template <unsigned int MAX_IMPORTS>
@@ -94,16 +93,17 @@ public:
 
 	ControlSelector(unsigned int index,
 			bool *requires_memory_access_reporting,
-			bool *requires_finished_instruction_reporting,
+			bool *requires_fetch_instruction_reporting,
+			bool *requires_commit_instruction_reporting,
 			const char *name, Object *parent = 0);
 	~ControlSelector();
 	
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report);
+	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType, bool report);
 private:
 	unsigned int index;
 	bool *requires_memory_access_reporting;
-	bool *requires_finished_instruction_reporting;
+	bool *requires_fetch_instruction_reporting;
+	bool *requires_commit_instruction_reporting;
 };
 
 } // end of namespace memory_access_reporting

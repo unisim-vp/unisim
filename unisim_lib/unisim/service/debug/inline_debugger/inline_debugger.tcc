@@ -43,7 +43,8 @@
 #include <set>
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/util/debug/data_object.tcc>
+#include <unisim/util/debug/data_object_initializer.hh>
+#include <unisim/util/debug/data_object_initializer.tcc>
 #include <unisim/util/likely/likely.hh>
 
 #if defined(HAVE_CONFIG_H)
@@ -59,49 +60,32 @@
 #include <fstream>
 #include <iostream>
 
-#if defined(WIN32)
-#include <windows.h>
-#include <io.h>     // for function access()
-#else
-#include <unistd.h>
-#endif
-
 namespace unisim {
 namespace service {
 namespace debug {
 namespace inline_debugger {
 
-using std::list;
-using std::cin;
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-using std::streamsize;
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
-
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements a built-in debugger in the terminal console")
-	, Service<DebugControl<ADDRESS> >(_name, _parent)
-	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
-	, Service<TrapReporting>(_name, _parent)
-	, Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
-	, Client<Disassembly<ADDRESS> >(_name, _parent)
-	, Client<Memory<ADDRESS> >(_name, _parent)
-	, Client<Registers>(_name, _parent)
-	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<StatementLookup<ADDRESS> >(_name, _parent)
-	, Client<BackTrace<ADDRESS> >(_name, _parent)
-	, Client<Profiling<ADDRESS> >(_name, _parent)
-	, Client<DebugInfoLoading>(_name, _parent)
-	, Client<DataObjectLookup<ADDRESS> >(_name, _parent)
-	, InlineDebuggerBase()
-	, debug_control_export("debug-control-export", this)
+	, InlineDebuggerBase(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
+	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
-	, trap_reporting_export("trap-reporting-export", this)
+	, debug_yielding_request_import("debug-yielding-request-import", this)
 	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, disasm_import("disasm-import", this)
 	, memory_import("memory-import", this)
@@ -112,23 +96,43 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
+	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
+	, init_macro()
+	, output()
+	, program_counter_name("pc")
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
-	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 	, param_init_macro("init-macro", this, init_macro, "path to initial macro to run when debugger starts")
 	, param_output("output", this, output, "path to output file where to redirect the debugger outputs")
+	, param_program_counter_name("program-counter-name", this, program_counter_name, "name of program counter")
+	, program_counter(0)
+	, listening_fetch(false)
+	, listening_trap(false)
+	, trap(false)
 	, running_mode(INLINE_DEBUGGER_MODE_WAITING_USER)
+	, cia(0)
 	, disasm_addr(0)
 	, dump_addr(0)
 	, cont_until_addr(0)
 	, last_stmt(0)
-	, prompt(string(_name) + "> ")
+	, prompt(std::string(_name) + "> ")
 	, output_stream(0)
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
+	, tracked_data_objects()
+	, fetch_insn_event(0)
+	, trap_event(0)
+	, visited_instructions()
+	, is_started(false)
 {
-	trap = false;
+	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	
+	fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
+	fetch_insn_event->Catch();
+	
+	trap_event = new unisim::util::debug::TrapEvent<ADDRESS>();
+	trap_event->Catch();
 }
 
 template <class ADDRESS>
@@ -138,6 +142,32 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	{
 		delete output_stream;
 	}
+	
+	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	
+	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
+	{
+		delete (*it);
+	}
+	
+	fetch_insn_event->Release();
+	
+	if(listening_trap)
+	{
+		if(debug_event_trigger_import)
+		{
+			if(debug_event_trigger_import->Unlisten(trap_event))
+			{
+				listening_trap = false;
+			}
+			else
+			{
+				(*std_output_stream) << "Can't unlisten trap events" << std::endl;
+			}
+		}
+	}
+	
+	trap_event->Release();
 }
 
 template<class ADDRESS>
@@ -149,7 +179,7 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 		
 		if(output_stream->fail())
 		{
-			cerr << "ERROR! Can't open output \"" << output << "\"" << endl;
+			std::cerr << "ERROR! Can't open output \"" << output << "\"" << std::endl;
 			delete output_stream;
 			output_stream = 0;
 			return false;
@@ -170,7 +200,7 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 	   memory_atom_size != 8 &&
 	   memory_atom_size != 16)
 	{
-		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
+		std::cerr << this->GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << std::endl;
 		return false;
 	}
 	
@@ -178,6 +208,30 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 	{
 		LoadMacro(init_macro.c_str());
 	}
+	
+	Interrupt();
+	
+	if(!registers_import) return false;
+	
+	program_counter = registers_import->GetRegister(program_counter_name.c_str());
+	
+	if(!program_counter)
+	{
+		std::cerr << this->GetName() << "ERROR! can't access program counter" << std::endl;
+		return false;
+	}
+	
+	if(debug_event_trigger_import)
+	{
+		if(!debug_event_trigger_import->Listen(trap_event))
+		{
+			(*std_output_stream) << "Can't listen trap events" << std::endl;
+			return false;
+		}
+		listening_trap = true;
+	}
+	
+	
 	return true;
 }
 
@@ -187,64 +241,87 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void InlineDebugger<ADDRESS>::Interrupt()
 {
-	switch(event.GetType())
+	trap = true;
+	
+	if(debug_yielding_request_import)
 	{
-		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
-			{
-				const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = (const unisim::util::debug::Breakpoint<ADDRESS> *) &event;
-				(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
-			}
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			{
-				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = (const unisim::util::debug::Watchpoint<ADDRESS> *) &event;
-				(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
-			}
-			break;
-		default:
-			// ignore event
-			return;
+		debug_yielding_request_import->DebugYieldRequest();
 	}
-	
-	trap = true;
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ReportTrap()
+bool InlineDebugger<ADDRESS>::ListenFetch()
 {
-	trap = true;
-	(*std_output_stream) << "-> Received trap" << endl;
+	if(!fetch_insn_event) return false;
+	if(listening_fetch) return true;
+	
+	if(debug_event_trigger_import)
+	{
+		if(debug_event_trigger_import->Listen(fetch_insn_event))
+		{
+			listening_fetch = true;
+			return true;
+		}
+	}
+
+	(*std_output_stream) << "Can't track fetched instructions" << std::endl;
+	return false;
 }
 
 template <class ADDRESS>
-void 
-InlineDebugger<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj)
+bool InlineDebugger<ADDRESS>::UnlistenFetch()
 {
-	trap = true;
-	(*std_output_stream) << "-> Received trap from \"" << obj.GetName() << "\"" << endl;
+	if(!fetch_insn_event) return false;
+	if(!listening_fetch) return true;
+
+	if(debug_event_trigger_import)
+	{
+		if(debug_event_trigger_import->Unlisten(fetch_insn_event))
+		{
+			listening_fetch = false;
+			return true;
+		}
+	}
+
+	(*std_output_stream) << "Can't untrack fetched instructions" << std::endl;
+	return false;
 }
-	
+
 template <class ADDRESS>
-void
-InlineDebugger<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
-		   const std::string &str)
+void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	trap = true;
-	(*std_output_stream) << "-> Received trap from \"" << obj.GetName() << "\": " << str << endl;
-}
+	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
 	
-template <class ADDRESS>
-void 
-InlineDebugger<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
-		   const char *c_str)
-{
-	trap = true;
-	(*std_output_stream) << "-> Received trap from \"" << obj.GetName() << "\": " << c_str << endl;
+	if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN))
+	{
+		const unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<const unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
+		
+		cia = fetch_insn_event->GetAddress();
+		trap = true;
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
+	{
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
+	{
+		const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = static_cast<const unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+		(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
+		trap = true;
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
+	{
+		const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = static_cast<const unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+		(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
+		trap = true;
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_TRAP))
+	{
+		const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+		(*std_output_stream) << "-> Received " << (*trap_event) << std::endl;
+		trap = true;
+	}
 }
 
 template <class ADDRESS>
@@ -257,66 +334,75 @@ void InlineDebugger<ADDRESS>::Tokenize(const std::string& str, std::vector<std::
 }
 
 template <class ADDRESS>
-typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+void InlineDebugger<ADDRESS>::DebugYield()
 {
+	if(Killed()) return;
+	if(!trap) return;
+	is_started = true;
+	
+	// Ctrl-C, breakpoint or watchpoint condition occured
+	
 	bool recognized = false;
 	ADDRESS addr;
 	ADDRESS cont_addr;
 	unsigned int size;
 	ADDRESS next_addr;
 
-	if(unlikely(trap))
+	program_counter->GetValue(cia);
+	
+	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
 	{
-		if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
-		{
-			DeleteBreakpoint(cont_until_addr);
-		}
-	}
-	else
-	{
-		if(likely((running_mode == INLINE_DEBUGGER_MODE_CONTINUE) || (running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)))
-		{
-			return DebugControl<ADDRESS>::DBG_STEP;
-		}
-		
-		if(running_mode == INLINE_DEBUGGER_MODE_RESET)
-		{
-			running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-			return DebugControl<ADDRESS>::DBG_STEP;
-		}
-		
-		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
-		{
-			const Statement<ADDRESS> *stmt = FindStatement(cia);
-			if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
-		}
+		DeleteBreakpoint(cont_until_addr);
 	}
 
-	int nparms = 0;
+	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+	{
+		const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(cia);
+		if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return;
+	}
 
+	if((running_mode == INLINE_DEBUGGER_MODE_STEP_INSTRUCTION) ||
+	   (running_mode == INLINE_DEBUGGER_MODE_STEP) ||
+	   (running_mode == INLINE_DEBUGGER_MODE_TRAVERSE))
+	{
+		UnlistenFetch();
+	}
+		
+	PrintTrackedDataObjects();
 	
 	Disasm(cia, 1, next_addr);
 
+	if(running_mode == INLINE_DEBUGGER_MODE_TRAVERSE)
+	{
+		if(IsVisited(cia))
+		{
+			return;
+		}
+		
+		UnlistenFetch();
+	}
+	
 	while(1)
 	{
 		trap = false;
 		bool interactive = false;
 		//(*std_output_stream) << "> ";
+		if(Killed()) return;
 		if(!GetLine(prompt.c_str(), line, interactive))
 		{
-			Object::Stop(0);
-			return DebugControl<ADDRESS>::DBG_KILL;
+			this->Stop(0);
+			return;
 		}
 
 		if(interactive && IsBlankLine(line))
 		{
 	 		line = last_line;
-//			(*std_output_stream) << "\033[1A\033[2C" << line << endl;
+//			(*std_output_stream) << "\033[1A\033[2C" << line << std::endl;
 		}
 		
 		parm.clear();
 		Tokenize(line, parm);
-		nparms = parm.size();
+		int nparms = parm.size();
 	
 		recognized = false;
 
@@ -327,7 +413,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				break;
 			case 1:
 				{
-					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
+					unisim::service::interfaces::Register *reg = registers_import->GetRegister(parm[0].c_str());
 
 					if(reg)
 					{
@@ -336,7 +422,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						uint8_t value[size];
 						reg->GetValue(&value);
 						int i;
-						(*std_output_stream) << reg->GetName() << " = 0x" << hex;
+						(*std_output_stream) << reg->GetName() << " = 0x" << std::hex;
 #if BYTE_ORDER == BIG_ENDIAN
 						for(i = 0; i < (int) size; i++)
 #else
@@ -346,7 +432,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 							(*std_output_stream) << (value[i] >> 4);
 							(*std_output_stream) << (value[i] & 15);
 						}
-						(*std_output_stream) << dec << endl;
+						(*std_output_stream) << std::dec << std::endl;
 						break;
 					}
 				}
@@ -361,15 +447,24 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsQuitCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					this->Stop(0);
+					return;
 				}
 
 				if(IsStepInstructionCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP_INSTRUCTION;
 					if(interactive) last_line = line;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					ListenFetch();
+					return;
+				}
+
+				if(IsTraverseCommand(parm[0].c_str()))
+				{
+					running_mode = INLINE_DEBUGGER_MODE_TRAVERSE;
+					if(interactive) last_line = line;
+					ListenFetch();
+					return;
 				}
 
 				if(IsStepCommand(parm[0].c_str()))
@@ -377,7 +472,8 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
 					if(interactive) last_line = line;
 					last_stmt = FindStatement(cia);
-					return DebugControl<ADDRESS>::DBG_STEP;
+					ListenFetch();
+					return;
 				}
 
 				if(IsNextInstructionCommand(parm[0].c_str()))
@@ -394,14 +490,15 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						cont_until_addr = cont_addr;
 						SetBreakpoint(cont_until_addr);
 					}
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return;
 				}
 
 				if(IsContinueCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
+					
 					if(interactive) last_line = line;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return;
 				}
 
 				if(IsDisasmCommand(parm[0].c_str()))
@@ -441,7 +538,9 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					running_mode = INLINE_DEBUGGER_MODE_RESET;
 					disasm_addr = 0;
 					dump_addr = 0;
-					return DebugControl<ADDRESS>::DBG_RESET;
+					//return DebugControl<ADDRESS>::DBG_RESET;
+					// FIXME: should reset
+					return;
 				}
 
 				if (IsMonitorCommand(parm[0].c_str()))
@@ -451,24 +550,31 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
+				if (IsRegistersCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					DumpRegisters();
+					break;
+				}
+
 				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables("m", 0, unisim::kernel::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables("m", 0, unisim::kernel::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables("m", 0, unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -484,20 +590,20 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsBackTraceCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpBackTrace(cia);
+					DumpBackTrace();
 					break;
 				}
 				
 				if(IsFinishCommand(parm[0].c_str()))
 				{
 					ADDRESS ret_addr;
-					if(GetReturnAddress(cia, ret_addr))
+					if(GetReturnAddress(ret_addr))
 					{
 						if(interactive) last_line = line;
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 						cont_until_addr = ret_addr;
 						SetBreakpoint(cont_until_addr);
-						return DebugControl<ADDRESS>::DBG_STEP;
+						return;
 					}
 					else
 					{
@@ -531,7 +637,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsListDataObjectsCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					ListDataObjects(cia);
+					ListDataObjects();
 					break;
 				}
 				break;
@@ -539,21 +645,21 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsDumpDataObjectCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpDataObject(parm[1].c_str(), cia);
+					DumpDataObject(parm[1].c_str());
 					break;
 				}
 				
 				if(IsPrintDataObjectCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					PrintDataObject(parm[1].c_str(), cia);
+					PrintDataObject(parm[1].c_str());
 					break;
 				}
 
 				if(IsEditDataObjectCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					EditDataObject(parm[1].c_str(), cia);
+					EditDataObject(parm[1].c_str());
 					break;
 				}
 
@@ -562,20 +668,41 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					if(strcmp(parm[1].c_str(), "global") == 0)
 					{
 						recognized = true;
-						ListDataObjects(cia, unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_GLOBAL_ONLY);
+						ListDataObjects(unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_GLOBAL_ONLY);
 					}
 					else if(strcmp(parm[1].c_str(), "local") == 0)
 					{
 						recognized = true;
-						ListDataObjects(cia, unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_LOCAL_ONLY);
+						ListDataObjects(unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_LOCAL_ONLY);
 					}
+					break;
+				}
+
+				if(IsTrackDataObjectCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					TrackDataObject(parm[1].c_str());
+					break;
+				}
+
+				if(IsUntrackDataObjectCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					UntrackDataObject(parm[1].c_str());
+					break;
+				}
+
+				if(IsWhatIsCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					PrintDataObjectType(parm[1].c_str());
 					break;
 				}
 
 				if(IsLoadConfigCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Object::GetSimulator()->LoadXmlParameters(parm[1].c_str());
+					this->GetSimulator()->LoadVariables(parm[1].c_str(), unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 				
@@ -649,7 +776,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					if(interactive) last_line = line;
 					cont_until_addr = cont_addr;
 					SetBreakpoint(cont_until_addr);
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return;
 				}
 				
 				if (IsMonitorCommand(parm[0].c_str()))
@@ -662,21 +789,21 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -740,6 +867,12 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					recognized = true;
 					LoadMacro(parm[1].c_str());
 					break;
+				}
+				
+				if(IsInfoSubProgramCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					InfoSubProgram(parm[1].c_str());
 				}
 				break;
 			case 3:
@@ -851,7 +984,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0].c_str();
 					str << parm[1].c_str();
-					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
@@ -861,7 +994,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0].c_str();
 					str << parm[1].c_str();
-					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
@@ -871,14 +1004,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0].c_str();
 					str << parm[1].c_str();
-					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
 				if(IsSetDataObjectCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					SetDataObject(parm[1].c_str(), cia, parm[2].c_str());
+					SetDataObject(parm[1].c_str(), parm[2].c_str());
 					break;
 				}
 
@@ -946,189 +1079,205 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		} // end of switch
 
-		if (nparms >= 3 && nparms <= 33)
+		if((nparms >= 3) && IsMonitorSetCommand(parm[0].c_str()))
 		{
-			if (IsMonitorSetCommand(parm[0].c_str()))
+			recognized = true;
+			std::stringstream sstr;
+			int i;
+			
+			for(i = 2; i < nparms; i++)
 			{
-				recognized = true;
-				std::stringstream str;
-				for (int i = 2; i < nparms; i++)
-				{
-					if (i > 2) str << " ";
-						str << parm[i];
-				}
-				SetVariable(parm[1].c_str(), str.str().c_str());
+				if(i > 2) sstr << " ";
+				sstr << parm[i];
 			}
+			SetVariable(parm[1].c_str(), sstr.str().c_str());
 		}
 
 		if(!recognized)
 		{
-			(*std_output_stream) << "Unrecognized command.  Try \"help\"." << endl;
+			(*std_output_stream) << "Unrecognized command.  Try \"help\"." << std::endl;
 			for (int i = 0; i < nparms; i++)
 				(*std_output_stream) << parm[i] << " ";
-			(*std_output_stream) << endl;
+			(*std_output_stream) << std::endl;
 		}
 		
 		if(interactive) last_line = line;
 	}
-	Object::Stop(0);
-	return DebugControl<ADDRESS>::DBG_KILL;
+	this->Stop(0);
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::Help()
 {
-	(*std_output_stream) << "HELP:" << endl;
-	(*std_output_stream) << "================================ LOAD ==========================================" << endl;
-	(*std_output_stream) << "<st | symtab> <filename>" << endl;
-	(*std_output_stream) << "    load symbol table from file <filename>" << endl;
-	(*std_output_stream) << "=============================== SCRIPTING ======================================" << endl;
-	(*std_output_stream) << "<mac | macro> <filename>" << endl;
-	(*std_output_stream) << "    run debugger commands from file named 'filename'" << endl;
-	(*std_output_stream) << "================================ EXECUTE =======================================" << endl;
-	(*std_output_stream) << "<c | cont | continue> [<symbol | *address>]" << endl;
-	(*std_output_stream) << "    continue to execute instructions until program reaches a breakpoint," << endl;
-	(*std_output_stream) << "    a watchpoint, 'symbol' or 'address'" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<si | stepi>" << endl;
-	(*std_output_stream) << "    execute one instruction" << endl;
-	(*std_output_stream) << "<s | step>" << endl;
-	(*std_output_stream) << "    continue executing instructions until control reaches a different source line" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<ni | nexti>" << endl;
-	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << endl;
-	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<r | run>" << endl;
-	(*std_output_stream) << "    restart the simulation from the beginning" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<fin | finish>" << endl;
-	(*std_output_stream) << "    continue executing instructions until returning from current function" << endl;
-	(*std_output_stream) << "================================ INSPECT =======================================" << endl;
-	(*std_output_stream) << "<dis | disasm | disassemble> [<symbol | *address>]" << endl;
-	(*std_output_stream) << "    continue to disassemble starting from 'symbol', 'address', or after" << endl;
-	(*std_output_stream) << "    the previous disassembly" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<d | dump> [<symbol | *address>]" << endl;
-	(*std_output_stream) << "    dump memory starting from 'symbol', 'address', or after the previous dump" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<bt | backtrace>" << endl;
-	(*std_output_stream) << "    display backtrace" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<e | ed | edit> <symbol | *address>" << endl;
-	(*std_output_stream) << "    edit data memory starting from 'symbol' or 'address'" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<register name>" << endl;
-	(*std_output_stream) << "    display the register value" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<variable name | hierarchical variable name>" << endl;
-	(*std_output_stream) << "    display all the objects variables that are named as the given variable name," << endl;
-	(*std_output_stream) << "    or that contain part of the given name" << endl;
-	(*std_output_stream) << "    note: this command is overriden if the given name matches any of the other" << endl;
-	(*std_output_stream) << "    inline debugger commands" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<m | monitor>[/<format>] [<variable name>]" << endl;
-	(*std_output_stream) << "<reg | register>[/<format>] [<register name>]" << endl;
-	(*std_output_stream) << "<param | parameter>[/<format>] [<parameter name>]" << endl;
-	(*std_output_stream) << "<stat | statistic>[/<format>] [<statistic name>]" << endl;
-	(*std_output_stream) << "    display the given simulator variable (register/parameter/statistic), or " << endl;
-	(*std_output_stream) << "    display all variable (register/parameter/statistic) names if none is given" << endl;
-	(*std_output_stream) << "    when giving a variable name a format can be used, the available formats are:" << endl;
-	(*std_output_stream) << "     x     print variable as an integer in hexadecimal format" << endl;
-	(*std_output_stream) << "     d     print variable as a signed integer" << endl;
-	(*std_output_stream) << "     u     print variable as an unsigned integer" << endl;
-	(*std_output_stream) << "     o     print variable as an integer in octal format" << endl;
-	(*std_output_stream) << "     t     print variable as an integer in binary format" << endl;
-	(*std_output_stream) << "     a     print variable as an address (equivalent to 'x')" << endl;
-	(*std_output_stream) << "     c     print variable as a string" << endl;
-	(*std_output_stream) << "     f     print variable as a float (actually is considered as a double)" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "set <variable name> <value>" << endl;
-	(*std_output_stream) << "    sets the variable (register/parameter/statistic) to the given value" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<sym | symbol> [<symbol name>]" << endl;
-	(*std_output_stream) << "    Display information about symbols having 'symbol name' in their name" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<p | prof | profile> on" << endl;
-	(*std_output_stream) << "<p | prof | profile> prog on" << endl;
-	(*std_output_stream) << "<p | prof | profile> program on" << endl;
-	(*std_output_stream) << "<p | prof | profile> data on" << endl;
-	(*std_output_stream) << "<p | prof | profile> data read on" << endl;
-	(*std_output_stream) << "<p | prof | profile> data write on" << endl;
-	(*std_output_stream) << "<p | prof | profile> off" << endl;
-	(*std_output_stream) << "<p | prof | profile> prog off" << endl;
-	(*std_output_stream) << "<p | prof | profile> program off" << endl;
-	(*std_output_stream) << "<p | prof | profile> data off" << endl;
-	(*std_output_stream) << "<p | prof | profile> data read off" << endl;
-	(*std_output_stream) << "<p | prof | profile> data write off" << endl;
-	(*std_output_stream) << "    enable/disable the program and data profiling" << endl;
-	(*std_output_stream) << "<p | prof | profile> status" << endl;
-	(*std_output_stream) << "<p | prof | profile> prog status" << endl;
-	(*std_output_stream) << "<p | prof | profile> program status" << endl;
-	(*std_output_stream) << "<p | prof | profile> data status" << endl;
-	(*std_output_stream) << "<p | prof | profile> data read status" << endl;
-	(*std_output_stream) << "<p | prof | profile> data write status" << endl;
-	(*std_output_stream) << "    display the program and data profiling status (on/off)" << endl;
-	(*std_output_stream) << "<p | prof | profile> clear" << endl;
-	(*std_output_stream) << "<p | prof | profile> prog clear" << endl;
-	(*std_output_stream) << "<p | prof | profile> program clear" << endl;
-	(*std_output_stream) << "<p | prof | profile> data clear" << endl;
-	(*std_output_stream) << "<p | prof | profile> data read clear" << endl;
-	(*std_output_stream) << "<p | prof | profile> data write clear" << endl;
-	(*std_output_stream) << "    clear the collected program and data profiles" << endl;
-	(*std_output_stream) << "<p | prof | profile>" << endl;
-	(*std_output_stream) << "<p | prof | profile> prog" << endl;
-	(*std_output_stream) << "<p | prof | profile> program" << endl;
-	(*std_output_stream) << "<p | prof | profile> data" << endl;
-	(*std_output_stream) << "<p | prof | profile> data read" << endl;
-	(*std_output_stream) << "<p | prof | profile> data write" << endl;
-	(*std_output_stream) << "    display the program/data profile" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<dumpobject | dumobj | dob> <data object name>" << endl;
-	(*std_output_stream) << "    dump data object bytes" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<printobject | printobj | pob> <data object name>" << endl;
-	(*std_output_stream) << "    print data object in a programmer friendly manner" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<listobjects | lsobj | lob> [<local>|<global>]" << endl;
-	(*std_output_stream) << "    list data objects" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<editobject | editobj | eob> <data object name>" << endl;
-	(*std_output_stream) << "    edit data object bytes" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<setobject | setobj | sob> <data object name>" << endl;
-	(*std_output_stream) << "    set data object value in a programmer friendly manner" << endl;
-	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
-	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << endl;
-	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << endl;
-	(*std_output_stream) << "    or 'filename:lineno' are not specified, display the breakpoint list" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<w | watch> [<symbol | *address[#<size>]>] [<read | write>]" << endl;
-	(*std_output_stream) << "    set a watchpoint at 'symbol' or 'address'." << endl;
-	(*std_output_stream) << "    When using 'continue' and 'next' commands, the debugger will spy CPU loads" << endl;
-	(*std_output_stream) << "    and stores. The debugger will return to command line prompt once a load," << endl;
-	(*std_output_stream) << "    or a store will access to 'symbol' or 'address'." << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<del | delete> <symbol | *address | filename:lineno>" << endl;
-	(*std_output_stream) << "    delete the breakpoint at 'symbol', 'address', or 'filename:lineno'" << endl << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << endl;
-	(*std_output_stream) << "    delete the watchpoint at 'symbol' or 'address'" << endl;
-	(*std_output_stream) << "============================== MISCELLANEOUS ===================================" << endl;
-	(*std_output_stream) << "<sources>" << endl;
-	(*std_output_stream) << "    Locate source files" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<enable | disable> <filename>" << endl;
-	(*std_output_stream) << "    enable/disable symbolic debugging of binary file <filename>" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<files>" << endl;
-	(*std_output_stream) << "    list binary files and whether symbolic debugging is enabled or disabled" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<h | ? | help>" << endl;
-	(*std_output_stream) << "    display the help" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<quit | q>" << endl;
-	(*std_output_stream) << "    quit the built-in debugger" << endl << endl;
+	(*std_output_stream) << "HELP:" << std::endl;
+	(*std_output_stream) << "================================ LOAD ==========================================" << std::endl;
+	(*std_output_stream) << "<st | symtab> <filename>" << std::endl;
+	(*std_output_stream) << "    load symbol table from file <filename>" << std::endl;
+	(*std_output_stream) << "=============================== SCRIPTING ======================================" << std::endl;
+	(*std_output_stream) << "<mac | macro> <filename>" << std::endl;
+	(*std_output_stream) << "    run debugger commands from file named 'filename'" << std::endl;
+	(*std_output_stream) << "================================ EXECUTE =======================================" << std::endl;
+	(*std_output_stream) << "<c | cont | continue> [<symbol | *address>]" << std::endl;
+	(*std_output_stream) << "    continue to execute instructions until program reaches a breakpoint," << std::endl;
+	(*std_output_stream) << "    a watchpoint, 'symbol' or 'address'" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<si | stepi>" << std::endl;
+	(*std_output_stream) << "    execute one instruction" << std::endl;
+	(*std_output_stream) << "<s | step>" << std::endl;
+	(*std_output_stream) << "    continue executing instructions until control reaches a different source line" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<traverse>" << std::endl;
+	(*std_output_stream) << "    step continuously until control reaches an unvisited instruction" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<ni | nexti>" << std::endl;
+	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << std::endl;
+	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<r | run>" << std::endl;
+	(*std_output_stream) << "    restart the simulation from the beginning" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<fin | finish>" << std::endl;
+	(*std_output_stream) << "    continue executing instructions until returning from current function" << std::endl;
+	(*std_output_stream) << "================================ INSPECT =======================================" << std::endl;
+	(*std_output_stream) << "<dis | disasm | disassemble> [<symbol | *address>]" << std::endl;
+	(*std_output_stream) << "    continue to disassemble starting from 'symbol', 'address', or after" << std::endl;
+	(*std_output_stream) << "    the previous disassembly" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<d | dump> [<symbol | *address>]" << std::endl;
+	(*std_output_stream) << "    dump memory starting from 'symbol', 'address', or after the previous dump" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<regs | registers>" << std::endl;
+	(*std_output_stream) << "    dump registers" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<bt | backtrace>" << std::endl;
+	(*std_output_stream) << "    display backtrace" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<e | ed | edit> <symbol | *address>" << std::endl;
+	(*std_output_stream) << "    edit data memory starting from 'symbol' or 'address'" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<register name>" << std::endl;
+	(*std_output_stream) << "    display the register value" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<variable name | hierarchical variable name>" << std::endl;
+	(*std_output_stream) << "    display all the objects variables that are named as the given variable name," << std::endl;
+	(*std_output_stream) << "    or that contain part of the given name" << std::endl;
+	(*std_output_stream) << "    note: this command is overriden if the given name matches any of the other" << std::endl;
+	(*std_output_stream) << "    inline debugger commands" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<m | monitor>[/<format>] [<variable name>]" << std::endl;
+	(*std_output_stream) << "<reg | register>[/<format>] [<register name>]" << std::endl;
+	(*std_output_stream) << "<param | parameter>[/<format>] [<parameter name>]" << std::endl;
+	(*std_output_stream) << "<stat | statistic>[/<format>] [<statistic name>]" << std::endl;
+	(*std_output_stream) << "    display the given simulator variable (register/parameter/statistic), or " << std::endl;
+	(*std_output_stream) << "    display all variable (register/parameter/statistic) names if none is given" << std::endl;
+	(*std_output_stream) << "    when giving a variable name a format can be used, the available formats are:" << std::endl;
+	(*std_output_stream) << "     x     print variable as an integer in hexadecimal format" << std::endl;
+	(*std_output_stream) << "     d     print variable as a signed integer" << std::endl;
+	(*std_output_stream) << "     u     print variable as an unsigned integer" << std::endl;
+	(*std_output_stream) << "     o     print variable as an integer in octal format" << std::endl;
+	(*std_output_stream) << "     t     print variable as an integer in binary format" << std::endl;
+	(*std_output_stream) << "     a     print variable as an address (equivalent to 'x')" << std::endl;
+	(*std_output_stream) << "     c     print variable as a string" << std::endl;
+	(*std_output_stream) << "     f     print variable as a float (actually is considered as a double)" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "set <variable name> <value>" << std::endl;
+	(*std_output_stream) << "    sets the variable (register/parameter/statistic) to the given value" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<sym | symbol> [<symbol name>]" << std::endl;
+	(*std_output_stream) << "    Display information about symbols having 'symbol name' in their name" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> on" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> prog on" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> program on" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data on" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data read on" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data write on" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> off" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> prog off" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> program off" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data off" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data read off" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data write off" << std::endl;
+	(*std_output_stream) << "    enable/disable the program and data profiling" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> status" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> prog status" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> program status" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data status" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data read status" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data write status" << std::endl;
+	(*std_output_stream) << "    display the program and data profiling status (on/off)" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> clear" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> prog clear" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> program clear" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data clear" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data read clear" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data write clear" << std::endl;
+	(*std_output_stream) << "    clear the collected program and data profiles" << std::endl;
+	(*std_output_stream) << "<p | prof | profile>" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> prog" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> program" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data read" << std::endl;
+	(*std_output_stream) << "<p | prof | profile> data write" << std::endl;
+	(*std_output_stream) << "    display the program/data profile" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<dumpobject | dumobj | dob> <data object name>" << std::endl;
+	(*std_output_stream) << "    dump data object bytes" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<printobject | printobj | pob> <data object name>" << std::endl;
+	(*std_output_stream) << "    print data object in a programmer friendly manner" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<listobjects | lsobj | lob> [<local>|<global>]" << std::endl;
+	(*std_output_stream) << "    list data objects" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<editobject | editobj | eob> <data object name>" << std::endl;
+	(*std_output_stream) << "    edit data object bytes" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<setobject | setobj | sob> <data object name>" << std::endl;
+	(*std_output_stream) << "    set data object value in a programmer friendly manner" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<trackobject | trackobj | tob> <data object name>" << std::endl;
+	(*std_output_stream) << "    track data object and repeatedly print the data object value at each stepping" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<untrackobject | untrackobj | utob> <data object name>" << std::endl;
+	(*std_output_stream) << "    untrack data object" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<whatis> <data object name>" << std::endl;
+	(*std_output_stream) << "    print data object type" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<info> <subprogram name>" << std::endl;
+	(*std_output_stream) << "    print information about a subprogram" << std::endl;
+	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << std::endl;
+	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << std::endl;
+	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << std::endl;
+	(*std_output_stream) << "    or 'filename:lineno' are not specified, display the breakpoint list" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<w | watch> [<symbol | *address[#<size>]>] [<read | write>]" << std::endl;
+	(*std_output_stream) << "    set a watchpoint at 'symbol' or 'address'." << std::endl;
+	(*std_output_stream) << "    When using 'continue' and 'next' commands, the debugger will spy CPU loads" << std::endl;
+	(*std_output_stream) << "    and stores. The debugger will return to command line prompt once a load," << std::endl;
+	(*std_output_stream) << "    or a store will access to 'symbol' or 'address'." << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<del | delete> <symbol | *address | filename:lineno>" << std::endl;
+	(*std_output_stream) << "    delete the breakpoint at 'symbol', 'address', or 'filename:lineno'" << std::endl << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << std::endl;
+	(*std_output_stream) << "    delete the watchpoint at 'symbol' or 'address'" << std::endl;
+	(*std_output_stream) << "============================== MISCELLANEOUS ===================================" << std::endl;
+	(*std_output_stream) << "<sources>" << std::endl;
+	(*std_output_stream) << "    Locate source files" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<enable | disable> <filename>" << std::endl;
+	(*std_output_stream) << "    enable/disable symbolic debugging of binary file <filename>" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<files>" << std::endl;
+	(*std_output_stream) << "    list binary files and whether symbolic debugging is enabled or disabled" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<h | ? | help>" << std::endl;
+	(*std_output_stream) << "    display the help" << std::endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
+	(*std_output_stream) << "<quit | q>" << std::endl;
+	(*std_output_stream) << "    quit the built-in debugger" << std::endl << std::endl;
 }
 
 template <class ADDRESS>
@@ -1136,11 +1285,15 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 {
 	if(count > 0)
 	{
+		std::streamsize width = (*std_output_stream).width();
+		std::ostream::char_type fill = (*std_output_stream).fill();
+		std::ios_base::fmtflags flags = (*std_output_stream).flags();
+		
 		bool first = true;
-		const Symbol<ADDRESS> *last_symbol = 0;
+		const unisim::util::debug::Symbol<ADDRESS> *last_symbol = 0;
 		do
 		{
-			const Statement<ADDRESS> *stmt = FindStatement(addr, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT : unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+			const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(addr, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT : unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
 			first = false;
 			
 			if(stmt)
@@ -1163,20 +1316,20 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 			}
 			
 			(*std_output_stream).fill('0');
-			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
-			string s = disasm_import->Disasm(addr, next_addr);
+			const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+			std::string s = disasm_import->Disasm(addr, next_addr);
 			
 			if(symbol)
 			{
 				if(symbol != last_symbol)
 				{
-					(*std_output_stream) << "0x" << hex;
-					(*std_output_stream).width(8);
-					(*std_output_stream) << (addr / memory_atom_size) << dec;
+					(*std_output_stream) << "0x" << std::hex;
+					(*std_output_stream).width((2 * sizeof(ADDRESS)) / memory_atom_size);
+					(*std_output_stream) << (addr / memory_atom_size) << std::dec;
 					(*std_output_stream) << " <";
 					(*std_output_stream) << symbol->GetFriendlyName(addr);
 					
-					(*std_output_stream) << ">:" << endl;
+					(*std_output_stream) << ">:" << std::endl;
 					
 					last_symbol = symbol;
 				}
@@ -1189,90 +1342,144 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 					last_symbol = symbol;
 				}
 			}
-			(*std_output_stream) << "0x" << hex;
-			(*std_output_stream).width(8);
-			(*std_output_stream) << (addr / memory_atom_size) << ":" << dec << s << endl;
+			(*std_output_stream) << "0x" << std::hex;
+			(*std_output_stream).width((2 * sizeof(ADDRESS)) / memory_atom_size);
+			(*std_output_stream) << (addr / memory_atom_size) << ":" << std::dec;
+			
+			(*std_output_stream).fill('0');
+			(*std_output_stream) << std::hex;
+			while(addr < next_addr)
+			{
+				uint8_t value = 0;
+				if(memory_import->ReadMemory(addr, &value, 1))
+				{
+					(*std_output_stream).width(2);
+					(*std_output_stream) << (unsigned int) value;
+				}
+				else
+				{
+					(*std_output_stream) << "??";
+				}
+				(*std_output_stream) << " ";
+				
+				addr++;
+			}
+			
+			(*std_output_stream) << " " << s << std::endl;
 			(*std_output_stream).fill(' ');
+			(*std_output_stream).width(width);
 		} while(addr = next_addr, --count > 0);
+		
+		(*std_output_stream).width(width);
+		(*std_output_stream).fill(fill);
+		(*std_output_stream).flags(flags);
 	}
 }
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::HasBreakpoint(ADDRESS addr)
 {
-	return debug_event_trigger_import ? debug_event_trigger_import->IsEventListened(unisim::util::debug::Breakpoint<ADDRESS>(addr)) : false;
+	if(debug_event_trigger_import)
+	{
+		return debug_event_trigger_import->HasBreakpoints(addr);
+	}
+	return false;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
+		if(debug_event_trigger_import->SetBreakpoint(addr))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't set breakpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
+		if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, true))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't set watchpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
+		if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, true))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't set watchpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
+		if(debug_event_trigger_import->RemoveBreakpoint(addr))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove breakpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
+		if(debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove read watchpoint at 0x" << std::hex << addr << std::dec << " (" << size << " bytes)" << std::endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
+		if(debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove write watchpoint at 0x" << std::hex << addr << std::dec << " (" << size << " bytes)" << std::endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBreakpoints()
 {
-	std::list<const Event<ADDRESS> *> events;
+	std::list<unisim::util::debug::Event<ADDRESS> *> events;
 	debug_event_trigger_import->EnumerateListenedEvents(events, unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT);
-	typename list<const Event<ADDRESS> *>::const_iterator iter;
+	typename std::list<unisim::util::debug::Event<ADDRESS> *>::const_iterator iter;
 
 	for(iter = events.begin(); iter != events.end(); iter++)
 	{
-		const Event<ADDRESS> *event = *iter;
-		const Breakpoint<ADDRESS> *brkp = (const Breakpoint<ADDRESS> *) event;
+		unisim::util::debug::Event<ADDRESS> *event = *iter;
+		unisim::util::debug::Breakpoint<ADDRESS> *brkp = (unisim::util::debug::Breakpoint<ADDRESS> *) event;
 		ADDRESS addr = brkp->GetAddress();
 		
-		(*std_output_stream) << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
+		(*std_output_stream) << "*0x" << std::hex << (addr / memory_atom_size) << std::dec << " (";
 		
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1284,7 +1491,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		}
 		(*std_output_stream) << ")";
 		
-		const Statement<ADDRESS> *stmt = FindStatement(addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
+		const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
 		
 		if(stmt)
 		{
@@ -1306,21 +1513,21 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 			}
 		}
 
-		(*std_output_stream) << endl;
+		(*std_output_stream) << std::endl;
 	}
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpWatchpoints()
 {
-	std::list<const Event<ADDRESS> *> events;
+	std::list<unisim::util::debug::Event<ADDRESS> *> events;
 	debug_event_trigger_import->EnumerateListenedEvents(events, unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT);
-	typename list<const Event<ADDRESS> *>::const_iterator iter;
+	typename std::list<unisim::util::debug::Event<ADDRESS> *>::const_iterator iter;
 
 	for(iter = events.begin(); iter != events.end(); iter++)
 	{
-		const Event<ADDRESS> *event = *iter;
-		const Watchpoint<ADDRESS> *wt = (const Watchpoint<ADDRESS> *) event;
+		unisim::util::debug::Event<ADDRESS> *event = *iter;
+		unisim::util::debug::Watchpoint<ADDRESS> *wt = (unisim::util::debug::Watchpoint<ADDRESS> *) event;
 		ADDRESS addr = wt->GetAddress();
 		uint32_t size = wt->GetSize();
 		unisim::util::debug::MemoryAccessType mat = wt->GetMemoryAccessType();
@@ -1350,9 +1557,9 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		}
 		(*std_output_stream) << " ";
 		
-		(*std_output_stream) << "*0x" << hex << (addr / memory_atom_size) << dec << ":" << (size / memory_atom_size) << " (";
+		(*std_output_stream) << "*0x" << std::hex << (addr / memory_atom_size) << std::dec << "#" << (size / memory_atom_size) << " (";
 		
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1362,7 +1569,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		{
 			(*std_output_stream) << "?";
 		}
-		(*std_output_stream) << ")" << endl;
+		(*std_output_stream) << ")" << std::endl;
 	}
 }
 
@@ -1371,21 +1578,25 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 {
 	unsigned int i, j;
-	streamsize width = (*std_output_stream).width();
+	std::streamsize width = (*std_output_stream).width();
 
 	(*std_output_stream).fill(' ');
 	(*std_output_stream).width(2 * sizeof(addr));
-	(*std_output_stream) << "address" << hex;
+	(*std_output_stream) << "address" << std::hex;
 	(*std_output_stream).width(0);
 	for(i = 0; i < 16 / memory_atom_size; i++)
 	{
 		(*std_output_stream) << "  " << i;
 		for(j = 1; j < memory_atom_size; j++) (*std_output_stream) << "   ";
 	}
-	(*std_output_stream) << endl;
+	(*std_output_stream) << std::endl;
 	for(i = 0; i < 16; i++)
 	{
-		(*std_output_stream) << hex; (*std_output_stream).fill('0'); (*std_output_stream).width(2 * sizeof(addr)); (*std_output_stream) << (addr / memory_atom_size) << " "; (*std_output_stream).fill(' ');
+		(*std_output_stream) << std::hex;
+		(*std_output_stream).fill('0');
+		(*std_output_stream).width(2 * sizeof(addr));
+		(*std_output_stream) << (addr / memory_atom_size) << " ";
+		(*std_output_stream).fill(' ');
 		for(j = 0; j < 16; j++, addr++)
 		{
 			uint8_t value = 0;
@@ -1401,16 +1612,47 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 			if(j < 15) (*std_output_stream) << " ";
 		}
 		addr -= 16;
-		(*std_output_stream) << dec << "  ";
+		(*std_output_stream) << std::dec << "  ";
 		for(j = 0; j < 16; j++, addr++)
 		{
 			uint8_t value = 0;
 			memory_import->ReadMemory(addr, &value, 1);
 			(*std_output_stream) << (char)((value >= ' ' && value < 128) ? value : '.');
 		}
-		(*std_output_stream) << endl;
+		(*std_output_stream) << std::endl;
 	}
 	(*std_output_stream).width(width);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpRegisters()
+{
+	struct Printer : unisim::service::interfaces::RegisterScanner
+	{
+		InlineDebugger<ADDRESS> *inline_debugger;
+		
+		virtual void Append( unisim::service::interfaces::Register* reg)
+		{
+			unsigned int size = reg->GetSize();
+			uint8_t value[size];
+			reg->GetValue(&value);
+			int i;
+			(*inline_debugger->std_output_stream) << reg->GetName() << " = 0x" << std::hex;
+#if BYTE_ORDER == BIG_ENDIAN
+			for(i = 0; i < (int) size; i++)
+#else
+			for(i = size - 1; i >= 0; i--)
+#endif
+			{
+				(*inline_debugger->std_output_stream) << (value[i] >> 4);
+				(*inline_debugger->std_output_stream) << (value[i] & 15);
+			}
+			(*inline_debugger->std_output_stream) << std::dec << std::endl;
+		}
+	} printer;
+	
+	printer.inline_debugger = this;
+	registers_import->ScanRegisters(printer);
 }
 
 template <class ADDRESS>
@@ -1429,7 +1671,7 @@ bool InlineDebugger<ADDRESS>::EditBuffer(ADDRESS addr, std::vector<uint8_t>& buf
 		sstr << ": ";
 		
 		bool interactive = false;
-		if(!GetLine(sstr.str().c_str(), line, interactive))
+		if(Killed() || !GetLine(sstr.str().c_str(), line, interactive))
 		{
 			return false;
 		}
@@ -1457,56 +1699,6 @@ bool InlineDebugger<ADDRESS>::EditBuffer(ADDRESS addr, std::vector<uint8_t>& buf
 	return true;
 }
 
-// template <class ADDRESS>
-// bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
-// {
-// 	unsigned int written = 0;
-// 	unsigned int failed = 0;
-// 	std::string line;
-// 
-// 	(*std_output_stream) << "Entering data memory edit mode." << std::endl;
-// 	do
-// 	{
-// 		std::stringstream sstr;
-// 		sstr << "0x" << std::hex;
-// 		sstr.fill('0');
-// 		sstr.width(2 * sizeof(addr));
-// 		sstr << addr;
-// 		sstr << ": ";
-// 		
-// 		bool interactive = false;
-// 		if(!GetLine(sstr.str().c_str(), line, interactive))
-// 		{
-// 			return false;
-// 		}
-// 	
-// 		if(IsBlankLine(line)) break;
-// 
-// 		const char *ptr = line.c_str();
-// 		char *endptr = 0;
-// 		
-// 		do
-// 		{
-// 			uint8_t value = strtoul(ptr, &endptr, 0);
-// 			
-// 			if(ptr == endptr) break;
-// 		
-// 			if(memory_import->WriteMemory(addr, &value, 1))
-// 				written++;
-// 			else
-// 				failed++;
-// 			
-// 			addr++;
-// 			ptr = endptr;
-// 		}
-// 		while(1);
-// 	}
-// 	while(1);
-// 	(*std_output_stream) << "Leaving data memory edit mode." << std::endl;
-// 	(*std_output_stream) << written << " of " << (failed + written) << " bytes written" << std::endl;
-// 	return true;
-// }
-
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 {
@@ -1530,11 +1722,11 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::service::VariableBase::Type type)
+void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::VariableBase::Type type)
 {
 	bool found = false;
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
+	std::list<unisim::kernel::VariableBase *> lst;
+	std::list<unisim::kernel::VariableBase *>::iterator iter;
 
 	GetSimulator()->GetVariables(lst, type);
 	
@@ -1542,10 +1734,10 @@ void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, t
 	
 	for(iter = lst.begin(); iter != lst.end(); iter++)
 	{
-		VariableBase *var = *iter;
+		unisim::kernel::VariableBase *var = *iter;
 		std::string var_name(var->GetName());
 		
-		if(!name || ((*name == '~') && var_name.find(name + 1, 0, strlen(name + 1)) != string::npos) || (var_name.compare(name) == 0))
+		if(!name || ((*name == '~') && var_name.find(name + 1, 0, strlen(name + 1)) != std::string::npos) || (var_name.compare(name) == 0))
 		{
 			DumpVariable(cmd, var);
 			found = true;
@@ -1557,13 +1749,13 @@ void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, t
 		(*std_output_stream) << "unknown ";
 		switch(type)
 		{
-			case unisim::kernel::service::VariableBase::VAR_REGISTER:
+			case unisim::kernel::VariableBase::VAR_REGISTER:
 				(*std_output_stream) << "register";
 				break;
-			case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+			case unisim::kernel::VariableBase::VAR_STATISTIC:
 				(*std_output_stream) << "statistic";
 				break;
-			case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+			case unisim::kernel::VariableBase::VAR_PARAMETER:
 				(*std_output_stream) << "parameter";
 				break;
 			default:
@@ -1638,28 +1830,25 @@ void InlineDebugger<ADDRESS>::MonitorGetFormat(const char *cmd, char &format)
 		format = 'f';
 		return;
 	}
-	(*std_error_stream) << "WARNING: unknow monitor/register/statistic/parameter format (" << cmd << "). See help for available formats." << endl;
+	(*std_error_stream) << "WARNING: unknow monitor/register/statistic/parameter format (" << cmd << "). See help for available formats." << std::endl;
 	format = 'c';
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *variable)
+void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const unisim::kernel::VariableBase *variable)
 {
 	switch (variable->GetType())
 	{
-		case VariableBase::VAR_ARRAY:
+		case unisim::kernel::VariableBase::VAR_ARRAY:
 			(*std_output_stream) << " A";
 			break;
-		case VariableBase::VAR_PARAMETER:
+		case unisim::kernel::VariableBase::VAR_PARAMETER:
 			(*std_output_stream) << " P";
 			break;
-		case VariableBase::VAR_STATISTIC:
+		case unisim::kernel::VariableBase::VAR_STATISTIC:
 			(*std_output_stream) << " S";
 			break;
-		case VariableBase::VAR_FORMULA:
-			(*std_output_stream) << " F";
-			break;
-		case VariableBase::VAR_REGISTER:
+		case unisim::kernel::VariableBase::VAR_REGISTER:
 			(*std_output_stream) << " R";
 			break;
 		default:
@@ -1676,7 +1865,7 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *
 	switch (format)
 	{
 		case 'x':
-			(*std_output_stream) << "0x" << hex << ((unsigned long long) *variable) << dec;
+			(*std_output_stream) << "0x" << std::hex << ((unsigned long long) *variable) << std::dec;
 			break;
 		case 'd':
 			(*std_output_stream) << ((long long) *variable);
@@ -1695,17 +1884,17 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *
 				(*std_output_stream) << (int)((((unsigned long long) *variable) >> i) & 1);
 			break;
 		case 'a':
-			(*std_output_stream) << "0x" << hex << ((unsigned long long) *variable) << dec;
+			(*std_output_stream) << "0x" << std::hex << ((unsigned long long) *variable) << std::dec;
 			break;
 		case 'c':
-			(*std_output_stream) << ((string) *variable);
+			(*std_output_stream) << ((std::string) *variable);
 			break;
 		case 'f':
 			(*std_output_stream) << ((double) *variable);
 			break;
 	}
 	
-	(*std_output_stream) << endl;
+	(*std_output_stream) << std::endl;
 }
 
 template <class ADDRESS>
@@ -1720,7 +1909,7 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim:
 		
 		std::string symbol_name(symbol->GetName());
 		
-		if(!name || ((*name == '~') && symbol_name.find(name + 1, 0, strlen(name + 1)) != string::npos) || (symbol_name.compare(name) == 0))
+		if(!name || ((*name == '~') && symbol_name.find(name + 1, 0, strlen(name + 1)) != std::string::npos) || (symbol_name.compare(name) == 0))
 		{
 			if(!found)
 			{
@@ -1845,11 +2034,11 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 {
-	VariableBase *variable = GetSimulator()->FindVariable(name);
+	unisim::kernel::VariableBase *variable = GetSimulator()->FindVariable(name);
 	
 	if (variable->IsVoid())
 	{
-		(*std_output_stream) << "Unknow variable (" << name << ")" << endl;
+		(*std_output_stream) << "Unknow variable (" << name << ")" << std::endl;
 		return;
 	}
 
@@ -1860,7 +2049,7 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpProgramProfile()
 {
 	if(!profiling_import) return;
-	(*std_output_stream) << "Program profile:" << endl;
+	(*std_output_stream) << "Program profile:" << std::endl;
 
 	const unisim::util::debug::Profile<ADDRESS>& program_profile = profiling_import->GetProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC);
 	typename std::map<ADDRESS, uint64_t> map = program_profile;
@@ -1869,16 +2058,16 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		ADDRESS next_addr;
 
-		string s = disasm_import->Disasm(addr, next_addr);
+		std::string s = disasm_import->Disasm(addr, next_addr);
 
-		(*std_output_stream) << "0x" << hex;
+		(*std_output_stream) << "0x" << std::hex;
 		(*std_output_stream).fill('0');
 		(*std_output_stream).width(8);
-		(*std_output_stream) << (addr / memory_atom_size) << dec;
+		(*std_output_stream) << (addr / memory_atom_size) << std::dec;
 
 		if(symbol)
 		{
@@ -1896,42 +2085,8 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 
 		(*std_output_stream).fill(' ');
 		(*std_output_stream).width(0);
-		(*std_output_stream) << ":" << (*iter).second << " times:" << s << endl;
+		(*std_output_stream) << ":" << (*iter).second << " times:" << s << std::endl;
 	}
-}
-
-template <class ADDRESS>
-std::string InlineDebugger<ADDRESS>::SearchFile(const char *filename)
-{
-	if(access(filename, F_OK) == 0)
-	{
-		return std::string(filename);
-	}
-
-	std::string s;
-	const char *p;
-
-	p = search_path.c_str();
-	do
-	{
-		if(*p == 0 || *p == ';')
-		{
-			std::stringstream sstr;
-			sstr << s << "/" << filename;
-			std::string path(sstr.str());
-			if(access(path.c_str(), F_OK) == 0)
-			{
-				return path;
-			}
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	return Object::GetSimulator()->SearchSharedDataFile(filename);
 }
 
 template <class ADDRESS>
@@ -1997,7 +2152,7 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
 	if(!profiling_import) return;
-	(*std_output_stream) << "Data " << (write ? "write" : "read") << " profile:" << endl;
+	(*std_output_stream) << "Data " << (write ? "write" : "read") << " profile:" << std::endl;
 	const unisim::util::debug::Profile<ADDRESS>& data_profile = profiling_import->GetProfile(write ? unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE : unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ);
 	typename std::map<ADDRESS, uint64_t> map = data_profile;
 	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
@@ -2005,12 +2160,12 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
-		(*std_output_stream) << "0x" << hex;
+		(*std_output_stream) << "0x" << std::hex;
 		(*std_output_stream).fill('0');
 		(*std_output_stream).width(8);
-		(*std_output_stream) << (addr / memory_atom_size) << dec;
+		(*std_output_stream) << (addr / memory_atom_size) << std::dec;
 
 		if(symbol)
 		{
@@ -2028,94 +2183,8 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 
 		(*std_output_stream).fill(' ');
 		(*std_output_stream).width(0);
-		(*std_output_stream) << ":" << (*iter).second << " times" << endl;
+		(*std_output_stream) << ":" << (*iter).second << " times" << std::endl;
 	}
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::LocateFile(const char *filename, std::string& match_file_path)
-{
-	if(access(filename, R_OK) == 0)
-	{
-		match_file_path = filename;
-		return true;
-	}
-	
-	std::string s;
-	const char *p;
-
-	std::vector<std::string> search_paths;
-
-	s.clear();
-	p = search_path.c_str();
-	do
-	{
-		if(*p == 0 || *p == ';')
-		{
-			search_paths.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	std::vector<std::string> hierarchical_path;
-	
-	s.clear();
-	p = filename;
-	do
-	{
-		if(*p == 0 || *p == '/' || *p == '\\')
-		{
-			hierarchical_path.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	bool match = false;
-	
-	int hierarchical_path_depth = hierarchical_path.size();
-	
-	if(hierarchical_path_depth > 0)
-	{
-		int num_search_paths = search_paths.size();
-		int k;
-		
-		for(k = 0; k < num_search_paths; k++)
-		{
-			const std::string& search_path = search_paths[k];
-			int i;
-			for(i = 0; (!match) && (i < hierarchical_path_depth); i++)
-			{
-				std::string try_file_path = search_path;
-				int j;
-				for(j = i; j < hierarchical_path_depth; j++)
-				{
-					if(!try_file_path.empty()) try_file_path += '/';
-					try_file_path += hierarchical_path[j];
-				}
-				//std::cerr << "try_file_path=\"" << try_file_path << "\":";
-				if(access(try_file_path.c_str(), R_OK) == 0)
-				{
-					//std::cerr << "found" << std::endl;
-					match = true;
-					match_file_path = try_file_path;
-				}
-				else
-				{
-					//std::cerr << "not found" << std::endl;
-				}
-			}
-		}
-	}
-	
-	return match;
 }
 
 template <class ADDRESS>
@@ -2163,7 +2232,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
+void InlineDebugger<ADDRESS>::DumpBackTrace()
 {
 	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
 	
@@ -2177,7 +2246,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 			
 			ADDRESS addr = (*backtrace)[i];
 			
-			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(i == 0 ? addr : (addr - 1));
+			const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(i == 0 ? addr : (addr - 1));
 			
 			(*std_output_stream) << "0x" << std::hex;
 			(*std_output_stream) << (addr / memory_atom_size) << std::dec;
@@ -2188,7 +2257,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 				(*std_output_stream) << ">";
 			}
 
-			const Statement<ADDRESS> *stmt = FindStatement(i == 0 ? addr : (addr - 1), unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
+			const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(i == 0 ? addr : (addr - 1), unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
 			
 			if(stmt)
 			{
@@ -2230,7 +2299,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) const
+bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS& ret_addr) const
 {
 	return backtrace_import->GetReturnAddress(cia, ret_addr);
 }
@@ -2242,7 +2311,7 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 	{
 		std::string str(s + 1);
 		
-		size_t pos = str.find_first_of('#');
+		std::size_t pos = str.find_first_of('#');
 		
 		std::stringstream sstr_addr(str.substr(0, pos));
 		
@@ -2272,7 +2341,7 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		}
 	}
 	
-	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
+	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
 	{
@@ -2304,7 +2373,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		}
 	}
 
-	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
+	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
 	{
@@ -2325,7 +2394,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	if(!(sstr_lineno >> lineno)) return false;
 	if(!sstr_lineno.eof()) return false;
 	
-	const Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(filename.c_str(), lineno, 0);
+	const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(filename.c_str(), lineno, 0);
 	
 	if(stmt)
 	{
@@ -2399,7 +2468,7 @@ bool InlineDebugger<ADDRESS>::ParseFloatValue(const char *s, unisim::util::ieee7
 }
 
 template <class ADDRESS>
-const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
 	switch(opt)
 	{
@@ -2408,22 +2477,22 @@ const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr, t
 		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
 		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
 			{
-				const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+				const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 				ADDRESS func_start_addr = addr;
 				ADDRESS func_end_addr = addr;
 				if(symbol)
 				{
 					ADDRESS symbol_addr = symbol->GetAddress();
 					ADDRESS symbol_size = symbol->GetSize();
-					typename Symbol<ADDRESS>::Type symbol_type = symbol->GetType();
-					if((symbol_size != 0) && (symbol_type == Symbol<ADDRESS>::SYM_FUNC))
+					typename unisim::util::debug::Symbol<ADDRESS>::Type symbol_type = symbol->GetType();
+					if((symbol_size != 0) && (symbol_type == unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC))
 					{
 						func_start_addr = symbol_addr;
 						func_end_addr = symbol_addr + symbol_size - 1;
 					}
 				}
 
-				const Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, opt);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, opt);
 				
 				if(stmt && (stmt->GetAddress() >= func_start_addr) && (stmt->GetAddress() <= func_end_addr))
 				{
@@ -2439,12 +2508,12 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ListSourceFiles()
 {
 	std::set<std::string> source_filenames;
-	std::map<ADDRESS, const Statement<ADDRESS> *> stmts;
+	std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *> stmts;
 	stmt_lookup_import->GetStatements(stmts);
-	typename std::map<ADDRESS, const Statement<ADDRESS> *>::const_iterator stmt_iter;
+	typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator stmt_iter;
 	for(stmt_iter = stmts.begin(); stmt_iter != stmts.end(); stmt_iter++)
 	{
-		const Statement<ADDRESS> *stmt = (*stmt_iter).second;
+		const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_iter).second;
 		
 		const char *source_filename = stmt->GetSourceFilename();
 		if(source_filename)
@@ -2663,7 +2732,7 @@ void InlineDebugger<ADDRESS>::DumpProfilingStatus()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRESS cia)
+void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
@@ -2691,10 +2760,6 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 					{
 						std::ios::fmtflags std_output_stream_saved_flags(std_output_stream->flags());
 						
-						const unisim::util::debug::Type *data_object_type = data_object->GetType();
-						
-						(*std_output_stream) << *data_object_type;
-						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
 						(*std_output_stream) << data_object_name << " = [ ";
 						ADDRESS byte_offset;
 						(*std_output_stream).fill('0');
@@ -2710,125 +2775,111 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 						
 						std_output_stream->flags(std_output_stream_saved_flags);
 						
-						(*std_output_stream) << endl;
+						(*std_output_stream) << std::endl;
 					}
 					else
 					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << std::endl;
 					}
 				}
 				else
 				{
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << std::endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << std::endl;
 			}
-			
+				
 			delete data_object;
 		}
 		else
 		{
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
 		}
 	}
 	else
 	{
-		(*std_output_stream) << "Can't lookup data objects" << endl;
+		(*std_output_stream) << "Can't lookup data objects" << std::endl;
 	}
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDRESS cia)
+void InlineDebugger<ADDRESS>::PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object)
+{
+	const char *data_object_name = data_object->GetName();
+	
+	if(data_object->Exists())
+	{
+		if(!data_object->IsOptimizedOut())
+		{
+			unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
+			(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
+		}
+		else
+		{
+			(*std_output_stream) << data_object_name << " = <optimized out>" << std::endl;
+		}
+	}
+	else
+	{
+		(*std_output_stream) << data_object_name << " = <unavailable>" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		bool requesting_address_of_data_object = false;
 		if(*data_object_name == '&')
 		{
+			// requesting address of data object
 			data_object_name++; // skip '&'
-			requesting_address_of_data_object = true;
-		}
-		
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
-		
-		if(data_object)
-		{
-			const unisim::util::debug::Type *data_object_type = data_object->GetType();
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
 			
-			if(!data_object->IsOptimizedOut())
+			if(data_object)
 			{
-				if(requesting_address_of_data_object)
+				ADDRESS data_object_addr = 0;
+				if(data_object->GetAddress(data_object_addr))
 				{
-					ADDRESS data_object_addr = 0;
-					if(data_object->GetAddress(data_object_addr))
-					{
-						(*std_output_stream) << "&" << data_object_name << " = @0x" << std::hex << data_object_addr << std::dec << endl;
-					}
-					else
-					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" has no address" << endl;
-					}
+					(*std_output_stream) << "&" << data_object_name << " = @0x" << std::hex << data_object_addr << std::dec << std::endl;
 				}
 				else
 				{
-					if(data_object->Fetch())
-					{
-						ADDRESS data_object_bit_size = data_object->GetBitSize();
-						ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
-						unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
-						uint8_t data_object_raw_value[data_object_byte_size];
-						memset(data_object_raw_value, 0, data_object_byte_size);
-						
-						ADDRESS buf_bit_offset = 0;
-						if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
-						{
-							ADDRESS l_bit_size = data_object_bit_size % 8;
-							buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-						}
-						if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
-						{
-							unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
-							(*std_output_stream) << *data_object_type; 
-							if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
-							(*std_output_stream) << data_object_name << ";" << std::endl;
-							(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
-						}
-						else
-						{
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
-						}
-					}
-					else
-					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
-					}
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" has no address" << std::endl;
 				}
+				delete data_object;
 			}
 			else
 			{
-				(*std_output_stream) << *data_object_type;
-				if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
-				(*std_output_stream) << data_object_name << " = <optimized out>" << endl;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
 			}
-			
-			delete data_object;
 		}
 		else
 		{
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+			// requesting value of data object
+			if(data_object)
+			{
+				PrintDataObject(data_object);
+				delete data_object;
+			}
+			else
+			{
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
+			}
 		}
 	}
 	else
 	{
-		(*std_output_stream) << "Can't lookup data objects" << endl;
+		(*std_output_stream) << "Can't lookup data objects" << std::endl;
 	}
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRESS cia)
+bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name)
 {
 	bool status = true;
 
@@ -2884,30 +2935,31 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 							if(!data_object->Commit())
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << std::endl;
 							}
 						}
 						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << std::endl;
 						}
 					}
 					else
 					{
 						status = false;
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << std::endl;
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << std::endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				status = false;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << std::endl;
 			}
 			
 			delete data_object;
@@ -2915,19 +2967,19 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 		else
 		{
 			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
 		}
 	}
 	else
 	{
 		status = false;
-		(*std_output_stream) << "Can't lookup data objects" << endl;
+		(*std_output_stream) << "Can't lookup data objects" << std::endl;
 	}
 	return status;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const char *literal)
+bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, const char *literal)
 {
 	bool status = true;
 
@@ -2965,7 +3017,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							if(!ParseIntegerValue(literal, data_object_raw_value))
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts an integral value" << std::endl;
 							}
 							break;
 						case unisim::util::debug::T_FLOAT:
@@ -2975,7 +3027,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 								if(!ParseFloatValue(literal, float_value))
 								{
 									status = false;
-									(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
+									(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts a floating-point value" << std::endl;
 									break;
 								}
 								switch(data_object_bit_size)
@@ -2992,7 +3044,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 										data_object_raw_value = float_value.queryValue();
 										break;
 									default:
-										(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
+										(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << std::endl;
 										break;
 								}
 							}
@@ -3008,7 +3060,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 						case unisim::util::debug::T_VOID:
 						case unisim::util::debug::T_VOLATILE:
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" is not a base type" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is not a base type" << std::endl;
 							break;
 					}
 					
@@ -3019,25 +3071,26 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							if(!data_object->Commit())
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << std::endl;
 							}
 						}
 						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << std::endl;
 						}
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << std::endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				status = false;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << std::endl;
 			}
 			
 			delete data_object;
@@ -3045,19 +3098,19 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 		else
 		{
 			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
 		}
 	}
 	else
 	{
 		status = false;
-		(*std_output_stream) << "Can't lookup data objects" << endl;
+		(*std_output_stream) << "Can't lookup data objects" << std::endl;
 	}
 	return status;
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope)
+void InlineDebugger<ADDRESS>::ListDataObjects(typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope)
 {
 	if(data_object_lookup_import)
 	{
@@ -3069,6 +3122,118 @@ void InlineDebugger<ADDRESS>::ListDataObjects(ADDRESS cia, typename unisim::serv
 		{
 			(*std_output_stream) << (*it) << std::endl;
 		}
+	}
+	else
+	{
+		(*std_output_stream) << "Can't lookup data objects" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::TrackDataObject(const char *data_object_name)
+{
+	if(data_object_lookup_import)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		
+		if(data_object)
+		{
+			tracked_data_objects.push_back(data_object);
+		}
+		else
+		{
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
+		}
+	}
+	else
+	{
+		(*std_output_stream) << "Can't lookup data objects" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::UntrackDataObject(const char *data_object_name)
+{
+	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	
+	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
+	{
+		if(strcmp((*it)->GetName(), data_object_name) == 0)
+		{
+			it = tracked_data_objects.erase(it);
+		}
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintTrackedDataObjects()
+{
+	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	
+	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = *it;
+		
+		data_object->Seek(cia);
+		
+		PrintDataObject(data_object);
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object)
+{
+	const char *data_object_name = data_object->GetName();
+	
+	if(data_object->Exists())
+	{
+		const unisim::util::debug::Type *data_object_type = data_object->GetType();
+		(*std_output_stream) << data_object_type->BuildCDecl(data_object_name) << ";" << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Type of Data object \"" << data_object_name << "\" is not available" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintDataObjectType(const char *data_object_name)
+{
+	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+	
+	if(data_object)
+	{
+		PrintDataObjectType(data_object);
+	}
+	else
+	{
+		(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::InfoSubProgram(const char *subprogram_name)
+{
+	const unisim::util::debug::SubProgram<ADDRESS> *subprogram = subprogram_lookup_import->FindSubProgram(subprogram_name);
+	
+	if(subprogram)
+	{
+		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" found" << std::endl;
+		(*std_output_stream) << "Arity: " << subprogram->GetArity() << std::endl;
+		for(unsigned i = 0; i < subprogram->GetArity(); i++)
+		{
+			const unisim::util::debug::FormalParameter *formal_param = subprogram->GetFormalParameter(i);
+			
+			const char *formal_param_name = formal_param->GetName();
+			const unisim::util::debug::Type *formal_param_type = formal_param->GetType();
+			(*std_output_stream) << "Type of parameter #" << i << ": " << formal_param_type->BuildCDecl(formal_param_name) << std::endl;
+		}
+		
+		delete subprogram;
+	}
+	else
+	{
+		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" not found" << std::endl;
 	}
 }
 
@@ -3091,6 +3256,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 				(*std_output_stream) << prompt;
 			}
 			line_read = readline(prompt);
+			if(Killed()) return false;
 			if(!line_read)
 			{
 				rl_redisplay(); // work around when terminal size changes
@@ -3118,8 +3284,9 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 			std::cout << prompt;
 		}
 		(*std_output_stream) << prompt;
-		getline(cin, line);
-		if(cin.fail()) return false;
+		getline(std::cin, line);
+		if(std::cin.fail()) return false;
+		if(Killed()) return false;
 		if(std_output_stream != &std::cout)
 		{
 			(*std_output_stream) << line << std::endl;
@@ -3145,7 +3312,7 @@ bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line) const
 	unsigned int i;
 	for(i = 0; i < n; i++)
 	{
-		if(line[i] != ' ') return false;
+		if ((line[i] != ' ') && (line[i] != '\t') && (line[i] != '\n') && (line[i] != '\r')) return false;
 	}
 	return true;
 }
@@ -3161,6 +3328,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd) const
 {
 	return strcmp(cmd, "si") == 0 || strcmp(cmd, "stepi") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsTraverseCommand(const char *cmd) const
+{
+  return strcmp(cmd, "traverse") == 0;
 }
 
 template <class ADDRESS>
@@ -3215,6 +3388,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsDumpCommand(const char *cmd) const
 {
 	return strcmp(cmd, "d") == 0 || strcmp(cmd, "dump") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsRegistersCommand(const char *cmd) const
+{
+	return strcmp(cmd, "regs") == 0 || strcmp(cmd, "registers") == 0;
 }
 
 template <class ADDRESS>
@@ -3384,6 +3563,69 @@ bool InlineDebugger<ADDRESS>::IsListDataObjectsCommand(const char *cmd) const
 {
 	return strcmp(cmd, "lob") == 0 || strcmp(cmd, "lstobj") == 0 || strcmp(cmd, "listobjects") == 0;
 }
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsTrackDataObjectCommand(const char *cmd) const
+{
+	return strcmp(cmd, "tob") == 0 || strcmp(cmd, "trackobj") == 0 || strcmp(cmd, "trackobject") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsUntrackDataObjectCommand(const char *cmd) const
+{
+	return strcmp(cmd, "utob") == 0 || strcmp(cmd, "untrackobj") == 0 || strcmp(cmd, "untrackobject") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsWhatIsCommand(const char *cmd) const
+{
+	return strcmp(cmd, "whatis") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsInfoSubProgramCommand(const char *cmd) const
+{
+	return strcmp(cmd, "info") == 0;
+}
+
+template <class ADDRESS>
+InlineDebugger<ADDRESS>::VisitedInstructionPage::VisitedInstructionPage()
+{
+	std::fill_n(flags,WORD_COUNT,0);
+}
+
+template <class ADDRESS>
+bool
+InlineDebugger<ADDRESS>::VisitedInstructionPage::Get(ADDRESS cia)
+{
+	uint32_t mask = uint32_t(1) << (cia % BITS_PER_WORD);
+	unsigned idx = (cia / BITS_PER_WORD) % WORD_COUNT;
+	bool visited( flags[idx] & mask );
+	flags[idx] |= mask;
+	return visited;
+}
+
+template <class ADDRESS>
+ADDRESS
+InlineDebugger<ADDRESS>::VisitedInstructionPage::MaskLowerBits(ADDRESS cia)
+{
+  return cia & -(ADDRESS(1) << OFFSET_BITS);
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS _cia)
+{
+	ADDRESS hi_address = VisitedInstructionPage::MaskLowerBits(_cia);
+	VisitedInstructionPage& vip = visited_instructions[hi_address];
+	return vip.Get(_cia);
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsStarted() const
+{
+	return is_started;
+}
+
 
 } // end of namespace inline_debugger
 } // end of namespace debug

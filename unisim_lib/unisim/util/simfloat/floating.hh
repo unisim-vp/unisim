@@ -45,11 +45,11 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <iosfwd>
-#include <limits.h>
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <assert.h>
+#include <climits>
+#include <cfloat>
+#include <cmath>
+#include <cstdio>
+#include <cassert>
 #if defined(__GNUC__)
 #ifdef __SUN__
 #include <ieeefp.h>
@@ -85,6 +85,8 @@ class Access : public Integer::Details::Access {
       
      private:
       bool fAvoidInfty;
+      bool fAvoidAllInfty;
+      bool fAvoidDenormalized;
       bool fKeepNaNSign;
       bool fProduceDivNaNPositive;
       bool fRoundToEven;
@@ -110,7 +112,8 @@ class Access : public Integer::Details::Access {
 
      public:
       StatusAndControlFlags()
-         :  fAvoidInfty(false), fKeepNaNSign(false), fProduceDivNaNPositive(false),
+         :  fAvoidInfty(false), fAvoidAllInfty(false), fAvoidDenormalized(false),
+            fKeepNaNSign(false), fProduceDivNaNPositive(false),
             fRoundToEven(true), fPositiveZeroMAdd(false), fUpApproximateInfty(false),
             fUpApproximateInversionForNear(false), fChooseNaNAddBeforeMult(false),
             fConvertNaNNegative(false), fRefuseMinusZero(false), cContext(CMinDown),
@@ -119,7 +122,8 @@ class Access : public Integer::Details::Access {
             fSNaNOperand(false), qnrQNaNResult(QNNRUndefined), feExcept(FENoException),
             fDivisionByZero(false) {}
       StatusAndControlFlags(const StatusAndControlFlags& rpSource)
-         :  fAvoidInfty(rpSource.fAvoidInfty), fKeepNaNSign(rpSource.fKeepNaNSign), fProduceDivNaNPositive(rpSource.fProduceDivNaNPositive),
+         :  fAvoidInfty(rpSource.fAvoidInfty), fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized),
+            fKeepNaNSign(rpSource.fKeepNaNSign), fProduceDivNaNPositive(rpSource.fProduceDivNaNPositive),
             fRoundToEven(rpSource.fRoundToEven), fPositiveZeroMAdd(rpSource.fPositiveZeroMAdd),
             fUpApproximateInfty(rpSource.fUpApproximateInfty), fUpApproximateInversionForNear(rpSource.fUpApproximateInversionForNear),
             fChooseNaNAddBeforeMult(rpSource.fChooseNaNAddBeforeMult), fConvertNaNNegative(rpSource.fConvertNaNNegative),
@@ -148,6 +152,10 @@ class Access : public Integer::Details::Access {
       StatusAndControlFlags& setPositiveZeroMAdd() { fPositiveZeroMAdd = true; return *this; }
       StatusAndControlFlags& avoidInfty()      { fAvoidInfty = true; return *this; }
       StatusAndControlFlags& clearAvoidInfty() { fAvoidInfty = false; return *this; }
+      StatusAndControlFlags& avoidAllInfty()   { fAvoidAllInfty = true; return *this; }
+      StatusAndControlFlags& clearAvoidAllInfty() { fAvoidAllInfty = false; return *this; }
+      StatusAndControlFlags& avoidDenormalized() { fAvoidDenormalized = true; return *this; }
+      StatusAndControlFlags& clearAvoidDenormalized() { fAvoidDenormalized = false; return *this; }
       StatusAndControlFlags& setKeepNaNSign()  { fKeepNaNSign = true; return *this; }
       StatusAndControlFlags& setProduceDivNaNPositive() { fProduceDivNaNPositive = true; return *this; }
       StatusAndControlFlags& setUpApproximateInfty() { fUpApproximateInfty = true; return *this; }
@@ -166,10 +174,12 @@ class Access : public Integer::Details::Access {
       bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
       bool isPositiveZeroMAdd() { return fPositiveZeroMAdd; }
       bool isInftyAvoided() const { return fAvoidInfty; }
+      bool isAllInftyAvoided() const { return fAvoidAllInfty; }
       bool doesAvoidInfty(bool fNegative) const
          {  assert(fAvoidInfty);
-            return fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest);
+            return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest));
          }
+      bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
       bool keepNaNSign() const { return fKeepNaNSign; }
       bool produceDivNaNPositive() const { return fProduceDivNaNPositive; }
       bool upApproximateInfty() const { return fUpApproximateInfty; }
@@ -215,7 +225,7 @@ class Access : public Integer::Details::Access {
 
       void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
       void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
-      bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
+      bool hasEffectiveRoundToEven() const { return fEffectiveRoundToEven; }
 
       void setPartialRead() { rrReadResult = RRPartial; }
       void setTotalRead() { rrReadResult = RRTotal; }
@@ -248,13 +258,11 @@ class Access : public Integer::Details::Access {
 
       bool isDivisionByZero() const { return fDivisionByZero; }
       void setDivisionByZero() { fDivisionByZero = true; }
-      bool hasFlowException() const { return feExcept != FENoException; }
       void clearFlowException() { feExcept = FENoException; }
       void setOverflow() { feExcept = FEOverflow; }
       void setUnderflow() { feExcept = FEUnderflow; }
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
-      void clearUnderflow() { feExcept = FENoException; }
    };
    class WriteParameters {
      private:
@@ -365,7 +373,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const int UBitSizeExponent = BitSizeExponent;
    typedef unsigned char CharChunk[BitSizeMantissa+BitSizeExponent+1];
    void setChunkSize(int uChunkSize) const { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
-   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize) const
+   void copyChunk(CharChunk& ccChunk, void const* pChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memcpy((unsigned char*) ccChunk, pChunk, uChunkSize);
       }
@@ -387,7 +395,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa() {}
       Mantissa(const Mantissa& mSource) : inherited(mSource) {}
       Mantissa(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
+         {  for (int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
          }
       void normalizeLastCell() { inherited::normalizeLastCell(); }
@@ -396,7 +404,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa& operator=(const Mantissa& mSource)
          {  return (Mantissa&) inherited::operator=(mSource); }
       Mantissa& operator=(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex <= inherited::lastCellIndex(); ++uIndex)
+         {  for (int uIndex = 0; uIndex <= inherited::lastCellIndex(); ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
             inherited::normalize();
             return *this;
@@ -453,7 +461,6 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const Exponent& getOneExponent(const Exponent&) { return eOneExponent; }
    static const Exponent& getMinusOneExponent(const Exponent&) { return eMinusOneExponent; }
    static const Exponent& getInftyExponent(const Exponent&) { return eInftyExponent; }
-   static const Exponent& getMaxExponent(const Exponent&) { return eZeroExponent; }
 
    class ExtendedMantissa : public Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa+1> > {
      private:
@@ -462,7 +469,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
      public:
       ExtendedMantissa(const ExtendedMantissa& emSource) : inherited(emSource) {}
       ExtendedMantissa(const Mantissa& mSource)
-         {  register int uIndex = 0;
+         {  int uIndex = 0;
             for (; uIndex <= mSource.lastCellIndex(); ++uIndex)
                inherited::array(uIndex) = mSource[uIndex];
             inherited::bitArray(UBitSizeMantissa) = true;
@@ -617,7 +624,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       bool isNegativeMult() const { return (oOperation & OMinusPlus); }
       bool hasSameSign(bool fNegative) const
          {  assert(pbdAdd);
-            register bool fResult = pbdAdd->fNegative == fNegative;
+            bool fResult = pbdAdd->fNegative == fNegative;
             return ((oOperation == OPlusPlus) || (oOperation == OMinusMinus)) ? fResult : !fResult;
          }
    };
@@ -675,14 +682,14 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return *this;
       }
 
-   void setChunk(void* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void setChunk(void const* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
    void fillChunk(void* pChunk) const { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
-   void setChunk(void* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
+   void setChunk(void const* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
    void fillChunk(void* pChunk, bool fLittleEndian) const;
 
    void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);
    void setInteger(const IntConversion& icValue, StatusAndControlFlags& scfFlags);
-   void retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags) const;
+   void retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags, unsigned fbits=0) const;
    enum ComparisonResult { CRNaN=0, CRLess=1, CREqual=2, CRGreater=3 };
    ComparisonResult compare(const thisType& bdSource) const
       {  ComparisonResult crResult = CRNaN;
@@ -693,7 +700,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
                   crResult = CREqual;
             }
             else {
-               register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+               typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
                crResult = (crExponentResult != Exponent::CREqual)
                   ? ((ComparisonResult) (1+crExponentResult))
                   : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
@@ -704,7 +711,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return crResult;
       }
    ComparisonResult compareValue(const thisType& bdSource) const
-      {  register ComparisonResult crResult;
+      {  ComparisonResult crResult;
          if (fNegative != bdSource.fNegative) {
             if (!isZero() || !bdSource.isZero())
                crResult = fNegative ? CRLess : CRGreater;
@@ -712,7 +719,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
                crResult = CREqual;
          }
          else {
-            register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+            typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
             crResult = (crExponentResult != Exponent::CREqual)
                ? ((ComparisonResult) (1+crExponentResult))
                : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
@@ -723,17 +730,17 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       }
    bool operator==(const thisType& bdSource) const { return compare(bdSource) == CREqual; }
    bool operator!=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRLess) || (crResult == CRGreater);
       }
    bool operator<(const thisType& bdSource) const { return compare(bdSource) == CRLess; }
    bool operator>(const thisType& bdSource) const { return compare(bdSource) == CRGreater; }
    bool operator<=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRLess) || (crResult == CREqual);
       }
    bool operator>=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRGreater) || (crResult == CREqual);
       }
 
@@ -743,7 +750,6 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
    typename TypeTraits::Exponent getOneExponent() const { return TypeTraits::getOneExponent(biExponent); }
    typename TypeTraits::Exponent getMinusOneExponent() const { return TypeTraits::getMinusOneExponent(biExponent); }
    typename TypeTraits::Exponent getInftyExponent() const { return TypeTraits::getInftyExponent(biExponent); }
-   typename TypeTraits::Exponent getMaxExponent() const { return TypeTraits::getMaxExponent(biExponent); }
 
    const typename TypeTraits::Exponent& queryBasicExponent() const { return biExponent; }
    typename TypeTraits::Exponent& querySBasicExponent() { return biExponent; }
@@ -763,9 +769,10 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
             biResult -= biExponent;
          return biResult;
       }
+   int queryExponentValue() const { return queryBasicExponent().queryValue() - getZeroExponent().queryValue(); }
    void setBasicExponent(const typename TypeTraits::Exponent& biExponentSource) { biExponent = biExponentSource; }
-   void setInfty() { fNegative = false; biExponent = TypeTraits::getInftyExponent(biExponent); biMantissa = 0U; }
-   void setZero() { fNegative = false; biExponent = 0U; biMantissa = 0U; }
+   void setInfty(bool negative=false) { fNegative = negative; biExponent = TypeTraits::getInftyExponent(biExponent); biMantissa = 0U; }
+   void setZero(bool negative=false) { fNegative = negative; biExponent = 0U; biMantissa = 0U; }
    void setOne() { fNegative = false; biExponent = TypeTraits::getZeroExponent(biExponent); biMantissa = 0U; }
    void setExponent(const typename TypeTraits::Exponent& biExponentSource, bool fNegative = false)
       {  if (!fNegative) {
@@ -796,6 +803,8 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       {  return (biExponent == TypeTraits::getInftyExponent(biExponent))
             && biMantissa.cbitArray(bitSizeMantissa()-1);
       }
+   bool hasInftyExponent() const
+      {  return biExponent == TypeTraits::getInftyExponent(biExponent); }
    bool isNormalized() const
       {  return (!biExponent.isZero()) && (biExponent != TypeTraits::getInftyExponent(biExponent)); }
    bool isDenormalized() const { return biExponent.isZero() && !biMantissa.isZero(); }
@@ -902,7 +911,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
    void swap(thisType& bdSource)
       {  biMantissa.swap(bdSource.biMantissa);
          biExponent.swap(bdSource.biExponent);
-         register bool fTemp = fNegative;
+         bool fTemp = fNegative;
          fNegative = bdSource.fNegative;
          bdSource.fNegative = fTemp;
       }

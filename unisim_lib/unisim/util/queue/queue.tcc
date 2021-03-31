@@ -130,9 +130,28 @@ void Queue<CONFIG>::Pop()
 }
 
 template <class CONFIG>
+void Queue<CONFIG>::Pop(unsigned int num_elts)
+{
+	if(num_elts)
+	{
+		do
+		{
+			Pop();
+		}
+		while(--num_elts);
+	}
+}
+
+template <class CONFIG>
 unsigned int Queue<CONFIG>::Size() const
 {
 	return size;
+}
+
+template <class CONFIG>
+unsigned int Queue<CONFIG>::Available() const
+{
+	return CONFIG::SIZE - size;
 }
 
 template <class CONFIG>

@@ -61,6 +61,7 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "symbol-table-lookup-import[" << i << "]";
 		string import_name = sstr.str();
 		symbol_table_lookup_import[i] = new ServiceImport<SymbolTableLookup<ADDRESS> >(import_name.c_str(), this);
+		symbol_table_lookup_export.SetupDependsOn(*symbol_table_lookup_import[i]);
 	}
 }
 

@@ -119,8 +119,6 @@ unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os,
 
 template <unsigned int DATA_SIZE>
 unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& os, const MemoryResponse<DATA_SIZE>& rsp) {
-	typedef MemoryResponse<DATA_SIZE> RspType;
-	
 	os << "- read_data(hex) =" << std::hex;
 	for(unsigned int i = 0; i < DATA_SIZE; i++) {
 		os << " " << (unsigned int)rsp.read_data[i];

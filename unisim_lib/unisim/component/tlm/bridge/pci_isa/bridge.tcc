@@ -51,9 +51,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::Bridge(const sc_module_name& name, Object *parent) :
+Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::Bridge(const sc_core::sc_module_name& name, Object *parent) :
 	Object(name, parent, "PCI-to-ISA bridge"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	unisim::component::cxx::bridge::pci_isa::Bridge<ADDRESS_TYPE>(name, parent),
 	pci_slave_port("pci-slave-port"),
 	//pci_master_port("pci-master-port"),
@@ -85,8 +85,8 @@ template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup()
 {
 	if(!inherited::BeginSetup()) return false;
-	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
-	isa_bus_cycle_time = sc_time(1.0 / (double) (*this)["isa-bus-frequency"], SC_US);
+	pci_bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["pci-bus-frequency"], sc_core::SC_US);
+	isa_bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["isa-bus-frequency"], sc_core::SC_US);
 	return true;
 }
 
@@ -124,11 +124,11 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 	
 					if(legal_access)
 					{
-						wait(GetSynchro(isa_bus_cycle_time, SC_ZERO_TIME));
+						wait(GetSynchro(isa_bus_cycle_time, sc_core::SC_ZERO_TIME));
 	
 						Pointer<ISAReq> isa_req = new(isa_req) ISAReq(); // bus transaction request
 						Pointer<ISARsp> isa_rsp; // bus transaction response
-						sc_event isa_rsp_ev; // event notified when bus transaction response is ready
+						sc_core::sc_event isa_rsp_ev; // event notified when bus transaction response is ready
 						Pointer<TlmMessage<ISAReq, ISARsp> > isa_msg =
 								new(isa_msg) TlmMessage<ISAReq, ISARsp>(isa_req, isa_rsp_ev); // message for bus transaction
 	
@@ -199,8 +199,8 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 					{
 						case unisim::component::cxx::pci::TT_READ:
 							{
-								sc_event *pci_rsp_ev = pci_msg->GetResponseEvent();
-								pci_rsp_ev->notify(GetSynchro(pci_bus_cycle_time, SC_ZERO_TIME));
+								sc_core::sc_event *pci_rsp_ev = pci_msg->GetResponseEvent();
+								pci_rsp_ev->notify(GetSynchro(pci_bus_cycle_time, sc_core::SC_ZERO_TIME));
 								if(inherited::verbose)
 								{
 									inherited::logger << DebugInfo << ": Forwarding to PCI " << (*pci_msg->rsp) << std::endl << EndDebugInfo;
@@ -242,7 +242,7 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 							}
 						
 							pci_msg->rsp = pci_rsp;
-							sc_event *pci_rsp_ev = pci_msg->GetResponseEvent();
+							sc_core::sc_event *pci_rsp_ev = pci_msg->GetResponseEvent();
 							pci_rsp_ev->notify(pci_bus_cycle_time);
 						}
 						break;
@@ -265,14 +265,14 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-sc_time Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::GetSynchro(const sc_time& cycle_time, const sc_time& process_delay)
+sc_core::sc_time Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::GetSynchro(const sc_core::sc_time& cycle_time, const sc_core::sc_time& process_delay)
 {
-	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
+	sc_dt::uint64 current_time_tu = sc_core::sc_time_stamp().value();
 	sc_dt::uint64 process_delay_tu = process_delay.value();
 	sc_dt::uint64 next_time_tu = current_time_tu + process_delay_tu;
 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
 	sc_dt::uint64 time_phase_tu = next_time_tu % cycle_time_tu;
-	return sc_time(next_time_tu - current_time_tu + (cycle_time_tu - time_phase_tu), false);
+	return sc_core::sc_time(next_time_tu - current_time_tu + (cycle_time_tu - time_phase_tu), false);
 }
 
 } // end of namespace pci_isa

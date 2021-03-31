@@ -57,8 +57,13 @@
 #include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
@@ -113,10 +118,10 @@ using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
 using unisim::service::telnet::Telnet;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBase;
+using unisim::kernel::Object;
 
 #ifdef DEBUG_PPC440EMU_SYSTEM
 class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
@@ -148,13 +153,13 @@ typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CON
 static const unsigned int TIMER_IRQ = 3;
 static const unsigned int UART_LITE_IRQ = 2;
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
 	int GetExitStatus() const;
 protected:
@@ -172,6 +177,14 @@ private:
 	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
 
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger */
+		static const unsigned int MAX_FRONT_ENDS = 2;
+	};
+	
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -201,6 +214,18 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC3_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> EXTERNAL_SLAVE_DCR_STUB;
 
+	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef PPCLinuxKernelLoader<CPU_ADDRESS_TYPE> PPC_LINUX_KERNEL_LOADER;
+	typedef Elf32Loader<CPU_ADDRESS_TYPE> ROM_LOADER;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -254,6 +279,10 @@ private:
 	PPCLinuxKernelLoader<CPU_ADDRESS_TYPE> *ppc_linux_kernel_loader;
 	//  - ROM loader (ELF32)
 	Elf32Loader<CPU_ADDRESS_TYPE> *rom_loader;
+	
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	//  - debugger back-end
+	Debugger *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -285,13 +314,13 @@ private:
 	Parameter<bool> param_enable_telnet;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 };
 
 
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, ram(0)
 	, rom(0)
@@ -314,6 +343,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dmac2_dcr_stub(0)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
+	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -419,6 +449,8 @@ Simulator::Simulator(int argc, char **argv)
 	ppc_linux_kernel_loader = new PPCLinuxKernelLoader<CPU_ADDRESS_TYPE>("ppc-linux-kernel-loader");
 	//  - ROM Loader
 	rom_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("rom-loader");
+	//  - Debugger
+	debugger = (enable_inline_debugger or enable_gdb_server) ? new Debugger("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -516,31 +548,49 @@ Simulator::Simulator(int argc, char **argv)
 	cpu->loader_import >> ppc_linux_kernel_loader->loader_export;
 	ppc_linux_kernel_loader->registers_import >> cpu->registers_export;
 	
-	if(enable_inline_debugger)
+	if (enable_inline_debugger or enable_gdb_server)
 	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> ppc_linux_kernel_loader->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> ppc_linux_kernel_loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> ppc_linux_kernel_loader->symbol_table_lookup_export;
-	}
-	else if(enable_gdb_server)
-	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
+		// Debugger <-> CPU Connections
+		// Debugger <-> CPU connections
+		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+		cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+		*debugger->disasm_import[0]                          >> cpu->disasm_export;
+		*debugger->memory_import[0]                          >> cpu->memory_export;
+		*debugger->registers_import[0]                       >> cpu->registers_export;
+		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+			
+		// Debugger <-> Loader connections
+		debugger->blob_import >> ppc_linux_kernel_loader->blob_export;
+		
+		if (enable_inline_debugger)
+		{
+			// inline-debugger <-> debugger connections
+			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+			inline_debugger->memory_import                 >> *debugger->memory_export[0];
+			inline_debugger->registers_import              >> *debugger->registers_export[0];
+			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+		}
+		
+		if (enable_gdb_server)
+		{
+			// gdb-server <-> debugger connections
+			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+			gdb_server->memory_import                 >> *debugger->memory_export[1];
+			gdb_server->registers_import              >> *debugger->registers_export[1];
+		}
 	}
 
 	if(estimate_power)
@@ -633,7 +683,7 @@ Simulator::~Simulator()
 	if(telnet) delete telnet;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppc440emu-system");
@@ -648,7 +698,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *initrd_filename = "initrd.img";
 	const char *rom_filename = "boot.elf";
 	int gdb_server_tcp_port = 1234;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
 	double cpu_clock_multiplier = 2.0;
@@ -817,13 +867,6 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	void (*prev_sig_int_handler)(int) = 0;
-
-	if(!inline_debugger)
-	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-	}
-
 	try
 	{
 		sc_start();
@@ -832,11 +875,6 @@ void Simulator::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-		signal(SIGINT, prev_sig_int_handler);
 	}
 
 	cerr << "Simulation finished" << endl;
@@ -860,7 +898,7 @@ void Simulator::Run()
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	// Build the Linux OS arguments from the command line arguments
 	
@@ -880,7 +918,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		}*/
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	return unisim::kernel::Simulator::Setup();
 }
 
 void Simulator::Stop(Object *object, int _exit_status)
@@ -892,7 +930,7 @@ void Simulator::Stop(Object *object, int _exit_status)
 	}
 #ifdef DEBUG_PPC440EMU_SYSTEM
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
@@ -928,15 +966,15 @@ int sc_main(int argc, char *argv[])
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation at supervisor privilege level" << endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}

@@ -39,7 +39,8 @@
 #include "config.h"
 #endif
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/video.hh>
 #include <unisim/service/interfaces/keyboard.hh>
 #include <unisim/service/interfaces/mouse.hh>
@@ -66,13 +67,13 @@ using std::list;
 using std::string;
 using std::map;
 using namespace unisim::util::endian;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Video;
 using unisim::service::interfaces::Keyboard;
@@ -121,6 +122,13 @@ private:
 
 	void PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action);
 
+	// Setup SDL
+	bool SetupSDL();
+	
+	bool alive;
+	unsigned int typematic_delay_us;
+	unsigned int typematic_interval_us;
+	
 #if defined(HAVE_SDL)
 	enum
 	{
@@ -142,13 +150,10 @@ private:
 	bool full_screen;
 	SDLKey host_key;
 	bool mode_set;
-	bool alive;
 	SDL_cond *video_subsystem_initialized_cond;
 	SDL_mutex *video_subsystem_initialized_mutex;
 	bool refresh;
 	bool force_refresh;
-	unsigned int typematic_delay_us;
-	unsigned int typematic_interval_us;
 	VideoMode<ADDRESS> video_mode;
 	unsigned int bmp_out_file_number;
 	string learn_keymap_filename;
@@ -166,9 +171,6 @@ private:
 	bool work_around_sdl_mouse_motion_coordinates_bug;
 	Parameter<bool> param_work_around_sdl_mouse_motion_coordinates_bug;
 
-	// Setup SDL
-	bool SetupSDL();
-	
 	// Keyboard learning is executed in main thread
 	void LearnKeyboard();
 

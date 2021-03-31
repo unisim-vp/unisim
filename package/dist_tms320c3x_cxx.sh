@@ -105,12 +105,12 @@ unistd.h \
 vector"
 
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_helper.cc \
+unisim/kernel/kernel.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/debug/debug.cc \
-unisim/kernel/api/api.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/symbol_32.cc \
 unisim/util/debug/symbol_64.cc \
@@ -137,17 +137,17 @@ unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/blob64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/debug/coff_symtab/coff_symtab64.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -184,8 +184,6 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_64.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/backtrace/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33_debug.cc \
 unisim/component/cxx/processor/tms320c3x/register.cc \
@@ -204,12 +202,12 @@ unisim/component/cxx/processor/tms320c3x/isa/power.isa \
 unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.isa"
 
 UNISIM_LIB_TMS320C3X_HEADER_FILES="${UNISIM_LIB_TMS320C3X_ISA_FILES} \
-unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_helper.hh \
+unisim/kernel/kernel.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
-unisim/kernel/debug/debug.hh \
-unisim/kernel/api/api.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/util/likely/likely.hh \
 unisim/util/xml/xml.hh \
 unisim/util/debug/memory_access_type.hh \
@@ -257,9 +255,9 @@ unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
-unisim/util/debug/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
+unisim/util/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
@@ -277,12 +275,16 @@ unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
 unisim/util/inlining/inlining.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/util/nat_sort/nat_sort.hh \
+unisim/util/hypapp/hypapp.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -308,7 +310,6 @@ unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/loader/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
@@ -347,9 +348,9 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
@@ -375,7 +376,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/tms320c3x/cpu.tcc \
 unisim/component/cxx/processor/tms320c3x/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
@@ -430,6 +430,7 @@ vector \
 UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES="\
 main.cc \
 "
+
 UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES="\
 "
 
@@ -738,7 +739,7 @@ fi
 # 	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
 # 
 # 	echo "Generating docs Makefile.am"
-# 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
+# 	echo "ACLOCAL_AMFLAGS=-I m4" > "${DOCS_MAKEFILE_AM}"
 # 	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
 # 	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
 # 	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
@@ -849,7 +850,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -933,7 +934,7 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 
 	AM_TMS320C3X_VERSION=$(printf ${TMS320C3X_VERSION} | sed -e 's/\./_/g')
 	echo "Generating TMS320C3X Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${TMS320C3X_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${TMS320C3X_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libtms320c3x-${TMS320C3X_VERSION}.a" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "libtms320c3x_${AM_TMS320C3X_VERSION}_a_SOURCES = ${UNISIM_LIB_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"

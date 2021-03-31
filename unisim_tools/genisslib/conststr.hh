@@ -18,56 +18,47 @@
 #ifndef __STRIMMUTABLE_HH__
 #define __STRIMMUTABLE_HH__
 
-/*** Classes an method for handling strings. Here, string refer to the
- *** C-fashioned strings: null-terminated arrays of char.
- ***/
-
+#include <set>
+#include <string>
+#include <iosfwd>
 #include <inttypes.h>
-#include <map>
 
-/** Ref:
- * Reference to a immutable string (Instance)
- */
+/** ConstStr Class for handling immutable and intensively shared
+ *    strings .
+ **/
 
-struct ConstStr_t {
-  /** Instance:
-   * Imutable string container
-   */
-  
-  struct Instance {
-    char const*                   m_string;
-    intptr_t                      m_refcount;
-    
-    Instance( char const* _string );
-    ~Instance();
-    
-    Instance*                     retain() { if( not this ) return 0; ++m_refcount; return this; }
-    void                          release();
-  };
-
-  struct Less {
-    bool operator()( char const* _s1, char const* _s2 ) const {
-      while( *_s1 != '\0' and *_s1 == *_s2 )
-        ++_s1, ++_s2;
-      return *_s1 < *_s2;
-    }
-  };
-
-  Instance*                     m_instance;
-  typedef std::map<char const*, ConstStr_t, Less> Set;
+struct ConstStr
+{
+  typedef std::set<std::string> Pool;
   
   // Construction / Destruction / Assignation
-  ConstStr_t() : m_instance( 0 ) {}
-  ConstStr_t( char const* _string );
-  ConstStr_t( char const* _string, Set& _set );
-  ConstStr_t( ConstStr_t const& _ref );
-  ConstStr_t&                   operator=( ConstStr_t const& _ref );
-  ConstStr_t&                   init( Instance* _instance );
-  ~ConstStr_t();
+  ConstStr() : c_string( 0 ) {}
   
-  // C string access (char const*)
-  operator                      char const*() const { return m_instance ? m_instance->m_string : 0; }
-  char const*                   str() const { return m_instance ? m_instance->m_string : 0; }
+  ConstStr( char const* _str ) : c_string( _str ? default_pool.insert( _str ).first->c_str() : 0 ) {}
+  
+  ConstStr( std::string const& _str ) : c_string( default_pool.insert( _str ).first->c_str() ) {}
+  
+  ConstStr( std::string const& _str, Pool& _set ) : c_string( _set.insert( _str ).first->c_str() ) {}
+  
+  ConstStr( ConstStr const& _ref ) : c_string( _ref.c_string ) {}
+  
+  char const* str() const { return c_string; }
+  
+  int cmp( ConstStr const& rhs ) const;
+
+  bool operator == ( ConstStr const& rhs ) const { return cmp( rhs ) == 0; }
+  bool operator != ( ConstStr const& rhs ) const { return cmp( rhs ) != 0; }
+  bool operator <  ( ConstStr const& rhs ) const { return cmp( rhs ) <  0; }
+  bool operator <= ( ConstStr const& rhs ) const { return cmp( rhs ) <= 0; }
+  bool operator >  ( ConstStr const& rhs ) const { return cmp( rhs ) >  0; }
+  bool operator >= ( ConstStr const& rhs ) const { return cmp( rhs ) >= 0; }
+  
+  friend std::ostream& operator << ( std::ostream& sink, ConstStr const& rhs );
+  
+  static Pool default_pool; //< Default shared string pool
+  
+private:
+  char const* c_string;
 };
 
 #endif // __STRIMMUTABLE_HH__

@@ -12,18 +12,18 @@
 
 #include <systemc>
 
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -32,6 +32,8 @@
 
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #include <inttypes.h>
 
@@ -49,15 +51,15 @@ using namespace tlm;
 using tlm_utils::tlm_quantumkeeper;
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::CallBackObject;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::CallBackObject;
 using unisim::kernel::logger::Logger;
 
 using unisim::kernel::logger::Logger;
@@ -70,7 +72,7 @@ using unisim::kernel::logger::EndDebugError;
 
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -88,7 +90,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class S12XFTMX :
-	public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
+	  public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
 	, public CallBackObject
 	, public Service<Registers>
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
@@ -137,7 +139,7 @@ public:
 	static const uint16_t DFLASH_SECTOR_SIZE = 256;
 	static const uint16_t PHRASE_SIZE = 8;
 	static const uint16_t PFLASH_SECTOR_SIZE = 1024;
-	static const uint16_t PFLASH_SECTION_SIZE = 128*PFLASH_SECTOR_SIZE;
+	static const uint32_t PFLASH_SECTION_SIZE = 128*PFLASH_SECTOR_SIZE;
 	static const uint16_t EEE_NON_VOLATILE_SPACE_SIZE = 8;
 	static const uint16_t BACKDOOR_ACCESS_KEY_SIZE = 8;
 
@@ -216,8 +218,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             FLASH Registers Interface interface methods               =
@@ -229,7 +231,8 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -375,9 +378,9 @@ private:
 	uint8_t ready_sector_count;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	uint8_t  fclkdiv_reg, fsec_reg, fccobix_reg, feccrix_reg, fcnfg_reg, fercnfg_reg, fstat_reg, ferstat_reg, fprot_reg, eprot_reg, fopt_reg, frsv0_reg, frsv1_reg, frsv2_reg;
 	uint16_t fccob_reg[6], etag_reg, feccr_reg[8];

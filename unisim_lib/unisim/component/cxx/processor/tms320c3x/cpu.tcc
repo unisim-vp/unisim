@@ -82,7 +82,7 @@ CPU<CONFIG, DEBUG> ::
 CPU(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
+	Client<DebugYielding>(name, parent),
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
 	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
@@ -102,14 +102,15 @@ CPU(const char *name,
 	memory_access_reporting_control_export(
 		"memory_access_reporting_control_export",
 		this),
-	debug_control_import("debug_control_import", this),
+	debug_yielding_import("debug_yielding_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	trap_reporting_import("trap-reporting-import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	ti_c_io_import("ti-c-io-import", this),
-	requires_memory_access_reporting(true),
-	requires_finished_instruction_reporting(true),
+	requires_memory_access_reporting(false),
+	requires_fetch_instruction_reporting(false),
+	requires_commit_instruction_reporting(false),
 	instruction_counter(0),
 	trap_on_instruction_counter(0xffffffffffffffffULL),
 	max_inst(0xffffffffffffffffULL),
@@ -133,7 +134,7 @@ CPU(const char *name,
 	insn_cache_misses(0),
 	stat_insn_cache_accesses("insn-cache-accesses", this, insn_cache_accesses, "Instruction cache accesses"),
 	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses, "Instruction cache misses"),
-	formula_insn_cache_miss_rate("insn-cache-miss-rate", this, Formula<double>::OP_DIV, &stat_insn_cache_misses, &stat_insn_cache_accesses, "instruction cache miss rate"),
+	stat_insn_cache_miss_rate("insn-cache-miss-rate", this, "/", &stat_insn_cache_misses, &stat_insn_cache_accesses, "instruction cache miss rate"),
 	enable_parallel_load_bug(true),
 	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
 		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
@@ -151,12 +152,15 @@ CPU(const char *name,
 	param_verbose_all("verbose-all", this, verbose_all),
 	param_verbose_setup("verbose-setup", this, verbose_setup)
 {
+	disasm_export.SetupDependsOn(memory_import);
+	memory_export.SetupDependsOn(memory_import);
+  
 	regs[REG_ST].SetLoWriteMask(ST_WRITE_MASK);
 	regs[REG_IE].SetLoWriteMask(IE_WRITE_MASK);
 	regs[REG_IF].SetLoWriteMask(IF_WRITE_MASK);
 	regs[REG_IOF].SetLoWriteMask(IOF_WRITE_MASK);
 
-	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
+	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc));
 
 	unsigned int i;
 	for (i = 8; i < 32; i++)
@@ -166,57 +170,57 @@ CPU(const char *name,
 	{
 		stringstream sstr;
 		sstr << "R" << i;
-		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], true /* extended precision */);
+		registers_registry.AddRegisterInterface(new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], true /* extended precision */));
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "R" << i << "L";
-		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]);
+		registers_registry.AddRegisterInterface(new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]));
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "R" << i << "H";
-		registers_registry[sstr.str().c_str()] = new RegisterBitFieldDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], 32, 8);
+		registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], 32, 8));
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "AR" << i;
-		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_AR0 + i]);
+		registers_registry.AddRegisterInterface(new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_AR0 + i]));
 	}
 
-	registers_registry["DP"] = new RegisterDebugInterface("DP", &regs[REG_DP]);
-	registers_registry["IR0"] = new RegisterDebugInterface("IR0", &regs[REG_IR0]);
-	registers_registry["IR1"] = new RegisterDebugInterface("IR1", &regs[REG_IR1]);
-	registers_registry["BK"] = new RegisterDebugInterface("BK", &regs[REG_BK]);
-	registers_registry["SP"] = new RegisterDebugInterface("SP", &regs[REG_SP]);
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("DP", &regs[REG_DP]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IR0", &regs[REG_IR0]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IR1", &regs[REG_IR1]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("BK", &regs[REG_BK]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("SP", &regs[REG_SP]));
 
-	registers_registry["ST"] = new RegisterDebugInterface("ST", &regs[REG_ST]);
-	registers_registry["ST:C"] = new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST], ST_C);
-	registers_registry["ST:V"] = new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST], ST_V);
-	registers_registry["ST:Z"] = new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST], ST_Z);
-	registers_registry["ST:N"] = new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST], ST_N);
-	registers_registry["ST:UF"] = new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST], ST_UF);
-	registers_registry["ST:LV"] = new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST], ST_LV);
-	registers_registry["ST:LUF"] = new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST], ST_LUF);
-	registers_registry["ST:OVM"] = new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST], ST_OVM);
-	registers_registry["ST:RM"] = new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST], ST_RM);
-	registers_registry["ST:CF"] = new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST], ST_CF);
-	registers_registry["ST:CE"] = new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST], ST_CE);
-	registers_registry["ST:CC"] = new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST], ST_CC);
-	registers_registry["ST:GIE"] = new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST], ST_GIE);
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("ST", &regs[REG_ST]));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST], ST_C));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST], ST_V));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST], ST_Z));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST], ST_N));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST], ST_UF));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST], ST_LV));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST], ST_LUF));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST], ST_OVM));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST], ST_RM));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST], ST_CF));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST], ST_CE));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST], ST_CC));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST], ST_GIE));
 
-	registers_registry["IE"] = new RegisterDebugInterface("IE", &regs[REG_IE]);
-	registers_registry["IF"] = new RegisterDebugInterface("IF", &regs[REG_IF]);
-	registers_registry["IOF"] = new RegisterDebugInterface("IOF", &regs[REG_IOF]);
-	registers_registry["RS"] = new RegisterDebugInterface("RS", &regs[REG_RS]);
-	registers_registry["RE"] = new RegisterDebugInterface("RE", &regs[REG_RE]);
-	registers_registry["RC"] = new RegisterDebugInterface("RC", &regs[REG_RC]);
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IE", &regs[REG_IE]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IF", &regs[REG_IF]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IOF", &regs[REG_IOF]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("RS", &regs[REG_RS]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("RE", &regs[REG_RE]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("RC", &regs[REG_RC]));
 
 }
 
@@ -224,12 +228,6 @@ template<class CONFIG, bool DEBUG>
 CPU<CONFIG, DEBUG> ::
 ~CPU() 
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		delete reg_iter->second;
-	}
 }
 
 //===============================================================
@@ -273,7 +271,8 @@ BeginSetup()
 		if (VerboseSetup())
 			logger << "- memory access reporting not active";
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	Reset();
@@ -287,47 +286,6 @@ CPU<CONFIG, DEBUG> ::
 OnDisconnect() 
 {
 }
-
-//===============================================================
-//= Client/Service setup methods                           STOP =
-//===============================================================
-
-//===============================================================
-//= Memory injection interface methods                    START =
-//===============================================================
-
-
-//===============================================================
-//= Memory injection interface methods                     STOP =
-//===============================================================
-
-//===============================================================
-//= Memory access reporting control interface methods     START =
-//===============================================================
-
-template<class CONFIG, bool DEBUG>
-void
-CPU<CONFIG, DEBUG> ::
-RequiresMemoryAccessReporting(bool report)
-{
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG, bool DEBUG>
-void
-CPU<CONFIG, DEBUG> ::
-RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
-}
-
-//===============================================================
-//= Memory access reporting control interface methods      STOP =
-//===============================================================
-
-//===============================================================
-//= Memory interface methods                              START =
-//===============================================================
 
 template<class CONFIG, bool DEBUG>
 void
@@ -349,6 +307,51 @@ Reset()
 		logger << DebugInfo << "Reseting" << EndDebugInfo;
 	}
 	reset = true;
+}
+
+//===============================================================
+//= Client/Service setup methods                           STOP =
+//===============================================================
+
+//===============================================================
+//= Memory injection interface methods                    START =
+//===============================================================
+
+
+//===============================================================
+//= Memory injection interface methods                     STOP =
+//===============================================================
+
+//===============================================================
+//= Memory access reporting control interface methods     START =
+//===============================================================
+
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report)
+{
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
+}
+
+//===============================================================
+//= Memory access reporting control interface methods      STOP =
+//===============================================================
+
+//===============================================================
+//= Memory interface methods                              START =
+//===============================================================
+
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG> ::
+ResetMemory()
+{
+	Reset();
 }
 
 template<class CONFIG, bool DEBUG>
@@ -476,12 +479,24 @@ InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t 
  * @return        A pointer to the RegisterInterface corresponding to name.
  */
 template<class CONFIG, bool DEBUG>
-unisim::util::debug::Register *
+unisim::service::interfaces::Register *
 CPU<CONFIG, DEBUG> ::
 GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
-	return (reg_iter != registers_registry.end()) ? (*reg_iter).second : 0;
+	return registers_registry.GetRegister(name);
+}
+
+/**
+ * Provide Available Registers
+ *
+ * @param scanner  the registry where registers are declared
+ */
+
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 //===============================================================
@@ -1288,23 +1303,6 @@ void
 CPU<CONFIG, DEBUG> ::
 StepInstruction()
 {
-	if(unlikely(debug_control_import != 0))
-	{
-		do
-		{
-			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC23_0());
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL)
-			{
-				Stop(0);
-				return;
-			}
-		} while(1);
-	}
-
 	try
 	{
 		if(unlikely(reset))
@@ -1440,6 +1438,11 @@ StepInstruction()
 							SetIR(Fetch(GetPC23_0()));
 							first_time_through_repeat_single = false;
 						}
+						else if (unlikely(debug_yielding_import))
+						{
+							// Give hand to debuggers during (potentially long) repeat single instructions
+							debug_yielding_import->DebugYield();
+						}
 
 						// Decrement RC
 						SetRC(GetRC() - 1);
@@ -1509,7 +1512,8 @@ StepInstruction()
 
 		// Decode the instruction
 		// Note: GenISSLib generated decoder handle byte address not word address
-		typename isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * GetPC23_0(), GetIR());
+		address_t current_instruction_address = 4 * GetPC23_0();
+		typename isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = decoder.Decode(current_instruction_address, GetIR());
 
 		// Execute the instruction
 		operation->execute(*this);
@@ -1529,12 +1533,9 @@ StepInstruction()
 			}
 		}
 
-		if(unlikely(requires_finished_instruction_reporting))
+		if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import != 0))
 		{
-			if(unlikely(memory_access_reporting_import != 0))
-			{
-				memory_access_reporting_import->ReportFinishedInstruction(4 * GetPC23_0(), 4 * GetNPC23_0());
-			}
+			memory_access_reporting_import->ReportCommitInstruction(current_instruction_address, 4);
 		}
 		
 		/* go to the next instruction */
@@ -1543,18 +1544,20 @@ StepInstruction()
 		/* update the instruction counter */
 		instruction_counter++;
 
-		if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+		if(unlikely(trap_reporting_import and (instruction_counter == trap_on_instruction_counter)))
 		{
 			trap_reporting_import->ReportTrap();
 		}
+
+		if (unlikely(instruction_counter >= max_inst))
+			Stop(0);
 	}
-	catch(Exception& exc)
+
+	catch (Exception& exc)
 	{
 		logger << DebugError << "Unpredictable behavior: " << exc.what() << EndDebugError;
 		Stop(-1);
 	}
-
-	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 }
 
 //===============================================================
@@ -1701,6 +1704,16 @@ uint32_t
 CPU<CONFIG, DEBUG> ::
 Fetch(address_t addr)
 {
+	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportFetchInstruction(4 * addr);
+	}
+		
+	if (unlikely(debug_yielding_import))
+	{
+		debug_yielding_import->DebugYield();
+	}
+
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{

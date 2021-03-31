@@ -35,20 +35,45 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_CHAR_IO_HH__
 #define __UNISIM_SERVICE_INTERFACES_CHAR_IO_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
+#include <string>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class CharIO : public unisim::kernel::service::ServiceInterface
+class CharIO : public ServiceInterface
 {
 public:
-	virtual void Reset() = 0;
+	virtual void ResetCharIO() = 0;
 	virtual bool GetChar(char& c) = 0;
 	virtual void PutChar(char c) = 0;
 	virtual void FlushChars() = 0;
+	inline void PutString(const char *s);
+	inline void PutString(const std::string& s);
 };
+
+inline void CharIO::PutString(const char *s)
+{
+	char c = *s;
+	if(c)
+	{
+		do
+		{
+			PutChar(c);
+		}
+		while((c = *++s) != 0);
+	}
+}
+
+inline void CharIO::PutString(const std::string& s)
+{
+	std::size_t n = s.length();
+	for(std::size_t i = 0; i < n; i++)
+	{
+		PutChar(s[i]);
+	}
+}
 
 } // end of namespace interfaces
 } // end of namespace service

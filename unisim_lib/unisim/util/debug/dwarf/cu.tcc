@@ -44,17 +44,12 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugError;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugInfo;
-
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, logger(_dw_handler->GetLogger())
+	, debug_info_stream(_dw_handler->GetDebugInfoStream())
+	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
+	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 	, debug(false)
 	, dw_fmt(FMT_DWARF_UNKNOWN)
 	, dw_ver(DW_VER_UNKNOWN)
@@ -323,7 +318,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_CompilationUnit<MEMORY_
 }
 
 template <class MEMORY_ADDR>
-void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
+void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
 	dw_die->BuildStatementMatrix(stmt_matrix);
 }
@@ -342,11 +337,17 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrR
 		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_die->FindDIEByAddrRange(dw_tag, addr, length);
 		if(debug && dw_found_die)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", found DIE #" << dw_found_die->GetId() << " for address range 0x" << std::hex << addr << "-0x" << (addr + length) << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", found DIE #" << dw_found_die->GetId() << " for address range 0x" << std::hex << addr << "-0x" << (addr + length) << std::dec << std::endl;
 		}
 		return dw_found_die;
 	}
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByName(unsigned int dw_tag, const char *name, bool external) const
+{
+	return dw_die->FindDIEByName(dw_tag, name, external);
 }
 
 template <class MEMORY_ADDR>
@@ -356,18 +357,18 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
 {
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
 	if(!dw_die_code_portion)
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
 		}
 		return 0;
 	}
-	return dw_die_code_portion->GetFrameBase(pc, frame_base);
+	return dw_die_code_portion->GetFrameBase(prc_num, pc, frame_base);
 }
 
 template <class MEMORY_ADDR>
@@ -378,7 +379,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
 		}
 		return 0;
 	}
@@ -396,7 +397,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 		
 		if(dw_die_code_portion_parent && debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << std::endl;
 		}
 		
 		dw_die_code_portion = dw_die_code_portion_parent;
@@ -405,7 +406,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 	
 	if(debug)
 	{
-		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching data object name \"" << name << "\" and PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+		debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching data object name \"" << name << "\" and PC=0x" << std::hex << pc << std::dec << std::endl;
 	}
 	return 0;
 }
@@ -418,7 +419,7 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
 		}
 		return;
 	}
@@ -431,7 +432,7 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 		
 		if(dw_die_code_portion_parent && debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << std::endl;
 		}
 		
 		if(local_only && (dw_die_code_portion->GetTag() == DW_TAG_subprogram)) break;
@@ -439,6 +440,22 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 		dw_die_code_portion = dw_die_code_portion_parent;
 	}
 	while(dw_die_code_portion);
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindSubProgram(const char *name) const
+{
+	if(!dw_die) return 0;
+	
+	return dw_die->FindSubProgram(name);
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetName() const
+{
+	const DWARF_String<MEMORY_ADDR> *dw_at_name = 0;
+	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_name, dw_at_name)) return 0;
+	return dw_at_name->GetValue();
 }
 
 template <class MEMORY_ADDR>

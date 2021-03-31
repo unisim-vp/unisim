@@ -67,8 +67,8 @@ using unisim::component::clm::utility::hexa;
   using unisim::component::clm::utility::MISALIGNMENT_EXCEPTION;
   using unisim::component::clm::utility::INVALID_OPCODE_EXCEPTION;
 
-  using unisim::kernel::service::Object;
-  using unisim::kernel::service::Statistic;
+  using unisim::kernel::Object;
+  using unisim::kernel::variable::Statistic;
 
 /** State of a reorder buffer entry */
 enum ReorderBufferEntryState { unallocated_instruction, allocated_instruction, finished_instruction, written_back_instruction, committed_instruction };

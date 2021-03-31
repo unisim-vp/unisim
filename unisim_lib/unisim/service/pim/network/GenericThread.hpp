@@ -5,8 +5,8 @@
  *      Author: rnouacer
  */
 
-#ifndef GENERIC_THREAD_H_
-#define GENERIC_THREAD_H_
+#ifndef GENERIC_THREAD_HPP_
+#define GENERIC_THREAD_HPP_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +39,7 @@ public:
 	 */
 	virtual void run(){}
 	virtual void error(const char* msg);
-	virtual void error(const int* fd, const char* msg);
+	virtual void error(const int* fd, int size, const char* msg);
 
 };
 
@@ -52,7 +52,7 @@ public:
 	static const int kill_signo = SIGKILL;
 #endif
 
-	GenericThread() : ret(0), terminated(false), started(false) {}
+	GenericThread() : thid(), ret(0), terminated(false), started(false) {}
 
 	virtual ~GenericThread() {
 		if (!isTerminated()) stop();

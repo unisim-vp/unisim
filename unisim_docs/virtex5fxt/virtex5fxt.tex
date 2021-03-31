@@ -117,7 +117,7 @@ Table~\ref{table:memory_mapping} shows the simulator memory mapping.
 
 \noindent The 1.0 release of the simulator is composed of:
 \begin{itemize}
-\item the simulator source code: unisim-virtex5fxt-1.0beta11.tar.gz
+\item the simulator source code: unisim-virtex5fxt-1.0beta13.tar.gz
 \item the present documentation
 \end{itemize}
 
@@ -143,21 +143,21 @@ Appendix~\ref{techref} contains the technical references (generated) of the simu
 \item libxml2 (aka. libxml2-dev)
 \end{itemize}
 
-\subsection{Installing SystemC 2.3}
+\subsection{Installing SystemC 2.3.1}
 \subsubsection{Download the source code}
-Register at \url{http://www.accellera.org} and then download systemc-2.3.0.tgz from the Accelera SystemC standards download page.
+Register at \url{http://www.accellera.org} and then download systemc-2.3.1.tgz from the Accelera SystemC standards download page.
 
 \subsubsection{Uncompressing the source code tarballs}
 \begin{script}
-   $ tar zxvf systemc-2.3.0.tgz
+   $ tar zxvf systemc-2.3.1.tgz
 \end{script}
   
-This will uncompress the source of SystemC in directory systemc-2.3.0. 
+This will uncompress the source of SystemC in directory systemc-2.3.1. 
 
 \subsubsection{Configuring SystemC}
 To handle threads, SystemC relies on QuickThreads, a fast implementation of user's threads. QuickThreads speeds-up threads switching compared to the slower kernel POSIX threads and thus considerably improves overall simulation performance. To configure the SystemC building process with the built-in QuickThreads (recommended), do the following at the command prompt:
 \begin{script}
-   $ cd systemc-2.3.0
+   $ cd systemc-2.3.1
    $ mkdir objdir
    $ cd objdir
    $ mkdir ${HOME}/systemc
@@ -165,7 +165,7 @@ To handle threads, SystemC relies on QuickThreads, a fast implementation of user
 \end{script}
 However, if you intend to instrument your simulator (e.g. with valgrind) to debug the simulator memory leaks, bad memory accesses, pointers, and uninitialized memory reads, you should use the slower kernel POSIX threads. To configure the SystemC building process with the kernel POSIX threads, do the following at the command prompt:
 \begin{script}
-   $ cd systemc-2.3.0
+   $ cd systemc-2.3.1
    $ mkdir objdir
    $ cd objdir
    $ mkdir ${HOME}/systemc
@@ -182,12 +182,12 @@ To compile SystemC, do the following at the command prompt:
 \subsection{Building the UNISIM Virtex 5 FXT simulator}
 \subsubsection{Uncompressing the source code tarball}
 \begin{script}
-   $ tar zxvf unisim-virtex5fxt-1.0beta11.tar.gz
+   $ tar zxvf unisim-virtex5fxt-1.0beta13.tar.gz
 \end{script}
 
 \subsubsection{Configuring the simulator building process}
 \begin{script}
-  $ cd unisim-virtex5fxt-1.0beta11
+  $ cd unisim-virtex5fxt-1.0beta13
   $ ./configure \
           --with-systemc=${HOME}/systemc
 \end{script}
@@ -200,14 +200,14 @@ To compile SystemC, do the following at the command prompt:
 \noindent The simulator binaries are in \texttt{virtex5fxt/bin} subdirectory.
 The simulators comes in eight flavors in:
 \begin{itemize}
-\item \texttt{unisim-virtex5fxt-1.0beta11}: release simulator
-\item \texttt{unisim-virtex5fxt-wfpu-1.0beta11}: release simulator with a FPU APU
-\item \texttt{unisim-virtex5fxt-wfpu-wocache-1.0beta11}: release simulator with a FPU APU but without instruction and data caches
-\item \texttt{unisim-virtex5fxt-wocache-1.0beta11}: release simulator without instruction and data caches
-\item \texttt{unisim-virtex5fxt-debug-1.0beta11}: development simulator
-\item \texttt{unisim-virtex5fxt-wfpu-debug-1.0beta11}: development simulator with a FPU APU
-\item \texttt{unisim-virtex5fxt-wfpu-wocache-debug-1.0beta11}: development simulator with a FPU APU but without instruction and data caches
-\item \texttt{unisim-virtex5fxt-wocache-debug-1.0beta11}: development simulator without instruction and data caches
+\item \texttt{unisim-virtex5fxt-1.0beta13}: release simulator
+\item \texttt{unisim-virtex5fxt-wfpu-1.0beta13}: release simulator with a FPU APU
+\item \texttt{unisim-virtex5fxt-wfpu-wocache-1.0beta13}: release simulator with a FPU APU but without instruction and data caches
+\item \texttt{unisim-virtex5fxt-wocache-1.0beta13}: release simulator without instruction and data caches
+\item \texttt{unisim-virtex5fxt-debug-1.0beta13}: development simulator
+\item \texttt{unisim-virtex5fxt-wfpu-debug-1.0beta13}: development simulator with a FPU APU
+\item \texttt{unisim-virtex5fxt-wfpu-wocache-debug-1.0beta13}: development simulator with a FPU APU but without instruction and data caches
+\item \texttt{unisim-virtex5fxt-wocache-debug-1.0beta13}: development simulator without instruction and data caches
 \end{itemize}
 
 \section{Cross-compiling the simulator}
@@ -234,22 +234,22 @@ The later sub-sections will refer to the mingw32 tool chain of Ubuntu and Debian
 \item Standard GNU C++ library for the host machine (aka. libstdc++)
 \end{itemize}
 
-\subsection{Installing a cross-compiled SystemC 2.3.0}
+\subsection{Installing a cross-compiled SystemC 2.3.1}
 \subsubsection{Download the source code}
-Register at \url{http://www.accellera.org} and then download systemc-2.3.0.tgz from the Accellera SystemC standards download page.
+Register at \url{http://www.accellera.org} and then download systemc-2.3.1.tgz from the Accellera SystemC standards download page.
 
 \subsubsection{Uncompressing the source code tarballs}
 \begin{script}
-   $ tar zxvf systemc-2.3.0.tgz
+   $ tar zxvf systemc-2.3.1.tgz
 \end{script}
   
-This will uncompress the source of SystemC in directory systemc-2.3.0. 
+This will uncompress the source of SystemC in directory systemc-2.3.1. 
 
 \subsubsection{Configuring SystemC}
 To configure, cross-compile, and install SystemC in your home directory, do the following at the command prompt: 
 
 \begin{script}
-   $ cd systemc-2.3.0
+   $ cd systemc-2.3.1
    $ mkdir objdir
    $ cd objdir
    $ mkdir ${HOME}/systemc-mingw32
@@ -321,12 +321,12 @@ Uncompress the source code tarball and cross-compile the library:
 \subsection{Cross-compiling the UNISIM Virtex 5 FXT simulator}
 \subsubsection{Uncompressing the source code tarball}
 \begin{script}
-   $ tar zxvf unisim-virtex5fxt-1.0beta11.tar.gz
+   $ tar zxvf unisim-virtex5fxt-1.0beta13.tar.gz
 \end{script}
 
 \subsubsection{Configuring the simulator building process}
 \begin{script}
-  $ cd unisim-virtex5fxt-1.0beta11
+  $ cd unisim-virtex5fxt-1.0beta13
   $ ./configure.cross \
           --host=i586-mingw32msvc \
           --with-systemc=${HOME}/systemc-mingw32 \
@@ -344,10 +344,10 @@ Uncompress the source code tarball and cross-compile the library:
 \noindent The simulator binaries are in \texttt{virtex5fxt/bin} subdirectory.
 The simulators comes in four flavors in:
 \begin{itemize}
-\item \texttt{unisim-virtex5fxt-1.0beta11.exe}: release simulator without FPU
-\item \texttt{unisim-virtex5fxt-wfpu-1.0beta11.exe}: release simulator with FPU
-\item \texttt{unisim-virtex5fxt-debug-1.0beta11.exe}: developement simulator
-\item \texttt{unisim-virtex5fxt-wfpu-debug-1.0beta11.exe}: developement simulator with FPU
+\item \texttt{unisim-virtex5fxt-1.0beta13.exe}: release simulator without FPU
+\item \texttt{unisim-virtex5fxt-wfpu-1.0beta13.exe}: release simulator with FPU
+\item \texttt{unisim-virtex5fxt-debug-1.0beta13.exe}: developement simulator
+\item \texttt{unisim-virtex5fxt-wfpu-debug-1.0beta13.exe}: developement simulator with FPU
 \end{itemize}
 
 The simulator binaries may need some DLLs from mingw32 (e.g. \texttt{libgcc\_s*.dll}) or third party libraries (e.g. \texttt{libxml2-2.dll}).
@@ -368,33 +368,33 @@ The simulator has a parametrization system that allows configuring individual si
 \newline\\
 \noindent The simulator can provide the user with a default XML configuration file with option \texttt{-g}:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -g default_sim_config.xml
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -g default_sim_config.xml
 \end{script}
 
 The XML configuration file can be edited, and then reloaded by the simulator with option \texttt{-c}:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -c sim_config.xml
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -c sim_config.xml
 \end{script}
 
 \noindent The user can also simply set the value of an individual parameter with option \texttt{-s}:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -s enable-inline-debugger=true
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -s enable-inline-debugger=true
 \end{script}
 
 \noindent The simulator can prints the list of parameter set on the console with option \texttt{-l}:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -l
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -l
 \end{script}
 
 \noindent In general, each simulator components have log messages that can be switched on or off using a parameter named \texttt{verbose} (or approching):
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -s cpu.verbose-exception=true
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -s cpu.verbose-exception=true
 \end{script}
 
 \noindent The simulator accepts any combination of the above options.
 For example, you can combine these options to change the value of one or more parameters in an XML configuration file:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -c sim_config.xml -s enable-inline-debugger=true -g sim_config.xml
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -c sim_config.xml -s enable-inline-debugger=true -g sim_config.xml
 \end{script}
 
 \subsection{Loading binaries}
@@ -403,17 +403,17 @@ For example, you can combine these options to change the value of one or more pa
 The simulators has a multi-format loader service that can detect the format of binaries and accordingly instantiate the right loader.
 The user can set the list of binary files to load in Parameter loader.filename, each filenames being separated by a comma:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -s loader.filename='boot.elf,vmlinux,device_tree.dtb,initrd.img'
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -s loader.filename='boot.elf,vmlinux,device_tree.dtb,initrd.img'
 \end{script}
 In the hypothetic case where the multi-format loader would wrongly guess the format of a binary, the user tells the loader what is the format of the binary file:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 \
+   $ unisim-virtex5fxt-wfpu-1.0beta13 \
      -s loader.filename='boot.elf:elf32,vmlinux:elf32,device_tree.dtb:raw,initrd.img:raw'
 \end{script}
 
 \noindent If, for any reason (virtual memory, self relocation), the simulator must load a binary file to an address that is not the final address indicated in the binary file itself, the user tells the loader to override (when possible) the base address:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 \
+   $ unisim-virtex5fxt-wfpu-1.0beta13 \
         -s loader.filename='boot.elf,vmlinux,device_tree.dtb,initrd.img' \
         -s loader.file1.base-addr=0 \
         -s loader.file1.force-base-addr=true
@@ -429,7 +429,7 @@ The combination of the UART Lite module, the telnet service and a serial console
 
 To enable the serial console, do the following at the command prompt:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 \
+   $ unisim-virtex5fxt-wfpu-1.0beta13 \
         -s enable-telnet=true \
         -s telnet.telnet-tcp-port=1234
 \end{script}
@@ -448,7 +448,7 @@ The simulator has an integrated debugger for debugging the target application an
 
 To enable the inline-debugger, do the following at the command prompt:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -s enable-inline-debugger=true
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -s enable-inline-debugger=true
 \end{script}
 
 The user can enter classical debug commands from the debugger, such as putting breakpoints, watchpoints, stepping instructions, disassembling, dumping memory regions, etc.
@@ -562,7 +562,7 @@ The simulator has a GDB server service that implements the GDB serial remote pro
 
 To enable the simulator GDB server, do the following at the command prompt:
 \begin{script}
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -s enable-gdb-server=true -s gdb-server.tcp-port=1234
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -s enable-gdb-server=true -s gdb-server.tcp-port=1234
 \end{script}
 
 During initialization, the simulator waits for a GDB client connection on the GDB server TCP/IP port.
@@ -764,7 +764,7 @@ From the directory where you uncompressed the archive, do the following at the c
 
 \noindent To check in an automatic mannner that the UNISIM Virtex 5 FXT simulator correctly runs the system level unit tests, do the following at the command prompt:
 \begin{script}
-   $ ./check.sh ${HOME}/unisim-virtex5fxt-1.0beta11/virtex5fxt/bin/unisim-virtex5fxt-wfpu-1.0beta11
+   $ ./check.sh ${HOME}/unisim-virtex5fxt-1.0beta13/virtex5fxt/bin/unisim-virtex5fxt-wfpu-1.0beta13
 \end{script}
 
 \noindent You should get the following output:
@@ -890,7 +890,7 @@ It means that a set of Linux system calls are passed through the host operating 
 \noindent To execute the benchmarks in an automatic manner on the UNISIM Virtex 5 FXT simulator, do the following at the command prompt:
 \begin{script}
    $ ./auto.sh sim powerpc-440fp-linux \
-     ${HOME}/unisim-virtex5fxt-1.0beta11/virtex5fxt/bin/unisim-virtex5fxt-wfpu-1.0beta11
+     ${HOME}/unisim-virtex5fxt-1.0beta13/virtex5fxt/bin/unisim-virtex5fxt-wfpu-1.0beta13
 \end{script}
 
 \noindent To check that the results from the PPC440FP target and the simulator match, do the following at the command prompt:
@@ -1259,7 +1259,7 @@ To boot that small Linux distribution within the simulator, do the following at 
 
 \begin{script}
    $ cd linux_distro
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -c config/sim_config.xml
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -c config/sim_config.xml
 \end{script}
 
 The simulator acts as a telnet server to emulate a terminal over the XPS UART Lite. Once started, it waits for a telnet client connection like \texttt{telnet} or \texttt{PuTTY}.
@@ -1376,7 +1376,7 @@ We provide an initial RAM disk for almost each MiBench benchmark and the corresp
 
 \begin{script}
    $ cd linux_distro
-   $ unisim-virtex5fxt-wfpu-1.0beta11 -c config/sim_config_consumer_lame_large.xml
+   $ unisim-virtex5fxt-wfpu-1.0beta13 -c config/sim_config_consumer_lame_large.xml
 \end{script}
 
 \noindent In another console, connect the telnet client to the simulator:
@@ -1384,12 +1384,12 @@ We provide an initial RAM disk for almost each MiBench benchmark and the corresp
    $ telnet localhost 1234
 \end{script}
 
-\textit{Note: The UNISIM Virtex 5 FXT Simulator must have the hardware FPU enabled (\texttt{unisim\--virtex5fxt\--wfpu\--1.0beta11}) to run a Linux kernel for \texttt{powerpc\--440fp\--linux\--gnu}.
-When the simulator has the hardware FPU disabled (\texttt{unisim\--virtex5fxt\--1.0beta11}, the simulator can only use the Linux kernel for \texttt{powerpc\--440\--linux\--gnu}.}
+\textit{Note: The UNISIM Virtex 5 FXT Simulator must have the hardware FPU enabled (\texttt{unisim\--virtex5fxt\--wfpu\--1.0beta13}) to run a Linux kernel for \texttt{powerpc\--440fp\--linux\--gnu}.
+When the simulator has the hardware FPU disabled (\texttt{unisim\--virtex5fxt\--1.0beta13}, the simulator can only use the Linux kernel for \texttt{powerpc\--440\--linux\--gnu}.}
 
 To check (this may take tens of minutes/hours) in an automatic mannner that the UNISIM Virtex 5 FXT simulator correctly boots Linux and runs the MiBench version 1 benchmarks, do the following at the command prompt:
 \begin{script}
-   $ ./check.sh ${HOME}/unisim-virtex5fxt-1.0beta11/virtex5fxt/bin/unisim-virtex5fxt-wfpu-1.0beta11 1234
+   $ ./check.sh ${HOME}/unisim-virtex5fxt-1.0beta13/virtex5fxt/bin/unisim-virtex5fxt-wfpu-1.0beta13 1234
 \end{script}
 \textit{Note: the Netcat utility (either traditional or BSD version) must be installed}.
 

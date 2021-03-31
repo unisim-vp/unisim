@@ -46,7 +46,7 @@
 #include <vector>
 
 #include <systemc>
-#include <tlm.h>
+#include <tlm>
 
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
@@ -54,7 +54,7 @@
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
 #include "unisim/service/interfaces/trap_reporting.hh"
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
@@ -73,10 +73,10 @@ using namespace sc_core;
 using namespace sc_dt;
 using tlm_utils::simple_initiator_socket;
 
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Client;
 using unisim::service::interfaces::TrapReporting;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::variable::Parameter;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::MMC;
@@ -89,7 +89,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::TSemaphore;
 using unisim::component::cxx::processor::hcs12x::TOWNER;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::PayloadFabric;
 
 
@@ -137,7 +137,7 @@ private:
 		 * Such modules are PIM, MMC and can be accounted for others
 		 * This index also cover the case of EEPROM emulation by the flash
 		 */
-		uint16_t			module_index;
+		unsigned int		module_index;
 		physical_address_t	start_address;
 		physical_address_t	end_address;
 	};

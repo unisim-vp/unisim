@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
 #define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <list>
 #include <unisim/util/debug/symbol.hh>
 
@@ -44,7 +44,7 @@ namespace service {
 namespace interfaces {
 
 template <class T>
-class SymbolTableLookup : public unisim::kernel::service::ServiceInterface
+class SymbolTableLookup : public ServiceInterface
 {
 public:
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const = 0;

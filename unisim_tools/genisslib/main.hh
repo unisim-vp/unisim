@@ -21,28 +21,11 @@
 #define GENISSLIB "GenISSLib"
 
 #ifndef GENISSLIB_VERSION
-#define GENISSLIB_VERSION "???"
+#define GENISSLIB_VERSION "latest"
 #endif
 
 #define AUTHORS "Gilles Mouchard, Yves Lhuillier"
 #define EMAILS "gilles.mouchard@cea.fr, yves.lhuillier@cea.fr"
 #define COPYRIGHT "Copyright (c) 2003-2010 Commissariat a l'Energie Atomique (CEA) and Universite Paris Sud"
-
-struct Opts {
-  Opts();
-  
-  char const*      outputprefix;
-  unsigned int     verbosity;
-  char const*      expandname;
-  char const*      inputname;
-  char const*      depfilename;
-  unsigned int     minwordsize;
-  bool             sourcelines;
-  bool             specialization;
-
-  static Opts&     shared();
-  
-  static Opts*     s_shared;
-};
 
 #endif // __MAIN_HH__

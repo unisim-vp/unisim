@@ -45,10 +45,10 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -100,6 +100,8 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
+	, rti_fdr(1)
+
 	, synr_register(0x09)
 	, refdv_register(0x00)
 	, ctflg_register(0x00)
@@ -115,11 +117,11 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 {
 
-	param_oscillator_clock_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_self_clock_mode_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_pll_stabilization_delay.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_check_window.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_osc_ok.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_oscillator_clock_int.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_self_clock_mode_clock.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_pll_stabilization_delay.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_check_window.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_osc_ok.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	var_osc_fail.SetMutable(true);
 	var_osc_fail.SetSerializable(false);
@@ -149,16 +151,6 @@ CRG::~CRG() {
 	bus_clk_trans->release();
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -175,7 +167,7 @@ void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -688,7 +680,7 @@ void CRG::runRTI() {
 	}
 }
 
-void CRG::assertInterrupt(uint8_t interrupt_offset) {
+void CRG::assertInterrupt(unsigned int interrupt_offset) {
 
 	if ((interrupt_offset == interrupt_offset_pll_lock) && ((crgint_register & 0x10) == 0)) return;
 	if ((interrupt_offset == interrupt_offset_self_clock_mode) && ((crgint_register & 0x02) == 0)) return;
@@ -814,7 +806,7 @@ void CRG::updateBusClock() {
 
 	sc_time delay = SC_ZERO_TIME;
 
-	for (uint8_t i = 0; i < bus_clock_socket.size(); i++) {
+	for (unsigned int i = 0; i < bus_clock_socket.size(); i++) {
 		bus_clk_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
 		bus_clock_socket[i]->b_transport( *bus_clk_trans, delay);
@@ -862,89 +854,75 @@ void CRG::initialize_rti_counter() {
 bool CRG::BeginSetup() {
 
 
-	char buf[80];
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SYNR", &synr_register));
 
-	sprintf(buf, "%s.SYNR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &synr_register);
-
-	unisim::kernel::service::Register<uint8_t> *synr_var = new unisim::kernel::service::Register<uint8_t>("SYNR", this, synr_register, "CRG Synthesizer Register (SYNR)");
+	unisim::kernel::variable::Register<uint8_t> *synr_var = new unisim::kernel::variable::Register<uint8_t>("SYNR", this, synr_register, "CRG Synthesizer Register (SYNR)");
 	extended_registers_registry.push_back(synr_var);
 	synr_var->setCallBack(this, SYNR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.REFDV",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &refdv_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".REFDV", &refdv_register));
 
-	unisim::kernel::service::Register<uint8_t> *refdv_var = new unisim::kernel::service::Register<uint8_t>("REFDV", this, refdv_register, "CRG Reference Divider Register (REFDV)");
+	unisim::kernel::variable::Register<uint8_t> *refdv_var = new unisim::kernel::variable::Register<uint8_t>("REFDV", this, refdv_register, "CRG Reference Divider Register (REFDV)");
 	extended_registers_registry.push_back(refdv_var);
 	refdv_var->setCallBack(this, REFDV, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.CTFLG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctflg_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".CTFLG", &ctflg_register));
 
-	unisim::kernel::service::Register<uint8_t> *ctflg_var = new unisim::kernel::service::Register<uint8_t>("CTFLG", this, ctflg_register, "CRG Test Flags Register (CTFLG)");
+	unisim::kernel::variable::Register<uint8_t> *ctflg_var = new unisim::kernel::variable::Register<uint8_t>("CTFLG", this, ctflg_register, "CRG Test Flags Register (CTFLG)");
 	extended_registers_registry.push_back(ctflg_var);
 	ctflg_var->setCallBack(this, CTFLG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.CRGFLG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgflg_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".CRGFLG", &crgflg_register));
 
-	unisim::kernel::service::Register<uint8_t> *crgflg_var = new unisim::kernel::service::Register<uint8_t>("CRGFLG", this, crgflg_register, "CRG Flags Register (CRGFLG)");
+	unisim::kernel::variable::Register<uint8_t> *crgflg_var = new unisim::kernel::variable::Register<uint8_t>("CRGFLG", this, crgflg_register, "CRG Flags Register (CRGFLG)");
 	extended_registers_registry.push_back(crgflg_var);
 	crgflg_var->setCallBack(this, CRGFLG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.CRGINT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgint_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".CRGINT", &crgint_register));
 
-	unisim::kernel::service::Register<uint8_t> *crgint_var = new unisim::kernel::service::Register<uint8_t>("CRGINT", this, crgint_register, "CRG Interrupt Enable Register (CRGINT)");
+	unisim::kernel::variable::Register<uint8_t> *crgint_var = new unisim::kernel::variable::Register<uint8_t>("CRGINT", this, crgint_register, "CRG Interrupt Enable Register (CRGINT)");
 	extended_registers_registry.push_back(crgint_var);
 	crgint_var->setCallBack(this, CRGINT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.CLKSEL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &clksel_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".CLKSEL", &clksel_register));
 
-	unisim::kernel::service::Register<uint8_t> *clksel_var = new unisim::kernel::service::Register<uint8_t>("CLKSEL", this, clksel_register, "CRG Clock Select Register (CLKSEL)");
+	unisim::kernel::variable::Register<uint8_t> *clksel_var = new unisim::kernel::variable::Register<uint8_t>("CLKSEL", this, clksel_register, "CRG Clock Select Register (CLKSEL)");
 	extended_registers_registry.push_back(clksel_var);
 	clksel_var->setCallBack(this, CLKSEL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PLLCTL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pllctl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PLLCTL", &pllctl_register));
 
-	unisim::kernel::service::Register<uint8_t> *pllctl_var = new unisim::kernel::service::Register<uint8_t>("PLLCTL", this, pllctl_register, "CRG PLL Control Register (PLLCTL)");
+	unisim::kernel::variable::Register<uint8_t> *pllctl_var = new unisim::kernel::variable::Register<uint8_t>("PLLCTL", this, pllctl_register, "CRG PLL Control Register (PLLCTL)");
 	extended_registers_registry.push_back(pllctl_var);
 	pllctl_var->setCallBack(this, PLLCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RTICTL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &rtictl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RTICTL", &rtictl_register));
 
-	unisim::kernel::service::Register<uint8_t> *rtictl_var = new unisim::kernel::service::Register<uint8_t>("RTICTL", this, rtictl_register, "CRG RTI Control Register (RTICTL)");
+	unisim::kernel::variable::Register<uint8_t> *rtictl_var = new unisim::kernel::variable::Register<uint8_t>("RTICTL", this, rtictl_register, "CRG RTI Control Register (RTICTL)");
 	extended_registers_registry.push_back(rtictl_var);
 	rtictl_var->setCallBack(this, RTICTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.COPCTL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &copctl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".COPCTL", &copctl_register));
 
-	unisim::kernel::service::Register<uint8_t> *copctl_var = new unisim::kernel::service::Register<uint8_t>("COPCTL", this, copctl_register, "CRG COP Control Register (COPCTL)");
+	unisim::kernel::variable::Register<uint8_t> *copctl_var = new unisim::kernel::variable::Register<uint8_t>("COPCTL", this, copctl_register, "CRG COP Control Register (COPCTL)");
 	extended_registers_registry.push_back(copctl_var);
 	copctl_var->setCallBack(this, COPCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FORBYP",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &forbyp_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FORBYP", &forbyp_register));
 
-	unisim::kernel::service::Register<uint8_t> *forbyp_var = new unisim::kernel::service::Register<uint8_t>("FORBYP", this, forbyp_register, "CRG Force and Bypass Test Register (FORBYP)");
+	unisim::kernel::variable::Register<uint8_t> *forbyp_var = new unisim::kernel::variable::Register<uint8_t>("FORBYP", this, forbyp_register, "CRG Force and Bypass Test Register (FORBYP)");
 	extended_registers_registry.push_back(forbyp_var);
 	forbyp_var->setCallBack(this, FORBYP, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.CTCTL",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctctl_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".CTCTL", &ctctl_register));
 
-	unisim::kernel::service::Register<uint8_t> *ctctl_var = new unisim::kernel::service::Register<uint8_t>("CTCTL", this, ctctl_register, "CRG Test Control Register (CTCTL)");
+	unisim::kernel::variable::Register<uint8_t> *ctctl_var = new unisim::kernel::variable::Register<uint8_t>("CTCTL", this, ctctl_register, "CRG Test Control Register (CTCTL)");
 	extended_registers_registry.push_back(ctctl_var);
 	ctctl_var->setCallBack(this, CTCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ARMCOP",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &armcop_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ARMCOP", &armcop_register));
 
-	unisim::kernel::service::Register<uint8_t> *armcop_var = new unisim::kernel::service::Register<uint8_t>("ARMCOP", this, armcop_register, "CRG COP Arm/Timer Reset (ARMCOP)");
+	unisim::kernel::variable::Register<uint8_t> *armcop_var = new unisim::kernel::variable::Register<uint8_t>("ARMCOP", this, armcop_register, "CRG COP Arm/Timer Reset (ARMCOP)");
 	extended_registers_registry.push_back(armcop_var);
 	armcop_var->setCallBack(this, ARMCOP, &CallBackObject::write, NULL);
 
@@ -981,11 +959,12 @@ bool CRG::EndSetup() {
 
 Register* CRG::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
 
+void CRG::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 void CRG::OnDisconnect() {
@@ -1010,6 +989,11 @@ void CRG::Reset() {
 
 }
 
+void CRG::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =
@@ -1017,7 +1001,7 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) ARMCOP))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -1063,7 +1047,7 @@ bool CRG::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool CRG::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) ARMCOP))) {
 
 		if (size == 0) {
 			return (true);

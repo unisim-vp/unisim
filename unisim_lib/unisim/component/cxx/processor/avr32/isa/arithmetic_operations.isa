@@ -330,9 +330,9 @@ cp_w_b.disasm={
 
 }
 
-op cp_w_c(0b111[3]:imm_20_17[4]:0b0010[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
+op cp_w_c(0b111[3]:shl<17>imm_20_17[4]:0b0010[4]:shl<16>imm_16[1]:rd[4]:><:imm_15_0[16])
 
-cp_w_c.var imm : { int32_t } = { SignExtend(((uint32_t) imm_20_17 << 17) | ((uint32_t) imm_16 << 16) | (uint32_t) imm_15_0, 21) }
+cp_w_c.var imm : { int32_t } = { SignExtend(imm_20_17 | imm_16 | imm_15_0, 21) }
 
 cp_w_c.execute={
 
@@ -747,8 +747,8 @@ sub_c.disasm={
 	if(CONFIG::DISAMBIGUATE_DISASM) os<< "\t\t/*imm8*/";
 }
 
-op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
-sub_d.var imm :{int32_t}= {SignExtend((uint32_t)(imm_20_17 << 17)|((uint32_t) imm_16 <<16 )|(uint32_t) imm_15_0,21)}
+op sub_d(0b111[3]:shl<17>imm_20_17[4]:0b0001[4]:shl<16>imm_16[1]:rd[4]:><:imm_15_0[16])
+sub_d.var imm :{int32_t}= {SignExtend(imm_20_17 | imm_16 | imm_15_0,21)}
 
 sub_d.execute = {
 

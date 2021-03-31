@@ -35,13 +35,13 @@
 #ifndef UNISIM_SERVICE_INTERFACES_RUNNABLE_HH
 #define UNISIM_SERVICE_INTERFACES_RUNNABLE_HH
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-struct Runnable : public unisim::kernel::service::ServiceInterface
+struct Runnable : public ServiceInterface
 {
 	virtual void Run() = 0;
 };

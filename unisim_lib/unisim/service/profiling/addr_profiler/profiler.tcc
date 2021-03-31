@@ -127,7 +127,7 @@ void Profiler<ADDRESS>::ProfileMemoryAccess(typename unisim::service::interfaces
 }
 
 template <class ADDRESS>
-void Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+bool Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(size)
 	{
@@ -152,10 +152,12 @@ void Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType
 				break;
 		}
 	}
+	
+	return true;
 }
 
 template <class ADDRESS>
-void Profiler<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void Profiler<ADDRESS>::ReportCommitInstruction(ADDRESS addr, unsigned size)
 {
 	if(enable_prof[unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC])
 	{
@@ -165,6 +167,11 @@ void Profiler<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_add
 			profile[unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC].Accumulate(addr, 1);
 		}
 	}
+}
+
+template <class ADDRESS>
+void Profiler<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
+{
 }
 
 template <class ADDRESS>

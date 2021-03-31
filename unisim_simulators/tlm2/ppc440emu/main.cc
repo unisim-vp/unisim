@@ -36,25 +36,22 @@
 #include "config.h"
 #endif
 
+#include <unisim/kernel/kernel.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/os/linux_os/powerpc_linux32.hh>
+#include <unisim/service/power/cache_power_estimator.hh>
+#include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/time/host_time/time.hh>
+#include <unisim/service/translator/memory_address/memory/translator.hh>
+
 #include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
 #include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
-#include <unisim/kernel/tlm2/tlm.hh>
-
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
-#include <unisim/service/debug/gdb_server/gdb_server.hh>
-#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/loader/elf_loader/elf32_loader.hh>
-#include <unisim/service/loader/linux_loader/linux_loader.hh>
-#include <unisim/service/os/linux_os/linux_os.hh>
-#include <unisim/service/power/cache_power_estimator.hh>
-#include <unisim/service/time/sc_time/time.hh>
-#include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/translator/memory_address/memory/translator.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -84,16 +81,14 @@ void SigIntHandler(int signum)
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::elf_loader::Elf32Loader;
-using unisim::service::loader::linux_loader::LinuxLoader;
-using unisim::service::os::linux_os::LinuxOS;
+using unisim::service::os::linux_os::Linux;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBase;
+using unisim::kernel::Object;
 
 #ifdef DEBUG_PPC440EMU
 class PLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
@@ -119,13 +114,13 @@ public:
 typedef PLBConfig PLB_CONFIG;
 #endif
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
 	int GetExitStatus() const;
 protected:
@@ -168,12 +163,19 @@ private:
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	//  - ELF32 loader
-	Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader;
-	//  - Linux loader
-	LinuxLoader<CPU_ADDRESS_TYPE> *linux_loader;
 	//  - Linux OS
-	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os;
+	Linux<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os;
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 2;
+	};
+	
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	//  - debugger back-end
+	Debugger *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -199,19 +201,20 @@ private:
 	Parameter<bool> param_estimate_power;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 };
 
 
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, plb(0)
 	, memory(0)
 	, external_input_interrupt_stub(0)
 	, critical_input_interrupt_stub(0)
 	, dcr_stub(0)
+	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -248,12 +251,10 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	//  - ELF32 loader
-	elf32_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("elf32-loader");
-	//  - Linux loader
-	linux_loader = new LinuxLoader<CPU_ADDRESS_TYPE>("linux-loader");
 	//  - Linux OS
-	linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux-os");
+	linux_os = new unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os");
+	//  - Debugger
+	debugger = (enable_inline_debugger or enable_gdb_server) ? new Debugger("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -290,32 +291,49 @@ Simulator::Simulator(int argc, char **argv)
 	cpu->memory_import >> plb->memory_export;
 	(*plb->memory_import[0]) >> memory->memory_export;
 	
-	if(enable_inline_debugger)
+	if (enable_inline_debugger or enable_gdb_server)
 	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> linux_os->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> elf32_loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> elf32_loader->symbol_table_lookup_export;
-		*inline_debugger->backtrace_import[0] >> elf32_loader->backtrace_export;
-	}
-	else if(enable_gdb_server)
-	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
+		// Debugger <-> CPU Connections
+		// Debugger <-> CPU connections
+		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+		cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+		*debugger->disasm_import[0]                          >> cpu->disasm_export;
+		*debugger->memory_import[0]                          >> cpu->memory_export;
+		*debugger->registers_import[0]                       >> cpu->registers_export;
+		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+			
+		// Debugger <-> Loader connections
+		debugger->blob_import >> linux_os->blob_export_;
+		
+		if (enable_inline_debugger)
+		{
+			// inline-debugger <-> debugger connections
+			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+			inline_debugger->memory_import                 >> *debugger->memory_export[0];
+			inline_debugger->registers_import              >> *debugger->registers_export[0];
+			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+		}
+		
+		if (enable_gdb_server)
+		{
+			// gdb-server <-> debugger connections
+			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+			gdb_server->memory_import                 >> *debugger->memory_export[1];
+			gdb_server->registers_import              >> *debugger->registers_export[1];
+		}
 	}
 
 	if(estimate_power)
@@ -340,41 +358,33 @@ Simulator::Simulator(int argc, char **argv)
 	}
 
 	effective_to_physical_address_translator->memory_import >> memory->memory_export;
-	elf32_loader->memory_import >> effective_to_physical_address_translator->memory_export;
-	linux_loader->memory_import >> effective_to_physical_address_translator->memory_export;
-	linux_loader->loader_import >> elf32_loader->loader_export;
-	linux_loader->blob_import >> elf32_loader->blob_export;
-	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->memory_import >> cpu->memory_export;
-	linux_os->memory_injection_import >> cpu->memory_injection_export;
-	linux_os->registers_import >> cpu->registers_export;
-	linux_os->loader_import >> linux_loader->loader_export;
-	linux_os->blob_import >> linux_loader->blob_export;
-	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+	cpu->linux_os_import >> linux_os->linux_os_export_;
+	linux_os->memory_import_ >> cpu->memory_export;
+	linux_os->memory_injection_import_ >> cpu->memory_injection_export;
+	linux_os->registers_import_ >> cpu->registers_export;
 }
 
 Simulator::~Simulator()
 {
-	if(external_input_interrupt_stub) delete external_input_interrupt_stub;
-	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
-	if(memory) delete memory;
-	if(gdb_server) delete gdb_server;
-	if(inline_debugger) delete inline_debugger;
-	if(cpu) delete cpu;
-	if(plb) delete plb;
-	if(il1_power_estimator) delete il1_power_estimator;
-	if(dl1_power_estimator) delete dl1_power_estimator;
-	if(itlb_power_estimator) delete itlb_power_estimator;
-	if(dtlb_power_estimator) delete dtlb_power_estimator;
-	if(utlb_power_estimator) delete utlb_power_estimator;
-	if(sim_time) delete sim_time;
-	if(linux_os) delete linux_os;
-	if(elf32_loader) delete elf32_loader;
-	if(linux_loader) delete linux_loader;
-	if(effective_to_physical_address_translator) delete effective_to_physical_address_translator;
+	delete external_input_interrupt_stub;
+	delete critical_input_interrupt_stub;
+	delete memory;
+	delete debugger;
+	delete gdb_server;
+	delete inline_debugger;
+	delete cpu;
+	delete plb;
+	delete il1_power_estimator;
+	delete dl1_power_estimator;
+	delete itlb_power_estimator;
+	delete dtlb_power_estimator;
+	delete utlb_power_estimator;
+	delete sim_time;
+	delete linux_os;
+	delete effective_to_physical_address_translator;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppc440emu");
@@ -386,7 +396,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	const char *filename = "";
 	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
 	double cpu_clock_multiplier = 2.0;
@@ -525,13 +535,6 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	void (*prev_sig_int_handler)(int) = 0;
-
-	if(!inline_debugger)
-	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-	}
-
 	try
 	{
 		sc_start();
@@ -540,11 +543,6 @@ void Simulator::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-		signal(SIGINT, prev_sig_int_handler);
 	}
 
 	cerr << "Simulation finished" << endl;
@@ -568,7 +566,7 @@ void Simulator::Run()
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	// Build the Linux OS arguments from the command line arguments
 	
@@ -592,7 +590,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		cerr << "WARNING! command line is empty: it may result in an error unless you provide a value for elf32-loader.filename, linux-loader.argc and linux-loader.argv" << endl;
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	return unisim::kernel::Simulator::Setup();
 }
 
 void Simulator::Stop(Object *object, int _exit_status)
@@ -604,7 +602,7 @@ void Simulator::Stop(Object *object, int _exit_status)
 	}
 #ifdef DEBUG_PPC440EMU
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
@@ -632,21 +630,21 @@ int sc_main(int argc, char *argv[])
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}
 
 	int exit_status = simulator->GetExitStatus();
-	if(simulator) delete simulator;
+	delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();

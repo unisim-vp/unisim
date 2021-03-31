@@ -53,10 +53,10 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
-Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
+Crossbar<CONFIG>::Crossbar(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "A crossbar")
 	, unisim::component::cxx::interconnect::xilinx::crossbar::Crossbar<CONFIG>(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, icurd_plb_slave_sock("icurd-plb-slave-sock")
 	, dcuwr_plb_slave_sock("dcuwr-plb-slave-sock")
 	, dcurd_plb_slave_sock("dcurd-plb-slave-sock")
@@ -68,7 +68,7 @@ Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
 	, plbs0_dcr_slave_sock("plbs0-dcr-slave-sock")
 	, plbs1_dcr_slave_sock("plbs1-dcr-slave-sock")
 	, plbm_dcr_slave_sock("plbm-dcr-slave-sock")
-	, cycle_time(SC_ZERO_TIME)
+	, cycle_time(sc_core::SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Enable/Disable verbosity")
 	, burst_latency_lut()
 {
@@ -231,9 +231,9 @@ Crossbar<CONFIG>::~Crossbar()
 template <class CONFIG>
 bool Crossbar<CONFIG>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
+	if(cycle_time == sc_core::SC_ZERO_TIME)
 	{
-		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << sc_core::SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
 	
@@ -260,7 +260,7 @@ tlm::tlm_sync_enum Crossbar<CONFIG>::nb_transport_fw(unsigned int intf, tlm::tlm
 				case inherited::IF_PLBS1_DCR:
 				case inherited::IF_PLBM_DCR:
 					{
-						sc_time notify_time_stamp(sc_time_stamp());
+						sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 						notify_time_stamp += t;
 						Event *event = schedule.AllocEvent();
 						event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp);
@@ -299,14 +299,14 @@ void Crossbar<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& 
 		case inherited::IF_PLBS1_DCR:
 		case inherited::IF_PLBM_DCR:
 			{
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				Event *event = schedule.AllocEvent();
-				sc_event ev_completed;
+				sc_core::sc_event ev_completed;
 				event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp, &ev_completed);
 				schedule.Notify(event);
 				wait(ev_completed);
-				t = SC_ZERO_TIME;
+				t = sc_core::SC_ZERO_TIME;
 			}
 			break;
 		default:
@@ -430,7 +430,7 @@ tlm::tlm_sync_enum Crossbar<CONFIG>::nb_transport_bw(unsigned int intf, tlm::tlm
 				case inherited::IF_MPLB:
 				case inherited::IF_MCI:
 					{
-						sc_time notify_time_stamp(sc_time_stamp());
+						sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 						notify_time_stamp += t;
 						Event *event = schedule.AllocEvent();
 						event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp);
@@ -488,7 +488,7 @@ void Crossbar<CONFIG>::invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint6
 template <class CONFIG>
 void Crossbar<CONFIG>::ProcessEvents()
 {
-	const sc_time& time_stamp = sc_time_stamp();
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
@@ -557,7 +557,7 @@ void Crossbar<CONFIG>::Process()
 template <class CONFIG>
 void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 {
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	tlm::tlm_generic_payload *payload = event->GetPayload();
 	
 	typename CONFIG::ADDRESS start_range = 0;
@@ -572,7 +572,7 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 			<< inherited::GetInterfaceName(dst_if) << ", @0x" << std::hex << payload->get_address() << std::dec << ")" << EndDebugInfo;
 	}
 	
-	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::PLB_WIDTH - 1) / CONFIG::PLB_WIDTH));
+	sc_core::sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::PLB_WIDTH - 1) / CONFIG::PLB_WIDTH));
 
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
@@ -656,9 +656,9 @@ void Crossbar<CONFIG>::ProcessBackwardEvent(Event *event)
 
 	CheckResponseStatus(event->GetInterface(), dst_if, payload);
 	
-	sc_time t(cycle_time);
+	sc_core::sc_time t(cycle_time);
 	
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(t);
@@ -790,14 +790,14 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 	payload->set_response_status(status);
 	payload->set_dmi_allowed(false);
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(cycle_time);
 	}
 	else
 	{
-		sc_time t(cycle_time);
+		sc_core::sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
 		switch(event->GetInterface())

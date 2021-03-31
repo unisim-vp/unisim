@@ -40,14 +40,15 @@
 #include <assert.h>
 
 #include <systemc>
-#include <tlm.h>
+#include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/simple_initiator_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
@@ -76,10 +77,10 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::logger::EndDebug;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::ServiceExportBase;
 using unisim::kernel::tlm2::PayloadFabric;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
@@ -137,10 +138,10 @@ public:
 	void Stop(int ret);
 	void Sync();
 
-	address_t getIntVector(uint8_t& priority);
+	address_t getIntVector(unsigned int& priority);
 	void handleAsynchronousInterrupt();
 
-	void assertInterrupt(uint8_t offset, bool isXGATE_flag);
+	void assertInterrupt(unsigned int offset, bool isXGATE_flag);
 
 	void enbale_xgate();
 	void disable_xgate();

@@ -50,6 +50,12 @@ template <{class} {CONFIG}>
 
 impl {
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace avr32 {
+
 static const char *REG_NAME[16] = {
 	"r0", "r1",  "r2",  "r3",  "r4", "r5", "r6", "r7",
 	"r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc"
@@ -133,6 +139,13 @@ static const unsigned int SIZE_BYTE = 8;
 static const unsigned int SIZE_HALF_WORD = 16;
 static const unsigned int SIZE_WORD = 32;
 static const unsigned int SIZE_DOUBLE_WORD = 64;
+
+} // end of namespace avr32
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
 }
 
 
