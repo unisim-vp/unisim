@@ -48,7 +48,7 @@
 using SSv8::Trace;
 using SSv8::CFmt;
 
-void usage( ostream& _sink, int _code );
+void usage( std::ostream& _sink, int _code );
 
 int
 main( int argc, char *argv[] )
@@ -59,8 +59,8 @@ main( int argc, char *argv[] )
     aidx = Star::Options::parse( argc - 1, argv + 1 ) + 1;
   } catch( Star::Options::Exception_t exc ) {
     switch( exc ) {
-    case Star::Options::Error: usage( cerr, 1 ); break;
-    case Star::Options::Help:  usage( cout, 0 ); break;
+    case Star::Options::Error: usage( std::cerr, 1 ); break;
+    case Star::Options::Help:  usage( std::cout, 0 ); break;
     }
   }
   
@@ -93,10 +93,10 @@ main( int argc, char *argv[] )
   arch.add( ahbpnp );
   arch.add( apbpnp );
   
-  SSv8::PFXChan trapchan( "\x1b[31;1m", cerr );
+  SSv8::PFXChan trapchan( "\x1b[31;1m", std::cerr );
   Trace::initchan( "trap", &trapchan );
 
-  Trace::chan("main") << "\n*** Run ***" << endl;
+  Trace::chan("main") << "\n*** Run ***" << std::endl;
   
   // {
   //   char const* img_path = "toto.bmp";
@@ -105,7 +105,7 @@ main( int argc, char *argv[] )
   //   ifstream img_source( img_path );
     
   //   if( not img_source.good() ) {
-  //     std::cerr << "Can't open image file: " << img_path << endl;
+  //     std::std::cerr << "Can't open image file: " << img_path << endl;
   //     throw 0;
   //   }
     
@@ -124,9 +124,9 @@ main( int argc, char *argv[] )
         }
       // Some stop conditions
       if( arch.m_pc == exitpoint )
-        { Trace::chan("main") << "[Stop] exitpoint." << endl; break; }
+        { Trace::chan("main") << "[Stop] exitpoint." << std::endl; break; }
       if( arch.m_instcount == maxinsts )
-        { Trace::chan("main") << "[Stop] instruction max." << endl; break; }
+        { Trace::chan("main") << "[Stop] instruction max." << std::endl; break; }
       arch.step();
     }
   
@@ -142,8 +142,9 @@ main( int argc, char *argv[] )
 }
   
 void
-usage( ostream& _sink, int _code ) {
-  _sink << "Usage: sparcv8 [options] program arguments." << endl;
+usage( std::ostream& _sink, int _code )
+{
+  _sink << "Usage: sparcv8 [options] program arguments." << std::endl;
   if( _code == 0 )
     Star::Options::dump( _sink );
   exit( _code );
