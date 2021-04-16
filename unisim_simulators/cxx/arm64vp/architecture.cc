@@ -1686,11 +1686,11 @@ AArch64::run()
 {
   for (;;)
     {
-      // if (insn_counter == 12855914000)
-      //   {
-      //     save_snapshot("toto.shot");
-      //     return;
-      //   }
+      if (insn_counter == 14000000000)
+        {
+          save_snapshot("toto.shot");
+          return;
+        }
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
