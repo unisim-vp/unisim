@@ -36,6 +36,7 @@
 #define __ARM64VP_TAINT_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <algorithm>
 #include <limits>
 #include <iosfwd>
 #include <inttypes.h>
@@ -234,5 +235,13 @@ TaintedValue<double> floor( TaintedValue<double> const& _value );
 
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
+
+template <typename T>
+TaintedValue<T> Minimum(TaintedValue<T> const& l, TaintedValue<T> const& r)
+{ return TaintedValue<T>(std::min(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
+
+template <typename T>
+TaintedValue<T> Maximum(TaintedValue<T> const& l, TaintedValue<T> const& r)
+{ return TaintedValue<T>(std::max(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
 
 #endif /* __ARM64VP_TAINT_HH__ */

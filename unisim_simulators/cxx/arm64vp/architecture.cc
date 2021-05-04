@@ -233,7 +233,9 @@ AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
     { last = pi->base - 1; }
 
   Page res(base, last);
-  std::fill(res.udat_beg(), res.udat_end(), -1);
+  // Initialize taint
+  // std::fill(res.udat_beg(), res.udat_end(), -1);
+  std::fill(res.udat_beg(), res.udat_end(), 0);
   return *pages.insert(pi, std::move(res));
 }
 
@@ -793,6 +795,11 @@ AArch64::PState::AsSPSR() const
 bool
 AArch64::concretize(bool possible)
 {
+  static std::set<uint64_t> seen;
+  if (seen.insert(current_insn_addr).second)
+    uninitialized_error("condition");
+  return possible;
+ 
   struct ShouldNotHappen {};
 
   if (current_insn_addr == 0xffffffc0109fb26c or
@@ -1686,7 +1693,7 @@ AArch64::run()
 {
   for (;;)
     {
-      if (insn_counter == 14000000000)
+      if (insn_counter == 2800000000)
         {
           save_snapshot("toto.shot");
           return;

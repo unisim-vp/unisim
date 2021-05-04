@@ -230,6 +230,24 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0100, 0b000 ):
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0100, 0b010 ):
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0100, 0b100 ):
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0100, 0b110 ):
+      {
+        static struct : public BaseSysReg
+        {
+          char const* description() const { return "Branch Target Identification"; }
+          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "bti (read error)\t; " << description(); }
+          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t op2, uint8_t, std::ostream& sink) const override
+          {
+            sink << "bti\t" << (op2 & 4 ? "j" : "") << (op2 & 2 ? "c" : "") << "; " << description();
+          }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64&, U64) const override { /* Not supported, doing nothing */ }
+        } x; return &x;
+      } break;
+      
+
       /*** Instruction Cache Maintenance ***/
     case SYSENCODE( 0b01, 0b000, 0b0111, 0b0101, 0b000 ):
       {

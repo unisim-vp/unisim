@@ -202,7 +202,8 @@ main(int argc, char *argv[])
         }
     }
 
-  // load_linux(arch, "Image", "device_tree.dtb");
+  // if (not load_linux(arch, "Image", "device_tree.dtb"))
+  //   return 1;
   arch.load_snapshot("toto.shot");
   
   // // ffffffc010eb5198 0x20000
