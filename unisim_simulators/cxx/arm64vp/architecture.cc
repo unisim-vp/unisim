@@ -1818,8 +1818,8 @@ AArch64::PMemDump64(uint64_t paddr)
   unsigned vsize = page.read(paddr,&dbuf[0],&ubuf[0],size);
   uintptr_t host_addr = (uintptr_t)page.data_abs(paddr);
 
-  std::cerr << "phys: " << std::hex << paddr << ", host: " << host_addr << std::dec << std::endl;
-  std::cerr << "\t0x";
+  std::cerr << "phys: " << std::hex << paddr << ", host: " << host_addr << std::dec;
+  std::cerr << "\n\t0x";
   for (unsigned byte = vsize; byte-- > 0;)
     {
       Print(std::cerr, 2, 4, dbuf[byte], ubuf[byte] );
@@ -1828,7 +1828,7 @@ AArch64::PMemDump64(uint64_t paddr)
       //   std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
     }
 
-  std::cerr << "\t0b";
+  std::cerr << "\n\t0b";
   for (unsigned byte = vsize; byte-- > 0;)
     {
       Print(std::cerr, 8, 1, dbuf[byte], ubuf[byte]);
@@ -1836,13 +1836,14 @@ AArch64::PMemDump64(uint64_t paddr)
       // for (unsigned bit = 8; bit-- > 0;)
       //   std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
     }
-  std::cerr << "\t\"";
+  std::cerr << "\n\t" << '"';
   for (unsigned byte = 0; byte < vsize; ++byte)
     {
       uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
       std::cerr << (ubyte or dbyte < 32 or dbyte > 126 ? '.' : char(dbyte));
     }
-  std::cerr << "\"\n";
+  std::cerr << '"';
+  std::cerr << std::endl;
 }
 
 void
