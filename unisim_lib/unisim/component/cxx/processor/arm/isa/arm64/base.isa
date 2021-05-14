@@ -8211,3 +8211,205 @@ crc32cx.execute = {
  *
  *******************************************************************/
 
+op cas_w( 0b100010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+cas_w.disasm = {
+  sink << "cas" << ("a"[!a]) << ("l"[!l]) << "\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+cas_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U32 comparevalue( cpu.GetGZR(rs) );
+  
+  /*BEG ATOMIC*/
+  U32 data( cpu.MemRead32(addr) );
+  
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite32(addr, U32(cpu.GetGZR(rt)));
+  else
+    cpu.SetGZR(rs, data);
+  /*END ATOMIC*/
+};
+
+op cas_x( 0b110010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+cas_x.disasm = {
+  sink << "cas" << ("a"[!a]) << ("l"[!l]) << "\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+cas_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 comparevalue( cpu.GetGZR(rs) );
+
+  /*BEG ATOMIC*/
+  U64 data( cpu.MemRead64(addr) );
+
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite64(addr, cpu.GetGZR(rt));
+  else
+    cpu.SetGZR(rs, data);
+  /*END ATOMIC*/
+};
+
+op casb_w( 0b000010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+casb_w.disasm = {
+  sink << "cas" << ("a"[!a]) << ("l"[!l]) << "b\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+casb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U8 comparevalue( cpu.GetGZR(rs) );
+  
+  /*BEG ATOMIC*/
+  U8 data( cpu.MemRead8(addr) );
+
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite8(addr, U8(cpu.GetGZR(rt)));
+  else
+    cpu.SetGZR(rs, data);
+  /*END ATOMIC*/
+};
+
+op cash_w( 0b010010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+cash_w.disasm = {
+  sink << "cas" << ("a"[!a]) << ("l"[!l]) << "h\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+cash_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U16 comparevalue( cpu.GetGZR(rs) );
+  
+  /*BEG ATOMIC*/
+  U16 data( cpu.MemRead16(addr) );
+
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite16(addr, U16(cpu.GetGZR(rt)));
+  else
+    cpu.SetGZR(rs, data);
+  /*END ATOMIC*/
+};
+
+op casp_w( 0b000010000[9]: a[1] : 1[1] : shl<1> rs[4] : 0[1] : l[1] : 0b11111[5] : rn[5] : shl<1> rt[4] : 0b0[1] );
+
+casp_w.disasm = {
+  sink << "casp" << ("a"[!a]) << ("l"[!l]) << "\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rs|1) << ", " << DisasmGZWR(rt) << ", " << DisasmGZWR(rt|1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+casp_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U32 comparevalue0( cpu.GetGZR(rs+0) ),
+      comparevalue1( cpu.GetGZR(rs+1) );
+  
+  /*BEG ATOMIC*/
+  U32 data0( cpu.MemRead32(addr+U64(0)) ),
+      data1( cpu.MemRead32(addr+U64(4)) );
+  
+  if (cpu.Test(data0 == comparevalue0 and data1 == comparevalue1))
+    {
+      cpu.MemWrite32(addr+U64(0), U32(cpu.GetGZR(rt+0)));
+      cpu.MemWrite32(addr+U64(4), U32(cpu.GetGZR(rt+1)));
+    }
+  else
+    {
+      cpu.SetGZR(rs+0, data0);
+      cpu.SetGZR(rs+1, data1);
+    }
+  /*END ATOMIC*/
+};
+
+op casp_x( 0b010010000[9]: a[1] : 1[1] : shl<1> rs[4] : 0[1] : l[1] : 0b11111[5] : rn[5] : shl<1> rt[4] : 0b0[1] );
+casp_x.var format : {char const*} = {"base,1919"};
+
+casp_x.disasm = {
+  sink << "casp" << ("a"[!a]) << ("l"[!l]) << "\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rs|1) << ", " << DisasmGZXR(rt) << ", " << DisasmGZXR(rt|1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+casp_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 comparevalue0( cpu.GetGZR(rs+0) ),
+      comparevalue1( cpu.GetGZR(rs+1) );
+
+  /*BEG ATOMIC*/
+  U64 data0( cpu.MemRead64(addr+U64(0)) ),
+      data1( cpu.MemRead64(addr+U64(4)) );
+
+  if (cpu.Test(data0 == comparevalue0 and data1 == comparevalue1))
+    {
+      cpu.MemWrite64(addr+U64(0), cpu.GetGZR(rt+0));
+      cpu.MemWrite64(addr+U64(4), cpu.GetGZR(rt+1));
+    }
+  else
+    {
+      cpu.SetGZR(rs+0, data0);
+      cpu.SetGZR(rs+1, data1);
+    }
+  /*END ATOMIC*/
+};
+
+op swp_w( 0b10111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swp_w.disasm = {
+  sink << "swp" << ("a"[!a]) << ("l"[!l]) << "\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+swp_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  
+  /*BEG ATOMIC*/
+  U32 data( cpu.MemRead32(addr) );
+  cpu.MemWrite32(addr, U32(cpu.GetGZR(rs)));
+  cpu.SetGZR(rt, data);
+  /*END ATOMIC*/
+};
+
+op swp_x( 0b11111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swp_x.disasm = {
+  sink << "swp" << ("a"[!a]) << ("l"[!l]) << "\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+swp_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  
+  /*BEG ATOMIC*/
+  U64 data( cpu.MemRead64(addr) );
+  cpu.MemWrite64(addr, cpu.GetGZR(rs));
+  cpu.SetGZR(rt, data);
+  /*END ATOMIC*/
+};
+
+op swpb_w( 0b00111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swpb_w.disasm = {
+  sink << "swp" << ("a"[!a]) << ("l"[!l]) << "b\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+op swph_w( 0b01111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swph_w.disasm = {
+  sink << "swp" << ("a"[!a]) << ("l"[!l]) << "h\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
