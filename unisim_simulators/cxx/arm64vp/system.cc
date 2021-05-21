@@ -197,6 +197,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       }
 
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
+      {
+        static struct : public BaseSysReg
+        {
+          char const* description() const { return "XPACLRI (Strip Pointer Authentication Code from LR)"; }
+          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "xpaclri<bad-read>\t; " << description(); }
+          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "xpaclri\t; " << description(); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64) const override { /* Not supported, doing nothing */ }
+        } x; return &x;
+      }
+
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0010, 0b100 ):
       {
         static struct : public BaseSysReg
