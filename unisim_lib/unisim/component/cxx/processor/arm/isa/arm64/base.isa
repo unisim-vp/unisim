@@ -8462,7 +8462,7 @@ op ldstaddb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5
 
 ldstaddb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "add" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "add" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8485,7 +8485,7 @@ op ldstaddh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5
 
 ldstaddh_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "add" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "add" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8553,7 +8553,7 @@ op ldstclrb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000100[6] : rn[5
 
 ldstclrb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "clr" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "clr" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8599,7 +8599,7 @@ op ldsteor_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5]
 
 ldsteor_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "eor" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "eor" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8644,7 +8644,7 @@ op ldsteorb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5
 
 ldsteorb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "eor" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "eor" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8667,7 +8667,7 @@ op ldsteorh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5
 
 ldsteorh_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "eor" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "eor" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8735,7 +8735,7 @@ op ldstsetb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001100[6] : rn[5
 
 ldstsetb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "set" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "set" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8758,7 +8758,7 @@ op ldstseth_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001100[6] : rn[5
 
 ldstseth_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "set" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "set" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8828,7 +8828,7 @@ op ldstsmaxb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010000[6] : rn[
 
 ldstsmaxb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "smax" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "smax" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8852,7 +8852,7 @@ op ldstsmaxh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010000[6] : rn[
 
 ldstsmaxh_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "smax" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "smax" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8923,7 +8923,7 @@ op ldstsminb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010100[6] : rn[
 
 ldstsminb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "smin" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "smin" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -8947,7 +8947,7 @@ op ldstsminh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010100[6] : rn[
 
 ldstsminh_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "smin" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "smin" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -9016,7 +9016,7 @@ op ldstumaxb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011000[6] : rn[
 
 ldstumaxb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "umax" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "umax" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -9039,7 +9039,7 @@ op ldstumaxh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011000[6] : rn[
 
 ldstumaxh_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "umax" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "umax" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -9107,7 +9107,7 @@ op ldstuminb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011100[6] : rn[
 
 ldstuminb_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "umin" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "umin" << &"a"[!a] << &"l"[!r] << "b\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";
@@ -9130,7 +9130,7 @@ op ldstuminh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011100[6] : rn[
 
 ldstuminh_w.disasm = {
   bool ld = rt != 31 or a;
-  sink << (ld ? "ld" : "st") << "umin" << &"a"[!a] << &"l"[!r] << "\t" << DisasmGZWR(rs);
+  sink << (ld ? "ld" : "st") << "umin" << &"a"[!a] << &"l"[!r] << "h\t" << DisasmGZWR(rs);
   if (ld)
     sink << ", " << DisasmGZWR(rt);
   sink << ", [" << DisasmGSXR(rn) << "]";

@@ -631,6 +631,9 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( "class Decoder\n" );
   _product.code( "{\n" );
   _product.code( "public:\n" );
+  _product.code( " typedef Operation" );
+  _product.template_abbrev( source.m_tparams );
+  _product.code( " operation_type;\n\n" );
   _product.code( " Decoder();\n" );
   _product.code( " virtual ~Decoder();\n" );
   _product.code( "\n" );
