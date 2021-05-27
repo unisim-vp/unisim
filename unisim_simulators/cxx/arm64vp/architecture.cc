@@ -117,7 +117,7 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
       MMU::TLB::Entry entry(addr);
       try { translate_address(entry, 1, mem_acc_type::debug); }
       catch (DataAbort const& x) { return false; }
-      Page const& page = access_page(entry.pa);
+      Page const& page = get_page(entry.pa);
       uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
       uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
       if (std::any_of(&udat[0], &udat[done], [](uint8_t b) { return b != 0; } )) throw Bad();
@@ -142,7 +142,7 @@ AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
       MMU::TLB::Entry entry(addr);
       try { translate_address(entry, 1, mem_acc_type::debug); }
       catch (DataAbort const& x) { return false; }
-      Page const& page = modify_page(entry.pa);
+      Page const& page = get_page(entry.pa);
       uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
       uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
       std::fill(&udat[0], &udat[done], 0);
@@ -261,7 +261,7 @@ AArch64::IPB::access(AArch64& core, uint64_t paddr)
   if (base_address != req_base_address)
     {
       uint8_t ubuf[LINE_SIZE];
-      if (core.access_page(req_base_address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
+      if (core.get_page(req_base_address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
         { struct Bad {}; raise( Bad() ); }
       if (not std::all_of( &ubuf[0], &ubuf[LINE_SIZE], [](unsigned char const byte) { return byte == 0; } ))
         { struct Bad {}; raise( Bad() ); }
@@ -307,23 +307,24 @@ AArch64::TODO()
 void
 AArch64::CallSupervisor( unsigned imm )
 {
-  // if (verbose) {
-  // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
-  // {
-  //   typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
-  //   typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
+  static std::ofstream strace("strace.log");
+  
+  static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
+  {
+    typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
+    typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
 
-  //   Arm64LinuxOS( AArch64* _cpu )
-  //     : ThisLinux( std::cerr, std::cerr, std::cerr, _cpu, _cpu, _cpu )
-  //   {
-  //     SetTargetSystem(new Arm64Target(*this));
-  //   }
-  //   ~Arm64LinuxOS() { delete GetTargetSystem(); }
-  // } arm64_linux_os( this );
+    Arm64LinuxOS( AArch64* _cpu )
+      : ThisLinux( strace, strace, strace, _cpu, _cpu, _cpu )
+    {
+      SetTargetSystem(new Arm64Target(*this));
+    }
+    ~Arm64LinuxOS() { delete GetTargetSystem(); }
+  } arm64_linux_os( this );
 
-  // std::cerr << "SVC@" << std::hex << current_insn_addr << ": ";
-  // arm64_linux_os.LogSystemCall( imm );
-  // }
+  strace << last_insn(0) << "\n\t";
+  //  strace << "SVC@" << std::hex << current_insn_addr;
+  arm64_linux_os.LogSystemCall( imm );
 
   //  if UsingAArch32() then AArch32.ITAdvance();
   // SSAdvance();
@@ -572,7 +573,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
     uint64_t read(uint64_t paddr)
     {
       uint8_t dbuf[size], ubuf[size];
-      if (cpu.access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
+      if (cpu.get_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
       uint64_t value = 0;
       for (unsigned idx = size; idx-- > 0;)
       { if (ubuf[idx]) raise( Bad() ); value = (value << 8) | dbuf[idx ^ endianness]; }
@@ -795,19 +796,20 @@ AArch64::PState::AsSPSR() const
 bool
 AArch64::concretize(bool possible)
 {
-  static std::set<uint64_t> seen;
-  if (seen.insert(current_insn_addr).second)
-    uninitialized_error("condition");
-  return possible;
+  // static std::set<uint64_t> seen;
+  // if (seen.insert(current_insn_addr).second)
+  //   uninitialized_error("condition");
+  // return possible;
  
   struct ShouldNotHappen {};
-
-  if (current_insn_addr == 0xffffffc0109fb26c or
-      current_insn_addr == 0xffffffc0109fb270)
+  
+  if (   current_insn_addr == 0xffffffc0105c70f8
+    //or current_insn_addr == 0xffffffc0109fb270
+         )
     { // <__pi_strlen>:
       // ...
-      // ffffffc0109fb26c:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
-      // ffffffc0109fb270:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
+      // ffffffc0105c70f8:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
+      // ffffffc0105c70fc:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
       gpr[5].ubits = 0;
       gpr[6].ubits = 0;
       return possible;
@@ -825,9 +827,12 @@ AArch64::concretize(bool possible)
       return possible;
     }
 
-  if (current_insn_addr == 0xffffffc01028b198)
+  if (current_insn_addr == 0xffffffc010238bdc)
     {
-      // link_path_walk.part.0: b.eq (ands    x2, x2, #0x8080808080808080)
+      // link_path_walk.part.0:
+      // ...
+      // ffffffc010238bd8:	f201c042	ands    x2, x2, #0x8080808080808080
+      // ffffffc010238bdc:	54fffde0	b.eq
       gpr[2].ubits = 0;
       gpr[3].ubits = 0;
       gpr[5].ubits = 0;
@@ -849,45 +854,43 @@ AArch64::concretize(bool possible)
       return possible;
     }
 
-  if (current_insn_addr == 0xffffffc0109fb120)
-    {
-      // <__pi_strcmp>:
-      // ...
-      // orr     x6, x5, x4
-      // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
-      gpr[2].ubits = 0;
-      gpr[3].ubits = 0;
-      gpr[6].ubits = 0;
-      return possible;
-    }
+  // if (current_insn_addr == 0xffffffc0109fb120)
+  //   {
+  //     // <__pi_strcmp>:
+  //     // ...
+  //     // orr     x6, x5, x4
+  //     // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
+  //     gpr[2].ubits = 0;
+  //     gpr[3].ubits = 0;
+  //     gpr[6].ubits = 0;
+  //     return possible;
+  //   }
 
-  if (current_insn_addr == 0xffffffc01062b630)
-    {
-      // <amba_device_try_add>:
-      // ...
-      // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
-      gpr[3].ubits = 0;
-      if (possible) raise( ShouldNotHappen() );
-      return possible;
-    }
+  // if (current_insn_addr == 0xffffffc01062b630)
+  //   {
+  //     // <amba_device_try_add>:
+  //     // ...
+  //     // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
+  //     gpr[3].ubits = 0;
+  //     if (possible) raise( ShouldNotHappen() );
+  //     return possible;
+  //   }
 
-  if (current_insn_addr == 0xffffffc0100886d8)
+  if (current_insn_addr == 0xffffffc010008cbc)
     {
       return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
     }
 
-  if (current_insn_addr == 0x7faa8aebec or
-      current_insn_addr == 0x7faa8aec18)
+  if (current_insn_addr == 0xffffffc0105c70c4)
     {
       return possible;
     }
 
-  if (current_insn_addr == 0xffffffc0103177e8 or current_insn_addr == 0xffffffc0103177ec or
-      current_insn_addr == 0xffffffc0103169f0 or current_insn_addr == 0xffffffc0103169f4)
-    {
-      gpr[0].ubits = 0;
-      return possible;
-    }
+  // if (current_insn_addr == 0xffffffc0105c70c4)
+  //   {
+  //     gpr[0].ubits = 0;
+  //     return possible;
+  //   }
 
   // static struct { uint64_t address; bool result; }
   // exceptions [] =
@@ -1189,7 +1192,7 @@ namespace {
 
     VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
     {
-      AArch64::Page const& page = write ? core.modify_page(addr) : core.access_page(addr);
+      AArch64::Page const& page = core.get_page(addr);
       VIOAccess::Slice res{page.data_abs(addr), page.size_from(addr)};
       if      (res.size > size) res.size = size;
       else if (size > res.size) size = res.size;
@@ -1204,7 +1207,7 @@ namespace {
 
     void flag(uint64_t addr) const override
     {
-      AArch64::Page const& page = core.modify_page(addr);
+      AArch64::Page const& page = core.get_page(addr);
       *page.udat_abs(addr) = 0xff;
     }
 
@@ -1688,16 +1691,26 @@ AArch64::reload_next_event()
     next_event = insn_timer + 0x1000000;
 }
 
+AArch64::U64
+AArch64::RNDR()
+{
+  uint64_t rval =       (random = random * 22695477 + 1);
+  rval = (rval << 32) | (random = random * 22695477 + 1);
+  nzcv = U8(0);
+  
+  return U64(rval);
+}
+
 void
 AArch64::run()
 {
   for (;;)
     {
-      if (insn_counter == 2800000000)
-        {
-          save_snapshot("toto.shot");
-          return;
-        }
+      // if ((insn_counter % 0x10000000) == 0)
+      //   {
+      //     save_snapshot("toto.shot");
+      //     //          return;
+      //   }
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
@@ -1724,6 +1737,12 @@ AArch64::run()
             {
               breakdance();
               // disasm = true;
+            }
+
+          if (current_insn_addr == 0x7fba767d38)
+            {
+              std::cerr << "Buggy loop entered at instruction #" << std::dec << insn_counter << " and tick #"  << insn_timer << "\n";
+              force_throw();
             }
 
           if (terminate) { force_throw(); }
@@ -1814,7 +1833,7 @@ AArch64::PMemDump64(uint64_t paddr)
   unsigned const size = 8;
   uint8_t dbuf[size], ubuf[size];
 
-  Page const& page = access_page(paddr);
+  Page const& page = get_page(paddr);
   unsigned vsize = page.read(paddr,&dbuf[0],&ubuf[0],size);
   uintptr_t host_addr = (uintptr_t)page.data_abs(paddr);
 

@@ -394,7 +394,7 @@ struct AArch64
 
     try
       {
-        if (entry.size_after() < size or access_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        if (entry.size_after() < size or get_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
           {
             for (unsigned byte = 0; byte < size; ++byte)
               {
@@ -458,7 +458,7 @@ struct AArch64
 
     try
       {
-        if (entry.size_after() < size or modify_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        if (entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
           {
             for (unsigned byte = 0; byte < size; ++byte)
               memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
@@ -669,19 +669,20 @@ struct AArch64
   typedef std::set<Page, Page::Above> Pages;
   typedef std::set<Device, Device::Above> Devices;
 
-  Page const& access_page( uint64_t addr )
-  {
-    auto pi = pages.lower_bound(addr);
-    if (pi == pages.end() or pi->last < addr)
-      {
-        auto di = devices.lower_bound(addr);
-        if (di != devices.end() and addr <= di->last)
-          throw *di;
-        throw MemFault();
-      }
-    return *pi;
-  }
-  Page const& modify_page(uint64_t addr)
+  // Page const& access_page( uint64_t addr )
+  // {
+  //   auto pi = pages.lower_bound(addr);
+  //   if (pi == pages.end() or pi->last < addr)
+  //     {
+  //       auto di = devices.lower_bound(addr);
+  //       if (di != devices.end() and addr <= di->last)
+  //         throw *di;
+  //       throw MemFault();
+  //     }
+  //   return *pi;
+  // }
+  // Page const& modify_page(uint64_t addr)
+  Page const& get_page( uint64_t addr )
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->last < addr)
@@ -775,6 +776,8 @@ struct AArch64
   };
 
   EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
+
+  U64 RNDR();
 
   struct GIC
   {
