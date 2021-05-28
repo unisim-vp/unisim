@@ -224,14 +224,17 @@ void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
   PrintHex(sink, ml, value, tv.ubits);
 }
 
+TaintedValue<float> floor( TaintedValue<float> const& _value );
+TaintedValue<double> floor( TaintedValue<double> const& _value );
+
+TaintedValue<float> ceil( TaintedValue<float> const& _value );
+TaintedValue<double> ceil( TaintedValue<double> const& _value );
+
 TaintedValue<float> trunc( TaintedValue<float> const& _value );
 TaintedValue<double> trunc( TaintedValue<double> const& _value );
 
 TaintedValue<float> fabs( TaintedValue<float> const& _value );
 TaintedValue<double> fabs( TaintedValue<double> const& _value );
-
-TaintedValue<float> floor( TaintedValue<float> const& _value );
-TaintedValue<double> floor( TaintedValue<double> const& _value );
 
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }

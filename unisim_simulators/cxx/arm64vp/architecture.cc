@@ -1706,10 +1706,10 @@ AArch64::run()
 {
   for (;;)
     {
-      // if ((insn_counter % 0x10000000) == 0)
+      // if (insn_counter == 3267089900)
       //   {
-      //     save_snapshot("toto.shot");
-      //     //          return;
+      //     save_snapshot("uvp.shot");
+      //     return;
       //   }
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);

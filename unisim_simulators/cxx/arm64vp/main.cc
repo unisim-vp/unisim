@@ -202,9 +202,9 @@ main(int argc, char *argv[])
         }
     }
 
-  if (not load_linux(arch, "Image", "device_tree.dtb"))
-    return 1;
-  //  arch.load_snapshot("toto.shot");
+  // if (not load_linux(arch, "Image", "device_tree.dtb"))
+  //   return 1;
+  arch.load_snapshot("uvp.shot");
   
   // // ffffffc010eb5198 0x20000
   // AArch64::Page const& logbuf = arch.modify_page(0xeb5198);

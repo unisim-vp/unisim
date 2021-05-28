@@ -105,3 +105,11 @@ Runner::GetSystemRegister(int op0, int op1, int crn, int crm, int op2)
     dont("system");
   return 0;
 }
+
+Runner::U8
+Runner::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 index, U8 oob_value)
+{
+  unsigned e = index % elements, r = index / elements;
+  return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
+}
+

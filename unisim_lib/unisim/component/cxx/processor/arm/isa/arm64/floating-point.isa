@@ -2300,7 +2300,7 @@ frinti_v2d2d.disasm = {
 /*******************************************************************
  * FRINTM (scalar)
  *
- * Floating-point round to integral, toward minus infinity (scalar): Vd = roundToIntegralTowardNegative(Vn)
+ * Floating-point round to integral, toward minus infinity (scalar)
  */
 
 op frintm_ss( 0b0001111000100101010000[22] : rn[5] : rd[5] );
@@ -2357,12 +2357,11 @@ frintn_v2d2d.disasm = {
   sink << "frintn\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
-op frintp_dd( 0b0001111001100100110000[22] : rn[5] : rd[5] );
-frintp_dd.var format : {char const*} = {"2198"};
-
-frintp_dd.disasm = {
-  sink << "frintp\t" << DisasmD(rd) << ", " << DisasmD(rn);
-};
+/*******************************************************************
+ * FRINTP (scalar)
+ *
+ * Floating-point round to integral, toward plus infinity (scalar).
+ */
 
 op frintp_ss( 0b0001111000100100110000[22] : rn[5] : rd[5] );
 frintp_ss.var format : {char const*} = {"2284"};
@@ -2370,6 +2369,25 @@ frintp_ss.var format : {char const*} = {"2284"};
 frintp_ss.disasm = {
   sink << "frintp\t" << DisasmS(rd) << ", " << DisasmS(rn);
 };
+
+frintp_ss.execute = {
+  cpu.SetVF32(rd, ceil(cpu.GetVF32(rn,0)));
+};
+
+op frintp_dd( 0b0001111001100100110000[22] : rn[5] : rd[5] );
+frintp_dd.var format : {char const*} = {"2198"};
+
+frintp_dd.disasm = {
+  sink << "frintp\t" << DisasmD(rd) << ", " << DisasmD(rn);
+};
+
+frintp_dd.execute = {
+  cpu.SetVF64(rd, ceil(cpu.GetVF64(rn,0)));
+};
+
+/*
+ * end of FRINTP (scalar)
+ *******************************************************************/
 
 op frintp_v2d2d( 0b0100111011100001100010[22] : rn[5] : rd[5] );
 frintp_v2d2d.var format : {char const*} = {"2374"};

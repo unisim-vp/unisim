@@ -371,6 +371,11 @@ struct Scanner
   S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
   S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
   S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
+  F32 GetVF32( unsigned reg, unsigned sub ) { dont("floating-point"); return F32(); }
+  F64 GetVF64( unsigned reg, unsigned sub ) { dont("floating-point"); return F64(); }
+
+  U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value);
+  
 
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
@@ -386,6 +391,8 @@ struct Scanner
   void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
   void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
   void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+  void SetVF32( unsigned reg, unsigned sub, F32 value ) { dont("floating-point"); }
+  void SetVF64( unsigned reg, unsigned sub, F64 value ) { dont("floating-point"); }
 
   template <typename T>
   void vector_write(unsigned reg, T value )
@@ -401,6 +408,8 @@ struct Scanner
   void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
   void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
   void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
+  void SetVF32( unsigned reg, F32 value ) { vector_write(reg, value); }
+  void SetVF64( unsigned reg, F64 value ) { vector_write(reg, value); }
 
   void ClearHighV( unsigned reg, unsigned bytes )
   {
@@ -493,6 +502,32 @@ struct Scanner
   VectorView     vector_views[VREGCOUNT];
   VectorBrick    vector_data[VREGCOUNT][VUConfig::BYTECOUNT];
 };
+
+template <class FTP> FTP FPMulAdd(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }
+
+struct PM2
+{
+  PM2(int _S, uint32_t _poly) : S(_S), poly(_poly) {} int S; uint32_t poly;
+  friend std::ostream& operator << (std::ostream& sink, PM2 const& pm2) { sink << "PM2[" << pm2.S << "," << pm2.poly << "]"; return sink; }
+  friend int strcmp(PM2 const& a, PM2 const& b)
+  {
+    if (int delta = a.S - b.S) return delta;
+    return (int64_t(a.poly) - int64_t(b.poly)) >> 32;
+  }
+};
+
+namespace unisim {
+namespace util {
+namespace symbolic {
+// Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
+template <typename OUT, unsigned S, typename TIN>
+OUT PolyMod2(unisim::util::symbolic::SmartValue<TIN> const& value, uint32_t _poly)
+{
+  return unisim::util::sav::make_weirdop<OUT>(PM2(S,_poly),value);
+}
+}
+}
+}
 
 #endif // ARM64SAV_SCANNER_HH
 

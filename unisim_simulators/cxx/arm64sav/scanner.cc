@@ -106,3 +106,27 @@ Scanner::concretize(unisim::util::symbolic::Expr cond)
   path = path->next( predicate );
   return predicate;
 }
+
+namespace
+{
+  struct OpTVU8
+  {
+    OpTVU8(int _reg0, int _elements, int _regs) : reg0(_reg0), elements(_elements), regs(_regs) {} int reg0, elements, regs;
+    friend std::ostream& operator << (std::ostream& sink, OpTVU8 const& op)
+    { return (sink << "tvu8[" << op.reg0 << ", " << op.elements << ", " << op.regs << "]"); }
+    friend int strcmp(OpTVU8 const& a, OpTVU8 const& b)
+    {
+      if (int delta = a.reg0 - b.reg0) return delta;
+      if (int delta = a.elements - b.elements) return delta;
+      return a.regs - b.regs;
+    }
+  };
+}
+
+Scanner::U8
+Scanner::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, Scanner::U8 const& index, Scanner::U8 const& oob_value)
+{
+  return unisim::util::sav::make_weirdop<U8>(OpTVU8(reg0, elements, regs), index, oob_value);
+  // unsigned e = index.value % elements, r = index.value / elements;
+  // return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
+}

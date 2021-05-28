@@ -111,6 +111,10 @@ struct Runner
   S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
   S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
   S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
+  F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<F32>(reg, sub); }
+  F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<F64>(reg, sub); }
+
+  U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 index, U8 oob_value);
 
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
@@ -126,6 +130,8 @@ struct Runner
   void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
   void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
   void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+  void SetVF32( unsigned reg, unsigned sub, F32 value ) { vector_write( reg, sub, value ); }
+  void SetVF64( unsigned reg, unsigned sub, F64 value ) { vector_write( reg, sub, value ); }
 
   template <typename T>
   void vector_write(unsigned reg, T value )
@@ -141,6 +147,8 @@ struct Runner
   void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
   void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
   void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
+  void SetVF32( unsigned reg, F32 value ) { vector_write(reg, value); }
+  void SetVF64( unsigned reg, F64 value ) { vector_write(reg, value); }
 
   void ClearHighV( unsigned reg, unsigned bytes )
   {
@@ -190,5 +198,12 @@ struct Runner
   VectorView vector_views[VECTORCOUNT];
   uint8_t    vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
 };
+
+template <typename T>
+T FPMulAdd(Runner& cpu, T const& acc, T const& op1, T const& op2)
+{
+  return acc + (op1 * op2);
+}
+
 
 #endif // __ARM64SAV_RUNNER_HH__
