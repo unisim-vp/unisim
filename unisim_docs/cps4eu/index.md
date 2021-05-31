@@ -24,11 +24,11 @@ In linux, we're left with:
 Note: 
 ## QEMU
 
-Informations for QEMU are [here](https://git.frama-c.com/unisim-vp/unisim/-/blob/master/unisim_docs/cps4eu/qemu.md)
+Informations for QEMU are [here](qemu.md)
 
 ## Yocto
 
-Informations for YOCTO are [here](https://git.frama-c.com/unisim-vp/unisim/-/blob/master/unisim_docs/cps4eu/yocto.md)
+Informations for YOCTO are [here](yocto.md)
 
 # Good to know
 
