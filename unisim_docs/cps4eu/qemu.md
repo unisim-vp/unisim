@@ -65,15 +65,11 @@ root $ ip tuntap add dev tap0 mode tap user ylhuillier
 # Samples
 Kernel options (cmdline arguments to appear in -append)
 
-========================
-=== Simple Text Boot ===
-========================
+## Simple Text Boot
 
 /opt/yocto/usvp4armv8/tmp/work/x86_64-linux/qemu-helper-native/1.0-r1/recipe-sysroot-native/usr/bin/qemu-system-aarch64 -machine virt -cpu cortex-a57 -nographic -m 256 -drive id=disk0,file=/opt/yocto/usvp4armv8/tmp/deploy/images/qemuarm64/core-image-full-cmdline-qemuarm64-20201105123308.rootfs.ext4,if=none,format=raw -device virtio-blk-device,drive=disk0 -kernel /opt/yocto/usvp4armv8/tmp/deploy/images/qemuarm64/Image -append "raid=noautodetect root=/dev/vda rw mem=256M console=ttyAMA0"
 
-==================================================
-=== Simple Text Boot with user network and RNG ===
-==================================================
+## Simple Text Boot with user network and RNG
 
 /opt/yocto/usvp4armv8/tmp/work/x86_64-linux/qemu-helper-native/1.0-r1/recipe-sysroot-native/usr/bin/qemu-system-aarch64 -machine virt -cpu cortex-a57 -nographic -m 256 -drive id=disk0,file=/home/ylhuillier/Documents/unisim/arm64vp/build/rootfs.ext4,if=none,format=raw -device virtio-blk-device,drive=disk0 -kernel /opt/yocto/usvp4armv8/tmp/deploy/images/qemuarm64/Image -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 -device virtio-net-device,netdev=net0 -netdev user,id=net0 -append "raid=noautodetect root=/dev/vda rw mem=256M console=ttyAMA0 ip=192.168.7.2::192.168.7.1:255.255.255.0"
 
