@@ -5,6 +5,50 @@
 The first demo attempts to show usage of instrumented simulation in full linux environments.
 This is especially usefull when dealing with complex frameworks such as tensorflow.
 
+## Yocto
+
+Detailed information for YOCTO is [here](yocto.md)
+
+Deploy the images (rootfs and linux)
+
+    bitbake core-minimal-image
+
+## QEMU
+
+Detailed information about QEMU is [here](qemu.md)):
+
+Launch qemu on the right image and log into root (no password required)
+
+edit `/etc/network/interfaces`
+
+    auto eth0
+    iface eth0 inet dhcp
+
+bring up networking
+    
+    ifup eth0
+
+Create a demo user and log into
+
+    useradd demo
+    su - demo
+
+Update pip and install numpy and tensorflow-lite
+
+    python3 -m pip install -U pip
+    python3 -m pip install numpy
+    python3 -m pip install --index-url https://google-coral.github.io/py-repo/ tflite_runtime
+
+To retrieve demo files start a server on host
+
+    python -m http.server 8000
+
+
+Then get files from guest
+
+    wget http://10.0.2.2:8000/resnet50_tflite.py
+
+
 ## Tensorflow lite implementation
 
 Since tensorflow 2.5 ARMv8/OpenCL/YOCTO friendliness has been drastically improved.
@@ -17,18 +61,6 @@ YOCTO dunfell gaves us troubles (see [bug #14374](https://bugzilla.yoctoproject.
 
 Installation is thouroughly [documented](https://www.tensorflow.org/lite/guide/python) with many variants. We choose one that leave the hard work to the YOCTO image creation side.
 
-In linux, we're left with:
-
-    python -m pip install --index-url https://google-coral.github.io/py-repo/ tflite_runtime
-
-Note: 
-## QEMU
-
-Informations for QEMU are [here](qemu.md)
-
-## Yocto
-
-Informations for YOCTO are [here](yocto.md)
 
 # Good to know
 
