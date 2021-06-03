@@ -86,7 +86,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   http_server = new HTTP_SERVER("http-server");
   
   // - debugger
-  if (enable_gdb_server or enable_inline_debugger)
+  if (enable_gdb_server or enable_inline_debugger or enable_profiler)
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -113,9 +113,9 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   if (debugger)
     {
       // Debugger <-> CPU connections
-      cpu.debug_yielding_import                           >> *debugger->debug_yielding_export[0];
-      cpu.trap_reporting_import                           >> *debugger->trap_reporting_export[0];
-      cpu.memory_access_reporting_import                  >> *debugger->memory_access_reporting_export[0];
+      cpu.debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+      cpu.trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+      cpu.memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
       *debugger->disasm_import[0]                          >> cpu.disasm_export;
       *debugger->memory_import[0]                          >> cpu.memory_export;
       *debugger->registers_import[0]                       >> cpu.registers_export;
@@ -125,35 +125,36 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       debugger->blob_import >> linux_os.blob_export_;
     }
   
-  if (inline_debugger)
-    {
-      // inline-debugger <-> debugger connections
-      *debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
-      *debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
-      inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
-      inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
-      inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
-      inline_debugger->memory_import                 >> *debugger->memory_export[0];
-      inline_debugger->registers_import              >> *debugger->registers_export[0];
-      inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
-      inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-      inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
-      inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
-      inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
-      inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
-    }
-  
   if (gdb_server)
     {
       // gdb-server <-> debugger connections
-      *debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
-      *debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
-      gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
-      gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
-      gdb_server->memory_import                 >> *debugger->memory_export[1];
-      gdb_server->registers_import              >> *debugger->registers_export[1];
+      *debugger->debug_yielding_import[0]       >> gdb_server->debug_yielding_export;
+      *debugger->debug_event_listener_import[0] >> gdb_server->debug_event_listener_export;
+      gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+      gdb_server->debug_selecting_import        >> *debugger->debug_selecting_export[0];
+      gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+      gdb_server->memory_import                 >> *debugger->memory_export[0];
+      gdb_server->registers_import              >> *debugger->registers_export[0];
     }
     
+  if (inline_debugger)
+    {
+      // inline-debugger <-> debugger connections
+      *debugger->debug_event_listener_import[1]      >> inline_debugger->debug_event_listener_export;
+      *debugger->debug_yielding_import[1]            >> inline_debugger->debug_yielding_export;
+      inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+      inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+      inline_debugger->disasm_import                 >> *debugger->disasm_export[1];
+      inline_debugger->memory_import                 >> *debugger->memory_export[1];
+      inline_debugger->registers_import              >> *debugger->registers_export[1];
+      inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[1];
+      inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[1];
+      inline_debugger->backtrace_import              >> *debugger->backtrace_export[1];
+      inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[1];
+      inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[1];
+      inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[1];
+    }
+  
   if (profiler)
     {
       *debugger->debug_event_listener_import[2] >> profiler->debug_event_listener_export;
@@ -170,15 +171,20 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
       profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
     }
-    
-  *http_server->http_server_import[0] >> logger_http_writer->http_server_export;
-  *http_server->http_server_import[1] >> instrumenter->http_server_export;
-  if (profiler)
+
   {
-    *http_server->http_server_import[2] >> profiler->http_server_export;
+    unsigned idx = 0;
+    *http_server->http_server_import[idx++] >> instrumenter->http_server_export;
+    *http_server->http_server_import[idx++] >> logger_http_writer->http_server_export;
+    if (profiler)
+      {
+        *http_server->http_server_import[idx++] >> profiler->http_server_export;
+      }
   }
-   
-  *http_server->registers_import[0] >> cpu.registers_export;
+  {
+    unsigned idx = 0;
+    *http_server->registers_import[idx++] >> cpu.registers_export;
+  }
 }
 
 Simulator::~Simulator()
