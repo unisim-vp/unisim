@@ -879,6 +879,9 @@ struct AArch64
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
   //  void map_virtio_console(uint64_t base_addr, unsigned irq);
 
+  struct Suspend {};
+  void handle_suspend();
+  
   void sync( SnapShot& );
   void save_snapshot( char const* );
   void load_snapshot( char const* );
@@ -938,6 +941,7 @@ public:
   uint32_t random;
   bool     terminate;
   bool     disasm;
+  bool     suspend;
 
   // /*QESCAPTURE*/
   // bool QESCapture();

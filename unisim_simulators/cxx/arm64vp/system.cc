@@ -159,94 +159,69 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     }
   };
 
-  struct BarrierSysReg : public BaseSysReg
+  struct WOOpSysReg : public BaseSysReg
   {
-    virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
-    { sink << WriteOperation() << "<bad-read>"; }
-    virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
-    { sink << WriteOperation() << '\t' << unisim::component::cxx::processor::arm::isa::arm64::DisasmBarrierOption(crm); }
+    virtual void Disasm(Encoding, std::ostream&) const = 0;
+    void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    { Encoding e{op0, op1, crn, crm, op2}; Disasm(e, sink << (rt == 31 ? "" : "<illegal write>")); }
+    void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
+    { Encoding e{op0, op1, crn, crm, op2}; Disasm(e, sink << "<illegal read>"); }
+    /* TODO: most of this instructions (if not all), doesn't accept rt != 31, and we cannot test that for now */
     virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
-    { /* No OoO nor speculative execution, nothing to do */ }
+    { /* Most of this operations have no side effect on instruction-level simulations. Thus, we provide a default empty implementation. */ }
   };
-
 
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
       /***  Architectural hints instructions ***/
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b001 ):
       {
-        static struct : public BaseSysReg
+        static struct : public WOOpSysReg
         {
-          char const* description() const { return "Yield"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "yield<bad-read>\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "yield\t; " << description(); }
-          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
-          { /* Don't know what to do here */ cpu.TODO(); }
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "yield"; }
         } x; return &x;
       }
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b010 ):
       {
-        static struct : public BaseSysReg
-        {
-          char const* description() const { return "Wait For Event"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfe<bad-read>\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfe\t; " << description(); }
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfe\t; Wait For Event"; } 
         } x; return &x;
       }
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b011 ):
       {
-        static struct : public BaseSysReg
-        {
-          char const* description() const { return "Wait For Interrupt"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfi<bad-read>\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "wfi\t; " << description(); }
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfi\t; Wait For Interrupt"; } 
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64) const override { cpu.notify(1,&AArch64::wfi); }
         } x; return &x;
       }
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
-        static struct : public BaseSysReg
-        {
-          char const* description() const { return "XPACLRI (Strip Pointer Authentication Code from LR)"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "xpaclri<bad-read>\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "xpaclri\t; " << description(); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64) const override { /* Not supported, doing nothing */ }
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "xpaclri\t; Strip Pointer Authentication Code from LR"; } 
         } x; return &x;
       }
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0010, 0b100 ):
       {
-        static struct : public BaseSysReg
-        {
-          char const* description() const { return "Consumption of Speculative Data Barrier"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "csdb (read error)\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "csdb\t; " << description(); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64&, U64) const override { /* No OoO nor speculative execution, nothing to do */ }
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "csdb\t; Consumption of Speculative Data Barrier"; }
         } x; return &x;
       } break;
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0011, 0b001 ):
       {
-        static struct : public BaseSysReg
-        {
-          char const* description() const { return "PACIASP (Pointer Authentication Code for Instruction address)"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "paciasp (read error)\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "paciasp\t; " << description(); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64&, U64) const override { /* Not supported, doing nothing */ }
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "paciasp\t; Pointer Authentication Code for Instruction address"; }
         } x; return &x;
       } break;
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0011, 0b101 ):
       {
-        static struct : public BaseSysReg
-        {
-          char const* description() const { return "AUTIASP (Authenticate Instruction address, using key A)"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "autiasp (read error)\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "autiasp\t; " << description(); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64&, U64) const override { /* Not supported, doing nothing */ }
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "autiasp\t; Authenticate Instruction address, using key A"; }
         } x; return &x;
       } break;
 
@@ -255,15 +230,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0100, 0b100 ):
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0100, 0b110 ):
       {
-        static struct : public BaseSysReg
+        static struct : public WOOpSysReg
         {
-          char const* description() const { return "Branch Target Identification"; }
-          void DisasmRead(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, std::ostream& sink) const override { sink << "bti (read error)\t; " << description(); }
-          void DisasmWrite(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t op2, uint8_t, std::ostream& sink) const override
+          void Disasm(Encoding e, std::ostream& sink) const override
           {
-            sink << "bti\t" << (op2 & 4 ? "j" : "") << (op2 & 2 ? "c" : "") << "; " << description();
+            sink << "bti\t" << (e.op2 & 4 ? "j" : "") << (e.op2 & 2 ? "c" : "") << "; Branch Target Identification";
           }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64&, U64) const override { /* Not supported, doing nothing */ }
         } x; return &x;
       } break;
       
@@ -1616,7 +1588,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE(0b11,0b011,0b0010,0b0100,0b001): // RNDRRS, Reseeded Random Number
       {
         static struct : public BaseSysReg {
-          char const* description() const { return "Yield"; }
           void Name(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 0 ? "rndr" : e.op2 == 0 ? "rndrrs" : "?"); }
           void Describe(Encoding e, std::ostream& sink) const { sink << (e.op2 == 1 ? "Reseeded " : "") << "Random Number"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return cpu.RNDR(); }
@@ -2622,26 +2593,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     }
 
   /*  System instructions with immediate, CRm used as immediate field,
-   *  and thus ignored during decode.  (TODO: rt should be 0b11111).
+   *  and thus ignored during decode.
    */
   switch (SYSENCODE(op0, op1, crn, 0, op2))
     {
     case SYSENCODE(0b00,0b011,0b0011,0b0000,0b100):
-      {
-        static struct : public BarrierSysReg { virtual char const* WriteOperation() const override { return "dsb"; } } x;
-        return &x;
-      } break;
-
     case SYSENCODE(0b00,0b011,0b0011,0b0000,0b101):
-      {
-        static struct : public BarrierSysReg { virtual char const* WriteOperation() const override { return "dmb"; } } x;
-        return &x;
-      } break;
-
     case SYSENCODE(0b00,0b011,0b0011,0b0000,0b110):
       {
-        static struct : public BarrierSysReg { virtual char const* WriteOperation() const override { return "isb"; } } x;
-        return &x;
+        static struct : public WOOpSysReg
+        {
+          virtual void Disasm(Encoding e, std::ostream& sink) const override
+          {
+            char const* ops[] = {"dsb", "dmb", "isb"};
+            sink << ops[e.op2&3] << '\t' << unisim::component::cxx::processor::arm::isa::arm64::DisasmBarrierOption(e.crm);
+          }
+        } x; return &x;
       } break;
 
     case SYSENCODE(0b00,0b000,0b0100,0b0000,0b101):

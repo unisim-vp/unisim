@@ -75,6 +75,7 @@ AArch64::AArch64()
   , random(0)
   , terminate(false)
   , disasm(false)
+  , suspend(false)
 {
   for (int idx = 0; idx < 32; ++idx)
     {
@@ -1706,11 +1707,6 @@ AArch64::run()
 {
   for (;;)
     {
-      // if (insn_counter == 3267089900)
-      //   {
-      //     save_snapshot("uvp.shot");
-      //     return;
-      //   }
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
@@ -1729,6 +1725,9 @@ AArch64::run()
               (this->*method)();
             }
 
+          // if (insn_counter == 3267089900)
+          //   throw Suspend();
+          
           Operation* op = fetch_and_decode(insn_addr);
 
           this->next_insn_addr += 4;
@@ -1778,6 +1777,12 @@ AArch64::run()
           /* Instruction aborted, proceed to next */
           //   if (unlikely(trap_reporting_import))
           //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+        }
+      
+      catch (Suspend const&)
+        {
+          save_snapshot("uvp.shot");
+          return;
         }
     }
 }
@@ -2038,6 +2043,15 @@ AArch64::UART::flags() const
     int(tx_count ==     0) << 7 |
     int(tx_count >= qsize) << 5 |
     int(rx_valid == false) << 4;
+}
+
+void
+AArch64::handle_suspend()
+{
+  if (suspend)
+    throw Suspend();
+
+  notify( 0x800000, &AArch64::handle_suspend );
 }
 
 void

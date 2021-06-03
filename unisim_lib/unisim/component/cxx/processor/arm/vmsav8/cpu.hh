@@ -63,7 +63,7 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace vmsav8 {
-  
+
 /** Armv8 cpu
  *
  * Defines and implements architectural state of armv8 processors.
@@ -85,7 +85,7 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef CPU<CPU_IMPL> this_type;
-  
+
   // typedef simfloat::FP FP;
   // typedef FP::F64  F64;
   // typedef FP::F32  F32;
@@ -99,22 +99,25 @@ struct CPU
   typedef int64_t  S64;
   typedef bool     BOOL;
 
+  typedef float    F32;
+  typedef double   F64;
+
   typedef U64      UREG;
   typedef S64      SREG;
-  
+
   typedef this_type DisasmState;
-  
+
   /**********************************************************************
    ***                   Constructors / Destructors                   ***
    **********************************************************************/
-    
+
   CPU(const char* name, Object* parent);
   ~CPU();
-  
+
   /**********************************************************************
    ***                  Service methods and members                   ***
    **********************************************************************/
-    
+
   //=====================================================================
   //=                    Registers interface methods                    =
   //=====================================================================
@@ -138,14 +141,14 @@ struct CPU
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
   virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
-  
+
   //=====================================================================
   //=             Memory access reporting interface methods             =
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
-  
+
   //=====================================================================
   //=                Memory injection interface methods                 =
   //=====================================================================
@@ -168,14 +171,14 @@ struct CPU
   /**********************************************************************
    ***                Functional methods and members                  ***
    **********************************************************************/
-    
+
   void StepInstruction();
 
   void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL> const* insn );
   void UndefinedInstruction();
-  
+
   bool Cond( bool cond ) { return cond; }
-  
+
   //=====================================================================
   //=             General Purpose Registers access methods              =
   //=====================================================================
@@ -219,9 +222,9 @@ struct CPU
   {
     if (id != 31) gpr[id] = val;
   }
-  
+
   //====================================================================
-  //=                 Special  Registers access methods                 
+  //=                 Special  Registers access methods
   //====================================================================
 
   template <typename T>
@@ -229,7 +232,7 @@ struct CPU
   {
     return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
   }
-  
+
   U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
   U16 GetVU16( unsigned reg, unsigned sub ) { return vector_read<U16>(reg, sub); }
   U32 GetVU32( unsigned reg, unsigned sub ) { return vector_read<U32>(reg, sub); }
@@ -238,13 +241,17 @@ struct CPU
   S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
   S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
   S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
-  
+  F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<F32>(reg, sub); }
+  F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<F64>(reg, sub); }
+
+  U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? GetVU8((r0 + r) % 32, idx % elts) : oob; }
+
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
   {
     (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
   }
-  
+
   void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
   void SetVU16( unsigned reg, unsigned sub, U16 value ) { vector_write( reg, sub, value ); }
   void SetVU32( unsigned reg, unsigned sub, U32 value ) { vector_write( reg, sub, value ); }
@@ -253,13 +260,15 @@ struct CPU
   void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
   void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
   void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
+  void SetVF32( unsigned reg, unsigned sub, F32 value ) { vector_write( reg, sub, value ); }
+  void SetVF64( unsigned reg, unsigned sub, F64 value ) { vector_write( reg, sub, value ); }
 
   template <typename T>
   void vector_write(unsigned reg, T value )
   {
     *(vector_views[reg].GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
   }
-  
+
   void SetVU8 ( unsigned reg, U8 value )  { vector_write(reg, value); }
   void SetVU16( unsigned reg, U16 value ) { vector_write(reg, value); }
   void SetVU32( unsigned reg, U32 value ) { vector_write(reg, value); }
@@ -268,7 +277,9 @@ struct CPU
   void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
   void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
   void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
-  
+  void SetVF32( unsigned reg, F32 value ) { vector_write(reg, value); }
+  void SetVF64( unsigned reg, F64 value ) { vector_write(reg, value); }
+
   void ClearHighV( unsigned reg, unsigned bytes )
   {
     vector_views[reg].Truncate(bytes);
@@ -289,21 +300,23 @@ struct CPU
   {
     nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0);
   }
-  
+
   uint8_t GetNZCV() const { return nzcv; }
   uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
-  
+
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
-  
+
   /** Get the next Program Counter */
   uint64_t GetNPC() { return next_insn_addr; }
 
   /** Manage System Registers **/
   struct SysReg
   {
-    virtual char const* Name() const { return 0; };
-    virtual char const* Describe() const { return 0; };
+    struct Encoding { unsigned op0 : 4; unsigned op1 : 4; unsigned crn : 4; unsigned crm : 4; unsigned op2 : 4; };
+    virtual void Name(Encoding, std::ostream&) const {};
+    virtual void Describe(Encoding, std::ostream&) const {};
+    virtual void Describe(Encoding, char const* prefix, std::ostream&) const;
     virtual char const* ReadOperation() const { return "mrs"; }
     virtual char const* WriteOperation() const { return "msr"; };
     virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const;
@@ -311,25 +324,26 @@ struct CPU
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
     virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
   };
-  
+
   static SysReg const* GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   void        CheckSystemAccess( uint8_t op1 );
-  
+
   //=====================================================================
   //=                      Control Transfer methods                     =
   //=====================================================================
-  
+
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   bool Test( bool cond ) { return cond; }
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
-  
+  void ExceptionReturn();
+
   //=====================================================================
   //=                       Memory access methods                       =
   //=====================================================================
-  
+
   template <typename T>
   T
   MemReadT(uint64_t addr)
@@ -347,9 +361,9 @@ struct CPU
   uint32_t MemRead32(uint64_t addr) { return MemReadT<uint32_t>(addr); }
   uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
   uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
-  
+
   void MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
-  
+
   template <typename T>
   void
   MemWriteT(uint64_t addr, T val)
@@ -360,57 +374,57 @@ struct CPU
       { buffer[idx] = val; val >>= 8; }
     MemWrite( addr, &buffer[0], size );
   }
-  
+
   void MemWrite64(uint64_t addr, uint64_t val) { MemWriteT(addr, val); }
   void MemWrite32(uint64_t addr, uint32_t val) { MemWriteT(addr, val); }
   void MemWrite16(uint64_t addr, uint16_t val) { MemWriteT(addr, val); }
   void MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
-  
+
   void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
 
   void     SetExclusiveMonitors( uint64_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint64_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
-  
+
 protected:
-  
+
   /**********************************************************************
    ***                   Non functional variables                     ***
    **********************************************************************/
-  
+
   //=====================================================================
   //=                              Logger                               =
   //=====================================================================
-  
+
   /** Unisim logging services. */
   unisim::kernel::logger::Logger logger;
-  
+
   /** Verbosity of the CPU implementation */
   bool verbose;
 
   //=====================================================================
   //=                  Registers interface structures                   =
   //=====================================================================
-  
+
   /** The registers interface for debugging purpose */
   typedef unisim::util::debug::SimpleRegisterRegistry RegistersRegistry;
   RegistersRegistry registers_registry;
-  
+
   typedef std::set<unisim::kernel::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
-  
+
   /**********************************************************************
    ***                       Architectural state                      ***
    **********************************************************************/
-  
+
   uint64_t gpr[32];
   uint32_t nzcv;
   uint64_t current_insn_addr, next_insn_addr;
 
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register
-  
+
   virtual void          ResetSystemRegisters();
-  
+
   static unsigned const VECTORCOUNT = 32;
 
   struct VUConfig
@@ -420,12 +434,12 @@ protected:
     typedef U8 Byte;
   };
   unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
-  
+
   uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
-  
+
 protected:
   virtual void Sync() = 0;
-  
+
   //=====================================================================
   //=                          Memory Accesses                          =
   //=====================================================================
@@ -438,12 +452,12 @@ protected:
     IPB() : bytes(), base_address( -1 ) {}
     uint8_t* get(this_type& core, U64 address);
   } ipb;
-  
+
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
-  
+
   /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU_IMPL> decoder;
-  
+
   // // Intrusive memory accesses
   // virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   // virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
@@ -454,7 +468,7 @@ protected:
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
   bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
-  
+
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp,
                            uint64_t addr, uint32_t size )
   {
@@ -462,6 +476,12 @@ protected:
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
 };
+
+template <typename CPU, typename T>
+T FPMulAdd(CPU& cpu, T acc, T op1, T op2)
+{
+  return acc + (op1 * op2);
+}
 
 } // end of namespace vmsav8
 } // end of namespace arm

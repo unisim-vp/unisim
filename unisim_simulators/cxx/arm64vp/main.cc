@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 struct MMapped : AArch64::Page::Free
 {
@@ -177,6 +178,28 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
 //  [AArch64 boot info] https://www.kernel.org/doc/Documentation/arm64/booting.txt
 //  [Yocto dtb generation] runqemu qemuparams="-machine dumpdtb=device_tree_from_qemu.dtb"
 
+AArch64* core_instance(AArch64* new_arch)
+{
+  static AArch64* instance = 0;
+  if (new_arch) instance = new_arch;
+  return instance;
+}
+
+void usr_handler(int signum)
+{
+  struct Bad {};
+  switch (signum)
+    {
+    default: throw Bad();
+    case SIGUSR1:
+      core_instance(0)->suspend = true;
+      break;
+    case SIGUSR2:
+      core_instance(0)->terminate = true;
+      break;
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -205,6 +228,11 @@ main(int argc, char *argv[])
   // if (not load_linux(arch, "Image", "device_tree.dtb"))
   //   return 1;
   arch.load_snapshot("uvp.shot");
+
+  signal(SIGUSR1, usr_handler);
+  signal(SIGUSR2, usr_handler);
+  core_instance(&arch);
+  arch.notify( 0, &AArch64::handle_suspend );
   
   // // ffffffc010eb5198 0x20000
   // AArch64::Page const& logbuf = arch.modify_page(0xeb5198);
