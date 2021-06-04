@@ -314,7 +314,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("linux-os.apply-host-environment", false);
   sim->SetVariable("linux-os.hwcap", "swp half fastmult");
 
-  sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml");
+  sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
   sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml");
 

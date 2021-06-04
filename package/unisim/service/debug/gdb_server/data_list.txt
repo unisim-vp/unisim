@@ -1,3 +1,4 @@
+unisim/service/debug/gdb_server/gdb_aarch64.xml
 unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml
 unisim/service/debug/gdb_server/gdb_arm_with_neon.xml
 unisim/service/debug/gdb_server/gdb_avr32.xml
