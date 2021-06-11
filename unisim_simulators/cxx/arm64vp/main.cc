@@ -232,6 +232,7 @@ main(int argc, char *argv[])
   signal(SIGUSR1, usr_handler);
   signal(SIGUSR2, usr_handler);
   core_instance(&arch);
+  arch.silence( &AArch64::handle_suspend );
   arch.notify( 0, &AArch64::handle_suspend );
   
   // // ffffffc010eb5198 0x20000

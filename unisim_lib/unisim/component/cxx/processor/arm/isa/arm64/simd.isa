@@ -7518,6 +7518,23 @@ shadd_vsvsvs.disasm = {
   sink << "shadd\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+/*******************************************************************
+ * SHL
+ *
+ * Shift Left (immediate).
+ */
+
+op shl_ddi( 0b0101111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
+shl_ddi.var format : {char const*} = {"538"};
+
+shl_ddi.disasm = {
+  sink << "shl\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+};
+
+shl_ddi.execute = {
+  cpu.SetVU64(rd, cpu.GetVU64(rn, 0) << shift);
+};
+
 op shl_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : imm[3] : 0b010101[6] : rn[5] : rd[5] );
 
 shl_vbbi.disasm = {
@@ -7525,7 +7542,7 @@ shl_vbbi.disasm = {
 };
 
 shl_vbbi.execute = {
-  for (unsigned idx = 0, end=8<<q; idx < end; ++idx)
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
     cpu.SetVU8(rd, idx, cpu.GetVU8(rn, idx) << imm);
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -7537,7 +7554,7 @@ shl_vhhi.disasm = {
 };
 
 shl_vhhi.execute = {
-  for (unsigned idx = 0, end=4<<q; idx < end; ++idx)
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
     cpu.SetVU16(rd, idx, cpu.GetVU16(rn, idx) << imm);
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -7550,7 +7567,7 @@ shl_vssi.disasm = {
 };
 
 shl_vssi.execute = {
-  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
     cpu.SetVU32(rd, idx, cpu.GetVU32(rn, idx) << imm);
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -7563,16 +7580,13 @@ shl_v2d2di.disasm = {
 };
 
 shl_v2d2di.execute = {
-  for (unsigned idx = 0, end=2; idx < end; ++idx)
+  for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU64(rd, idx, cpu.GetVU64(rn, idx) << imm);
 };
 
-op shl_ddi( 0b0101111101[10] : shift[6] : 0b010101[6] : rn[5] : rd[5] );
-shl_ddi.var format : {char const*} = {"538"};
-
-shl_ddi.disasm = {
-  sink << "shl\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
+/*
+ * end of SHL
+ *******************************************************************/
 
 op shsub_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
 shsub_vbvbvb.var format : {char const*} = {"1320"};
@@ -7620,8 +7634,7 @@ sli_vbbi.disasm = {
 };
 
 sli_vbbi.execute = {
-  unsigned const elements = 8<<q;
-  for (unsigned e=0; e < elements; e += 1)
+  for (unsigned e = 0, end = 8<<q; e < end; e += 1)
     cpu.SetVU8(rd, e, (cpu.GetVU8(rn, e) << shift) | (cpu.GetVU8(rd, e) & typename ARCH::U8((1<<shift)-1)));
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -7634,8 +7647,7 @@ sli_vhhi.disasm = {
 };
 
 sli_vhhi.execute = {
-  unsigned const elements = 4<<q;
-  for (unsigned e=0; e < elements; e += 1)
+  for (unsigned e = 0, end = 4<<q; e < end; e += 1)
     cpu.SetVU16(rd, e, (cpu.GetVU16(rn, e) << shift) | (cpu.GetVU16(rd, e) & typename ARCH::U16((1<<shift)-1)));
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -7648,8 +7660,7 @@ sli_vssi.disasm = {
 };
 
 sli_vssi.execute = {
-  unsigned const elements = 2<<q;
-  for (unsigned e=0; e < elements; e += 1)
+  for (unsigned e = 0, end = 2<<q; e < end; e += 1)
     cpu.SetVU32(rd, e, (cpu.GetVU32(rn, e) << shift) | (cpu.GetVU32(rd, e) & typename ARCH::U32((1<<shift)-1)));
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -7662,7 +7673,7 @@ sli_v2d2di.disasm = {
 };
 
 sli_v2d2di.execute = {
-  for (unsigned e=0; e < 2; e += 1)
+  for (unsigned e = 0; e < 2; e += 1)
     cpu.SetVU64(rd, e, (cpu.GetVU64(rn, e) << shift) | (cpu.GetVU64(rd, e) & typename ARCH::U64((1ull<<shift)-1)));
 };
 

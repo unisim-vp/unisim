@@ -889,6 +889,7 @@ struct AArch64
   /* Simulation state */
 public:
   typedef std::multimap<uint64_t, event_handler_t> Events;
+  void silence( event_handler_t method );
   void notify( uint64_t delay, event_handler_t method );
 
 private:

@@ -1725,8 +1725,8 @@ AArch64::run()
               (this->*method)();
             }
 
-          // if (insn_counter == 3267089900)
-          //   throw Suspend();
+          if (insn_counter == 8500000000)
+            throw Suspend();
           
           Operation* op = fetch_and_decode(insn_addr);
 
@@ -2036,6 +2036,15 @@ AArch64::notify( uint64_t delay, event_handler_t method )
   reload_next_event();
 }
 
+void
+AArch64::silence( event_handler_t method )
+{
+  for (auto itr = next_events.begin(), end = next_events.begin(); itr != end;)
+    {
+      itr = itr->second == method ? next_events.erase(itr) : std::next( itr );
+    }
+}
+
 uint16_t
 AArch64::UART::flags() const
 {
@@ -2177,28 +2186,38 @@ void
 AArch64::sync(SnapShot& snapshot)
 {
   //  NELock nel(*this);
+  {
+    std::array<event_handler_t,6> methods =
+      {
+        &AArch64::wfi,
+        &AArch64::handle_irqs,
+        &AArch64::handle_vtimer,
+        &AArch64::handle_rtc,
+        &AArch64::handle_uart,
+        &AArch64::handle_suspend,
+      };
 
-  for (auto evt = next_events.begin();;++evt)
-    {
-      uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
-      snapshot.sync(date);
-      if (not date) break;
-      std::array<event_handler_t,5> methods = {&AArch64::wfi, &AArch64::handle_rtc, &AArch64::handle_uart,
-                                               &AArch64::handle_vtimer, &AArch64::handle_irqs};
-      if (snapshot.is_load())
-        {
-          int mid; snapshot.sync(mid);
-          evt = next_events.emplace_hint( evt, std::piecewise_construct,
-                                    std::forward_as_tuple( date ), std::forward_as_tuple( methods[mid] ));
-        }
-      else
-        {
-          auto itr = std::find(methods.begin(), methods.end(), evt->second);
-          if (itr == methods.end()) { struct Bad{}; raise( Bad() ); }
-          int mid = itr - methods.begin();
-          snapshot.sync(mid);
-        }
-    }
+    for (auto evt = next_events.begin();; ++evt)
+      {
+        uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
+        snapshot.sync(date);
+        if (not date) break;
+      
+        if (snapshot.is_load())
+          {
+            int mid; snapshot.sync(mid);
+            evt = next_events.emplace_hint( evt, std::piecewise_construct,
+                                            std::forward_as_tuple( date ), std::forward_as_tuple( methods[mid] ));
+          }
+        else
+          {
+            auto itr = std::find(methods.begin(), methods.end(), evt->second);
+            if (itr == methods.end()) { struct Bad{}; raise( Bad() ); }
+            int mid = itr - methods.begin();
+            snapshot.sync(mid);
+          }
+      }
+  }
 
   gic.sync(snapshot);
   uart.sync(snapshot);
