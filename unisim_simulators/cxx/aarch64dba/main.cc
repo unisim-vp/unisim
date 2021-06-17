@@ -482,7 +482,7 @@ struct Translator
 };
 
 template <typename T>
-T getu( T& res, char const* arg )
+bool getu( T& res, char const* arg )
 {
   char *end;
   uint64_t tmp = strtoull( arg, &end, 0 );
