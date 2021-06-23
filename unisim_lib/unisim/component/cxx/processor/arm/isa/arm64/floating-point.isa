@@ -32,12 +32,11 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-op fabd_ddd( 0b01111110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
-fabd_ddd.var format : {char const*} = {"714"};
-
-fabd_ddd.disasm = {
-  sink << "fabd\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
-};
+/*******************************************************************
+ * FABD (Scalar)
+ *
+ * Floating-point Absolute Difference (scalar)
+ */
 
 op fabd_sss( 0b01111110101[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
 fabd_sss.var format : {char const*} = {"791"};
@@ -45,6 +44,25 @@ fabd_sss.var format : {char const*} = {"791"};
 fabd_sss.disasm = {
   sink << "fabd\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
+
+fabd_sss.execute = {
+  cpu.SetVF32(rd, fabs(cpu.GetVF32(rn,0) - cpu.GetVF32(rm,0)));
+};
+
+op fabd_ddd( 0b01111110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
+fabd_ddd.var format : {char const*} = {"714"};
+
+fabd_ddd.disasm = {
+  sink << "fabd\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+fabd_ddd.execute = {
+  cpu.SetVF64(rd, fabs(cpu.GetVF64(rn,0) - cpu.GetVF64(rm,0)));
+};
+
+/*
+ * end of FABS (scalar)
+ *******************************************************************/
 
 op fabd_v2dv2dv2d( 0b01101110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
 fabd_v2dv2dv2d.var format : {char const*} = {"902"};
@@ -2255,12 +2273,11 @@ frecpx_ss.disasm = {
   sink << "frecpx\t" << DisasmS(rd) << ", " << DisasmS(rn);
 };
 
-op frinta_dd( 0b0001111001100110010000[22] : rn[5] : rd[5] );
-frinta_dd.var format : {char const*} = {"2194"};
-
-frinta_dd.disasm = {
-  sink << "frinta\t" << DisasmD(rd) << ", " << DisasmD(rn);
-};
+/*******************************************************************
+ * FRINTA (scalar)
+ *
+ * Floating-point Round to Integral, to nearest with ties to Away (scalar)
+ */
 
 op frinta_ss( 0b0001111000100110010000[22] : rn[5] : rd[5] );
 frinta_ss.var format : {char const*} = {"2280"};
@@ -2269,12 +2286,37 @@ frinta_ss.disasm = {
   sink << "frinta\t" << DisasmS(rd) << ", " << DisasmS(rn);
 };
 
+frinta_ss.execute = {
+  cpu.SetVF32(rd, round(cpu.GetVF32(rn,0)));
+};
+
+op frinta_dd( 0b0001111001100110010000[22] : rn[5] : rd[5] );
+frinta_dd.var format : {char const*} = {"2194"};
+
+frinta_dd.disasm = {
+  sink << "frinta\t" << DisasmD(rd) << ", " << DisasmD(rn);
+};
+
+frinta_dd.execute = {
+  cpu.SetVF64(rd, round(cpu.GetVF64(rn,0)));
+};
+
+/*
+ * end of FRINTA (scalar)
+ *******************************************************************/
+
 op frinta_v2d2d( 0b0110111001100001100010[22] : rn[5] : rd[5] );
 frinta_v2d2d.var format : {char const*} = {"2370"};
 
 frinta_v2d2d.disasm = {
   sink << "frinta\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
+
+/*******************************************************************
+ * FRINTI (scalar)
+ *
+ * Floating-point Round to Integral, using current rounding mode (scalar)
+ */
 
 op frinti_dd( 0b0001111001100111110000[22] : rn[5] : rd[5] );
 frinti_dd.var format : {char const*} = {"2195"};
@@ -2289,6 +2331,10 @@ frinti_ss.var format : {char const*} = {"2281"};
 frinti_ss.disasm = {
   sink << "frinti\t" << DisasmS(rd) << ", " << DisasmS(rn);
 };
+
+/*
+ * end of FRINTI (scalar)
+ *******************************************************************/
 
 op frinti_v2d2d( 0b0110111011100001100110[22] : rn[5] : rd[5] );
 frinti_v2d2d.var format : {char const*} = {"2371"};

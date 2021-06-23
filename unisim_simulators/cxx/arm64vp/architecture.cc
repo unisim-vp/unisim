@@ -1725,7 +1725,7 @@ AArch64::run()
               (this->*method)();
             }
 
-          if (insn_counter == 8500000000)
+          if (insn_counter == 8163857000)
             throw Suspend();
           
           Operation* op = fetch_and_decode(insn_addr);

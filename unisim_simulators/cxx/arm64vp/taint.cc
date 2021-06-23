@@ -59,6 +59,9 @@ void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t 
   _.recurse(sink, minlength, logradix, vbits, ubits);
 }
 
+TaintedValue<float>  round(TaintedValue<float> const& v) { return TaintedValue<float>(roundf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> round(TaintedValue<double> const& v)  { return TaintedValue<double>(round(v.value), v.ubits ? -1 : 0); }
+
 TaintedValue<float>  floor(TaintedValue<float> const& v) { return TaintedValue<float>(floorf(v.value), v.ubits ? -1 : 0); }
 TaintedValue<double> floor(TaintedValue<double> const& v)  { return TaintedValue<double>(floor(v.value), v.ubits ? -1 : 0); }
 

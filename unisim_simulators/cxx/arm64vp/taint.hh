@@ -224,6 +224,9 @@ void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
   PrintHex(sink, ml, value, tv.ubits);
 }
 
+TaintedValue<float> round( TaintedValue<float> const& _value );
+TaintedValue<double> round( TaintedValue<double> const& _value );
+
 TaintedValue<float> floor( TaintedValue<float> const& _value );
 TaintedValue<double> floor( TaintedValue<double> const& _value );
 
