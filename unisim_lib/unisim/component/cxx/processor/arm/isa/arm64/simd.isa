@@ -1572,26 +1572,6 @@ ins_vdx.execute = {
  * end of INS (general)
  *******************************************************************/
 
-op movi_di( 0b0010111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[1] : f[1] : g[1] : h[1] : rd[5] );
-movi_di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff}, format : {char const*} = {"1941"};
-
-movi_di.disasm = {
-  sink << "movi\t" << DisasmD(rd) << ", " << DisasmI(imm, 16);
-};
-
-movi_di.execute = {
-  typedef typename ARCH::U64 U64;
-
-  cpu.SetVU64(rd, U64(imm));
-};
-
-op movi_v2di( 0b0110111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[1] : f[1] : g[1] : h[1] : rd[5] );
-movi_v2di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff}, format : {char const*} = {"1965"};
-
-movi_v2di.disasm = {
-  sink << "movi\t" << DisasmTV(rd, 2, 3) << ", " << DisasmI(imm, 16);
-};
-
 op neg_dd( 0b0111111011100000101110[22] : rn[5] : rd[5] );
 neg_dd.var format : {char const*} = {"2203"};
 
@@ -7113,6 +7093,12 @@ mls_vsvsvs.disasm = {
   sink << "mls\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+/*******************************************************************
+ * MOVI
+ *
+ * Move Immediate (vector).
+ */
+
 op movi_vbi( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b111001[6] : imm0[5] : rd[5] );
 movi_vbi.var imm : {uint8_t} = {imm1|imm0}, format : {char const*} = {"1969"};
 
@@ -7135,11 +7121,54 @@ movi_vhi.disasm = {
   sink << "movi\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmI(imm, 16);
 };
 
+movi_vhi.execute = {
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned idx = 0, end=4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd, idx, U16(imm));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op movi_vsi( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b001[3] : imm0[5] : rd[5] );
 movi_vsi.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh}, format : {char const*} = {"1787"};
 
 movi_vsi.disasm = {
   sink << "movi\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
+};
+
+movi_vsi.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, U32(imm));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op movi_di( 0b0010111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[1] : f[1] : g[1] : h[1] : rd[5] );
+movi_di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff}, format : {char const*} = {"1941"};
+
+movi_di.disasm = {
+  sink << "movi\t" << DisasmD(rd) << ", " << DisasmI(imm, 16);
+};
+
+movi_di.execute = {
+  typedef typename ARCH::U64 U64;
+
+  cpu.SetVU64(rd, U64(imm));
+};
+
+op movi_v2di( 0b0110111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[1] : f[1] : g[1] : h[1] : rd[5] );
+movi_v2di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff}, format : {char const*} = {"1965"};
+
+movi_v2di.disasm = {
+  sink << "movi\t" << DisasmTV(rd, 2, 3) << ", " << DisasmI(imm, 16);
+};
+
+movi_v2di.execute = {
+  typedef typename ARCH::U64 U64;
+
+  for (unsigned idx = 0; idx < 2; ++idx)
+    cpu.SetVU64(rd, idx, U64(imm));
 };
 
 op movi_vsmsl( 0b0[1] : q[1] : 0b00111100000[11] : shl<21> imm1[3] : 0b110[3] : sh[1] : 0b01[2] : shl<16> imm0[5] : rd[5] );
@@ -7148,6 +7177,10 @@ movi_vsmsl.var imm : {uint32_t} = {(imm1|imm0|0xffff) >> (sh ? 0 : 8)}, format :
 movi_vsmsl.disasm = {
   sink << "movi\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
 };
+
+/*
+ * end of MOVI
+ *******************************************************************/
 
 op mul_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
 mul_vbvbvb.var format : {char const*} = {"1313"};

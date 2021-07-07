@@ -1237,6 +1237,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
              << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
              << ")" << std::dec;
       }
+      void Execute( Linux& lin, int syscall_id ) const
+      {
+        lin.SetSystemCallStatus(0, false);
+      }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }

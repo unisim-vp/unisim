@@ -212,32 +212,72 @@ faddp_v2dv2dv2d.disasm = {
   sink << "faddp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
-op fccmp_d( 0b00011110011[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b0[1] : nzcv[4] );
-fccmp_d.var format : {char const*} = {"362"};
+/*******************************************************************
+ * FCCMP
+ *
+ * Floating-point Conditional quiet compare (scalar)
+ */
 
-fccmp_d.disasm = {
-  sink << "fccmp\t" << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
-};
-
-op fccmp_s( 0b00011110001[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b0[1] : nzcv[4] );
+op fccmp_s( 0b00011110001[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b0[1] : n[1] : z[1] : c[1] : v[1] );
 fccmp_s.var format : {char const*} = {"364"};
 
 fccmp_s.disasm = {
-  sink << "fccmp\t" << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+  sink << "fccmp\t" << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmI((n<<3)|(z<<2)|(c<<1)|(v<<0),16) << ", " << DisasmCond(cond);
 };
 
-op fccmpe_d( 0b00011110011[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b1[1] : nzcv[4] );
+fccmp_s.execute = {
+  typedef typename ARCH::BOOL BOOL;
+
+  if (CheckCondition(cpu, cond))
+    {
+      typedef typename ARCH::F32 F32;
+
+      F32 a = cpu.GetVF32(rn,0), b = cpu.GetVF32(rm,0);
+      BOOL le = a <= b, ge = a >= b;
+      cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+    }
+  else
+    cpu.SetNZCV( BOOL(n==1), BOOL(z==1), BOOL(c==1), BOOL(v==1) );
+};
+
+op fccmp_d( 0b00011110011[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b0[1] : n[1] : z[1] : c[1] : v[1] );
+fccmp_d.var format : {char const*} = {"362"};
+
+fccmp_d.disasm = {
+  sink << "fccmp\t" << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmI((n<<3)|(z<<2)|(c<<1)|(v<<0),16) << ", " << DisasmCond(cond);
+};
+
+fccmp_d.execute = {
+  typedef typename ARCH::BOOL BOOL;
+
+  if (CheckCondition(cpu, cond))
+    {
+      typedef typename ARCH::F64 F64;
+
+      F64 a = cpu.GetVF64(rn,0), b = cpu.GetVF64(rm,0);
+      BOOL le = a <= b, ge = a >= b;
+      cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+    }
+  else
+    cpu.SetNZCV( BOOL(n==1), BOOL(z==1), BOOL(c==1), BOOL(v==1) );
+};
+
+/*
+ * end of FCCMP
+ *******************************************************************/
+
+op fccmpe_d( 0b00011110011[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b1[1] : n[1] : z[1] : c[1] : v[1] );
 fccmpe_d.var format : {char const*} = {"363"};
 
 fccmpe_d.disasm = {
-  sink << "fccmpe\t" << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+  sink << "fccmpe\t" << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmI((n<<3)|(z<<2)|(c<<1)|(v<<0),16) << ", " << DisasmCond(cond);
 };
 
-op fccmpe_s( 0b00011110001[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b1[1] : nzcv[4] );
+op fccmpe_s( 0b00011110001[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b1[1] : n[1] : z[1] : c[1] : v[1] );
 fccmpe_s.var format : {char const*} = {"365"};
 
 fccmpe_s.disasm = {
-  sink << "fccmpe\t" << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+  sink << "fccmpe\t" << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmI((n<<3)|(z<<2)|(c<<1)|(v<<0),16) << ", " << DisasmCond(cond);
 };
 
 op fcmeq_ddd( 0b01011110011[11] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -1321,7 +1361,7 @@ fcvtzs_xdi.disasm = {
  * FCVTZU (vector, integer)
  *
  * Floating-point convert to unsigned integer, rounding toward zero (vector)
- * 
+ *
  * It has encodings from 2 classes:Scalar and Vector
  */
 
@@ -1389,7 +1429,7 @@ fcvtzu_v2d2d.execute = {
  * FCVTZU (vector, fixed-point)
  *
  * Floating-point convert to unsigned fixed-point, rounding toward zero (vector)
- * 
+ *
  * It has encodings from 2 classes:Scalar and Vector
  */
 
