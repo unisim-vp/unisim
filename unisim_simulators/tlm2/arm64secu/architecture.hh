@@ -36,9 +36,7 @@
 #define __ARM64VP_ARCHITECTURE_HH__
 
 #include "taint.hh"
-#include "viodisk.hh"
 #include "debug.hh"
-#include "snapshot.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
@@ -47,8 +45,14 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/util/netstreamer/netstreamer.hh>
-#include <hostterm.hh>
+#include <systemc>
 #include <iosfwd>
 #include <set>
 #include <map>
@@ -58,9 +62,19 @@
 void force_throw();
 
 struct AArch64
-  : public unisim::service::interfaces::Registers
-  , public unisim::service::interfaces::Memory<uint64_t>
-  , unisim::service::interfaces::MemoryInjection<uint64_t>
+  : public virtual unisim::kernel::Object
+  , public sc_core::sc_module
+  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
+  , public unisim::kernel::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
+  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef TaintedValue< uint8_t> U8;
   typedef TaintedValue<uint16_t> U16;
@@ -79,7 +93,7 @@ struct AArch64
   typedef U64 UREG;
   typedef U64 SREG;
 
-  typedef AArch64 DisasmState;
+  struct DisasmState {};
 
   enum { ZID=4 };
 
@@ -95,23 +109,22 @@ struct AArch64
     Operation* op;
   };
 
-  typedef void (AArch64::*event_handler_t)();
-
-  AArch64();
+  SC_HAS_PROCESS(AArch64);
+  AArch64(sc_core::sc_module_name const& name, Object* parent);
   ~AArch64();
 
-  // unisim::service::interfaces::Memory<uint64_t>
-  void ResetMemory() {}
-  bool ReadMemory(uint64_t addr, void* buffer, unsigned size);
-  bool WriteMemory(uint64_t addr, void const* buffer, unsigned size);
+  // // unisim::service::interfaces::Memory<uint64_t>
+  // void ResetMemory() {}
+  // bool ReadMemory(uint64_t addr, void* buffer, unsigned size);
+  // bool WriteMemory(uint64_t addr, void const* buffer, unsigned size);
   
-  // unisim::service::interfaces::Registers
-  unisim::service::interfaces::Register* GetRegister(char const* name);
-  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+  // // unisim::service::interfaces::Registers
+  // unisim::service::interfaces::Register* GetRegister(char const* name);
+  // void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
   
-  // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  bool InjectReadMemory(uint64_t addr, void *buffer, unsigned size);
-  bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size);
+  // // unisim::service::interfaces::MemoryInjection<ADDRESS>
+  // bool InjectReadMemory(uint64_t addr, void *buffer, unsigned size);
+  // bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size);
 
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
@@ -293,92 +306,6 @@ struct AArch64
 
   struct mem_acc_type { enum Code { write = 0, read, exec, cache_maintenance, debug } code; };
     
-  struct MMU
-  {
-    MMU() : MAIR_EL1(), TCR_EL1(), TTBR0_EL1(), TTBR1_EL1() {}
-
-    uint64_t MAIR_EL1;
-    uint64_t TCR_EL1;
-    uint64_t TTBR0_EL1;
-    uint64_t TTBR1_EL1;
-
-    void sync(SnapShot&);
-    unsigned GetASID() const
-    {
-      return (unisim::component::cxx::processor::arm::vmsav8::tcr::A1.Get(TCR_EL1) ? TTBR1_EL1 : TTBR0_EL1) >> 48;
-    }
-
-    // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
-    // uint32_t ttbcr; /*< Translation Table Base Control Register */
-    // uint32_t ttbr0; /*< Translation Table Base Register 0 */
-    // uint32_t ttbr1; /*< Translation Table Base Register 1 */
-    // uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
-    // uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
-    // uint32_t dacr;
-
-    // uint16_t attr_cache[64];
-
-    // void refresh_attr_cache( bool tre );
-
-    struct TLB
-    {
-      struct Entry
-      {
-        uint64_t pa;
-        uint32_t sh         : 2;  // 2
-        uint32_t attridx    : 3;  // 5
-        uint32_t domain     : 4;  // 9
-        // <Permission>
-        uint32_t ap         : 3;  // 12
-        uint32_t xn         : 1;  // 13
-        uint32_t pxn        : 1;  // 14
-        // </Permission>
-        uint32_t NS         : 1;  // 15
-        uint32_t nG         : 1;  // 16
-        uint32_t level      : 2;  // 18
-        uint32_t blocksize  : 6;  // 24
-
-        Entry() : pa(), sh(), attridx(), domain(), ap(), xn(), pxn(), NS(), nG(), level(), blocksize() {}
-        Entry( uint64_t addr ) : pa(addr), sh(), attridx(), domain(), ap(), xn(), pxn(), NS(), nG(), level(), blocksize(48) {}
-        uint64_t size_after() const { return -(uint64_t(-1) << blocksize | pa); }
-
-        // uint32_t   asid     : 8;
-        // Permissions perms,
-        // bit nG,
-        // bits(4) domain,
-        // boolean contiguous,
-        // integer level,
-        // integer blocksize,
-        // AddressDescriptor addrdesc
-      };
-
-      bool GetTranslation( Entry& tlbe, uint64_t vaddr, unsigned asid, bool update );
-      void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
-
-      enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
-      void invalidate(bool nis, bool ll, unsigned cond, AArch64& cpu, U64 const& arg);
-
-      TLB();
-
-      /* 64-bit-keys:
-       * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
-       *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
-       */
-      uint64_t keys[kcount];
-      unsigned indices[kcount];
-      Entry    entries[kcount];
-    } tlb;
-  };
-
-  void translation_table_walk( MMU::TLB::Entry& entry, uint64_t vaddr, mem_acc_type::Code mat );
-
-  void translate_address(MMU::TLB::Entry& entry, unsigned el, mem_acc_type::Code mat);
-  
-  void CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat);
-  
-  struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
-  void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
-  
   template <typename T>
   T
   memory_read(unsigned el, U64 addr)
@@ -387,30 +314,16 @@ struct AArch64
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
-    MMU::TLB::Entry entry( addr.value );
-    translate_address(entry, el, mem_acc_type::read);
     
     uint8_t dbuf[size], ubuf[size];
 
-    try
+    if (get_page(addr.value).read(addr.value,&dbuf[0],&ubuf[0],size) != size)
       {
-        if (entry.size_after() < size or get_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        for (unsigned byte = 0; byte < size; ++byte)
           {
-            for (unsigned byte = 0; byte < size; ++byte)
-              {
-                U8 u8 = memory_read<U8>(el, U64(addr.value+byte));
-                dbuf[byte] = u8.value; ubuf[byte] = u8.ubits;
-              }
+            U8 u8 = memory_read<U8>(el, U64(addr.value+byte));
+            dbuf[byte] = u8.value; ubuf[byte] = u8.ubits;
           }
-      }
-    catch (Device const& device)
-      {
-        if (not device.read(*this, entry.pa - device.base, &dbuf[0], &ubuf[0], size))
-          throw MemFault("device");
-      }
-    catch (MemFault const& mf)
-      {
-        memory_fault(mf, "read", addr.value, entry.pa, size);
       }
     
     typedef typename T::value_type value_type;
@@ -422,6 +335,8 @@ struct AArch64
         value <<= 8; value |= bits_type( dbuf[idx] );
         ubits <<= 8; ubits |= bits_type( ubuf[idx] );
       }
+    
+    ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr.value, size);
     
     return T(*reinterpret_cast<value_type const*>(&value), ubits);
   }
@@ -443,8 +358,6 @@ struct AArch64
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
     unsigned const size = sizeof (typename T::value_type);
-    MMU::TLB::Entry entry( addr.value );
-    translate_address(entry, el, mem_acc_type::write);
 
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
@@ -456,19 +369,13 @@ struct AArch64
         ubuf[idx] = ubits & 0xff; ubits >>= 8;
       }
 
-    try
+    if (get_page(addr.value).write(addr.value,&dbuf[0],&ubuf[0],size) != size)
       {
-        if (entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
-          {
-            for (unsigned byte = 0; byte < size; ++byte)
-              memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
-          }
+        for (unsigned byte = 0; byte < size; ++byte)
+          memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
       }
-    catch (Device const& device)
-      {
-        if (not device.write(*this, entry.pa - device.base, &dbuf[0], &ubuf[0], size))
-          memory_fault(MemFault("device"), "write", addr.value, entry.pa, size);
-      }
+
+    ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr.value, size);
   }
 
   void MemWrite64(U64 addr, U64 val) { memory_write(pstate.GetEL(), addr, val); }
@@ -509,19 +416,6 @@ struct AArch64
     virtual void proceed( AArch64& cpu ) const {}
   };
 
-  struct DataAbort : public Abort
-  {
-    typedef unisim::component::cxx::processor::arm::DAbort DAbort;
-    DataAbort(DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type::Code _mat, unsigned _level,
-              bool _ipavalid, bool _secondstage, bool _s2fs1walk )
-      : type(_type), va(_va), ipa(_ipa), mat(_mat), level(_level),
-        ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
-    {}
-    virtual void proceed( AArch64& cpu ) const override;
-    unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
-    bool ipavalid, secondstage, s2fs1walk;
-  };
-  
   /* AArch32 obsolete arguments
    * - bool taketohypmode
    * - LDFSRformat
@@ -529,9 +423,6 @@ struct AArch64
    * - domain    // Domain number, AArch32 only (UNKNOWN in AArch64)
    * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
    */
-  void TakePhysicalIRQException();
-  void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
-
   void ExceptionReturn();
 
   /**********************************************************************
@@ -594,11 +485,8 @@ struct AArch64
     }
     Page() : Zone(0,0), data(0), udat(0), free(&Free::nop) {}
     Page( Page const& ) = delete;
-    Page( SnapShot& snapshot ) : Zone(0,0), data(0), udat(0), free(&Free::nop)  { sync(snapshot); }
     ~Page();
 
-    void sync( SnapShot& );
-    void save( SnapShot& ) const;
     uint64_t write(uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const
     {
       uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
@@ -639,59 +527,13 @@ struct AArch64
     void resize(uint64_t last);
   };
 
-  struct Device : public Zone
-  {
-    struct Effect;
-
-    Device( uint64_t _base, uint64_t _last, Effect const* _effect, unsigned _id )
-      : Zone( _base, _last )
-      , effect( _effect ), id(_id)
-    {}
-
-    bool write(AArch64& arch, uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const;
-    bool read(AArch64& arch, uint64_t addr, uint8_t* dbuf, uint8_t* ubuf, uint64_t count) const;
-
-    struct Request;
-
-    struct Effect
-    {
-      virtual ~Effect() {};
-      virtual bool access(AArch64& arch, Request& req) const = 0;
-      virtual void get_name(unsigned dev_id, std::ostream& sink) const = 0;
-      bool error(unsigned dev_id, char const* msg) const;
-    };
-
-    Effect const* effect;
-    unsigned id;
-  };
-
-
   typedef std::set<Page, Page::Above> Pages;
-  typedef std::set<Device, Device::Above> Devices;
 
-  // Page const& access_page( uint64_t addr )
-  // {
-  //   auto pi = pages.lower_bound(addr);
-  //   if (pi == pages.end() or pi->last < addr)
-  //     {
-  //       auto di = devices.lower_bound(addr);
-  //       if (di != devices.end() and addr <= di->last)
-  //         throw *di;
-  //       throw MemFault();
-  //     }
-  //   return *pi;
-  // }
-  // Page const& modify_page(uint64_t addr)
   Page const& get_page( uint64_t addr )
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->last < addr)
-      {
-        auto di = devices.lower_bound(addr);
-        if (di != devices.end() and addr <= di->last)
-          throw *di;
-        return alloc_page(pi, addr);
-      }
+      return alloc_page(pi, addr);
     return *pi;
   }
 
@@ -726,7 +568,6 @@ struct AArch64
     {
       if (xt.ubits) { struct Bad {}; raise( Bad() ); }
       D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
-      cpu.gic.program(cpu);
     }
 
     uint32_t AsSPSR() const;
@@ -746,7 +587,6 @@ struct AArch64
       cpu.gpr[31] = selsp(cpu);
     }
     unsigned GetEL() const { return EL; }
-    void sync(SnapShot&);
 
     unsigned D  :  1;
     unsigned A  :  1;
@@ -779,60 +619,13 @@ struct AArch64
 
   U64 RNDR();
 
-  struct GIC
-  {
-    enum { ITLinesNumber = 2, ITLinesCount = 32*(ITLinesNumber+1) };
-    GIC();
-
-    void sync( SnapShot& );
-    bool activated(AArch64& cpu) const;
-    void program(AArch64& cpu);
-    unsigned HighestPriorityPendingInterrupt() const { return ScanPendingInterruptsFor( C_PMR, 0 ); }
-    bool HasPendingInterrupt() const { return ScanPendingInterruptsFor( C_PMR, C_PMR ) < ITLinesCount; }
-    unsigned ScanPendingInterruptsFor( uint8_t required, uint8_t enough ) const;
-    void set_interrupt(unsigned idx) { uint32_t word = idx/32, bit = (1ul << (idx%32)); D_IPENDING[word] |=  bit; }
-    void ack_interrupt(unsigned idx) { uint32_t word = idx/32, bit = (1ul << (idx%32)); D_IPENDING[word] &= ~bit; D_IACTIVE[word] |= bit; }
-    void eoi_interrupt(unsigned idx) { uint32_t word = idx/32, bit = (1ul << (idx%32)); D_IACTIVE [word] &= ~bit; }
-    // CPU interface
-    uint32_t C_CTLR;
-    uint32_t C_PMR;
-    // Distributor
-    uint32_t D_CTLR;
-    uint32_t D_IENABLE[ITLinesCount/32];
-    uint32_t D_IPENDING[ITLinesCount/32];
-    uint32_t D_IACTIVE[ITLinesCount/32];
-    uint8_t  D_IPRIORITYR[ITLinesCount];
-    uint32_t D_ICFGR[ITLinesCount/16];
-  };
-  void map_gic(uint64_t base_addr);
-  bool has_irqs() const;
-  void handle_irqs();
   void wfi();
 
-  struct RTC
-  {
-    RTC() : LR(0), MR(), load_insn_time(0), started(false), masked(true) {}
-    void     sync(SnapShot&);
-    uint32_t get_counter(AArch64& cpu) const { return LR + get_gap(cpu); }
-    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / (cpu.get_freq() / get_cntfrq()); }
-    uint64_t get_cntfrq() const { return 1; }
-    void     flush_lr(AArch64& cpu) { load_insn_time = cpu.insn_timer; }
-    void     program(AArch64& cpu);
-    bool     matching(AArch64& cpu) { return get_counter(cpu) == MR; }
-
-    uint32_t LR, MR;
-    uint64_t load_insn_time;
-    bool started;
-    bool masked;
-  };
-  void map_rtc(uint64_t base_addr);
-  void handle_rtc();
 
   struct UART
   {
     UART();
     
-    void sync( SnapShot& );
     uint16_t flags() const;
     uint16_t mis() const { return RIS & IMSC; }
     bool rx_pop(char& ch);
@@ -857,7 +650,6 @@ struct AArch64
   struct Timer
   {
     Timer() : kctl(0), ctl(0), cval(0) {}
-    void sync( SnapShot& );
     bool activated() const;
     void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
@@ -882,41 +674,13 @@ struct AArch64
   struct Suspend {};
   void handle_suspend();
   
-  void sync( SnapShot& );
-  void save_snapshot( char const* );
-  void load_snapshot( char const* );
-  
   /* Simulation state */
 public:
-  typedef std::multimap<uint64_t, event_handler_t> Events;
-  void silence( event_handler_t method );
-  void notify( uint64_t delay, event_handler_t method );
-
-private:
-  //  struct NELock { NELock(AArch64& a); ~NELock(); pthread_mutex_t* m; };
-
-  event_handler_t pop_next_event();
-  void reload_next_event();
-  
-  Events   next_events;
-  uint64_t next_event;
-  //pthread_mutex_t next_event_mutex;
-  
-  /** Architectural state **/
-public:
   std::map<std::string,unisim::service::interfaces::Register*> regmap;
-  Devices     devices;
-  GIC         gic;
-  UART        uart;
-  Timer       vt;
-  RTC         rtc;
-  VIODisk     viodisk;
-  //VIOConsole  vioconsole; 
 
   Pages    pages;
   ExcMon   excmon;
 
-  MMU      mmu;
   IPB      ipb;
   Decoder  decoder;
 
@@ -929,7 +693,9 @@ public:
   EL       el1;
   PState   pstate;
   U8       nzcv;
-  uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer;
+  uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer, next_quantum_timer, quantum_cycles;
+  sc_core::sc_time quantum_delay;
+  
 
   static unsigned const histsize = 1024;
   InstructionInfo last_insns[histsize];
@@ -942,14 +708,73 @@ public:
   uint32_t random;
   bool     terminate;
   bool     disasm;
-  bool     suspend;
+  bool     suspend;  
 
-  // /*QESCAPTURE*/
-  // bool QESCapture();
-  // struct QES { uint16_t desc; uint16_t flags; } qes[2];
-  // void viocapture(uint64_t base, uint64_t size);
-  // void checkvio(uint64_t base, unsigned size);
-  // std::set<Zone, Zone::Above> diskpages;
+  /**********************************************************************
+   ***                  Service methods and members                   ***
+   **********************************************************************/
+
+
+  //=====================================================================
+  //=                    Registers interface methods                    =
+  //=====================================================================
+
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  virtual unisim::service::interfaces::Register* GetRegister( const char* name );
+  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
+
+		
+  //=====================================================================
+  //=              Memory interface methods (non intrusive)             =
+  //=====================================================================
+
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size );
+  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+  virtual void ResetMemory() {}
+
+  //=====================================================================
+  //=                   Disassembly interface methods                   =
+  //=====================================================================
+
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
+  virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
+
+  //=====================================================================
+  //=             Memory access reporting interface methods             =
+  //=====================================================================
+
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
+  bool  requires_memory_access_reporting = false;
+  bool  requires_fetch_instruction_reporting = false;
+  bool requires_commit_instruction_reporting = false;
+
+  //=====================================================================
+  //=                Memory injection interface methods                 =
+  //=====================================================================
+
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size );
+  virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+
+  //=====================================================================
+  //=                          Service imports                          =
+  //=====================================================================
+
+  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding>                    debug_yielding_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting>                    trap_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >     symbol_table_lookup_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::LinuxOS>                          linux_os_import;
+
+  void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp,
+                           uint64_t addr, uint32_t size )
+  {
+    if (requires_memory_access_reporting and memory_access_reporting_import)
+      memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
+  }
 };
 
 template <typename T>

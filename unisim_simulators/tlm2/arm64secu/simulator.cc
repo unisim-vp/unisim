@@ -35,22 +35,17 @@
 #include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
-#include <unisim/component/tlm2/memory/ram/memory.tcc>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <stdexcept>
 
-template class unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true>;
-
 bool debug_enabled;
 
 Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   : unisim::kernel::tlm2::Simulator(name, argc, argv, Simulator::DefaultConfiguration)
   , cpu("cpu", this)
-  , memory("memory", this)
-  , time("time")
   , host_time("host-time")
   , linux_os("linux-os")
   , simulation_spent_time(0.0)
@@ -97,11 +92,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
-
-  cpu.master_socket(memory.slave_sock);
-  
-  // CPU <-> Memory connections                                                                                                                       
-  cpu.memory_import >> memory.memory_export;
 
   // CPU <-> LinuxOS connections
   cpu.linux_os_import >> linux_os.linux_os_export_;
@@ -287,7 +277,6 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("logger.std_err", true);
   sim->SetVariable("logger.std_err_color", true);
 
-  sim->SetVariable("HARDWARE.cpu.default-endianness",   "little-endian");
   sim->SetVariable("HARDWARE.cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
   sim->SetVariable("HARDWARE.cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
   sim->SetVariable("HARDWARE.cpu.icache.size",          0x020000); // 128 KB
@@ -358,3 +347,5 @@ void Simulator::SigInt()
     unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
   }
 }
+
+void AArch64::breakdance() {}

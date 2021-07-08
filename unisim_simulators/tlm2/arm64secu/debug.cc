@@ -32,29 +32,11 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <architecture.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <debug.hh>
 #include <iostream>
-#include <iomanip>
 
-template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
-
-AArch64::Operation*
-AArch64::fetch_and_decode(uint64_t insn_addr)
+void raise_breakpoint()
 {
-  // Instruction Fetch Decode and Execution (may generate exceptions
-  // known as synchronous aborts since their occurences are a direct
-  // consequence of the instruction execution).
-
-  // Fetch
-  unisim::component::cxx::processor::arm::isa::arm64::CodeType insn = 0;
-  for (uint8_t *beg = ipb.access(*this, insn_addr), *itr = &beg[4]; --itr >= beg;)
-    insn = insn << 8 | *itr;
-
-  /* Decode current PC. TODO: should provide physical address for caching purpose */
-  Operation* op = decoder.Decode(insn_addr, insn);
-  last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
-
-  return op;
+  std::cerr << "Raise BP\n";
 }
+

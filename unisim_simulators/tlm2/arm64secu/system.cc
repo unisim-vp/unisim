@@ -189,14 +189,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       }
 
-    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b011 ):
-      {
-        static struct : public WOOpSysReg {
-          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfi\t; Wait For Interrupt"; } 
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64) const override { cpu.notify(1,&AArch64::wfi); }
-        } x; return &x;
-      }
-
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
         static struct : public WOOpSysReg {
@@ -289,10 +281,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             uint64_t const zsize = 4 << cpu.ZID;
             // ZID value should be so MMU page bounds are not crossed
-            MMU::TLB::Entry entry(addr.value & -zsize);
-            cpu.translate_address(entry, cpu.pstate.GetEL(), mem_acc_type::write);
             uint8_t buffer[zsize] = {0};
-            if (cpu.get_page(entry.pa).write(entry.pa, &buffer[0], &buffer[0], zsize) != zsize)
+            if (cpu.get_page(addr.value).write(addr.value, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
           }
         } x; return &x;
@@ -556,10 +546,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (not (e.crm&4)) // <inner-shareable>)
               sink << ", Inner Shareable";
           }
-          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t op2, AArch64& cpu, U64 arg) const override
-          {
-            cpu.mmu.tlb.invalidate(crm&4,op2&4,op2&3,cpu,arg);
-          }
         } x; return &x;
       } break;
 
@@ -647,29 +633,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-
-    case SYSENCODE(0b01,0b000,0b0111,0b1000,0b000):
-    case SYSENCODE(0b01,0b000,0b0111,0b1000,0b001):
-      {
-        static struct : public ATSysReg {
-          void Name(Encoding e, std::ostream& sink) const override { sink << "s1e1" << (e.op2 ? 'w' : 'r'); }
-          void Describe(Encoding e, std::ostream& sink) const override { sink << "Stage 1 address translation, as if " << (e.op2 ? "writing to" : "reading from") << " EL1"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            if (addr.ubits) { struct Bad {}; raise( Bad() ); }
-            try
-              {
-                MMU::TLB::Entry entry(addr.value);
-                cpu.translate_address(entry, cpu.pstate.GetEL(), op2 ? mem_acc_type::write : mem_acc_type::read);
-                cpu.el1.PAR = U64(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
-              }
-            catch (AArch64::DataAbort const& x)
-              {
-                cpu.el1.PAR = U64(0x801 | (unisim::component::cxx::processor::arm::EncodeLDFSC(x.type, x.level) << 1));
-              }
-          }
-        } x; return &x;
-      } break;
 
     case SYSENCODE(0b01,0b100,0b0111,0b1000,0b000):
       {
@@ -1359,10 +1322,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Memory Attribute Indirection Register (EL1)"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.mmu.MAIR_EL1 = value.value; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          { return U64(cpu.mmu.MAIR_EL1); }
         } x; return &x;
       } break;
 
@@ -1543,12 +1502,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Control Register (EL1)"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TCR_EL1); }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
-          {
-            if (value.ubits) { struct Bad {}; raise( Bad () ); }
-            cpu.mmu.TCR_EL1 = value.value;
-          }
         } x; return &x;
       } break;
 
@@ -1622,12 +1575,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 0 (EL1)"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TTBR0_EL1); }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
-          {
-            if (value.ubits) { struct Bad {}; raise( Bad () ); }
-            cpu.mmu.TTBR0_EL1 = value.value;
-          }
         } x; return &x;
       } break;
 
@@ -1652,12 +1599,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 1"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.TTBR1_EL1); }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
-          {
-            if (value.ubits) { struct Bad {}; raise( Bad () ); }
-            cpu.mmu.TTBR1_EL1 = value.value;
-          }
         } x; return &x;
       } break;
 
@@ -2057,15 +1998,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-    case SYSENCODE(0b11,0b011,0b1110,0b0000,0b000): // 5.1: CNTFRQ_EL0, Counter-timer Frequency register
-      {
-        static struct : public BaseSysReg {
-          void Name(Encoding, std::ostream& sink) const override { sink << "CNTFRQ_EL0"; }
-          void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Frequency register"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override { return U64(cpu.vt.get_cntfrq()); }
-        } x; return &x;
-      } break;
-
     case SYSENCODE(0b11,0b100,0b1110,0b0001,0b000): // 5.2: CNTHCTL_EL2, Counter-timer Hypervisor Control register
       {
         static struct : public BaseSysReg {
@@ -2103,9 +2035,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTKCTL_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Kernel Control register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.kctl); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_kctl( cpu, value.value ); }
         } x; return &x;
       } break;
 
@@ -2170,9 +2099,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CTL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer Control register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.read_ctl(cpu)); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_ctl(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2181,9 +2107,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer CompareValue register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.cval); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_cval(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2192,9 +2115,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_TVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer TimerValue register"; }
-          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(uint32_t(cpu.vt.read_tval(cpu))); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_tval(cpu, value.value); }
         } x; return &x;
       } break;
 
@@ -2203,14 +2123,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTVCT_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Count register"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          {
-            /* The virtual count value is equal to the physical count
-             * value minus the virtual offset visible in CNTVOFF_EL2.
-             * If EL2 not implemented, the offset is fixed as 0.
-             */
-            return U64(cpu.vt.get_pcount(cpu));
-          }
         } x; return &x;
       } break;
 
@@ -2640,14 +2552,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       {
         static struct : public PStateSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "DAIFClr"; }
-          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, AArch64& cpu, U64) const override
-          {
-            cpu.pstate.D &= ~crm >> 3;
-            cpu.pstate.A &= ~crm >> 2;
-            cpu.pstate.I &= ~crm >> 1;
-            cpu.pstate.F &= ~crm >> 0;
-            cpu.gic.program(cpu);
-          }
         } x; return &x;
       } break;
       

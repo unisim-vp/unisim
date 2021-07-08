@@ -222,12 +222,13 @@ namespace linux_os {
     bool SetupTarget() const
     {
       // Reset all target registers
-      for (int idx = 0; idx < 32; ++idx) {
-        std::ostringstream buf;
-        buf << 'x' << std::dec << idx;
-        if (not lin.ClearTargetRegister(buf.str().c_str()))
-          return false;
-      }
+      for (int idx = 0; idx < 31; ++idx)
+        {
+          std::ostringstream buf;
+          buf << 'x' << std::dec << idx;
+          if (not lin.ClearTargetRegister(buf.str().c_str()))
+            return false;
+        }
       
       // // Program Status Register (PSR)
       // // NZCVQ <- 0

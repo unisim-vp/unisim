@@ -35,6 +35,7 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
+#include "architecture.hh"
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/kernel/logger/console/console_printer.hh>
@@ -43,9 +44,7 @@
 #include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
 #include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
-#include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/util/likely/likely.hh>
-#include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/os/linux_os/arm_linux64.hh>
 #include <unisim/service/trap_handler/trap_handler.hh>
@@ -68,11 +67,9 @@ struct Simulator
   virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
 
- protected:
  private:
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
-  typedef unisim::component::tlm2::processor::arm::cortex_a53::CPU CPU;
-  typedef unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true> MEMORY;
+  typedef AArch64 CPU;
   
   struct DEBUGGER_CONFIG
   {
@@ -95,8 +92,6 @@ struct Simulator
   typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 
   CPU                                        cpu;
-  MEMORY                                     memory;
-  unisim::service::time::sc_time::ScTime     time;
   unisim::service::time::host_time::HostTime host_time;
   unisim::service::os::linux_os::ArmLinux64  linux_os;
 

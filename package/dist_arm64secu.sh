@@ -58,11 +58,13 @@ architecture.cc \
 instruction.cc \
 system.cc \
 taint.cc \
+debug.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
 architecture.hh \
 taint.hh \
+debug.hh \
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\

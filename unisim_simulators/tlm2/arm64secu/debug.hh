@@ -32,29 +32,12 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <architecture.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
-#include <iostream>
-#include <iomanip>
+#ifndef __ARM64VP_DEBUG_HH__
+#define __ARM64VP_DEBUG_HH__
 
-template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
+#include <inttypes.h>
 
-AArch64::Operation*
-AArch64::fetch_and_decode(uint64_t insn_addr)
-{
-  // Instruction Fetch Decode and Execution (may generate exceptions
-  // known as synchronous aborts since their occurences are a direct
-  // consequence of the instruction execution).
+void raise_breakpoint();
+template <typename E> void raise( E const& e ) { raise_breakpoint(); throw e; }
 
-  // Fetch
-  unisim::component::cxx::processor::arm::isa::arm64::CodeType insn = 0;
-  for (uint8_t *beg = ipb.access(*this, insn_addr), *itr = &beg[4]; --itr >= beg;)
-    insn = insn << 8 | *itr;
-
-  /* Decode current PC. TODO: should provide physical address for caching purpose */
-  Operation* op = decoder.Decode(insn_addr, insn);
-  last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
-
-  return op;
-}
+#endif /* __ARM64VP_DEBUG_HH__ */

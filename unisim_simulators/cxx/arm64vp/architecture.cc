@@ -125,6 +125,7 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
       std::copy( &data[0], &data[done], ptr );
       count -= done;
       ptr += done;
+      addr += done;
     }
 
   return true;
@@ -150,6 +151,7 @@ AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
       std::copy(&ptr[0], &ptr[done], data);
       count -= done;
       ptr += done;
+      addr += done;
     }
 
   return true;
