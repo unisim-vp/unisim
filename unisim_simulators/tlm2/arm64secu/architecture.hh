@@ -51,6 +51,7 @@
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/service/interfaces/http_server.hh>
 #include <unisim/util/netstreamer/netstreamer.hh>
 #include <systemc>
 #include <iosfwd>
@@ -75,6 +76,7 @@ struct AArch64
   , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
   typedef TaintedValue< uint8_t> U8;
   typedef TaintedValue<uint16_t> U16;
@@ -775,6 +777,14 @@ public:
     if (requires_memory_access_reporting and memory_access_reporting_import)
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
+
+  // Exports to HTTP server                                                                                                                                  
+  unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer>                   http_server_export;
+
+  // unisim::service::interfaces::HttpServer                                                                                                                 
+  virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+
+  virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
 };
 
 template <typename T>

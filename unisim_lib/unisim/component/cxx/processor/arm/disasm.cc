@@ -256,6 +256,28 @@ namespace arm {
     return sink;
   }
   
+  void DisasmBunch::operator () ( std::ostream& sink ) const
+  {
+    sink << '{';
+    if ((elems <= 2) or ((rid+elems) > 32))
+      {
+        char const* sep = "";
+        for (unsigned idx = 0; idx < elems; sep = ", ", ++idx)
+          sink << sep << "d" << std::dec << ((rid+idx)%32);
+      }
+    else
+      sink << "d" << std::dec << rid << "-d" << (rid+elems-1);
+    sink << '}';
+  }
+
+  void DisasmNeonMemoryRR::operator () (std::ostream& sink) const
+  {
+    sink << "[" << DisasmRegister(rb);
+    if (align) sink << " :" << align;
+    sink << "]";
+    if      (ra == 13) sink << "!";
+    else if (ra != 15) sink << ", " << DisasmRegister(ra);
+  }
 
 } // end of namespace arm
 } // end of namespace processor

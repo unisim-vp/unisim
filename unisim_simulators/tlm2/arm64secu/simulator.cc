@@ -170,6 +170,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       {
         *http_server->http_server_import[idx++] >> profiler->http_server_export;
       }
+    *http_server->http_server_import[idx++] >> cpu.http_server_export;
   }
   {
     unsigned idx = 0;
@@ -301,7 +302,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("linux-os.utsname-machine", "armv7");
   sim->SetVariable("linux-os.utsname-domainname","localhost");
   sim->SetVariable("linux-os.apply-host-environment", false);
-  sim->SetVariable("linux-os.hwcap", "swp half fastmult");
+  //  sim->SetVariable("linux-os.hwcap", "swp half fastmult");
 
   sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
   sim->SetVariable("debugger.parse-dwarf", false);

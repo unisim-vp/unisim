@@ -625,26 +625,26 @@ CPU<CPU_IMPL>::CallSupervisor( uint32_t imm )
     }
   else
     {
-    // if (verbose) {
-    //   static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
-    //   {
-    //     typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
+      // if (verbose) {
+      //   static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
+      //   {
+      //     typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
 
-    //     ArmLinuxOS( CPU* _cpu )
-    //       : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
-    //     {
-    //       SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
-    //     }
-    //     ~ArmLinuxOS() { delete GetTargetSystem(); }
-    //   } arm_linux_os( this );
+      //     ArmLinuxOS( CPU* _cpu )
+      //       : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
+      //     {
+      //       SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
+      //     }
+      //     ~ArmLinuxOS() { delete GetTargetSystem(); }
+      //   } arm_linux_os( this );
 
-    //   logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
-    //   arm_linux_os.LogSystemCall( imm );
-    // }
+      //   logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
+      //   arm_linux_os.LogSystemCall( imm );
+      // }
 
-    // we are executing on full system mode
-    throw SVCException();
-  }
+      // we are executing on full system mode
+      throw SVCException();
+    }
 }
 
 /** CallHypervisor

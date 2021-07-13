@@ -1090,11 +1090,11 @@ template <class CPU_IMPL>
 void
 CPU<CPU_IMPL>::UndefinedInstruction( isa::arm32::Operation<CPU_IMPL>* insn )
 {
-  std::ostringstream oss;
-  insn->disasm( oss );
+  std::ostringstream disasm;
+  insn->disasm( disasm );
 
   logger << DebugWarning << "Undefined instruction @" << std::hex << current_insn_addr << std::dec
-         << ": " << oss.str() << EndDebugWarning;
+         << ": " << disasm.str() << " ; (" << insn->GetName() << ")" << EndDebugWarning;
 
   if (linux_os_import)
     this->Stop( -1 );
@@ -1106,11 +1106,11 @@ template <class CPU_IMPL>
 void
 CPU<CPU_IMPL>::UndefinedInstruction( isa::thumb::Operation<CPU_IMPL>* insn )
 {
-  std::ostringstream oss;
-  insn->disasm( oss );
+  std::ostringstream disasm;
+  insn->disasm( disasm );
 
   logger << DebugWarning << "Undefined instruction @" << std::hex << current_insn_addr << std::dec
-         << ": " << oss.str() << EndDebugWarning;
+         << ": " << disasm.str() << " ; (" << insn->GetName() << ")" << EndDebugWarning;
 
   if (linux_os_import)
     this->Stop( -1 );

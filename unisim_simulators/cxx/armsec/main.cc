@@ -825,8 +825,7 @@ public:
 
   // Get|Set elements
   template <class ELEMT>
-  void
-  SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
+  void SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
   {
     using unisim::util::symbolic::binsec::BitFilter;
     auto uvalue = ucast( value );

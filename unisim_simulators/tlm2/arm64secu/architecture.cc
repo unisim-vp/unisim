@@ -38,6 +38,7 @@
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/aarch64.hh>
 #include <unisim/util/likely/likely.hh>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -57,6 +58,7 @@ AArch64::AArch64(sc_core::sc_module_name const& name, Object* parent)
   , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::HttpServer>(name, parent)
   , regmap()
   , pages()
   , excmon()
@@ -84,7 +86,7 @@ AArch64::AArch64(sc_core::sc_module_name const& name, Object* parent)
   , bdaddr(0)
   , random(0)
   , terminate(false)
-  , disasm(false)
+  , disasm(true)
   , suspend(false)
   , registers_export("registers-export", this)
   , memory_export("memory-export", this)
@@ -97,6 +99,7 @@ AArch64::AArch64(sc_core::sc_module_name const& name, Object* parent)
   , memory_import("memory-import", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , linux_os_import("linux-os-import", this)
+  , http_server_export("http-server-export", this)
 {
   struct GPRView : public unisim::service::interfaces::Register
   {
@@ -107,7 +110,7 @@ AArch64::AArch64(sc_core::sc_module_name const& name, Object* parent)
       name = regname.str();
     }
     virtual const char *GetName() const { return name.c_str(); }
-    virtual const char *GetDescription() const { name.c_str(); }
+    virtual const char *GetDescription() const { return name.c_str(); }
     virtual void GetValue(void* buffer) const { *(uint64_t*)buffer = value.value; }
     virtual void SetValue(const void* buffer) { value.value = *(uint64_t *)buffer; value.ubits = 0; }
     virtual int GetSize() const { return sizeof(uint64_t); }
@@ -258,7 +261,7 @@ AArch64::mem_map(Page&& page)
 AArch64::Page const&
 AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 {
-  unsigned const PAGE_SIZE = 0x10000;
+  uint64_t const PAGE_SIZE = 0x10000;
   uint64_t base = addr & -PAGE_SIZE, last = base + PAGE_SIZE - 1;
   if (pi != pages.end() and pi->last >= base)
     base = pi->last + 1;
@@ -267,8 +270,9 @@ AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 
   Page res(base, last);
   // Initialize taint
-  // std::fill(res.udat_beg(), res.udat_end(), -1);
-  std::fill(res.udat_beg(), res.udat_end(), 0);
+  std::fill(res.udat_beg(), res.udat_end(), -1);
+  //std::fill(res.udat_beg(), res.udat_end(), 0);
+  std::fill(res.data_beg(), res.data_end(), 0);
   return *pages.insert(pi, std::move(res));
 }
 
@@ -464,10 +468,10 @@ AArch64::PState::AsSPSR() const
 bool
 AArch64::concretize(bool possible)
 {
-  // static std::set<uint64_t> seen;
-  // if (seen.insert(current_insn_addr).second)
-  //   uninitialized_error("condition");
-  // return possible;
+  static std::set<uint64_t> seen;
+  if (seen.insert(current_insn_addr).second)
+    uninitialized_error("condition");
+  return possible;
  
   struct ShouldNotHappen {};
   
@@ -645,12 +649,15 @@ AArch64::run()
 
           if (disasm)
             {
+              uint64_t chk = 0;
+              for (unsigned idx = 0; idx < 32; ++idx)
+                chk ^= gpr[idx].value ^ gpr[idx].ubits;
               //static std::ofstream dbgtrace("dbgtrace");
               std::ostream& sink( std::cerr );
               sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
               DisasmState ds;
               op->disasm( ds, sink );
-              sink << std::endl;
+              sink << '\t' << chk << std::endl;
             }
 
           /* Execute instruction */
@@ -857,5 +864,139 @@ AArch64::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAcces
   case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
   default: throw 0;
   }
+}
+
+// unisim::service::interfaces::HttpServer
+bool
+AArch64::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+  unisim::util::hypapp::HttpResponse response;
+	
+  //  std::cerr << req.GetPath() << std::endl;
+  
+  switch(req.GetRequestType())
+    {
+    case unisim::util::hypapp::Request::OPTIONS:
+      response.Allow("OPTIONS, GET, HEAD");
+      break;
+				
+    case unisim::util::hypapp::Request::GET:
+    case unisim::util::hypapp::Request::HEAD:
+      {
+        response << "<!DOCTYPE html>" << std::endl;
+        response << "<html>" << std::endl;
+        response << "\t<head>" << std::endl;
+        response << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(this->GetName()) << "</title>" << std::endl;
+        response << "\t\t<meta name=\"description\" content=\"user interface for TOTO\">" << std::endl;
+        response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+        //response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/component/cxx/processor/powerpc/e600/mmu_style.css\" type=\"text/css\" />" << std::endl;
+        response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+        response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+        response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+        //response << "\t\t<script src=\"/unisim/component/cxx/processor/powerpc/e600/mmu_script.js\"></script>" << std::endl;
+        response << "\t</head>" << std::endl;
+        response << "\t<body onload=\"gui.auto_reload(1000, 'self-refresh-when-active')\">" << std::endl;
+        //Print(response, PFMT_HTML);
+        response << "\t\t<h2>Unitialized value map</h2>\n";
+        response << "\t\t<p>Registers: ";
+        {
+          char const* sep = "";
+          for (unsigned idx = 0; idx < 32; ++idx)
+            {
+              if (not gpr[idx].ubits) continue;
+              response << sep << unisim::component::cxx::processor::arm::isa::arm64::DisasmGSXR(idx);
+            }
+        }
+        response << "</p>\n";
+        response << "<table>";
+        static unsigned pushup = 1;
+        for (auto const& page : pages)
+          {
+            response << "<tr>";
+            response << "<td style=\"text-align: right\">" << std::hex << std::setw(16) << std::setfill('0') << page.base << "</td>";
+            response << "<td style=\"text-align: right\">" << std::hex << std::setw(16) << std::setfill('0') << page.last << "</td>";
+            response << "<td style=\"width:256px;background-color:black;\">";
+            uint64_t ubs = 0;
+            for (uint8_t const* uptr = page.udat_beg(), *end = page.udat_end(); uptr < end; uptr++)
+              {
+                ubs += bool(*uptr);
+              }
+            uint64_t tbs = page.size();
+
+            ubs = (256*ubs/tbs);
+            ubs = std::min(ubs, uint64_t(256));
+            response << "<div style=\"width:" << std::dec << ubs << "px;height:16px;background-color:red;\"></div>";
+            response << "</td>";
+            response << "</tr>";
+          }
+
+        pushup = pushup * 7;
+        response << "</table>";
+        response << "\t</body>" << std::endl;
+        response << "</html>" << std::endl;
+				
+        break;
+      }
+			
+    default:
+      response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+      response.Allow("OPTIONS, GET, HEAD");
+				
+      response << "<!DOCTYPE html>" << std::endl;
+      response << "<html>" << std::endl;
+      response << "\t<head>" << std::endl;
+      response << "\t\t<title>Error 405 (Method Not Allowed)</title>" << std::endl;
+      response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+      response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
+      response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+      response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+      response << "\t\t<style>" << std::endl;
+      response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+      response << "\t\t</style>" << std::endl;
+      response << "\t</head>" << std::endl;
+      response << "\t<body>" << std::endl;
+      response << "\t\t<p>HTTP Method not allowed</p>" << std::endl;
+      response << "\t</body>" << std::endl;
+      response << "</html>" << std::endl;
+      break;
+    }
+  
+  // else
+  //   {
+  //     response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
+		
+  //     response << "<!DOCTYPE html>" << std::endl;
+  //     response << "<html>" << std::endl;
+  //     response << "\t<head>" << std::endl;
+  //     response << "\t\t<title>Error 404 (Not Found)</title>" << std::endl;
+  //     response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+  //     response << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
+  //     response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+  //     response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+  //     response << "\t\t<style>" << std::endl;
+  //     response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+  //     response << "\t\t</style>" << std::endl;
+  //     response << "\t</head>" << std::endl;
+  //     response << "\t<body>" << std::endl;
+  //     response << "\t\t<p>Unavailable</p>" << std::endl;
+  //     response << "\t</body>" << std::endl;
+  //     response << "</html>" << std::endl;
+  //   }
+	
+  return conn.Send(response.ToString((req.GetRequestType() == unisim::util::hypapp::Request::HEAD) || (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)));
+}
+
+void
+AArch64::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)
+{
+  //http_server->AddJSAction
+  scanner.Append(
+     unisim::service::interfaces::BrowserOpenTabAction(
+       /* name        */ std::string("secu-") + this->GetName(),
+       /* object name */ this->GetName(),
+       /* label       */ "Show Security Map",
+       /* tile        */ unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+       /* uri         */ this->URI() + "/secu"
+    ));
 }
 

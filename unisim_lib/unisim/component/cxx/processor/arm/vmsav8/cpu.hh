@@ -224,7 +224,7 @@ struct CPU
   }
 
   //====================================================================
-  //=                 Special  Registers access methods
+  //=                Vector Registers access methods
   //====================================================================
 
   template <typename T>

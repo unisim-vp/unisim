@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_FLOATING_HH__
 
 #include <unisim/util/simfloat/floating.hh>
-#include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/kernel/variable/variable.hh>
@@ -359,7 +358,7 @@ namespace simfloat {
   {
     SoftFloat() : inherited() {}
     SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
-    //SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, unisim::util::endian::IsHostLittleEndian()); }
+    SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, unisim::util::endian::IsHostLittleEndian()); }
     SoftFloat(VFPExpandImm const& imm);
 
     SoftFloat& operator=(const SoftFloat& sfSource)
@@ -801,27 +800,49 @@ namespace simfloat {
 
 } // end of namespace simfloat
   
-  template <> struct ExtTypeInfo<simfloat::SoftFloat>
-  {
-    typedef simfloat::SoftFloat float_type;
-    enum bytecount_t { bytecount = 4 };
-    static void ToBytes( uint8_t* dst, float_type const& src ) { src.ToBytes( dst ); }
-    static void FromBytes( float_type& dst, uint8_t const* src ) { dst.FromBytes( src ); }
-  };
-
-  template <> struct ExtTypeInfo<simfloat::SoftDouble>
-  {
-    typedef simfloat::SoftDouble float_type;
-    enum bytecount_t { bytecount = 8 };
-    static void ToBytes( uint8_t* dst, float_type const& src ) { src.ToBytes( dst ); }
-    static void FromBytes( float_type& dst, uint8_t const* src ) { dst.FromBytes( src ); }
-  };
-  
-
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#include <unisim/component/cxx/vector/vector.hh>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace vector {
+  template <unsigned E> struct VectorTypeInfo<processor::arm::simfloat::SoftFloat,E>
+  {
+    typedef processor::arm::simfloat::SoftFloat float_type;
+    enum bytecount_t { bytecount = 4 };
+    // TODO: what about endianness E ?
+    static void ToBytes( uint8_t* dst, float_type const& src ) { src.ToBytes( dst ); }
+    static void FromBytes( float_type& dst, uint8_t const* src ) { dst.FromBytes( src ); }
+    static void Destroy( float_type& obj ) { obj.~float_type(); }
+    static void Allocate( float_type& obj ) { new (&obj) float_type(); }
+  };
+
+  template <unsigned E> struct VectorTypeInfo<processor::arm::simfloat::SoftDouble,E>
+  {
+    typedef processor::arm::simfloat::SoftDouble float_type;
+    enum bytecount_t { bytecount = 8 };
+    static void ToBytes( uint8_t* dst, float_type const& src ) { src.ToBytes( dst ); }
+    static void FromBytes( float_type& dst, uint8_t const* src ) { dst.FromBytes( src ); }
+    static void Destroy( float_type& obj ) { obj.~float_type(); }
+    static void Allocate( float_type& obj ) { new (&obj) float_type(); }
+  };
+  // template <> struct ExtTypeInfo<simfloat::SoftFloat>
+  // {
+  // };
+
+  // template <> struct ExtTypeInfo<simfloat::SoftDouble>
+  // {
+  // };
+} // end of namespace vector
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+  
 
 #endif /*  __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_FLOATING_HH__ */

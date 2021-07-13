@@ -93,28 +93,6 @@ struct DecodeBitMasks
 };
 
 
-struct Vms /* Vector multiple structure */
-{
-  Vms& operator = (unsigned opcode)
-  {
-    ses = opcode >> 1;
-    switch (opcode)
-      {
-      default: throw Reject();
-      case 0x0: case 0x4: case 0x8: case 0x2: case 0x6: case 0xa:
-        regs = 4 - (opcode>>2);
-        break;
-      case 0x7:
-        regs = 1;
-        break;
-      }
-    return *this;
-  }
-  unsigned regs : 3;
-  unsigned ses : 1;
-};
-
-
 } // end of namespace arm64
 } // end of namespace isa
 } // end of namespace arm

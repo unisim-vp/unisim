@@ -221,6 +221,26 @@ namespace arm {
     uint32_t m_mask;
   };
   
+  struct DisasmBunch : public DisasmObject
+  {
+    DisasmBunch( unsigned _rid, unsigned _elems )
+      : rid(_rid), elems(_elems) {}
+  
+    void operator () ( std::ostream& sink ) const;
+  
+    unsigned rid, elems;
+  };
+
+  struct DisasmNeonMemoryRR : public DisasmObject
+  {
+    DisasmNeonMemoryRR(unsigned _rb, unsigned _ra, unsigned _align)
+      : rb(_rb), ra(_ra), align(_align) {}
+        
+    void operator () (std::ostream& sink) const;
+    
+    unsigned rb, ra, align;
+  };
+
   struct PSR;
   
   std::ostream& operator << ( std::ostream& sink, PSR const& dobj );
