@@ -444,6 +444,8 @@ vadd_i8.disasm = {
 };
 
 vadd_i8.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
   typedef typename ARCH::U8 U8;
   
   // CheckAdvSIMDEnabled();
@@ -462,6 +464,8 @@ vadd_i16.disasm = {
 };
 
 vadd_i16.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
   typedef typename ARCH::U16 U16;
   
   // CheckAdvSIMDEnabled();
@@ -480,6 +484,8 @@ vadd_i32.disasm = {
 };
 
 vadd_i32.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
   typedef typename ARCH::U32 U32;
   
   // CheckAdvSIMDEnabled();
@@ -498,6 +504,8 @@ vadd_i64.disasm = {
 };
 
 vadd_i64.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDU( vd+dd, cpu.GetVDU( vn+dd ) + cpu.GetVDU( vm+dd ) );
@@ -2042,6 +2050,26 @@ vldms_8.disasm = {
   buffer << "vld" << (vms.ses ? 1 : int(vms.regs)) << ".8\t" << DisasmBunch(vd, vms.regs) << ", " << DisasmNeonMemoryRR(rn, rm, (len?32:0) << len);
 };
 
+vldms_8.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8 U8;
+  unsigned const elements = 8, size = 1;
+
+  U32 addr( cpu.GetGPR(rn) );
+
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+  
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVDE((vd+idx/elements)%32, idx%elements, U8(cpu.MemRead8(addr + U32(size*idx))));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVDE((vd+idx%vms.regs)%32, idx/vms.regs, U8(cpu.MemRead8(addr + U32(size*idx))));
+};
+
 op vld2_8( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b10[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b00[2]: len[2]: ra[4] );
 vld2_8.var vm : {uint32_t} = {vm1|vm0};
 
@@ -2077,6 +2105,26 @@ vldms_16.disasm = {
   buffer << "vld" << (vms.ses ? 1 : int(vms.regs)) << ".16\t" << DisasmBunch(vd, vms.regs) << ", " << DisasmNeonMemoryRR(rn, rm, (len?32:0) << len);
 };
 
+vldms_16.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  unsigned const elements = 4, size = 2;
+
+  U32 addr( cpu.GetGPR(rn) );
+
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+  
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVDE((vd+idx/elements)%32, idx%elements, U16(cpu.MemRead16(addr + U32(size*idx))));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVDE((vd+idx%vms.regs)%32, idx/vms.regs, U16(cpu.MemRead16(addr + U32(size*idx))));
+};
+
 op vld2_16( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b10[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b01[2]: len[2]: ra[4] );
 vld2_16.var vm : {uint32_t} = {vm1|vm0};
 
@@ -2110,6 +2158,25 @@ vldms_32.var vms : {Vms} = {opcode}, vd : {uint32_t} = {vd1|vd0};
 
 vldms_32.disasm = {
   buffer << "vld" << (vms.ses ? 1 : int(vms.regs)) << ".32\t" << DisasmBunch(vd, vms.regs) << ", " << DisasmNeonMemoryRR(rn, rm, (len?32:0) << len);
+};
+
+vldms_32.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
+  typedef typename ARCH::U32 U32;
+  unsigned const elements = 2, size = 4;
+
+  U32 addr( cpu.GetGPR(rn) );
+
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+  
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVDE((vd+idx/elements)%32, idx%elements, U32(cpu.MemRead32(addr + U32(size*idx))));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.SetVDE((vd+idx%vms.regs)%32, idx/vms.regs, U32(cpu.MemRead32(addr + U32(size*idx))));
 };
 
 op vld2_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b10[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b10[2]: len[2]: ra[4] );
@@ -2942,19 +3009,22 @@ vmov_f32qi.disasm = {
   buffer << "vmov.f32\tq" << vd << ", #" << std::setprecision(10) << fpimm;
 };
 
-op vmov_i8di( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b11100001[8]: imm0[4] );
-vmov_i8di.var vd : {uint32_t} = {vd1|vd0}, imm : {uint32_t} = {imm2|imm1|imm0};
+op vmov_i8i( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b11100[5]: q[1]: 0b01[2]: imm0[4] );
+vmov_i8i.var vd : {unsigned} = {vd1|vd0}, imm : {uint32_t} = {imm2|imm1|imm0};
+vmov_i8i.var reject : {Reject} = {vd0 & q};
 
-vmov_i8di.disasm = {
-  buffer << "vmov.i8\td" << vd << ", " << DisasmI(imm);
+vmov_i8i.disasm = {
+  buffer << "vmov.i8\t" << ("dq"[q]) << (vd>>q) << ", " << DisasmI(imm);
 };
 
-op vmov_i8qi( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b11100101[8]: imm0[4] );
-vmov_i8qi.var vd : {uint32_t} = {(vd1|vd0)>>1}, imm : {uint32_t} = {imm2|imm1|imm0};
-vmov_i8qi.var reject : {Reject} = {vd0 & 1};
+vmov_i8i.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 
-vmov_i8qi.disasm = {
-  buffer << "vmov.i8\tq" << vd << ", " << DisasmI(imm);
+  typedef typename ARCH::U8 U8;
+
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 8; ++idx)
+      cpu.SetVDE( vd | dd, idx, U8(imm) );
 };
 
 op vmov_i16di( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b10[2]: shl<3> shift[1]: 0b0[1]: 0b0001[4]: imm0[4] );
@@ -3849,6 +3919,8 @@ vpaddl_u32.disasm = {
 };
 
 vpaddl_u32.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+  
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   
@@ -6633,18 +6705,135 @@ vsri_64qi.disasm = {
   buffer << "vsri.64\tq" << vd << ", q" << vm << ", " << DisasmI(imm);
 };
 
-op vst1_8( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0010[4]: 0b00[2]: len[2]: ra[4] );
-vst1_8.var vm : {uint32_t} = {vm1|vm0};
+op vstms_8( 0b11111001[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: rn[4]:> <: vd0[4]: opcode[4]: 0[2]: len[2]: rm[4] );
+vstms_8.var vms : {Vms} = {opcode}, vd : {uint32_t} = {vd1|vd0};
 
-vst1_8.disasm = {
-  buffer << "vst1.8\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+vstms_8.disasm = {
+  buffer << "vst" << (vms.ses ? 1 : int(vms.regs)) << ".8\t" << DisasmBunch(vd, vms.regs) << ", " << DisasmNeonMemoryRR(rn, rm, (len?32:0) << len);
 };
 
-op vst1_16( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0010[4]: 0b01[2]: len[2]: ra[4] );
-vst1_16.var vm : {uint32_t} = {vm1|vm0};
+vstms_8.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8 U8;
+  unsigned const elements = 8, size = 1;
 
-vst1_16.disasm = {
-  buffer << "vst1.16\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+  U32 addr( cpu.GetGPR(rn) );
+
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+  
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U32(size*idx), cpu.GetVDE((vd+idx/elements)%32, idx%elements, U8()));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite8(addr + U32(size*idx), cpu.GetVDE((vd+idx%vms.regs)%32, idx/vms.regs, U8()));
+};
+
+op vst2_8( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b00[2]: len[2]: ra[4] );
+vst2_8.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_8.disasm = {
+  buffer << "vst2.8\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst2_8_s2d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: 0b00[2]: len[2]: ra[4] );
+vst2_8_s2d.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_8_s2d.disasm = {
+  buffer << "vst2.8\t{d" << vm << ",d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst3_8_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0101[4]: 0b00[2]: len[2]: ra[4] );
+vst3_8_s2.var vm : {uint32_t} = {vm1|vm0};
+
+vst3_8_s2.disasm = {
+  buffer << "vst3.8\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst4_8_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: 0b00[2]: len[2]: ra[4] );
+vst4_8_s2.var vm : {uint32_t} = {vm1|vm0};
+
+vst4_8_s2.disasm = {
+  buffer << "vst4.8\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << ",d" << (vm+6) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vstms_16( 0b11111001[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: rn[4]:> <: vd0[4]: opcode[4]: 1[2]: len[2]: rm[4] );
+vstms_16.var vms : {Vms} = {opcode}, vd : {uint32_t} = {vd1|vd0};
+
+vstms_16.disasm = {
+  buffer << "vst" << (vms.ses ? 1 : int(vms.regs)) << ".16\t" << DisasmBunch(vd, vms.regs) << ", " << DisasmNeonMemoryRR(rn, rm, (len?32:0) << len);
+};
+
+vstms_16.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  unsigned const elements = 4, size = 2;
+
+  U32 addr( cpu.GetGPR(rn) );
+
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+  
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U32(size*idx), cpu.GetVDE((vd+idx/elements)%32, idx%elements, U16()));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite16(addr + U32(size*idx), cpu.GetVDE((vd+idx%vms.regs)%32, idx/vms.regs, U16()));
+};
+
+op vst2_16( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b01[2]: len[2]: ra[4] );
+vst2_16.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_16.disasm = {
+  buffer << "vst2.16\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst2_16_s2d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: 0b01[2]: len[2]: ra[4] );
+vst2_16_s2d.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_16_s2d.disasm = {
+  buffer << "vst2.16\t{d" << vm << ",d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst3_16_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0101[4]: 0b01[2]: len[2]: ra[4] );
+vst3_16_s2.var vm : {uint32_t} = {vm1|vm0};
+
+vst3_16_s2.disasm = {
+  buffer << "vst3.16\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst4_16_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: 0b01[2]: len[2]: ra[4] );
+vst4_16_s2.var vm : {uint32_t} = {vm1|vm0};
+
+vst4_16_s2.disasm = {
+  buffer << "vst4.16\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << ",d" << (vm+6) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vstms_32( 0b11111001[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: rn[4]:> <: vd0[4]: opcode[4]: 2[2]: len[2]: rm[4] );
+vstms_32.var vms : {Vms} = {opcode}, vd : {uint32_t} = {vd1|vd0};
+
+vstms_32.disasm = {
+  buffer << "vst" << (vms.ses ? 1 : int(vms.regs)) << ".32\t" << DisasmBunch(vd, vms.regs) << ", " << DisasmNeonMemoryRR(rn, rm, (len?32:0) << len);
+};
+
+vstms_32.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 U32;
+  unsigned const elements = 2, size = 4;
+
+  U32 addr( cpu.GetGPR(rn) );
+
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+  
+  if (vms.ses)
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U32(size*idx), cpu.GetVDE((vd+idx/elements)%32, idx%elements, U32()));
+  else
+    for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
+      cpu.MemWrite32(addr + U32(size*idx), cpu.GetVDE((vd+idx%vms.regs)%32, idx/vms.regs, U32()));
 };
 
 op vst1_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0010[4]: 0b10[2]: len[2]: ra[4] );
@@ -6654,84 +6843,11 @@ vst1_32.disasm = {
   buffer << "vst1.32\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
-op vst1_64( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0010[4]: 0b11[2]: len[2]: ra[4] );
-vst1_64.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_64.disasm = {
-  buffer << "vst1.64\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_8_s2t( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0111[4]: 0b00[2]: len[2]: ra[4] );
-vst1_8_s2t.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_8_s2t.disasm = {
-  buffer << "vst1.8\t{d" << vm << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_8bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b00[2]: 0b00[2]: part[3]: x[1]: ra[4] );
-vst1_8bp.var vm : {uint32_t} = {vm1|vm0};
-vst1_8bp.var reject : {Reject} = {x};
-
-vst1_8bp.disasm = {
-  buffer << "vst1.8\t{d" << vm << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, 0);
-};
-
-op vst1_8d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1010[4]: 0b00[2]: len[2]: ra[4] );
-vst1_8d.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_8d.disasm = {
-  buffer << "vst1.8\t{d" << vm << "-d" << (vm+1) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_8t( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0110[4]: 0b00[2]: len[2]: ra[4] );
-vst1_8t.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_8t.disasm = {
-  buffer << "vst1.8\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_16_s2t( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0111[4]: 0b01[2]: len[2]: ra[4] );
-vst1_16_s2t.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_16_s2t.disasm = {
-  buffer << "vst1.16\t{d" << vm << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_16bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b01[2]: 0b00[2]: part[2]: y[1]: x[1]: ra[4] );
-vst1_16bp.var vm : {uint32_t} = {vm1|vm0};
-vst1_16bp.var reject : {Reject} = {y};
-
-vst1_16bp.disasm = {
-  buffer << "vst1.16\t{d" << vm << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, x?16:0);
-};
-
-op vst1_16d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1010[4]: 0b01[2]: len[2]: ra[4] );
-vst1_16d.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_16d.disasm = {
-  buffer << "vst1.16\t{d" << vm << "-d" << (vm+1) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_16t( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0110[4]: 0b01[2]: len[2]: ra[4] );
-vst1_16t.var vm : {uint32_t} = {vm1|vm0};
-
-vst1_16t.disasm = {
-  buffer << "vst1.16\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
 op vst1_32_s2t( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0111[4]: 0b10[2]: len[2]: ra[4] );
 vst1_32_s2t.var vm : {uint32_t} = {vm1|vm0};
 
 vst1_32_s2t.disasm = {
   buffer << "vst1.32\t{d" << vm << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst1_32bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1000[4]: part[1]: len[3]: ra[4] );
-vst1_32bp.var vm : {uint32_t} = {vm1|vm0};
-vst1_32bp.var reject : {Reject} = {(len != 0) and (len != 3)};
-
-vst1_32bp.disasm = {
-  buffer << "vst1.32\t{d" << vm << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, len==3?32:0);
 };
 
 op vst1_32d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1010[4]: 0b10[2]: len[2]: ra[4] );
@@ -6746,6 +6862,86 @@ vst1_32t.var vm : {uint32_t} = {vm1|vm0};
 
 vst1_32t.disasm = {
   buffer << "vst1.32\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst2_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b10[2]: len[2]: ra[4] );
+vst2_32.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_32.disasm = {
+  buffer << "vst2.32\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst2_32_s2d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: 0b10[2]: len[2]: ra[4] );
+vst2_32_s2d.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_32_s2d.disasm = {
+  buffer << "vst2.32\t{d" << vm << ",d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst2_32d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1000[4]: 0b10[2]: len[2]: ra[4] );
+vst2_32d.var vm : {uint32_t} = {vm1|vm0};
+
+vst2_32d.disasm = {
+  buffer << "vst2.32\t{d" << vm << "-d" << (vm+1) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst3_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0100[4]: 0b10[2]: len[2]: ra[4] );
+vst3_32.var vm : {uint32_t} = {vm1|vm0};
+
+vst3_32.disasm = {
+  buffer << "vst3.32\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst3_32_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0101[4]: 0b10[2]: len[2]: ra[4] );
+vst3_32_s2.var vm : {uint32_t} = {vm1|vm0};
+
+vst3_32_s2.disasm = {
+  buffer << "vst3.32\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst4_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0000[4]: 0b10[2]: len[2]: ra[4] );
+vst4_32.var vm : {uint32_t} = {vm1|vm0};
+
+vst4_32.disasm = {
+  buffer << "vst4.32\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst4_32_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: 0b10[2]: len[2]: ra[4] );
+vst4_32_s2.var vm : {uint32_t} = {vm1|vm0};
+
+vst4_32_s2.disasm = {
+  buffer << "vst4.32\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << ",d" << (vm+6) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst1_64( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0010[4]: 0b11[2]: len[2]: ra[4] );
+vst1_64.var vm : {uint32_t} = {vm1|vm0};
+
+vst1_64.disasm = {
+  buffer << "vst1.64\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
+};
+
+op vst1_8bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b00[2]: 0b00[2]: part[3]: x[1]: ra[4] );
+vst1_8bp.var vm : {uint32_t} = {vm1|vm0};
+vst1_8bp.var reject : {Reject} = {x};
+
+vst1_8bp.disasm = {
+  buffer << "vst1.8\t{d" << vm << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, 0);
+};
+
+op vst1_16bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b01[2]: 0b00[2]: part[2]: y[1]: x[1]: ra[4] );
+vst1_16bp.var vm : {uint32_t} = {vm1|vm0};
+vst1_16bp.var reject : {Reject} = {y};
+
+vst1_16bp.disasm = {
+  buffer << "vst1.16\t{d" << vm << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, x?16:0);
+};
+
+op vst1_32bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1000[4]: part[1]: len[3]: ra[4] );
+vst1_32bp.var vm : {uint32_t} = {vm1|vm0};
+vst1_32bp.var reject : {Reject} = {(len != 0) and (len != 3)};
+
+vst1_32bp.disasm = {
+  buffer << "vst1.32\t{d" << vm << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, len==3?32:0);
 };
 
 op vst1_64_s2t( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0111[4]: 0b11[2]: len[2]: ra[4] );
@@ -6769,34 +6965,6 @@ vst1_64t.disasm = {
   buffer << "vst1.64\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
-op vst2_8( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b00[2]: len[2]: ra[4] );
-vst2_8.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_8.disasm = {
-  buffer << "vst2.8\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst2_16( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b01[2]: len[2]: ra[4] );
-vst2_16.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_16.disasm = {
-  buffer << "vst2.16\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst2_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: 0b10[2]: len[2]: ra[4] );
-vst2_32.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_32.disasm = {
-  buffer << "vst2.32\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst2_8_s2d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: 0b00[2]: len[2]: ra[4] );
-vst2_8_s2d.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_8_s2d.disasm = {
-  buffer << "vst2.8\t{d" << vm << ",d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
 op vst2_8bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: part[3]: x[1]: ra[4] );
 vst2_8bp.var vm : {uint32_t} = {vm1|vm0};
 
@@ -6805,39 +6973,11 @@ vst2_8bp.disasm = {
   buffer << "{d" << vm << "[" << part << "],d" << (vm+1) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, x?16:0);
 };
 
-op vst2_8d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1000[4]: 0b00[2]: len[2]: ra[4] );
-vst2_8d.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_8d.disasm = {
-  buffer << "vst2.8\t{d" << vm << "-d" << (vm+1) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst2_16_s2d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: 0b01[2]: len[2]: ra[4] );
-vst2_16_s2d.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_16_s2d.disasm = {
-  buffer << "vst2.16\t{d" << vm << ",d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
 op vst2_16bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b01[2]: 0b01[2]: part[2]: y[1]: x[1]: ra[4] );
 vst2_16bp.var vm : {uint32_t} = {vm1|vm0};
 
 vst2_16bp.disasm = {
   buffer << "vst2.16\t{d" << vm << "[" << part << "],d" << (vm+1+y) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, x?32:0);
-};
-
-op vst2_16d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1000[4]: 0b01[2]: len[2]: ra[4] );
-vst2_16d.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_16d.disasm = {
-  buffer << "vst2.16\t{d" << vm << "-d" << (vm+1) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst2_32_s2d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: 0b10[2]: len[2]: ra[4] );
-vst2_32_s2d.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_32_s2d.disasm = {
-  buffer << "vst2.32\t{d" << vm << ",d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
 op vst2_32bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1001[4]: part[1]: z[1]: y[1]: x[1]: ra[4] );
@@ -6849,41 +6989,6 @@ vst2_32bp.disasm = {
   buffer << "{d" << vm << "[" << part << "],d" << (vm+1+z) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, x?64:0);
 };
 
-op vst2_32d( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1000[4]: 0b10[2]: len[2]: ra[4] );
-vst2_32d.var vm : {uint32_t} = {vm1|vm0};
-
-vst2_32d.disasm = {
-  buffer << "vst2.32\t{d" << vm << "-d" << (vm+1) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst3_8( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0100[4]: 0b00[2]: len[2]: ra[4] );
-vst3_8.var vm : {uint32_t} = {vm1|vm0};
-
-vst3_8.disasm = {
-  buffer << "vst3.8\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst3_16( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0100[4]: 0b01[2]: len[2]: ra[4] );
-vst3_16.var vm : {uint32_t} = {vm1|vm0};
-
-vst3_16.disasm = {
-  buffer << "vst3.16\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst3_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0100[4]: 0b10[2]: len[2]: ra[4] );
-vst3_32.var vm : {uint32_t} = {vm1|vm0};
-
-vst3_32.disasm = {
-  buffer << "vst3.32\t{d" << vm << "-d" << (vm+2) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst3_8_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0101[4]: 0b00[2]: len[2]: ra[4] );
-vst3_8_s2.var vm : {uint32_t} = {vm1|vm0};
-
-vst3_8_s2.disasm = {
-  buffer << "vst3.8\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
 op vst3_8bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0010[4]: part[3]: x[1]: ra[4] );
 vst3_8bp.var vm : {uint32_t} = {vm1|vm0};
 vst3_8bp.var reject : {Reject} = {x};
@@ -6892,26 +6997,12 @@ vst3_8bp.disasm = {
   buffer << "vst3.8\t{d" << vm << "[" << part << "],d" << (vm+1) << "[" << part << "],d" << (vm+2) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, 0);
 };
 
-op vst3_16_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0101[4]: 0b01[2]: len[2]: ra[4] );
-vst3_16_s2.var vm : {uint32_t} = {vm1|vm0};
-
-vst3_16_s2.disasm = {
-  buffer << "vst3.16\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
 op vst3_16bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b01[2]: 0b10[2]: part[2]: y[1]: x[1]: ra[4] );
 vst3_16bp.var vm : {uint32_t} = {vm1|vm0};
 vst3_16bp.var reject : {Reject} = {x};
 
 vst3_16bp.disasm = {
   buffer << "vst3.16\t{d" << vm << "[" << part << "],d" << (vm+(1+y)) << "[" << part << "],d" << (vm+2*(1+y)) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, 0);
-};
-
-op vst3_32_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0101[4]: 0b10[2]: len[2]: ra[4] );
-vst3_32_s2.var vm : {uint32_t} = {vm1|vm0};
-
-vst3_32_s2.disasm = {
-  buffer << "vst3.32\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
 op vst3_32bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1010[4]: part[1]: y[1]: x[2]: ra[4] );
@@ -6923,47 +7014,12 @@ vst3_32bp.disasm = {
   buffer << "{d" << vm << "[" << part << "],d" << (vm+(1+y)) << "[" << part << "],d" << (vm+2*(1+y)) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, 0);
 };
 
-op vst4_8( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0000[4]: 0b00[2]: len[2]: ra[4] );
-vst4_8.var vm : {uint32_t} = {vm1|vm0};
-
-vst4_8.disasm = {
-  buffer << "vst4.8\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst4_16( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0000[4]: 0b01[2]: len[2]: ra[4] );
-vst4_16.var vm : {uint32_t} = {vm1|vm0};
-
-vst4_16.disasm = {
-  buffer << "vst4.16\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst4_32( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0000[4]: 0b10[2]: len[2]: ra[4] );
-vst4_32.var vm : {uint32_t} = {vm1|vm0};
-
-vst4_32.disasm = {
-  buffer << "vst4.32\t{d" << vm << "-d" << (vm+3) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
-op vst4_8_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: 0b00[2]: len[2]: ra[4] );
-vst4_8_s2.var vm : {uint32_t} = {vm1|vm0};
-
-vst4_8_s2.disasm = {
-  buffer << "vst4.8\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << ",d" << (vm+6) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
-};
-
 op vst4_8bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0011[4]: part[3]: x[1]: ra[4] );
 vst4_8bp.var vm : {uint32_t} = {vm1|vm0};
 
 vst4_8bp.disasm = {
   buffer << "vst4.8\t";
   buffer << "{d" << vm << "[" << part << "],d" << (vm+1) << "[" << part << "],d" << (vm+2) << "[" << part << "],d" << (vm+3) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, x?32:0);
-};
-
-op vst4_16_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: 0b01[2]: len[2]: ra[4] );
-vst4_16_s2.var vm : {uint32_t} = {vm1|vm0};
-
-vst4_16_s2.disasm = {
-  buffer << "vst4.16\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << ",d" << (vm+6) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
 op vst4_16bp( 0b1111[4]: 0b1001[4]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b01[2]: 0b11[2]: part[2]: y[1]: x[1]: ra[4] );
@@ -6973,13 +7029,6 @@ vst4_16bp.disasm = {
   buffer << "vst4.16\t";
   buffer << "{d" << vm << "[" << part << "],d" << (vm+(1+y)) << "[" << part << "],d" << (vm+2*(1+y)) << "[" << part << "],d" << (vm+3*(1+y)) << "[" << part << "]}, ";
   buffer << DisasmNeonMemoryRR(rb, ra, x?64:0);
-};
-
-op vst4_32_s2( 0b11111001[8]: 0b0[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b0001[4]: 0b10[2]: len[2]: ra[4] );
-vst4_32_s2.var vm : {uint32_t} = {vm1|vm0};
-
-vst4_32_s2.disasm = {
-  buffer << "vst4.32\t{d" << vm << ",d" << (vm+2) << ",d" << (vm+4) << ",d" << (vm+6) << "}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
 op vst4_32bp( 0b11111001[8]: 0b1[1]: shl<4> vm1[1]: 0b00[2]: rb[4]:> <: vm0[4]: 0b1011[4]: part[1]: y[1]: len[2]: ra[4] );

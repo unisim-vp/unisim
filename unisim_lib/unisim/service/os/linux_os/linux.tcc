@@ -157,16 +157,16 @@ Linux(const char *name, unisim::kernel::Object *parent)
                             "The network node hostname that the uname system"
                             " call should return. Default value is localhost,"
                             " but you could write whatever name you want.")
-  , utsname_release_("2.6.27.35")
+  , utsname_release_("5.10.46")
   , param_utsname_release_("utsname-release", this, utsname_release_,
                            "The kernel realese information that the uname"
                            " system call should return. This should usually"
                            " match the linux-kernel parameter.")
-  , utsname_version_("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010")
+  , utsname_version_("#UNISIM SMP Thu Jun 24 14:33:54 UTC 2021")
   , param_utsname_version_("utsname-version", this, utsname_version_,
                            "The kernel version information that the uname"
                            " system call should return.")
-  , utsname_machine_("armv5")
+  , utsname_machine_("noarch")
   , param_utsname_machine_("utsname-machine", this, utsname_machine_,
                            "The machine information that the uname system"
                            " call should  return. This should be one of the"
