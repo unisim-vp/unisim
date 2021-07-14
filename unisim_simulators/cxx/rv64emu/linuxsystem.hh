@@ -47,14 +47,14 @@ struct LinuxOS
 {
   LinuxOS( std::ostream& log,
            unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<uint32_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<uint32_t> *mem_inject_if );
+           unisim::service::interfaces::Memory<uint64_t> *mem_if,
+           unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if );
   
   void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
   
   void ExecuteSystemCall( int id );
 
-  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> linux_impl;
+  unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
   bool exited;
   int app_ret_status;
 };

@@ -77,25 +77,6 @@ namespace linux_os {
   struct RISCVTS : public LINUX::TargetSystem
   {
     // HWCAP flags
-    // static uint32_t const RISCV_HWCAP_RISCV_SWP       = 1 << 0;
-    // static uint32_t const RISCV_HWCAP_RISCV_HALF      = 1 << 1;
-    // static uint32_t const RISCV_HWCAP_RISCV_THUMB     = 1 << 2;
-    // static uint32_t const RISCV_HWCAP_RISCV_26BIT     = 1 << 3;
-    // static uint32_t const RISCV_HWCAP_RISCV_FAST_MULT = 1 << 4;
-    // static uint32_t const RISCV_HWCAP_RISCV_FPA       = 1 << 5;
-    // static uint32_t const RISCV_HWCAP_RISCV_VFP       = 1 << 6;
-    // static uint32_t const RISCV_HWCAP_RISCV_EDSP      = 1 << 7;
-    // static uint32_t const RISCV_HWCAP_RISCV_JAVA      = 1 << 8;
-    // static uint32_t const RISCV_HWCAP_RISCV_IWMMXT    = 1 << 9;
-    // static uint32_t const RISCV_HWCAP_RISCV_CRUNCH    = 1 << 10;
-    // static uint32_t const RISCV_HWCAP_RISCV_THUMBEE   = 1 << 11;
-    // static uint32_t const RISCV_HWCAP_RISCV_NEON      = 1 << 12;
-    // static uint32_t const RISCV_HWCAP_RISCV_VFPv3     = 1 << 13;
-    // static uint32_t const RISCV_HWCAP_RISCV_VFPv3D16  = 1 << 14;
-    // static uint32_t const RISCV_HWCAP_RISCV_TLS       = 1 << 15;
-    // static uint32_t const RISCV_HWCAP_RISCV_VFPv4     = 1 << 16;
-    // static uint32_t const RISCV_HWCAP_RISCV_IDIVA     = 1 << 17;
-    // static uint32_t const RISCV_HWCAP_RISCV_IDIVT     = 1 << 18;
     
     // Name imports
     typedef typename LINUX::SysCall SysCall;
@@ -222,7 +203,7 @@ namespace linux_os {
     bool SetupTarget() const
     {
       // Reset all target registers
-      for (int idx = 0; idx < 31; ++idx)
+      for (int idx = 1; idx < 32; ++idx)
         {
           std::ostringstream buf;
           buf << 'x' << std::dec << idx;

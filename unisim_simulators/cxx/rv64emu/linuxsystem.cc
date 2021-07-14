@@ -39,8 +39,8 @@
 
 LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::Registers *regs_if,
-         unisim::service::interfaces::Memory<uint32_t> *mem_if,
-         unisim::service::interfaces::MemoryInjection<uint32_t> *mem_inject_if
+         unisim::service::interfaces::Memory<uint64_t> *mem_if,
+         unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
          )
   : unisim::service::interfaces::LinuxOS()
   , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
@@ -68,7 +68,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   
   // Set the system type of the target simulator (should be the same than the
   // binary)
-  auto target = new unisim::util::os::linux_os::RISCVTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_impl );
+  auto target = new unisim::util::os::linux_os::RISCVTS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
   linux_impl.SetTargetSystem(target);
     
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );

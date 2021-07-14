@@ -40,8 +40,8 @@
 #include <iostream>
 
 struct Arch
-  : public unisim::service::interfaces::MemoryInjection<uint32_t>
-  , public unisim::service::interfaces::Memory<uint32_t>
+  : public unisim::service::interfaces::MemoryInjection<uint64_t>
+  , public unisim::service::interfaces::Memory<uint64_t>
   , public unisim::service::interfaces::Registers
 
 {
@@ -52,7 +52,7 @@ struct Arch
   typedef bool  BOOL;
   typedef uint8_t  U8;
   typedef uint16_t U16;
-  typedef uint32_t U32;
+  typedef uint64_t U32;
   typedef uint64_t U64;
   typedef int8_t  S8;
   typedef int16_t S16;
@@ -62,11 +62,11 @@ struct Arch
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   
   Arch()
-    : unisim::service::interfaces::MemoryInjection<uint32_t>()
-    , unisim::service::interfaces::Memory<uint32_t>()
+    : unisim::service::interfaces::MemoryInjection<uint64_t>()
+    , unisim::service::interfaces::Memory<uint64_t>()
     , unisim::service::interfaces::Registers()
     , decoder(), linux_os(0), regmap()
-    , mem(), gprs(), insn_addrs()
+    , mem(), gprs(), current_insn_addr(), next_insn_addr()
     , m_disasm(false)
   {
     for (int idx = 1; idx < 32; ++idx)
@@ -77,20 +77,24 @@ struct Arch
           buf << unisim::component::cxx::processor::riscv::isa::PrintGPR(idx);
           regmap[buf.str()] = reg = new unisim::util::debug::SimpleRegister<uint64_t>(buf.str(), &gprs[idx]);
         }
+        {
+          std::ostringstream buf;
+          buf << 'x' << std::dec << idx;
+          regmap[buf.str()] = reg;
+        }
       }
     
     struct ProgramCounter : public unisim::service::interfaces::Register
     {
       ProgramCounter( Arch& _core ) : core(_core) {}
       virtual const char *GetName() const override { return "pc"; }
-      virtual void GetValue( void* buffer ) const override { *((uint64_t*)buffer) = core.insn_addrs[0]; }
+      virtual void GetValue( void* buffer ) const override { *((uint64_t*)buffer) = core.current_insn_addr; }
       virtual void SetValue( void const* buffer ) override
       {
         uint64_t address = *((uint64_t*)buffer);
-        core.insn_addrs[1] = address;
-        core.Branch(address+4, core.B_DBG);
+        core.Branch(address, core.B_DBG);
       }
-      virtual int  GetSize() const override { return 4; }
+      virtual int  GetSize() const override { return 8; }
       virtual void Clear() { /* Clear is meaningless for PC */ }
       Arch&        core;
     };
@@ -130,15 +134,15 @@ struct Arch
   uint64_t                    gprs[32];
   
   bool    Test( bool cond ) { return cond; }
-  U32     GetPC() { return insn_addrs[0]; }
-  void    Branch(U32 target,   branch_type_t) { insn_addrs[2] = target; }
-  void    CancelDelaySlot() { insn_addrs[1] = insn_addrs[2]; insn_addrs[2] += 4; }
-  uint32_t                    insn_addrs[3];
+  // U32     GetPC() { return insn_addrs[0]; }
+  void    Branch(U32 target,   branch_type_t) { next_insn_addr = target; }
+  // void    CancelDelaySlot() { insn_addrs[1] = insn_addrs[2]; insn_addrs[2] += 4; }
+  uint64_t   current_insn_addr, next_insn_addr;
   
-  // unisim::service::interfaces::Memory<uint32_t>
+  // unisim::service::interfaces::Memory<uint64_t>
   void ResetMemory() {}
-  bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  bool ReadMemory(uint64_t addr, void* buffer, uint32_t size) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool WriteMemory(uint64_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // unisim::service::interfaces::Registers
   unisim::service::interfaces::Register* GetRegister(char const* name)
   {
@@ -150,8 +154,8 @@ struct Arch
     // General purpose registers
   }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  bool InjectReadMemory(uint64_t addr, void *buffer, uint32_t size) { mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool InjectWriteMemory(uint64_t addr, void const* buffer, uint32_t size) { mem.write( addr, (uint8_t*)buffer, size ); return true; }
   
   bool IsBigEndian() { return false; }
 
@@ -177,10 +181,10 @@ struct Arch
     mem.write( addr, &buffer[0], sizeof buffer );
   }
 
-  void AtomicBegin(uint32_t addr) { }
-  bool AtomicUpdate(uint32_t addr) { return true; }
+  void AtomicBegin(uint64_t addr) { }
+  bool AtomicUpdate(uint64_t addr) { return true; }
 
-  CodeType ReadInsn(uint32_t addr)
+  CodeType ReadInsn(uint64_t addr)
   {
     uint8_t buffer[4];
     mem.read( (uint8_t*)&buffer[0], addr, 4 );
@@ -198,9 +202,7 @@ struct Arch
   StepInstruction()
   {
     /* Start new instruction */
-    uint32_t insn_addr = insn_addrs[0] = insn_addrs[1];
-    insn_addrs[1] = insn_addrs[2];
-    insn_addrs[2] += 4;
+    uint64_t insn_addr = current_insn_addr = next_insn_addr;
     
     /* Fetch instruction word from memory */
     CodeType insn = ReadInsn(insn_addr);
@@ -255,10 +257,10 @@ int main(int argc, char *argv[])
   envs.push_back( "LANG=C" );
   
   Arch core;
-  LinuxOS linux32( std::cerr, &core, &core, &core );
-  core.SetLinuxOS( &linux32 );
+  LinuxOS linux64( std::cerr, &core, &core, &core );
+  core.SetLinuxOS( &linux64 );
   
-  linux32.Setup( simargs, envs );
+  linux64.Setup( simargs, envs );
   
   core.m_disasm = false;
   
@@ -267,7 +269,7 @@ int main(int argc, char *argv[])
   
   std::cerr << "\n*** Run ***" << std::endl;
   
-  while (not linux32.exited)
+  while (not linux64.exited)
     {
       core.StepInstruction();
       //      Arch::Operation* op = core.fetch();
@@ -281,7 +283,7 @@ int main(int argc, char *argv[])
       //   { std::cerr << "Executed instructions: " << std::dec << core.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
     }
   
-  std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
+  std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
   
   
   return 0;
