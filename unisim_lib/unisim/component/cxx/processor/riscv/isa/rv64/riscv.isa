@@ -92,10 +92,18 @@ addi.disasm = {
   sink << "addi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
 };
 
+addi.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) + typename ARCH::UREG(imm));
+};
+
 op add(0b0[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
 
 add.disasm = {
   sink << "add\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+add.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) + cpu.GetGPR(rs2));
 };
 
 op addiw(sext imm[12] : rs1[5] : 0b0[3] : rd[5] : 0b11011[7]);
@@ -296,10 +304,18 @@ andi.disasm = {
   sink << "andi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
 };
 
+andi.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) & typename ARCH::UREG(imm));
+};
+
 op andr(0b0[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
 
 andr.disasm = {
   sink << "and\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+andr.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) & cpu.GetGPR(rs2));
 };
 
 op andn(0b100000[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
@@ -308,11 +324,19 @@ andn.disasm = {
   sink << "andn\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+andn.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) & ~cpu.GetGPR(rs2));
+};
+
 op auipc(shl<12> imm[20] : rd[5] : 0b10111[7]);
 
 auipc.disasm = {
   //  sink << "auipc\t" << PrintGPR(rd) << "," << PrintHex(GetAddr() + imm);
   sink << "auipc\t" << PrintGPR(rd) << "," << PrintHex(imm >> 12);
+};
+
+auipc.execute = {
+  cpu.SetGPR(rd, cpu.GetPC() + imm);
 };
 
 op ave(0b1110000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
@@ -357,13 +381,6 @@ bdecompressw.disasm = {
   sink << "bdecompressw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
-op beq(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b0[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
-beq.var imm : {int32_t} = {im3|im2|im1|im0};
-
-beq.disasm = {
-  sink << "beq\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
-};
-
 op bexti(0b10010[6] : imm6[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
 
 bexti.disasm = {
@@ -386,20 +403,6 @@ op bfpw(0b100100[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b111011[7]);
 
 bfpw.disasm = {
   sink << "bfpw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
-};
-
-op bge(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b101[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
-bge.var imm : {int32_t} = {im3|im2|im1|im0};
-
-bge.disasm = {
-  sink << "bge\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
-};
-
-op bgeu(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b111[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
-bgeu.var imm : {int32_t} = {im3|im2|im1|im0};
-
-bgeu.disasm = {
-  sink << "bgeu\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
 };
 
 op binvi(0b11010[6] : imm6[6] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
@@ -426,20 +429,6 @@ bitrev.disasm = {
   sink << "bitrev\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
-op blt(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b100[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
-blt.var imm : {int32_t} = {im3|im2|im1|im0};
-
-blt.disasm = {
-  sink << "blt\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
-};
-
-op bltu(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b110[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
-bltu.var imm : {int32_t} = {im3|im2|im1|im0};
-
-bltu.disasm = {
-  sink << "bltu\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
-};
-
 op bmatflip(0b11000000011[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
 
 bmatflip.disasm = {
@@ -458,11 +447,80 @@ bmatxor.disasm = {
   sink << "bmatxor\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+op beq(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b0[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+beq.var imm : {int32_t} = {im3|im2|im1|im0};
+
+beq.disasm = {
+  sink << "beq\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+beq.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) == cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
 op bne(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b1[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
 bne.var imm : {int32_t} = {im3|im2|im1|im0};
 
 bne.disasm = {
   sink << "bne\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bne.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) != cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op blt(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b100[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+blt.var imm : {int32_t} = {im3|im2|im1|im0};
+
+blt.disasm = {
+  sink << "blt\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+blt.execute = {
+  typedef typename ARCH::SREG SREG;
+  
+  if (cpu.Test(SREG(cpu.GetGPR(rs1)) < SREG(cpu.GetGPR(rs2))))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bge(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b101[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bge.var imm : {int32_t} = {im3|im2|im1|im0};
+
+bge.disasm = {
+  sink << "bge\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bge.execute = {
+  typedef typename ARCH::SREG SREG;
+  
+  if (cpu.Test(SREG(cpu.GetGPR(rs1)) >= SREG(cpu.GetGPR(rs2))))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bltu(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b110[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bltu.var imm : {int32_t} = {im3|im2|im1|im0};
+
+bltu.disasm = {
+  sink << "bltu\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bltu.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) < cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bgeu(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b111[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bgeu.var imm : {int32_t} = {im3|im2|im1|im0};
+
+bgeu.disasm = {
+  sink << "bgeu\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bgeu.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) >= cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
 };
 
 op bpick(rs3[5] : 0b0[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b1110111[7]);
@@ -505,7 +563,7 @@ c_addi.disasm = {
 };
 
 op c_addiw(0b001[3] : shl<5> sext im1[1] : rd[5] : im0[5] : 0b01[2]);
-c_addiw.var imm : {int32_t} = {im1|im0};
+c_addiw.var imm : {int8_t} = {im1|im0};
 
 c_addiw.disasm = {
   sink << "c.addiw\t" << PrintGPR(rd) << "," << PrintI(imm);
@@ -517,6 +575,10 @@ c_add.disasm = {
   sink << "c.add\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+c_add.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) + cpu.GetGPR(rs2));
+};
+
 op c_addw(0b100111[6] : rs1s[3] : 0b1[2] : rs2s[3] : 0b1[2]);
 c_addw.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
 
@@ -525,10 +587,14 @@ c_addw.disasm = {
 };
 
 op c_andi(0b100[3] : shl<5> sext im1[1] : 0b10[2] : rs1s[3] : im0[5] : 0b1[2]);
-c_andi.var rs1 : {uint8_t} = {rs1s+8}, imm : {uint32_t} = {im1|im0};
+c_andi.var rs1 : {uint8_t} = {rs1s+8}, imm : {int8_t} = {im1|im0};
 
 c_andi.disasm = {
   sink << "c.andi\t" << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+c_andi.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) & typename ARCH::U64(imm));
 };
 
 op c_and(0b100011[6] : rs1s[3] : 0b11[2] : rs2s[3] : 0b1[2]);
@@ -538,6 +604,10 @@ c_and.disasm = {
   sink << "c.and\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+c_and.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) & cpu.GetGPR(rs2));
+};
+
 op c_beqz(0b110[3] : shl<8> sext im4[1] : shl<3> im1[2] : rs1s[3] : shl<6> im3[2] : shl<1> im0[2] : shl<5> im2[1] : 0b1[2]);
 c_beqz.var imm : {int32_t} = {im4|im3|im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8};
 
@@ -545,11 +615,21 @@ c_beqz.disasm = {
   sink << "c.beqz\t" << PrintGPR(rs1) << "," << PrintHex(this->GetAddr() + imm);
 };
 
+c_beqz.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) == typename ARCH::UREG(0)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
 op c_bnez(0b111[3] : shl<8> sext im4[1] : shl<3> im1[2] : rs1s[3] : shl<6> im3[2] : shl<1> im0[2] : shl<5> im2[1] : 0b1[2]);
 c_bnez.var imm : {int32_t} = {im4|im3|im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8};
 
 c_bnez.disasm = {
   sink << "c.bnez\t" << PrintGPR(rs1) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+c_bnez.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) != typename ARCH::UREG(0)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
 };
 
 op c_ebreak(0b1001000000000010[16]);
@@ -641,10 +721,14 @@ c_jr.disasm = {
 };
 
 op c_li(0b10[3] : shl<5> sext im1[1] : rd[5] : im0[5] : 0b1[2]);
-c_li.var imm : {uint32_t} = {im1|im0};
+c_li.var imm : {int8_t} = {im1|im0};
 
 c_li.disasm = {
   sink << "c.li\t" << PrintGPR(rd) << "," << PrintI(imm);
+};
+
+c_li.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(imm));
 };
 
 op clmulh(0b101[7] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b110011[7]);
@@ -729,11 +813,19 @@ c_ld.disasm = {
   sink << "c.ld\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
 };
 
+c_ld.execute = {
+  cpu.SetGPR(rd, cpu.MemRead(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64()));
+};
+
 op c_ldsp(0b11[3] : shl<5> im1[1] : rd[5] : shl<3> im0[2] : shl<6> im2[3] : 0b10[2]);
 c_ldsp.var imm : {uint32_t} = {im2|im1|im0};
 
 c_ldsp.disasm = {
   sink << "c.ldsp\t" << PrintGPR(rd) << "," << PrintI(imm) << "(sp)";
+};
+
+c_ldsp.execute = {
+  cpu.SetGPR(rd, cpu.MemRead(cpu.GetGPR(2) + typename ARCH::UREG(imm), typename ARCH::U64()));
 };
 
 op c_sd(0b111[3] : shl<3> im0[3] : rs1s[3] : shl<6> im1[2] : rs2s[3] : 0b0[2]);
@@ -743,11 +835,19 @@ c_sd.disasm = {
   sink << "c.sd\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
 };
 
+c_sd.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64(cpu.GetGPR(rs2)));
+};
+
 op c_sdsp(0b111[3] : shl<3> im0[3] : shl<6> im1[3] : rs2[5] : 0b10[2]);
 c_sdsp.var imm : {uint32_t} = {im1|im0};
 
 c_sdsp.disasm = {
   sink << "c.sdsp\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(sp)";
+};
+
+c_sdsp.execute = {
+  cpu.MemWrite(cpu.GetGPR(2) + typename ARCH::UREG(imm), typename ARCH::U64(cpu.GetGPR(rs2)));
 };
 
 op clz16(0b101011101001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
@@ -810,11 +910,19 @@ c_mv.disasm = {
   sink << "c.mv\t" << PrintGPR(rd) << "," << PrintGPR(rs2);
 };
 
+c_mv.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs2));
+};
+
 op c_or(0b100011[6] : rs1s[3] : 0b10[2] : rs2s[3] : 0b1[2]);
 c_or.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
 
 c_or.disasm = {
   sink << "c.or\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_or.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) | cpu.GetGPR(rs2));
 };
 
 op cpop(0b11000000010[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
@@ -985,6 +1093,10 @@ c_sub.disasm = {
   sink << "c.sub\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+c_sub.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) - cpu.GetGPR(rs2));
+};
+
 op c_subw(0b100111[6] : rs1s[3] : 0b0[2] : rs2s[3] : 0b1[2]);
 c_subw.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
 
@@ -1023,6 +1135,10 @@ c_xor.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
 
 c_xor.disasm = {
   sink << "c.xor\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_xor.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2));
 };
 
 op div(0b1[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
@@ -2130,6 +2246,11 @@ jal.disasm = {
   sink << "jal\t" << PrintGPR(rd) << "," << PrintHex(this->GetAddr() + imm);
 };
 
+jal.execute = {
+  cpu.SetGPR(rd, cpu.GetNPC());
+  cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
 op jalr(sext imm[12] : rs1[5] : 0b0[3] : rd[5] : 0b1100111[7]);
 
 jalr.disasm = {
@@ -2784,6 +2905,10 @@ ld.disasm = {
   sink << "ld\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
 };
 
+ld.execute = {
+  cpu.SetGPR(rd, cpu.MemRead(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64()));
+};
+
 op lh(sext imm[12] : rs1[5] : 0b1[3] : rd[5] : 0b11[7]);
 
 lh.disasm = {
@@ -2928,16 +3053,28 @@ ori.disasm = {
   sink << "ori\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
 };
 
+ori.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) | typename ARCH::UREG(imm));
+};
+
 op orr(0b0[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
 
 orr.disasm = {
   sink << "or\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+orr.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) | cpu.GetGPR(rs2));
+};
+
 op orn(0b100000[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
 
 orn.disasm = {
   sink << "orn\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+orn.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) | ~cpu.GetGPR(rs2));
 };
 
 op packh(0b100[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
@@ -3264,6 +3401,10 @@ sd.var imm : {int32_t} = {im1|im0};
 
 sd.disasm = {
   sink << "sd\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+sd.execute = {
+  cpu.MemWrite(cpu.GetGPR(2) + typename ARCH::UREG(imm), typename ARCH::U64(cpu.GetGPR(rs2)));
 };
 
 op sext_b(0b11000000100[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
@@ -4113,6 +4254,10 @@ sub.disasm = {
   sink << "sub\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
 };
 
+sub.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) - cpu.GetGPR(rs2));
+};
+
 op subw(0b100000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b111011[7]);
 
 subw.disasm = {
@@ -4577,10 +4722,18 @@ xori.disasm = {
   sink << "xori\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
 };
 
+xori.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) ^ typename ARCH::UREG(imm));
+};
+
 op xorr(0b0[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
 
 xorr.disasm = {
   sink << "xor\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+xorr.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2));
 };
 
 op xperm_b(0b10100[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);

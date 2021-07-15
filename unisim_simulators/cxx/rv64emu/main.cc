@@ -58,6 +58,9 @@ struct Arch
   typedef int16_t S16;
   typedef int32_t S32;
   typedef int64_t S64;
+
+  typedef U64 UREG;
+  typedef S64 SREG;
   
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   
@@ -67,7 +70,7 @@ struct Arch
     , unisim::service::interfaces::Registers()
     , decoder(), linux_os(0), regmap()
     , mem(), gprs(), current_insn_addr(), next_insn_addr()
-    , m_disasm(false)
+    , disasm(false)
   {
     for (int idx = 1; idx < 32; ++idx)
       {
@@ -128,15 +131,15 @@ struct Arch
   typedef typename unisim::component::cxx::memory::sparse::Memory<uint64_t,12,12,ClearMemSet> Memory;
   Memory                      mem;
 
-  void     SetGPR(unsigned idx, U32 value) { if (idx) gprs[idx] = value; }
-  U32      GetGPR(unsigned idx) { return gprs[idx]; }
+  void     SetGPR(unsigned idx, U64 value) { if (idx) gprs[idx] = value; }
+  U64      GetGPR(unsigned idx) { return gprs[idx]; }
   
   uint64_t                    gprs[32];
   
   bool    Test( bool cond ) { return cond; }
-  // U32     GetPC() { return insn_addrs[0]; }
-  void    Branch(U32 target,   branch_type_t) { next_insn_addr = target; }
-  // void    CancelDelaySlot() { insn_addrs[1] = insn_addrs[2]; insn_addrs[2] += 4; }
+  U64     GetPC() { return current_insn_addr; }
+  U64     GetNPC() { return next_insn_addr; }
+  void    Branch(U64 target, branch_type_t) { next_insn_addr = target; }
   uint64_t   current_insn_addr, next_insn_addr;
   
   // unisim::service::interfaces::Memory<uint64_t>
@@ -161,7 +164,7 @@ struct Arch
 
   template <typename U>
   U
-  MemRead( U32 addr )
+  MemRead( U64 addr, U value )
   {
     uint8_t buffer[sizeof (U)];
     mem.read( &buffer[0], addr, sizeof buffer );
@@ -173,7 +176,7 @@ struct Arch
 
   template <typename U>
   void
-  MemWrite( U32 addr, U value )
+  MemWrite( U64 addr, U value )
   {
     uint8_t buffer[sizeof (U)];
     for (unsigned idx = 0; idx < sizeof buffer; ++idx)
@@ -209,9 +212,10 @@ struct Arch
 
     /* Decode instruction */
     Operation* op = decoder.Decode(insn_addr, insn);
+    next_insn_addr += op->GetLength() / 8;
 
     /* Disassemble instruction */
-    if (m_disasm)
+    if (disasm)
       {
         op->disasm(std::cerr << "0x" << std::hex << insn_addr << ": ");
         std::cerr << '\n';
@@ -232,7 +236,7 @@ struct Arch
     throw Unimplemented();
   }
 
-  bool m_disasm;
+  bool disasm;
 };
 
 int main(int argc, char *argv[])
@@ -262,7 +266,7 @@ int main(int argc, char *argv[])
   
   linux64.Setup( simargs, envs );
   
-  core.m_disasm = false;
+  core.disasm = true;
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
