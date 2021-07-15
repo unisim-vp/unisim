@@ -227,7 +227,7 @@ struct Arch
   void UndefinedInstruction( Operation const* insn )
   {
     insn->disasm(std::cerr << "0x" << std::hex << insn->GetAddr() << ": ");
-    std::cerr << std::endl;
+    std::cerr << " (" << insn->GetName() << ")" << std::endl;
     struct Unimplemented {};
     throw Unimplemented();
   }
