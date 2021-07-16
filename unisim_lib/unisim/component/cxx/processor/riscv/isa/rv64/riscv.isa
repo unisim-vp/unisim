@@ -571,7 +571,7 @@ c_addi16sp.execute = {
 };
 
 op c_addi(0b0[3] : shl<5> sext im1[1] : rs1[5] : im0[5] : 0b1[2]);
-c_addi.var imm : {uint8_t} = {im1|im0};
+c_addi.var imm : {int8_t} = {im1|im0};
 
 c_addi.disasm = {
   sink << "c.addi\t" << PrintGPR(rs1) << "," << PrintI(imm);
@@ -737,7 +737,7 @@ c_jalr.execute = {
   typedef typename ARCH::UREG UREG;
   
   UREG target = cpu.GetGPR(rs1);
-  cpu.SetGPR(rs1, cpu.GetPC() + UREG(4));
+  cpu.SetGPR(1, cpu.GetPC() + UREG(2));
   cpu.Branch(target, cpu.B_JMP);
 };
 
@@ -2982,10 +2982,20 @@ lb.disasm = {
   sink << "lb\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
 };
 
+lb.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::S8())));
+};
+
 op lbu(sext imm[12] : rs1[5] : 0b100[3] : rd[5] : 0b11[7]);
 
 lbu.disasm = {
   sink << "lbu\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lbu.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::U8())));
 };
 
 op ld(sext imm[12] : rs1[5] : 0b11[3] : rd[5] : 0b11[7]);
@@ -3004,10 +3014,20 @@ lh.disasm = {
   sink << "lh\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
 };
 
+lh.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::S16())));
+};
+
 op lhu(sext imm[12] : rs1[5] : 0b101[3] : rd[5] : 0b11[7]);
 
 lhu.disasm = {
   sink << "lhu\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lhu.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::U16())));
 };
 
 op lr_d(0b10[5] : aqrl[2] : 0b0[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
@@ -3446,6 +3466,10 @@ sb.disasm = {
   sink << "sb\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
 };
 
+sb.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U8(cpu.GetGPR(rs2)));
+};
+
 op sc_d(0b11[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
 
 sc_d.disasm = {
@@ -3672,6 +3696,10 @@ sh.var imm : {int32_t} = {im1|im0};
 
 sh.disasm = {
   sink << "sh\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+sh.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U16(cpu.GetGPR(rs2)));
 };
 
 op sll16(0b101010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);

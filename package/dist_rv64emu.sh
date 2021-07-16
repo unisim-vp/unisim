@@ -51,10 +51,12 @@ UNISIM_ISA_PREFIX="unisim/component/cxx/processor/riscv/isa"
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 linuxsystem.cc \
+architecture.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 linuxsystem.hh \
+architecture.hh \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\

@@ -32,31 +32,33 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __RISCVEMU_LINUXSYSTEM_HH__
-#define __RISCVEMU_LINUXSYSTEM_HH__
+#include "architecture.hh"
+#include <iostream>
+#include <iomanip>
 
-#include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/util/os/linux_os/linux.hh>
-#include <inttypes.h>
 
-struct LinuxOS
-  : public unisim::service::interfaces::LinuxOS
+void
+Arch::MemDump64(uint64_t addr)
 {
-  LinuxOS( std::ostream& log,
-           unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<uint64_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if );
-  
-  void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
-  
-  void ExecuteSystemCall( int id );
+  addr &= -8;
 
-  unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
-  bool exited;
-  int app_ret_status;
-};
+  unsigned const size = 8;
+  uint8_t buffer[size];
+  mem.read( &buffer[0], addr, sizeof buffer );
 
-#endif // __RISCVEMU_LINUXSYSTEM_HH__
+  std::cerr << "@" << std::setfill('0') << std::setw(16) << std::hex << addr << std::dec << ": ";
+  std::cerr << "0x";
+  for (unsigned nibble = size*2; nibble-- > 0; )
+    {
+      uint8_t nbits = (buffer[nibble/2] >> (nibble * 4 & 4)) & 15;
+      std::cerr << "0123456789abcdef"[nbits];
+    }
+  std::cerr << ", " << '"';
+  for (unsigned idx = 0; idx < size; ++idx)
+    {
+      uint8_t byte = buffer[idx];
+      std::cerr << (byte < 32 or byte > 126 ? '.' : char(byte));
+    }
+  std::cerr << '"' << std::endl;
+}
+

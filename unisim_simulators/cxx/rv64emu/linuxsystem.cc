@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -98,3 +98,4 @@ LinuxOS::ExecuteSystemCall( int id )
   // linux_impl.LogSystemCall(id);
   linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
 }
+

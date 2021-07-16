@@ -202,39 +202,6 @@ namespace linux_os {
             return false;
         }
       
-      // // Program Status Register (PSR)
-      // // NZCVQ <- 0
-      // // J <- 0
-      // // ITState <- 0
-      // // GE <- 0
-      // // E <- 0
-      // // AIF <- 0
-      // // T <- 0 (will be overwritten as a side effect of PC assignment, below)
-      // // M <- 0b10000 /* USER_MODE */
-      // if (not SetRegister(lin, "cpsr", 0x00000010))
-      //   return false;
-      
-      // // We need to set SCTLR and CPACR as a standard linux would have done. We
-      // //  * only affects flags that impact a Linux OS emulation (others
-      // //  * are unaffected).
-      // {
-      //   uint32_t sctlr;
-      //   if (not lin.GetTargetRegister("sctlr", &sctlr))
-      //     return false;
-      //   {
-      //     uint32_t const I = 1<<12;
-      //     uint32_t const C = 1<< 2;
-      //     uint32_t const A = 1<< 1;
-          
-      //     sctlr |=  I; // Instruction Cache enable
-      //     sctlr |=  C; // Cache enable
-      //     sctlr &= ~A; // Alignment check disable
-      //   }
-      //   if (not SetRegister(lin, "sctlr", sctlr))
-      //     return false;
-      //   if (not SetRegister(lin, "cpacr", 0x00f00000))
-      //     return false;
-      // }
       
       // Set PC to the program entry point
       if (not lin.SetTargetRegister("pc", lin.GetEntryPoint()))
@@ -255,8 +222,8 @@ namespace linux_os {
       parameter_type par2 = 0;
       if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
           not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          not lin.SetTargetRegister("x1", Target2Host(lin.GetEndianness(), par1)) or
-          not lin.SetTargetRegister("x2", Target2Host(lin.GetEndianness(), par2)))
+          not lin.SetTargetRegister("a0", Target2Host(lin.GetEndianness(), par1)) or
+          not lin.SetTargetRegister("a1", Target2Host(lin.GetEndianness(), par2)))
         return false;
           
       return true;

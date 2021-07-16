@@ -336,27 +336,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
   // setup target specific implementation
   
   this->SetupTargetSystem();
-  
-  // {
-  //   if      ((system_.compare("arm") == 0) or (system_.compare("arm-eabi") == 0))
-  //     {
-  //       target_system_ = new unisim::util::os::linux_os::ARMTS<linux_type>( system_, *linuxlib_ );
-  //     }
-  //   else if (system_.compare("ppc") == 0)
-  //     {
-  //       target_system_ = new unisim::util::os::linux_os::PPCTS<linux_type>( *linuxlib_ );
-  //     }
-  //   else if (system_.compare("i386") == 0)
-  //     {
-  //       target_system_ = new unisim::util::os::linux_os::I386TS<linux_type>( *linuxlib_ );
-  //     }
-  //   else {
-  //     logger_ << DebugError
-  //             << "System type not supported (\"" << system_ << "\")."
-  //             << EndDebugError;
-  //     return false;
-  //   }
-  // }
 
   // set the endianness of the target simulator
   linuxlib_->SetEndianness(endianness_);
