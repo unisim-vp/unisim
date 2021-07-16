@@ -194,11 +194,11 @@ struct Arch
     return (buffer[0] << 0) | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
   }
 
-  void SysCall(unsigned id)
+  void ECall()
   {
     if (not linux_os)
       { throw std::logic_error( "No linux OS emulation connected" ); }
-    linux_os->ExecuteSystemCall( id );
+    linux_os->ExecuteSystemCall(0);
   }
 
   Operation*

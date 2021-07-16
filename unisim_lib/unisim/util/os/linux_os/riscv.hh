@@ -64,15 +64,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  // Register names
-  static char const* const kRISCV_x0  = "x0"; /* syscall arg#1 */
-  static char const* const kRISCV_x1  = "x1"; /* syscall arg#2, argc */
-  static char const* const kRISCV_x2  = "x2"; /* syscall arg#3, argv */
-  static char const* const kRISCV_x3  = "x3"; /* syscall arg#4 */
-  static char const* const kRISCV_x4  = "x4"; /* syscall arg#5 */
-  static char const* const kRISCV_x5  = "x5"; /* syscall arg#6 */
-  static char const* const kRISCV_x8  = "x8"; /* syscall NR */
-
   template <class LINUX>
   struct RISCVTS : public LINUX::TargetSystem
   {
@@ -271,24 +262,19 @@ namespace linux_os {
       return true;
     }
     
-    static void SetRISCVSystemCallStatus(LINUX& _lin, int64_t ret, bool error) { _lin.SetTargetRegister(kRISCV_x0, (parameter_type) ret); }
+    static void SetRISCVSystemCallStatus(LINUX& _lin, int64_t ret, bool error) { _lin.SetTargetRegister("a0", (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetRISCVSystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {
       parameter_type val = 0;
-          
-      switch (id) {
-      case 0: _lin.GetTargetRegister(kRISCV_x0, val); break;
-      case 1: _lin.GetTargetRegister(kRISCV_x1, val); break;
-      case 2: _lin.GetTargetRegister(kRISCV_x2, val); break;
-      case 3: _lin.GetTargetRegister(kRISCV_x3, val); break;
-      case 4: _lin.GetTargetRegister(kRISCV_x4, val); break;
-      case 5: _lin.GetTargetRegister(kRISCV_x5, val); break;
-      default: throw std::logic_error("internal_error");
-      }
-          
+
+      if (unsigned(id) > 5)
+        throw std::logic_error("internal_error");
+      char regname[] = {'a', char('0' + id), '\0'};
+      _lin.GetTargetRegister(&regname[0], val);
+
       return val;
     }
     
@@ -558,12 +544,17 @@ namespace linux_os {
     {
       // Riscv ABI ignores the supplied argument and uses register x8
       parameter_type id_from_reg;
-      if (not lin.GetTargetRegister(kRISCV_x8, id_from_reg))
+      if (not lin.GetTargetRegister("a7", id_from_reg))
         return 0;
       id = int(id_from_reg);
       
       // see either arch/riscv/include/asm/unistd.h or arch/riscv/include/uapi/asm/unistd.h in Linux source
       switch (id) {
+// #define __NR_io_setup 0
+// #define __NR_io_destroy 1
+// #define __NR_io_submit 2
+// #define __NR_io_cancel 3
+// #define __NR_io_getevents 4
       case 5:   return this->GetSysCall("setxattr");
       case 6:   return this->GetSysCall("lsetxattr");
       case 7:   return this->GetSysCall("fsetxattr");
@@ -824,71 +815,148 @@ namespace linux_os {
       case 277: return this->GetSysCall("seccomp");
       case 278: return this->GetSysCall("getrandom");
       case 279: return this->GetSysCall("memfd_create");
+        // #define __NR_bpf 280
+        // #define __NR_execveat 281
+        // #define __NR_userfaultfd 282
+        // #define __NR_membarrier 283
+        // #define __NR_mlock2 284
+        // #define __NR_copy_file_range 285
+        // #define __NR_preadv2 286
+        // #define __NR_pwritev2 287
+        // #define __NR_pkey_mprotect 288
+        // #define __NR_pkey_alloc 289
+        // #define __NR_pkey_free 290
+        // #define __NR_statx 291
+        // #define __NR_io_pgetevents 292
+        // #define __NR_rseq 293
+        // #define __NR_kexec_file_load 294
+        // #define __NR_clock_gettime64 403
+        // #define __NR_clock_settime64 404
+        // #define __NR_clock_adjtime64 405
+        // #define __NR_clock_getres_time64 406
+        // #define __NR_clock_nanosleep_time64 407
+        // #define __NR_timer_gettime64 408
+        // #define __NR_timer_settime64 409
+        // #define __NR_timerfd_gettime64 410
+        // #define __NR_timerfd_settime64 411
+        // #define __NR_utimensat_time64 412
+        // #define __NR_pselect6_time64 413
+        // #define __NR_ppoll_time64 414
+        // #define __NR_io_pgetevents_time64 416
+        // #define __NR_recvmmsg_time64 417
+        // #define __NR_mq_timedsend_time64 418
+        // #define __NR_mq_timedreceive_time64 419
+        // #define __NR_semtimedop_time64 420
+        // #define __NR_rt_sigtimedwait_time64 421
+        // #define __NR_futex_time64 422
+        // #define __NR_sched_rr_get_interval_time64 423
+        // #define __NR_pidfd_send_signal 424
+        // #define __NR_io_uring_setup 425
+        // #define __NR_io_uring_enter 426
+        // #define __NR_io_uring_register 427
+        // #define __NR_open_tree 428
+        // #define __NR_move_mount 429
+        // #define __NR_fsopen 430
+        // #define __NR_fsconfig 431
+        // #define __NR_fsmount 432
+        // #define __NR_fspick 433
+        // #define __NR_pidfd_open 434
+        // #define __NR_clone3 435
+        // #define __NR_openat2 437
+        // #define __NR_pidfd_getfd 438
+        // #define __NR_faccessat2 439
+        // #define __NR_syscalls 440
+        // #define __NR_fcntl __NR3264_fcntl
+        // #define __NR_statfs __NR3264_statfs
+        // #define __NR_fstatfs __NR3264_fstatfs
+        // #define __NR_truncate __NR3264_truncate
+        // #define __NR_ftruncate __NR3264_ftruncate
+        // #define __NR_lseek __NR3264_lseek
+        // #define __NR_sendfile __NR3264_sendfile
+        // #define __NR_newfstatat __NR3264_fstatat
+        // #define __NR_fstat __NR3264_fstat
+        // #define __NR_mmap __NR3264_mmap
+        // #define __NR_fadvise64 __NR3264_fadvise64
+        // #define __NR_stat __NR3264_stat
+        // #define __NR_lstat __NR3264_lstat
+        // #define __NR_fcntl64 __NR3264_fcntl
+        // #define __NR_statfs64 __NR3264_statfs
+        // #define __NR_fstatfs64 __NR3264_fstatfs
+        // #define __NR_truncate64 __NR3264_truncate
+        // #define __NR_ftruncate64 __NR3264_ftruncate
+        // #define __NR_llseek __NR3264_lseek
+        // #define __NR_sendfile64 __NR3264_sendfile
+        // #define __NR_fstatat64 __NR3264_fstatat
+        // #define __NR_fstat64 __NR3264_fstat
+        // #define __NR_mmap2 __NR3264_mmap
+        // #define __NR_fadvise64_64 __NR3264_fadvise64
+        // #define __NR_stat64 __NR3264_stat
+        // #define __NR_lstat64 __NR3264_lstat
 
-      case 79: /* Riscv specific newfstatat call */
-        {
-          // asmlinkage long sys_newfstatat(int dfd, const char __user *filename, struct stat __user *statbuf, int flag);
-          static struct : public SysCall
-          {
-            char const* GetName() const { return "fstatat"; }
-            struct Args {
-              Args(LINUX& lin)
-                : dfd(SysCall::GetParam(lin, 0)), filename(SysCall::GetParam(lin, 1)), statbuf(SysCall::GetParam(lin, 2)), flag(SysCall::GetParam(lin, 3))
-                , filename_string(), filename_valid(lin.ReadString(filename, filename_string, false)) {}
-              int32_t dfd; parameter_type filename; parameter_type statbuf; int32_t flag; std::string filename_string; bool filename_valid;
-              void Describe(std::ostream& sink) const
-              {
-                sink << "(int dfd=" << std::dec << dfd
-                     << ", const char *filename=0x" << std::hex << filename << " \"" << filename_string << "\""
-                     << ", struct stat *statbuf=0x" << std::hex << statbuf
-                     << ", int flag=0x" << std::hex << flag << ")";
-              }
-            };
-            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+      // case 79: /* Riscv specific newfstatat call */
+      //   {
+      //     // asmlinkage long sys_newfstatat(int dfd, const char __user *filename, struct stat __user *statbuf, int flag);
+      //     static struct : public SysCall
+      //     {
+      //       char const* GetName() const { return "fstatat"; }
+      //       struct Args {
+      //         Args(LINUX& lin)
+      //           : dfd(SysCall::GetParam(lin, 0)), filename(SysCall::GetParam(lin, 1)), statbuf(SysCall::GetParam(lin, 2)), flag(SysCall::GetParam(lin, 3))
+      //           , filename_string(), filename_valid(lin.ReadString(filename, filename_string, false)) {}
+      //         int32_t dfd; parameter_type filename; parameter_type statbuf; int32_t flag; std::string filename_string; bool filename_valid;
+      //         void Describe(std::ostream& sink) const
+      //         {
+      //           sink << "(int dfd=" << std::dec << dfd
+      //                << ", const char *filename=0x" << std::hex << filename << " \"" << filename_string << "\""
+      //                << ", struct stat *statbuf=0x" << std::hex << statbuf
+      //                << ", int flag=0x" << std::hex << flag << ")";
+      //         }
+      //       };
+      //       void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
 
-            //void Execute( LINUX& lin, int syscall_id ) const {}
-          } sc; return &sc;
-        } break;
+      //       //void Execute( LINUX& lin, int syscall_id ) const {}
+      //     } sc; return &sc;
+      //   } break;
 
-      case 80: /* Riscv specific stat call */
-        {
-          // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
-          static struct : public SysCall
-          {
-            char const* GetName() const { return "newfstat"; }
-            struct Args {
-              Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
-              unsigned fd; parameter_type statbuf;
-              void Describe( std::ostream& sink ) const
-              { sink << "(unsigned fd=" << std::dec << fd << ", struct stat __user *statbuf=" << std::hex << statbuf << ")"; }
-            };
-            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
-            void Execute( LINUX& lin, int syscall_id ) const
-            {
-              Args sc(lin);
-              int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
+      // case 80: /* Riscv specific stat call */
+      //   {
+      //     // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
+      //     static struct : public SysCall
+      //     {
+      //       char const* GetName() const { return "newfstat"; }
+      //       struct Args {
+      //         Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
+      //         unsigned fd; parameter_type statbuf;
+      //         void Describe( std::ostream& sink ) const
+      //         { sink << "(unsigned fd=" << std::dec << fd << ", struct stat __user *statbuf=" << std::hex << statbuf << ")"; }
+      //       };
+      //       void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+      //       void Execute( LINUX& lin, int syscall_id ) const
+      //       {
+      //         Args sc(lin);
+      //         int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
 
-              if (host_fd == -1)
-                {
-                  lin.SetSystemCallStatus(-LINUX_EBADF,false);
-                  return;
-                }
+      //         if (host_fd == -1)
+      //           {
+      //             lin.SetSystemCallStatus(-LINUX_EBADF,false);
+      //             return;
+      //           }
         
-              struct riscv_newstat target_stat;
+      //         struct riscv_newstat target_stat;
               
-              int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
+      //         int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
 
-              if (ret == -1) {
-                lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
-                return;
-              }
+      //         if (ret == -1) {
+      //           lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+      //           return;
+      //         }
   
-              lin.WriteMemory(sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
+      //         lin.WriteMemory(sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
 	
-              lin.SetSystemCallStatus(ret, false);
-            }
-          } sc; return &sc;
-        } break;
+      //         lin.SetSystemCallStatus(ret, false);
+      //       }
+      //     } sc; return &sc;
+      //   } break;
         
         
 
@@ -997,38 +1065,38 @@ namespace linux_os {
       //     return &sc;
       //   } break;
 
-      case 160: /* RISCV specific uname syscall */
-        {
-          static struct : public SysCall {
-            char const* GetName() const { return "uname"; }
-            void Describe( LINUX& lin, std::ostream& sink ) const
-            {
-              parameter_type buf_addr = GetSystemCallParam(lin, 0);
-              sink << "(struct utsname *buf=" << std::hex << buf_addr << std::dec << ")";
-            }
-            void Execute( LINUX& lin, int syscall_id ) const
-            {
-              int ret;
-              int32_t target_errno = 0;
-              parameter_type buf_addr = GetSystemCallParam(lin, 0);
-              ret = 0;
+      // case 160: /* RISCV specific uname syscall */
+      //   {
+      //     static struct : public SysCall {
+      //       char const* GetName() const { return "uname"; }
+      //       void Describe( LINUX& lin, std::ostream& sink ) const
+      //       {
+      //         parameter_type buf_addr = GetSystemCallParam(lin, 0);
+      //         sink << "(struct utsname *buf=" << std::hex << buf_addr << std::dec << ")";
+      //       }
+      //       void Execute( LINUX& lin, int syscall_id ) const
+      //       {
+      //         int ret;
+      //         int32_t target_errno = 0;
+      //         parameter_type buf_addr = GetSystemCallParam(lin, 0);
+      //         ret = 0;
 	
-              struct riscv_utsname uname_struct;
-              memset(&uname_struct, 0, sizeof(uname_struct));
-              UTSName const& utsname = lin.GetUTSName();
+      //         struct riscv_utsname uname_struct;
+      //         memset(&uname_struct, 0, sizeof(uname_struct));
+      //         UTSName const& utsname = lin.GetUTSName();
               
-              strncpy(uname_struct.sysname,  utsname.sysname.c_str(),  sizeof(uname_struct.sysname) - 1);
-              strncpy(uname_struct.nodename, utsname.nodename.c_str(), sizeof(uname_struct.nodename) - 1);
-              strncpy(uname_struct.release,  utsname.release.c_str(),  sizeof(uname_struct.release) - 1);
-              strncpy(uname_struct.version,  utsname.version.c_str(),  sizeof(uname_struct.version) - 1);
-              strncpy(uname_struct.machine,  utsname.machine.c_str(),  sizeof(uname_struct.machine) - 1);
-              lin.WriteMemory(buf_addr, (uint8_t *)&uname_struct, sizeof(uname_struct));
+      //         strncpy(uname_struct.sysname,  utsname.sysname.c_str(),  sizeof(uname_struct.sysname) - 1);
+      //         strncpy(uname_struct.nodename, utsname.nodename.c_str(), sizeof(uname_struct.nodename) - 1);
+      //         strncpy(uname_struct.release,  utsname.release.c_str(),  sizeof(uname_struct.release) - 1);
+      //         strncpy(uname_struct.version,  utsname.version.c_str(),  sizeof(uname_struct.version) - 1);
+      //         strncpy(uname_struct.machine,  utsname.machine.c_str(),  sizeof(uname_struct.machine) - 1);
+      //         lin.WriteMemory(buf_addr, (uint8_t *)&uname_struct, sizeof(uname_struct));
 	
-              SetRISCVSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
-            }
-          } sc;
-          return &sc;
-        } break;
+      //         SetRISCVSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+      //       }
+      //     } sc;
+      //     return &sc;
+      //   } break;
 
       // case 195: /* RISCV specific stat64 syscall */
       //   {
