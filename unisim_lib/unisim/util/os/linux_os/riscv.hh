@@ -83,6 +83,20 @@ namespace linux_os {
     //   uint32_t tv_nsec; /* Nanoseconds.  (long int) */
     // };
     
+// dev_t	   st_dev      8    0
+// ino_t	   st_ino      8    8
+// mode_t	   st_mode     4   16
+// nlink_t	   st_nlink    4   20
+// uid_t	   st_uid      4   24
+// gid_t	   st_gid      4   28
+// dev_t	   st_rdev     8   32
+// off_t	   st_size     8   48
+// blksize_t  st_blksize  8   56
+// blkcnt_t   st_blocks   8   64
+// time_t	   st_atime   16   72
+// time_t	   st_mtime   16   88
+// time_t	   st_ctime   16  104
+                                                       
     struct riscv_newstat
     { // UAPI structure
       uint64_t ust_dev;           // 00-08 0b0000xxx
@@ -216,15 +230,15 @@ namespace linux_os {
       }
       if (not lin.SetTargetRegister("sp", sp_section->GetAddr()))
         return false;
-      address_type par1_addr = sp_section->GetAddr() + 8;
-      address_type par2_addr = sp_section->GetAddr() + 16;
-      parameter_type par1 = 0;
-      parameter_type par2 = 0;
-      if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
-          not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          not lin.SetTargetRegister("a0", Target2Host(lin.GetEndianness(), par1)) or
-          not lin.SetTargetRegister("a1", Target2Host(lin.GetEndianness(), par2)))
-        return false;
+      // address_type par1_addr = sp_section->GetAddr() + 8;
+      // address_type par2_addr = sp_section->GetAddr() + 16;
+      // parameter_type par1 = 0;
+      // parameter_type par2 = 0;
+      // if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
+      //     not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
+      //     not lin.SetTargetRegister("a0", Target2Host(lin.GetEndianness(), par1)) or
+      //     not lin.SetTargetRegister("a1", Target2Host(lin.GetEndianness(), par2)))
+      //   return false;
           
       return true;
     }
@@ -885,45 +899,45 @@ namespace linux_os {
       //     } sc; return &sc;
       //   } break;
 
-      // case 80: /* Riscv specific stat call */
-      //   {
-      //     // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
-      //     static struct : public SysCall
-      //     {
-      //       char const* GetName() const { return "newfstat"; }
-      //       struct Args {
-      //         Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
-      //         unsigned fd; parameter_type statbuf;
-      //         void Describe( std::ostream& sink ) const
-      //         { sink << "(unsigned fd=" << std::dec << fd << ", struct stat __user *statbuf=" << std::hex << statbuf << ")"; }
-      //       };
-      //       void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
-      //       void Execute( LINUX& lin, int syscall_id ) const
-      //       {
-      //         Args sc(lin);
-      //         int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
+      case 80: /* Riscv specific stat call */
+        {
+          // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
+          static struct : public SysCall
+          {
+            char const* GetName() const { return "newfstat"; }
+            struct Args {
+              Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
+              unsigned fd; parameter_type statbuf;
+              void Describe( std::ostream& sink ) const
+              { sink << "(unsigned fd=" << std::dec << fd << ", struct stat __user *statbuf=" << std::hex << statbuf << ")"; }
+            };
+            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+            void Execute( LINUX& lin, int syscall_id ) const
+            {
+              Args sc(lin);
+              int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
 
-      //         if (host_fd == -1)
-      //           {
-      //             lin.SetSystemCallStatus(-LINUX_EBADF,false);
-      //             return;
-      //           }
+              if (host_fd == -1)
+                {
+                  lin.SetSystemCallStatus(-LINUX_EBADF,false);
+                  return;
+                }
         
-      //         struct riscv_newstat target_stat;
+              struct riscv_newstat target_stat;
               
-      //         int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
+              int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
 
-      //         if (ret == -1) {
-      //           lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
-      //           return;
-      //         }
+              if (ret == -1) {
+                lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+                return;
+              }
   
-      //         lin.WriteMemory(sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
+              lin.WriteMemory(sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
 	
-      //         lin.SetSystemCallStatus(ret, false);
-      //       }
-      //     } sc; return &sc;
-      //   } break;
+              lin.SetSystemCallStatus(ret, false);
+            }
+          } sc; return &sc;
+        } break;
         
         
 

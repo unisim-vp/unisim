@@ -52,7 +52,7 @@ void
 LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(true);
+  linux_impl.SetVerbose(false);
   
   if (not linux_impl.SetCommandLine(simargs))
     throw 0;
@@ -72,7 +72,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   linux_impl.SetTargetSystem(target);
     
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
-  linux_impl.SetStackBase( 0x40000000UL );
+  linux_impl.SetStackBase( 0x00000040007ff800UL );
   linux_impl.SetMemoryPageSize( 0x1000UL );
   linux_impl.SetUname("Linux" /* sysname */,
                       "localhost" /* nodename */,
@@ -95,7 +95,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
 void
 LinuxOS::ExecuteSystemCall( int id )
 {
-  // linux_impl.LogSystemCall(id);
+  //  linux_impl.LogSystemCall(id);
   linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
 }
 

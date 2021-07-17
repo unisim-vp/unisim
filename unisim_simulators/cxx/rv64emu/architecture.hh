@@ -58,7 +58,7 @@ struct Arch
   typedef bool  BOOL;
   typedef uint8_t  U8;
   typedef uint16_t U16;
-  typedef uint64_t U32;
+  typedef uint32_t U32;
   typedef uint64_t U64;
   typedef int8_t  S8;
   typedef int16_t S16;
@@ -207,6 +207,8 @@ struct Arch
     linux_os->ExecuteSystemCall(0);
   }
 
+  void debug();
+
   Operation*
   StepInstruction()
   {
@@ -219,7 +221,7 @@ struct Arch
     /* Decode instruction */
     Operation* op = decoder.Decode(insn_addr, insn);
     next_insn_addr += op->GetLength() / 8;
-
+    
     /* Disassemble instruction */
     if (disasm)
       {
@@ -227,6 +229,7 @@ struct Arch
         std::cerr << '\n';
       }
 
+    debug();
     /* Execute instruction*/
     asm volatile ("operation_execute:");
     op->execute( *this );

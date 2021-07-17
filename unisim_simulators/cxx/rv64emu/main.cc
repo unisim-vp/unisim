@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   
   linux64.Setup( simargs, envs );
   
-  core.disasm = true;
+  core.disasm = false;
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
