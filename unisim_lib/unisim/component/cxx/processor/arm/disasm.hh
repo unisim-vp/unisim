@@ -244,7 +244,13 @@ namespace arm {
   struct PSR;
   
   std::ostream& operator << ( std::ostream& sink, PSR const& dobj );
-  
+
+  struct DisasmV : public DisasmObject
+  {
+    DisasmV(unsigned _vn, unsigned _scale) : vn(_vn), scale(_scale) {}
+    void operator () (std::ostream& sink) const;
+    unsigned vn, scale;
+  };
   
   enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
   

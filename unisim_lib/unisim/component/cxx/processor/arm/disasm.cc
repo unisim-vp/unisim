@@ -279,6 +279,12 @@ namespace arm {
     else if (ra != 15) sink << ", " << DisasmRegister(ra);
   }
 
+  void DisasmV::operator () (std::ostream& sink) const
+  {
+    sink << "bjsdq"[scale] << std::dec << vn;
+  }
+  
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
