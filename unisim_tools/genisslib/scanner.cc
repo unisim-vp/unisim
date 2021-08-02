@@ -695,20 +695,21 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                   }
                 else if (source.lnext == CLex::Scanner::GroupOpening)
                   {
-                    do {
-                      FileLoc def; char const* err = 0;
-                      if  (Operation* prev_op = isa.operation( symbol ))
-                        { err = "operation"; def = prev_op->fileloc; }
-                      else if (Group* prev_gr = isa.group( symbol ))
-                        { err =     "group"; def = prev_gr->fileloc; }
-                      else
-                        break;
+                    isa.check_name_validity("group", symbol, symfl);
+                    // do {
+                    //   FileLoc def; char const* err = 0;
+                    //   if  (Operation* prev_op = isa.operation( symbol ))
+                    //     { err = "operation"; def = prev_op->fileloc; }
+                    //   else if (Group* prev_gr = isa.group( symbol ))
+                    //     { err =     "group"; def = prev_gr->fileloc; }
+                    //   else
+                    //     break;
                       
-                      symfl.err( "error: %s name conflicts with %s `%s'", err, err, symbol.str() );
-                      def.err( "%s `%s' previously defined here", err, symbol.str() );
-                      throw CLex::Scanner::Unexpected();
+                    //   symfl.err( "error: %s name conflicts with %s `%s'", err, err, symbol.str() );
+                    //   def.err( "%s `%s' previously defined here", err, symbol.str() );
+                    //   throw CLex::Scanner::Unexpected();
                       
-                    } while (0);
+                    // } while (0);
                     
                     struct : Isa::OOG
                     {

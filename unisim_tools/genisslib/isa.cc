@@ -100,6 +100,7 @@ Isa::remove( Operation* _op )
 void
 Isa::add( Operation* _op )
 {
+  check_name_validity("operation", _op->symbol, _op->fileloc);
   m_operations.append( _op );
   for (GroupAccumulators::iterator itr = m_group_accs.begin(), end = m_group_accs.end(); itr != end; ++itr)
     {
@@ -438,25 +439,32 @@ Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc const& fl 
                   group_symbol.str(), group_begin.str(), group_symbol.str(), group_end.str() );
           throw ParseError();
         }
-      
-        /* Operations and groups name should not conflict */
-        if (Operation* prev_op = operation( group_symbol ))
-          {
-            fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
-            prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
-            throw ParseError();
-          }
 
-        if (Group* prev_gr = group( group_symbol ))
-          {
-            fl.err( "conflicting group `%s' redefined", group_symbol.str() );
-            prev_gr->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
-            throw ParseError();
-          }
+        // check group name for conflicts
+        check_name_validity("group", group_symbol, fl);
       }
       
       m_groups.push_back( ga->second );
       m_group_accs.erase( ga );
+    }
+}
+
+void
+Isa::check_name_validity(char const* kind, ConstStr symbol, FileLoc const& fl)
+{
+  /* Operations and groups name should not conflict */
+  if (Operation* prev_op = operation( symbol ))
+    {
+      fl.err( "error: %s name conflicts with operation `%s'", kind, symbol.str() );
+      prev_op->fileloc.err( "operation `%s' previously defined here", symbol.str() );
+      throw ParseError();
+    }
+
+  if (Group* prev_gr = group( symbol ))
+    {
+      fl.err( "error: %s name conflicts with group `%s'", kind, symbol.str() );
+      prev_gr->fileloc.err( "group `%s' previously defined here", symbol.str() );
+      throw ParseError();
     }
 }
 
