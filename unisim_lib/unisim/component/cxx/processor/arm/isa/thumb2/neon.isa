@@ -655,12 +655,12 @@ vcge_f32z.disasm = {
   buffer << "vcge.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", #0";
 };
 
-op vcge_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+op vcge_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0011[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vcge_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vcge_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vcge_s8.disasm = {
-  buffer << "vcge.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+  buffer << "vcge.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
 op vcge_s8z( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0001[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -985,7 +985,7 @@ vcnt_8.disasm = {
 
 op vcvt_f16_f32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0110[4]: 0[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vcvt_f16_f32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vcvt_f16_f32.var reject : {Reject} = {vm0 & q};
+vcvt_f16_f32.var reject : {Reject} = {vm0 & 1};
 
 vcvt_f16_f32.disasm = {
   buffer << "vcvt.f16.f32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
@@ -993,7 +993,7 @@ vcvt_f16_f32.disasm = {
 
 op vcvt_f32_f16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0111[4]: 0[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vcvt_f32_f16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vcvt_f32_f16.var reject : {Reject} = {vd0 & q};
+vcvt_f32_f16.var reject : {Reject} = {vd0 & 1};
 
 vcvt_f32_f16.disasm = {
   buffer << "vcvt.f32.f16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
@@ -1192,12 +1192,12 @@ vfms_f32v.disasm = {
   buffer << "vfms.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vhadd_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vhadd_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vhadd_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vhadd_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vhadd_s8.disasm = {
-  buffer << "vhadd.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+  buffer << "vhadd.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
 op vhadd_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -1240,12 +1240,12 @@ vhadd_u32.disasm = {
   buffer << "vhadd.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vhsub_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0010[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vhsub_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0010[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vhsub_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vhsub_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vhsub_s8.disasm = {
-  buffer << "vhsub.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+  buffer << "vhsub.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
 op vhsub_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0010[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2139,7 +2139,7 @@ vmovl_u16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
 vmovl_u16qd.var reject : {Reject} = {vd0 & 1};
 
 vmovl_u16qd.disasm = {
-  buffer << "vmovl.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>q, 3+q);
+  buffer << "vmovl.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
 op vmovl_u32qd( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: 0b0000[4]:> <: vd0[4]: 0b1010[4]: 0[1]: 0[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2995,76 +2995,76 @@ vqdmull_s32qdp.disasm = {
   buffer << "vqdmull.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3) << "[" << part << "]";
 };
 
-op vqmovn_s16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovn_s16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovn_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovn_s16.var reject : {Reject} = {vm0 & q};
+vqmovn_s16.var reject : {Reject} = {vm0 & 1};
 
 vqmovn_s16.disasm = {
-  buffer << "vqmovn.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovn.s16\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovn_s32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovn_s32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0010[4]: 1[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovn_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovn_s32.var reject : {Reject} = {vm0 & q};
+vqmovn_s32.var reject : {Reject} = {vm0 & 1};
 
 vqmovn_s32.disasm = {
-  buffer << "vqmovn.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovn.s32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovn_s64( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovn_s64( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovn_s64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovn_s64.var reject : {Reject} = {vm0 & q};
+vqmovn_s64.var reject : {Reject} = {vm0 & 1};
 
 vqmovn_s64.disasm = {
-  buffer << "vqmovn.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovn.s64\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovn_u16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovn_u16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: 1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovn_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovn_u16.var reject : {Reject} = {vm0 & q};
+vqmovn_u16.var reject : {Reject} = {vm0 & 1};
 
 vqmovn_u16.disasm = {
-  buffer << "vqmovn.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovn.u16\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovn_u32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovn_u32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0010[4]: 1[1]: 1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovn_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovn_u32.var reject : {Reject} = {vm0 & q};
+vqmovn_u32.var reject : {Reject} = {vm0 & 1};
 
 vqmovn_u32.disasm = {
-  buffer << "vqmovn.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovn.u32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovn_u64( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovn_u64( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0010[4]: 1[1]: 1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovn_u64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovn_u64.var reject : {Reject} = {vm0 & q};
+vqmovn_u64.var reject : {Reject} = {vm0 & 1};
 
 vqmovn_u64.disasm = {
-  buffer << "vqmovn.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovn.u64\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovun_s16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovun_s16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0010[4]: 0[1]: 1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovun_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovun_s16.var reject : {Reject} = {vm0 & q};
+vqmovun_s16.var reject : {Reject} = {vm0 & 1};
 
 vqmovun_s16.disasm = {
-  buffer << "vqmovun.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovun.s16\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovun_s32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovun_s32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0010[4]: 0[1]: 1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovun_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovun_s32.var reject : {Reject} = {vm0 & q};
+vqmovun_s32.var reject : {Reject} = {vm0 & 1};
 
 vqmovun_s32.disasm = {
-  buffer << "vqmovun.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovun.s32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vqmovun_s64( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vqmovun_s64( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0010[4]: 0[1]: 1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vqmovun_s64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vqmovun_s64.var reject : {Reject} = {vm0 & q};
+vqmovun_s64.var reject : {Reject} = {vm0 & 1};
 
 vqmovun_s64.disasm = {
-  buffer << "vqmovun.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vqmovun.s64\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4);
 };
 
 op vqneg_s8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0111[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -3603,471 +3603,252 @@ vrecps_f32.disasm = {
   buffer << "vrecps.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-// TODO:CONTINUE HERE
+op vrev_168( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev_168.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev_168.var reject : {Reject} = {(vd0 | vm0) & q};
 
-op vrev_168d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_168d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev_168d.disasm = {
+vrev_168.disasm = {
   buffer << "vrev16.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev_168q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_168q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev_168q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev_328( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev_328.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev_328.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev_168q.disasm = {
-  buffer << "vrev16.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev_328d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_328d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev_328d.disasm = {
+vrev_328.disasm = {
   buffer << "vrev32.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev_328q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_328q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev_328q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev_648( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev_648.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev_648.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev_328q.disasm = {
-  buffer << "vrev32.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev_648d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_648d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev_648d.disasm = {
+vrev_648.disasm = {
   buffer << "vrev64.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev_648q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_648q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev_648q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev16_16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev16_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev16_16.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev_648q.disasm = {
-  buffer << "vrev64.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev16_16d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev16_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev16_16d.disasm = {
+vrev16_16.disasm = {
   buffer << "vrev16.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev16_16q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev16_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev16_16q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev16_32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev16_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev16_32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev16_16q.disasm = {
-  buffer << "vrev16.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev16_32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev16_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev16_32d.disasm = {
+vrev16_32.disasm = {
   buffer << "vrev16.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev16_32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev16_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev16_32q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev32_16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev32_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev32_16.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev16_32q.disasm = {
-  buffer << "vrev16.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev32_16d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev32_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev32_16d.disasm = {
+vrev32_16.disasm = {
   buffer << "vrev32.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev32_16q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev32_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev32_16q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev32_32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev32_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev32_32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev32_16q.disasm = {
-  buffer << "vrev32.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev32_32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev32_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev32_32d.disasm = {
+vrev32_32.disasm = {
   buffer << "vrev32.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev32_32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev32_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev32_32q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev64_16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev64_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev64_16.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev32_32q.disasm = {
-  buffer << "vrev32.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev64_16d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev64_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev64_16d.disasm = {
+vrev64_16.disasm = {
   buffer << "vrev64.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev64_16q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev64_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev64_16q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev64_32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev64_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev64_32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrev64_16q.disasm = {
-  buffer << "vrev64.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrev64_32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev64_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrev64_32d.disasm = {
+vrev64_32.disasm = {
   buffer << "vrev64.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev64_32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev64_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev64_32q.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vrev64_32q.disasm = {
-  buffer << "vrev64.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrhadd_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vrhadd_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vrhadd_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vrhadd_s8.disasm = {
-  buffer << "vrhadd.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
-};
-
-op vrhadd_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_s8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrhadd_s8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrhadd_s8q.disasm = {
-  buffer << "vrhadd.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vrhadd.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
 op vrhadd_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_s16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_s16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrhadd_s16d.disasm = {
+vrhadd_s16.disasm = {
   buffer << "vrhadd.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrhadd_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_s16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrhadd_s16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrhadd_s16q.disasm = {
-  buffer << "vrhadd.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vrhadd_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_s32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_s32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrhadd_s32d.disasm = {
+vrhadd_s32.disasm = {
   buffer << "vrhadd.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrhadd_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_s32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrhadd_s32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrhadd_s32q.disasm = {
-  buffer << "vrhadd.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vrhadd_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_u8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_u8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrhadd_u8d.disasm = {
+vrhadd_u8.disasm = {
   buffer << "vrhadd.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrhadd_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_u8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrhadd_u8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrhadd_u8q.disasm = {
-  buffer << "vrhadd.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vrhadd_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_u16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_u16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrhadd_u16d.disasm = {
+vrhadd_u16.disasm = {
   buffer << "vrhadd.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrhadd_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_u16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrhadd_u16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrhadd_u16q.disasm = {
-  buffer << "vrhadd.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vrhadd_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_u32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrhadd_u32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrhadd_u32d.disasm = {
+vrhadd_u32.disasm = {
   buffer << "vrhadd.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrhadd_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrhadd_u32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrhadd_u32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrhadd_u32q.disasm = {
-  buffer << "vrhadd.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vrshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vrshl_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vrshl_s8.disasm = {
-  buffer << "vrshl.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vm, 3) << ", " << DisasmV(vn, 3);
-};
-
-op vrshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_s8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_s8q.disasm = {
-  buffer << "vrshl.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
+  buffer << "vrshl.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
 op vrshl_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_s16d.disasm = {
+vrshl_s16.disasm = {
   buffer << "vrshl.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_s16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_s16q.disasm = {
-  buffer << "vrshl.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vrshl_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_s32d.disasm = {
+vrshl_s32.disasm = {
   buffer << "vrshl.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_s32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_s32q.disasm = {
-  buffer << "vrshl.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vrshl_s64( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s64d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_s64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_s64d.disasm = {
+vrshl_s64.disasm = {
   buffer << "vrshl.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_s64( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_s64q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_s64q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_s64q.disasm = {
-  buffer << "vrshl.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vrshl_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_u8d.disasm = {
+vrshl_u8.disasm = {
   buffer << "vrshl.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_u8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_u8q.disasm = {
-  buffer << "vrshl.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vrshl_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_u16d.disasm = {
+vrshl_u16.disasm = {
   buffer << "vrshl.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_u16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_u16q.disasm = {
-  buffer << "vrshl.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vrshl_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_u32d.disasm = {
+vrshl_u32.disasm = {
   buffer << "vrshl.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_u32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vrshl_u32q.disasm = {
-  buffer << "vrshl.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vrshl_u64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u64d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrshl_u64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrshl_u64d.disasm = {
+vrshl_u64.disasm = {
   buffer << "vrshl.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vrshl_u64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrshl_u64q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrshl_u64q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
+op vrshr_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vrshr_s8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrshl_u64q.disasm = {
-  buffer << "vrshl.u64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
-op vrshr_s8di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vrshr_s8di.disasm = {
+vrshr_s8i.disasm = {
   buffer << "vrshr.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_s8qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vrshr_s8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrshr_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vrshr_s16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrshr_s8qi.disasm = {
-  buffer << "vrshr.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_s16di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vrshr_s16di.disasm = {
+vrshr_s16i.disasm = {
   buffer << "vrshr.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_s16qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vrshr_s16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrshr_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vrshr_s32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrshr_s16qi.disasm = {
-  buffer << "vrshr.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_s32di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vrshr_s32di.disasm = {
+vrshr_s32i.disasm = {
   buffer << "vrshr.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_s32qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vrshr_s32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrshr_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vrshr_s64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrshr_s32qi.disasm = {
-  buffer << "vrshr.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_s64di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vrshr_s64di.disasm = {
+vrshr_s64i.disasm = {
   buffer << "vrshr.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_s64qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_s64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vrshr_s64qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrshr_u8i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_u8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vrshr_u8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrshr_s64qi.disasm = {
-  buffer << "vrshr.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_u8di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vrshr_u8di.disasm = {
+vrshr_u8i.disasm = {
   buffer << "vrshr.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_u8qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vrshr_u8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrshr_u16i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_u16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vrshr_u16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrshr_u8qi.disasm = {
-  buffer << "vrshr.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_u16di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vrshr_u16di.disasm = {
+vrshr_u16i.disasm = {
   buffer << "vrshr.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_u16qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vrshr_u16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrshr_u32i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_u32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vrshr_u32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrshr_u16qi.disasm = {
-  buffer << "vrshr.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_u32di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vrshr_u32di.disasm = {
+vrshr_u32i.disasm = {
   buffer << "vrshr.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrshr_u32qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0010[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vrshr_u32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrshr_u64i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrshr_u64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vrshr_u64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrshr_u32qi.disasm = {
-  buffer << "vrshr.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrshr_u64di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vrshr_u64di.disasm = {
+vrshr_u64i.disasm = {
   buffer << "vrshr.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-op vrshr_u64qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0010[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrshr_u64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vrshr_u64qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vrshr_u64qi.disasm = {
-  buffer << "vrshr.u64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
 op vrshrn_i16dqi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b1000[4]: 0b01[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -4094,169 +3875,92 @@ vrshrn_i64dqi.disasm = {
   buffer << "vrshrn.i64\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
-op vrsqrte_f32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrsqrte_f32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+op vrsqrte_f32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrsqrte_f32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrsqrte_f32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrsqrte_f32d.disasm = {
+vrsqrte_f32.disasm = {
   buffer << "vrsqrte.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrsqrte_f32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrsqrte_f32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrsqrte_f32q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrsqrte_u32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b0100[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrsqrte_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrsqrte_u32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrsqrte_f32q.disasm = {
-  buffer << "vrsqrte.f32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrsqrte_u32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b0100[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrsqrte_u32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vrsqrte_u32d.disasm = {
+vrsqrte_u32.disasm = {
   buffer << "vrsqrte.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrsqrte_u32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b0100[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrsqrte_u32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrsqrte_u32q.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vrsqrte_u32q.disasm = {
-  buffer << "vrsqrte.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vrsqrts_f32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1111[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsqrts_f32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrsqrts_f32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vrsqrts_f32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vrsqrts_f32d.disasm = {
+vrsqrts_f32.disasm = {
   buffer << "vrsqrts.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrsqrts_f32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1111[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsqrts_f32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vrsqrts_f32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
+op vrsra_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vrsra_s8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrsqrts_f32q.disasm = {
-  buffer << "vrsqrts.f32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vrsra_s8di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vrsra_s8di.disasm = {
+vrsra_s8i.disasm = {
   buffer << "vrsra.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_s8qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vrsra_s8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrsra_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vrsra_s16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrsra_s8qi.disasm = {
-  buffer << "vrsra.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_s16di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vrsra_s16di.disasm = {
+vrsra_s16i.disasm = {
   buffer << "vrsra.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_s16qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vrsra_s16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrsra_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vrsra_s32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrsra_s16qi.disasm = {
-  buffer << "vrsra.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_s32di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vrsra_s32di.disasm = {
+vrsra_s32i.disasm = {
   buffer << "vrsra.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_s32qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vrsra_s32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrsra_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vrsra_s64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrsra_s32qi.disasm = {
-  buffer << "vrsra.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_s64di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vrsra_s64di.disasm = {
+vrsra_s64i.disasm = {
   buffer << "vrsra.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_s64qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_s64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vrsra_s64qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrsra_u8i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_u8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vrsra_u8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrsra_s64qi.disasm = {
-  buffer << "vrsra.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_u8di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vrsra_u8di.disasm = {
+vrsra_u8i.disasm = {
   buffer << "vrsra.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_u8qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vrsra_u8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrsra_u16i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_u16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vrsra_u16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrsra_u8qi.disasm = {
-  buffer << "vrsra.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_u16di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vrsra_u16di.disasm = {
+vrsra_u16i.disasm = {
   buffer << "vrsra.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_u16qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vrsra_u16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vrsra_u32i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_u32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vrsra_u32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vrsra_u16qi.disasm = {
-  buffer << "vrsra.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_u32di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vrsra_u32di.disasm = {
+vrsra_u32i.disasm = {
   buffer << "vrsra.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vrsra_u32qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vrsra_u32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrsra_u64i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vrsra_u64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vrsra_u64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vrsra_u32qi.disasm = {
-  buffer << "vrsra.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vrsra_u64di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vrsra_u64di.disasm = {
+vrsra_u64i.disasm = {
   buffer << "vrsra.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-op vrsra_u64qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vrsra_u64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vrsra_u64qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vrsra_u64qi.disasm = {
-  buffer << "vrsra.u64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
 op vrsubhn_i16dq( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -4283,184 +3987,100 @@ vrsubhn_i64dq.disasm = {
   buffer << "vrsubhn.i64\t" << DisasmV(vd, 3) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vshl_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vshl_s8.disasm = {
-  buffer << "vshl.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vm, 3) << ", " << DisasmV(vn, 3);
+  buffer << "vshl.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_s8di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+op vshl_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vshl_s8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshl_s8di.disasm = {
+vshl_s8i.disasm = {
   buffer << "vshl.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_s8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_s8q.disasm = {
-  buffer << "vshl.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
-op vshl_s8qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vshl_s8qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s8qi.disasm = {
-  buffer << "vshl.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
 op vshl_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_s16d.disasm = {
+vshl_s16.disasm = {
   buffer << "vshl.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_s16di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+op vshl_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vshl_s16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshl_s16di.disasm = {
+vshl_s16i.disasm = {
   buffer << "vshl.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshl_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_s16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_s16q.disasm = {
-  buffer << "vshl.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
-op vshl_s16qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vshl_s16qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s16qi.disasm = {
-  buffer << "vshl.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
 op vshl_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_s32d.disasm = {
+vshl_s32.disasm = {
   buffer << "vshl.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_s32di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+op vshl_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vshl_s32i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshl_s32di.disasm = {
+vshl_s32i.disasm = {
   buffer << "vshl.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshl_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_s32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_s32q.disasm = {
-  buffer << "vshl.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
-op vshl_s32qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vshl_s32qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s32qi.disasm = {
-  buffer << "vshl.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
 op vshl_s64( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s64d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_s64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_s64d.disasm = {
+vshl_s64.disasm = {
   buffer << "vshl.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_s64di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+op vshl_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vshl_s64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshl_s64di.disasm = {
+vshl_s64i.disasm = {
   buffer << "vshl.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshl_s64( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_s64q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_s64q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_s64q.disasm = {
-  buffer << "vshl.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
-op vshl_s64qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vshl_s64qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s64qi.disasm = {
-  buffer << "vshl.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
 op vshl_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_u8d.disasm = {
+vshl_u8.disasm = {
   buffer << "vshl.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_u8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_u8q.disasm = {
-  buffer << "vshl.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vshl_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_u16d.disasm = {
+vshl_u16.disasm = {
   buffer << "vshl.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_u16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_u16q.disasm = {
-  buffer << "vshl.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vshl_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_u32d.disasm = {
+vshl_u32.disasm = {
   buffer << "vshl.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
 };
 
-op vshl_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_u32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_u32q.disasm = {
-  buffer << "vshl.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
-};
-
 op vshl_u64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u64d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vshl_u64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vshl_u64d.disasm = {
+vshl_u64.disasm = {
   buffer << "vshl.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q);
-};
-
-op vshl_u64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vshl_u64q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vshl_u64q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vshl_u64q.disasm = {
-  buffer << "vshl.u64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmV(vn>>1, 4);
 };
 
 op vshll_i8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0011[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -4535,124 +4155,68 @@ vshll_u32dqi.disasm = {
   buffer << "vshll.u32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
-op vshr_s8di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+op vshr_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vshr_s8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshr_s8di.disasm = {
+vshr_s8i.disasm = {
   buffer << "vshr.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_s8qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vshr_s8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vshr_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vshr_s16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshr_s8qi.disasm = {
-  buffer << "vshr.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_s16di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vshr_s16di.disasm = {
+vshr_s16i.disasm = {
   buffer << "vshr.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_s16qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vshr_s16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vshr_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vshr_s32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vshr_s16qi.disasm = {
-  buffer << "vshr.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_s32di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vshr_s32di.disasm = {
+vshr_s32i.disasm = {
   buffer << "vshr.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_s32qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vshr_s32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vshr_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vshr_s64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshr_s32qi.disasm = {
-  buffer << "vshr.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_s64di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vshr_s64di.disasm = {
+vshr_s64i.disasm = {
   buffer << "vshr.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_s64qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_s64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vshr_s64qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vshr_u8i2( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_u8i2.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vshr_u8i2.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshr_s64qi.disasm = {
-  buffer << "vshr.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_u8di2( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u8di2.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vshr_u8di2.disasm = {
+vshr_u8i2.disasm = {
   buffer << "vshr.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_u8qi2( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u8qi2.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vshr_u8qi2.var reject : {Reject} = {(vd0|vm0) & q};
+op vshr_u16i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_u16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vshr_u16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshr_u8qi2.disasm = {
-  buffer << "vshr.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_u16di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vshr_u16di.disasm = {
+vshr_u16i.disasm = {
   buffer << "vshr.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_u16qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vshr_u16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vshr_u32i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_u32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vshr_u32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vshr_u16qi.disasm = {
-  buffer << "vshr.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_u32di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vshr_u32di.disasm = {
+vshr_u32i.disasm = {
   buffer << "vshr.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vshr_u32qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vshr_u32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vshr_u64i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshr_u64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vshr_u64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vshr_u32qi.disasm = {
-  buffer << "vshr.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vshr_u64di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vshr_u64di.disasm = {
+vshr_u64i.disasm = {
   buffer << "vshr.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-op vshr_u64qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshr_u64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vshr_u64qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshr_u64qi.disasm = {
-  buffer << "vshr.u64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
 op vshrn_i16dqi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b1000[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -4679,244 +4243,132 @@ vshrn_i64dqi.disasm = {
   buffer << "vshrn.i64\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
-op vsli_8di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+op vsli_8i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsli_8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vsli_8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsli_8di.disasm = {
+vsli_8i.disasm = {
   buffer << "vsli.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsli_8qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vsli_8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsli_16i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsli_16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vsli_16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsli_8qi.disasm = {
-  buffer << "vsli.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsli_16di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-
-vsli_16di.disasm = {
+vsli_16i.disasm = {
   buffer << "vsli.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsli_16qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vsli_16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsli_32i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsli_32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vsli_32i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsli_16qi.disasm = {
-  buffer << "vsli.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsli_32di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-
-vsli_32di.disasm = {
+vsli_32i.disasm = {
   buffer << "vsli.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsli_32qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vsli_32qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsli_64i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsli_64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
+vsli_64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsli_32qi.disasm = {
-  buffer << "vsli.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsli_64di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-
-vsli_64di.disasm = {
+vsli_64i.disasm = {
   buffer << "vsli.64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsli_64qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsli_64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {imm_};
-vsli_64qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsra_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vsra_s8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsli_64qi.disasm = {
-  buffer << "vsli.64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_s8di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vsra_s8di.disasm = {
+vsra_s8i.disasm = {
   buffer << "vsra.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_s8qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vsra_s8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsra_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vsra_s16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsra_s8qi.disasm = {
-  buffer << "vsra.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_s16di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vsra_s16di.disasm = {
+vsra_s16i.disasm = {
   buffer << "vsra.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_s16qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vsra_s16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsra_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vsra_s32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vsra_s16qi.disasm = {
-  buffer << "vsra.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_s32di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vsra_s32di.disasm = {
+vsra_s32i.disasm = {
   buffer << "vsra.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_s32qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vsra_s32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vsra_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vsra_s64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsra_s32qi.disasm = {
-  buffer << "vsra.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_s64di( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vsra_s64di.disasm = {
+vsra_s64i.disasm = {
   buffer << "vsra.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_s64qi( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_s64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vsra_s64qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsra_u8i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_u8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vsra_u8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsra_s64qi.disasm = {
-  buffer << "vsra.s64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_u8di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vsra_u8di.disasm = {
+vsra_u8i.disasm = {
   buffer << "vsra.u8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_u8qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vsra_u8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsra_u16i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_u16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vsra_u16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsra_u8qi.disasm = {
-  buffer << "vsra.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_u16di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vsra_u16di.disasm = {
+vsra_u16i.disasm = {
   buffer << "vsra.u16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_u16qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vsra_u16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsra_u32i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_u32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vsra_u32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vsra_u16qi.disasm = {
-  buffer << "vsra.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_u32di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vsra_u32di.disasm = {
+vsra_u32i.disasm = {
   buffer << "vsra.u32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_u32qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vsra_u32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vsra_u64i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsra_u64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vsra_u64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsra_u32qi.disasm = {
-  buffer << "vsra.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsra_u64di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vsra_u64di.disasm = {
+vsra_u64i.disasm = {
   buffer << "vsra.u64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsra_u64qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsra_u64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vsra_u64qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsri_8i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsri_8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
+vsri_8i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsra_u64qi.disasm = {
-  buffer << "vsra.u64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsri_8di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_8di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-
-vsri_8di.disasm = {
+vsri_8i.disasm = {
   buffer << "vsri.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsri_8qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_8qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {8-imm_};
-vsri_8qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsri_16i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsri_16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
+vsri_16i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsri_8qi.disasm = {
-  buffer << "vsri.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsri_16di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_16di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-
-vsri_16di.disasm = {
+vsri_16i.disasm = {
   buffer << "vsri.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsri_16qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm_[4]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_16qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {16-imm_};
-vsri_16qi.var reject : {Reject} = {(vd0|vm0) & q};
+op vsri_32i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsri_32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
+vsri_32i.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vsri_16qi.disasm = {
-  buffer << "vsri.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsri_32di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_32di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-
-vsri_32di.disasm = {
+vsri_32i.disasm = {
   buffer << "vsri.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
 };
 
-op vsri_32qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]:> <: vd0[4]: 0b0100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_32qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {32-imm_};
-vsri_32qi.var reject : {Reject} = {(vd0 | vm0) & q};
+op vsri_64i( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0100[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vsri_64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
+vsri_64i.var reject : {Reject} = {(vd0|vm0) & q};
 
-vsri_32qi.disasm = {
-  buffer << "vsri.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
-};
-
-op vsri_64di( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0100[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_64di.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-
-vsri_64di.disasm = {
+vsri_64i.disasm = {
   buffer << "vsri.64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-op vsri_64qi( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: imm_[6]:> <: vd0[4]: 0b0100[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vsri_64qi.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {64-imm_};
-vsri_64qi.var reject : {Reject} = {(vd0|vm0) & q};
-
-vsri_64qi.disasm = {
-  buffer << "vsri.64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
 };
 
 op vstms_8( 0b11111001[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: rn[4]:> <: vd0[4]: opcode[4]: 0[2]: len[2]: rm[4] );
@@ -5254,79 +4706,44 @@ vst4_32bp.disasm = {
   buffer << "{" << DisasmV(vm, 3) << "[" << part << "],d" << (vm+(1+y)) << "[" << part << "],d" << (vm+2*(1+y)) << "[" << part << "],d" << (vm+3*(1+y)) << "[" << part << "]}, " << DisasmNeonMemoryRR(rb, ra, (len?32:0) << len);
 };
 
-op vsub_f32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_f32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+op vsub_f32v( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vsub_f32v.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_f32v.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vsub_f32d.disasm = {
+vsub_f32v.disasm = {
   buffer << "vsub.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vsub_f32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_f32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vsub_f32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vsub_f32q.disasm = {
-  buffer << "vsub.f32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vsub_i8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vsub_i8d.disasm = {
+vsub_i8.disasm = {
   buffer << "vsub.i8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vsub_i8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vsub_i8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vsub_i8q.disasm = {
-  buffer << "vsub.i8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vsub_i16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vsub_i16d.disasm = {
+vsub_i16.disasm = {
   buffer << "vsub.i16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vsub_i16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vsub_i16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vsub_i16q.disasm = {
-  buffer << "vsub.i16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vsub_i32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vsub_i32d.disasm = {
+vsub_i32.disasm = {
   buffer << "vsub.i32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vsub_i32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vsub_i32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vsub_i32q.disasm = {
-  buffer << "vsub.i32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vsub_i64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i64d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vsub_i64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vsub_i64d.disasm = {
+vsub_i64.disasm = {
   buffer << "vsub.i64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
-};
-
-op vsub_i64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsub_i64q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vsub_i64q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vsub_i64q.disasm = {
-  buffer << "vsub.i64\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
 };
 
 op vsubhn_i16dq( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5449,19 +4866,12 @@ vsubw_u32.disasm = {
   buffer << "vsubw.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
-op vswp_d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vswp_d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+op vswp( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vswp.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vswp.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vswp_d.disasm = {
+vswp.disasm = {
   buffer << "vswp\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
-};
-
-op vswp_q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vswp_q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vswp_q.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vswp_q.disasm = {
-  buffer << "vswp\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
 };
 
 op vtbl_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: x[2]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5482,184 +4892,102 @@ vtbx_8d.disasm = {
   else                buffer << "vtbx.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "-<overflow reg d" << (vn+x) << "}, " << DisasmV(vm, 3);
 };
 
-op vtrn_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vtrn_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+// TODO:CONTINUE HERE
 
-vtrn_8d.disasm = {
+op vtrn_8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vtrn_8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vtrn_8.var reject : {Reject} = {(vd0 | vm0) & q};
+
+vtrn_8.disasm = {
   buffer << "vtrn.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vtrn_8q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vtrn_8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vtrn_8q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vtrn_16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vtrn_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vtrn_16.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vtrn_8q.disasm = {
-  buffer << "vtrn.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vtrn_16d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vtrn_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vtrn_16d.disasm = {
+vtrn_16.disasm = {
   buffer << "vtrn.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vtrn_16q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vtrn_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vtrn_16q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vtrn_32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vtrn_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vtrn_32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vtrn_16q.disasm = {
-  buffer << "vtrn.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vtrn_32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vtrn_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vtrn_32d.disasm = {
+vtrn_32.disasm = {
   buffer << "vtrn.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vtrn_32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vtrn_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vtrn_32q.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vtrn_32q.disasm = {
-  buffer << "vtrn.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vtst_i8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+op vtst_i8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vtst_i8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtst_i8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vtst_i8.disasm = {
-  buffer << "vtst.8\t" << DisasmV(vd, 3) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
-};
-
-op vtst_i8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vtst_i8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vtst_i8q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vtst_i8q.disasm = {
-  buffer << "vtst.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
+  buffer << "vtst.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
 op vtst_16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vtst_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtst_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtst_16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vtst_16d.disasm = {
+vtst_16.disasm = {
   buffer << "vtst.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vtst_16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vtst_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vtst_16q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vtst_16q.disasm = {
-  buffer << "vtst.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
 op vtst_32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vtst_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtst_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtst_32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
-vtst_32d.disasm = {
+vtst_32.disasm = {
   buffer << "vtst.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vtst_32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vtst_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vtst_32q.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
+op vuzp_8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vuzp_8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vuzp_8.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vtst_32q.disasm = {
-  buffer << "vtst.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vuzp_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vuzp_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vuzp_8d.disasm = {
+vuzp_8.disasm = {
   buffer << "vuzp.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vuzp_8q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vuzp_8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vuzp_8q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vuzp_16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vuzp_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vuzp_16.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vuzp_8q.disasm = {
-  buffer << "vuzp.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vuzp_16d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vuzp_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vuzp_16d.disasm = {
+vuzp_16.disasm = {
   buffer << "vuzp.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vuzp_16q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vuzp_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vuzp_16q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vuzp_32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vuzp_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vuzp_32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vuzp_16q.disasm = {
-  buffer << "vuzp.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vuzp_32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vuzp_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vuzp_32d.disasm = {
+vuzp_32.disasm = {
   buffer << "vuzp.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vuzp_32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0001[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vuzp_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vuzp_32q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vzip_8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vzip_8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vzip_8.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vuzp_32q.disasm = {
-  buffer << "vuzp.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vzip_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vzip_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vzip_8d.disasm = {
+vzip_8.disasm = {
   buffer << "vzip.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vzip_8q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vzip_8q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vzip_8q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vzip_16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vzip_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vzip_16.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vzip_8q.disasm = {
-  buffer << "vzip.8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vzip_16d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vzip_16d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vzip_16d.disasm = {
+vzip_16.disasm = {
   buffer << "vzip.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vzip_16q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vzip_16q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vzip_16q.var reject : {Reject} = {(vd0 | vm0) & q};
+op vzip_32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vzip_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vzip_32.var reject : {Reject} = {(vd0 | vm0) & q};
 
-vzip_16q.disasm = {
-  buffer << "vzip.16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
-};
-
-op vzip_32d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vzip_32d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-
-vzip_32d.disasm = {
+vzip_32.disasm = {
   buffer << "vzip.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
-};
-
-op vzip_32q( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0001[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vzip_32q.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vzip_32q.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vzip_32q.disasm = {
-  buffer << "vzip.32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm>>1, 4);
 };
 
 // vldmdb_mod.specialize( ldc_3, ldcl_2 );
