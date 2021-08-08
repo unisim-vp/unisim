@@ -284,6 +284,11 @@ namespace arm {
     sink << "bjsdq"[scale] << std::dec << vn;
   }
   
+  void DisasmVIdx::operator () (std::ostream& sink) const
+  {
+    sink << "[" << idx << "]";
+  }
+  
 
 } // end of namespace arm
 } // end of namespace processor

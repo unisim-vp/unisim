@@ -252,6 +252,13 @@ namespace arm {
     unsigned vn, scale;
   };
   
+  struct DisasmVIdx : public DisasmObject
+  {
+    DisasmVIdx(unsigned _idx) : idx(_idx) {}
+    void operator () (std::ostream& sink) const;
+    unsigned idx;
+  };
+  
   enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
   
 } // end of namespace arm
