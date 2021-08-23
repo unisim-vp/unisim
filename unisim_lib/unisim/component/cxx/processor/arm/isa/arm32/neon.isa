@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 /**********************************************
 
         ARM32 NEON INSTRUCTIONS
@@ -304,7 +304,7 @@ vadd_i8.disasm = {
 
 vadd_i8.execute = {
   typedef typename ARCH::U8 U8;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 8; ++idx)
@@ -321,7 +321,7 @@ vadd_i16.disasm = {
 
 vadd_i16.execute = {
   typedef typename ARCH::U16 U16;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 4; ++idx)
@@ -338,7 +338,7 @@ vadd_i32.disasm = {
 
 vadd_i32.execute = {
   typedef typename ARCH::U32 U32;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 2; ++idx)
@@ -383,64 +383,148 @@ vaddhn_i64dq.disasm = {
   buffer << "vaddhn.i64\t" << DisasmV(vd, 3) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
 };
 
-op vaddl_s8qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vaddl_s8qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vaddl_s8qd.var reject : {Reject} = {vd0 & 1};
+op vaddl_s8( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vaddl_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vaddl_s8.var reject : {Reject} = {vd0 & 1};
 
-vaddl_s8qd.disasm = {
+vaddl_s8.disasm = {
   buffer << "vaddl.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-op vaddl_s16qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vaddl_s16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vaddl_s16qd.var reject : {Reject} = {vd0 & 1};
+vaddl_s8.execute = {
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::S16 S16;
+  unsigned const subs = 4;
 
-vaddl_s16qd.disasm = {
+  S16 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = S16( cpu.GetVDE( vn, subs*q+idx, S8() ) ) + S16( cpu.GetVDE( vm, subs*q+idx, S8() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vaddl_s16( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vaddl_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vaddl_s16.var reject : {Reject} = {vd0 & 1};
+
+vaddl_s16.disasm = {
   buffer << "vaddl.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-op vaddl_s32qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vaddl_s32qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vaddl_s32qd.var reject : {Reject} = {vd0 & 1};
+vaddl_s16.execute = {
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S32 S32;
+  unsigned const subs = 2;
 
-vaddl_s32qd.disasm = {
+  S32 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = S32( cpu.GetVDE( vn, subs*q+idx, S16() ) ) + S32( cpu.GetVDE( vm, subs*q+idx, S16() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vaddl_s32( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vaddl_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vaddl_s32.var reject : {Reject} = {vd0 & 1};
+
+vaddl_s32.disasm = {
   buffer << "vaddl.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-op vaddl_u8qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vaddl_u8qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vaddl_u8qd.var reject : {Reject} = {vd0 & 1};
+vaddl_s32.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  unsigned const subs = 1;
 
-vaddl_u8qd.disasm = {
+  S64 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = S64( cpu.GetVDE( vn, subs*q+idx, S32() ) ) + S64( cpu.GetVDE( vm, subs*q+idx, S32() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vaddl_u8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vaddl_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vaddl_u8.var reject : {Reject} = {vd0 & 1};
+
+vaddl_u8.disasm = {
   buffer << "vaddl.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-op vaddl_u16qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vaddl_u16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vaddl_u16qd.var reject : {Reject} = {vd0 & 1};
+vaddl_u8.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U16 U16;
+  unsigned const subs = 4;
 
-vaddl_u16qd.disasm = {
+  U16 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = U16( cpu.GetVDE( vn, subs*q+idx, U8() ) ) + U16( cpu.GetVDE( vm, subs*q+idx, U8() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vaddl_u16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vaddl_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vaddl_u16.var reject : {Reject} = {vd0 & 1};
+
+vaddl_u16.disasm = {
   buffer << "vaddl.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-op vaddl_u32qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vaddl_u32qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vaddl_u32qd.var reject : {Reject} = {vd0 & 1};
+vaddl_u16.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  unsigned const subs = 2;
 
-vaddl_u32qd.disasm = {
+  U32 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = U32( cpu.GetVDE( vn, subs*q+idx, U16() ) ) + U32( cpu.GetVDE( vm, subs*q+idx, U16() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vaddl_u32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b0000[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vaddl_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vaddl_u32.var reject : {Reject} = {vd0 & 1};
+
+vaddl_u32.disasm = {
   buffer << "vaddl.u32\tq" << (vd>>1) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-vaddl_u32qd.execute = {
+vaddl_u32.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  
+  unsigned const subs = 1;
+
+  U64 res[2][subs];
   // CheckAdvSIMDEnabled();
-  for (unsigned idx = 0; idx < 2; ++idx)
-    {
-      U64 op1( cpu.GetVDE( vn, idx, U32() ) ), op2( cpu.GetVDE( vm, idx, U32() ) ), res = op1 + op2;
-      cpu.SetVDE( vd + idx, 0, res );
-    }
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = U64( cpu.GetVDE( vn, subs*q+idx, U32() ) ) + U64( cpu.GetVDE( vm, subs*q+idx, U32() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
 };
 
 op vaddw_s8( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -451,12 +535,44 @@ vaddw_s8.disasm = {
   buffer << "vaddw.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
+vaddw_s8.execute = {
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::S16 S16;
+  unsigned const subs = 4;
+
+  S16 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = cpu.GetVDE( vn+q, idx, S16() ) + S16( cpu.GetVDE( vm, subs*q+idx, S8() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
 op vaddw_s16( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vaddw_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vaddw_s16.var reject : {Reject} = {(vd0|vn0) & 1};
 
 vaddw_s16.disasm = {
   buffer << "vaddw.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
+};
+
+vaddw_s16.execute = {
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S32 S32;
+  unsigned const subs = 2;
+
+  S32 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = cpu.GetVDE( vn+q, idx, S32() ) + S32( cpu.GetVDE( vm, subs*q+idx, S16() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
 };
 
 op vaddw_s32( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -467,12 +583,44 @@ vaddw_s32.disasm = {
   buffer << "vaddw.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
+vaddw_s32.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  unsigned const subs = 1;
+
+  S64 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = cpu.GetVDE( vn+q, idx, S64() ) + S64( cpu.GetVDE( vm, subs*q+idx, S32() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
 op vaddw_u8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vaddw_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vaddw_u8.var reject : {Reject} = {(vd0|vn0) & 1};
 
 vaddw_u8.disasm = {
   buffer << "vaddw.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
+};
+
+vaddw_u8.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U16 U16;
+  unsigned const subs = 4;
+
+  U16 res[2][subs];
+  // CheckAdvUIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = cpu.GetVDE( vn+q, idx, U16() ) + U16( cpu.GetVDE( vm, subs*q+idx, U8() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
 };
 
 op vaddw_u16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -483,12 +631,44 @@ vaddw_u16.disasm = {
   buffer << "vaddw.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
+vaddw_u16.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  unsigned const subs = 2;
+
+  U32 res[2][subs];
+  // CheckAdvUIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = cpu.GetVDE( vn+q, idx, U32() ) + U32( cpu.GetVDE( vm, subs*q+idx, U16() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
 op vaddw_u32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vaddw_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vaddw_u32.var reject : {Reject} = {(vd0|vn0) & 1};
 
 vaddw_u32.disasm = {
   buffer << "vaddw.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm, 3);
+};
+
+vaddw_u32.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  unsigned const subs = 1;
+
+  U64 res[2][subs];
+  // CheckAdvUIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = cpu.GetVDE( vn+q, idx, U64() ) + U64( cpu.GetVDE( vm, subs*q+idx, U32() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
 };
 
 op vand( 0b11110010[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -501,7 +681,7 @@ vand.disasm = {
 
 vand.execute = {
   typedef typename ARCH::U64 U64;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) & cpu.GetVDE( vm+dd, 0, U64() ) );
@@ -517,7 +697,7 @@ vbic.disasm = {
 
 vbic.execute = {
   typedef typename ARCH::U64 U64;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) & ~cpu.GetVDE( vm+dd, 0, U64() ) );
@@ -605,7 +785,7 @@ vceq_i8.disasm = {
 
 vceq_i8.execute = {
   typedef typename ARCH::S8 S8;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 8; ++idx)
@@ -633,7 +813,7 @@ vceq_i16.disasm = {
 
 vceq_i16.execute = {
   typedef typename ARCH::S16 S16;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 4; ++idx)
@@ -661,7 +841,7 @@ vceq_i32.disasm = {
 
 vceq_i32.execute = {
   typedef typename ARCH::S32 S32;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 2; ++idx)
@@ -1169,10 +1349,10 @@ vdup8_r.disasm = {
 
 vdup8_r.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   // CheckAdvSIMDEnabled();
   typename ARCH::U8 element( cpu.GetGPR(rt) );
-  
+
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned e=0, end=8<<q; e < end; ++e)
       cpu.SetVDE( vd+dd, e, element );
@@ -1188,10 +1368,10 @@ vdup16_r.disasm = {
 
 vdup16_r.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   // CheckAdvSIMDEnabled();
   typename ARCH::U16 element( cpu.GetGPR(rt) );
-  
+
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned e=0, end=4<<q; e < end; ++e)
       cpu.SetVDE( vd+dd, e, element );
@@ -1207,10 +1387,10 @@ vdup32_r.disasm = {
 
 vdup32_r.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   // CheckAdvSIMDEnabled();
   typename ARCH::U32 element( cpu.GetGPR(rt) );
-  
+
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned e=0, end=2<<q; e < end; ++e)
       cpu.SetVDE( vd+dd, e, element );
@@ -1226,7 +1406,7 @@ veor.disasm = {
 
 veor.execute = {
   typedef typename ARCH::U64 U64;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) ^ cpu.GetVDE( vm+dd, 0, U64() ) );
@@ -1375,7 +1555,7 @@ vldms_8.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
-  
+
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
       cpu.SetVDE((vd+idx/elements)%32, idx%elements, U8(cpu.MemRead8(addr + U32(size*idx))));
@@ -1428,7 +1608,7 @@ vldms_16.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
-  
+
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
       cpu.SetVDE((vd+idx/elements)%32, idx%elements, U16(cpu.MemRead16(addr + U32(size*idx))));
@@ -1480,7 +1660,7 @@ vldms_32.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
-  
+
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
       cpu.SetVDE((vd+idx/elements)%32, idx%elements, U32(cpu.MemRead32(addr + U32(size*idx))));
@@ -1534,9 +1714,9 @@ vldms_64.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs) : cpu.GetGPR(rm)) );
-  
+
   U32 endianness = cpu.CPSR().Get(E) * U32(4);
-  
+
   for (unsigned idx = 0, end = vms.regs; idx < end; ++idx)
     {
       U64 data0( cpu.MemRead32(addr + (U32(size*idx + 0) ^ endianness)) ),
@@ -2187,52 +2367,118 @@ vmov_i64i.execute = {
     cpu.SetVDE( vd+dd, 0, typename ARCH::U64(imm) );
 };
 
-op vmovl_s8qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmovl_s8qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vmovl_s8qd.var reject : {Reject} = {vd0 & 1};
+op vmovl_s8( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vmovl_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vmovl_s8.var reject : {Reject} = {vd0 & 1};
 
-vmovl_s8qd.disasm = {
+vmovl_s8.disasm = {
   buffer << "vmovl.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
-op vmovl_s16qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmovl_s16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vmovl_s16qd.var reject : {Reject} = {vd0 & 1};
+vmovl_s8.execute = {
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::S16 S16;
+  unsigned const subs = 4;
 
-vmovl_s16qd.disasm = {
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, S16( cpu.GetVDE( vm, subs*q+idx, S8() ) ) );
+};
+
+op vmovl_s16( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vmovl_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vmovl_s16.var reject : {Reject} = {vd0 & 1};
+
+vmovl_s16.disasm = {
   buffer << "vmovl.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
-op vmovl_s32qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmovl_s32qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vmovl_s32qd.var reject : {Reject} = {vd0 & 1};
+vmovl_s16.execute = {
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S32 S32;
+  unsigned const subs = 2;
 
-vmovl_s32qd.disasm = {
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, S32( cpu.GetVDE( vm, subs*q+idx, S16() ) ) );
+};
+
+op vmovl_s32( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vmovl_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vmovl_s32.var reject : {Reject} = {vd0 & 1};
+
+vmovl_s32.disasm = {
   buffer << "vmovl.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
-op vmovl_u8qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmovl_u8qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vmovl_u8qd.var reject : {Reject} = {vd0 & 1};
+vmovl_s32.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  unsigned const subs = 1;
 
-vmovl_u8qd.disasm = {
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, S64( cpu.GetVDE( vm, subs*q+idx, S32() ) ) );
+};
+
+op vmovl_u8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vmovl_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vmovl_u8.var reject : {Reject} = {vd0 & 1};
+
+vmovl_u8.disasm = {
   buffer << "vmovl.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
-op vmovl_u16qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmovl_u16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vmovl_u16qd.var reject : {Reject} = {vd0 & 1};
+vmovl_u8.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U16 U16;
+  unsigned const subs = 4;
 
-vmovl_u16qd.disasm = {
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, U16( cpu.GetVDE( vm, subs*q+idx, U8() ) ) );
+};
+
+op vmovl_u16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vmovl_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vmovl_u16.var reject : {Reject} = {vd0 & 1};
+
+vmovl_u16.disasm = {
   buffer << "vmovl.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
 };
 
-op vmovl_u32qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmovl_u32qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vmovl_u32qd.var reject : {Reject} = {vd0 & 1};
+vmovl_u16.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  unsigned const subs = 2;
 
-vmovl_u32qd.disasm = {
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, U32( cpu.GetVDE( vm, subs*q+idx, U16() ) ) );
+};
+
+op vmovl_u32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: 0b0000[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vmovl_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vmovl_u32.var reject : {Reject} = {vd0 & 1};
+
+vmovl_u32.disasm = {
   buffer << "vmovl.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3);
+};
+
+vmovl_u32.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  unsigned const subs = 1;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, U64( cpu.GetVDE( vm, subs*q+idx, U32() ) ) );
 };
 
 op vmovn_i16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]: vd0[4]: 0b0010[4]: 0b00[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2463,20 +2709,148 @@ vmull_p8qd.disasm = {
 //   buffer << "vmull.p8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 // };
 
-op vmull_s8qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vmull_s8qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vmull_s8qd.var reject : {Reject} = {vd0 & 1};
+op vmull_s8( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vmull_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vmull_s8.var reject : {Reject} = {vd0 & 1};
 
-vmull_s8qd.disasm = {
+vmull_s8.disasm = {
   buffer << "vmull.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
-op vmull_s16qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vmull_s16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vmull_s16qd.var reject : {Reject} = {vd0 & 1};
+vmull_s8.execute = {
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::S16 S16;
+  unsigned const subs = 4;
 
-vmull_s16qd.disasm = {
+  S16 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = S16( cpu.GetVDE( vn, subs*q+idx, S8() ) ) * S16( cpu.GetVDE( vm, subs*q+idx, S8() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vmull_s16( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vmull_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vmull_s16.var reject : {Reject} = {vd0 & 1};
+
+vmull_s16.disasm = {
   buffer << "vmull.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+};
+
+vmull_s16.execute = {
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S32 S32;
+  unsigned const subs = 2;
+
+  S32 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = S32( cpu.GetVDE( vn, subs*q+idx, S16() ) ) * S32( cpu.GetVDE( vm, subs*q+idx, S16() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vmull_s32( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vmull_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vmull_s32.var reject : {Reject} = {vd0 & 1};
+
+vmull_s32.disasm = {
+  buffer << "vmull.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+};
+
+vmull_s32.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  unsigned const subs = 1;
+
+  S64 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = S64( cpu.GetVDE( vn, subs*q+idx, S32() ) ) * S64( cpu.GetVDE( vm, subs*q+idx, S32() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vmull_u8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vmull_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vmull_u8.var reject : {Reject} = {vd0 & 1};
+
+vmull_u8.disasm = {
+  buffer << "vmull.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+};
+
+vmull_u8.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U16 U16;
+  unsigned const subs = 4;
+
+  U16 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = U16( cpu.GetVDE( vn, subs*q+idx, U8() ) ) * U16( cpu.GetVDE( vm, subs*q+idx, U8() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vmull_u16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vmull_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vmull_u16.var reject : {Reject} = {vd0 & 1};
+
+vmull_u16.disasm = {
+  buffer << "vmull.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+};
+
+vmull_u16.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  unsigned const subs = 2;
+
+  U32 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = U32( cpu.GetVDE( vn, subs*q+idx, U16() ) ) * U32( cpu.GetVDE( vm, subs*q+idx, U16() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
+};
+
+op vmull_u32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vmull_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vmull_u32.var reject : {Reject} = {vd0 & 1};
+
+vmull_u32.disasm = {
+  buffer << "vmull.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
+};
+
+vmull_u32.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  unsigned const subs = 1;
+
+  U64 res[2][subs];
+  // CheckAdvSIMDEnabled();
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      res[q][idx] = U64( cpu.GetVDE( vn, subs*q+idx, U32() ) ) * U64( cpu.GetVDE( vm, subs*q+idx, U32() ) );
+
+  for (unsigned q = 0, qe = 2; q < qe; ++q)
+    for (unsigned idx = 0; idx < subs; ++idx)
+      cpu.SetVDE( vd+q, idx, res[q][idx] );
 };
 
 op vmull_s16qdp( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1010[4]: shl<4> vn1[1]: 0b1[1]: shl<1> part1[1]: 0b0[1]: part0[1]: vm[3] );
@@ -2487,14 +2861,6 @@ vmull_s16qdp.disasm = {
   buffer << "vmull.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3) << DisasmVIdx(part);
 };
 
-op vmull_s32qd( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vmull_s32qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vmull_s32qd.var reject : {Reject} = {vd0 & 1};
-
-vmull_s32qd.disasm = {
-  buffer << "vmull.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
-};
-
 op vmull_s32qdp( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1010[4]: shl<4> vn1[1]: 0b1[1]: part[1]: 0b0[1]: vm[4] );
 vmull_s32qdp.var vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vmull_s32qdp.var reject : {Reject} = {vd0 & 1};
@@ -2503,36 +2869,12 @@ vmull_s32qdp.disasm = {
   buffer << "vmull.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3) << DisasmVIdx(part);
 };
 
-op vmull_u8qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vmull_u8qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vmull_u8qd.var reject : {Reject} = {vd0 & 1};
-
-vmull_u8qd.disasm = {
-  buffer << "vmull.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
-};
-
-op vmull_u16qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vmull_u16qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vmull_u16qd.var reject : {Reject} = {vd0 & 1};
-
-vmull_u16qd.disasm = {
-  buffer << "vmull.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
-};
-
 op vmull_u16qdp( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1010[4]: shl<4> vn1[1]: 0b1[1]: shl<1> part1[1]: 0b0[1]: part0[1]: vm[3] );
 vmull_u16qdp.var part : {uint32_t} = {part1|part0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vmull_u16qdp.var reject : {Reject} = {vd0 & 1};
 
 vmull_u16qdp.disasm = {
   buffer << "vmull.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3) << DisasmVIdx(part);
-};
-
-op vmull_u32qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vmull_u32qd.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vmull_u32qd.var reject : {Reject} = {vd0 & 1};
-
-vmull_u32qd.disasm = {
-  buffer << "vmull.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vn, 3) << ", " << DisasmV(vm, 3);
 };
 
 op vmull_u32qdp( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1010[4]: shl<4> vn1[1]: 0b1[1]: part[1]: 0b0[1]: vm[4] );
@@ -2633,7 +2975,7 @@ vorn.disasm = {
 
 vorn.execute = {
   typedef typename ARCH::U64 U64;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) | ~cpu.GetVDE( vm+dd, 0, U64() ) );
@@ -2649,7 +2991,7 @@ vorr.disasm = {
 
 vorr.execute = {
   typedef typename ARCH::U64 U64;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) | cpu.GetVDE( vm+dd, 0, U64() ) );
@@ -2663,12 +3005,30 @@ vorr_i16i.disasm = {
   buffer << "vorr.i16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmI(imm);
 };
 
+vorr_i16i.execute = {
+  typedef typename ARCH::U16 U16;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 4; ++idx)
+      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vd+dd, idx, U16() ) | U16(imm) );
+};
+
 op vorr_i32i( 0b1111[4]: 0b001[3]: shl<7> imm2[1]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl<4> imm1[3]: vd0[4]: 0b0[1]: shl<3> shift[2]: 0b1[1]: 0b0[1]: q[1]: 0b01[2]: imm0[4] );
 vorr_i32i.var vd : {uint8_t} = {vd1|vd0}, imm : {uint32_t} = {(imm2|imm1|imm0) << shift};
 vorr_i32i.var reject : {Reject} = {vd0 & q};
 
 vorr_i32i.disasm = {
   buffer << "vorr.i32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmI(imm);
+};
+
+vorr_i32i.execute = {
+  typedef typename ARCH::U32 U32;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 2; ++idx)
+      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vd+dd, idx, U32() ) | U32(imm) );
 };
 
 op vpadal_s8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]: vd0[4]: 0b0110[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2747,7 +3107,7 @@ vpadd_i8.execute = {
         res[dd][idx+  0] = cpu.GetVDE( vn+dd, 2*idx+0, U8() ) + cpu.GetVDE( vn+dd, 2*idx+1, U8() );
         res[dd][idx+end] = cpu.GetVDE( vm+dd, 2*idx+0, U8() ) + cpu.GetVDE( vm+dd, 2*idx+1, U8() );
       }
-  
+
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
       cpu.SetVDE( vd+dd, idx, res[dd][idx] );
@@ -2773,7 +3133,7 @@ vpadd_i16.execute = {
         res[dd][idx+  0] = cpu.GetVDE( vn+dd, 2*idx+0, U16() ) + cpu.GetVDE( vn+dd, 2*idx+1, U16() );
         res[dd][idx+end] = cpu.GetVDE( vm+dd, 2*idx+0, U16() ) + cpu.GetVDE( vm+dd, 2*idx+1, U16() );
       }
-  
+
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
       cpu.SetVDE( vd+dd, idx, res[dd][idx] );
@@ -2799,7 +3159,7 @@ vpadd_i32.execute = {
         res[dd][idx+  0] = cpu.GetVDE( vn+dd, 2*idx+0, U32() ) + cpu.GetVDE( vn+dd, 2*idx+1, U32() );
         res[dd][idx+end] = cpu.GetVDE( vm+dd, 2*idx+0, U32() ) + cpu.GetVDE( vm+dd, 2*idx+1, U32() );
       }
-  
+
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
       cpu.SetVDE( vd+dd, idx, res[dd][idx] );
@@ -2856,7 +3216,7 @@ vpaddl_u32.disasm = {
 vpaddl_u32.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDU( vd+dd, U64(cpu.GetVDE( vm+dd, 0, U32() )) + U64(cpu.GetVDE( vm+dd, 1, U32() )) );
@@ -3798,76 +4158,73 @@ vrecps_f32.disasm = {
   buffer << "vrecps.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev_168( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]: vd0[4]: 0b0001[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_168.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev_168.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev_8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b00[2]: 0b00[2]: vd0[4]: 0b000[3]: op[2]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev_8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev_8.var reject : {Reject} = {(vd0 | vm0) & q or op > 2};
 
-vrev_168.disasm = {
-  buffer << "vrev16.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+vrev_8.disasm = {
+  buffer << "vrev" << (64 >> op) << ".8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev_328( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]: vd0[4]: 0b0000[4]: 0b1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_328.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev_328.var reject : {Reject} = {(vd0 | vm0) & q};
+vrev_8.execute = {
+  typedef typename ARCH::U8 U8;
+  unsigned const elements = 8, reverse_mask = (elements-1) >> op;
 
-vrev_328.disasm = {
-  buffer << "vrev32.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+  U8 res[1<<q][elements];
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      res[dd][idx] = cpu.GetVDE( vm+dd, idx ^ reverse_mask, U8() );
+
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, res[dd][idx] );
 };
 
-op vrev_648( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]: vd0[4]: 0b0000[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev_648.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev_648.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev_16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b01[2]: 0b00[2]: vd0[4]: 0b000[3]: op[2]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev_16.var reject : {Reject} = {(vd0 | vm0) & q or op > 2};
 
-vrev_648.disasm = {
-  buffer << "vrev64.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+vrev_16.disasm = {
+  buffer << "vrev" << (64 >> op) << ".16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev16_16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]: vd0[4]: 0b0001[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev16_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev16_16.var reject : {Reject} = {(vd0 | vm0) & q};
+vrev_16.execute = {
+  typedef typename ARCH::U16 U16;
+  unsigned const elements = 4, reverse_mask = (elements-1) >> op;
 
-vrev16_16.disasm = {
-  buffer << "vrev16.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+  U16 res[1<<q][elements];
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      res[dd][idx] = cpu.GetVDE( vm+dd, idx ^ reverse_mask, U16() );
+
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, res[dd][idx] );
 };
 
-op vrev16_32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]: vd0[4]: 0b0001[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev16_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev16_32.var reject : {Reject} = {(vd0 | vm0) & q};
+op vrev_32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b10[2]: 0b00[2]: vd0[4]: 0b000[3]: op[2]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vrev_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vrev_32.var reject : {Reject} = {(vd0 | vm0) & q or op > 2};
 
-vrev16_32.disasm = {
-  buffer << "vrev16.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+vrev_32.disasm = {
+  buffer << "vrev" << (64 >> op) << ".32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vrev32_16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]: vd0[4]: 0b0000[4]: 0b1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev32_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev32_16.var reject : {Reject} = {(vd0 | vm0) & q};
+vrev_32.execute = {
+  typedef typename ARCH::U32 U32;
+  unsigned const elements = 2, reverse_mask = (elements-1) >> op;
 
-vrev32_16.disasm = {
-  buffer << "vrev32.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
-};
+  U32 res[1<<q][elements];
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      res[dd][idx] = cpu.GetVDE( vm+dd, idx ^ reverse_mask, U32() );
 
-op vrev32_32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]: vd0[4]: 0b0000[4]: 0b1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev32_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev32_32.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vrev32_32.disasm = {
-  buffer << "vrev32.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
-};
-
-op vrev64_16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]: vd0[4]: 0b0000[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev64_16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev64_16.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vrev64_16.disasm = {
-  buffer << "vrev64.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
-};
-
-op vrev64_32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]: vd0[4]: 0b0000[4]: 0b0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vrev64_32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vrev64_32.var reject : {Reject} = {(vd0 | vm0) & q};
-
-vrev64_32.disasm = {
-  buffer << "vrev64.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, res[dd][idx] );
 };
 
 op vrhadd_s8( 0b11110010[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -4662,7 +5019,7 @@ vstms_8.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
-  
+
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
       cpu.MemWrite8(addr + U32(size*idx), cpu.GetVDE((vd+idx/elements)%32, idx%elements, U8()));
@@ -4715,7 +5072,7 @@ vstms_16.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
-  
+
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
       cpu.MemWrite16(addr + U32(size*idx), cpu.GetVDE((vd+idx/elements)%32, idx%elements, U16()));
@@ -4767,7 +5124,7 @@ vstms_32.execute = {
 
   if (rm != 15)
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
-  
+
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
       cpu.MemWrite32(addr + U32(size*idx), cpu.GetVDE((vd+idx/elements)%32, idx%elements, U32()));
@@ -4823,7 +5180,7 @@ vstms_64.execute = {
     cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs) : cpu.GetGPR(rm)) );
 
   U32 endianness = cpu.CPSR().Get(E) * U32(4);
-  
+
   for (unsigned idx = 0, end = vms.regs; idx < end; ++idx)
     {
       U64 data = cpu.GetVDE((vd+idx)%32, 0, U64());
@@ -4946,12 +5303,30 @@ vsub_i8.disasm = {
   buffer << "vsub.i8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
+vsub_i8.execute = {
+  typedef typename ARCH::U8 U8;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 8; ++idx)
+      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U8() ) - cpu.GetVDE( vm+dd, idx, U8() ) );
+};
+
 op vsub_i16( 0b11110011[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vsub_i16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vsub_i16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vsub_i16.disasm = {
   buffer << "vsub.i16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+};
+
+vsub_i16.execute = {
+  typedef typename ARCH::U16 U16;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 4; ++idx)
+      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U16() ) - cpu.GetVDE( vm+dd, idx, U16() ) );
 };
 
 op vsub_i32( 0b11110011[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -4962,12 +5337,27 @@ vsub_i32.disasm = {
   buffer << "vsub.i32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
+vsub_i32.execute = {
+  typedef typename ARCH::U32 U32;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 2; ++idx)
+      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U32() ) - cpu.GetVDE( vm+dd, idx, U32() ) );
+};
+
 op vsub_i64( 0b11110011[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vsub_i64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vsub_i64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
 
 vsub_i64.disasm = {
   buffer << "vsub.i64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
+};
+
+vsub_i64.execute = {
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    cpu.SetVDU( vd+dd, cpu.GetVDU( vn+dd ) - cpu.GetVDU( vm+dd ) );
 };
 
 op vsubhn_i16dq( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0110[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5029,7 +5419,7 @@ vsubl_u8qd.disasm = {
 vsubl_u8qd.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
-  
+
   // CheckAdvSIMDEnabled();
   for (unsigned idx = 0; idx < 8; ++idx)
     {
