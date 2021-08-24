@@ -376,7 +376,8 @@ CPU::StepInstruction()
     
       /* Execute instruction */
       asm volatile( "thumb_operation_execute:" );
-      op->execute( *this );
+      if (likely(CheckCondition(*this, itcond())))
+        op->execute( *this );
     
       this->ITAdvance();
       //op->profile(profile);
@@ -399,7 +400,9 @@ CPU::StepInstruction()
     
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
-      op->execute( *this );
+      if (likely(CheckCondition(*this, (insn >> 28) & 0xf)))
+        op->execute( *this );
+
       //op->profile(profile);
     }
     
@@ -411,12 +414,14 @@ CPU::StepInstruction()
   
   catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
-     * requested from regular instructions. ITState will be updated by
-     * TakeSVCException (as done in the ARM spec). */
-    if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+     * requested from regular instructions.  ITState will be updated
+     * as needed by TakeSVCException (as required by the ARM reference
+     * specification).
+     */
+    if (unlikely( requires_commit_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
 
-    instruction_counter++;
+    instruction_counter++; /* Instruction regularly finished */
     
     this->TakeSVCException();
   }

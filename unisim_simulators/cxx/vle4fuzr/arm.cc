@@ -134,6 +134,9 @@ struct ArmBranch
   void SetVSR( unsigned idx, F32 val ) {}
   F64  GetVDR( unsigned idx ) { return F64( 0 ); }
   void SetVDR( unsigned idx, F64 val ) {}
+ 
+  template <class ELEMT> void SetVDE( unsigned reg, unsigned idx, ELEMT const& value ) {}
+  template <class ELEMT> ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait ) { return ELEMT(); }
 
   U32  GetVSU( unsigned idx ) { return U32(); }
   void SetVSU( unsigned idx, U32 val ) {}
@@ -330,7 +333,9 @@ ArmProcessor::Step( Decoder& decoder )
         for (bool end = false; not end;)
           {
             ArmBranch ab( root, insn_addr, insn_length, AMO<Decoder>::thumb );
-            bop->execute( ab );
+            using unisim::component::cxx::processor::arm::CheckCondition;
+            if (AMO<Decoder>::thumb ? CheckCondition(ab, ab.itcond()) : CheckCondition(ab, op->GetEncoding() >> 28))
+              bop->execute( ab );
             op->branch.update( ab.has_branch, ab.next_insn_addr );
             end = ab.path->close();
           }
@@ -352,7 +357,8 @@ ArmProcessor::Step( Decoder& decoder )
   this->gpr[15] = insn_addr + (AMO<Decoder>::thumb ? 4 : 8);
   this->next_insn_addr = insn_addr + insn_length;
 
-  op->execute( *this );
+  if (CheckCondition(*this, AMO<Decoder>::thumb ? itcond() : op->GetEncoding() >> 28))
+    op->execute( *this );
 
   if (AMO<Decoder>::thumb)
     this->ITAdvance();

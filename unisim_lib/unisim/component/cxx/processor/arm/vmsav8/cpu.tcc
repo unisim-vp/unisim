@@ -437,8 +437,7 @@ CPU<CPU_IMPL>::StepInstruction()
 
   // catch (SVCException const& svexc) {
   //   /* Resuming execution, since SVC exceptions are explicitly
-  //    * requested from regular instructions. ITState will be updated as
-  //    * needed by TakeSVCException (as done in the ARM spec). */
+  //    * requested from regular instructions. */
   //   if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
   //     memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
 

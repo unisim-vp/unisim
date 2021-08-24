@@ -617,7 +617,8 @@ CPU<CPU_IMPL>::StepInstruction()
 
       /* Execute instruction */
       asm volatile( "thumb_operation_execute:" );
-      op->execute( static_cast<CPU_IMPL&>(*this) );
+      if (likely(CheckCondition(*this, this->itcond())))
+        op->execute( static_cast<CPU_IMPL&>(*this) );
 
       this->ITAdvance();
       //op->profile(profile);
@@ -640,7 +641,9 @@ CPU<CPU_IMPL>::StepInstruction()
 
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
-      op->execute( static_cast<CPU_IMPL&>(*this) );
+      if (likely(CheckCondition(*this, (insn >> 28) & 0xf)))
+        op->execute( static_cast<CPU_IMPL&>(*this) );
+      
       //op->profile(profile);
     }
 
@@ -652,8 +655,10 @@ CPU<CPU_IMPL>::StepInstruction()
 
   catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
-     * requested from regular instructions. ITState will be updated as
-     * needed by TakeSVCException (as done in the ARM spec). */
+     * requested from regular instructions.  ITState will be updated
+     * as needed by TakeSVCException (as required by the ARM reference
+     * specification).
+     */
     if (unlikely( requires_commit_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportCommitInstruction(current_insn_addr, insn_length);
 

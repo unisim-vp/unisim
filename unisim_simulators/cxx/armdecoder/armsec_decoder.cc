@@ -2293,7 +2293,8 @@ bool CheckCondition( Processor& state, unsigned cond )
   case 12: result = not(Z or (N xor V)); break; // gt; signed greater than
   case 13: result =    (Z or (N xor V)); break; // le; signed less than or equal
   case 14: return true;                         // al; always
-  default:                                      // nv; never (illegal)
+  case 15: return true;                         // nv; never (when allowed, behaves as always)
+  default:
     throw std::logic_error( "bad condition" );
   }
 
@@ -2989,7 +2990,8 @@ struct Translator
         state.branch_address = insn_addr + (is_thumb ? 4 : 8);
         // state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
         // Execute
-        instruction->execute( state );
+        if (is_thumb ? CheckCondition(state, state.itcond()) : CheckCondition(state, instruction->GetEncoding() >> 28))
+          instruction->execute( state );
         if (is_thumb)
           state.ITAdvance();
         end = state.close();

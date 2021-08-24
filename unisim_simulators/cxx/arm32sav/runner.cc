@@ -78,8 +78,9 @@ Runner::step_instruction()
         
       /* Execute instruction */
       asm volatile( "thumb_operation_execute:" );
-      op->execute( *this );
-        
+      if (CheckCondition(*this, itcond()))
+        op->execute( *this );
+
       this->ITAdvance();
     }
   else
@@ -94,7 +95,8 @@ Runner::step_instruction()
         
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
-      op->execute( *this );
+      if (CheckCondition(*this, insn >> 28))
+        op->execute( *this );
     }
 }
 

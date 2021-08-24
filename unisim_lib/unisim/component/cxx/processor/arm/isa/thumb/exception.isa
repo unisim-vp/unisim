@@ -50,8 +50,6 @@ swi.disasm = {
 };
 
 swi.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.CallSupervisor( imm );
 };
 
@@ -72,8 +70,6 @@ bkpt.disasm = {
 };
 
 bkpt.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.BKPT( imm );
 };
 

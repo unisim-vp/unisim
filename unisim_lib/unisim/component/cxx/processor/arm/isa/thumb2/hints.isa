@@ -50,7 +50,6 @@ nopw.disasm = {
 };
 
 nopw.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /*
@@ -94,7 +93,6 @@ dmb.disasm = {
 };
 
 dmb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* DSB instruction */
@@ -107,7 +105,6 @@ dsb.disasm = {
 };
 
 dsb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* ISB instruction */
@@ -120,7 +117,6 @@ isb.disasm = {
 };
 
 isb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 { ARCH::Config::insns7 }:                               \
@@ -137,8 +133,6 @@ wfi.disasm = {
 };
 
 wfi.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
   //   HSRString = Zeros(25);
   //   HSRString<0> = '0';
@@ -168,8 +162,6 @@ wfi_w.disasm = {
 };
 
 wfi_w.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
   //   HSRString = Zeros(25);
   //   HSRString<0> = '0';

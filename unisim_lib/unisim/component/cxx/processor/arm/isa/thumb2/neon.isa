@@ -303,8 +303,6 @@ vadd_i8.disasm = {
 };
 
 vadd_i8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
 
   // CheckAdvSIMDEnabled();
@@ -322,8 +320,6 @@ vadd_i16.disasm = {
 };
 
 vadd_i16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
 
   // CheckAdvSIMDEnabled();
@@ -341,8 +337,6 @@ vadd_i32.disasm = {
 };
 
 vadd_i32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
 
   // CheckAdvSIMDEnabled();
@@ -360,8 +354,6 @@ vadd_i64.disasm = {
 };
 
 vadd_i64.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDU( vd+dd, cpu.GetVDU( vn+dd ) + cpu.GetVDU( vm+dd ) );
@@ -400,8 +392,6 @@ vaddl_s8.disasm = {
 };
 
 vaddl_s8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::S16 S16;
   unsigned const subs = 4;
@@ -426,8 +416,6 @@ vaddl_s16.disasm = {
 };
 
 vaddl_s16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
   unsigned const subs = 2;
@@ -452,8 +440,6 @@ vaddl_s32.disasm = {
 };
 
 vaddl_s32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
   unsigned const subs = 1;
@@ -478,8 +464,6 @@ vaddl_u8.disasm = {
 };
 
 vaddl_u8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
   unsigned const subs = 4;
@@ -504,8 +488,6 @@ vaddl_u16.disasm = {
 };
 
 vaddl_u16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   unsigned const subs = 2;
@@ -530,8 +512,6 @@ vaddl_u32.disasm = {
 };
 
 vaddl_u32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const subs = 1;
@@ -556,8 +536,6 @@ vaddw_s8.disasm = {
 };
 
 vaddw_s8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::S16 S16;
   unsigned const subs = 4;
@@ -582,8 +560,6 @@ vaddw_s16.disasm = {
 };
 
 vaddw_s16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
   unsigned const subs = 2;
@@ -608,8 +584,6 @@ vaddw_s32.disasm = {
 };
 
 vaddw_s32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
   unsigned const subs = 1;
@@ -634,8 +608,6 @@ vaddw_u8.disasm = {
 };
 
 vaddw_u8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
   unsigned const subs = 4;
@@ -660,8 +632,6 @@ vaddw_u16.disasm = {
 };
 
 vaddw_u16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   unsigned const subs = 2;
@@ -686,8 +656,6 @@ vaddw_u32.disasm = {
 };
 
 vaddw_u32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const subs = 1;
@@ -712,8 +680,6 @@ vand.disasm = {
 };
 
 vand.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
 
   // CheckAdvSIMDEnabled();
@@ -730,8 +696,6 @@ vbic.disasm = {
 };
 
 vbic.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
 
   // CheckAdvSIMDEnabled();
@@ -820,8 +784,6 @@ vceq_i8.disasm = {
 };
 
 vceq_i8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S8 S8;
 
   // CheckAdvSIMDEnabled();
@@ -850,8 +812,6 @@ vceq_i16.disasm = {
 };
 
 vceq_i16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S16 S16;
 
   // CheckAdvSIMDEnabled();
@@ -880,8 +840,6 @@ vceq_i32.disasm = {
 };
 
 vceq_i32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S32 S32;
 
   // CheckAdvSIMDEnabled();
@@ -1390,8 +1348,6 @@ vdup8_r.disasm = {
 };
 
 vdup8_r.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // CheckAdvSIMDEnabled();
   typename ARCH::U8 element( cpu.GetGPR(rt) );
 
@@ -1409,8 +1365,6 @@ vdup16_r.disasm = {
 };
 
 vdup16_r.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // CheckAdvSIMDEnabled();
   typename ARCH::U16 element( cpu.GetGPR(rt) );
 
@@ -1428,8 +1382,6 @@ vdup32_r.disasm = {
 };
 
 vdup32_r.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // CheckAdvSIMDEnabled();
   typename ARCH::U32 element( cpu.GetGPR(rt) );
 
@@ -1447,8 +1399,6 @@ veor.disasm = {
 };
 
 veor.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
 
   // CheckAdvSIMDEnabled();
@@ -1592,8 +1542,6 @@ vldms_8.disasm = {
 };
 
 vldms_8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8 U8;
   unsigned const elements = 8, size = 1;
@@ -1647,8 +1595,6 @@ vldms_16.disasm = {
 };
 
 vldms_16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
   unsigned const elements = 4, size = 2;
@@ -1702,8 +1648,6 @@ vldms_32.disasm = {
 };
 
 vldms_32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   unsigned const elements = 2, size = 4;
 
@@ -1757,8 +1701,6 @@ vldms_64.disasm = {
 };
 
 vldms_64.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const size = 8;
@@ -2358,8 +2300,6 @@ vmov_i8i.disasm = {
 };
 
 vmov_i8i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 8; ++idx)
       cpu.SetVDE( vd+dd, idx, typename ARCH::U8(imm) );
@@ -2374,8 +2314,6 @@ vmov_i16i.disasm = {
 };
 
 vmov_i16i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 4; ++idx)
       cpu.SetVDE( vd+dd, idx, typename ARCH::U16(imm) );
@@ -2390,8 +2328,6 @@ vmov_i32i.disasm = {
 };
 
 vmov_i32i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < 2; ++idx)
       cpu.SetVDE( vd+dd, idx, typename ARCH::U32(imm) );
@@ -2415,8 +2351,6 @@ vmov_i64i.disasm = {
 };
 
 vmov_i64i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDE( vd+dd, 0, typename ARCH::U64(imm) );
 };
@@ -2430,8 +2364,6 @@ vmovl_s8.disasm = {
 };
 
 vmovl_s8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::S16 S16;
   unsigned const subs = 4;
@@ -2451,8 +2383,6 @@ vmovl_s16.disasm = {
 };
 
 vmovl_s16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
   unsigned const subs = 2;
@@ -2472,8 +2402,6 @@ vmovl_s32.disasm = {
 };
 
 vmovl_s32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
   unsigned const subs = 1;
@@ -2493,8 +2421,6 @@ vmovl_u8.disasm = {
 };
 
 vmovl_u8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
   unsigned const subs = 4;
@@ -2514,8 +2440,6 @@ vmovl_u16.disasm = {
 };
 
 vmovl_u16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   unsigned const subs = 2;
@@ -2535,8 +2459,6 @@ vmovl_u32.disasm = {
 };
 
 vmovl_u32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const subs = 1;
@@ -2581,8 +2503,6 @@ vmov_8dr.disasm = {
 };
 
 vmov_8dr.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetVDE( vd, index, typename ARCH::U8(cpu.GetGPR(rt)) );
 };
 
@@ -2594,8 +2514,6 @@ vmov_16dr.disasm = {
 };
 
 vmov_16dr.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetVDE( vd, index, typename ARCH::U16(cpu.GetGPR(rt)) );
 };
 
@@ -2607,8 +2525,6 @@ vmov_32dr.disasm = {
 };
 
 vmov_32dr.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetVDE( vd, index, typename ARCH::U32(cpu.GetGPR(rt)) );
 };
 
@@ -2622,8 +2538,6 @@ vmov_s8rd.disasm = {
 };
 
 vmov_s8rd.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetGPR( rt, typename ARCH::U32( cpu.GetVDE( vn, index, typename ARCH::S8() ) ) );
 };
 
@@ -2635,8 +2549,6 @@ vmov_u8rd.disasm = {
 };
 
 vmov_u8rd.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetGPR( rt, typename ARCH::U32( cpu.GetVDE( vn, index, typename ARCH::U8() ) ) );
 };
 
@@ -2648,8 +2560,6 @@ vmov_s16rd.disasm = {
 };
 
 vmov_s16rd.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetGPR( rt, typename ARCH::U32( cpu.GetVDE( vn, index, typename ARCH::S16() ) ) );
 };
 
@@ -2661,8 +2571,6 @@ vmov_u16rd.disasm = {
 };
 
 vmov_u16rd.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetGPR( rt, typename ARCH::U32( cpu.GetVDE( vn, index, typename ARCH::U16() ) ) );
 };
 
@@ -2674,8 +2582,6 @@ vmov_32rd.disasm = {
 };
 
 vmov_32rd.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.SetGPR( rt, cpu.GetVDE( vn, index, typename ARCH::U32() ) );
 };
 
@@ -2784,8 +2690,6 @@ vmull_s8.disasm = {
 };
 
 vmull_s8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::S16 S16;
   unsigned const subs = 4;
@@ -2810,8 +2714,6 @@ vmull_s16.disasm = {
 };
 
 vmull_s16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
   unsigned const subs = 2;
@@ -2836,8 +2738,6 @@ vmull_s32.disasm = {
 };
 
 vmull_s32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
   unsigned const subs = 1;
@@ -2862,8 +2762,6 @@ vmull_u8.disasm = {
 };
 
 vmull_u8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
   unsigned const subs = 4;
@@ -2888,8 +2786,6 @@ vmull_u16.disasm = {
 };
 
 vmull_u16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   unsigned const subs = 2;
@@ -2914,8 +2810,6 @@ vmull_u32.disasm = {
 };
 
 vmull_u32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const subs = 1;
@@ -3052,8 +2946,6 @@ vorn.disasm = {
 };
 
 vorn.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
 
   // CheckAdvSIMDEnabled();
@@ -3070,8 +2962,6 @@ vorr.disasm = {
 };
 
 vorr.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
 
   // CheckAdvSIMDEnabled();
@@ -3088,8 +2978,6 @@ vorr_i16i.disasm = {
 };
 
 vorr_i16i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
 
   // CheckAdvSIMDEnabled();
@@ -3107,8 +2995,6 @@ vorr_i32i.disasm = {
 };
 
 vorr_i32i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
 
   // CheckAdvSIMDEnabled();
@@ -3182,8 +3068,6 @@ vpadd_i8.disasm = {
 };
 
 vpadd_i8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   unsigned const elements = 8;
 
@@ -3210,8 +3094,6 @@ vpadd_i16.disasm = {
 };
 
 vpadd_i16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   unsigned const elements = 4;
 
@@ -3238,8 +3120,6 @@ vpadd_i32.disasm = {
 };
 
 vpadd_i32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   unsigned const elements = 2;
 
@@ -3306,8 +3186,6 @@ vpaddl_u32.disasm = {
 };
 
 vpaddl_u32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
 
@@ -4261,8 +4139,6 @@ vrev_8.disasm = {
 };
 
 vrev_8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   unsigned const elements = 8, reverse_mask = (elements-1) >> op;
 
@@ -4286,8 +4162,6 @@ vrev_16.disasm = {
 };
 
 vrev_16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   unsigned const elements = 4, reverse_mask = (elements-1) >> op;
 
@@ -4311,8 +4185,6 @@ vrev_32.disasm = {
 };
 
 vrev_32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   unsigned const elements = 2, reverse_mask = (elements-1) >> op;
 
@@ -4656,8 +4528,6 @@ vshl_s8i.disasm = {
 };
 
 vshl_s8i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
 
   // CheckAdvSIMDEnabled();
@@ -4683,8 +4553,6 @@ vshl_s16i.disasm = {
 };
 
 vshl_s16i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
 
   // CheckAdvSIMDEnabled();
@@ -4710,8 +4578,6 @@ vshl_s32i.disasm = {
 };
 
 vshl_s32i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
 
   // CheckAdvSIMDEnabled();
@@ -4737,8 +4603,6 @@ vshl_s64i.disasm = {
 };
 
 vshl_s64i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
 
   // CheckAdvSIMDEnabled();
@@ -4788,8 +4652,6 @@ vshll_i8.disasm = {
 };
 
 vshll_i8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
   unsigned const subs = 4;
@@ -4809,8 +4671,6 @@ vshll_i16.disasm = {
 };
 
 vshll_i16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   unsigned const subs = 2;
@@ -4830,8 +4690,6 @@ vshll_i32.disasm = {
 };
 
 vshll_i32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const subs = 1;
@@ -4851,8 +4709,6 @@ vshll_s8.disasm = {
 };
 
 vshll_s8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S8 S8;
   typedef typename ARCH::S16 S16;
   unsigned const subs = 4;
@@ -4872,8 +4728,6 @@ vshll_s16.disasm = {
 };
 
 vshll_s16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
   unsigned const subs = 2;
@@ -4893,8 +4747,6 @@ vshll_s32.disasm = {
 };
 
 vshll_s32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
   unsigned const subs = 1;
@@ -4914,8 +4766,6 @@ vshll_u8.disasm = {
 };
 
 vshll_u8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
   unsigned const subs = 4;
@@ -4935,8 +4785,6 @@ vshll_u16.disasm = {
 };
 
 vshll_u16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U32 U32;
   unsigned const subs = 2;
@@ -4956,8 +4804,6 @@ vshll_u32.disasm = {
 };
 
 vshll_u32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const subs = 1;
@@ -4977,8 +4823,6 @@ vshr_s8i.disasm = {
 };
 
 vshr_s8i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   unsigned const shift = imm > 7 ? 7 : imm;
 
@@ -4997,8 +4841,6 @@ vshr_s16i.disasm = {
 };
 
 vshr_s16i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   unsigned const shift = imm > 15 ? 15 : imm;
 
@@ -5017,8 +4859,6 @@ vshr_s32i.disasm = {
 };
 
 vshr_s32i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   unsigned const shift = imm > 31 ? 31 : imm;
 
@@ -5037,8 +4877,6 @@ vshr_s64i.disasm = {
 };
 
 vshr_s64i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
   unsigned const shift = imm > 63 ? 63 : imm;
 
@@ -5057,8 +4895,6 @@ vshr_u8i.disasm = {
 };
 
 vshr_u8i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
   U8 mask(~(uint8_t(-1) << imm_));
 
@@ -5077,8 +4913,6 @@ vshr_u16i.disasm = {
 };
 
 vshr_u16i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
   U16 mask(~(uint16_t(-1) << imm_));
 
@@ -5097,8 +4931,6 @@ vshr_u32i.disasm = {
 };
 
 vshr_u32i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 mask(~(uint32_t(-1) << imm_));
 
@@ -5117,8 +4949,6 @@ vshr_u64i.disasm = {
 };
 
 vshr_u64i.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U64 U64;
   U64 mask(~(uint64_t(-1) << imm_));
 
@@ -5288,8 +5118,6 @@ vstms_8.disasm = {
 };
 
 vstms_8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8 U8;
   unsigned const elements = 8, size = 1;
@@ -5343,8 +5171,6 @@ vstms_16.disasm = {
 };
 
 vstms_16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
   unsigned const elements = 4, size = 2;
@@ -5399,8 +5225,6 @@ vstms_32.disasm = {
 };
 
 vstms_32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U32 U32;
   unsigned const elements = 2, size = 4;
@@ -5455,8 +5279,6 @@ vstms_64.disasm = {
 };
 
 vstms_64.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   unsigned const size = 8;
@@ -5592,8 +5414,6 @@ vsub_i8.disasm = {
 };
 
 vsub_i8.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U8 U8;
 
   // CheckAdvSIMDEnabled();
@@ -5611,8 +5431,6 @@ vsub_i16.disasm = {
 };
 
 vsub_i16.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U16 U16;
 
   // CheckAdvSIMDEnabled();
@@ -5630,8 +5448,6 @@ vsub_i32.disasm = {
 };
 
 vsub_i32.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
 
   // CheckAdvSIMDEnabled();
@@ -5649,8 +5465,6 @@ vsub_i64.disasm = {
 };
 
 vsub_i64.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     cpu.SetVDU( vd+dd, cpu.GetVDU( vn+dd ) - cpu.GetVDU( vm+dd ) );

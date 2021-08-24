@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr), 
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr),
  */
- 
+
 /**********************************************
 
          COPROCESSOR INSTRUCTIONS
@@ -51,8 +51,6 @@ cdp.disasm = {
 };
 
 cdp.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-	
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -74,8 +72,6 @@ ldc.disasm = {
 };
 
 ldc.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-	
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -89,8 +85,6 @@ ldc_unindexed.disasm = {
 };
 
 ldc_unindexed.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-	
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -110,8 +104,6 @@ mcr.disasm = {
 };
 
 mcr.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -133,8 +125,6 @@ mrc.disasm = {
 };
 
 mrc.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -156,8 +146,6 @@ stc.disasm = {
 };
 
 stc.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -171,8 +159,6 @@ stc_unindexed.disasm = {
 };
 
 stc_unindexed.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-	
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -327,8 +313,6 @@ mcrr.disasm = {
 };
 
 mcrr.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -349,8 +333,6 @@ mrrc.disasm = {
 };
 
 mrrc.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   cpu.UnpredictableInsnBehaviour();
 };
 
@@ -413,10 +395,8 @@ cp15_mcr.disasm = {
 };
 
 cp15_mcr.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   cp15reg->CheckPermissions(crn, opc1, crm, opc2, cpu, true);
-  
+
   cp15reg->Write( crn, opc1, crm, opc2, cpu, cpu.GetGPR(rt) );
 };
 
@@ -432,10 +412,8 @@ cp15_mrc.disasm = {
 };
 
 cp15_mrc.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   cp15reg->CheckPermissions(crn, opc1, crm, opc2, cpu, false);
-  
+
   typename ARCH::U32 value = cp15reg->Read( crn, opc1, crm, opc2, cpu );
   if (rt != 15)
     cpu.SetGPR( rt, value );

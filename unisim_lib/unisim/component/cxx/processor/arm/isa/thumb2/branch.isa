@@ -46,8 +46,6 @@ bl_w.disasm = {
 };
 
 bl_w.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_CALL );
@@ -61,8 +59,6 @@ blx_w.disasm = {
 };
 
 blx_w.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
   cpu.BranchExchange( (cpu.GetGPR( 15 ) + U32(imm)) & U32(-4), ARCH::B_CALL );
@@ -112,8 +108,6 @@ b_w.disasm = {
 };
 
 b_w.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP );
 };
@@ -129,6 +123,9 @@ it.disasm = {
 };
 
 it.execute = {
+  if (cpu.itblock())
+    cpu.UnpredictableInsnBehaviour();
+
   cpu.ITSetState( firstcond, mask );
 };
 
@@ -140,7 +137,6 @@ nop.disasm = {
 };
 
 nop.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 op tbb( 0b111010001101[12]: rn[4]:> <: 0b111100000000[12]: rm[4] );
@@ -150,8 +146,6 @@ tbb.disasm = {
 };
 
 tbb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.Branch( cpu.GetGPR( 15 ) + (typename ARCH::U32( cpu.MemRead8( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) << 1), ARCH::B_JMP );
 }
 
@@ -162,7 +156,5 @@ tbh.disasm = {
 };
 
 tbh.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.Branch( cpu.GetGPR( 15 ) + (typename ARCH::U32( cpu.MemURead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) ) << 1), ARCH::B_JMP );
 }

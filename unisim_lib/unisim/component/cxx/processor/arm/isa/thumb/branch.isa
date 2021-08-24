@@ -68,9 +68,8 @@ b.disasm = {
 };
 
 b.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
+
   cpu.Branch(cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP);
 };
 
@@ -92,8 +91,6 @@ bx.disasm = {
 };
 
 bx.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   cpu.BranchExchange( cpu.GetGPR(rm), ARCH::B_JMP );
 };
 
@@ -116,9 +113,8 @@ blx.disasm = {
 };
 
 blx.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-
   typedef typename ARCH::U32 U32;
+
   U32 address = cpu.GetGPR(rm);
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
   cpu.BranchExchange( address, ARCH::B_CALL );

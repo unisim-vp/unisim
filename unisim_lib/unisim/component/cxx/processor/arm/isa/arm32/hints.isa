@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 /**********************************************
 
        HINTS INSTRUCTIONS
@@ -49,7 +49,6 @@ nop.disasm = {
 };
 
 nop.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
 };
 
 /*
@@ -101,7 +100,7 @@ wfi.execute = {
   //   WriteHSR('000001', HSRString);
   //   TakeHypTrapException();
   // } else
-  
+
   cpu.WaitForInterrupt();
 };
 
