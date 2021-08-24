@@ -60,6 +60,10 @@ struct Interface
   uint32_t memspread() const { return memrange[1] - memrange[0]; }
   bool usemem() const { return base_addr.good(); }
   unsigned gindex(unsigned reg) const { return __builtin_popcount(grmap & ((1<<reg)-1)); }
+  uint32_t vrmap() const;
+  struct Vitr { Vitr(uint32_t _map) : map(_map) {} uint32_t map; unsigned operator*() const; bool operator!=(Vitr const&) const; void operator++ (); };
+  struct Veach { Veach(Interface const& _it) : it(_it) {} Interface const& it; Vitr begin() { return Vitr(it.vrmap()); } Vitr end() { return Vitr(0); } };
+  Veach vregs_each() const { return Veach(*this); }
   
   std::string asmcode, gilname;
   unisim::util::sav::OperandMap<uint8_t,16> gregs; /* general purpose registers */

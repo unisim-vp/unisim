@@ -1348,11 +1348,13 @@ vdup8_r.disasm = {
 };
 
 vdup8_r.execute = {
-  // CheckAdvSIMDEnabled();
-  typename ARCH::U8 element( cpu.GetGPR(rt) );
+  typedef typename ARCH::U8 OP;
+  unsigned const elements = 8;
 
+  // CheckAdvSIMDEnabled();
+  OP element( cpu.GetGPR(rt) );
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned e=0, end=8<<q; e < end; ++e)
+    for (unsigned e=0; e < elements; ++e)
       cpu.SetVDE( vd+dd, e, element );
 };
 
@@ -1365,11 +1367,13 @@ vdup16_r.disasm = {
 };
 
 vdup16_r.execute = {
-  // CheckAdvSIMDEnabled();
-  typename ARCH::U16 element( cpu.GetGPR(rt) );
+  typedef typename ARCH::U16 OP;
+  unsigned const elements = 4;
 
+  // CheckAdvSIMDEnabled();
+  OP element( cpu.GetGPR(rt) );
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned e=0, end=4<<q; e < end; ++e)
+    for (unsigned e=0; e < elements; ++e)
       cpu.SetVDE( vd+dd, e, element );
 };
 
@@ -1382,11 +1386,13 @@ vdup32_r.disasm = {
 };
 
 vdup32_r.execute = {
-  // CheckAdvSIMDEnabled();
-  typename ARCH::U32 element( cpu.GetGPR(rt) );
+  typedef typename ARCH::U32 OP;
+  unsigned const elements = 2;
 
+  // CheckAdvSIMDEnabled();
+  OP element( cpu.GetGPR(rt) );
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned e=0, end=2<<q; e < end; ++e)
+    for (unsigned e=0; e < elements; ++e)
       cpu.SetVDE( vd+dd, e, element );
 };
 
@@ -4829,10 +4835,10 @@ vshll_i32.execute = {
 
 op vshll_s8( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm[3]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vshll_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshll_s8.var reject : {Reject} = {vm0 & 1};
+vshll_s8.var reject : {Reject} = {vd0 & 1};
 
 vshll_s8.disasm = {
-  buffer << "vshll.s8\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
+  buffer << "vshll.s8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3) << ", " << DisasmI(imm);
 };
 
 vshll_s8.execute = {
@@ -4848,10 +4854,10 @@ vshll_s8.execute = {
 
 op vshll_s16( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vshll_s16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshll_s16.var reject : {Reject} = {vm0 & 1};
+vshll_s16.var reject : {Reject} = {vd0 & 1};
 
 vshll_s16.disasm = {
-  buffer << "vshll.s16\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
+  buffer << "vshll.s16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3) << ", " << DisasmI(imm);
 };
 
 vshll_s16.execute = {
@@ -4867,10 +4873,10 @@ vshll_s16.execute = {
 
 op vshll_s32( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm[5]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vshll_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshll_s32.var reject : {Reject} = {vm0 & 1};
+vshll_s32.var reject : {Reject} = {vd0 & 1};
 
 vshll_s32.disasm = {
-  buffer << "vshll.s32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
+  buffer << "vshll.s32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3) << ", " << DisasmI(imm);
 };
 
 vshll_s32.execute = {
@@ -4886,10 +4892,10 @@ vshll_s32.execute = {
 
 op vshll_u8( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm[3]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vshll_u8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshll_u8.var reject : {Reject} = {vm0 & 1};
+vshll_u8.var reject : {Reject} = {vd0 & 1};
 
 vshll_u8.disasm = {
-  buffer << "vshll.u8\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
+  buffer << "vshll.u8\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3) << ", " << DisasmI(imm);
 };
 
 vshll_u8.execute = {
@@ -4905,10 +4911,10 @@ vshll_u8.execute = {
 
 op vshll_u16( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm[4]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vshll_u16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshll_u16.var reject : {Reject} = {vm0 & 1};
+vshll_u16.var reject : {Reject} = {vd0 & 1};
 
 vshll_u16.disasm = {
-  buffer << "vshll.u16\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
+  buffer << "vshll.u16\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3) << ", " << DisasmI(imm);
 };
 
 vshll_u16.execute = {
@@ -4924,10 +4930,10 @@ vshll_u16.execute = {
 
 op vshll_u32( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm[5]: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vshll_u32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshll_u32.var reject : {Reject} = {vm0 & 1};
+vshll_u32.var reject : {Reject} = {vd0 & 1};
 
 vshll_u32.disasm = {
-  buffer << "vshll.u32\t" << DisasmV(vd, 3) << ", " << DisasmV(vm>>1, 4) << ", " << DisasmI(imm);
+  buffer << "vshll.u32\t" << DisasmV(vd>>1, 4) << ", " << DisasmV(vm, 3) << ", " << DisasmI(imm);
 };
 
 vshll_u32.execute = {

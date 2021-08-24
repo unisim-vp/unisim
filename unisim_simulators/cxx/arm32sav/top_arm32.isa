@@ -68,7 +68,8 @@ using unisim::util::endian::ByteSwap;
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) const {
-  throw unisim::component::cxx::processor::arm::isa::Reject();
+  cpu.dont("unimplemented");
+  //  throw unisim::component::cxx::processor::arm::isa::Reject();
 }
 
 //action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer})

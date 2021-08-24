@@ -48,6 +48,8 @@ Scanner::Scanner( Interface& iif )
   , flags()
   , current_insn_addr(newRegRead(PC()))
   , next_insn_addr()
+  , vector_views()
+  , vector_data()
 {
   for (Flag reg; reg.next();)
     flags[reg.idx()] = BOOL(newRegRead( reg ));
