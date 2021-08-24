@@ -64,6 +64,7 @@ struct Interface
   std::string asmcode, gilname;
   unisim::util::sav::OperandMap<uint8_t,16> gregs; /* general purpose registers */
   uint32_t grmap;
+  unisim::util::sav::OperandMap<uint8_t,32> vregs; /* vector registers */
   //  unisim::util::sav::OperandMap<uint8_t,16> vregs; /* vector registers */
   std::shared_ptr<unisim::util::sav::ActionNode> behavior;
   uint32_t memrange[2];

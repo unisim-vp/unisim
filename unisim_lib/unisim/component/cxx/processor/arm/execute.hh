@@ -358,6 +358,32 @@ namespace arm {
     uint32_t m_reglist, m_offset, m_inca, m_incb;
     int32_t  m_dir, m_reg;
   };
+
+  template <typename T> struct OverShift {};
+  template <> struct OverShift<int8_t> { static int8_t const size = 8; };
+  template <> struct OverShift<int16_t> { static int16_t const size = 16; };
+  template <> struct OverShift<int32_t> { static int32_t const size = 32; };
+  template <> struct OverShift<int64_t> { static int64_t const size = 64; };
+  
+  template <class OP, class SH>
+  OP NeonSHL( OP op, SH sh )
+  {
+    if (sh >= OverShift<SH>::size)
+      return OP(0);
+
+    if (sh >= 0)
+      return op << sh;
+
+    sh = -sh;
+    if (sh >= OverShift<SH>::size)
+      {
+        if (std::numeric_limits<OP>::is_signed)
+          return op >> (OverShift<SH>::size-1);
+        else
+          return OP(0);
+      }
+    return op >> sh;
+  }
   
   /******************/
   /* Floating Point */

@@ -60,7 +60,7 @@ Scanner::step( Arm32::Operation const& op )
 {
   next_insn_addr = current_insn_addr + U32(4);
   gpr[15] = current_insn_addr + U32(8);
-  if (CheckCondition(*this, op.GetEncoding() >> 28))
+  if (unisim::component::cxx::processor::arm::CheckCondition(*this, op.GetEncoding() >> 28))
     op.execute(*this);
 }
 
@@ -69,7 +69,7 @@ Scanner::step( Thumb2::Operation const& op )
 {
   next_insn_addr = current_insn_addr + U32(op.GetLength()/16);
   gpr[15] = current_insn_addr + U32(4);
-  if (CheckCondition(*this, itcond()))
+  if (unisim::component::cxx::processor::arm::CheckCondition(*this, itcond()))
     op.execute(*this);
 }
   

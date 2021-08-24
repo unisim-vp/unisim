@@ -83,7 +83,7 @@ include "unisim/component/cxx/processor/arm/isa/arm32/load_store.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa"
 //include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm32/neon.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/neon.isa"
 
 group donttest begin;
 include "unisim/component/cxx/processor/arm/isa/arm32/hints.isa"

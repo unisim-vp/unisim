@@ -34,6 +34,7 @@
 
 #include <runner.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <iomanip>
 #include <ostream>
 #include <cmath>
@@ -78,7 +79,7 @@ Runner::step_instruction()
         
       /* Execute instruction */
       asm volatile( "thumb_operation_execute:" );
-      if (CheckCondition(*this, itcond()))
+      if (unisim::component::cxx::processor::arm::CheckCondition(*this, itcond()))
         op->execute( *this );
 
       this->ITAdvance();
@@ -95,7 +96,7 @@ Runner::step_instruction()
         
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
-      if (CheckCondition(*this, insn >> 28))
+      if (unisim::component::cxx::processor::arm::CheckCondition(*this, insn >> 28))
         op->execute( *this );
     }
 }

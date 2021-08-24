@@ -14,6 +14,7 @@ import unisim/component/cxx/processor/arm/isa/thumb2 || exit
 import unisim/util/sav || exit
 import unisim/util/random || exit
 import unisim/util/arithmetic || exit
+import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic || exit
 
 import libc/inttypes || exit

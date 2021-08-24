@@ -91,7 +91,8 @@ include "unisim/component/cxx/processor/arm/isa/thumb2/load_store.isa"
 include "unisim/component/cxx/processor/arm/isa/thumb2/multiply.isa"
 include "unisim/component/cxx/processor/arm/isa/thumb2/misc_arithmetic.isa"
 
-//include "unisim/component/cxx/processor/arm/isa/thumb2/neon.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb2/neon.isa"
+
 //include "unisim/component/cxx/processor/arm/isa/thumb2/vfp.isa"
 //include "unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa"
 
