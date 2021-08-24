@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 /**********************************************
 
        HINTS INSTRUCTIONS
@@ -121,7 +121,6 @@ isb.disasm = {
 
 isb.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
 };
 
 { ARCH::Config::insns7 }:                               \
@@ -138,13 +137,15 @@ wfi.disasm = {
 };
 
 wfi.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+
   // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
   //   HSRString = Zeros(25);
   //   HSRString<0> = '0';
   //   WriteHSR('000001', HSRString);
   //   TakeHypTrapException();
   // } else
-  
+
   cpu.WaitForInterrupt();
 };
 
@@ -167,13 +168,15 @@ wfi_w.disasm = {
 };
 
 wfi_w.execute = {
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
+
   // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
   //   HSRString = Zeros(25);
   //   HSRString<0> = '0';
   //   WriteHSR('000001', HSRString);
   //   TakeHypTrapException();
   // } else
-  
+
   cpu.WaitForInterrupt();
 };
 

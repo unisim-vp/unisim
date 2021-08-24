@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr), 
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr),
  */
- 
+
 /**********************************************
 
          LOAD AND STORE INSTRUCTIONS
@@ -52,7 +52,7 @@ ldr_imm.disasm = {
 
 ldr_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   cpu.SetGPR_mem( rt, cpu.MemURead32( p?oaddr:addr ) );
@@ -71,7 +71,7 @@ ldr_reg.disasm = {
 
 ldr_reg.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
@@ -97,7 +97,7 @@ ldrh_imm.disasm = {
 
 ldrh_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   cpu.SetGPR_mem( rt, U32( cpu.MemURead16( p?oaddr:addr ) ) );
@@ -139,7 +139,7 @@ ldrsh_imm.disasm = {
 
 ldrsh_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
@@ -186,7 +186,7 @@ ldrb_imm.disasm = {
 
 ldrb_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   cpu.SetGPR_mem( rt, U32( cpu.MemRead8( p?oaddr:addr ) ) );
@@ -230,7 +230,7 @@ ldrsb_imm.disasm = {
 
 ldrsb_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S8  S8;
@@ -279,7 +279,7 @@ ldrd_imm.disasm = {
 
 ldrd_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + U32(0) ) );
@@ -325,7 +325,7 @@ str_imm.disasm = {
 
 str_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   cpu.MemUWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
@@ -370,7 +370,7 @@ strh_imm.disasm = {
 
 strh_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32(imm);
@@ -415,7 +415,7 @@ strb_imm.disasm = {
 
 strb_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
@@ -463,7 +463,7 @@ strd_imm.disasm = {
 
 strd_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   cpu.MemWrite32( (p?oaddr:addr) + U32(0), cpu.GetGPR( (rt+0) & 0xf ) );
@@ -510,7 +510,7 @@ ldrt_imm.disasm = {
 
 ldrt_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR_mem( rt, cpu.MemURead32( addr ) );
@@ -553,7 +553,7 @@ ldrht_imm.disasm = {
 
 ldrht_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR_mem( rt, U32( cpu.MemURead16( addr ) ) );
@@ -595,7 +595,7 @@ ldrsht_imm.disasm = {
 
 ldrsht_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
@@ -685,7 +685,7 @@ ldrsbt_imm.disasm = {
 
 ldrsbt_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S8  S8;
@@ -820,7 +820,7 @@ strbt_imm.disasm = {
 
 strbt_imm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
   U32 addr = cpu.GetGPR( rn );
@@ -869,7 +869,9 @@ pld_imm.disasm = {
   buffer << "pld" << (r?"":"w") << "\t" << DisasmMemoryRI(rn,imm,true,false);
 };
 
-pld_imm.execute = { /*ignore for now*/ };
+pld_imm.execute = {
+  /* nop: no architecturally visible changes */
+};
 
 op pld_reg( 0b1111[4]: 0b01[2]: 0b1[1]: 0b1[1]: u[1]: r[1]: 0b0[1]: 0b1[1]: rn[4]: 0b1111[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
@@ -877,7 +879,9 @@ pld_reg.disasm = {
   buffer << "pld" << (r?"":"w") << "\t" << DisasmMemoryRRI( rn, rm, shift, imm, true, u, false );
 };
 
-pld_reg.execute = { /*ignore for now*/ };
+pld_reg.execute = {
+  /* nop: no architecturally visible changes */
+};
 
 /*
  * end of pld (Preload Data) instruction
@@ -938,14 +942,14 @@ ldm.disasm = {
 
 ldm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
   while (itr.next()) {
     cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
-  
+
   bool overwritten = (reglist >> rn) & 1;
   if (w and not overwritten) cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
@@ -972,7 +976,7 @@ stm.disasm = {
 
 stm.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
@@ -980,7 +984,7 @@ stm.execute = {
   while (itr.next()) {
     cpu.MemWrite32( base + U32(itr.offset()), cpu.GetGPR( itr.reg() ) );
   }
-  
+
   if (w) cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
@@ -989,7 +993,7 @@ stm.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * ldm ^ (Load Multiple User Registers) instruction 
+ * ldm ^ (Load Multiple User Registers) instruction
  */
 
 op ldm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b1[1]: rn[4]: 0b0[1]: reglist[15] );
@@ -1002,9 +1006,9 @@ ldm_usr.disasm = {
 
 ldm_usr.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
+
   U32 runmode = cpu.CPSR().Get(M);
   if (unlikely( cpu.Test(runmode == U32(cpu.HYPERVISOR_MODE)) ))
     {
@@ -1016,7 +1020,7 @@ ldm_usr.execute = {
       cpu.UnpredictableInsnBehaviour();
       return;
     }
-  
+
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
   while (itr.next()) {
@@ -1035,9 +1039,9 @@ ldm_rfe.disasm = {
 
 ldm_rfe.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
+
   U32 runmode = cpu.CPSR().Get(M);
   if (unlikely( cpu.Test( runmode == U32(ARCH::HYPERVISOR_MODE) ) ))
     {
@@ -1049,7 +1053,7 @@ ldm_rfe.execute = {
       cpu.UnpredictableInsnBehaviour();
       return;
     }
-  
+
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
   U32 new_pc_value = U32(1); //< Illegal address to be sure that value is overwritten
@@ -1059,13 +1063,13 @@ ldm_rfe.execute = {
     else                 new_pc_value = value;
   }
   if (w) cpu.SetGPR( rn, base + U32(itr.offset()) );
-  
+
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   // Cannot return to Hyp mode and ThumbEE state
   if (unlikely( cpu.Test((cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
                                (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1))) ))
     cpu.UnpredictableInsnBehaviour();
-  
+
   cpu.BranchExchange( new_pc_value, ARCH::B_RFE );
 };
 
@@ -1074,7 +1078,7 @@ ldm_rfe.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * stm ^ (Store Multiple User Registers) instruction 
+ * stm ^ (Store Multiple User Registers) instruction
  */
 
 op stm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b0[1]: rn[4]: reglist[16] );
@@ -1089,7 +1093,7 @@ stm_usr.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  
+
   U32 runmode = cpu.CPSR().Get(M);
   if (unlikely( cpu.Test(runmode == U32(cpu.HYPERVISOR_MODE)) ))
     {
@@ -1101,7 +1105,7 @@ stm_usr.execute = {
       cpu.UnpredictableInsnBehaviour();
       return;
     }
-  
+
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
   while (itr.next()) {
@@ -1134,9 +1138,9 @@ swp.disasm = {
 
 swp.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
+
   U32 address = cpu.GetGPR(rn);
   /* bus lock */
   U32 data = cpu.MemRead32(address);
@@ -1164,10 +1168,10 @@ swpb.disasm = {
 
 swpb.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8 U8;
-  
+
   U32 address = cpu.GetGPR(rn);
   /* bus lock */
   U8 data( cpu.MemRead8(address) );
@@ -1200,9 +1204,9 @@ ldrex.disasm = {
 
 ldrex.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typename ARCH::U32 addr = cpu.GetGPR( rn );
-  
+
   cpu.SetExclusiveMonitors( addr, 4 );
   cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
 };
@@ -1225,11 +1229,11 @@ ldrexh.disasm = {
 
 ldrexh.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
+
   U32 addr = cpu.GetGPR( rn );
-  
+
   cpu.SetExclusiveMonitors( addr, 2 );
   cpu.SetGPR_mem( rt, U32( cpu.MemRead16( addr ) ) );
 };
@@ -1252,11 +1256,11 @@ ldrexb.disasm = {
 
 ldrexb.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
-  
+
   U32 addr = cpu.GetGPR( rn );
-  
+
   cpu.SetExclusiveMonitors( addr, 1 );
   cpu.SetGPR_mem( rt, U32( cpu.MemRead8( addr ) ) );
 };
@@ -1279,10 +1283,10 @@ ldrexd.disasm = {
 
 ldrexd.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
-  
+
   cpu.SetExclusiveMonitors( addr, 8 );
   cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( addr + U32(0) ) );
   cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( addr + U32(4) ) );
@@ -1312,10 +1316,10 @@ strex.disasm = {
 
 strex.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
-  
+
   if (cpu.ExclusiveMonitorsPass(addr, 4)) {
     cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
     cpu.SetGPR( rd, U32(0) );
@@ -1343,10 +1347,10 @@ strexh.disasm = {
 
 strexh.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
-  
+
   if (cpu.ExclusiveMonitorsPass(addr, 2)) {
     cpu.MemWrite16( addr, typename ARCH::U16(cpu.GetGPR( rt )) );
     cpu.SetGPR( rd, U32(0) );
@@ -1374,10 +1378,10 @@ strexb.disasm = {
 
 strexb.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
-  
+
   if (cpu.ExclusiveMonitorsPass(addr, 1)) {
     cpu.MemWrite8( addr, typename ARCH::U8(cpu.GetGPR( rt )) );
     cpu.SetGPR( rd, U32(0) );
@@ -1406,10 +1410,10 @@ strexd.disasm = {
 
 strexd.execute = {
   if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
-  
+
   if (cpu.ExclusiveMonitorsPass(addr, 8)) {
     cpu.MemWrite32( addr + U32(0), cpu.GetGPR( (rt+0) & 0xf ) );
     cpu.MemWrite32( addr + U32(4), cpu.GetGPR( (rt+1) & 0xf ) );

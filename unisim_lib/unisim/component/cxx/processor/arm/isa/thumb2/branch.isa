@@ -31,13 +31,13 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 /**********************************************
 
         THUMB2 BRANCH INSTRUCTIONS
 
 **********************************************/
- 
+
 op bl_w( 0b11110[5]: shl<12> sext<32> imm1[11]:> <: 0b11[2]: shl<23> j1[1]: 0b1[1]: shl<22> j2[1]: shl<1> imm0[11] );
 bl_w.var imm : {uint32_t} = {(imm1|imm0)^j1^j2^0xc00000};
 
@@ -47,7 +47,7 @@ bl_w.disasm = {
 
 bl_w.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_CALL );
@@ -62,7 +62,7 @@ blx_w.disasm = {
 
 blx_w.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
   cpu.BranchExchange( (cpu.GetGPR( 15 ) + U32(imm)) & U32(-4), ARCH::B_CALL );
@@ -76,9 +76,12 @@ cbnz.disasm = {
 };
 
 cbnz.execute = {
+  if (cpu.itblock())
+    cpu.UnpredictableInsnBehaviour();
+
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::BOOL BOOL;
-  
+
   if (cpu.Test( (cpu.GetGPR( rn ) == U32(0)) xor BOOL(nz) ))
     cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP );
 };
@@ -92,9 +95,11 @@ bcc_w.disasm = {
 };
 
 bcc_w.execute = {
-  // Note: according to specification, if InITBlock() then UNPREDICTABLE;
+  if (cpu.itblock())
+    cpu.UnpredictableInsnBehaviour();
+
   typedef typename ARCH::U32 U32;
-  
+
   if (CheckCondition(cpu, cond ))
     cpu.Branch( cpu.GetGPR( 15 ) + U32( imm ), ARCH::B_JMP );
 };
@@ -108,7 +113,7 @@ b_w.disasm = {
 
 b_w.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   typedef typename ARCH::U32 U32;
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP );
 };
@@ -146,7 +151,7 @@ tbb.disasm = {
 
 tbb.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   cpu.Branch( cpu.GetGPR( 15 ) + (typename ARCH::U32( cpu.MemRead8( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) << 1), ARCH::B_JMP );
 }
 
@@ -158,6 +163,6 @@ tbh.disasm = {
 
 tbh.execute = {
   if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
+
   cpu.Branch( cpu.GetGPR( 15 ) + (typename ARCH::U32( cpu.MemURead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) ) << 1), ARCH::B_JMP );
 }
