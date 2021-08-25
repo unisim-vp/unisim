@@ -258,15 +258,29 @@ namespace arm {
   
   void DisasmBunch::operator () ( std::ostream& sink ) const
   {
+    struct DisasmD : public DisasmObject
+    {
+      DisasmD(unsigned _idx, DisasmBunch const& _db) : idx(_idx), db(_db) {} unsigned idx; DisasmBunch const& db;
+      void operator() ( std::ostream& sink ) const
+      {
+        sink << DisasmV(idx,3);
+        switch (db.lane) {
+        case Each:   break;
+        case All:    sink << "[]"; break;
+        case Single: sink << "[" << std::dec << db.lane_index << "]"; break;
+        }
+      }
+    };
+    
     sink << '{';
-    if ((elems <= 2) or ((rid+elems) > 32))
+    if ((regs <= 2) or ((rid+regs) > 32) or double_spacing)
       {
         char const* sep = "";
-        for (unsigned idx = 0; idx < elems; sep = ", ", ++idx)
-          sink << sep << "d" << std::dec << ((rid+idx)%32);
+        for (unsigned idx = 0; idx < regs; sep = ", ", idx += (double_spacing ? 1 : 2))
+          sink << sep << DisasmD((rid+idx)%32, *this);
       }
     else
-      sink << "d" << std::dec << rid << "-d" << (rid+elems-1);
+      sink << DisasmD(rid, *this) << "-" << DisasmD(rid+regs-1, *this);
     sink << '}';
   }
 

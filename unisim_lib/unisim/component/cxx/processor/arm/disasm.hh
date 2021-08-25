@@ -220,15 +220,20 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_mask;
   };
-  
   struct DisasmBunch : public DisasmObject
   {
-    DisasmBunch( unsigned _rid, unsigned _elems )
-      : rid(_rid), elems(_elems) {}
+    DisasmBunch( unsigned _rid, unsigned _regs ) : rid(_rid), regs(_regs), lane(Each), double_spacing(false) {}
+    //    DisasmBunch( unsigned _rid, unsigned _regs, bool _dspc ) : rid(_rid), regs(_regs), lane(Each), double_spacing(_dspc) {}
+
+    DisasmBunch dspc(bool _dspc) { DisasmBunch res(*this); res.double_spacing = _dspc; return res; }
+    DisasmBunch lidx(unsigned _lidx) { DisasmBunch res(*this); res.lane = Single; res.lane_index = _lidx; return res; }
+    DisasmBunch all_lanes() { DisasmBunch res(*this); res.lane = All; return res; }
   
     void operator () ( std::ostream& sink ) const;
   
-    unsigned rid, elems;
+    unsigned rid, regs, lane_index;
+    enum { Each, All, Single } lane;
+    bool double_spacing;
   };
 
   struct DisasmNeonMemoryRR : public DisasmObject
