@@ -1323,6 +1323,17 @@ vdup_8dp.disasm = {
   buffer << "vdup.8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm, 3) << DisasmVIdx(part);
 };
 
+vdup_8dp.execute = {
+  typedef typename ARCH::U8 OP;
+  unsigned const elements = 8;
+
+  // CheckAdvSIMDEnabled();
+  OP element = cpu.GetVDE(vm, part, OP());
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned e=0; e < elements; ++e)
+      cpu.SetVDE( vd+dd, e, element );
+};
+
 op vdup_16dp( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: part[2]: 0b10[2]:> <: vd0[4]: 0b1100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vdup_16dp.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
 vdup_16dp.var reject : {Reject} = {vd0 & q};
@@ -1331,12 +1342,34 @@ vdup_16dp.disasm = {
   buffer << "vdup.16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm, 3) << DisasmVIdx(part);
 };
 
+vdup_16dp.execute = {
+  typedef typename ARCH::U16 OP;
+  unsigned const elements = 4;
+
+  // CheckAdvSIMDEnabled();
+  OP element = cpu.GetVDE(vm, part, OP());
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned e=0; e < elements; ++e)
+      cpu.SetVDE( vd+dd, e, element );
+};
+
 op vdup_32dp( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: part[1]: 0b100[3]:> <: vd0[4]: 0b1100[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vdup_32dp.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
 vdup_32dp.var reject : {Reject} = {vd0 & q};
 
 vdup_32dp.disasm = {
   buffer << "vdup.32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm, 3) << DisasmVIdx(part);
+};
+
+vdup_32dp.execute = {
+  typedef typename ARCH::U32 OP;
+  unsigned const elements = 2;
+
+  // CheckAdvSIMDEnabled();
+  OP element = cpu.GetVDE(vm, part, OP());
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned e=0; e < elements; ++e)
+      cpu.SetVDE( vd+dd, e, element );
 };
 
 op vdup8_r( 0b1110[4]: 0b1110[4]: 0b11[2]: q[1]: 0[1]: vd0[4]:> <: rt[4]: 0b1011[4]: shl<4> vd1[1]: 0b001[3]: ?[4] );
@@ -5581,22 +5614,30 @@ vswp.disasm = {
   buffer << "vswp\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
-op vtbl_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: x[2]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+op vtbl_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: regs[2]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vtbl_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 
 vtbl_8d.disasm = {
-  if (x == 0)         buffer << "vtbl.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "}, " << DisasmV(vm, 3);
-  else if ((vn+x)<32) buffer << "vtbl.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "-d" << (vn+x) << "}, " << DisasmV(vm, 3);
-  else                buffer << "vtbl.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "-<overflow reg d" << (vn+x) << "}, " << DisasmV(vm, 3);
+  buffer << "vtbl.8\t" << DisasmV(vd, 3) << ", {" << DisasmBunch(vn, regs+1) << "}, " << DisasmV(vm, 3);
 };
 
-op vtbx_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: x[2]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vtbl_8d.execute = {
+  typedef typename ARCH::U8 U8;
+  for (unsigned e=0; e < 8; e += 1)
+    cpu.SetVDE(vd, e, cpu.GetTVU8(vn, 8, regs+1, cpu.GetVDE(vm, e, U8()), U8(0)));
+};
+
+op vtbx_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: regs[2]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vtbx_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 
 vtbx_8d.disasm = {
-  if (x == 0)         buffer << "vtbx.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "}, " << DisasmV(vm, 3);
-  else if ((vn+x)<32) buffer << "vtbx.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "-d" << (vn+x) << "}, " << DisasmV(vm, 3);
-  else                buffer << "vtbx.8\t" << DisasmV(vd, 3) << ", {" << DisasmV(vn, 3) << "-<overflow reg d" << (vn+x) << "}, " << DisasmV(vm, 3);
+  buffer << "vtbx.8\t" << DisasmV(vd, 3) << ", {" << DisasmBunch(vn, regs+1) << "}, " << DisasmV(vm, 3);
+};
+
+vtbx_8d.execute = {
+  typedef typename ARCH::U8 U8;
+  for (unsigned e=0; e < 8; e += 1)
+    cpu.SetVDE(vd, e, cpu.GetTVU8(vn, 8, regs+1, cpu.GetVDE(vm, e, U8()), cpu.GetVDE(vd, e, U8())));
 };
 
 op vtrn_8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0010[4]:> <: vd0[4]: 0b0000[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );

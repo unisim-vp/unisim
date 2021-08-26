@@ -488,6 +488,12 @@ public:
   {
     return ELEMT( vector_read<ELEMT>(reg, idx) );
   }
+
+  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
+  {
+    auto r = idx/elts;
+    return r < regs ? GetVDE((r0 + r) % 32, idx % elts, U8()) : oob;
+  }
   
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
