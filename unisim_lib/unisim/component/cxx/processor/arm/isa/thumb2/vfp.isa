@@ -167,6 +167,22 @@ vcmp_f64i.execute = {
   FPCompare( op1, zero, e, cpu, cpu.FPSCR );
 }
 
+/* VCVTB, VCVTT (Convert between halfword precision (Bottom or Top) and single precision) */
+
+op vcvtb_f16_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0011[4]:> <: shl<1> vd1[4]: 0b1010[4]: t[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vcvtb_f16_f32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+
+vcvtb_f16_f32.disasm = {
+  buffer << "vcvt" << (t?"t":"b") << ".f16.f32\ts" << vd << ", s" << vm;
+};
+
+op vcvtb_f32_f16( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0010[4]:> <: shl<1> vd1[4]: 0b1010[4]: t[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vcvtb_f32_f16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+
+vcvtb_f32_f16.disasm = {
+  buffer << "vcvt" << (t?"t":"b") << ".f32.f16\ts" << vd << ", s" << vm;
+};
+
 /* VCVT, VCVTR (Convert between floating-point and integer, Floating-point) */
 
 op vcvt_f32u32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1000[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
