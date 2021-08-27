@@ -94,10 +94,6 @@ OUT PolyMod2(IN value, uint32_t _poly)
   return OUT(value);
 }
 
-// Min Max operations
-template <typename T> T const& Minimum( T const& l, T const& r ) { return l < r ? l : r; }
-template <typename T> T const& Maximum( T const& l, T const& r ) { return l > r ? l : r; }
-
 } // end of namespace arm64
 } // end of namespace isa
 } // end of namespace arm

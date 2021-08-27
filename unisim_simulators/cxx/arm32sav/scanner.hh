@@ -483,6 +483,7 @@ struct Scanner
     return ELEMT( vector_read<ELEMT>(reg, idx) );
   }
   
+  U8 GetTVU8(unsigned reg0, unsigned elements, unsigned regs, Scanner::U8 const& index, Scanner::U8 const& oob_value);
 
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )

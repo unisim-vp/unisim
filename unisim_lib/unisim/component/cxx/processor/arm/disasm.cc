@@ -276,7 +276,8 @@ namespace arm {
     if ((regs <= 2) or ((rid+regs) > 32) or double_spacing)
       {
         char const* sep = "";
-        for (unsigned idx = 0; idx < regs; sep = ", ", idx += (double_spacing ? 1 : 2))
+        
+        for (unsigned idx = 0, end = regs << double_spacing; idx < end; sep = ", ", idx += (1 << double_spacing))
           sink << sep << DisasmD((rid+idx)%32, *this);
       }
     else

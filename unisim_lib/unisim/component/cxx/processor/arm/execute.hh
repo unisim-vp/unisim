@@ -385,6 +385,10 @@ namespace arm {
     return op >> sh;
   }
   
+  // Min Max operations
+  template <typename T> T const& Minimum( T const& l, T const& r ) { return l < r ? l : r; }
+  template <typename T> T const& Maximum( T const& l, T const& r ) { return l > r ? l : r; }
+
   /******************/
   /* Floating Point */
   /******************/

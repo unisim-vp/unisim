@@ -220,6 +220,7 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_mask;
   };
+  
   struct DisasmBunch : public DisasmObject
   {
     DisasmBunch( unsigned _rid, unsigned _regs ) : rid(_rid), regs(_regs), lane(Each), double_spacing(false) {}

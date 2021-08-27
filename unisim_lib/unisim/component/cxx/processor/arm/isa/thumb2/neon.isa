@@ -6363,6 +6363,7 @@ vswp.disasm = {
 
 op vtbl_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: regs[2]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vtbl_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtbl_8d.var reject : {Reject} = {vn+regs >= 32};
 
 vtbl_8d.disasm = {
   buffer << "vtbl.8\t" << DisasmV(vd, 3) << ", {" << DisasmBunch(vn, regs+1) << "}, " << DisasmV(vm, 3);
@@ -6376,6 +6377,7 @@ vtbl_8d.execute = {
 
 op vtbx_8d( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b10[2]: regs[2]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vtbx_8d.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vtbx_8d.var reject : {Reject} = {vn+regs >= 32};
 
 vtbx_8d.disasm = {
   buffer << "vtbx.8\t" << DisasmV(vd, 3) << ", {" << DisasmBunch(vn, regs+1) << "}, " << DisasmV(vm, 3);

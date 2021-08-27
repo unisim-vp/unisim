@@ -126,7 +126,10 @@ namespace
 Scanner::U8
 Scanner::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, Scanner::U8 const& index, Scanner::U8 const& oob_value)
 {
+  // All regs from input list are potentially accessed
+  for (unsigned reg = 0; reg < regs; ++reg)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      GetVU8((reg0+reg)%32,idx);
+
   return unisim::util::sav::make_weirdop<U8>(OpTVU8(reg0, elements, regs), index, oob_value);
-  // unsigned e = index.value % elements, r = index.value / elements;
-  // return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
 }
