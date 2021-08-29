@@ -112,12 +112,13 @@ namespace sav {
   struct OperandMap
   {
     typedef Operand<T> Op;
+    struct Ouch {};
 
     OperandMap() : omap(), allocated() {}
 
     T touch(unsigned idx, bool w)
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       Operand<T>& op = omap[idx];
       if (op.access(w))
         return op.get_index();
@@ -126,19 +127,19 @@ namespace sav {
 
     bool modified(unsigned idx) const
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       return omap[idx].is_modified();
     }
 
     bool accessed(unsigned idx) const
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       return omap[idx].is_accessed();
     }
 
     T index(unsigned idx) const
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       return omap[idx].get_index();
     }
 

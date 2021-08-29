@@ -554,7 +554,7 @@ struct Scanner
   U32            gpr[14];
   BOOL           flags[Flag::end];
   U32            current_insn_addr, next_insn_addr;
-  
+
   VectorView     vector_views[VREGCOUNT];
   VectorBrick    vector_data[VREGCOUNT][VUConfig::BYTECOUNT];
 };

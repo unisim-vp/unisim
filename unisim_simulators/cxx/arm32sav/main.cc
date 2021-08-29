@@ -50,12 +50,25 @@
 #include <sys/mman.h>
 #include <inttypes.h>
 
+struct Todo {};
+
 struct TestCode
 {
   virtual ~TestCode() {}
   virtual void write(unsigned bytes, uint32_t code) = 0;
   void writ2(unsigned bytes, uint32_t code) { if (bytes > 2) write(2,code>>16); write(2,code); }
 };
+
+static uint32_t vsize(unsigned n)
+{
+  switch (n) {
+  case 1: return 0x7 << 8;
+  case 2: return 0xa << 8;
+  case 3: return 0x6 << 8;
+  case 4: return 0x2 << 8;
+  }
+  return 0;
+}
 
 struct ARM32
 {
@@ -74,11 +87,11 @@ struct ARM32
   static char const* Name() { return "Arm32"; }
   static void emit_prologue(TestCode& tc, uint32_t regs) { if (regs) tc.write(4, 0xe92d4000 | regs); else tc.write(4, 0xe52de004); }
   static void emit_set_igprs(TestCode& tc, uint32_t regs) { tc.write(4, 0xe8b00002 | regs); }
-  static void emit_set_vgprs(TestCode& tc, unsigned v) { throw "sdf"; }
+  static void emit_set_vgprs(TestCode& tc, unsigned v, unsigned n) { tc.write(4, 0xf42000cd | vsize(n) | ((v & 15) << 12) | ((v & -16) << 18) ); }
   static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.write(4, 0xe12ef001); }
   static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.write(4, 0xe10f1000); /*setend le*/tc.write(4, 0xf1010000); }
-  static void emit_get_vgprs(TestCode& tc, unsigned v) { throw "sdf"; }
   static void emit_get_ogprs(TestCode& tc, uint32_t regs) { tc.write(4, 0xe8a00002 | regs); }
+  static void emit_get_vgprs(TestCode& tc, unsigned v, unsigned n) { tc.write(4, 0xf40000cd | vsize(n) | ((v & 15) << 12) | ((v & -16) << 18) ); }
   static void emit_epilogue(TestCode& tc, uint32_t regs) { if (regs) tc.write(4, 0xe8bd8000 | regs); else tc.write(4, 0xe49df004); }
 };
 
@@ -99,11 +112,11 @@ struct THUMB
   static char const* Name() { return "Thumb2"; }
   static void emit_prologue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe92d4000 | regs); else tc.writ2(2, 0xb500 | regs); }
   static void emit_set_igprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe8b00002 | regs); else tc.writ2(2, 0xc802 | regs); }
-  static void emit_set_vgprs(TestCode& tc, unsigned v) { throw "sdf"; }
+  static void emit_set_vgprs(TestCode& tc, unsigned v, unsigned n) { tc.writ2(4, 0xf92000cd | vsize(n) | ((v & 15) << 12) | ((v & -16) << 18) ); }
   static void emit_set_flags(TestCode& tc) { /*msr psr*/tc.writ2(4,0xf3818e00); }
   static void emit_get_flags(TestCode& tc) { /*mrs psr*/tc.writ2(4,0xf3ef8100); /*setend le*/tc.writ2(2, 0xb650); }
   static void emit_get_ogprs(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe8a00002 | regs); else tc.writ2(2, 0xc002 | regs); }
-  static void emit_get_vgprs(TestCode& tc, unsigned v) { throw "sdf"; }
+  static void emit_get_vgprs(TestCode& tc, unsigned v, unsigned n) { tc.writ2(4, 0xf90000cd | vsize(n) | ((v & 15) << 12) | ((v & -16) << 18) ); }
   static void emit_epilogue(TestCode& tc, uint32_t regs) { if (regs & -256) tc.writ2(4, 0xe8bd8000 | regs); else tc.writ2(2, 0xbd00 | regs); }
 };
 
@@ -256,7 +269,7 @@ struct Checker
           } 
         catch (unisim::util::sav::Untestable const& denial)
           {
-            std::cerr << fl << ": behavioral rejection for " << std::hex << code << "\t" << disasm << " <" << denial.reason << ">\n";
+            std::cerr << fl << "behavioral rejection for " << std::hex << code << "\t" << disasm << " (reason: " << denial.reason << ")\n";
             updated = true;
             continue;
           }
@@ -273,13 +286,13 @@ struct Checker
     ISA::emit_prologue(code, saved);
     ISA::emit_set_igprs(code, grmap);
     for (unsigned v : test.vregs_each())
-      ISA::emit_set_vgprs(code, v);
+      ISA::emit_set_vgprs(code, v, 1);
     ISA::emit_set_flags(code);
     code.write(test.insnhalf ? 2 : 4, test.insncode);
     ISA::emit_get_flags(code);
     ISA::emit_get_ogprs(code, grmap);
     for (unsigned v : test.vregs_each())
-      ISA::emit_get_vgprs(code, v);
+      ISA::emit_get_vgprs(code, v, 1);
     ISA::emit_epilogue(code, saved);
   }
   

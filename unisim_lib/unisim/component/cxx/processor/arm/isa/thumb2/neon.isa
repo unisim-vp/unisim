@@ -303,12 +303,13 @@ vadd_i8.disasm = {
 };
 
 vadd_i8.execute = {
-  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U8 OP;
+  unsigned const elements = 8;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 8; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U8() ) + cpu.GetVDE( vm+dd, idx, U8() ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vadd_i16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -320,12 +321,13 @@ vadd_i16.disasm = {
 };
 
 vadd_i16.execute = {
-  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U16 OP;
+  unsigned const elements = 4;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 4; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U16() ) + cpu.GetVDE( vm+dd, idx, U16() ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vadd_i32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -337,12 +339,13 @@ vadd_i32.disasm = {
 };
 
 vadd_i32.execute = {
-  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 OP;
+  unsigned const elements = 2;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 2; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U32() ) + cpu.GetVDE( vm+dd, idx, U32() ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vadd_i64( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -354,9 +357,13 @@ vadd_i64.disasm = {
 };
 
 vadd_i64.execute = {
+  typedef typename ARCH::U64 OP;
+  unsigned const elements = 1;
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDU( vd+dd, cpu.GetVDU( vn+dd ) + cpu.GetVDU( vm+dd ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vaddhn_i16dq( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -684,7 +691,7 @@ vand.execute = {
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) & cpu.GetVDE( vm+dd, 0, U64() ) );
+    cpu.SetVDE( vd+dd, 0, U64(cpu.GetVDE( vn+dd, 0, U64() ) & cpu.GetVDE( vm+dd, 0, U64() )) );
 };
 
 op vbic( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -700,7 +707,7 @@ vbic.execute = {
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) & ~cpu.GetVDE( vm+dd, 0, U64() ) );
+    cpu.SetVDE( vd+dd, 0, U64(cpu.GetVDE( vn+dd, 0, U64() ) & ~cpu.GetVDE( vm+dd, 0, U64() )) );
 };
 
 op vbic_i16i( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b10[2]: shl<3> shift[1]: 0b1[1]: 0[1]: q[1]: 0b11[2]: imm0[4] );
@@ -734,7 +741,7 @@ vbif.execute = {
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     {
       U64 sel = cpu.GetVDE( vm+dd, 0, U64() );
-      cpu.SetVDE( vd+dd, 0, (cpu.GetVDE( vd+dd, 0, U64() ) & sel) | (cpu.GetVDE( vn+dd, 0, U64() ) & ~sel) );
+      cpu.SetVDE( vd+dd, 0, U64((cpu.GetVDE( vd+dd, 0, U64() ) & sel) | (cpu.GetVDE( vn+dd, 0, U64() ) & ~sel)) );
     }
 };
 
@@ -753,7 +760,7 @@ vbit.execute = {
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     {
       U64 sel = cpu.GetVDE( vm+dd, 0, U64() );
-      cpu.SetVDE( vd+dd, 0, (cpu.GetVDE( vn+dd, 0, U64() ) & sel) | (cpu.GetVDE( vd+dd, 0, U64() ) & ~sel) );
+      cpu.SetVDE( vd+dd, 0, U64((cpu.GetVDE( vn+dd, 0, U64() ) & sel) | (cpu.GetVDE( vd+dd, 0, U64() ) & ~sel)) );
     }
 };
 
@@ -772,7 +779,7 @@ vbsl.execute = {
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     {
       U64 sel = cpu.GetVDE( vd+dd, 0, U64() );
-      cpu.SetVDE( vd+dd, 0, (cpu.GetVDE( vn+dd, 0, U64() ) & sel) | (cpu.GetVDE( vm+dd, 0, U64() ) & ~sel) );
+      cpu.SetVDE( vd+dd, 0, U64((cpu.GetVDE( vn+dd, 0, U64() ) & sel) | (cpu.GetVDE( vm+dd, 0, U64() ) & ~sel)) );
     }
 };
 
@@ -1813,7 +1820,7 @@ veor.execute = {
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) ^ cpu.GetVDE( vm+dd, 0, U64() ) );
+    cpu.SetVDE( vd+dd, 0, U64(cpu.GetVDE( vn+dd, 0, U64() ) ^ cpu.GetVDE( vm+dd, 0, U64() )) );
 };
 
 op vext_8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: imm[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -1951,7 +1958,7 @@ vldms_8.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
@@ -1976,7 +1983,7 @@ vldms_16.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
@@ -2000,7 +2007,7 @@ vldms_32.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
@@ -2026,7 +2033,7 @@ vldms_64.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   U32 endianness = cpu.CPSR().Get(E) * U32(4);
 
@@ -2034,7 +2041,7 @@ vldms_64.execute = {
     {
       U64 data0( cpu.MemRead32(addr + (U32(size*idx + 0) ^ endianness)) ),
           data1( cpu.MemRead32(addr + (U32(size*idx + 4) ^ endianness)) );
-      cpu.SetVDE((vd+idx)%32, 0, (data1 >> 32) | (data0 >> 0));
+      cpu.SetVDE((vd+idx)%32, 0, U64((data1 << 32) | (data0 << 0)));
     }
 };
 
@@ -2053,7 +2060,7 @@ vldms2s_8.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
     cpu.SetVDE((vd+2*(idx%vms.regs))%32, idx/vms.regs, U8(cpu.MemRead8(addr + U32(size*idx))));
@@ -2074,7 +2081,7 @@ vldms2s_16.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
     cpu.SetVDE((vd+2*(idx%vms.regs))%32, idx/vms.regs, U16(cpu.MemRead16(addr + U32(size*idx))));
@@ -2094,7 +2101,7 @@ vldms2s_32.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
     cpu.SetVDE((vd+2*(idx%vms.regs))%32, idx/vms.regs, U32(cpu.MemRead32(addr + U32(size*idx))));
@@ -2209,7 +2216,7 @@ vmax_s8.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmax_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2226,7 +2233,7 @@ vmax_s16.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmax_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2243,7 +2250,7 @@ vmax_s32.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmax_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2260,7 +2267,7 @@ vmax_u8.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmax_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2277,7 +2284,7 @@ vmax_u16.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmax_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2294,7 +2301,7 @@ vmax_u32.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Maximum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmin_f32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1111[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -2319,7 +2326,7 @@ vmin_s8.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmin_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2336,7 +2343,7 @@ vmin_s16.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmin_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2353,7 +2360,7 @@ vmin_s32.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmin_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2370,7 +2377,7 @@ vmin_u8.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmin_u16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2387,7 +2394,7 @@ vmin_u16.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmin_u32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2404,7 +2411,7 @@ vmin_u32.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() )) );
+      cpu.SetVDE( vd+dd, idx, OP(Minimum(cpu.GetVDE( vn+dd, idx, OP() ), cpu.GetVDE( vm+dd, idx, OP() ))) );
 };
 
 op vmla_f32v( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1101[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -2485,7 +2492,7 @@ vmlal_s16qd.execute = {
   // CheckAdvSIMDEnabled();
 
   for (unsigned idx = 0; idx < 4; ++idx)
-    cpu.SetVDE( vd+idx/2, idx%2, cpu.GetVDE( vd+idx/2, idx%2, S32() ) + S32(cpu.GetVDE( vn, idx, S16() )) * S32(cpu.GetVDE( vm, idx, S16() )) );
+    cpu.SetVDE( vd+idx/2, idx%2, S32(cpu.GetVDE( vd+idx/2, idx%2, S32() ) + S32(cpu.GetVDE( vn, idx, S16() )) * S32(cpu.GetVDE( vm, idx, S16() ))) );
 };
 
 op vmlal_s16qdp( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0010[4]: shl<4> vn1[1]: 0b1[1]: shl<1> part1[1]: 0b0[1]: part0[1]: vm[3] );
@@ -3420,7 +3427,7 @@ vneg_s8.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, -cpu.GetVDE( vm+dd, idx, OP() ) );
+      cpu.SetVDE( vd+dd, idx, OP(-cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vneg_s16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0101[4]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -3437,7 +3444,7 @@ vneg_s16.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, -cpu.GetVDE( vm+dd, idx, OP() ) );
+      cpu.SetVDE( vd+dd, idx, OP(-cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vneg_s32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1001[4]:> <: vd0[4]: 0b0011[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -3454,7 +3461,7 @@ vneg_s32.execute = {
   
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, -cpu.GetVDE( vm+dd, idx, OP() ) );
+      cpu.SetVDE( vd+dd, idx, OP(-cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vorn( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -3470,7 +3477,7 @@ vorn.execute = {
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) | ~cpu.GetVDE( vm+dd, 0, U64() ) );
+    cpu.SetVDE( vd+dd, 0, U64(cpu.GetVDE( vn+dd, 0, U64() ) | ~cpu.GetVDE( vm+dd, 0, U64() )) );
 };
 
 op vorr( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0001[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -3486,7 +3493,7 @@ vorr.execute = {
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDE( vd+dd, 0, cpu.GetVDE( vn+dd, 0, U64() ) | cpu.GetVDE( vm+dd, 0, U64() ) );
+    cpu.SetVDE( vd+dd, 0, U64(cpu.GetVDE( vn+dd, 0, U64() ) | cpu.GetVDE( vm+dd, 0, U64() )) );
 };
 
 op vorr_i16i( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b10[2]: shl<3> shift[1]: 0b1[1]: 0[1]: q[1]: 0b01[2]: imm0[4] );
@@ -3498,12 +3505,13 @@ vorr_i16i.disasm = {
 };
 
 vorr_i16i.execute = {
-  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U16 OP;
+  unsigned const elements = 4;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 4; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vd+dd, idx, U16() ) | U16(imm) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vd+dd, idx, OP() ) | OP(imm)) );
 };
 
 op vorr_i32i( 0b111[3]: shl<7> imm2[1]: 0b1111[4]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]:> <: vd0[4]: 0b0[1]: shl<3> shift[2]: 0b1[1]: 0[1]: q[1]: 0b01[2]: imm0[4] );
@@ -3515,12 +3523,13 @@ vorr_i32i.disasm = {
 };
 
 vorr_i32i.execute = {
-  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 OP;
+  unsigned const elements = 2;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 2; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vd+dd, idx, U32() ) | U32(imm) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vd+dd, idx, OP() ) | OP(imm)) );
 };
 
 op vpadal_s8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b0110[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5031,6 +5040,74 @@ vrsubhn_i64dq.disasm = {
   buffer << "vrsubhn.i64\t" << DisasmV(vd, 3) << ", " << DisasmV(vn>>1, 4) << ", " << DisasmV(vm>>1, 4);
 };
 
+op vshl_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vshl_s8i.var reject : {Reject} = {(vd0|vm0) & q};
+
+vshl_s8i.disasm = {
+  buffer << "vshl.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
+};
+
+vshl_s8i.execute = {
+  typedef typename ARCH::U8 U8;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 8; ++idx)
+      cpu.SetVDE( vd+dd, idx, U8(cpu.GetVDE( vd+dd, idx, U8() ) << imm) );
+};
+
+op vshl_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vshl_s16i.var reject : {Reject} = {(vd0|vm0) & q};
+
+vshl_s16i.disasm = {
+  buffer << "vshl.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
+};
+
+vshl_s16i.execute = {
+  typedef typename ARCH::U16 U16;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 4; ++idx)
+      cpu.SetVDE( vd+dd, idx, U16(cpu.GetVDE( vd+dd, idx, U16() ) << imm) );
+};
+
+op vshl_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vshl_s32i.var reject : {Reject} = {(vd0|vm0) & q};
+
+vshl_s32i.disasm = {
+  buffer << "vshl.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
+};
+
+vshl_s32i.execute = {
+  typedef typename ARCH::U32 U32;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 2; ++idx)
+      cpu.SetVDE( vd+dd, idx, U32(cpu.GetVDE( vd+dd, idx, U32() ) << imm) );
+};
+
+op vshl_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
+vshl_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
+vshl_s64i.var reject : {Reject} = {(vd0|vm0) & q};
+
+vshl_s64i.disasm = {
+  buffer << "vshl.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
+};
+
+vshl_s64i.execute = {
+  typedef typename ARCH::U64 U64;
+
+  // CheckAdvSIMDEnabled();
+  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
+    for (unsigned idx = 0; idx < 1; ++idx)
+      cpu.SetVDE( vd+dd, idx, U64(cpu.GetVDE( vd+dd, idx, U64() ) << imm) );
+};
+
 op vshl_s8( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vshl_s8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vshl_s8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
@@ -5048,23 +5125,6 @@ vshl_s8.execute = {
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
       cpu.SetVDE( vd+dd, idx, NeonSHL(cpu.GetVDE( vm+dd, idx, OP() ), cpu.GetVDE( vn+dd, idx, SH() )) );
-};
-
-op vshl_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm[3]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s8i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshl_s8i.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s8i.disasm = {
-  buffer << "vshl.s8\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-vshl_s8i.execute = {
-  typedef typename ARCH::U8 U8;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 8; ++idx)
-      cpu.SetVDE( vd+dd, idx, U8(cpu.GetVDE( vd+dd, idx, U8() ) << imm) );
 };
 
 op vshl_s16( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5086,23 +5146,6 @@ vshl_s16.execute = {
       cpu.SetVDE( vd+dd, idx, NeonSHL(cpu.GetVDE( vm+dd, idx, OP() ), cpu.GetVDE( vn+dd, idx, SH() )) );
 };
 
-op vshl_s16i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm[4]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s16i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshl_s16i.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s16i.disasm = {
-  buffer << "vshl.s16\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-vshl_s16i.execute = {
-  typedef typename ARCH::U16 U16;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 4; ++idx)
-      cpu.SetVDE( vd+dd, idx, U16(cpu.GetVDE( vd+dd, idx, U16() ) << imm) );
-};
-
 op vshl_s32( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vshl_s32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vshl_s32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
@@ -5122,23 +5165,6 @@ vshl_s32.execute = {
       cpu.SetVDE( vd+dd, idx, NeonSHL(cpu.GetVDE( vm+dd, idx, OP() ), cpu.GetVDE( vn+dd, idx, SH() )) );
 };
 
-op vshl_s32i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm[5]:> <: vd0[4]: 0b0101[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s32i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshl_s32i.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s32i.disasm = {
-  buffer << "vshl.s32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-vshl_s32i.execute = {
-  typedef typename ARCH::U32 U32;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 2; ++idx)
-      cpu.SetVDE( vd+dd, idx, U32(cpu.GetVDE( vd+dd, idx, U32() ) << imm) );
-};
-
 op vshl_s64( 0b11101111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vshl_s64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
 vshl_s64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
@@ -5156,23 +5182,6 @@ vshl_s64.execute = {
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
     for (unsigned idx = 0; idx < elements; ++idx)
       cpu.SetVDE( vd+dd, idx, NeonSHL(cpu.GetVDE( vm+dd, idx, OP() ), cpu.GetVDE( vn+dd, idx, SH() )) );
-};
-
-op vshl_s64i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: imm[6]:> <: vd0[4]: 0b0101[4]: 1[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vshl_s64i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0};
-vshl_s64i.var reject : {Reject} = {(vd0|vm0) & q};
-
-vshl_s64i.disasm = {
-  buffer << "vshl.s64\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q) << ", " << DisasmI(imm);
-};
-
-vshl_s64i.execute = {
-  typedef typename ARCH::U64 U64;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 1; ++idx)
-      cpu.SetVDE( vd+dd, idx, U64(cpu.GetVDE( vd+dd, idx, U64() ) << imm) );
 };
 
 op vshl_u8( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0100[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5260,14 +5269,14 @@ vshll_i8.disasm = {
 };
 
 vshll_i8.execute = {
-  typedef typename ARCH::U8 U8;
-  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U8 OP;
+  typedef typename ARCH::U16 WOP;
   unsigned const subs = 4;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, U16( U16( cpu.GetVDE( vm, subs*q+idx, U8() ) ) << 8 ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << 8 ) );
 };
 
 op vshll_i16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0110[4]:> <: vd0[4]: 0b0011[4]: 0[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5279,14 +5288,14 @@ vshll_i16.disasm = {
 };
 
 vshll_i16.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 OP;
+  typedef typename ARCH::U32 WOP;
   unsigned const subs = 2;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, U32( U32( cpu.GetVDE( vm, subs*q+idx, U16() ) ) << 16 ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << 16 ) );
 };
 
 op vshll_i32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b0011[4]: 0[1]: 0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -5298,14 +5307,14 @@ vshll_i32.disasm = {
 };
 
 vshll_i32.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 OP;
+  typedef typename ARCH::U64 WOP;
   unsigned const subs = 1;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, U64( U64( cpu.GetVDE( vm, subs*q+idx, U32() ) ) << 32 ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << 32 ) );
 };
 
 op vshll_s8( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm[3]:> <: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5317,14 +5326,14 @@ vshll_s8.disasm = {
 };
 
 vshll_s8.execute = {
-  typedef typename ARCH::S8 S8;
-  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S8 OP;
+  typedef typename ARCH::S16 WOP;
   unsigned const subs = 4;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, S16( S16( cpu.GetVDE( vm, subs*q+idx, S8() ) ) << imm ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << imm ) );
 };
 
 op vshll_s16( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm[4]:> <: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5336,14 +5345,14 @@ vshll_s16.disasm = {
 };
 
 vshll_s16.execute = {
-  typedef typename ARCH::S16 S16;
-  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 OP;
+  typedef typename ARCH::S32 WOP;
   unsigned const subs = 2;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, S32( S32( cpu.GetVDE( vm, subs*q+idx, S16() ) ) << imm ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << imm ) );
 };
 
 op vshll_s32( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm[5]:> <: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5355,14 +5364,14 @@ vshll_s32.disasm = {
 };
 
 vshll_s32.execute = {
-  typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::S32 OP;
+  typedef typename ARCH::S64 WOP;
   unsigned const subs = 1;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, S64( S64( cpu.GetVDE( vm, subs*q+idx, S32() ) ) << imm ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << imm ) );
 };
 
 op vshll_u8( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm[3]:> <: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5374,14 +5383,14 @@ vshll_u8.disasm = {
 };
 
 vshll_u8.execute = {
-  typedef typename ARCH::U8 U8;
-  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U8 OP;
+  typedef typename ARCH::U16 WOP;
   unsigned const subs = 4;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, U16( U16( cpu.GetVDE( vm, subs*q+idx, U8() ) ) << imm ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << imm ) );
 };
 
 op vshll_u16( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: imm[4]:> <: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5393,14 +5402,14 @@ vshll_u16.disasm = {
 };
 
 vshll_u16.execute = {
-  typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 OP;
+  typedef typename ARCH::U32 WOP;
   unsigned const subs = 2;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, U32( U32( cpu.GetVDE( vm, subs*q+idx, U16() ) ) << imm ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << imm ) );
 };
 
 op vshll_u32( 0b11111111[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm[5]:> <: vd0[4]: 0b1010[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5412,14 +5421,14 @@ vshll_u32.disasm = {
 };
 
 vshll_u32.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 OP;
+  typedef typename ARCH::U64 WOP;
   unsigned const subs = 1;
 
   // CheckAdvSIMDEnabled();
   for (unsigned q = 0, qe = 2; q < qe; ++q)
     for (unsigned idx = 0; idx < subs; ++idx)
-      cpu.SetVDE( vd+q, idx, U64( U64( cpu.GetVDE( vm, subs*q+idx, U32() ) ) << imm ) );
+      cpu.SetVDE( vd+q, idx, WOP( WOP( cpu.GetVDE( vm, subs*q+idx, OP() ) ) << imm ) );
 };
 
 op vshr_s8i( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b1[1]: imm_[3]:> <: vd0[4]: 0b0000[4]: 0[1]: q[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
@@ -5733,7 +5742,7 @@ vstms_8.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
@@ -5758,7 +5767,7 @@ vstms_16.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
@@ -5782,7 +5791,7 @@ vstms_32.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   if (vms.ses)
     for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
@@ -5808,7 +5817,7 @@ vstms_64.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   U32 endianness = cpu.CPSR().Get(E) * U32(4);
 
@@ -5835,7 +5844,7 @@ vstms2s_8.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
     cpu.MemWrite8(addr + U32(size*idx), cpu.GetVDE((vd+2*(idx%vms.regs))%32, idx/vms.regs, U8()));
@@ -5856,7 +5865,7 @@ vstms2s_16.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
     cpu.MemWrite16(addr + U32(size*idx), cpu.GetVDE((vd+2*(idx%vms.regs))%32, idx/vms.regs, U16()));
@@ -5876,7 +5885,7 @@ vstms2s_32.execute = {
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(vms.regs*8) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0, end = vms.regs*elements; idx < end; ++idx)
     cpu.MemWrite32(addr + U32(size*idx), cpu.GetVDE((vd+2*(idx%vms.regs))%32, idx/vms.regs, U32()));
@@ -5914,12 +5923,12 @@ vstsl_8.disasm = {
 vstsl_8.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8 U8;
-  unsigned const elements = 8, size = 1;
+  unsigned const size = 1;
 
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32((regs+1)*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32((regs+1)*size) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0; idx <= regs; ++idx)
     cpu.MemWrite8(addr + U32(size*idx), cpu.GetVDE((vd+idx)%32, part, U8()));
@@ -5936,12 +5945,12 @@ vstsl_16.disasm = {
 vstsl_16.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
-  unsigned const elements = 4, size = 2;
+  unsigned const size = 2;
 
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32((regs+1)*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32((regs+1)*size) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0; idx <= regs; ++idx)
     cpu.MemWrite16(addr + U32(size*idx), cpu.GetVDE((vd+(idx<<ds))%32, part, U16()));
@@ -5957,12 +5966,12 @@ vstsl_32.disasm = {
 
 vstsl_32.execute = {
   typedef typename ARCH::U32 U32;
-  unsigned const elements = 2, size = 4;
+  unsigned const size = 4;
 
   U32 addr( cpu.GetGPR(rn) );
 
   if (rm != 15)
-    cpu.SetGPR( rn, addr + (rm == 13 ? U32((regs+1)*elements) : cpu.GetGPR(rm)) );
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32((regs+1)*size) : cpu.GetGPR(rm)) );
 
   for (unsigned idx = 0; idx <= regs; ++idx)
     cpu.MemWrite32(addr + U32(size*idx), cpu.GetVDE((vd+(idx<<ds))%32, part, U32()));
@@ -5985,12 +5994,13 @@ vsub_i8.disasm = {
 };
 
 vsub_i8.execute = {
-  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U8 OP;
+  unsigned const elements = 8;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 8; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U8() ) - cpu.GetVDE( vm+dd, idx, U8() ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) - cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vsub_i16( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -6002,12 +6012,13 @@ vsub_i16.disasm = {
 };
 
 vsub_i16.execute = {
-  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U16 OP;
+  unsigned const elements = 4;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 4; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U16() ) - cpu.GetVDE( vm+dd, idx, U16() ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) - cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vsub_i32( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -6019,12 +6030,13 @@ vsub_i32.disasm = {
 };
 
 vsub_i32.execute = {
-  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 OP;
+  unsigned const elements = 2;
 
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < 2; ++idx)
-      cpu.SetVDE( vd+dd, idx, cpu.GetVDE( vn+dd, idx, U32() ) - cpu.GetVDE( vm+dd, idx, U32() ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) - cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vsub_i64( 0b11111111[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -6036,9 +6048,13 @@ vsub_i64.disasm = {
 };
 
 vsub_i64.execute = {
+  typedef typename ARCH::U64 OP;
+  unsigned const elements = 1;
+
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    cpu.SetVDU( vd+dd, cpu.GetVDU( vn+dd ) - cpu.GetVDU( vm+dd ) );
+    for (unsigned idx = 0; idx < elements; ++idx)
+      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) - cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
 op vsubhn_i16dq( 0b11101111[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b0110[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );

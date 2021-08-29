@@ -83,7 +83,6 @@ include "unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/load_store.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/neon.isa"
 
 group donttest begin;
@@ -92,6 +91,7 @@ include "unisim/component/cxx/processor/arm/isa/arm32/branch.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/exception.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
 group donttest end;
 
 donttest.donttest = { return true; };
