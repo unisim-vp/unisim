@@ -447,6 +447,8 @@ struct Scanner
   void UnpredictableIf( BOOL const& condition ) { dont("unpredictable"); }
   bool IntegerZeroDivide( BOOL const& condition ) { return false; }
 
+  void CheckAlignment(U32 const&, uint32_t alignement) { if (alignement > 4) dont("alignement"); }
+
   static unsigned const VREGCOUNT = 32;
 
   struct VUConfig : public unisim::util::symbolic::vector::VUConfig

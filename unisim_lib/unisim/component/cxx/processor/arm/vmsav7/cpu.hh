@@ -265,6 +265,8 @@ struct CPU
   void     PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
 
+  void CheckAlignment( uint32_t addr, uint32_t alignment ) { if (alignment and (addr & (alignment-1))) throw 0; /*DataAbort*/ }
+  
   void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}

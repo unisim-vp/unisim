@@ -99,6 +99,8 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
   virtual void Sync() {}
   unisim::util::endian::endian_type endianess();
 
+  void CheckAlignment(U32 addr, uint32_t alignment) { if (alignment and (addr & (alignment-1))) { struct AlignmentError {}; throw AlignmentError(); } }
+
   template <typename T> T MemReadT(U32 addr, bool aligned)
   {
     if (aligned and (addr % sizeof(T)))
