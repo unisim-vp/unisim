@@ -450,6 +450,7 @@ a7aeb56	adcs.w	sl, r6, sl, ror #1
 72daeb52	adcs.w	r2, r2, sl, lsr #31
 7bd9eb5b	adcs.w	fp, fp, r9, lsr #31
 77d7eb5a	adcs.w	r7, sl, r7, lsr #31
+74d4eb57	adcs.w	r4, r7, r4, lsr #31
 2728eb57	adcs.w	r7, r7, r8, asr #8
 4726eb57	adcs.w	r7, r7, r6, asr #16
 4525eb54	adcs.w	r5, r4, r5, asr #16
@@ -1395,6 +1396,7 @@ a32f102	add.w	sl, r2, #50
 57fff207	addw	r7, r7, #1535
 79fdf609	addw	r9, r9, #4093
 73fbf603	addw	r3, r3, #4091
+72fff602	addw	r2, r2, #4095
 300f202	addw	r3, r2, #0
 701f208	addw	r7, r8, #1
 410f205	addw	r4, r5, #16
@@ -4320,6 +4322,7 @@ f7ff1b6	cmp.w	r6, #127
 1858ea88	eor.w	r8, r8, r8, lsr #5
 6353ea83	eor.w	r3, r3, r3, lsr #25
 33d3ea83	eor.w	r3, r3, r3, lsr #15
+57d7ea87	eor.w	r7, r7, r7, lsr #23
 1626ea86	eor.w	r6, r6, r6, asr #4
 5424ea84	eor.w	r4, r4, r4, asr #20
 5969ea89	eor.w	r9, r9, r9, asr #21
@@ -4456,6 +4459,7 @@ a7bea8a	eor.w	sl, sl, fp, ror #1
 4b3bea87	eor.w	fp, r7, fp, ror #16
 4333ea88	eor.w	r3, r8, r3, ror #16
 2a3aea84	eor.w	sl, r4, sl, ror #8
+2636ea85	eor.w	r6, r5, r6, ror #8
 1b3bea8a	eor.w	fp, sl, fp, ror #4
 1434ea89	eor.w	r4, r9, r4, ror #4
 abaea8b	eor.w	sl, fp, sl, ror #2
@@ -13604,6 +13608,7 @@ b0bebbb	subs.w	fp, fp, fp
 5868ebb8	subs.w	r8, r8, r8, asr #21
 65a5ebb5	subs.w	r5, r5, r5, asr #26
 73a3ebb3	subs.w	r3, r3, r3, asr #30
+703ebb3	subs.w	r7, r3, r3
 404ebbb	subs.w	r4, fp, r4
 a05ebba	subs.w	sl, sl, r5
 809ebb8	subs.w	r8, r8, r9
@@ -13937,6 +13942,7 @@ bf4ebb3	subs.w	fp, r3, r4, ror #3
 36e7f1b6	subs.w	r6, r6, #-404232217
 33edf1b3	subs.w	r3, r3, #-303174163
 34eff1b4	subs.w	r4, r4, #-269488145
+33fef1b3	subs.w	r3, r3, #-16843010
 1400f1b2	subs.w	r4, r2, #0
 1600f1b3	subs.w	r6, r3, #0
 501f1ba	subs.w	r5, sl, #1
@@ -15356,18 +15362,12 @@ d223ffb5	vclt.s16	d13, d19, #0
 322cffb9	vclt.s32	d3, d28, #0
 9224ffb1	vclt.s8	d9, d20, #0
 a201fff1	vclt.s8	d26, d1, #0
-fb35ee82	vdup.16	d2, pc
-fbb9ee8e	vdup.16	d30, pc
-7b3aeea4	vdup.16	q2, r7
-6b33eea0	vdup.16	q0, r6
-fb1eee8a	vdup.32	d10, pc
-fb10ee8c	vdup.32	d12, pc
-6b1aee8a	vdup.32	d10, r6
-7b95ee82	vdup.32	d18, r7
-fb15eec7	vdup.8	d7, pc
-fb9deec5	vdup.8	d21, pc
-4b99eec9	vdup.8	d25, r4
-bb12eec2	vdup.8	d2, fp
+3b30eea2	vdup.16	q1, r3
+3b30ee8b	vdup.16	d11, r3
+9b10ee86	vdup.32	d6, r9
+8b10ee88	vdup.32	d8, r8
+4b90eec0	vdup.8	d16, r4
+9b10eeee	vdup.8	q7, r9
 bc0bfff2	vdup.16	d27, d11[0]
 ac47ffba	vdup.16	q5, d7[2]
 8c42fffc	vdup.32	q12, d2[1]
@@ -15463,21 +15463,21 @@ b61aff51	vmin.u16	d27, d1, d10
 c806efde	vmlal.s16	q14, d14, d6
 888def9d	vmlal.s16	q4, d29, d13
 fbf0ee26	vmov.16	d22[3], pc
-fbbaee27	vmov.16	d23[2], pc
-4b38ee20	vmov.16	d0[2], r4
-bbf6ee24	vmov.16	d20[3], fp
-fb9aee2d	vmov.32	d29[1], pc
-fb14ee26	vmov.32	d6[1], pc
-7b9aee0c	vmov.32	d28[0], r7
-4b13ee2d	vmov.32	d13[1], r4
+fb70ee2d	vmov.16	d13[3], pc
+2bb0ee07	vmov.16	d23[0], r2
+7bb0ee25	vmov.16	d21[2], r7
+fb90ee2d	vmov.32	d29[1], pc
+fb90ee0b	vmov.32	d27[0], pc
+7b10ee09	vmov.32	d9[0], r7
+5b10ee22	vmov.32	d2[1], r5
 5b90ee34	vmov.32	r5, d20[1]
-8b1beeb1	vmov.32	r8, d1[1]
-4b18ee90	vmov.32	r4, d0[0]
-5b9cee9e	vmov.32	r5, d30[0]
+bb10ee32	vmov.32	fp, d2[1]
+5b10ee12	vmov.32	r5, d2[0]
+3b90ee1c	vmov.32	r3, d28[0]
 fbf0ee68	vmov.8	d24[7], pc
-fbf6ee60	vmov.8	d16[7], pc
-2b78ee4a	vmov.8	d10[3], r2
-ab78ee6f	vmov.8	d15[7], sl
+fbb0ee65	vmov.8	d21[5], pc
+4b10ee67	vmov.8	d7[4], r4
+4b10ee6d	vmov.8	d13[4], r4
 5a19ef84	vmov.i16	d5, #18688
 e857efc2	vmov.i16	q15, #39
 825bff82	vmov.i32	q4, #43776
@@ -15488,54 +15488,54 @@ ad11ef84	vmov.i32	d10, #4325375
 de32ffc5	vmov.i64	d29, #0xffff00ff0000ff00
 4e18ffc1	vmov.i8	d20, #152
 ae58efc0	vmov.i8	q13, #8
-2b77ee35	vmov.s16	r2, d5[3]
-9b76ee3b	vmov.s16	r9, d11[3]
-8bbfee3d	vmov.s16	r8, d29[2]
-7bb2ee32	vmov.s16	r7, d18[2]
-9b77ee14	vmov.s16	r9, d4[1]
-ab7cee14	vmov.s16	sl, d4[1]
-bbbcee1d	vmov.s16	fp, d29[0]
-9b3eee1f	vmov.s16	r9, d15[0]
+5b70ee3c	vmov.s16	r5, d12[3]
+6b70ee3e	vmov.s16	r6, d14[3]
+abb0ee3b	vmov.s16	sl, d27[2]
+9b30ee36	vmov.s16	r9, d6[2]
+9bf0ee1b	vmov.s16	r9, d27[1]
+2b70ee1e	vmov.s16	r2, d14[1]
+8b30ee1b	vmov.s16	r8, d11[0]
+bb30ee1d	vmov.s16	fp, d13[0]
 8bf0ee74	vmov.s8	r8, d20[7]
-7b7cee7b	vmov.s8	r7, d11[7]
-6b59ee7f	vmov.s8	r6, d15[6]
-6bddee7d	vmov.s8	r6, d29[6]
-2b37ee72	vmov.s8	r2, d2[5]
-8b31ee7f	vmov.s8	r8, d15[5]
-9b9bee74	vmov.s8	r9, d20[4]
-bb91ee77	vmov.s8	fp, d23[4]
-5b79ee5f	vmov.s8	r5, d15[3]
-6b7dee57	vmov.s8	r6, d7[3]
-4b5aee59	vmov.s8	r4, d9[2]
-3bdaee58	vmov.s8	r3, d24[2]
-abbfee59	vmov.s8	sl, d25[1]
-7b34ee5d	vmov.s8	r7, d13[1]
-7b9eee52	vmov.s8	r7, d18[0]
-9b95ee5e	vmov.s8	r9, d30[0]
-9b71eebc	vmov.u16	r9, d12[3]
-8bfdeebc	vmov.u16	r8, d28[3]
-9b3feeb5	vmov.u16	r9, d5[2]
-4b3deeb4	vmov.u16	r4, d4[2]
-4b7aee95	vmov.u16	r4, d5[1]
+4bf0ee7c	vmov.s8	r4, d28[7]
+8bd0ee76	vmov.s8	r8, d22[6]
+9b50ee70	vmov.s8	r9, d0[6]
+9b30ee76	vmov.s8	r9, d6[5]
+6bb0ee71	vmov.s8	r6, d17[5]
+2b10ee7f	vmov.s8	r2, d15[4]
+4b10ee7b	vmov.s8	r4, d11[4]
+3bf0ee50	vmov.s8	r3, d16[3]
+6b70ee53	vmov.s8	r6, d3[3]
+5b50ee5d	vmov.s8	r5, d13[2]
+9bd0ee51	vmov.s8	r9, d17[2]
+8bb0ee56	vmov.s8	r8, d22[1]
+5b30ee58	vmov.s8	r5, d8[1]
+9b10ee53	vmov.s8	r9, d3[0]
+3b10ee51	vmov.s8	r3, d1[0]
+7bf0eeb9	vmov.u16	r7, d25[3]
+8b70eeb1	vmov.u16	r8, d1[3]
+5bb0eeb6	vmov.u16	r5, d22[2]
+abb0eeb3	vmov.u16	sl, d19[2]
 6bf0ee99	vmov.u16	r6, d25[1]
-bb34ee94	vmov.u16	fp, d4[0]
-ab38ee9a	vmov.u16	sl, d10[0]
-2b7feef3	vmov.u8	r2, d3[7]
-3b75eefb	vmov.u8	r3, d11[7]
-bbd6eef9	vmov.u8	fp, d25[6]
-5bd9eef4	vmov.u8	r5, d20[6]
-4bbdeef4	vmov.u8	r4, d20[5]
-4bbaeefc	vmov.u8	r4, d28[5]
-4b9feef1	vmov.u8	r4, d17[4]
-9b11eefc	vmov.u8	r9, d12[4]
-3b7deed0	vmov.u8	r3, d0[3]
-ab7feed1	vmov.u8	sl, d1[3]
-7b51eed1	vmov.u8	r7, d1[2]
-3b52eeda	vmov.u8	r3, d10[2]
-bb3ceed8	vmov.u8	fp, d8[1]
-3bb9eed7	vmov.u8	r3, d23[1]
-bb94eedc	vmov.u8	fp, d28[0]
-2b1beed1	vmov.u8	r2, d1[0]
+bbf0ee91	vmov.u16	fp, d17[1]
+5bb0ee93	vmov.u16	r5, d19[0]
+abb0ee98	vmov.u16	sl, d24[0]
+5bf0eef9	vmov.u8	r5, d25[7]
+5b70eef4	vmov.u8	r5, d4[7]
+7bd0eef0	vmov.u8	r7, d16[6]
+5b50eef7	vmov.u8	r5, d7[6]
+9b30eef2	vmov.u8	r9, d2[5]
+8bb0eefd	vmov.u8	r8, d29[5]
+8b90eef8	vmov.u8	r8, d24[4]
+4b10eef3	vmov.u8	r4, d3[4]
+8bf0eed5	vmov.u8	r8, d21[3]
+2bf0eedf	vmov.u8	r2, d31[3]
+5b50eed2	vmov.u8	r5, d2[2]
+7b50eed6	vmov.u8	r7, d6[2]
+3bb0eed4	vmov.u8	r3, d20[1]
+7b30eedf	vmov.u8	r7, d15[1]
+6b10eed5	vmov.u8	r6, d5[0]
+2b90eed9	vmov.u8	r2, d25[0]
 ea3cefd0	vmovl.s16	q15, d28
 4a11efd0	vmovl.s16	q10, d1
 8a1aefe0	vmovl.s32	q12, d10

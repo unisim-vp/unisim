@@ -529,16 +529,16 @@ struct Checker
         // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
         uint32_t reloc = test.get_reloc( &workspace[0] );
         test.patch( &workspace[0],reloc );
-        test.run( &workspace[0] );
+        test.run( proc, &workspace[0] );
         std::copy( workspace.begin(), workspace.end(),reference.begin() );
         
         /* Perform simulation test */
         test.load( &workspace[0], testbed );
         test.patch( &workspace[0], reloc );
-        test.run( proc, &workspace[0] );
+        test.run( &workspace[0] );
         
         /* Check for differences */
-        test.check( testbed, &reference[0], &workspace[0]);
+        test.check( testbed, &reference[0], &workspace[0] );
       }
   }
 };
