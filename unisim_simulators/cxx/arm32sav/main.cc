@@ -517,7 +517,7 @@ struct Checker
     
     Runner proc("proc");
     
-    std::vector<uint32_t> reference(workcells), workspace(workcells);
+    std::vector<uint32_t> simulation(workcells), workspace(workcells);
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
@@ -530,7 +530,7 @@ struct Checker
         uint32_t reloc = test.get_reloc( &workspace[0] );
         test.patch( &workspace[0],reloc );
         test.run( proc, &workspace[0] );
-        std::copy( workspace.begin(), workspace.end(),reference.begin() );
+        std::copy( workspace.begin(), workspace.end(), simulation.begin() );
         
         /* Perform simulation test */
         test.load( &workspace[0], testbed );
@@ -538,7 +538,7 @@ struct Checker
         test.run( &workspace[0] );
         
         /* Check for differences */
-        test.check( testbed, &reference[0], &workspace[0] );
+        test.check( testbed, &workspace[0], &simulation[0] );
       }
   }
 };

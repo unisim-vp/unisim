@@ -564,7 +564,7 @@ struct Scanner
 namespace unisim {
 namespace util {
 namespace symbolic {
-  template <class OP, class SH> SmartValue<OP> NeonSHL( SmartValue<OP> op, SmartValue<SH> sh )
+  template <class OP> SmartValue<OP> NeonSHL( SmartValue<OP> op, SmartValue<int8_t> sh )
   {
     return unisim::util::sav::make_weirdop<SmartValue<OP>>("NeonSHL", op, sh);
   }
