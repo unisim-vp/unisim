@@ -1,0 +1,20 @@
+let () =
+  print_string "Amd64dba.decode ~m64:false ~addr:0x4000 \"55\"";
+  print_newline ();
+  print_string @@ Amd64dba.decode ~m64:false ~addr:0x4000 "55";
+  print_newline ();
+  print_string "Amd64dba.decode ~m64:true ~addr:0x4000 \"55\"";
+  print_newline ();
+  print_string @@ Amd64dba.decode ~m64:true ~addr:0x4000 "55";
+  print_newline ();
+  print_string "Arm32dba.decode ~thumb:false ~addr:0x4000 0xe2543210";
+  print_newline ();
+  print_string @@ Arm32dba.decode ~thumb:false ~addr:0x4000 0xe2543210;
+  print_newline ();
+  print_string "Arm32dba.decode ~thumb:true ~addr:0x4000 0x000af04f";
+  print_newline ();
+  print_string @@ Arm32dba.decode ~thumb:true ~addr:0x4000 0x000af04f;
+  print_newline ();
+  print_string "Aarch64dba.decode ~addr:0x4000 0x18000020";
+  print_newline ();
+  print_string @@ Aarch64dba.decode ~addr:0x4000 0x18000020;
