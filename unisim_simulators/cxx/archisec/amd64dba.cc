@@ -12,12 +12,12 @@ namespace intel {
 #include <caml/fail.h>
 
 uint8_t nibble_value(char n) {
-  if ('0' <= n || n <= '9')
+  if (('0' <= n) && (n <= '9'))
     return n - '0';
-  else if ('a' <= n || n <= 'z')
-    return n - 'a';
-  else if ('A' <= n || n <= 'Z')
-    return n - 'A';
+  else if (('a' <= n) && (n <= 'f'))
+    return n - 'a' + 10;
+  else if (('A' <= n) && (n <= 'F'))
+    return n - 'A' + 10;
   else
     caml_invalid_argument("not a valid hexadecimal digit");
 }
@@ -26,7 +26,7 @@ extern "C" value amd64dba_decode(value vmode, value vaddr, value vopcode) {
   const char *opcode = String_val(vopcode);
   std::vector<uint8_t> code;
   for (int i = 0; opcode[i] != '\0'; i += 2) {
-    code.push_back(nibble_value(opcode[i + 1]) << 4 | nibble_value(opcode[i]));
+    code.push_back(nibble_value(opcode[i]) << 4 | nibble_value(opcode[i + 1]));
   }
   std::stringstream s;
   intel::decode(Long_val(vmode), Unsigned_long_val(vaddr), code, s);
