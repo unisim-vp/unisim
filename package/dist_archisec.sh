@@ -1,10 +1,22 @@
 #!/bin/bash
 
 SIMPKG=archisec
-SIMPKG_SRCDIR=cxx/archisec
+SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
+ARCHISEC_SRCDIR=cxx/archisec
 
 source "$(dirname $0)/dist_common.sh"
+
+function dist_copy_and_patch() {
+	if has_to_build "$2" "$1"; then
+		echo "$1 ==> $2"
+		mkdir -p "$(dirname $2)"
+		${DISTCOPY} -f "$1" "$2" || exit
+		patch "$2" "$3" || exit
+		return 0
+	fi
+	return 1
+}
 
 import_genisslib || exit
 
@@ -53,42 +65,65 @@ import sys/mman || exit
 
 copy isa_thumb isa_arm32 isa source header template data
 
-UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
-
-UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
-
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
+ARMSEC_SRCDIR=cxx/armsec
+ARMSEC_DSTDIR=unisim/component/cxx/processor/arm
+ARMSEC_ISA_FILES="\
+top_thumb.isa \
+top_arm32.isa \
 "
 
-UNISIM_SIMULATOR_SOURCE_FILES="\
-main.cc \
+for file in ${ARMSEC_ISA_FILES}; do
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${ARMSEC_SRCDIR}/${file}" \
+    "${DEST_DIR}/${ARMSEC_DSTDIR}/${file}"
+done
+dist_copy_and_patch "${UNISIM_SIMULATOR_DIR}/${ARMSEC_SRCDIR}/main.cc" \
+		    "${DEST_DIR}/${ARMSEC_DSTDIR}/main.cc" \
+		    "${UNISIM_SIMULATOR_DIR}/${ARCHISEC_SRCDIR}/armsec.patch"
+
+AARCH64_SRCDIR=cxx/aarch64dba
+AARCH64_DSTDIR=unisim/component/cxx/processor/arm/isa/arm64
+AARCH64_ISA_FILES="\
+aarch64dec.isa \
+"
+
+for file in ${AARCH64_ISA_FILES}; do
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${file}" \
+    "${DEST_DIR}/${AARCH64_DSTDIR}/${file}"
+done
+dist_copy_and_patch "${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/main.cc" \
+		    "${DEST_DIR}/${AARCH64_DSTDIR}/main.cc" \
+		    "${UNISIM_SIMULATOR_DIR}/${ARCHISEC_SRCDIR}/aarch64.patch"
+
+AMD64_SRCDIR=cxx/amd64dba
+AMD64_DSTDIR=unisim/component/cxx/processor/amd64
+AMD64_ISA_FILES="\
+arch.hh \
 arch.cc \
 decode.cc \
 "
 
-UNISIM_SIMULATOR_ISA_FILES="\
-top_thumb.isa \
-top_arm32.isa \
-aarch64dec.isa \
-"
+for file in ${AMD64_ISA_FILES}; do
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${AMD64_SRCDIR}/${file}" \
+    "${DEST_DIR}/${AMD64_DSTDIR}/${file}"
+done
+dist_copy_and_patch "${UNISIM_SIMULATOR_DIR}/${AMD64_SRCDIR}/main.cc" \
+		    "${DEST_DIR}/${AMD64_DSTDIR}/main.cc" \
+		    "${UNISIM_SIMULATOR_DIR}/${ARCHISEC_SRCDIR}/amd64.patch"
 
-UNISIM_SIMULATOR_HEADER_FILES="\
-arch.hh \
-${UNISIM_SIMULATOR_ISA_FILES} \
-"
 
-UNISIM_SIMULATOR_DATA_FILES="\
+UNISIM_SIMULATOR_SOURCE_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
-decoder.ml \
-unisim_archisec.ml
+arm32dba.cc arm32dba.ml \
+aarch64dba.cc aarch64dba.ml \
+amd64dba.cc amd64dba.ml \
+main.ml \
 "
 
-UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
-
-for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
+for file in ${UNISIM_SIMULATOR_SOURCE_FILES}; do
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${ARCHISEC_SRCDIR}/${file}" \
+	      "${DEST_DIR}/${file}"
 done
 
 # Top level
@@ -110,7 +145,7 @@ cat << EOF > "${DEST_DIR}/dune-project"
 
 (package
  (name unisim_archisec)
- (synopsis "UNISIM-VP decoder")
+ (synopsis "UNISIM-VP DBA decoder")
  (description "UNISIM-VP decoder.")
  (depends
   (ocaml (>= 4.05))
@@ -146,6 +181,79 @@ cat <<EOF > "${DEST_DIR}/dune"
  (flags :standard -I ../..)
  (extra_deps ../../.unisim-tree)))
 
+(rule
+ (targets top_arm32.hh top_arm32.tcc)
+ (deps
+  (:gen genisslib/genisslib)
+  (:src unisim/component/cxx/processor/arm/top_arm32.isa))
+ (action
+  (no-infer (run %{gen} -o top_arm32 -w 8 -I . %{src}))))
+
+(rule
+ (targets top_thumb.hh top_thumb.tcc)
+ (deps
+  (:gen genisslib/genisslib)
+  (:src unisim/component/cxx/processor/arm/top_thumb.isa))
+ (action
+  (no-infer (run %{gen} -o top_thumb -w 8 -I . %{src}))))
+
+(subdir
+ unisim/component/cxx/processor/arm
+ (foreign_library
+ (archive_name arm)
+ (language cxx)
+ (names (:standard))
+ (flags :standard -I ../../../../..)
+ (extra_deps
+  ../../../../../.unisim-tree
+  ../../../../../top_arm32.hh ../../../../../top_arm32.tcc
+  ../../../../../top_thumb.hh ../../../../../top_thumb.tcc)))
+
+(library
+ ;(public_name unisim_archisec.arm32dba)
+ (name arm32dba)
+ (modules arm32dba)
+ (foreign_archives
+  unisim/component/cxx/processor/arm/arm
+  unisim/util/util)
+ (foreign_stubs
+  (language cxx)
+  (names arm32dba)
+  (flags :standard))
+ (c_library_flags :standard -lstdc++))
+
+(rule
+ (targets aarch64dec.hh aarch64dec.tcc)
+ (deps
+  (:gen genisslib/genisslib)
+  (:src unisim/component/cxx/processor/arm/isa/arm64/aarch64dec.isa))
+ (action
+  (no-infer (run %{gen} -o aarch64dec -w 8 -I . %{src}))))
+
+(subdir
+ unisim/component/cxx/processor/arm/isa/arm64
+ (foreign_library
+ (archive_name arm64)
+ (language cxx)
+ (names (:standard))
+ (flags :standard -I ../../../../../../..)
+ (extra_deps
+  ../../../../../../../.unisim-tree
+  ../../../../../../../aarch64dec.hh ../../../../../../../aarch64dec.tcc)))
+
+(library
+ ;(public_name unisim_archisec.aarch64dba)
+ (name aarch64dba)
+ (modules aarch64dba)
+ (foreign_archives
+  unisim/component/cxx/processor/arm/isa/arm64/arm64
+  unisim/util/util)
+ (foreign_stubs
+  (language cxx)
+  (names aarch64dba)
+  (flags :standard))
+ (c_library_flags :standard -lstdc++))
+
 (subdir
  unisim/component/cxx/processor/intel
  (include_subdirs unqualified)
@@ -156,67 +264,35 @@ cat <<EOF > "${DEST_DIR}/dune"
  (flags :standard -I ../../../../..)
  (extra_deps ../../../../../.unisim-tree)))
 
-(rule
- (targets top_arm32.hh top_arm32.tcc)
- (deps
-  (:gen genisslib/genisslib)
-  top_arm32.isa)
- (action
-  (no-infer (run %{gen} -o top_arm32 -w 8 -I . top_arm32.isa))))
-
 (subdir
- unisim/component/cxx/processor/arm
+ unisim/component/cxx/processor/amd64
  (foreign_library
- (archive_name arm)
+ (archive_name amd64)
  (language cxx)
  (names (:standard))
- (flags :standard -I ../../../../..)
+ (flags :standard -I . -I ../../../../..)
  (extra_deps ../../../../../.unisim-tree)))
 
-(rule
- (targets top_thumb.hh top_thumb.tcc)
- (deps
-  (:gen genisslib/genisslib)
-  top_thumb.isa)
- (action
-  (no-infer (run %{gen} -o top_thumb -w 8 -I . top_thumb.isa))))
-
-(subdir
- unisim/component/cxx/processor/arm/isa/arm64
- (foreign_library
- (archive_name arm64)
- (language cxx)
- (names (:standard))
- (flags :standard -I ../../../../../../..)
- (extra_deps ../../../../../../../.unisim-tree)))
-
-(rule
- (targets aarch64dec.hh aarch64dec.tcc)
- (deps
-  (:gen genisslib/genisslib)
-  aarch64dec.isa)
- (action
-  (no-infer (run %{gen} -o aarch64dec -w 8 -I . aarch64dec.isa))))
 
 (library
- (public_name unisim_archisec)
- (modules decoder)
+ ;(public_name unisim_archisec.amd64dba)
+ (name amd64dba)
+ (modules amd64dba)
  (foreign_archives
-  unisim/util/util
-  unisim/component/cxx/processor/arm/arm
-  unisim/component/cxx/processor/arm/isa/arm64/arm64
-  unisim/component/cxx/processor/intel/intel)
+  unisim/component/cxx/processor/amd64/amd64
+  unisim/component/cxx/processor/intel/intel
+  unisim/util/util)
  (foreign_stubs
   (language cxx)
-  (names (:standard))
-  (flags :standard -I .)
-  (extra_deps .unisim-tree top_arm32.tcc top_thumb.tcc aarch64dec.tcc))
+  (names amd64dba)
+  (flags :standard))
  (c_library_flags :standard -lstdc++))
 
 (executable
  (public_name unisim_archisec)
- (modules unisim_archisec)
- (libraries unisim_archisec))
+ (name main)
+ (modules main)
+ (libraries arm32dba aarch64dba amd64dba))
 EOF
 
 
