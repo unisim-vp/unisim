@@ -841,6 +841,15 @@ public:
     return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) );
   }
 
+  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
+  {
+    struct CantDoThat {};
+    throw CantDoThat();
+    return U8();
+    // auto r = idx/elts;
+    // return Test(r < regs) ? GetVDE((r0 + r) % 32, idx % elts, U8()) : oob;
+  }
+
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
@@ -873,6 +882,8 @@ public:
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
+
+  void CheckAlignment( U32 const& addr, uint32_t alignment ) { /*TODO*/ }
 
   U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, 0, false ) ) ); }
   U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
@@ -1174,6 +1185,16 @@ bool CheckCondition( Processor& state, Processor::ITCond const& cond )
     ((cc == U8(13)) and ((Z or (N xor V)))) or // le; signed less than or equal
     ((cc == U8(14)) and (unisim::util::symbolic::make_const( true ))));
 }
+
+namespace unisim { namespace util { namespace symbolic {
+template <class OP>
+unisim::util::symbolic::SmartValue<OP> NeonSHL( unisim::util::symbolic::SmartValue<OP> op, unisim::util::symbolic::SmartValue<int8_t> sh )
+{
+  struct CantDoThat {};
+  throw CantDoThat();
+  return unisim::util::symbolic::SmartValue<OP>();
+}
+}}}
 
 void UpdateStatusSub( Processor& state, Processor::U32 const& res, Processor::U32 const& lhs, Processor::U32 const& rhs )
 {

@@ -72,6 +72,7 @@ struct Translator
       Instruction(addr_t address, uint8_t* bytes) : operation()
       {
         operation = Proc::Decode(address, bytes);
+        if (not operation) throw typename Proc::Undefined();
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
@@ -118,6 +119,12 @@ struct Translator
           extract( Intel64(), sink );
         else
           extract( Compat32(), sink );
+        
+        // Translate to DBA
+        unisim::util::symbolic::binsec::Program program;
+        program.Generate( coderoot );
+        for (auto stmt : program)
+          sink << "(" << print_dbx(mode64 ? 8 : 4, addr) << ',' << stmt.first << ") " << stmt.second << std::endl;
       }
     catch (ProcessorBase::Undefined const&)
       {
@@ -129,12 +136,6 @@ struct Translator
         sink << "(unimplemented)\n";
         return;
       }
-
-    // Translate to DBA
-    unisim::util::symbolic::binsec::Program program;
-    program.Generate( coderoot );
-    for (auto stmt : program)
-      sink << "(" << print_dbx(mode64 ? 8 : 4, addr) << ',' << stmt.first << ") " << stmt.second << std::endl;
   }
   
   std::vector<uint8_t> code;

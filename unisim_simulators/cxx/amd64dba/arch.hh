@@ -167,7 +167,7 @@ struct ProcessorBase
     virtual int cmp(ExprNode const& rhs) const override { return Super::compare(dynamic_cast<Super const&>(rhs)); }
   };
 
-  u16_t                       ftopread() { throw Undefined(); /*FCW access*/; return u16_t(); }
+  u16_t                       ftopread() { throw Unimplemented(); /*FCW access*/; return u16_t(); }
   unsigned                    ftop;
 
   Expr&                       fpaccess(unsigned r, bool w);
@@ -506,8 +506,8 @@ struct Processor : public ProcessorBase
     fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
-  u32_t mxcsread() { throw Undefined(); /*mxcsr access*/; return u32_t(); }
-  void mxcswrite( u32_t const& value ) { throw Undefined(); /*mxcsr access*/; }
+  u32_t mxcsread() { throw Unimplemented(); /*mxcsr access*/; return u32_t(); }
+  void mxcswrite( u32_t const& value ) { throw Unimplemented(); /*mxcsr access*/; }
 
   struct VUConfig : public unisim::util::symbolic::vector::VUConfig
   {
