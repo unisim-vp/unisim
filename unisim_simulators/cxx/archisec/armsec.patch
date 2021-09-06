@@ -1,7 +1,13 @@
 51a52,53
 > namespace armsec {
 > 
-1380,1416c1382,1385
+1188a1191,1192
+> }
+> 
+1198a1203,1204
+> namespace armsec {
+> 
+1401,1409c1407,1410
 < uint32_t getu32( uint32_t& res, char const* arg )
 < {
 <   char *end;
@@ -11,9 +17,14 @@
 <   res = tmp;
 <   return true;
 < }
-< 
+---
+> int decode ( enum Processor::StatusRegister::InstructionSet iset, bool bigendian,
+>  	     uint32_t mode, unsigned itstate,
+>  	     uint32_t addr, uint32_t code,
+>  	     std::ostream& sink )
+1411d1411
 < char const* usage()
-< {
+1413,1442d1412
 <   return
 <     "usage: <program> arm|thumb <address> <encoding>\n";
 < }
@@ -39,17 +50,12 @@
 <   uint32_t addr, code;
 < 
 <   if (not getu32(addr, argv[2]) or not getu32(code, argv[3]))
----
-> int decode ( enum Processor::StatusRegister::InstructionSet iset, bool bigendian,
-> 	     uint32_t mode, unsigned itstate,
-> 	     uint32_t addr, uint32_t code,
-> 	     std::ostream& sink )
-1418,1421d1386
+<     {
 <       std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
 <       return 1;
 <     }
 < 
-1424,1473c1389,1393
+1445,1494c1415,1419
 < 
 <   std::string exec_flags(argv[1]);
 <   exec_flags += ',';
@@ -106,6 +112,6 @@
 >   status.mode = mode;
 >   status.itstate = itstate;
 >   actset.translate( sink );
-1967a1888,1889
+1988a1914,1915
 > }
 > 

@@ -1,7 +1,40 @@
 40a41,42
 > namespace intel {
 > 
-145,173c147,148
+53c55
+<   
+---
+> 
+66c68
+<     
+---
+> 
+68c70
+<   
+---
+> 
+91c93
+<     
+---
+> 
+95c97
+<     
+---
+> 
+101c103
+<     
+---
+> 
+122c124
+<         
+---
+> 
+140c142
+<   
+---
+> 
+145,154d146
+<   
 < bool getu64( uint64_t& res, char const* arg )
 < {
 <   char *end;
@@ -11,9 +44,12 @@
 <   res = tmp;
 <   return true;
 < }
-< 
+156c148,149
 < bool getbytes( std::vector<uint8_t>& res, char const* arg )
-< {
+---
+> int decode ( bool mode64, uint64_t addr, std::vector<uint8_t> code,
+> 	     std::ostream& sink )
+158,192d150
 <   for (char const* end = 0; *arg; arg = end)
 <     {
 <       unsigned l = strtoul(arg,(char**)&end,16);
@@ -31,10 +67,7 @@
 < 
 < int
 < main( int argc, char** argv )
----
-> int decode ( bool mode64, uint64_t addr, std::vector<uint8_t> code,
-> 	     std::ostream& sink )
-175,194c150,151
+< {
 <   if (argc != 4)
 <     {
 <       std::cerr << "Wrong number of CLI arguments.\n" << usage();
@@ -52,11 +85,10 @@
 < 
 <   bool mode64 = (strcmp("intel64", argv[1]) == 0);
 < 
-<   Translator actset( addr, std::move(code) );
+194,195c152
 <   actset.translate( mode64, std::cout );
 <   
 ---
->   Translator actset( addr, std::move(code) );
 >   actset.translate( mode64, sink );
-197a155
+198a156
 > }
