@@ -70,6 +70,8 @@ template <typename SRC> struct CastUBits<double,SRC> { typedef typename TX<SRC>:
 template <typename SRC> struct CastUBits<bool,SRC> { typedef typename TX<SRC>::as_mask mask_t; static bool process( mask_t mask, mask_t bits ) { return mask and not (~mask & bits); } };
 template <typename DST> struct CastUBits<DST,float> { static typename TX<DST>::as_mask process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };
 template <typename DST> struct CastUBits<DST,double> { static typename TX<DST>::as_mask process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<float,double> { static uint32_t process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<double,float> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };
 template <> struct CastUBits<float,float> { static uint32_t process( uint32_t mask, uint32_t bits ) { return mask; } };
 template <> struct CastUBits<double,double> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask; } };
 template <> struct CastUBits<bool,bool> { static bool process( bool mask, bool bits ) { return mask; } };
@@ -238,6 +240,9 @@ TaintedValue<double> trunc( TaintedValue<double> const& _value );
 
 TaintedValue<float> fabs( TaintedValue<float> const& _value );
 TaintedValue<double> fabs( TaintedValue<double> const& _value );
+
+TaintedValue<float> sqrt( TaintedValue<float> const& _value );
+TaintedValue<double> sqrt( TaintedValue<double> const& _value );
 
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }

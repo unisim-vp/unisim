@@ -1705,7 +1705,7 @@ AArch64::RNDR()
 }
 
 void
-AArch64::run()
+AArch64::run( uint64_t suspend_at )
 {
   for (;;)
     {
@@ -1727,7 +1727,7 @@ AArch64::run()
               (this->*method)();
             }
 
-          if (insn_counter == 8163857000)
+          if (insn_counter == suspend_at)
             throw Suspend();
           
           Operation* op = fetch_and_decode(insn_addr);

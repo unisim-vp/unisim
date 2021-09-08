@@ -228,6 +228,7 @@ main(int argc, char *argv[])
   // if (not load_linux(arch, "Image", "device_tree.dtb"))
   //   return 1;
   arch.load_snapshot("uvp.shot");
+  std::cerr << "Starting at " << std::dec << arch.insn_counter << " instructions." << std::endl;
 
   signal(SIGUSR1, usr_handler);
   signal(SIGUSR2, usr_handler);
@@ -244,7 +245,10 @@ main(int argc, char *argv[])
 
   try
     {
-      arch.run();
+      uint64_t suspend_at;
+      if (char const* arg = getenv("SUSPEND_AT")) suspend_at = strtoull(arg,0,0);
+      else                                        suspend_at = arch.insn_counter + 0x40000000;
+      arch.run( suspend_at );
       std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
     }
   catch (...)

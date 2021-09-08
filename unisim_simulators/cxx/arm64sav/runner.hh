@@ -199,11 +199,8 @@ struct Runner
   uint8_t    vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
 };
 
-template <typename T>
-T FPMulAdd(Runner& cpu, T const& acc, T const& op1, T const& op2)
-{
-  return acc + (op1 * op2);
-}
+template <typename T> T FPMulAdd(Runner& cpu, T const& acc, T const& op1, T const& op2) { return acc + (op1 * op2); }
+template <typename T> T FPMulSub(Runner& cpu, T const& acc, T const& op1, T const& op2) { return acc - (op1 * op2); }
 
 
 #endif // __ARM64SAV_RUNNER_HH__

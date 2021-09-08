@@ -504,6 +504,7 @@ struct Scanner
 };
 
 template <class FTP> FTP FPMulAdd(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }
+template <class FTP> FTP FPMulSub(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }
 
 struct PM2
 {
@@ -519,12 +520,18 @@ struct PM2
 namespace unisim {
 namespace util {
 namespace symbolic {
-// Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
-template <typename OUT, unsigned S, typename TIN>
-OUT PolyMod2(unisim::util::symbolic::SmartValue<TIN> const& value, uint32_t _poly)
-{
-  return unisim::util::sav::make_weirdop<OUT>(PM2(S,_poly),value);
-}
+  
+  // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
+  template <typename OUT, unsigned S, typename TIN>
+  OUT PolyMod2(SmartValue<TIN> const& value, uint32_t _poly) { return sav::make_weirdop<OUT>(PM2(S,_poly),value); }
+  
+  template <typename F>  SmartValue<F> round(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "round", v ); }
+  template <typename F>  SmartValue<F> ceil(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "ceil", v ); }
+  template <typename F>  SmartValue<F> floor(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "floor", v ); }
+  template <typename F>  SmartValue<F> trunc(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "trunc", v ); }
+  
+  template <typename F>  SmartValue<F> sqrt(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "sqrt", v ); }
+
 }
 }
 }

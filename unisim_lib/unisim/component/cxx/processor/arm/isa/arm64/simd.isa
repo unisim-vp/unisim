@@ -57,6 +57,51 @@ add_ddd.execute = {
   cpu.SetVU64(rd, cpu.GetVU64(rn, 0) + cpu.GetVU64(rm, 0));
 };
 
+/*******************************************************************
+ * ADD (vector)
+ *
+ * Add (vector)
+ */
+
+op add_vb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+add_vb.var format : {char const*} = {"1297"};
+
+add_vb.disasm = {
+  sink << "add\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
+};
+
+add_vb.execute = {
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd, idx, cpu.GetVU8(rn, idx) + cpu.GetVU8(rm, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op add_vh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+add_vh.var format : {char const*} = {"1095"};
+
+add_vh.disasm = {
+  sink << "add\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
+};
+
+add_vh.execute = {
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd, idx, cpu.GetVU16(rn, idx) + cpu.GetVU16(rm, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op add_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
+add_vs.var format : {char const*} = {"1021"};
+
+add_vs.disasm = {
+  sink << "add\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+};
+
+add_vs.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, cpu.GetVU32(rn, idx) + cpu.GetVU32(rm, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op add_v2d( 0b01001110111[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
 add_v2d.var format : {char const*} = {"894"};
 
@@ -67,8 +112,11 @@ add_v2d.disasm = {
 add_v2d.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU64(rd, idx, cpu.GetVU64(rn, idx) + cpu.GetVU64(rm, idx));
-  cpu.ClearHighV(rd, 16);
 };
+
+/*
+ * end of ADD (vector)
+ *******************************************************************/
 
 op addhn2_v16bv8hv8h( 0b01001110001[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 addhn2_v16bv8hv8h.var format : {char const*} = {"880"};
@@ -4482,20 +4530,6 @@ suqadd_v2d2d.disasm = {
   sink << "suqadd\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3);
 };
 
-op trn1_v2dv2dv2d( 0b01001110110[11] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
-trn1_v2dv2dv2d.var format : {char const*} = {"933"};
-
-trn1_v2dv2dv2d.disasm = {
-  sink << "trn1\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
-};
-
-op trn2_v2dv2dv2d( 0b01001110110[11] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
-trn2_v2dv2dv2d.var format : {char const*} = {"934"};
-
-trn2_v2dv2dv2d.disasm = {
-  sink << "trn2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
-};
-
 op uabal2_v2dv4sv4s( 0b01101110101[11] : rm[5] : 0b010100[6] : rn[5] : rd[5] );
 uabal2_v2dv4sv4s.var format : {char const*} = {"984"};
 
@@ -5623,45 +5657,6 @@ abs_vss.disasm = {
   sink << "abs\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
-op add_vb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
-add_vb.var format : {char const*} = {"1297"};
-
-add_vb.disasm = {
-  sink << "add\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
-};
-
-add_vb.execute = {
-  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
-    cpu.SetVU8(rd, idx, cpu.GetVU8(rn, idx) + cpu.GetVU8(rm, idx));
-  cpu.ClearHighV(rd, 8<<q);
-};
-
-op add_vh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
-add_vh.var format : {char const*} = {"1095"};
-
-add_vh.disasm = {
-  sink << "add\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
-};
-
-add_vh.execute = {
-  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
-    cpu.SetVU16(rd, idx, cpu.GetVU16(rn, idx) + cpu.GetVU16(rm, idx));
-  cpu.ClearHighV(rd, 8<<q);
-};
-
-op add_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
-add_vs.var format : {char const*} = {"1021"};
-
-add_vs.disasm = {
-  sink << "add\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
-};
-
-add_vs.execute = {
-  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVU32(rd, idx, cpu.GetVU32(rn, idx) + cpu.GetVU32(rm, idx));
-  cpu.ClearHighV(rd, 8<<q);
-};
-
 op and_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 and_vbvbvb.var format : {char const*} = {"1299"};
 
@@ -6645,20 +6640,6 @@ ext_vb.execute = {
   cpu.ClearHighV(rd, 8<<q);
 };
 
-op fabd_vsvsvs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
-fabd_vsvsvs.var format : {char const*} = {"1029"};
-
-fabd_vsvsvs.disasm = {
-  sink << "fabd\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
-};
-
-op fabs_vss( 0b0[1] : q[1] : 0b00111010100000111110[20] : rn[5] : rd[5] );
-fabs_vss.var format : {char const*} = {"2413"};
-
-fabs_vss.disasm = {
-  sink << "fabs\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
-};
-
 op facge_vsvsvs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
 facge_vsvsvs.var format : {char const*} = {"1030"};
 
@@ -6671,20 +6652,6 @@ facgt_vsvsvs.var format : {char const*} = {"1031"};
 
 facgt_vsvsvs.disasm = {
   sink << "facgt\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
-};
-
-op fadd_vsvsvs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
-fadd_vsvsvs.var format : {char const*} = {"1032"};
-
-fadd_vsvsvs.disasm = {
-  sink << "fadd\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
-};
-
-op faddp_vsvsvs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
-faddp_vsvsvs.var format : {char const*} = {"1033"};
-
-faddp_vsvsvs.disasm = {
-  sink << "faddp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
 op fcmeq_vsvsvs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -6750,11 +6717,25 @@ fcvtas_vss.disasm = {
   sink << "fcvtas\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op fcvtas_v2d2d( 0b0100111001100001110010[22] : rn[5] : rd[5] );
+fcvtas_v2d2d.var format : {char const*} = {"2358"};
+
+fcvtas_v2d2d.disasm = {
+  sink << "fcvtas\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op fcvtau_vss( 0b0[1] : q[1] : 0b10111000100001110010[20] : rn[5] : rd[5] );
 fcvtau_vss.var format : {char const*} = {"2415"};
 
 fcvtau_vss.disasm = {
   sink << "fcvtau\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op fcvtau_v2d2d( 0b0110111001100001110010[22] : rn[5] : rd[5] );
+fcvtau_v2d2d.var format : {char const*} = {"2359"};
+
+fcvtau_v2d2d.disasm = {
+  sink << "fcvtau\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op fcvtms_vss( 0b0[1] : q[1] : 0b00111000100001101110[20] : rn[5] : rd[5] );
@@ -6764,11 +6745,25 @@ fcvtms_vss.disasm = {
   sink << "fcvtms\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op fcvtms_v2d2d( 0b0100111001100001101110[22] : rn[5] : rd[5] );
+fcvtms_v2d2d.var format : {char const*} = {"2360"};
+
+fcvtms_v2d2d.disasm = {
+  sink << "fcvtms\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op fcvtmu_vss( 0b0[1] : q[1] : 0b10111000100001101110[20] : rn[5] : rd[5] );
 fcvtmu_vss.var format : {char const*} = {"2417"};
 
 fcvtmu_vss.disasm = {
   sink << "fcvtmu\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op fcvtmu_v2d2d( 0b0110111001100001101110[22] : rn[5] : rd[5] );
+fcvtmu_v2d2d.var format : {char const*} = {"2361"};
+
+fcvtmu_v2d2d.disasm = {
+  sink << "fcvtmu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op fcvtns_vss( 0b0[1] : q[1] : 0b00111000100001101010[20] : rn[5] : rd[5] );
@@ -6778,11 +6773,25 @@ fcvtns_vss.disasm = {
   sink << "fcvtns\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op fcvtns_v2d2d( 0b0100111001100001101010[22] : rn[5] : rd[5] );
+fcvtns_v2d2d.var format : {char const*} = {"2362"};
+
+fcvtns_v2d2d.disasm = {
+  sink << "fcvtns\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op fcvtnu_vss( 0b0[1] : q[1] : 0b10111000100001101010[20] : rn[5] : rd[5] );
 fcvtnu_vss.var format : {char const*} = {"2419"};
 
 fcvtnu_vss.disasm = {
   sink << "fcvtnu\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op fcvtnu_v2d2d( 0b0110111001100001101010[22] : rn[5] : rd[5] );
+fcvtnu_v2d2d.var format : {char const*} = {"2363"};
+
+fcvtnu_v2d2d.disasm = {
+  sink << "fcvtnu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op fcvtps_vss( 0b0[1] : q[1] : 0b00111010100001101010[20] : rn[5] : rd[5] );
@@ -6792,12 +6801,162 @@ fcvtps_vss.disasm = {
   sink << "fcvtps\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op fcvtps_v2d2d( 0b0100111011100001101010[22] : rn[5] : rd[5] );
+fcvtps_v2d2d.var format : {char const*} = {"2364"};
+
+fcvtps_v2d2d.disasm = {
+  sink << "fcvtps\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op fcvtpu_vss( 0b0[1] : q[1] : 0b10111010100001101010[20] : rn[5] : rd[5] );
 fcvtpu_vss.var format : {char const*} = {"2421"};
 
 fcvtpu_vss.disasm = {
   sink << "fcvtpu\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
+
+op fcvtpu_v2d2d( 0b0110111011100001101010[22] : rn[5] : rd[5] );
+fcvtpu_v2d2d.var format : {char const*} = {"2365"};
+
+fcvtpu_v2d2d.disasm = {
+  sink << "fcvtpu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+op fcvtzs_vss( 0b0[1] : q[1] : 0b00111010100001101110[20] : rn[5] : rd[5] );
+fcvtzs_vss.var format : {char const*} = {"2422"};
+
+fcvtzs_vss.disasm = {
+  sink << "fcvtzs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+fcvtzs_vss.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+    cpu.SetVS32(rd, idx, S32(trunc(cpu.GetVF32(rn,idx))));
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op fcvtzs_v2d2d( 0b0100111011100001101110[22] : rn[5] : rd[5] );
+fcvtzs_v2d2d.var format : {char const*} = {"2366"};
+
+fcvtzs_v2d2d.disasm = {
+  sink << "fcvtzs\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtzs_v2d2d.execute = {
+  typedef typename ARCH::S64 S64;
+
+  for (unsigned idx = 0, end=1<<1; idx < end; ++idx)
+    cpu.SetVS64(rd, idx, S64(trunc(cpu.GetVF64(rn,idx))));
+  cpu.ClearHighV(rd,8<<1);
+};
+
+/*******************************************************************
+ * FCVTZS (vector, fixed-point)
+ *
+ * Floating-point convert to signed fixed-point, rounding toward zero (vector)
+ *
+ * It has encodings from 2 classes:Scalar and Vector
+ */
+
+op fcvtzs_ssi( 0b01011111001[11] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzs_ssi.var format : {char const*} = {"784"}, shift : {unsigned} = {32 - lro};
+
+fcvtzs_ssi.disasm = {
+  sink << "fcvtzs\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(shift);
+};
+
+op fcvtzs_ddi( 0b0101111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzs_ddi.var format : {char const*} = {"535"}, shift : {unsigned} = {64 - lro};
+
+fcvtzs_ddi.disasm = {
+  sink << "fcvtzs\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+};
+
+op fcvtzs_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzs_vssi.var format : {char const*} = {"1003"}, shift : {unsigned} = {32 - lro};
+
+fcvtzs_vssi.disasm = {
+  sink << "fcvtzs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op fcvtzs_v2d2di( 0b0100111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzs_v2d2di.var format : {char const*} = {"553"}, shift : {unsigned} = {64 - lro};
+
+fcvtzs_v2d2di.disasm = {
+  sink << "fcvtzs\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
+};
+
+/*
+ * end of FCVTZS (vector, fixed-point)
+ *******************************************************************/
+
+op fcvtzu_vss( 0b0[1] : q[1] : 0b10111010100001101110[20] : rn[5] : rd[5] );
+fcvtzu_vss.var format : {char const*} = {"2423"};
+
+fcvtzu_vss.disasm = {
+  sink << "fcvtzu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+fcvtzu_vss.execute = {
+  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, typename ARCH::U32(trunc(cpu.GetVF32(rn,idx))));
+  cpu.ClearHighV(rd,8<<q);
+};
+
+op fcvtzu_v2d2d( 0b0110111011100001101110[22] : rn[5] : rd[5] );
+fcvtzu_v2d2d.var format : {char const*} = {"2367"};
+
+fcvtzu_v2d2d.disasm = {
+  sink << "fcvtzu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtzu_v2d2d.execute = {
+  for (unsigned idx = 0, end=1<<1; idx < end; ++idx)
+    cpu.SetVU64(rd, idx, typename ARCH::U64(trunc(cpu.GetVF64(rn,idx))));
+  cpu.ClearHighV(rd,8<<1);
+};
+
+/*******************************************************************
+ * FCVTZU (vector, fixed-point)
+ *
+ * Floating-point convert to unsigned fixed-point, rounding toward zero (vector)
+ *
+ * It has encodings from 2 classes:Scalar and Vector
+ */
+
+op fcvtzu_ssi( 0b01111111001[11] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzu_ssi.var format : {char const*} = {"785"}, shift : {unsigned} = {32 - lro};
+
+fcvtzu_ssi.disasm = {
+  sink << "fcvtzu\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(shift);
+};
+
+op fcvtzu_ddi( 0b0111111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzu_ddi.var format : {char const*} = {"536"}, shift : {unsigned} = {64 - lro};
+
+fcvtzu_ddi.disasm = {
+  sink << "fcvtzu\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+};
+
+op fcvtzu_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzu_vssi.var format : {char const*} = {"1004"}, shift : {unsigned} = {32 - lro};
+
+fcvtzu_vssi.disasm = {
+  sink << "fcvtzu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+};
+
+op fcvtzu_v2d2di( 0b0110111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
+fcvtzu_v2d2di.var format : {char const*} = {"554"}, shift : {unsigned} = {64 - lro};
+
+fcvtzu_v2d2di.disasm = {
+  sink << "fcvtzu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
+};
+
+/*
+ * end of FCVTZU (vector, fixed-point)
+ *******************************************************************/
 
 op fdiv_vsvsvs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
 fdiv_vsvsvs.var format : {char const*} = {"1037"};
@@ -6897,20 +7056,6 @@ fmov_vsf.disasm = {
   sink << "fmov\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmF(imm);
 };
 
-op fmul_vsvsvsi( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
-fmul_vsvsvsi.var index : {unsigned} = {index1|index0}, format : {char const*} = {"482"};
-
-fmul_vsvsvsi.disasm = {
-  sink << "fmul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
-};
-
-op fmul_vsvsvs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b110111[6] : rn[5] : rd[5] );
-fmul_vsvsvs.var format : {char const*} = {"1048"};
-
-fmul_vsvsvs.disasm = {
-  sink << "fmul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
-};
-
 op fmulx_vsvsvsi( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b1001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
 fmulx_vsvsvsi.var index : {unsigned} = {index1|index0}, format : {char const*} = {"483"};
 
@@ -6932,11 +7077,25 @@ fneg_vss.disasm = {
   sink << "fneg\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op fneg_v2d2d( 0b0110111011100000111110[22] : rn[5] : rd[5] );
+fneg_v2d2d.var format : {char const*} = {"2368"};
+
+fneg_v2d2d.disasm = {
+  sink << "fneg\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op frecpe_vss( 0b0[1] : q[1] : 0b00111010100001110110[20] : rn[5] : rd[5] );
 frecpe_vss.var format : {char const*} = {"2425"};
 
 frecpe_vss.disasm = {
   sink << "frecpe\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op frecpe_v2d2d( 0b0100111011100001110110[22] : rn[5] : rd[5] );
+frecpe_v2d2d.var format : {char const*} = {"2369"};
+
+frecpe_v2d2d.disasm = {
+  sink << "frecpe\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op frecps_vsvsvs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
@@ -6946,11 +7105,25 @@ frecps_vsvsvs.disasm = {
   sink << "frecps\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+op frecps_v2dv2dv2d( 0b01001110011[11] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
+frecps_v2dv2dv2d.var format : {char const*} = {"923"};
+
+frecps_v2dv2dv2d.disasm = {
+  sink << "frecps\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
 op frinta_vss( 0b0[1] : q[1] : 0b10111000100001100010[20] : rn[5] : rd[5] );
 frinta_vss.var format : {char const*} = {"2426"};
 
 frinta_vss.disasm = {
   sink << "frinta\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op frinta_v2d2d( 0b0110111001100001100010[22] : rn[5] : rd[5] );
+frinta_v2d2d.var format : {char const*} = {"2370"};
+
+frinta_v2d2d.disasm = {
+  sink << "frinta\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op frinti_vss( 0b0[1] : q[1] : 0b10111010100001100110[20] : rn[5] : rd[5] );
@@ -6960,11 +7133,25 @@ frinti_vss.disasm = {
   sink << "frinti\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op frinti_v2d2d( 0b0110111011100001100110[22] : rn[5] : rd[5] );
+frinti_v2d2d.var format : {char const*} = {"2371"};
+
+frinti_v2d2d.disasm = {
+  sink << "frinti\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op frintm_vss( 0b0[1] : q[1] : 0b00111000100001100110[20] : rn[5] : rd[5] );
 frintm_vss.var format : {char const*} = {"2428"};
 
 frintm_vss.disasm = {
   sink << "frintm\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op frintm_v2d2d( 0b0100111001100001100110[22] : rn[5] : rd[5] );
+frintm_v2d2d.var format : {char const*} = {"2372"};
+
+frintm_v2d2d.disasm = {
+  sink << "frintm\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op frintn_vss( 0b0[1] : q[1] : 0b00111000100001100010[20] : rn[5] : rd[5] );
@@ -6974,11 +7161,25 @@ frintn_vss.disasm = {
   sink << "frintn\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op frintn_v2d2d( 0b0100111001100001100010[22] : rn[5] : rd[5] );
+frintn_v2d2d.var format : {char const*} = {"2373"};
+
+frintn_v2d2d.disasm = {
+  sink << "frintn\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op frintp_vss( 0b0[1] : q[1] : 0b00111010100001100010[20] : rn[5] : rd[5] );
 frintp_vss.var format : {char const*} = {"2430"};
 
 frintp_vss.disasm = {
   sink << "frintp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op frintp_v2d2d( 0b0100111011100001100010[22] : rn[5] : rd[5] );
+frintp_v2d2d.var format : {char const*} = {"2374"};
+
+frintp_v2d2d.disasm = {
+  sink << "frintp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op frintx_vss( 0b0[1] : q[1] : 0b10111000100001100110[20] : rn[5] : rd[5] );
@@ -6988,11 +7189,25 @@ frintx_vss.disasm = {
   sink << "frintx\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op frintx_v2d2d( 0b0110111001100001100110[22] : rn[5] : rd[5] );
+frintx_v2d2d.var format : {char const*} = {"2375"};
+
+frintx_v2d2d.disasm = {
+  sink << "frintx\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op frintz_vss( 0b0[1] : q[1] : 0b00111010100001100110[20] : rn[5] : rd[5] );
 frintz_vss.var format : {char const*} = {"2432"};
 
 frintz_vss.disasm = {
   sink << "frintz\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
+};
+
+op frintz_v2d2d( 0b0100111011100001100110[22] : rn[5] : rd[5] );
+frintz_v2d2d.var format : {char const*} = {"2376"};
+
+frintz_v2d2d.disasm = {
+  sink << "frintz\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op frsqrte_vss( 0b0[1] : q[1] : 0b10111010100001110110[20] : rn[5] : rd[5] );
@@ -7002,12 +7217,32 @@ frsqrte_vss.disasm = {
   sink << "frsqrte\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+op frsqrte_v2d2d( 0b0110111011100001110110[22] : rn[5] : rd[5] );
+frsqrte_v2d2d.var format : {char const*} = {"2377"};
+
+frsqrte_v2d2d.disasm = {
+  sink << "frsqrte\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
 op frsqrts_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
 frsqrts_vsvsvs.var format : {char const*} = {"1051"};
 
 frsqrts_vsvsvs.disasm = {
   sink << "frsqrts\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+op frsqrts_v2dv2dv2d( 0b01001110111[11] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
+frsqrts_v2dv2dv2d.var format : {char const*} = {"924"};
+
+frsqrts_v2dv2dv2d.disasm = {
+  sink << "frsqrts\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+/*******************************************************************
+ * FSQRT (vector)
+ *
+ * Floating-point Square Root (vector).
+ */
 
 op fsqrt_vss( 0b0[1] : q[1] : 0b10111010100001111110[20] : rn[5] : rd[5] );
 fsqrt_vss.var format : {char const*} = {"2434"};
@@ -7016,11 +7251,40 @@ fsqrt_vss.disasm = {
   sink << "fsqrt\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fsqrt_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, sqrt(cpu.GetVF32(rn, e)));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op fsqrt_v2d2d( 0b0110111011100001111110[22] : rn[5] : rd[5] );
+fsqrt_v2d2d.var format : {char const*} = {"2378"};
+
+fsqrt_v2d2d.disasm = {
+  sink << "fsqrt\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fsqrt_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, sqrt(cpu.GetVF64(rn, e)));
+};
+
+/*
+ * end of FSQRT (vector)
+ *******************************************************************/
+
 op fsub_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
 fsub_vsvsvs.var format : {char const*} = {"1052"};
 
 fsub_vsvsvs.disasm = {
   sink << "fsub\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+};
+
+op fsub_v2dv2dv2d( 0b01001110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
+fsub_v2dv2dv2d.var format : {char const*} = {"925"};
+
+fsub_v2dv2dv2d.disasm = {
+  sink << "fsub\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
 op mla_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
@@ -7182,25 +7446,60 @@ movi_vsmsl.disasm = {
  * end of MOVI
  *******************************************************************/
 
-op mul_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
-mul_vbvbvb.var format : {char const*} = {"1313"};
+/*******************************************************************
+ * MUL (vector)
+ *
+ * Multiply (vector)
+ */
 
-mul_vbvbvb.disasm = {
+op mul_vb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+mul_vb.var format : {char const*} = {"1313"};
+
+mul_vb.disasm = {
   sink << "mul\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
+
+mul_vb.execute = {
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    cpu.SetVU8(rd, idx, cpu.GetVU8(rn, idx) * cpu.GetVU8(rm, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op mul_vh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+mul_vh.var format : {char const*} = {"1105"};
+
+mul_vh.disasm = {
+  sink << "mul\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
+};
+
+mul_vh.execute = {
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd, idx, cpu.GetVU16(rn, idx) * cpu.GetVU16(rm, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op mul_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
+mul_vs.var format : {char const*} = {"1055"};
+
+mul_vs.disasm = {
+  sink << "mul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+};
+
+mul_vs.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, cpu.GetVU32(rn, idx) * cpu.GetVU32(rm, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+/*
+ * end of MUL (vector)
+ *******************************************************************/
 
 op mul_vhvhvhi( 0b0[1] : q[1] : 0b00111101[8] : index0[2] : rm[4] : 0b1000[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
 mul_vhvhvhi.var index : {unsigned} = {index1|index0}, format : {char const*} = {"491"};
 
 mul_vhvhvhi.disasm = {
   sink << "mul\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 0, 1) << DisasmSubscript(index);
-};
-
-op mul_vhvhvh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
-mul_vhvhvh.var format : {char const*} = {"1105"};
-
-mul_vhvhvh.disasm = {
-  sink << "mul\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
 
 op mul_vsvsvsi( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1000[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -7210,13 +7509,6 @@ mul_vsvsvsi.disasm = {
   sink << "mul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
 };
 
-op mul_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100111[6] : rn[5] : rd[5] );
-mul_vsvsvs.var format : {char const*} = {"1055"};
-
-mul_vsvsvs.disasm = {
-  sink << "mul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
-};
-
 op mvn_vbb( 0b0[1] : q[1] : 0b10111000100000010110[20] : rn[5] : rd[5] );
 mvn_vbb.var format : {char const*} = {"2548"};
 
@@ -7224,11 +7516,25 @@ mvn_vbb.disasm = {
   sink << "mvn\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0);
 };
 
+/*******************************************************************
+ * MVNI
+ *
+ * Move inverted Immediate (vector).
+ */
+
 op mvni_vhi( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b001[3] : imm0[5] : rd[5] );
 mvni_vhi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1887"};
 
 mvni_vhi.disasm = {
   sink << "mvni\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmI(imm, 16);
+};
+
+mvni_vhi.execute = {
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned idx = 0, end=4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd, idx, U16(~imm));
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op mvni_vsi( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b001[3] : imm0[5] : rd[5] );
@@ -7238,12 +7544,32 @@ mvni_vsi.disasm = {
   sink << "mvni\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
 };
 
+mvni_vsi.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, U32(~imm));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op mvni_vsmsl( 0b0[1] : q[1] : 0b10111100000[11] : shl<21> imm1[3] : 0b110[3] : sh[1] : 0b01[2] : shl<16> imm0[5] : rd[5] );
 mvni_vsmsl.var imm : {uint32_t} = {(imm1|imm0|0xffff) >> (sh ? 0 : 8)}, format : {char const*} = {"1894"};
 
 mvni_vsmsl.disasm = {
   sink << "mvni\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
 };
+
+mvni_vsmsl.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, U32(~imm));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+/*
+ * end of MVNI
+ *******************************************************************/
 
 op neg_vbb( 0b0[1] : q[1] : 0b10111000100000101110[20] : rn[5] : rd[5] );
 neg_vbb.var format : {char const*} = {"2549"};
@@ -7528,6 +7854,20 @@ saddlv_svh.var format : {char const*} = {"2306"};
 
 saddlv_svh.disasm = {
   sink << "saddlv\t" << DisasmS(rd) << ", " << DisasmTV(rn, 4<<q, 1);
+};
+
+op scvtf_vss( 0b0[1] : q[1] : 0b00111000100001110110[20] : rn[5] : rd[5] );
+scvtf_vss.var format : {char const*} = {"2437"};
+
+scvtf_vss.disasm = {
+  sink << "scvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2);
+};
+
+op scvtf_v2d2d( 0b0100111001100001110110[22] : rn[5] : rd[5] );
+scvtf_v2d2d.var format : {char const*} = {"2380"};
+
+scvtf_v2d2d.disasm = {
+  sink << "scvtf\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
 };
 
 op shadd_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b000001[6] : rn[5] : rd[5] );
@@ -8262,47 +8602,80 @@ tbx.execute = {
   cpu.ClearHighV(rd, 8<<q);
 };
 
-op trn1_vbvbvb( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
-trn1_vbvbvb.var format : {char const*} = {"1333"};
+/*******************************************************************
+ * TRN
+ *
+ * Transpose vectors
+ */
 
-trn1_vbvbvb.disasm = {
-  sink << "trn1\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
+op trn_vb( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b0[1] : op[1] : 0b1010[4] : rn[5] : rd[5] );
+
+trn_vb.disasm = {
+  sink << "trn" << int(op+1) << "\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
-op trn1_vhvhvh( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
-trn1_vhvhvh.var format : {char const*} = {"1124"};
-
-trn1_vhvhvh.disasm = {
-  sink << "trn1\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
+trn_vb.execute = {
+  unsigned const elements = 8<<q;
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      typename ARCH::U8 op0 = cpu.GetVU8(rn, e|op), op1 = cpu.GetVU8(rm, e|op);
+      cpu.SetVU8(rd, e|0, op0);
+      cpu.SetVU8(rd, e|1, op1);
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
 
-op trn1_vsvsvs( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
-trn1_vsvsvs.var format : {char const*} = {"1074"};
+op trn_vh( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b0[1] : op[1] : 0b1010[4] : rn[5] : rd[5] );
 
-trn1_vsvsvs.disasm = {
-  sink << "trn1\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+trn_vh.disasm = {
+  sink << "trn" << int(op+1) << "\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
 
-op trn2_vbvbvb( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
-trn2_vbvbvb.var format : {char const*} = {"1334"};
-
-trn2_vbvbvb.disasm = {
-  sink << "trn2\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
+trn_vh.execute = {
+  unsigned const elements = 4<<q;
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      typename ARCH::U16 op0 = cpu.GetVU16(rn, e|op), op1 = cpu.GetVU16(rm, e|op);
+      cpu.SetVU16(rd, e|0, op0);
+      cpu.SetVU16(rd, e|1, op1);
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
 
-op trn2_vhvhvh( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
-trn2_vhvhvh.var format : {char const*} = {"1125"};
+op trn_vs( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b0[1] : op[1] : 0b1010[4] : rn[5] : rd[5] );
 
-trn2_vhvhvh.disasm = {
-  sink << "trn2\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
+trn_vs.disasm = {
+  sink << "trn" << int(op+1) << "\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
-op trn2_vsvsvs( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
-trn2_vsvsvs.var format : {char const*} = {"1075"};
-
-trn2_vsvsvs.disasm = {
-  sink << "trn2\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+trn_vs.execute = {
+  unsigned const elements = 2<<q;
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      typename ARCH::U32 op0 = cpu.GetVU32(rn, e|op), op1 = cpu.GetVU32(rm, e|op);
+      cpu.SetVU32(rd, e|0, op0);
+      cpu.SetVU32(rd, e|1, op1);
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
+
+op trn_v2d( 0b01001110110[11] : rm[5] : 0b0[1] : op[1] : 0b1010[4] : rn[5] : rd[5] );
+
+trn_v2d.disasm = {
+  sink << "trn" << int(op+1) << "\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
+};
+
+trn_v2d.execute = {
+  typename ARCH::U64 op0 = cpu.GetVU64(rn, op), op1 = cpu.GetVU64(rm, op);
+  cpu.SetVU64(rd, 0, op0);
+  cpu.SetVU64(rd, 1, op1);
+};
+
+/*
+ * end of TRN
+ *
+ * Transpose vectors
+ *******************************************************************/
 
 op uaba_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b011111[6] : rn[5] : rd[5] );
 uaba_vbvbvb.var format : {char const*} = {"1335"};

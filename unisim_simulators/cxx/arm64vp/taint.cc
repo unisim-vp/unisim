@@ -74,3 +74,5 @@ TaintedValue<double> trunc(TaintedValue<double> const& v)  { return TaintedValue
 TaintedValue<float>  fabs(TaintedValue<float> const& v) { return TaintedValue<float>(fabsf(v.value), v.ubits ? -1 : 0); }
 TaintedValue<double> fabs(TaintedValue<double> const& v)  { return TaintedValue<double>(fabs(v.value), v.ubits ? -1 : 0); }
 
+TaintedValue<float>  sqrt(TaintedValue<float> const& v) { return TaintedValue<float>(sqrtf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> sqrt(TaintedValue<double> const& v)  { return TaintedValue<double>(sqrt(v.value), v.ubits ? -1 : 0); }
