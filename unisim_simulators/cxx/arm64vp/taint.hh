@@ -76,6 +76,10 @@ template <> struct CastUBits<float,float> { static uint32_t process( uint32_t ma
 template <> struct CastUBits<double,double> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask; } };
 template <> struct CastUBits<bool,bool> { static bool process( bool mask, bool bits ) { return mask; } };
 
+template <typename SRC> bool EqUBits( typename TX<SRC>::as_mask ubits, SRC lhs, SRC rhs ) { return ubits and not (~ubits & (lhs ^ rhs)); }
+inline bool EqUBits( uint32_t ubits, float lhs, float rhs ) { return ubits; }
+inline bool EqUBits( uint64_t ubits, double lhs, double rhs ) { return ubits; }
+
 template <typename VALUE_TYPE>
 struct TaintedValue
 { 
@@ -134,8 +138,8 @@ struct TaintedValue
   this_type operator & ( this_type const& other ) const { return this_type( value & other.value, (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits) ); }
   this_type operator | ( this_type const& other ) const { return this_type( value | other.value, (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits) ); }
 
-  TaintedValue<bool> operator == ( this_type const& r ) const { return TaintedValue<bool>( value == r.value, (ubits | r.ubits) and not (~ubits & ~r.ubits & (value ^ r.value)) ); }
-  TaintedValue<bool> operator != ( this_type const& r ) const { return TaintedValue<bool>( value != r.value, (ubits | r.ubits) and not (~ubits & ~r.ubits & (value ^ r.value)) ); }
+  TaintedValue<bool> operator == ( this_type const& r ) const { return TaintedValue<bool>( value == r.value, EqUBits(ubits|r.ubits, value, r.value) ); }
+  TaintedValue<bool> operator != ( this_type const& r ) const { return TaintedValue<bool>( value != r.value, EqUBits(ubits|r.ubits, value, r.value) ); }
   TaintedValue<bool> operator <= ( this_type const& other ) const { return TaintedValue<bool>( value <= other.value, ubits or other.ubits ); }
   TaintedValue<bool> operator >= ( this_type const& other ) const { return TaintedValue<bool>( value >= other.value, ubits or other.ubits ); }
   TaintedValue<bool> operator < ( this_type const& other ) const  { return TaintedValue<bool>( value <  other.value, ubits or other.ubits ); }
