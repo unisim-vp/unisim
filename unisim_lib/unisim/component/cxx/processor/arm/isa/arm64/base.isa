@@ -8349,12 +8349,12 @@ casp_x.execute = {
 
   /*BEG ATOMIC*/
   U64 data0( cpu.MemRead64(addr+U64(0)) ),
-      data1( cpu.MemRead64(addr+U64(4)) );
+      data1( cpu.MemRead64(addr+U64(8)) );
 
   if (cpu.Test(data0 == comparevalue0 and data1 == comparevalue1))
     {
       cpu.MemWrite64(addr+U64(0), cpu.GetGZR(rt+0));
-      cpu.MemWrite64(addr+U64(4), cpu.GetGZR(rt+1));
+      cpu.MemWrite64(addr+U64(8), cpu.GetGZR(rt+1));
     }
   else
     {

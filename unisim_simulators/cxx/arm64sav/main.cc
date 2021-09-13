@@ -154,7 +154,10 @@ struct Checker
 
         uint32_t code;
         source >> std::hex >> code;
-        { char tab; if (not source.get(tab) or tab != '\t') { std::cerr << fl << ": parse error.\n"; break; } }
+        if (not source)
+          break;
+        { char tab; if (not source.get(tab) or tab != '\t')
+                      { std::cerr << fl << ": parse error.\n"; break; } }
         std::string disasm;
         std::getline( source, disasm, '\n' );
         
