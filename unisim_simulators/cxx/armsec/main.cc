@@ -1307,7 +1307,7 @@ struct Translator
         operation = isa.NCDecode( addr, ISA::mkcode( code ) );
         unsigned bitlength = operation->GetLength();
         if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
-          { delete operation; operation = 0; }
+          { delete operation; operation = 0; throw Processor::Undefined(); }
         bytecount = bitlength/8;
       }
       ~Instruction() { delete operation; }
