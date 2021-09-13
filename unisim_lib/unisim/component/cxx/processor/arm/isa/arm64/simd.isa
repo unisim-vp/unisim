@@ -7285,9 +7285,9 @@ tbl.execute = {
   
   U8 res[elements];
   for (unsigned e=0; e < elements; e += 1)
-    res = cpu.GetTVU8(rn, 16, regs, cpu.GetVU8(rm, e), U8(0));
+    res[e] = cpu.GetTVU8(rn, 16, regs, cpu.GetVU8(rm, e), U8(0));
   for (unsigned e=0; e < elements; e += 1)
-    cpu.SetVU8(rd, e, res);
+    cpu.SetVU8(rd, e, res[e]);
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -7298,9 +7298,14 @@ tbx.disasm = {
 };
 
 tbx.execute = {
+  typedef typename ARCH::U8 U8;
   unsigned const elements = 8<<q, regs = len+1;
+  
+  U8 res[elements];
   for (unsigned e=0; e < elements; e += 1)
-    cpu.SetVU8(rd, e, cpu.GetTVU8(rn, 16, regs, cpu.GetVU8(rm, e), cpu.GetVU8(rd, e)));
+    res[e] = cpu.GetTVU8(rn, 16, regs, cpu.GetVU8(rm, e), cpu.GetVU8(rd, e));
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVU8(rd, e, res[e]);
   cpu.ClearHighV(rd, 8<<q);
 };
 

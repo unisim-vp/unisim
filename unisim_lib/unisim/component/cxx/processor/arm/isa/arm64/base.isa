@@ -8229,8 +8229,7 @@ cas_w.execute = {
   
   if (cpu.Test(data == comparevalue))
     cpu.MemWrite32(addr, U32(cpu.GetGZR(rt)));
-  else
-    cpu.SetGZR(rs, data);
+  cpu.SetGZR(rs, data);
   /*END ATOMIC*/
 };
 
@@ -8251,8 +8250,7 @@ cas_x.execute = {
 
   if (cpu.Test(data == comparevalue))
     cpu.MemWrite64(addr, cpu.GetGZR(rt));
-  else
-    cpu.SetGZR(rs, data);
+  cpu.SetGZR(rs, data);
   /*END ATOMIC*/
 };
 
@@ -8274,8 +8272,7 @@ casb_w.execute = {
 
   if (cpu.Test(data == comparevalue))
     cpu.MemWrite8(addr, U8(cpu.GetGZR(rt)));
-  else
-    cpu.SetGZR(rs, data);
+  cpu.SetGZR(rs, data);
   /*END ATOMIC*/
 };
 
@@ -8297,8 +8294,7 @@ cash_w.execute = {
 
   if (cpu.Test(data == comparevalue))
     cpu.MemWrite16(addr, U16(cpu.GetGZR(rt)));
-  else
-    cpu.SetGZR(rs, data);
+  cpu.SetGZR(rs, data);
   /*END ATOMIC*/
 };
 
@@ -8325,11 +8321,8 @@ casp_w.execute = {
       cpu.MemWrite32(addr+U64(0), U32(cpu.GetGZR(rt+0)));
       cpu.MemWrite32(addr+U64(4), U32(cpu.GetGZR(rt+1)));
     }
-  else
-    {
-      cpu.SetGZR(rs+0, data0);
-      cpu.SetGZR(rs+1, data1);
-    }
+  cpu.SetGZR(rs+0, data0);
+  cpu.SetGZR(rs+1, data1);
   /*END ATOMIC*/
 };
 
@@ -8356,11 +8349,8 @@ casp_x.execute = {
       cpu.MemWrite64(addr+U64(0), cpu.GetGZR(rt+0));
       cpu.MemWrite64(addr+U64(8), cpu.GetGZR(rt+1));
     }
-  else
-    {
-      cpu.SetGZR(rs+0, data0);
-      cpu.SetGZR(rs+1, data1);
-    }
+  cpu.SetGZR(rs+0, data0);
+  cpu.SetGZR(rs+1, data1);
   /*END ATOMIC*/
 };
 
