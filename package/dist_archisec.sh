@@ -4,6 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
+VERSION=1.0.9
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -112,9 +113,6 @@ dist_copy_and_patch "${UNISIM_SIMULATOR_DIR}/${AMD64_SRCDIR}/main.cc" \
 
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
-COPYING \
-NEWS \
-ChangeLog \
 arm32dba.cc arm32dba.ml \
 aarch64dba.cc aarch64dba.ml \
 amd64dba.cc amd64dba.ml \
@@ -133,6 +131,42 @@ Yves Lhuillier <yves.lhuillier@cea.fr>
 Frédéric Recoules <frederic.recoules@cea.fr>
 EOF
 
+cat << EOF > "${DEST_DIR}/VERSION"
+$VERSION
+EOF
+
+cat << EOF > "${DEST_DIR}/LICENSE"
+Copyright (c) 2007-2021,
+Commissariat a l'Energie Atomique (CEA)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+ - Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+ - Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+ - Neither the name of CEA nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior
+   written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+EOF
+
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
   - arm32dba:   an arm32/thumb dba decoder
@@ -142,8 +176,37 @@ This package contains:
 See INSTALL for installation instructions.
 EOF
 
+cat << EOF > "${DEST_DIR}/INSTALL"
+INSTALLATION
+------------
+
+Requirements:
+  - GCC/G++
+  - OCaml (>= 4.05)
+  - dune (>= 2.8)
+
+Building instructions:
+  $ dune build @install
+
+Installing (optional):
+  $ dune install
+EOF
+
 cat << EOF > "${DEST_DIR}/dune-project"
 (lang dune 2.8)
+(generate_opam_files true)
+
+(name unisim_archisec)
+(version "$VERSION")
+(maintainers "BINSEC <binsec@saxifrage.saclay.cea.fr>")
+(authors
+  "Yves Lhuillier"
+  "Frédéric Recoules"
+)
+(license BSD-3-Clause)
+(homepage "https://binsec.github.io")
+(source (github binsec/unisim_archisec))
+(bug_reports "mailto:binsec@saxifrage.saclay.cea.fr")
 
 (package
  (name unisim_archisec)
