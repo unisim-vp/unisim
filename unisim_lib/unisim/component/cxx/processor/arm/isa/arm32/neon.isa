@@ -294,75 +294,33 @@ vadd_f32v.disasm = {
   buffer << "vadd.f32\t" << DisasmV(vd>>q, 3+q) << ", " << DisasmV(vn>>q, 3+q) << ", " << DisasmV(vm>>q, 3+q);
 };
 
+group vadd_i begin;
+
 op vadd_i8( 0b11110010[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vadd_i8.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vadd_i8.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vadd_i8.disasm = {
-  buffer << "vadd.i8\t" << DisasmV(vd>>q,3+q) << ", " << DisasmV(vn>>q,3+q) << ", " << DisasmV(vm>>q,3+q);
-};
-
-vadd_i8.execute = {
-  typedef typename ARCH::U8 OP;
-  unsigned const elements = 8;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
-};
+vadd_i8.var CFG : {typedef struct { enum { elements=8 }; }}, OP : {typedef typename ARCH::U8};
 
 op vadd_i16( 0b11110010[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vadd_i16.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vadd_i16.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vadd_i16.disasm = {
-  buffer << "vadd.i16\t" << DisasmV(vd>>q,3+q) << ", " << DisasmV(vn>>q,3+q) << ", " << DisasmV(vm>>q,3+q);
-};
-
-vadd_i16.execute = {
-  typedef typename ARCH::U16 OP;
-  unsigned const elements = 4;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
-};
+vadd_i16.var CFG : {typedef struct { enum { elements=4 }; }}, OP : {typedef typename ARCH::U16};
 
 op vadd_i32( 0b11110010[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vadd_i32.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vadd_i32.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
-
-vadd_i32.disasm = {
-  buffer << "vadd.i32\t" << DisasmV(vd>>q,3+q) << ", " << DisasmV(vn>>q,3+q) << ", " << DisasmV(vm>>q,3+q);
-};
-
-vadd_i32.execute = {
-  typedef typename ARCH::U32 OP;
-  unsigned const elements = 2;
-
-  // CheckAdvSIMDEnabled();
-  for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < elements; ++idx)
-      cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
-};
+vadd_i32.var CFG : {typedef struct { enum { elements=2 }; }}, OP : {typedef typename ARCH::U32};
 
 op vadd_i64( 0b11110010[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]: vd0[4]: 0b1000[4]: shl<4> vn1[1]: q[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vadd_i64.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
-vadd_i64.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
+vadd_i64.var CFG : {typedef struct { enum { elements=1 }; }}, OP : {typedef typename ARCH::U64};
 
-vadd_i64.disasm = {
-  buffer << "vadd.i64\t" << DisasmV(vd>>q,3+q) << ", " << DisasmV(vn>>q,3+q) << ", " << DisasmV(vm>>q,3+q);
+group vadd_i end;
+
+vadd_i.var vm : {uint8_t} = {vm1|vm0}, vd : {uint8_t} = {vd1|vd0}, vn : {uint8_t} = {vn1|vn0};
+vadd_i.var reject : {Reject} = {(vd0 | vm0 | vn0) & q};
+
+vadd_i.disasm = {
+  buffer << "vadd.i" << (64/CFG::elements) << "\t" << DisasmV(vd>>q,3+q) << ", " << DisasmV(vn>>q,3+q) << ", " << DisasmV(vm>>q,3+q);
 };
 
-vadd_i64.execute = {
-  typedef typename ARCH::U64 OP;
-  unsigned const elements = 1;
-
+vadd_i.execute = {
   // CheckAdvSIMDEnabled();
   for (unsigned dd = 0, dde = 1<<q; dd < dde; ++dd)
-    for (unsigned idx = 0; idx < elements; ++idx)
+    for (unsigned idx = 0; idx < CFG::elements; ++idx)
       cpu.SetVDE( vd+dd, idx, OP(cpu.GetVDE( vn+dd, idx, OP() ) + cpu.GetVDE( vm+dd, idx, OP() )) );
 };
 
@@ -2143,7 +2101,7 @@ vld2_8.execute = {
     for (unsigned idx = 0; idx < elements; ++idx)
       for (unsigned reg = 0; reg < 2; ++reg)
         {
-          cpu.GetVDE(vd+q+2*reg, idx, U8(cpu.MemRead8(addr))) ;
+          cpu.SetVDE(vd+q+2*reg, idx, U8(cpu.MemRead8(addr))) ;
           addr += U32(size);
         }
 };
@@ -2171,7 +2129,7 @@ vld2_16.execute = {
     for (unsigned idx = 0; idx < elements; ++idx)
       for (unsigned reg = 0; reg < 2; ++reg)
         {
-          cpu.GetVDE(vd+q+2*reg, idx, U16(cpu.MemRead16(addr))) ;
+          cpu.SetVDE(vd+q+2*reg, idx, U16(cpu.MemRead16(addr))) ;
           addr += U32(size);
         }
 };
@@ -2198,7 +2156,7 @@ vld2_32.execute = {
     for (unsigned idx = 0; idx < elements; ++idx)
       for (unsigned reg = 0; reg < 2; ++reg)
         {
-          cpu.GetVDE(vd+q+2*reg, idx, U32(cpu.MemRead32(addr))) ;
+          cpu.SetVDE(vd+q+2*reg, idx, U32(cpu.MemRead32(addr))) ;
           addr += U32(size);
         }
 };

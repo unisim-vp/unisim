@@ -297,13 +297,16 @@ namespace
         if (source.next() != CLex::Scanner::ObjectOpening)
           throw source.unexpected();
         SourceCode* c_type = new SourceCode(GetSourceCode(source));
-        if (source.next() != CLex::Scanner::Assign)
-          { var_list.push_back( new Variable( varname, c_type, 0 ) ); break; }
-        if (source.next() != CLex::Scanner::ObjectOpening)
-          throw source.unexpected();
-        SourceCode* c_init = new SourceCode(GetSourceCode(source));
+        SourceCode* c_init = 0;
+        if (source.next() == CLex::Scanner::Assign)
+          {
+            if (source.next() != CLex::Scanner::ObjectOpening)
+              throw source.unexpected();
+            c_init = new SourceCode(GetSourceCode(source));
+            source.next();
+          }
         var_list.push_back( new Variable( varname, c_type, c_init ) );
-        if (source.next() != CLex::Scanner::Comma)
+        if (source.lnext != CLex::Scanner::Comma)
           break;
       }
   }

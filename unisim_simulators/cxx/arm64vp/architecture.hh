@@ -905,12 +905,14 @@ private:
   /** Architectural state **/
 public:
   std::map<std::string,unisim::service::interfaces::Register*> regmap;
-  Devices     devices;
-  GIC         gic;
-  UART        uart;
-  Timer       vt;
-  RTC         rtc;
-  VIODisk     viodisk;
+  Devices  devices;
+  GIC      gic;
+  UART     uart;
+  Timer    vt;
+  RTC      rtc;
+  
+  typedef VIOVolatileDisk Disk;
+  Disk     disk;
   //VIOConsole  vioconsole; 
 
   Pages    pages;

@@ -47,7 +47,7 @@ struct VIOAccess
   virtual void flag(uint64_t addr) const = 0;
   virtual void notify() const = 0;
   
-  struct Iterator : Slice
+  struct Iterator
   {
     Iterator(uint64_t addr, uint64_t size, bool _write) : slice{0,0}, ptr(addr), left(size), write(_write) {}
     Slice slice;
@@ -101,16 +101,24 @@ struct VIOConsole
   bool SetupQueue(VIOAccess const& vioa);
   
   // Generic Config
-  //uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+  // uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
   uint32_t DeviceFeaturesSel, DriverFeaturesSel, InterruptStatus;
 };
 
 struct VIODisk
 {
   VIODisk();
+  virtual ~VIODisk() {}
+
+  enum { BLKSIZE = 512 };
+  
+  virtual void open(char const* filename) = 0;
+  virtual void seek(uint64_t pos) = 0;
+  virtual void read(uint8_t* bytes, uint64_t size) = 0;
+  virtual void write(uint8_t const* bytes, uint64_t size) = 0;
+  
   void sync(SnapShot& snapshot);
   void reset();
-  void open(char const* filename);
   
   // Generic Config
   static uint32_t Vendor() { return 0x70767375; }
@@ -136,9 +144,35 @@ struct VIODisk
 
   // Block Device Config
   VIOQueue rq;
-  std::fstream storage;
   uint64_t Capacity;
   uint8_t  WriteBack;
+};
+
+struct VIOStreamDisk : public VIODisk
+{
+  VIOStreamDisk() : VIODisk(), storage(), diskpos() {}
+  
+  void open(char const* filename) override;
+  void seek(uint64_t pos) override { diskpos = pos; storage.seekg(pos); }
+  void read(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); diskpos += size; }
+  void write(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); diskpos += size; }
+  
+  std::fstream storage;
+  uint64_t diskpos;
+};
+
+struct VIOVolatileDisk : public VIODisk
+{
+  VIOVolatileDisk() : storage(), diskpos(), disksize() {}
+  ~VIOVolatileDisk();
+  void open(char const* filename) override;
+  void seek(uint64_t pos) override { diskpos = pos; }
+  void read(uint8_t* bytes, uint64_t size) override { std::copy(data(0), data(size), bytes); diskpos += size; }
+  void write(uint8_t const* bytes, uint64_t size) override { std::copy(&bytes[0], &bytes[size], data(0)); diskpos += size; }
+  uint8_t* data(uintptr_t pos) { return &storage[diskpos+pos]; }
+  
+  uint8_t* storage;
+  uintptr_t diskpos, disksize;
 };
 
 template <typename FEATTYPE, FEATTYPE FEAT> struct Feature {};

@@ -1281,7 +1281,7 @@ namespace {
 void
 AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 {
-  viodisk.open(filename);
+  disk.open(filename);
 
   static struct : public Device::Effect
   {
@@ -1292,7 +1292,7 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
       //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
       //      std::cerr << '\n';
 
-      VIODisk& viodisk = arch.viodisk;
+      VIODisk& viodisk = arch.disk;
       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
         return false;
 
@@ -1346,9 +1346,10 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
             case 0xa0:
             case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
             case 0xfc: return req.ro(viodisk.ConfigGeneration);
+              //            case 0x100: return req.ro(viodisk.Capacity);
             case 0x100:
             case 0x104: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
-              //case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
+              // case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
             case 0x10c: return req.ro(viodisk.SegMax());
             case 0x114: return req.ro(viodisk.BlkSize());
             case 0x11c: return req.ro<uint32_t>(0); // optimal (suggested maximum) I/O size in blocks
@@ -1366,6 +1367,24 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
   devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_disk_effect, irq) );
 }
 
+// namespace
+// {
+//   void suspend_at_prompt(AArch64& arch, char ch)
+//   {
+//     static std::ofstream toto("toto");
+//     toto.write(&ch, 1);
+//     toto.flush();
+//     static char const* expect = "";
+//     if (ch != *expect) expect = "qemuarm64 login";
+//     else if (not *++expect)
+//       {
+//         arch.suspend = true;
+//         arch.silence( &AArch64::handle_suspend );
+//         arch.notify( 0, &AArch64::handle_suspend );
+//       }
+//   }
+// }
+
 void
 AArch64::map_uart(uint64_t base_addr)
 {
@@ -1382,8 +1401,8 @@ AArch64::map_uart(uint64_t base_addr)
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
           char ch;
           if (not req.write and not uart.rx_pop( ch )) { U8 x(0,-1); return req.tainted_access(x);  }
-          if (not req.access( ch )) return false;
-          if (    req.write) uart.tx_push( ch );
+          if (not req.access( ch ))                    { return false; }
+          if (    req.write)                           { uart.tx_push( ch ); /*suspend_at_prompt(arch, ch);*/ }
           return true;
         }
 
@@ -1783,6 +1802,7 @@ AArch64::run( uint64_t suspend_at )
       
       catch (Suspend const&)
         {
+          std::cerr << "Suspend...\n";
           save_snapshot("uvp.shot");
           return;
         }
@@ -1988,7 +2008,7 @@ AArch64::UART::UART()
 bool
 AArch64::UART::rx_push()
 {
-  rx_valid |= dterm.GetChar(rx_value);
+  if (not rx_valid) rx_valid = dterm.GetChar(rx_value);
   if (rx_valid) RIS |= RX_INT;
   return rx_valid;
 }
@@ -2225,7 +2245,7 @@ AArch64::sync(SnapShot& snapshot)
   uart.sync(snapshot);
   vt.sync(snapshot);
   rtc.sync(snapshot);
-  viodisk.sync(snapshot);
+  disk.sync(snapshot);
 
   if (snapshot.is_save())
     {

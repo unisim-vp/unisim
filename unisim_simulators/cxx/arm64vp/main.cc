@@ -247,7 +247,8 @@ main(int argc, char *argv[])
     {
       uint64_t suspend_at;
       if (char const* arg = getenv("SUSPEND_AT")) suspend_at = strtoull(arg,0,0);
-      else                                        suspend_at = arch.insn_counter + 0x40000000;
+      else                                        suspend_at = uint64_t(-1);
+      //else                                        suspend_at = arch.insn_counter + 0x1000000000ull;
       arch.run( suspend_at );
       std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
     }
