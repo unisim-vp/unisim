@@ -228,8 +228,8 @@ AArch64::mem_map(Page&& page)
 AArch64::Page const&
 AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 {
-  uint64_t const PAGE_SIZE = 0x10000;
-  uint64_t base = addr & -PAGE_SIZE, last = base + PAGE_SIZE - 1;
+  uint64_t const page_size = 0x10000;
+  uint64_t base = addr & -page_size, last = base + page_size - 1;
   if (pi != pages.end() and pi->last >= base)
     base = pi->last + 1;
   if (pages.size() and pi != pages.begin() and (--pi)->base <= last)
@@ -283,7 +283,8 @@ AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
 void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
 {
-  op->disasm(*this, std::cerr << "Undefined instruction : `");
+  DisasmState ds;
+  op->disasm(ds, std::cerr << "Undefined instruction : `");
   std::cerr << "` (" << op->GetName() << ", " << std::hex << op->GetEncoding()
             << "@" << std::hex << op->GetAddr() << ").\n";
   UndefinedInstruction();
@@ -1456,9 +1457,6 @@ AArch64::map_uart(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 
   /* Start asynchronous reception loop */
-  uart.dterm.tcp_port = 1234;
-  //  uart.dterm.verbose = true;
-  uart.dterm.filter_null_character = true;
   uart.dterm.Initialize();
   handle_uart();
 }
@@ -1772,7 +1770,8 @@ AArch64::run( uint64_t suspend_at )
               //static std::ofstream dbgtrace("dbgtrace");
               std::ostream& sink( std::cerr );
               sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
-              op->disasm( *this, sink );
+              DisasmState ds;
+              op->disasm( ds, sink );
               sink << std::endl;
             }
 

@@ -53,7 +53,7 @@ taint.cc \
 debug.cc \
 architecture.cc \
 snapshot.cc \
-hostterm.cc \
+serial.cc \
 viodisk.cc \
 system.cc \
 instruction.cc \
@@ -66,7 +66,7 @@ taint.hh \
 debug.hh \
 architecture.hh \
 snapshot.hh \
-hostterm.hh \
+serial.hh \
 viodisk.hh \
 debugger.hh \
 "

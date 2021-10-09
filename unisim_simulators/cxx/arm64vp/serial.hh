@@ -32,11 +32,25 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64VP_HOSTTERM_HH__
-#define __ARM64VP_HOSTTERM_HH__
+#ifndef __ARM64VP_SERIAL_HH__
+#define __ARM64VP_SERIAL_HH__
 
+#include <unisim/util/netstreamer/netstreamer.hh>
+#include <fstream>
 #include <pthread.h>
 #include <inttypes.h>
+
+struct Serial
+{
+  Serial();
+  void Initialize();
+  bool GetChar(char& c);
+  void PutChar(char c);
+  void FlushOutput();
+
+  unisim::util::netstreamer::NetStreamer netstreamer;
+  std::ofstream logger;
+};
 
 struct HostTerm
 {
@@ -69,4 +83,4 @@ struct HostTerm
   }        rx_sink;
 };
   
-#endif /* __ARM64VP_HOSTTERM_HH__ */
+#endif /* __ARM64VP_SERIAL_HH__ */

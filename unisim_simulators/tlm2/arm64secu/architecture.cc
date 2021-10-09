@@ -261,8 +261,8 @@ AArch64::mem_map(Page&& page)
 AArch64::Page const&
 AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 {
-  uint64_t const PAGE_SIZE = 0x10000;
-  uint64_t base = addr & -PAGE_SIZE, last = base + PAGE_SIZE - 1;
+  uint64_t const page_size = 0x10000;
+  uint64_t base = addr & -page_size, last = base + page_size - 1;
   if (pi != pages.end() and pi->last >= base)
     base = pi->last + 1;
   if (pages.size() and pi != pages.begin() and (--pi)->base <= last)

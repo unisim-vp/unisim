@@ -47,8 +47,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/util/netstreamer/netstreamer.hh>
-#include <hostterm.hh>
+#include <serial.hh>
 #include <iosfwd>
 #include <set>
 #include <map>
@@ -79,8 +78,9 @@ struct AArch64
   typedef U64 UREG;
   typedef U64 SREG;
 
-  typedef AArch64 DisasmState;
-
+  //typedef AArch64 DisasmState;
+  struct DisasmState {};
+  
   enum { ZID=4 };
 
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> Decoder;
@@ -843,9 +843,7 @@ struct AArch64
     enum { RX_INT = 0x10, TX_INT = 0x20 };
     static unsigned const qsize = 32;
 
-    typedef unisim::util::netstreamer::NetStreamer NetStreamer;
-    NetStreamer dterm;
-    //HostTerm dterm;
+    Serial dterm;
     char rx_value;
     bool rx_valid;
     unsigned tx_count;

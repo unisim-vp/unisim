@@ -32,8 +32,9 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <hostterm.hh>
+#include <serial.hh>
 #include <iostream>
+#include <iomanip>
 #include <termios.h>
 #include <unistd.h>
 #include <inttypes.h>
@@ -128,3 +129,41 @@ HostTerm::FlushChars()
   std::cout.flush();
 }
 
+Serial::Serial()
+  : netstreamer()
+  , logger("serial.log")
+{
+  netstreamer.tcp_port = 1234;
+  //  netstreamer.verbose = true;
+  netstreamer.filter_null_character = true;
+}
+
+void
+Serial::Initialize()
+{
+  netstreamer.Initialize();
+}
+
+bool
+Serial::GetChar(char& c)
+{
+  if (not netstreamer.GetChar(c))
+    return false;
+  logger << "r:'\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(uint8_t(c)) << std::dec << "'" << std::endl;
+  logger.flush();
+  return true;
+}
+
+void
+Serial::PutChar(char c)
+{
+  logger << "w:'\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(uint8_t(c)) << std::dec << "'" << std::endl;
+  logger.flush();
+  netstreamer.PutChar(c);
+}
+
+void
+Serial::FlushOutput()
+{
+  netstreamer.FlushOutput();
+}
