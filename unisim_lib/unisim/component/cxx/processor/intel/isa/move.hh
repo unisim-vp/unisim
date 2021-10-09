@@ -3,10 +3,10 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -78,7 +78,7 @@ newPushSeg( unsigned opsize, OpBase<ARCH> const& opbase, uint8_t _seg )
 template <class ARCH> struct DC<ARCH,PUSH> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xff" ) /6 & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new Push<ARCH,GOw>( _.opbase(), _.rmop() );
       if (ic.opsize()==32) return new Push<ARCH,GOd>( _.opbase(), _.rmop() );
@@ -94,35 +94,35 @@ template <class ARCH> struct DC<ARCH,PUSH> { Operation<ARCH>* get( InputCode<ARC
       if (ic.opsize()==32) return new PushReg<ARCH,GOd>( _.opbase(), _.ereg() );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x6a" ) & Imm<8>() ))
-  
+
     {
       if (ic.opsize()==16) return new PushImm<ARCH,16>( _.opbase(), _.i( int16_t() )  );
       if (ic.opsize()==32) return new PushImm<ARCH,32>( _.opbase(), _.i( int32_t() )  );
       if (ic.opsize()==64) return new PushImm<ARCH,64>( _.opbase(), _.i( int64_t() )  );
       return 0;
     }
-  
+
   if (auto _ = match( ic, OpSize<16>() & opcode( "\x68" ) & Imm<16>() ))
-  
+
     return new PushImm<ARCH,16>( _.opbase(), _.i( int16_t() )  );
-  
+
   if (auto _ = match( ic, OpSize<32>() & opcode( "\x68" ) & Imm<32>() ))
-  
+
     return new PushImm<ARCH,32>( _.opbase(), _.i( int32_t() )  );
-  
+
   if (auto _ = match( ic, OpSize<64>() & opcode( "\x68" ) & Imm<64>() ))
-  
+
     return new PushImm<ARCH,64>( _.opbase(), _.i( int64_t() )  );
-  
+
   if (not ic.mode64()) {
     if (auto _ = match( ic, opcode( "\x06" ) )) return newPushSeg( ic.opsize(), _.opbase(), ES );
     if (auto _ = match( ic, opcode( "\x0e" ) )) return newPushSeg( ic.opsize(), _.opbase(), CS );
     if (auto _ = match( ic, opcode( "\x16" ) )) return newPushSeg( ic.opsize(), _.opbase(), SS );
     if (auto _ = match( ic, opcode( "\x1e" ) )) return newPushSeg( ic.opsize(), _.opbase(), DS );
   }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xa0" ) )) return newPushSeg( ic.opsize(), _.opbase(), FS );
   if (auto _ = match( ic, opcode( "\x0f\xa8" ) )) return newPushSeg( ic.opsize(), _.opbase(), GS );
 
@@ -146,14 +146,14 @@ template <class ARCH> struct DC<ARCH,PUSHA> { Operation<ARCH>* get( InputCode<AR
   if (ic.mode64()) return 0;
 
   if (auto _ = match( ic, opcode( "\x60" ) ))
-  
+
     {
       if (ic.opsize()==16) return new PushAll<ARCH,GOw>( _.opbase() );
       if (ic.opsize()==32) return new PushAll<ARCH,GOd>( _.opbase() );
       if (ic.opsize()==64) return new PushAll<ARCH,GOq>( _.opbase() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -184,13 +184,13 @@ struct Pushf : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,PUSHF> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\x9c" ) ))
-  
+
     {
       if (ic.opsize()==64)                return new Pushf<ARCH,64>( _.opbase() );
       if (ic.opsize()==16 or ic.mode64()) return new Pushf<ARCH,16>( _.opbase() );
       if (ic.opsize()==32)                return new Pushf<ARCH,32>( _.opbase() );
     }
-  
+
   return 0;
 }};
 
@@ -231,29 +231,29 @@ newPopSeg( unsigned opsize, OpBase<ARCH> const& opbase, uint8_t _seg )
 template <class ARCH> struct DC<ARCH,POP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\x8f" ) /0 & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new Pop<ARCH,GOw>( _.opbase(), _.rmop() );
       if (ic.opsize()==32) return new Pop<ARCH,GOd>( _.opbase(), _.rmop() );
       if (ic.opsize()==64) return new Pop<ARCH,GOq>( _.opbase(), _.rmop() );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x58" ) + Reg() ))
-  
+
     {
       if (ic.mode64())     return new PopReg<ARCH,GOq>( _.opbase(), _.ereg() );
       if (ic.opsize()==16) return new PopReg<ARCH,GOw>( _.opbase(), _.ereg() );
       if (ic.opsize()==32) return new PopReg<ARCH,GOd>( _.opbase(), _.ereg() );
       return 0;
     }
-  
+
   if (not ic.mode64()) {
     if (auto _ = match( ic, opcode( "\x07" ) )) return newPopSeg( ic.opsize(), _.opbase(), ES );
     if (auto _ = match( ic, opcode( "\x17" ) )) return newPopSeg( ic.opsize(), _.opbase(), SS );
     if (auto _ = match( ic, opcode( "\x1f" ) )) return newPopSeg( ic.opsize(), _.opbase(), DS );
   }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xa1" ) )) return newPopSeg( ic.opsize(), _.opbase(), FS );
   if (auto _ = match( ic, opcode( "\x0f\xa9" ) )) return newPopSeg( ic.opsize(), _.opbase(), GS );
 
@@ -279,14 +279,14 @@ template <class ARCH> struct DC<ARCH,POPA> { Operation<ARCH>* get( InputCode<ARC
   if (ic.mode64()) return 0;
 
   if (auto _ = match( ic, opcode( "\x61" ) ))
-  
+
     {
       if (ic.opsize()==16) return new PopAll<ARCH,GOw>( _.opbase() );
       if (ic.opsize()==32) return new PopAll<ARCH,GOd>( _.opbase() );
       if (ic.opsize()==64) return new PopAll<ARCH,GOq>( _.opbase() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -301,7 +301,7 @@ struct Popf : public Operation<ARCH>
     typedef typename ARCH::bit_t bit_t;
     u_type flags = arch.template pop<OPSIZE>();
     u_type const bitmask(1);
-    
+
     arch.flagwrite( ARCH::FLAG::CF, bit_t( (flags >>  0) & bitmask ) );
     arch.flagwrite( ARCH::FLAG::PF, bit_t( (flags >>  2) & bitmask ) );
     arch.flagwrite( ARCH::FLAG::AF, bit_t( (flags >>  4) & bitmask ) );
@@ -315,13 +315,13 @@ struct Popf : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,POPF> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\x9d" ) ))
-  
+
     {
       if (ic.opsize()==64)                return new Popf<ARCH,64>( _.opbase() );
       if (ic.opsize()==16 or ic.mode64()) return new Popf<ARCH,16>( _.opbase() );
       if (ic.opsize()==32)                return new Popf<ARCH,32>( _.opbase() );
     }
-  
+
   return 0;
 }};
 
@@ -335,7 +335,7 @@ struct MovRM : public Operation<ARCH>
   }
   void execute( ARCH& arch ) const {
     if (GTOE) arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
-    else      arch.regwrite( OP(), gn, arch.rmread( OP(), rm ) ); 
+    else      arch.regwrite( OP(), gn, arch.rmread( OP(), rm ) );
   }
 };
 
@@ -359,7 +359,7 @@ struct MovSeg : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::u16_t u16_t;
-    
+
     if (STOE) arch.rmwrite( OP(), rm, typename TypeFor<ARCH,OP::SIZE>::u( arch.segregread( seg ) ) );
     else      arch.segregwrite( seg, u16_t( arch.rmread( OP(), rm ) ) );
   }
@@ -374,56 +374,56 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
       else          return new MovRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
   if (auto _ = match( ic, opcode( "\x89" ) & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new MovRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new MovRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new MovRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x8a" ) & RM() ))
-  
+
     {
       if (ic.rex_p) return new MovRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new MovRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
-  
+
   if (auto _ = match( ic, opcode( "\x8b" ) & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new MovRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new MovRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new MovRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x8c" ) & RM() ))
-  
+
     return newMovSeg<true>( ic, _.opbase(), _.rmop(), _.greg() );
-  
+
   if (auto _ = match( ic, opcode( "\x8e" ) & RM() ))
 
     return newMovSeg<false>( ic, _.opbase(), _.rmop(), _.greg() );
-  
+
   if (auto _ = match( ic, opcode( "\xa0" ) & Moffs() ))
-  
+
     {
       if (ic.rex_p) return new MovRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), 0 );
       else          return new MovRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), 0 );
     }
-  
+
   if (auto _ = match( ic, opcode( "\xa1" ) & Moffs() ))
-  
+
     {
       if (ic.opsize()==16) return new MovRM<ARCH,GOw,false>( _.opbase(), _.rmop(), 0 );
       if (ic.opsize()==32) return new MovRM<ARCH,GOd,false>( _.opbase(), _.rmop(), 0 );
       if (ic.opsize()==64) return new MovRM<ARCH,GOq,false>( _.opbase(), _.rmop(), 0 );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\xa2" ) & Moffs() ))
-  
+
     {
       if (ic.rex_p) return new MovRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), 0 );
       else          return new MovRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), 0 );
@@ -437,45 +437,45 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
       if (ic.opsize()==64) return new MovRM<ARCH,GOq,true>( _.opbase(), _.rmop(), 0 );
       return 0;
     }
-  
+
   if (auto _ = match( ic, (opcode( "\xb0" ) + Reg()) & Imm<8>() ))
-  
+
     {
       if (ic.rex_p) return new MovImm<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new MovImm<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
-  
+
   if (auto _ = match( ic, OpSize<16>() & (opcode( "\xb8" ) + Reg()) & Imm<16>() ))
-  
+
     return new MovImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
-  
+
   if (auto _ = match( ic, OpSize<32>() & (opcode( "\xb8" ) + Reg()) & Imm<32>() ))
-  
+
     return new MovImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-  
+
   if (auto _ = match( ic, OpSize<64>() & (opcode( "\xb8" ) + Reg()) & Imm<64>() ))
-  
+
     return new MovImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int64_t() ) );
-  
+
   if (auto _ = match( ic, opcode( "\xc6" ) /0 & RM() & Imm<8>() ))
-  
+
     {
       if (ic.rex_p) return new MovImm<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new MovImm<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
-  
+
   if (auto _ = match( ic, OpSize<16>() & opcode( "\xc7" ) /0 & RM() & Imm<16>() ))
-  
+
     return new MovImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
-  
+
   if (auto _ = match( ic, OpSize<32>() & opcode( "\xc7" ) /0 & RM() & Imm<32>() ))
-  
+
     return new MovImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-  
+
   if (auto _ = match( ic, OpSize<64>() & opcode( "\xc7" ) /0 & RM() & Imm<32>() ))
-  
+
     return new MovImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int64_t() ) );
-  
+
   return 0;
 }
 template <bool DIR> Operation<ARCH>* newMovSeg( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
@@ -517,15 +517,15 @@ template <class ARCH> struct DC<ARCH,MOVZX> { Operation<ARCH>* get( InputCode<AR
         }
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xb7" ) & RM() ))
-  
+
     {
       if (ic.opsize()==32) return new Movzx<ARCH,GOw,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new Movzx<ARCH,GOd,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -546,7 +546,7 @@ template <class ARCH> struct DC<ARCH,MOVSX> { Operation<ARCH>* get( InputCode<AR
 {
   // MOVSX -- Move with Zero-Extend
   if (auto _ = match( ic, opcode( "\x0f\xbe" ) & RM() ))
-  
+
     {
       if (ic.rex_p)
         {
@@ -561,19 +561,19 @@ template <class ARCH> struct DC<ARCH,MOVSX> { Operation<ARCH>* get( InputCode<AR
         }
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xbf" ) & RM() ))
-  
+
     {
       if (ic.opsize()==32) return new Movsx<ARCH,GOw,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new Movsx<ARCH,GOw,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   if (auto _ = match( ic, OpSize<64>() & opcode( "\x63" ) & RM() ))
-  
+
     return new Movsx<ARCH,GOd,GOq>( _.opbase(), _.rmop(), _.greg() );
-  
+
   return 0;
 }};
 
@@ -588,9 +588,9 @@ struct WriteDF : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,STD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xfc" ) + Var<1>() ))
-    
+
     return new WriteDF<ARCH>( _.opbase(), _.var() );
-  
+
   return 0;
 }};
 
@@ -604,11 +604,11 @@ struct Arpl : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,ARPL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.mode64()) return 0;
-  
+
   if (auto _ = match( ic, opcode( "\x63" ) & RM() ))
-    
+
     return new Arpl<ARCH>( _.opbase(), _.rmop(), _.greg() );
-  
+
   return 0;
 }};
 
@@ -617,7 +617,7 @@ struct CmpXchg : public Operation<ARCH>
 {
   CmpXchg( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "cmpxchg " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
-  
+
   void execute( ARCH& arch ) const
   {
     auto mem_operand = arch.rmread( OP(), rm );
@@ -636,7 +636,7 @@ template <class ARCH> struct DC<ARCH,CMPXCHG> { Operation<ARCH>* get( InputCode<
       if (ic.rex_p) return new CmpXchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new CmpXchg<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xb1" ) & RM() ) ))
     {
       if (ic.opsize()==16) return new CmpXchg<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -644,7 +644,7 @@ template <class ARCH> struct DC<ARCH,CMPXCHG> { Operation<ARCH>* get( InputCode<
       if (ic.opsize()==64) return new CmpXchg<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -659,13 +659,13 @@ template <class ARCH> struct DC<ARCH,CMPXCHG8B> { Operation<ARCH>* get( InputCod
 {
   // CMPXCHG8B/CMPXCHG16B -- Compare and Exchange Bytes
   if (auto _ = match( ic, lockable( opcode( "\x0f\xc7" ) /1 & RM_mem() ) ))
-  
+
     {
       if (ic.opsize()==32) return new CmpXchgBytes<ARCH,8>( _.opbase(), _.rmop() );
       if (ic.opsize()==64) return new CmpXchgBytes<ARCH,16>( _.opbase(), _.rmop() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -689,24 +689,24 @@ struct Xchg : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,XCHG> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode("\x90") + Reg() ))
-    
+
     if (MOp<ARCH>* x = _.rmop()) // xchg %a, %a => see nop
       {
         if (ic.opsize()==16) return new Xchg<ARCH,GOw>( _.opbase(), x, 0 );
-        if (ic.opsize()==32) return new Xchg<ARCH,GOd>( _.opbase(), x, 0 ); 
+        if (ic.opsize()==32) return new Xchg<ARCH,GOd>( _.opbase(), x, 0 );
         if (ic.opsize()==64) return new Xchg<ARCH,GOq>( _.opbase(), x, 0 );
         return 0;
       }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x86" ) & RM() ) ))
-  
+
     {
       if (ic.rex_p) return new Xchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new Xchg<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x87" ) & RM() ) ))
-  
+
     {
       if (ic.opsize()==16) return new Xchg<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new Xchg<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
@@ -732,7 +732,47 @@ template <class ARCH> struct DC<ARCH,NOP> { Operation<ARCH>* get( InputCode<ARCH
 
     return new Nop<ARCH>( _.opbase() );
 
-  if (auto _ = match( ic, opcode( "\x0f\x1f" ) /0 & RM() ))
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /4 & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /5 & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /6 & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /7 & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x19" ) & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1a" ) & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1b" ) & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1c" ) & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1d" ) & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1e" ) & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1f" ) & RM() ))
 
     return new Nop<ARCH>( _.opbase() );
 
@@ -757,21 +797,21 @@ template <class ARCH> struct DC<ARCH,XADD> { Operation<ARCH>* get( InputCode<ARC
 {
   // XADD -- Exchange and Add
   if (auto _ = match( ic, lockable( opcode( "\x0f\xc0" ) & RM() ) ))
-  
+
     {
       if (ic.rex_p) return new XAddEG<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new XAddEG<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xc1" ) & RM() ) ))
-  
+
     {
       if (ic.opsize()==16) return new XAddEG<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new XAddEG<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new XAddEG<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -779,7 +819,7 @@ template <class ARCH, class OP>
 struct Cmovcc : public Operation<ARCH>
 {
   Cmovcc( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _cc )
-    : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ), cc( _cc ) {} RMOp<ARCH> rm; uint8_t gn; uint8_t cc; 
+    : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ), cc( _cc ) {} RMOp<ARCH> rm; uint8_t gn; uint8_t cc;
   void disasm( std::ostream& sink ) const { sink << "cmov" << DisasmCond( cc ) << ' ' << DisasmE( OP(), rm ) << ',' << DisasmG( OP(), gn ); }
   void execute( ARCH& arch ) const
   {
@@ -793,14 +833,14 @@ template <class ARCH> struct DC<ARCH,CMOVCC> { Operation<ARCH>* get( InputCode<A
 {
   // CMOVcc -- Conditional Move
   if (auto _ = match( ic, (opcode( "\x0f\x40" ) + Var<4>()) & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new Cmovcc<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), _.var() );
       if (ic.opsize()==32) return new Cmovcc<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), _.var() );
       if (ic.opsize()==64) return new Cmovcc<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), _.var() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -827,15 +867,15 @@ struct BtRM : public Operation<ARCH>
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
     typedef typename ARCH::addr_t addr_t;
-    
+
     enum { BITSHIFT = SB<OP::SIZE>::begin, LOGOPBYTES = SB<OP::SIZE/8>::begin };
-    
+
     typename TypeFor<ARCH,OP::SIZE>::s str_bit( arch.regread( OP(), gn ) );
 
     addr_t offset = addr_t((str_bit >> BITSHIFT) << LOGOPBYTES);
     u_type opr_bit = u_type(str_bit) % u_type(OP::SIZE);
     u_type str_opr = rm.is_memory_operand() ? arch.vmm_memread( rm->segment, rm->effective_address( arch ) + offset, u_type() ) : arch.regread( OP(), rm.ereg() );
-    
+
     arch.flagwrite( ARCH::FLAG::CF, typename ARCH::bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
   }
 };
@@ -844,23 +884,23 @@ template <class ARCH> struct DC<ARCH,BT> { Operation<ARCH>* get( InputCode<ARCH>
 {
   // BT -- BitOpcode
   if (auto _ = match( ic, opcode( "\x0f\xba" ) /4 & RM() & Imm<8>() ))
-  
+
     {
       if (ic.opsize()==16) return new BtImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==32) return new BtImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==64) return new BtImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xa3" ) & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new BtRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new BtRM<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new BtRM<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -924,25 +964,25 @@ struct BtcRM : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,BTC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // BTC -- Bit Test and Complement
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xba" ) /7 & RM() ) & Imm<8>() ))
-  
+
     {
       if (ic.opsize()==16) return new BtcImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==32) return new BtcImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==64) return new BtcImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       return 0;
     }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xbb" ) & RM() ) ))
-  
+
     {
       if (ic.opsize()==16) return new BtcRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new BtcRM<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new BtcRM<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -1006,25 +1046,25 @@ struct BtrRM : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,BTR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // BTR -- Bit Test and Reset
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xba" ) /6 & RM() ) & Imm<8>() ))
-  
+
     {
       if (ic.opsize()==16) return new BtrImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==32) return new BtrImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==64) return new BtrImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       return 0;
     }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xb3" ) & RM() ) ))
-  
+
     {
       if (ic.opsize()==16) return new BtrRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new BtrRM<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new BtrRM<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -1088,25 +1128,25 @@ struct BtsRM : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,BTS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // BTS -- Bit Test and Reset
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xba" ) /5 & RM() ) & Imm<8>() ))
-  
+
     {
       if (ic.opsize()==16) return new BtsImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==32) return new BtsImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       if (ic.opsize()==64) return new BtsImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
       return 0;
     }
-  
+
   if (auto _ = match( ic, lockable( opcode( "\x0f\xab" ) & RM() ) ))
-  
+
     {
       if (ic.opsize()==16) return new BtsRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new BtsRM<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new BtsRM<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -1126,14 +1166,14 @@ struct Bswap : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,BSWAP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\x0f\xc8" ) + Reg() ))
-  
+
     {
       if (ic.opsize()==16) return new Bswap<ARCH,GOw>( _.opbase(), _.ereg() );
       if (ic.opsize()==32) return new Bswap<ARCH,GOd>( _.opbase(), _.ereg() );
       if (ic.opsize()==64) return new Bswap<ARCH,GOq>( _.opbase(), _.ereg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -1148,14 +1188,14 @@ struct Movnti : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,MOVNTI> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\x0f\xc3" ) & RM() ))
-  
+
     {
       if (ic.opsize()==16) return new Movnti<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new Movnti<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==64) return new Movnti<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -1170,52 +1210,52 @@ struct LoadFarPointer : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,LFP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // LDS/LES/LFS/LGS/LSS -- Load Far Pointer
-  
+
   if (auto _ = match( ic, opcode( "\xc5" ) & RM_mem() ))
-  
+
     {
       if (ic.mode64()) return 0;
       if (ic.opsize()==16) return new LoadFarPointer<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), DS );
       if (ic.opsize()==32) return new LoadFarPointer<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), DS );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xb2" ) & RM_mem() ))
-  
+
     {
       if (ic.opsize()==16) return new LoadFarPointer<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), SS );
       if (ic.opsize()==32) return new LoadFarPointer<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), SS );
       if (ic.opsize()==64) return new LoadFarPointer<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), SS );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\xc4" ) & RM_mem() ))
-  
+
     {
       if (ic.mode64()) return 0;
       if (ic.opsize()==16) return new LoadFarPointer<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), ES );
       if (ic.opsize()==32) return new LoadFarPointer<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), ES );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xb4" ) & RM_mem() ))
-  
+
     {
       if (ic.opsize()==16) return new LoadFarPointer<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), FS );
       if (ic.opsize()==32) return new LoadFarPointer<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), FS );
       if (ic.opsize()==64) return new LoadFarPointer<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), FS );
       return 0;
     }
-  
+
   if (auto _ = match( ic, opcode( "\x0f\xb5" ) & RM_mem() ))
-  
+
     {
       if (ic.opsize()==16) return new LoadFarPointer<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), GS );
       if (ic.opsize()==32) return new LoadFarPointer<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), GS );
       if (ic.opsize()==64) return new LoadFarPointer<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), GS );
       return 0;
     }
-  
+
   return 0;
 }};
 
@@ -1249,11 +1289,10 @@ template <class ARCH> struct DC<ARCH,PREFETCH> { Operation<ARCH>* get( InputCode
   if (auto _ = match( ic, opcode( "\x0f\x0d" ) /1 & RM_mem() ))
 
     return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetchw" );
-  
+
   if (auto _ = match( ic, opcode( "\x0f\x0d" ) /2 & RM_mem() ))
 
     return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetchwt1" );
-  
+
   return 0;
 }};
-
