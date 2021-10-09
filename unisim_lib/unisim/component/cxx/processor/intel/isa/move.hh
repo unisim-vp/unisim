@@ -718,6 +718,23 @@ template <class ARCH> struct DC<ARCH,XCHG> { Operation<ARCH>* get( InputCode<ARC
 }};
 
 template <class ARCH>
+struct Hint : public Operation<ARCH>
+{
+  Hint(OpBase<ARCH> const& opbase, uint8_t id, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ) {}
+  void disasm( std::ostream& sink ) const { sink << "nop"; }
+  void execute( ARCH& arch ) const {}
+};
+
+template <class ARCH> struct DC<ARCH,HINT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, (opcode( "\x0f\x18" ) + Var<4>()) & RM() ))
+
+    return new Hint<ARCH>( _.opbase(), _.var(), _.rmop(), _.greg() );
+
+  return 0;
+}};
+
+template <class ARCH>
 struct Nop : public Operation<ARCH>
 {
   Nop( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
@@ -732,47 +749,7 @@ template <class ARCH> struct DC<ARCH,NOP> { Operation<ARCH>* get( InputCode<ARCH
 
     return new Nop<ARCH>( _.opbase() );
 
-  if (auto _ = match( ic, opcode( "\x0f\x18" ) /4 & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x18" ) /5 & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x18" ) /6 & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x18" ) /7 & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x19" ) & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x1a" ) & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x1b" ) & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x1c" ) & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x1d" ) & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x1e" ) & RM() ))
-
-    return new Nop<ARCH>( _.opbase() );
-
-  if (auto _ = match( ic, opcode( "\x0f\x1f" ) & RM() ))
+  if (auto _ = match( ic, opcode( "\x0f\x1f" ) /0 & RM() ))
 
     return new Nop<ARCH>( _.opbase() );
 
@@ -1296,3 +1273,4 @@ template <class ARCH> struct DC<ARCH,PREFETCH> { Operation<ARCH>* get( InputCode
 
   return 0;
 }};
+
