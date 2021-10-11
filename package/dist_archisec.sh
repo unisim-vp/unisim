@@ -67,19 +67,19 @@ import sys/mman || exit
 copy isa_thumb isa_arm32 isa source header template data
 
 ARMSEC_SRCDIR=cxx/armsec
+#ARMSEC_DSTDIR=aarch32
 ARMSEC_DSTDIR=unisim/component/cxx/processor/arm
 ARMSEC_ISA_FILES="\
+decoder.hh \
+decoder.cc \
 top_thumb.isa \
 top_arm32.isa \
 "
 
 for file in ${ARMSEC_ISA_FILES}; do
     dist_copy "${UNISIM_SIMULATOR_DIR}/${ARMSEC_SRCDIR}/${file}" \
-    "${DEST_DIR}/${ARMSEC_DSTDIR}/${file}"
+              "${DEST_DIR}/${ARMSEC_DSTDIR}/${file}"
 done
-dist_copy_and_patch "${UNISIM_SIMULATOR_DIR}/${ARMSEC_SRCDIR}/main.cc" \
-		    "${DEST_DIR}/${ARMSEC_DSTDIR}/main.cc" \
-		    "${UNISIM_SIMULATOR_DIR}/${ARCHISEC_SRCDIR}/armsec.patch"
 
 AARCH64_SRCDIR=cxx/aarch64dba
 AARCH64_DSTDIR=unisim/component/cxx/processor/arm/isa/arm64

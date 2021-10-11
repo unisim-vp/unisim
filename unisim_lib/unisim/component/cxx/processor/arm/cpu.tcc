@@ -207,7 +207,7 @@ CPU<FP_IMPL,CPU_IMPL>::CPU(const char *name, Object *parent)
       if (is_banked) {
         std::string br_name = name + "_usr";
         std::string br_pretty_name = pretty_name + "_usr";
-        dbg_reg = new BankedRegister( *this, br_pretty_name, USER_MODE, idx );
+        dbg_reg = new BankedRegister( *this, br_pretty_name, PSR::USER_MODE, idx );
         registers_registry[br_pretty_name] = dbg_reg;
         if (br_name != br_pretty_name)
           registers_registry[br_name] = dbg_reg;
@@ -419,17 +419,17 @@ CPU<FP_IMPL,CPU_IMPL>::GetPL()
   /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
   switch (cpsr.Get(M))
     {
-    case USER_MODE:
+    case PSR::USER_MODE:
       return 0;
       break;
-    case FIQ_MODE:
-    case IRQ_MODE:
-    case SUPERVISOR_MODE:
-    case MONITOR_MODE:
-    case ABORT_MODE:
-    case HYPERVISOR_MODE:
-    case UNDEFINED_MODE:
-    case SYSTEM_MODE:
+    case PSR::FIQ_MODE:
+    case PSR::IRQ_MODE:
+    case PSR::SUPERVISOR_MODE:
+    case PSR::MONITOR_MODE:
+    case PSR::ABORT_MODE:
+    case PSR::HYPERVISOR_MODE:
+    case PSR::UNDEFINED_MODE:
+    case PSR::SYSTEM_MODE:
       return 1;
       break;
     default:
@@ -556,7 +556,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakeReset()
   // registers accessed later in the code.  Also reset other system
   // components.
   
-  cpsr.Set( M, SUPERVISOR_MODE );
+  cpsr.Set( M, PSR::SUPERVISOR_MODE );
   //if HaveSecurityExt() then SCR.NS = '0';
 
   CP15ResetRegisters();
@@ -650,7 +650,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakeUndefInstrException()
 
   // if CPSR.M == '10110' then SCR.NS = '0';
   CurrentMode().Swap( *this ); // OUT
-  cpsr.Set( M, UNDEFINED_MODE ); // CPSR.M = '11011';
+  cpsr.Set( M, PSR::UNDEFINED_MODE ); // CPSR.M = '11011';
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
   

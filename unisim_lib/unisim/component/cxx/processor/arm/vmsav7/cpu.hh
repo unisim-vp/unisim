@@ -154,8 +154,6 @@ struct CPU
   using PCPU::next_insn_addr;
   using PCPU::SCTLR;
   using PCPU::GetEndianness;
-  using PCPU::USER_MODE;
-  using PCPU::HYPERVISOR_MODE;
 
   struct AddressDescriptor
   {
