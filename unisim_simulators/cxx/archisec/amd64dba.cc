@@ -1,3 +1,4 @@
+#include <amd64/decoder.hh>
 #include <vector>
 #include <iostream>
 #include <sstream>
@@ -29,6 +30,11 @@ extern "C" value amd64dba_decode(value vmode, value vaddr, value vopcode) {
     code.push_back(nibble_value(opcode[i]) << 4 | nibble_value(opcode[i + 1]));
   }
   std::stringstream s;
-  intel::decode(Long_val(vmode), Unsigned_long_val(vaddr), code, s);
+  intel::Decoder decoder;
+
+  decoder.mode64 = Long_val(vmode);
+
+  decoder.process(s, Unsigned_long_val(vaddr), std::move(code));
+
   return caml_copy_string(s.str().c_str());
 }

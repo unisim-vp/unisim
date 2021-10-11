@@ -1,4 +1,4 @@
-#include <unisim/component/cxx/processor/arm/decoder.hh>
+#include <aarch32/decoder.hh>
 
 #include <vector>
 #include <iostream>
@@ -14,11 +14,8 @@ extern "C" value arm32dba_decode(value vmode, value vendian,
   std::stringstream s;
   armsec::Decoder decoder;
 
-  decoder.iset =
-    Long_val(vmode) ?
-    armsec::Processor::StatusRegister::Thumb :
-    armsec::Processor::StatusRegister::Arm;
-  decorer.bigendian = Long_val(vendian);
+  decoder.iset = Long_val(vmode) ? decoder.Thumb : decoder.Arm;
+  decoder.bigendian = Long_val(vendian);
   decoder.mode = unisim::component::cxx::processor::arm::PSR::USER_MODE;
   decoder.itstate = Long_val(vitstate);
 

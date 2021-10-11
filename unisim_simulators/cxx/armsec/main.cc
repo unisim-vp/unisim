@@ -82,7 +82,6 @@ main( int argc, char** argv )
       return 1;
     }
 
-  
   armsec::Decoder decoder;
   typedef armsec::StatusRegister::PSR PSR;
 

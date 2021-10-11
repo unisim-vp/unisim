@@ -32,62 +32,18 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <decoder.hh>
-#include <iostream>
-#include <vector>
-#include <cstdlib>
-#include <cstring>
+#ifndef __AARCH64_DECODER_HH__
+#define __AARCH64_DECODER_HH__
+
+#include <iosfwd>
 #include <inttypes.h>
 
-bool getu64( uint64_t& res, char const* arg )
-{
-  char *end;
-  uint64_t tmp = strtoull( arg, &end, 0 );
-  if ((*arg == '\0') or (*end != '\0'))
-    return false;
-  res = tmp;
-  return true;
-}
-
-bool getbytes( std::vector<uint8_t>& res, char const* arg )
-{
-  for (char const* end = 0; *arg; arg = end)
-    {
-      unsigned l = strtoul(arg,(char**)&end,16);
-      if (end == arg) break;
-      res.push_back(l);
-    }
-  return res.size();
-}
-
-char const* usage()
-{
-  return
-    "usage: <program> x86|intel64 <address> <encoding>\n";
-}
-
-int
-main( int argc, char** argv )
-{
-  if (argc != 4)
-    {
-      std::cerr << "Wrong number of CLI arguments.\n" << usage();
-      return 1;
-    }
-
-  uint64_t addr;
-  std::vector<uint8_t> code;
-
-  if (not getu64(addr, argv[2]) or not getbytes(code, argv[3]))
-    {
-      std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
-      return 1;
-    }
-
-  intel::Decoder decoder;
-  decoder.mode64 = strcmp("intel64", argv[1]) == 0;
-  decoder.process( std::cout, addr, std::move(code) );
+namespace aarch64 {
   
-  return 0;
+  struct Decoder
+  {
+    void process( std::ostream& sink, uint64_t addr, uint32_t code );
+  };
 }
 
+#endif /* __AARCH64_DECODER_HH__ */

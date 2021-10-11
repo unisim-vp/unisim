@@ -45,10 +45,12 @@ aarch64dec.isa \
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
+decoder.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_ISA_FILES} \
+decoder.hh \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\

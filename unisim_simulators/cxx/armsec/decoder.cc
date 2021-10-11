@@ -1397,24 +1397,6 @@ Decoder::process( std::ostream& sink, uint32_t addr, uint32_t code )
   actset.translate( sink );
 }
 
-int decode ( StatusRegister::InstructionSet iset, bool bigendian,
- 	     uint32_t mode, unsigned itstate,
- 	     uint32_t addr, uint32_t code,
- 	     std::ostream& sink )
-
-{
-  Decoder decoder;
-
-  decoder.iset = iset;
-  decoder.bigendian = bigendian;
-  decoder.mode = mode;
-  decoder.itstate = itstate;
-
-  decoder.process( sink, addr, code );
-  
-  return 0;
-}
-
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 Processor::CP15Reg*
