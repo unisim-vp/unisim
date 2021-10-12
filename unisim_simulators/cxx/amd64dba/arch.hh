@@ -294,6 +294,7 @@ struct ProcessorBase
 
   ActionNode*      path;
   ipproc_t         next_insn_mode;
+  bool             abort;
 };
 
 template <class MODE>
@@ -333,20 +334,26 @@ struct Processor : public ProcessorBase
     SegBaseID( char const* _code ) : SegmentID(_code) {}
   };
   
-  Expr                        segment_bases[2]; // FS and GS
-  addr_t GetSegBase( unsigned idx ) { return addr_t( segment_bases[idx-4] ); }
+  Expr                        segment_bases[6];
+  Expr GetSegBase( unsigned idx )
+  {
+    Expr& segbase = segment_bases[idx];
+    if (ExprNode const* node = segbase.node)
+      return node;
+    return (segbase = newRegRead( SegBaseID( typename SegBaseID::Code(idx) ) ) );
+  }
 
   /*** MEMORY ***/
   Expr PerformLoad( unsigned bytes, unsigned segment, addr_t addr )
   {
     if (segment >= 4) /*FS|GS relative addressing*/
-      addr = GetSegBase(segment) + addr;
+      addr = addr_t(GetSegBase(segment)) + addr;
     return new Load( addr.expr, bytes, 0, false );
   }
   void PerformStore( unsigned bytes, unsigned segment, addr_t addr, Expr const& value )
   {
     if (segment >= 4) /*FS|GS relative addressing*/
-      addr = GetSegBase(segment) + addr;
+      addr = addr_t(GetSegBase(segment)) + addr;
     stores.insert( Expr( new Store( addr.expr, value, bytes, 0, false ) ) );
   }
 
@@ -648,7 +655,7 @@ public:
 
   void stop() { throw Unimplemented(); /*hardware*/ }
 
-  void _DE()  { throw Unimplemented(); /*system*/ }
+  void _DE()  { abort = true; }
 
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
@@ -686,13 +693,6 @@ Processor<MODE>::Processor()
 {
   for (IRegID reg; reg.next();)
     regvalues[reg.idx()][0] = newRegRead( reg );
-
-  for (SegBaseID reg; reg.next();)
-    {
-      if (reg.code < reg.fs)
-        continue;
-      segment_bases[reg.idx()-4] = newRegRead( reg );
-    }
 
   for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
     {
@@ -838,6 +838,12 @@ Processor<MODE>::close( Processor<MODE> const& ref )
     path->add_sink( new Call( next_insn_addr.expr, return_address ) );
   else
     path->add_sink( new Goto( next_insn_addr.expr ) );
+
+  if (abort)
+    {
+      path->add_sink( new unisim::util::symbolic::binsec::AssertFalse() );
+      return complete;
+    }
 
   for (int reg = GREGCOUNT; --reg >= 0;)
     {

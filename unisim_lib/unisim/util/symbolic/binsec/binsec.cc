@@ -231,7 +231,10 @@ namespace binsec {
               case Op::Add:     sink << " + "; break;
               case Op::Sub:     sink << " - "; break;
               case Op::Mul:     sink << " * "; break;
-              case Op::Mod:     sink << " modu "; break;
+              case Op::Mod:     sink << " mods "; break;
+              case Op::Modu:     sink << " modu "; break;
+              case Op::Div:     sink << " /s "; break;
+              case Op::Divu:     sink << " /u "; break;
 
               case Op::Xor:     sink << " xor "; break;
               case Op::Or:      sink << " or "; break;

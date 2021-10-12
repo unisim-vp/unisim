@@ -38,6 +38,7 @@
 ProcessorBase::ProcessorBase()
   : path(0)
   , next_insn_mode(ipjmp)
+  , abort(false)
 {
   for (FLAG reg; reg.next();)
     flagvalues[reg.idx()] = newRegRead( reg );
