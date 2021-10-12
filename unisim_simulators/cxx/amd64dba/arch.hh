@@ -263,10 +263,8 @@ struct ProcessorBase
   void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
   /*** SEGMENTS ***/
-
-  struct SRegID : public unisim::util::identifier::Identifier<SRegID>
+  struct SegmentID : public unisim::util::identifier::Identifier<SegmentID>
   {
-    typedef uint16_t register_type;
     enum Code { es, cs, ss, ds, fs, gs, end } code;
 
     char const* c_str() const
@@ -284,9 +282,9 @@ struct ProcessorBase
       return "NA";
     }
 
-    SRegID() : code(end) {}
-    SRegID( Code _code ) : code(_code) {}
-    SRegID( char const* _code ) : code(end) { init( _code ); }
+    SegmentID() : code(end) {}
+    SegmentID( Code _code ) : code(_code) {}
+    SegmentID( char const* _code ) : code(end) { init( _code ); }
   };
 
   u16_t                       segregread( unsigned idx ) { throw Unimplemented(); return u16_t(); }
@@ -325,19 +323,30 @@ struct Processor : public ProcessorBase
 
   struct OpHeader { OpHeader( nat_addr_t _address ) : address( _address ) {} nat_addr_t address; };
 
-  /*** MEMORY ***/
-  Expr PerformLoad( unsigned bytes, unsigned segment, addr_t const& addr )
+  /*** SEGMENTS ***/
+  struct SegBaseID : public SegmentID
   {
-    //interface.memaccess( addr.expr, false );
+    typedef nat_addr_t register_type;
+    void Repr(std::ostream& sink) const { sink << c_str() << "_base"; }
+    SegBaseID() = default;
+    SegBaseID( Code _code ) : SegmentID(_code) {}
+    SegBaseID( char const* _code ) : SegmentID(_code) {}
+  };
+  
+  Expr                        segment_bases[2]; // FS and GS
+  addr_t GetSegBase( unsigned idx ) { return addr_t( segment_bases[idx-4] ); }
+
+  /*** MEMORY ***/
+  Expr PerformLoad( unsigned bytes, unsigned segment, addr_t addr )
+  {
     if (segment >= 4) /*FS|GS relative addressing*/
-      throw Unimplemented();
+      addr = GetSegBase(segment) + addr;
     return new Load( addr.expr, bytes, 0, false );
   }
-  void PerformStore( unsigned bytes, unsigned segment, addr_t const& addr, Expr const& value )
+  void PerformStore( unsigned bytes, unsigned segment, addr_t addr, Expr const& value )
   {
-    //interface.memaccess( addr.expr, true );
     if (segment >= 4) /*FS|GS relative addressing*/
-      throw Unimplemented();
+      addr = GetSegBase(segment) + addr;
     stores.insert( Expr( new Store( addr.expr, value, bytes, 0, false ) ) );
   }
 
@@ -677,6 +686,13 @@ Processor<MODE>::Processor()
 {
   for (IRegID reg; reg.next();)
     regvalues[reg.idx()][0] = newRegRead( reg );
+
+  for (SegBaseID reg; reg.next();)
+    {
+      if (reg.code < reg.fs)
+        continue;
+      segment_bases[reg.idx()-4] = newRegRead( reg );
+    }
 
   for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
     {
