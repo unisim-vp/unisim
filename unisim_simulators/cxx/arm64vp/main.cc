@@ -33,6 +33,9 @@
  */
 
 #include "architecture.hh"
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -200,14 +203,32 @@ void usr_handler(int signum)
     }
 }
 
+void simdefault(unisim::kernel::Simulator* sim)
+{
+  sim->SetVariable("http-server.http-port", 12360);
+}
+
 int
 main(int argc, char *argv[])
 {
   char const* disk_filename = "rootfs.ext4";
 
-  // Loading image
+  unisim::kernel::Simulator simulator(argc, argv, &simdefault);
+  unisim::service::http_server::HttpServer http_server("http-server");
+  unisim::service::web_terminal::WebTerminal web_terminal("web-terminal");
+  unisim::kernel::logger::console::Printer printer;
 
+  //  unisim::service::net_streamer::NetStreamer net_streamer("net_streamer");
+  //  netstreamer.tcp_port = 1234;
+  //  netstreamer.filter_null_character = true;
+  //  netstreamer.verbose = true;
   AArch64 arch;
+
+  arch.uart.dterm.char_io_import >> web_terminal.char_io_export;
+  *http_server.http_server_import[0] >> web_terminal.http_server_export;
+
+  if (simulator.Setup() != simulator.ST_OK_TO_START)
+    return 1;
 
   arch.map_gic(0x48000000);
   arch.map_uart(0x49000000);
@@ -225,6 +246,7 @@ main(int argc, char *argv[])
         }
     }
 
+  // Loading image
   // if (not load_linux(arch, "Image", "device_tree.dtb"))
   //   return 1;
   arch.load_snapshot("uvp.shot");

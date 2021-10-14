@@ -129,25 +129,18 @@ HostTerm::FlushChars()
   std::cout.flush();
 }
 
-Serial::Serial()
-  : netstreamer()
+Serial::Serial( char const* name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
+  , char_io_import("char-io-import", this)
   , logger("serial.log")
 {
-  netstreamer.tcp_port = 1234;
-  //  netstreamer.verbose = true;
-  netstreamer.filter_null_character = true;
-}
-
-void
-Serial::Initialize()
-{
-  netstreamer.Initialize();
 }
 
 bool
 Serial::GetChar(char& c)
 {
-  if (not netstreamer.GetChar(c))
+  if (not char_io_import->GetChar(c))
     return false;
   logger << "r:'\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(uint8_t(c)) << std::dec << "'" << std::endl;
   logger.flush();
@@ -159,11 +152,11 @@ Serial::PutChar(char c)
 {
   logger << "w:'\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(uint8_t(c)) << std::dec << "'" << std::endl;
   logger.flush();
-  netstreamer.PutChar(c);
+  char_io_import->PutChar(c);
 }
 
-void
-Serial::FlushOutput()
-{
-  netstreamer.FlushOutput();
-}
+// void
+// Serial::FlushOutput()
+// {
+//   char_io_import->FlushOutput();
+// }

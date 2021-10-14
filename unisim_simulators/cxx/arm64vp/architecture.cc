@@ -1457,7 +1457,7 @@ AArch64::map_uart(uint64_t base_addr)
   devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 
   /* Start asynchronous reception loop */
-  uart.dterm.Initialize();
+  uart.dterm.Start();
   handle_uart();
 }
 
@@ -1497,7 +1497,7 @@ AArch64::UART::tx_pop()
   if (tx_count == 0)
     return;
 
-  dterm.FlushOutput();
+  //  dterm.FlushOutput();
 
   tx_count = 0; // Infinite throughput
   RIS |= TX_INT;
@@ -1999,7 +1999,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
 }
 
 AArch64::UART::UART()
-  : dterm(), rx_value('\0'), rx_valid(false), tx_count()
+  : dterm("serial",0), rx_value('\0'), rx_valid(false), tx_count()
   , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
 {
 }

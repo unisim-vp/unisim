@@ -124,7 +124,7 @@ cps.execute = {
 
   typedef typename ARCH::U32 U32;
 
-  if (cpu.Test(cpu.CPSR().Get(M) == U32(cpu.USER_MODE)))
+  if (cpu.Test(cpu.CPSR().Get(M) == U32(PSR::USER_MODE)))
     return;
 
   // CPSRWriteByInstr() checks for illegal mode changes

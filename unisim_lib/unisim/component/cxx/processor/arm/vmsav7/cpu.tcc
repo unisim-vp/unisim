@@ -441,7 +441,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == PSR::HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -484,7 +484,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
 
   uint32_t mva = addr & ~lo_mask;
   AddressDescriptor loc( mva );
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_write, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_write, size );
 
   // Send the request to the memory interface
   if (not PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
@@ -542,14 +542,14 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == PSR::HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
   uint32_t mva = addr & ~lo_mask;
   AddressDescriptor loc( mva );
 
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_read, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_read, size );
 
   uint8_t data[4];
 
@@ -983,7 +983,7 @@ void
 CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_exec, IPB_LINE_SIZE );
   uint32_t buffer_index = address % (IPB_LINE_SIZE);
 
   if (unlikely(ipb_base_address != loc.address))
@@ -1010,7 +1010,7 @@ void
 CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
-  bool ispriv = cpsr.Get(M) != USER_MODE;
+  bool ispriv = cpsr.Get(M) != PSR::USER_MODE;
   TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
   intptr_t buffer_index = address % (IPB_LINE_SIZE);
 
@@ -1520,7 +1520,7 @@ CPU<CPU_IMPL>::TranslateAddress( AddressDescriptor& loc, bool ispriv, mem_acc_ty
   // FirstStageTranslation
 
   if (arm::sctlr::M.Get( this->SCTLR )) {
-    bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
+    bool ishyp = cpsr.Get(M) == PSR::HYPERVISOR_MODE;
     TLB::Entry tlbe;
 
     // Stage 1 MMU enabled

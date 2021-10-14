@@ -716,7 +716,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakeDataOrPrefetchAbortException( bool isdata )
   // if HaveSecurityExt() && CPSR.M == '10110' then SCR.NS = '0';
   
   CurrentMode().Swap( *this ); // OUT
-  cpsr.Set( M, ABORT_MODE ); // CPSR.M = '10111';
+  cpsr.Set( M, PSR::ABORT_MODE ); // CPSR.M = '10111';
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
   
@@ -776,7 +776,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakeSVCException()
   
   // if CPSR.M == '10110' then SCR.NS = '0';
   CurrentMode().Swap( *this ); // OUT
-  cpsr.Set( M, SUPERVISOR_MODE ); // CPSR.M = '10011';
+  cpsr.Set( M, PSR::SUPERVISOR_MODE ); // CPSR.M = '10011';
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
   
@@ -818,7 +818,7 @@ CPU<FP_IMPL,CPU_IMPL>::TakePhysicalFIQorIRQException( bool isIRQ )
   // initially in Monitor mode. This affects the Banked versions
   // of various registers accessed later in the code.
   CurrentMode().Swap( *this ); // OUT
-  cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
+  cpsr.Set( M, isIRQ ? PSR::IRQ_MODE : PSR::FIQ_MODE );
   Mode& newmode = CurrentMode();
   newmode.Swap( *this ); // IN
   // Write return information to registers, and make further CPSR
