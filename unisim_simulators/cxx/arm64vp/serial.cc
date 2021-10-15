@@ -129,34 +129,3 @@ HostTerm::FlushChars()
   std::cout.flush();
 }
 
-Serial::Serial( char const* name, unisim::kernel::Object* parent )
-  : unisim::kernel::Object(name, 0)
-  , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
-  , char_io_import("char-io-import", this)
-  , logger("serial.log")
-{
-}
-
-bool
-Serial::GetChar(char& c)
-{
-  if (not char_io_import->GetChar(c))
-    return false;
-  logger << "r:'\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(uint8_t(c)) << std::dec << "'" << std::endl;
-  logger.flush();
-  return true;
-}
-
-void
-Serial::PutChar(char c)
-{
-  logger << "w:'\\x" << std::hex << std::setw(2) << std::setfill('0') << unsigned(uint8_t(c)) << std::dec << "'" << std::endl;
-  logger.flush();
-  char_io_import->PutChar(c);
-}
-
-// void
-// Serial::FlushOutput()
-// {
-//   char_io_import->FlushOutput();
-// }

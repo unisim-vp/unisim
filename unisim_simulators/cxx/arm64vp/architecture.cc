@@ -43,12 +43,11 @@
 #include <termios.h>
 #include <unistd.h>
 
-
 AArch64::AArch64()
   : regmap()
   , devices()
   , gic()
-  , uart()
+  , uart("uart", 0)
   , vt()
   , pages()
   , excmon()
@@ -1456,8 +1455,6 @@ AArch64::map_uart(uint64_t base_addr)
 
   devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 
-  /* Start asynchronous reception loop */
-  uart.dterm.Start();
   handle_uart();
 }
 
@@ -1488,7 +1485,7 @@ void
 AArch64::UART::tx_push(char ch)
 {
   tx_count += 1;
-  dterm.PutChar(ch);
+  char_io_import->PutChar(ch);
 }
 
 void
@@ -1497,7 +1494,7 @@ AArch64::UART::tx_pop()
   if (tx_count == 0)
     return;
 
-  //  dterm.FlushOutput();
+  char_io_import->FlushChars();
 
   tx_count = 0; // Infinite throughput
   RIS |= TX_INT;
@@ -1998,8 +1995,11 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 
-AArch64::UART::UART()
-  : dterm("serial",0), rx_value('\0'), rx_valid(false), tx_count()
+AArch64::UART::UART(char const* name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name,parent)
+  , char_io_import("char-io-import",this)
+  , rx_value('\0'), rx_valid(false), tx_count()
   , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
 {
 }
@@ -2007,7 +2007,7 @@ AArch64::UART::UART()
 bool
 AArch64::UART::rx_push()
 {
-  if (not rx_valid) rx_valid = dterm.GetChar(rx_value);
+  if (not rx_valid) rx_valid = char_io_import->GetChar(rx_value);
   if (rx_valid) RIS |= RX_INT;
   return rx_valid;
 }

@@ -47,6 +47,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/char_io.hh>
 #include <serial.hh>
 #include <iosfwd>
 #include <set>
@@ -59,7 +60,7 @@ void force_throw();
 struct AArch64
   : public unisim::service::interfaces::Registers
   , public unisim::service::interfaces::Memory<uint64_t>
-  , unisim::service::interfaces::MemoryInjection<uint64_t>
+  , public unisim::service::interfaces::MemoryInjection<uint64_t>
 {
   typedef TaintedValue< uint8_t> U8;
   typedef TaintedValue<uint16_t> U16;
@@ -829,8 +830,10 @@ struct AArch64
   void handle_rtc();
 
   struct UART
+    : public virtual unisim::kernel::Object
+    , unisim::kernel::Client<unisim::service::interfaces::CharIO>
   {
-    UART();
+    UART(char const* name, unisim::kernel::Object* parent);
     
     void sync( SnapShot& );
     uint16_t flags() const;
@@ -843,7 +846,7 @@ struct AArch64
     enum { RX_INT = 0x10, TX_INT = 0x20 };
     static unsigned const qsize = 32;
 
-    Serial dterm;
+    unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
     char rx_value;
     bool rx_valid;
     unsigned tx_count;

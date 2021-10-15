@@ -25,6 +25,7 @@ import unisim/service/debug/inline_debugger || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/http_server || exit
 import unisim/service/web_terminal || exit
+import unisim/service/netstreamer || exit
 
 import std/iostream || exit
 import std/vector || exit

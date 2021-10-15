@@ -36,25 +36,9 @@
 #define __ARM64VP_SERIAL_HH__
 
 #include <unisim/kernel/kernel.hh>
-#include <unisim/service/interfaces/char_io.hh>
 #include <fstream>
 #include <pthread.h>
 #include <inttypes.h>
-
-struct Serial
-  : public virtual unisim::kernel::Object
-  , unisim::kernel::Client<unisim::service::interfaces::CharIO>
-{
-  Serial( char const* name, unisim::kernel::Object* parent );
-  void Start() {}
-  bool GetChar(char& c);
-  void PutChar(char c);
-  //  void FlushOutput();
-
-  unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
-  //  unisim::util::netstreamer::NetStreamer netstreamer;
-  std::ofstream logger;
-};
 
 struct HostTerm
 {
