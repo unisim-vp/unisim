@@ -209,12 +209,12 @@ Isa::expand( std::ostream& _sink ) const
 }
 
 Generator*
-Isa::generator( Isa& _source, Opts const& _options ) const
+Isa::generator( Opts const& _options )
 {
   switch (m_decoder)
     {
-    case RiscDecoder: return new RiscGenerator( _source, _options );
-    case CiscDecoder: return new CiscGenerator( _source, _options );
+    case RiscDecoder: return new RiscGenerator( *this, _options );
+    case CiscDecoder: return new CiscGenerator( *this, _options );
       // case VliwDecoder: return new VliwGenerator( this ); break;
     default: break;
     }

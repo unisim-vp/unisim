@@ -243,7 +243,7 @@ GIL_MAIN (int argc, char** argv, char** envp)
       Gen( Generator* _gen ) : gen(_gen) {} Generator* gen;
       ~Gen() { delete gen; }
       Generator* operator -> () { return gen; }
-    } generator( isa.generator( isa, gil ) );
+    } generator( isa.generator( gil ) );
     
     // generator->init( isa, gil.verbosity );
     

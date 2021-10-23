@@ -109,7 +109,7 @@ struct Isa
   SDClass const*                sdclass( std::vector<ConstStr>& _namespace ) const;
   SDInstance const*             sdinstance( ConstStr _symbol ) const;
                                 
-  Generator*                    generator( Isa& _source, Opts const& _options ) const;
+  Generator*                    generator( Opts const& _options );
                                 
   void                          expand( std::ostream& _sink ) const;
   void                          deps( std::ostream& _sink, char const* _prefix ) const;
