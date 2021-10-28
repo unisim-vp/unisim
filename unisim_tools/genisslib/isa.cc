@@ -431,18 +431,16 @@ Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc const& fl 
   else if (_command == group_end)
     {
       GroupAccumulators::iterator ga = m_group_accs.find( group_symbol );
-      
-      {
-        /* group accumulator should exist */
-        if (ga == m_group_accs.end()) {
-          fl.err( "error: no corresponding `group %s %s' to `group %s %s' directive.",
-                  group_symbol.str(), group_begin.str(), group_symbol.str(), group_end.str() );
-          throw ParseError();
-        }
 
-        // check group name for conflicts
-        check_name_validity("group", group_symbol, fl);
+      /* group accumulator should exist */
+      if (ga == m_group_accs.end()) {
+        fl.err( "error: no corresponding `group %s %s' to `group %s %s' directive.",
+                group_symbol.str(), group_begin.str(), group_symbol.str(), group_end.str() );
+        throw ParseError();
       }
+
+      // check group name for conflicts
+      check_name_validity("group", group_symbol, fl);
       
       m_groups.push_back( ga->second );
       m_group_accs.erase( ga );
