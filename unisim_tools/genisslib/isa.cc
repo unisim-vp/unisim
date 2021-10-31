@@ -80,19 +80,6 @@ Isa::operation( ConstStr _symbol )
   return 0;
 }
 
-/** Remove an operation object from the global operation object list (m_operations)
-    @param operation the operation object to remove
-*/
-void
-Isa::remove( Operation* _op )
-{
-  for (Vector<Operation>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter) {
-    if (*iter != _op) continue;
-    m_operations.erase( iter );
-    return;
-  }
-}
-
 /** Add an operation object to the global operation object list
     (m_operations) and to active group accumulators (m_group_accs)
     @param operation the operation object to add
@@ -139,19 +126,6 @@ Isa::actionproto( ConstStr _symbol ) const
     if( (*proto)->m_symbol == _symbol ) return *proto;
 
   return 0;
-}
-
-/** Remove an action prototype object from the global action prototype object list (action_proto_list)
-    @param actionproto the action prototype object to remove
-*/
-void
-Isa::remove( ActionProto const* _ap )
-{
-  for (Vector<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter) {
-    if (*iter != _ap) continue;
-    m_actionprotos.erase( iter );
-    return;
-  }
 }
 
 /** Dump all objects from the global objects list (source_code_list, action_proto_list, operation_list) into a stream

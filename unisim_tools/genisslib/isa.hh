@@ -92,9 +92,7 @@ struct Isa
   Isa();
   ~Isa();
   
-  void                          remove( Operation* _op );
   void                          add( Operation* _op );
-  void                          remove( ActionProto const* _ap );
   Operation*                    operation( ConstStr _symbol );
   void                          check_name_validity(char const* kind, ConstStr symbol, FileLoc const& fl);
   struct OOG
