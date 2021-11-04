@@ -567,7 +567,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                     if (sdclass)
                       {
                         sdloc.err( "error: subdecoder class redeclared." );
-                        sdclass->m_fileloc.err( "subdecoder class previously declared here." );
+                        sdclass->nmcode.fileloc.err( "subdecoder class previously declared here." );
                         throw CLex::Scanner::Unexpected();
                       }
   

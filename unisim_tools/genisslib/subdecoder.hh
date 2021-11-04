@@ -22,6 +22,7 @@
 #include <fwd.hh>
 #include <conststr.hh>
 #include <errtools.hh>
+#include <sourcecode.hh>
 #include <referencecounting.hh>
 #include <vect.hh>
 #include <set>
@@ -29,15 +30,15 @@
 /** A Sub Decoder class object */
 struct SDClass :  virtual ReferenceCounter
 {
-  std::vector<ConstStr>       m_namespace;         /**< The namespace in which the decoder is defined */
-  std::set<unsigned int>        m_insnsizes;         /**< instructions size set (in bytes) of the decoder's operations */
-  FileLoc                     m_fileloc;           /**< The file location where subdecoder was declared */
+  std::vector<ConstStr>       m_namespace;   /**< The namespace in which the decoder is defined */
+  std::set<unsigned int>      m_insnsizes;   /**< instructions size set (in bytes) of the decoder's operations */
+  SourceCode                  nmcode;        /**< An artificial sourcecode with the normalized namespace and the file location where subdecoder was declared */
 
   template<typename _InputIterator>
   SDClass( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc const& _fileloc );
   ~SDClass();
 
-  ConstStr                    qd_namespace() const;
+  std::string                   qd_namespace() const;
   
   unsigned int                  maxsize() const { return *m_insnsizes.rbegin(); }
   unsigned int                  minsize() const { return *m_insnsizes.begin(); }
@@ -63,7 +64,7 @@ struct SDInstance : virtual ReferenceCounter
 */
 template<typename _InputIterator>
 SDClass::SDClass( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc const& _fileloc )
-  : m_namespace( _namespace ), m_insnsizes( szbeg, szend ), m_fileloc( _fileloc )
+  : m_namespace( _namespace ), m_insnsizes( szbeg, szend ), nmcode( this->qd_namespace().c_str(), _fileloc )
 {}
 
 

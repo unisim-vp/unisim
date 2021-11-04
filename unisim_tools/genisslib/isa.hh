@@ -75,7 +75,6 @@ struct Isa
   ConstStr                      m_addrtype;        /**< C type for instructions addresses */
   std::vector<ConstStr>         m_includes;        /**< files included by the isa main file */
   Vector<Specialization>        m_specializations; /**< Requested specializations */
-  Vector<Inheritance>           m_inheritances;    /**< Defined inheritances for operation class */
   
   typedef std::map<ConstStr,Group*> GroupAccumulators;
   GroupAccumulators             m_group_accs;      /**< Active group accumulators */

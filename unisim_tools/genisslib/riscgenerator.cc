@@ -200,9 +200,9 @@ RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
       SDClass const* sdclass = sdinstance->sdclass;
       SourceCode const* tpscheme =  sdinstance->template_scheme;
       
-      _product.code( "%s = %s::sub_decode", sobf->symbol.str(), sdclass->qd_namespace().str() );
+      _product.code( "%s = ", sobf->symbol.str() ).usercode( sdclass->nmcode ).code("::sub_decode" );
       if (tpscheme)
-        _product.usercode( tpscheme->fileloc, "< %s >", tpscheme->content.str() );
+        _product.code( "< " ).usercode( *tpscheme ).code( " >" );
       _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n",
                      _addrname, _codename, fi.pos(), sobf->mask() );
 

@@ -465,9 +465,9 @@ Generator::iss() const
     sink.code( "#ifndef %s\n", headerid.str() );
     sink.code( "#define %s\n", headerid.str() );
   
-    sink.code( "#ifndef __STDC_FORMAT_MACROS\n"
-                   "#define __STDC_FORMAT_MACROS\n"
-                   "#endif\n\n" );
+    sink.code( "\n#ifndef __STDC_FORMAT_MACROS\n"
+               "#define __STDC_FORMAT_MACROS\n"
+               "#endif\n\n" );
   
     sink.code( "#include <vector>\n" );
     sink.code( "#include <inttypes.h>\n" );
@@ -498,7 +498,7 @@ Generator::iss() const
   
     sink.code( "#endif\n" );
   
-    sink.flush();
+    sink.require_newline();
   }
   
   /*******************/
@@ -537,7 +537,7 @@ Generator::iss() const
   
     sink.ns_leave( source.m_namespace );
   
-    sink.flush();
+    sink.require_newline();
   }
   
   /******************************/
@@ -564,7 +564,7 @@ Generator::iss() const
     
     sink.code( "]\n" );
     
-    sink.flush();
+    sink.require_newline();
   }
 }
 
@@ -693,16 +693,10 @@ Generator::decoder_decl( Product& _product ) const {
 }
 
 void
-Generator::operation_decl( Product& _product ) const {
+Generator::operation_decl( Product& _product ) const
+{
   _product.template_signature( source.m_tparams );
   _product.code( "class Operation\n" );
-  if( source.m_inheritances.size() > 0 ) {
-    char const* sep = ": ";
-    for( Vector<Inheritance>::const_iterator inh = source.m_inheritances.begin(); inh != source.m_inheritances.end(); ++inh ) {
-      _product.code( sep ).usercode( *(**inh).modifier ).code( " " ).usercode( *(**inh).ctypename ).code( "\n" );
-      sep = ", ";
-    }
-  }
   _product.code( "{\n" );
   _product.code( "public:\n" );
 
@@ -720,7 +714,7 @@ Generator::operation_decl( Product& _product ) const {
   _product.code( " static unsigned int const maxsize = %d;\n", (*m_insnsizes.rbegin()) );
   
   for( Vector<Variable>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
-    _product.usercode( (**var).ctype->fileloc, " %s %s;", (**var).ctype->content.str(), (**var).symbol.str() );
+    _product.code(" ").usercode( *(**var).ctype ).code( " %s;", (**var).symbol.str() );
   }
   
   for( intptr_t idx = source.m_actionprotos.size(); (--idx) >= 0; ) {
@@ -816,9 +810,9 @@ Generator::isa_operations_decl( Product& _product ) const
             SDClass const* sdclass = sdinstance->sdclass;
             SourceCode const* tpscheme =  sdinstance->template_scheme;
         
-            _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
+            _product.code(" ").usercode( sdclass->nmcode ).code( "::Operation" );
             if (tpscheme)
-              _product.usercode( *tpscheme, "< %s >" );
+              _product.code( "< " ).usercode( *tpscheme ).code( " >");
             _product.code( "* %s;\n", sobf->symbol.str() );
           }
       }
@@ -826,7 +820,7 @@ Generator::isa_operations_decl( Product& _product ) const
     if (not (**op).variables.empty())
       {
         for (Vector<Variable>::const_iterator var = (**op).variables.begin(); var < (**op).variables.end(); ++ var)
-          _product.usercode( (**var).ctype->fileloc, "   %s %s;", (**var).ctype->content.str(), (**var).symbol.str() );
+          _product.code( "   " ).usercode( *(**var).ctype ).code( " %s;", (**var).symbol.str() );
       }
     
     if (source.m_withsource) {
@@ -889,11 +883,6 @@ Generator::operation_impl( Product& _product ) const {
   _product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", codetype_constref().str(), source.m_addrtype.str() );
   _product.code( ": \n");
   
-  for( Vector<Inheritance>::const_iterator inh = source.m_inheritances.begin(); inh != source.m_inheritances.end(); ++ inh ) {
-    if (not (**inh).initargs) continue;
-    _product.usercode( *(**inh).ctypename ).code( "( " ).usercode( *(**inh).initargs ).code( " ),\n" );
-  }
-
   for( Vector<Variable>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
     if (not (**var).cinit) continue;
     _product.code( " %s(", (**var).symbol.str() ).usercode( *(**var).cinit ).code( "),\n" );
@@ -962,7 +951,7 @@ Generator::operation_impl( Product& _product ) const {
     }
 
     _product.code( ")%s\n{\n", (source.m_actionprotos[idx]->m_constness ? " const" : "") );
-    _product.usercode( *source.m_actionprotos[idx]->m_defaultcode, "{%s}\n" );
+    _product.code("{").usercode( *source.m_actionprotos[idx]->m_defaultcode ).code( "}\n" );
     _product.code( "}\n" );
   }
 }
@@ -1038,7 +1027,7 @@ Generator::isa_operations_methods( Product& _product ) const
       }
 
       _product.code( ")%s\n{\n", (actionproto->m_constness ? " const" : "") );
-      _product.usercode( *(**action).m_source_code, "{%s}\n" );
+      _product.code( "{" ).usercode( *(**action).m_source_code ).code( "}\n" );
       _product.code( "}\n" );
     }
 

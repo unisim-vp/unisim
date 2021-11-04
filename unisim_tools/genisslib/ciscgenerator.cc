@@ -268,15 +268,14 @@ CiscGenerator::additional_impl_includes( Product& _product ) const {
 
 void
 CiscGenerator::codetype_decl( Product& _product ) const {
-  bool little_endian = source.m_little_endian;
-  char const* dsh = little_endian ? ">>" : "<<";
-  char const* ash = little_endian ? "<<" : ">>";
+  char const* dsh = source.m_little_endian ? ">>" : "<<";
+  char const* ash = source.m_little_endian ? "<<" : ">>";
   _product.code( "struct CodeType {\n" );
   _product.code( " enum { capacity = %d };\n", m_code_capacity );
   _product.code( " unsigned int              size;\n" );
   _product.code( " uint8_t                   str[capacity];\n" );
   _product.code( " enum Exception_t { NotEnoughBytes };\n" );
-  _product.code( " CodeType() : size( 0 ) { for (int idx = capacity; (--idx) >= 0;) str[idx] = 0; };\n" );
+  _product.code( " CodeType() : size( 0 ) { for (int idx = capacity; (--idx) >= 0;) str[idx] = 0; }\n" );
   _product.code( " CodeType( unsigned int sz )\n" );
   _product.code( " : size( std::min( sz, capacity*8u ) )\n{\n" );
   _product.code( "   for (int idx = capacity; (--idx) >= 0;) str[idx] = 0;\n" );
@@ -296,7 +295,7 @@ CiscGenerator::codetype_decl( Product& _product ) const {
   _product.code( "  for (unsigned int idx = 0; idx < maskbound; ++idx) {\n" );
   _product.code( "   if (idx >= codebound) throw NotEnoughBytes;\n" );
   _product.code( "   if ((str[idx] & mask.str[idx]) != bits.str[idx]) return false;\n" );
-  _product.code( "  };\n" );
+  _product.code( "  }\n" );
   _product.code( "  return true;\n" );
   _product.code( " }\n" );
   _product.code( " bool match( CodeType const& bits ) const {\n" );
@@ -305,16 +304,14 @@ CiscGenerator::codetype_decl( Product& _product ) const {
   _product.code( "  for (unsigned int idx = 0; idx < end; idx += 1)\n" );
   _product.code( "   if (str[idx] != bits.str[idx]) return false;\n" );
   _product.code( "  unsigned int tail = (bits.size % 8);\n" );
-  _product.code( "  if (tail == 0) return true;" );
-  _product.code( "  uint8_t tailmask = 0xff %s (8-tail);\n", source.m_little_endian ? ">>" : "<<" );
+  _product.code( "  if (tail == 0) return true;\n" );
+  _product.code( "  uint8_t tailmask = 0xff %s (8-tail);\n", dsh );
   _product.code( "  return ((str[end] ^ bits.str[end]) & tailmask) == 0;\n" );
   _product.code( " }\n" );
   _product.code( " CodeType& stretch_front( unsigned int shift ) {\n" );
   _product.code( "  int hish = shift / 8, losh = shift %% 8; \n" );
-  _product.code( "  for (int dst = %u, src = dst - hish; dst >= 0; dst-=1, src-=1) {\n",
-                 m_code_capacity - 1 );
-  _product.code( "   if (src > 0) str[dst] = (str[src] %s losh) | (str[src-1] %s (8-losh));\n",
-                 ash, dsh );
+  _product.code( "  for (int dst = %u, src = dst - hish; dst >= 0; dst-=1, src-=1) {\n", m_code_capacity - 1 );
+  _product.code( "   if (src > 0) str[dst] = (str[src] %s losh) | (str[src-1] %s (8-losh));\n", ash, dsh );
   _product.code( "   else if (src == 0) str[dst] = (str[src] %s losh);\n", ash );
   _product.code( "   else str[dst] = 0;\n" );
   _product.code( "  }\n" );
@@ -322,12 +319,9 @@ CiscGenerator::codetype_decl( Product& _product ) const {
   _product.code( " }\n" );
   _product.code( " CodeType& shrink_front( unsigned int shift ) {\n" );
   _product.code( "  int hish = shift / 8, losh = shift %% 8; \n" );
-  _product.code( "  for (unsigned int dst = 0, src = dst + hish; dst < %u; dst+=1, src+=1) {\n",
-                 m_code_capacity);
-  _product.code( "   if (src < %u) str[dst] = (str[src] %s losh) | (str[src-1] %s (8-losh));\n",
-                 m_code_capacity - 1, dsh, ash );
-  _product.code( "   else if (src == %u) str[dst] = (str[src] %s losh);\n",
-                 m_code_capacity - 1, dsh );
+  _product.code( "  for (unsigned int dst = 0, src = dst + hish; dst < %u; dst+=1, src+=1) {\n", m_code_capacity);
+  _product.code( "   if (src < %u) str[dst] = (str[src] %s losh) | (str[src-1] %s (8-losh));\n", m_code_capacity - 1, dsh, ash );
+  _product.code( "   else if (src == %u) str[dst] = (str[src] %s losh);\n", m_code_capacity - 1, dsh );
   _product.code( "   else str[dst] = 0;\n" );
   _product.code( "  }\n" );
   _product.code( "  return *this;\n" );
@@ -338,12 +332,10 @@ CiscGenerator::codetype_decl( Product& _product ) const {
   _product.code( "  if (mod) {\n" );
   _product.code( "   tail.size = std::min( tail.size + mod, capacity*8u );\n" );
   _product.code( "   tail.stretch_front( mod );\n" );
-  _product.code( "   tail.str[0] = (tail.str[0] & (0xff %s mod)) | "
-                 "(this->str[this->size/8] & (0xff %s (8-mod)));\n", ash, dsh );
+  _product.code( "   tail.str[0] = (tail.str[0] & (0xff %s mod)) | (this->str[this->size/8] & (0xff %s (8-mod)));\n", ash, dsh );
   _product.code( "   this->size -= mod;\n" );
   _product.code( "  }\n" );
-  _product.code( "  for (unsigned int src = 0, dst = this->size/8; "
-                 "(src < capacity*1u) and (dst < capacity*1u); src+=1, dst+=1) {\n" );
+  _product.code( "  for (unsigned int src = 0, dst = this->size/8; (src < capacity*1u) and (dst < capacity*1u); src+=1, dst+=1) {\n" );
   _product.code( "   this->str[dst] = tail.str[src];\n" );
   _product.code( "  }\n" );
   _product.code( "  this->size = std::min( this->size + tail.size, capacity*8u );\n" );
@@ -496,7 +488,7 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
           SourceCode const* tpscheme =  sdinstance->template_scheme;
       
           _product.code( "{\n" );
-          _product.code( "%s::CodeType _subcode_;\n", sdclass->qd_namespace().str() );
+          _product.usercode(sdclass->nmcode).code( "::CodeType _subcode_;\n" );
           _product.code( "_subcode_.size = %u;\n", sdclass->maxsize() );
       
           unsigned int shift = fi.insn_size() - fi.m_size;
@@ -513,9 +505,9 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
             _product.code( ";\n" );
           }
       
-          _product.code( "%s = %s::sub_decode", sobf->symbol.str(), sdclass->qd_namespace().str() );
+          _product.code( "%s = ", sobf->symbol.str() ).usercode( sdclass->nmcode ).code( "::sub_decode" );
           if (tpscheme)
-            _product.usercode( tpscheme->fileloc, "< %s >", tpscheme->content.str() );
+            _product.code( "< " ).usercode( *tpscheme ).code( " >" );
           _product.code( "( %s, _subcode_ );\n", _addrname );
           _product.code( "unsigned int shortening = %u - %s->GetLength();\n",
                          sdclass->maxsize(), sobf->symbol.str() );
