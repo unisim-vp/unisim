@@ -115,11 +115,11 @@ struct OpcodeBitField : public FixedSizeBitField
 struct OperandBitField : public FixedSizeBitField
 {
   ConstStr              symbol;
-  int                   shift;
+  int                   lshift;
   unsigned int          size_modifier;
   bool                  sext;
   
-  OperandBitField( unsigned int _size, ConstStr _symbol, int _shift, unsigned int _size_modifier, bool _sext );
+  OperandBitField( unsigned int _size, ConstStr _symbol, int _lshift, unsigned int _size_modifier, bool _sext );
   OperandBitField( OperandBitField const& _src );
 
   unsigned int          dstsize() const;
@@ -131,7 +131,7 @@ struct OperandBitField : public FixedSizeBitField
   {
     if (int delta = FixedSizeBitField::compare(rhs)) return delta;
     if (int delta = symbol.cmp(rhs.symbol)) return delta;
-    if (int delta = shift - rhs.shift) return delta;
+    if (int delta = lshift - rhs.lshift) return delta;
     if (int delta = size_modifier - rhs.size_modifier) return delta;
     return sext - rhs.sext;
   }
@@ -233,32 +233,21 @@ struct SubOpBitField : public BitField
  *
  */
 
-struct SpOperandBitField : public FixedSizeBitField
+struct SpOperandBitField : public OperandBitField
 {
-  ConstStr              symbol;
-  int                   shift;
-  unsigned int          size_modifier;
-  bool                  sext;
   unsigned int          value;
   
   SpOperandBitField( OperandBitField const& _src, unsigned int _value );
   SpOperandBitField( SpOperandBitField const& _src );
 
-  unsigned int          dstsize() const;
-  ConstStr              constval() const;
-  
-  ConstStr              getsymbol() const override { return symbol; };
-
   bool                  hasopcode() const override { return true; }
   uint64_t              bits() const override { return value; };
+  ConstStr              constval() const;
   
-  int                   cmp(BitField const& rhs) const override { return compare(dynamic_cast<SpOperandBitField const&>(rhs)); }
-  int                   compare(SpOperandBitField const& rhs) const
+  int                   cmp( BitField const& rhs ) const override { return compare( dynamic_cast<SpOperandBitField const&>(rhs) ); }
+  int                   compare( SpOperandBitField const& rhs ) const
   {
-    if (int delta = symbol.cmp(rhs.symbol)) return delta;
-    if (int delta = shift - rhs.shift) return delta;
-    if (int delta = size_modifier - rhs.size_modifier) return delta;
-    if (int delta = sext - rhs.sext) return delta;
+    if (int delta = OperandBitField::compare(rhs)) return delta;
     return value > rhs.value ? 1 : value < rhs.value ? -1 : 0;
   }
   SpOperandBitField*    clone() const override { return new SpOperandBitField( *this ); }

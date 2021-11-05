@@ -173,10 +173,8 @@ RiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
       {
         int opsize = membersize( *opbf );
         ConstStr shiftedop;
-        if      (opbf->shift > 0)
-          shiftedop = Str::fmt( "(uint%d_t( %s ) << %u)", opsize, opbf->symbol.str(), +opbf->shift );
-        else if (opbf->shift < 0)
-          shiftedop = Str::fmt( "(uint%d_t( %s ) >> %u)", opsize, opbf->symbol.str(), -opbf->shift );
+        if (opbf->lshift > 0)
+          shiftedop = Str::fmt( "(uint%d_t( %s ) >> %u)", opsize, opbf->symbol.str(), opbf->lshift );
         else
           shiftedop = Str::fmt( "uint%d_t( %s )", opsize, opbf->symbol.str() );
         
@@ -241,10 +239,8 @@ RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
           }
         }
     
-        if (opbf->shift > 0)
-          _product.code( " >> %u", +opbf->shift );
-        if (opbf->shift < 0)
-          _product.code( " << %u", -opbf->shift );
+        if (opbf->lshift > 0)
+          _product.code( " << %u", opbf->lshift );
         _product.code( ";\n" );
       }
   }

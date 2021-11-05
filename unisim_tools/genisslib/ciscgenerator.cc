@@ -439,10 +439,8 @@ CiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
         {
           unsigned int opsize = membersize( *opbf );
           ConstStr shiftedop;
-          if      (opbf->shift > 0)
-            shiftedop = Str::fmt( "(uint%u_t( %s ) << %u)", opsize, opbf->symbol.str(), +opbf->shift );
-          else if (opbf->shift < 0)
-            shiftedop = Str::fmt( "(uint%u_t( %s ) >> %u)", opsize, opbf->symbol.str(), -opbf->shift );
+          if (opbf->lshift > 0)
+            shiftedop = Str::fmt( "(uint%u_t( %s ) >> %u)", opsize, opbf->symbol.str(), opbf->lshift );
           else
             shiftedop = Str::fmt( "uint%u_t( %s )", opsize, opbf->symbol.str() );
       
@@ -456,8 +454,7 @@ CiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
                 bytepos = substart / 8,
                 srcpos = little_endian ? (substart - start) : (end - subend);
           
-              _product.code( "%s.str[%u] |= (((%s >> %u) %% %u) << %u);\n",
-                             _codename, bytepos, shiftedop.str(), srcpos, bound, pos );
+              _product.code( "%s.str[%u] |= (((%s >> %u) %% %u) << %u);\n", _codename, bytepos, shiftedop.str(), srcpos, bound, pos );
             }
         }
     }
@@ -509,8 +506,7 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
           if (tpscheme)
             _product.code( "< " ).usercode( *tpscheme ).code( " >" );
           _product.code( "( %s, _subcode_ );\n", _addrname );
-          _product.code( "unsigned int shortening = %u - %s->GetLength();\n",
-                         sdclass->maxsize(), sobf->symbol.str() );
+          _product.code( "unsigned int shortening = %u - %s->GetLength();\n", sdclass->maxsize(), sobf->symbol.str() );
           _product.code( "this->encoding.size -= shortening;\n" );
           _product.code( "%s.stretch_front( shortening );\n", _codename );
           _product.code( "}\n" );
@@ -563,10 +559,8 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
             _product.code( "%s = (int%u_t)(%s << %u) >> %u;\n", opbf->symbol.str(), opsize, opbf->symbol.str(), sext_shift, sext_shift );
           }
     
-          if (opbf->shift > 0)
-            _product.code( "%s >>= %u;\n", opbf->symbol.str(), +opbf->shift );
-          if (opbf->shift < 0)
-            _product.code( "%s <<= %u;\n", opbf->symbol.str(), -opbf->shift );
+          if (opbf->lshift > 0)
+            _product.code( "%s <<= %u;\n", opbf->symbol.str(), opbf->lshift );
         }
     }
 }

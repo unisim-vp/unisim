@@ -207,7 +207,7 @@ namespace
           default:
             {
               // Operand
-              int shift = 0;
+              int lshift = 0;
               bool sext = false;
               std::string buf;
               
@@ -222,7 +222,7 @@ namespace
                             throw src.unexpected();
                           if (src.next() != CLex::Scanner::Number)
                             throw src.unexpected();
-                          shift = -GetInteger(src);
+                          lshift = GetInteger(src);
                           if (src.next() != CLex::Scanner::More)
                             throw src.unexpected();
                         }
@@ -263,7 +263,7 @@ namespace
               
               unsigned size = GetArraySize(src);
 
-              bitfields.push_back( new OperandBitField( size, symbol, shift, final_size, sext ) );
+              bitfields.push_back( new OperandBitField( size, symbol, lshift, final_size, sext ) );
             }
             break;
           }

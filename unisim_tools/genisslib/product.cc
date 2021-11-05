@@ -56,14 +56,16 @@ FProduct::~FProduct() { delete m_sink; }
     @param _source the SourceCode object to dump
  */
 Product&
-Product::usercode( SourceCode const& source )
+Product::usercode( SourceCode const& source, char const* before, char const* after )
 {
   if (m_sourcelines)
     {
       require_newline();
       code( "#line %u \"%s\"\n", source.fileloc.getline(), source.fileloc.getname().str() );
     }
+  if (before) write( before );
   write( source.content.str() );
+  if (after) write( after );
   
   if (m_sourcelines)
     {

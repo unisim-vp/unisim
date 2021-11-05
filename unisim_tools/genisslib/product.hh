@@ -37,7 +37,7 @@ struct Product
   Product( ConstStr _filename, bool _sourcelines );
   virtual ~Product() {};
 
-  Product&          usercode( SourceCode const& _source );
+  Product&          usercode( SourceCode const& _source, char const* before = 0, char const* after = 0 );
   Product&          code( char const* _format, ... );
   Product&          template_signature( Vector<CodePair> const& _tparams );
   Product&          template_abbrev( Vector<CodePair> const& _tparams );

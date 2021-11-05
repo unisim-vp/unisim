@@ -67,16 +67,15 @@ OpcodeBitField::fills( std::ostream& sink ) const
     @param _size_modifier minimum bit size for holding the operand bitfield
     @param _sext true if a sign extension is required
 */
-OperandBitField::OperandBitField( unsigned int _size, ConstStr _symbol, int _shift, unsigned int _size_modifier, bool _sext )
-  : FixedSizeBitField( _size ), symbol( _symbol ), shift( _shift ), size_modifier( _size_modifier ), sext( _sext )
+OperandBitField::OperandBitField( unsigned int _size, ConstStr _symbol, int _lshift, unsigned int _size_modifier, bool _sext )
+  : FixedSizeBitField( _size ), symbol( _symbol ), lshift( _lshift ), size_modifier( _size_modifier ), sext( _sext )
 {}
 
 /** Create an operand bitfield object (copy constructor)
     @param _src the source bitfield object to copy
 */
 OperandBitField::OperandBitField( OperandBitField const& _src )
-  : FixedSizeBitField( _src.size ),
-    symbol( _src.symbol ), shift( _src.shift ), size_modifier( _src.size_modifier ), sext( _src.sext )
+  : FixedSizeBitField( _src.size ), symbol( _src.symbol ), lshift( _src.lshift ), size_modifier( _src.size_modifier ), sext( _src.sext )
 {}
 
 /** Dump an operand bitfield object into a stream
@@ -85,10 +84,8 @@ OperandBitField::OperandBitField( OperandBitField const& _src )
 void
 OperandBitField::fills( std::ostream& sink ) const
 {
-  if      (shift < 0)
-    sink << "shl<" << (-shift) << "> ";
-  else if (shift > 0)
-    sink << "shr<" << (+shift) << "> ";
+  if      (lshift > 0)
+    sink << "shl<" << lshift << "> ";
   
   if (sext)
     sink << "sext ";
@@ -105,7 +102,7 @@ OperandBitField::fills( std::ostream& sink ) const
 unsigned int
 OperandBitField::dstsize() const
 {
-  return std::max( (unsigned int)(size + ((shift < 0) ? -shift : 0)), size_modifier );
+  return std::max( (unsigned int)(size + lshift), size_modifier );
 }
 
 /** Create an unused bitfield object
@@ -193,27 +190,17 @@ unsigned int SubOpBitField::maxsize() const { return sdinstance->sdclass->maxsiz
  *  @param _size_modifier minimum bit size for holding the operand bitfield
  *  @param _sext true if a sign extension is required
  */
+  
 SpOperandBitField::SpOperandBitField( OperandBitField const& _src, unsigned int _value )
-  : FixedSizeBitField( _src.size ), symbol( _src.symbol ), shift( _src.shift ),
-    size_modifier( _src.size_modifier ), sext( _src.sext ), value( _value )
+  : OperandBitField( _src ), value( _value )
 {}
 
 /** Create an operand bitfield object (copy constructor)
  *  @param _src the source bitfield object to copy
  */
 SpOperandBitField::SpOperandBitField( SpOperandBitField const& _src )
-  : FixedSizeBitField( _src.size ), symbol( _src.symbol ), shift( _src.shift ),
-    size_modifier( _src.size_modifier ), sext( _src.sext ), value( _src.value )
+  : OperandBitField( _src ), value( _src.value )
 {}
-
-/** Return the size (in bits) of the target word encoded by this field.
-    @return the size (in bits) of the target word encoded by this field.
-*/
-unsigned int
-SpOperandBitField::dstsize() const
-{
-  return std::max( (unsigned int)(size + ((shift < 0) ? -shift : 0)), size_modifier );
-}
 
 /**
  *  Return the c constant string corresponding to the value encoded.
