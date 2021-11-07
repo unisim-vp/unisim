@@ -507,7 +507,7 @@ Generator::iss() const
   {
     FProduct sink( options.outputprefix, source.m_tparams.empty() ? ".cc" : ".tcc", options.sourcelines );
     if (not sink.good()) {
-      std::cerr << options.appname() << ": can't open header file '" << sink.m_filename.str() << "'.\n";
+      std::cerr << options.appname() << ": can't open source file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
     }
   
