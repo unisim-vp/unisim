@@ -633,9 +633,15 @@ struct Processor : public ProcessorBase
 private:
   Processor( Processor const& );
 
+
 public:
 
   Processor();
+  ~Processor()
+  {
+    for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
+      umms[reg].Clear(&vmm_storage[reg][0]);
+  }
 
   bool close( Processor const& ref );
 

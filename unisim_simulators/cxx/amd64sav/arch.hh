@@ -221,6 +221,7 @@ namespace review
     };
 
     Arch( Interface& iif );
+    ~Arch();
 
     Interface&                     interface;
     unisim::util::sav::ActionNode* path;

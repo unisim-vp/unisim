@@ -99,7 +99,11 @@ namespace test
         //        , instruction_count(0)
     {}
 
-    ~Arch() {}
+    ~Arch()
+    {
+      for (unsigned reg = 0; reg < 16; ++reg)
+        umms[reg].Clear(&vmm_storage[reg][0]);
+    }
 
 
     typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;

@@ -142,6 +142,9 @@ AArch64::~AArch64()
 {
   for (auto reg : regmap)
     delete reg.second;
+  
+  for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+    vector_views[reg].Clear(&vectors[reg]);
 }
 
 bool

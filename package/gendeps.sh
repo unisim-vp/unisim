@@ -465,12 +465,6 @@ echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/co
 echo "m4/endian" >> "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"
 echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/kernel/pkg_deps.txt"
 
-sed -i '/unisim\/component\/cxx\/processor\/arm\/cache/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pkg_deps.txt"
-
-mv "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/isa_arm32_list.txt"
-mv "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/isa_thumb_list.txt"
-mv "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb2/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb2/isa_thumb_list.txt"
-
 mv "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_vle_list.txt"
 
 sed -i '/unisim\/component\/cxx\/processor\/hcs12x\/xb\.isa/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_list.txt"

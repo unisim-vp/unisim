@@ -366,6 +366,9 @@ CPU<FP_IMPL,CPU_IMPL>::~CPU()
     delete *itr;
   for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
     delete itr->second;
+
+  for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+    vector_views[reg].Clear( &vector_data[reg][0] );
 }
 
 /** Modify CPSR internal value with proper side effects

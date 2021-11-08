@@ -71,13 +71,18 @@ function import()
 function files()
 {
 	while [ $# -ne 0 ]; do
-		local LIST_NAME="$1"
+		local ONLY_IN
+		local LIST_NAME
+		IFS=: read LIST_NAME ONLY_IN <<<$1
 		local FOUND='no'
 		for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
 			LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
 			if [ -e "${LIST_FILENAME}" ]; then
 				local FILENAME
 				while IFS= read -r FILENAME; do
+					if [[ ${FILENAME} != ${ONLY_IN}* ]]; then
+						continue;
+					fi
 					FOUND='yes'
 					echo -n " ${FILENAME}"
 				done < "${LIST_FILENAME}"
@@ -95,13 +100,18 @@ function files()
 function lines()
 {
 	while [ $# -ne 0 ]; do
-		local LIST_NAME="$1"
+		local ONLY_IN
+		local LIST_NAME
+		IFS=: read LIST_NAME ONLY_IN <<<$1
 		local FOUND='no'
 		for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
 			LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
 			if [ -e "${LIST_FILENAME}" ]; then
 				local LINE
 				while IFS= read -r LINE; do
+					if [[ ${FILENAME} != ${ONLY_IN}* ]]; then
+						continue;
+					fi
 					FOUND='yes'
 					echo "${LINE}"
 				done < "${LIST_FILENAME}"

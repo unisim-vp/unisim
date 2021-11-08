@@ -8,8 +8,6 @@ VERSION=1.0.9
 
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib || exit
-
 # ARMv7
 
 import dist_armsec
@@ -53,7 +51,8 @@ import std/string || exit
 import std/vector || exit
 import sys/mman || exit
 
-copy isa_thumb isa_arm32 isa source header template data
+copy isa source header template data
+dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 
 AARCH32_SRCDIR=cxx/armsec
 AARCH32_DSTDIR=aarch32
@@ -204,17 +203,6 @@ cat << EOF > "${DEST_DIR}/dune-project"
 EOF
 
 cat <<EOF > "${DEST_DIR}/dune"
-(subdir
- genisslib
- (rule
-  (target genisslib)
-  (deps (source_tree .))
-  (action
-   (no-infer
-    (progn
-     (run ./configure)
-     (run make))))))
-
 (rule
  (target .unisim-tree)
  (deps (source_tree unisim))
@@ -237,7 +225,7 @@ cat <<EOF > "${DEST_DIR}/dune"
 (rule
  (targets top_arm32.hh top_arm32.tcc)
  (deps
-  (:gen genisslib/genisslib)
+  (:gen ./genisslib.py)
   (:src aarch32/top_arm32.isa))
  (action
   (no-infer (run %{gen} -o top_arm32 -w 8 -I . %{src}))))
@@ -245,7 +233,7 @@ cat <<EOF > "${DEST_DIR}/dune"
 (rule
  (targets top_thumb.hh top_thumb.tcc)
  (deps
-  (:gen genisslib/genisslib)
+  (:gen ./genisslib.py)
   (:src aarch32/top_thumb.isa))
  (action
   (no-infer (run %{gen} -o top_thumb -w 8 -I . %{src}))))
@@ -288,7 +276,7 @@ cat <<EOF > "${DEST_DIR}/dune"
 (rule
  (targets aarch64dec.hh aarch64dec.tcc)
  (deps
-  (:gen genisslib/genisslib)
+  (:gen ./genisslib.py)
   (:src aarch64/aarch64dec.isa))
  (action
   (no-infer (run %{gen} -o aarch64dec -w 8 -I . %{src}))))

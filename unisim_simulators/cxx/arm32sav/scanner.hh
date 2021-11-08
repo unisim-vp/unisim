@@ -80,6 +80,7 @@ struct Scanner
   };
 
   Scanner(Interface& iif);
+  ~Scanner();
   void step( Arm32::Operation const& op );
   void step( Thumb2::Operation const& op );
   bool close( Scanner const& ref );

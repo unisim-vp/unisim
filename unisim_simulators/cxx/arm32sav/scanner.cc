@@ -57,6 +57,12 @@ Scanner::Scanner( Interface& iif )
   //gpr[31] = newRegRead(SP());
 }
 
+Scanner::~Scanner( Interface& iif )
+{
+  for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
+    vector_views[reg].Clear(&vector_data[reg][0]);
+}
+
 void
 Scanner::step( Arm32::Operation const& op )
 {

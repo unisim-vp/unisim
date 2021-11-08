@@ -61,6 +61,12 @@ struct Runner
 
   static unsigned const VECTORCOUNT = 32;
 
+  ~Runner()
+  {
+    for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+      vector_views[reg].Clear(&vector_data[reg][0]);
+  }
+
   struct VUConfig
   {
     static unsigned const BYTECOUNT = 16;
