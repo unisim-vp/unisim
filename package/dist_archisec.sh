@@ -110,70 +110,89 @@ done
 
 # Top level
 
-cat << EOF > "${DEST_DIR}/AUTHORS"
+cat << EOF > "${DEST_DIR}/AUTHORS.md"
 Yves Lhuillier <yves.lhuillier@cea.fr>
 Frédéric Recoules <frederic.recoules@cea.fr>
 EOF
 
-cat << EOF > "${DEST_DIR}/VERSION"
-$VERSION
-EOF
-
-cat << EOF > "${DEST_DIR}/LICENSE"
+cat << EOF > "${DEST_DIR}/LICENSE.md"
 Copyright (c) 2007-2021,
-Commissariat a l'Energie Atomique (CEA)
+Commissariat a l'Énergie Atomique et aux Énergies Alternatives (CEA)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
 
- - Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
+ - Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
 
- - Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
+ - Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
 
- - Neither the name of CEA nor the names of its contributors may be used to
-   endorse or promote products derived from this software without specific prior
-   written permission.
+ - Neither the name of CEA nor the names of its contributors may be used
+   to endorse or promote products derived from this software without
+   specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 EOF
 
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - arm32dba:   an arm32/thumb dba decoder
-  - aarch64dba: an aarch64 dba decoder
-  - amd64dba:   an amd64/intel64 dba decoder
+cat << EOF > "${DEST_DIR}/README.md"
+# UNISIM ARCHISEC [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-See INSTALL for installation instructions.
+UNISIM ARCHISEC is a companion project of the binary analysis platform
+[BINSEC](https://github.com/binsec/binsec).
+It exposes disassembly metadata and DBA (Dynamic Bitvector Automata)
+semantics of several instruction set architectures:
+- \`Arm32dba\` an ARM/Thumb (ARMv7) DBA decoder
+- \`Aarch64dba\` an AARCH64 (ARMv8) DBA decoder
+- \`Amd64dba\` an AMD64 (x86-64) DBA decoder
+
+See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
-cat << EOF > "${DEST_DIR}/INSTALL"
+cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.0 (2021-10-05)
+
+Initial release.
+
+OCaml binding for the UNISIM DBA (Dynamic Bitvector Automata) decoder.
+- \`Arm32dba\` library exposes ARM/Thumb architecture;
+- \`Aarch64dba\` library exposes AARCH64 architecture;
+- \`Amd64dba\` library exposes AMD64 architecture.
+EOF
+
+cat << EOF > "${DEST_DIR}/INSTALL.md"
 INSTALLATION
 ------------
 
 Requirements:
   - GCC/G++
+  - python
   - OCaml (>= 4.05)
   - dune (>= 2.8)
 
 Building instructions:
-  $ dune build @install
+```console
+$ dune build @install
+```
 
 Installing (optional):
-  $ dune install
+```console
+$ dune install
+```
 EOF
 
 cat << EOF > "${DEST_DIR}/dune-project"
@@ -202,10 +221,18 @@ cat << EOF > "${DEST_DIR}/dune-project"
   (conf-g++ :build)))
 EOF
 
+cat <<EOF > "${DEST_DIR}/unisim_archisec.opam.template"
+available: [ os = "linux" & (os-distribution != "ol" & os-distribution != "centos" | os-version >= 8) ]
+EOF
+
 cat <<EOF > "${DEST_DIR}/dune"
 (rule
- (target .unisim-tree)
- (deps (source_tree unisim))
+ (target .unisim-full-tree)
+ (deps
+  (source_tree unisim)
+  (source_tree aarch32)
+  (source_tree aarch64)
+  (source_tree amd64))
  (action
   (write-file %{target} "")))
 
@@ -219,7 +246,7 @@ cat <<EOF > "${DEST_DIR}/dune"
    (language cxx)
    (names (:standard))
    (flags :standard -I ../..)
-   (extra_deps ../../.unisim-tree))
+   (extra_deps ../../.unisim-full-tree))
   (c_library_flags :standard -lstdc++)))
 
 (rule
@@ -245,7 +272,7 @@ cat <<EOF > "${DEST_DIR}/dune"
   (language cxx)
   (names (:standard))
   (flags :standard -I ../../../../..)
-  (extra_deps ../../../../../.unisim-tree)))
+  (extra_deps ../../../../../.unisim-full-tree)))
 
 (subdir
  aarch32
@@ -255,7 +282,7 @@ cat <<EOF > "${DEST_DIR}/dune"
   (names (:standard))
   (flags :standard -I ..)
   (extra_deps
-   ../.unisim-tree
+   ../.unisim-full-tree
    ../top_arm32.hh ../top_arm32.tcc
    ../top_thumb.hh ../top_thumb.tcc)))
 
@@ -288,7 +315,7 @@ cat <<EOF > "${DEST_DIR}/dune"
   (language cxx)
   (names (:standard))
   (flags :standard -I ../../../../../../..)
-  (extra_deps ../../../../../../../.unisim-tree)))
+  (extra_deps ../../../../../../../.unisim-full-tree)))
 
 (subdir
  aarch64
@@ -298,7 +325,7 @@ cat <<EOF > "${DEST_DIR}/dune"
   (names (:standard))
   (flags :standard -I ..)
   (extra_deps
-   ../.unisim-tree
+   ../.unisim-full-tree
    ../aarch64dec.hh ../aarch64dec.tcc)))
 
 (library
@@ -323,7 +350,7 @@ cat <<EOF > "${DEST_DIR}/dune"
   (language cxx)
   (names (:standard))
   (flags :standard -I ../../../../..)
-  (extra_deps ../../../../../.unisim-tree)))
+  (extra_deps ../../../../../.unisim-full-tree)))
 
 (subdir
  amd64
@@ -332,7 +359,7 @@ cat <<EOF > "${DEST_DIR}/dune"
  (language cxx)
  (names (:standard))
  (flags :standard -I .. -I.)
- (extra_deps ../.unisim-tree)))
+ (extra_deps ../.unisim-full-tree)))
 
 (library
  (public_name unisim_archisec.amd64dba)
@@ -356,7 +383,7 @@ cat <<EOF > "${DEST_DIR}/dune"
 EOF
 
 cat << EOF > "${DEST_DIR}/unittest.expected"
-Amd64dba.decode ~m64:false ~addr:0x4000 "55"
+Amd64dba.decode ~m64:false ~addr:0x4000L "55"
 (address . 0x00004000)
 (opcode . "55")
 (size . 1)
@@ -366,7 +393,7 @@ Amd64dba.decode ~m64:false ~addr:0x4000 "55"
 (0x00004000,2) esp<32> := nxt_esp<32>; goto 3
 (0x00004000,3) goto (0x00004001,0)
 
-Amd64dba.decode ~m64:true ~addr:0x4000 "55"
+Amd64dba.decode ~m64:true ~addr:0x4000L "55"
 (address . 0x0000000000004000)
 (opcode . "55")
 (size . 1)
@@ -376,7 +403,7 @@ Amd64dba.decode ~m64:true ~addr:0x4000 "55"
 (0x0000000000004000,2) rsp<64> := nxt_rsp<64>; goto 3
 (0x0000000000004000,3) goto (0x0000000000004001,0)
 
-Arm32dba.decode ~thumb:false ~addr:0x4000 0xe2543210
+Arm32dba.decode ~thumb:false ~addr:0x4000l 0xe2543210l
 (address . 0x00004000)
 (opcode . 0xe2543210)
 (size . 4)
@@ -393,7 +420,7 @@ Arm32dba.decode ~thumb:false ~addr:0x4000 0xe2543210
 (0x00004000,9) v<1> := nxt_v<1>; goto 10
 (0x00004000,10) goto (0x00004004,0)
 
-Arm32dba.decode ~thumb:true ~addr:0x4000 0x000af04f
+Arm32dba.decode ~thumb:true ~addr:0x4000l 0x000af04fl
 (address . 0x00004000)
 (opcode . 0x000af04f)
 (size . 4)
@@ -402,7 +429,7 @@ Arm32dba.decode ~thumb:true ~addr:0x4000 0x000af04f
 (0x00004000,1) goto (0x00004004,0)
 (0x00004000,2) r0<32> := 0x0000000a; goto 1
 
-Aarch64dba.decode ~addr:0x4000 0x18000020
+Aarch64dba.decode ~addr:0x4000L 0x18000020l
 (address . 0x0000000000004000)
 (opcode . 0x18000020)
 (size . 4)
