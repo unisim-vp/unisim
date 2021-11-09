@@ -106,7 +106,7 @@ struct ProcessorBase
   {
     typedef unisim::util::symbolic::binsec::RegRead Super;
     RegRead( RID _id ) : Super(), id(_id) {}
-    virtual RegRead* Mutate() const { return new RegRead( *this ); }
+    virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual ScalarType::id_t GetType() const
     { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
     virtual void GetRegName( std::ostream& sink ) const { id.Repr(sink); }
@@ -125,7 +125,7 @@ struct ProcessorBase
     typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
@@ -151,7 +151,7 @@ struct ProcessorBase
 
   struct FTop : public unisim::util::symbolic::ExprNode
   {
-    virtual FTop* Mutate() const { return new FTop(*this); }
+    virtual FTop* Mutate() const override { return new FTop(*this); }
     virtual unsigned SubCount() const { return 0; }
     virtual int cmp(ExprNode const&) const override { return 0; }
     virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
@@ -195,7 +195,7 @@ struct ProcessorBase
   struct VRegRead : public unisim::util::symbolic::ExprNode
   {
     VRegRead( unsigned _reg ) : reg(_reg) {}
-    virtual VRegRead* Mutate() const { return new VRegRead( *this ); }
+    virtual VRegRead* Mutate() const override { return new VRegRead( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual unsigned SubCount() const override { return 0; }
     virtual void Repr( std::ostream& sink ) const override;

@@ -79,7 +79,7 @@ namespace binsec {
       }
       ExprNode const* base()
       {
-        if (ExprNode* r = diff ? e->Mutate() : 0)
+        if (ExprNode* r = diff ? ExprNode::renew(e->Mutate()) : 0)
           {
             for (unsigned idx = 0; idx < subc; ++idx)
               const_cast<Expr&>(r->GetSub(idx)) = subs[idx];
@@ -133,7 +133,7 @@ namespace binsec {
                     BitFilter bf( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
                     bf.Retain(); // Prevent deletion of this stack-allocated object
                     Expr res( bf.Simplify() );
-                    return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                    return (res.node == &bf) ? ExprNode::renew( new BitFilter( bf ) ) : res.node;
                   }
 
               }
@@ -158,7 +158,7 @@ namespace binsec {
                       BitFilter bf( subs[idx^1], bitsize, 0, select, bitsize, false );
                       bf.Retain(); // Prevent deletion of this stack-allocated object
                       Expr res( bf.Simplify() );
-                      return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                      return (res.node == &bf) ? ExprNode::renew( new BitFilter( bf ) ) : res.node;
                     }
               }
             break;
@@ -698,7 +698,7 @@ namespace binsec {
           TmpVar( std::string const& _ref, unsigned rsz )
             : ref(_ref), dsz(rsz)
           {}
-          virtual TmpVar* Mutate() const { return new TmpVar(*this); }
+          virtual TmpVar* Mutate() const override { return new TmpVar(*this); }
           virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
           virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, dsz); }
           virtual int cmp( ExprNode const& rhs ) const override { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }

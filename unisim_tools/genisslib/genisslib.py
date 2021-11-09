@@ -1553,9 +1553,9 @@ class Generator:
         product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", self.codetype_constref(), self.source.addrtype )
         product.code( ": \n")
 
-        for variable in self.source.variables:
+        for variable in self.source.variables.values():
             if variable.c_init is None: continue
-            product.write( ' ' + variable.name ).usercode( vairable.c_init ).write( "),\n" )
+            product.write( ' ' + variable.name ).usercode( variable.c_init ).write( "),\n" )
 
         product.code( " encoding(_code),\n" )
         product.code( " addr(_addr),\n" )

@@ -96,7 +96,7 @@ namespace symbolic {
 
     if (simplified)
       {
-        ExprNode* nn = node->Mutate();
+        ExprNode* nn = ExprNode::renew( node->Mutate() );
         for (unsigned idx = 0; idx < subcount; ++idx)
           const_cast<Expr&>( nn->GetSub(idx) ) = args[idx];
         *this = Expr( nn );

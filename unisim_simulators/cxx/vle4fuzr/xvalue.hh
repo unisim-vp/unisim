@@ -11,6 +11,7 @@
 #ifndef __VLE4FUZR_XVALUE_HH__
 #define __VLE4FUZR_XVALUE_HH__
 
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <inttypes.h>
@@ -82,9 +83,9 @@ namespace x
   
   template <typename T, class F>
   XValue<T> XApply( F const& f, XValue<T> const& v ) { return XValue<T>( f(v.value), v.determined ); }
-  
-  template <typename T> XValue<T> Minimum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::min, l, r ); }
-  template <typename T> XValue<T> Maximum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::max, l, r ); }
+
+  template <typename T> XValue<T> Minimum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::min<T>, l, r ); }
+  template <typename T> XValue<T> Maximum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::max<T>, l, r ); }
 
   template <typename UTP> UTP ByteSwap( UTP const& v ) { return UTP( unisim::util::endian::ByteSwap( v.value ), v.determined ); }
   template <typename UTP> UTP BitScanReverse( UTP const& v ) { return UTP( unisim::util::arithmetic::BitScanReverse( v.value ), v.determined ); }
@@ -97,6 +98,11 @@ namespace x
 
   // template <typename UTP>
   // UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( make_operation( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
+
+  template <class OP> XValue<OP> NeonSHL( XValue<OP> op, XValue<int8_t> sh )
+  {
+    return XValue<OP>( unisim::component::cxx::processor::arm::NeonSHL( op.value, sh.value ), op.determined and sh.determined );
+  }
 
 }
 

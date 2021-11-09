@@ -2,10 +2,8 @@
 
 SIMPKG=arm64vp
 SIMPKG_SRCDIR=cxx/arm64vp
-SIMPKG_DSTDIR=arm64vp
-source "$(dirname $0)/dist_common.sh"
 
-import_genisslib || exit
+source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/arm/vmsav8 || exit
 import unisim/kernel/config/xml || exit
@@ -35,6 +33,7 @@ import std/stdexcept || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source isa header template data
+dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -74,12 +73,6 @@ viodisk.hh \
 debugger.hh \
 "
 
-UNISIM_SIMULATOR_PKG_DATA_FILES="\
-COPYING \
-NEWS \
-ChangeLog \
-"
-
 UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
 README \
@@ -90,79 +83,15 @@ ChangeLog \
 notes.txt \
 "
 
-UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
+UNISIM_SIMULATOR_FILES="\
+${UNISIM_SIMULATOR_SOURCE_FILES} \
+${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_DATA_FILES} \
+"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
-done
-
-for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
-# Top level
-
-cat << EOF > "${DEST_DIR}/AUTHORS"
-Yves Lhuillier <yves.lhuillier@cea.fr>
-EOF
-
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - Arm64vp: an ARMv8 kernel level simulator (for virtio linux simulation)
-  - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
-
-See INSTALL for installation instructions.
-EOF
-
-cat << EOF > "${DEST_DIR}/INSTALL"
-INSTALLATION
-------------
-
-Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-
-Building instructions:
-  $ ./configure
-  $ make
-
-Installing (optional):
-  $ make install
-EOF
-
-output_top_configure_ac <(cat << EOF
-AC_INIT([UniSIM Arm64vp simulator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_CONFIG_SUBDIRS([genisslib]) 
-AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}]) 
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-)
-
-output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG_DSTDIR}
-EXTRA_DIST = configure.cross
-EOF
-)
-
-build_top_configure
-build_top_configure_cross
 
 # Simulator
 
@@ -192,8 +121,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
-AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
@@ -234,7 +161,7 @@ CLEANFILES=\
 
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
+	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
 
 EOF
 )

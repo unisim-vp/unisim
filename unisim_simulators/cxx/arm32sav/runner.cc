@@ -43,7 +43,7 @@ Runner::Runner( char const* name )
   : unisim::kernel::Object( name, 0 )
   , CPU(name,0)
 {
-  cpsr.Set(unisim::component::cxx::processor::arm::M, this->USER_MODE);
+  cpsr.Set(unisim::component::cxx::processor::arm::M, unisim::component::cxx::processor::arm::PSR::USER_MODE);
 }
 
 Runner::~Runner()

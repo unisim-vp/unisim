@@ -320,7 +320,7 @@ namespace review
       flagvalues[reg.idx()] = newRegRead( reg );
   }
 
-  Arch::~Arch( Interface& iif )
+  Arch::~Arch()
   {
     for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
       umms[reg].Clear(&vmm_storage[reg][0]);

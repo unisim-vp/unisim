@@ -77,7 +77,7 @@ struct Processor
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
     RegRead( RID _id, ScalarType::id_t _tp ) : Super(), tp(_tp), id(_id) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const override { return tp; }
     virtual void GetRegName( std::ostream& sink ) const override { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
@@ -97,7 +97,7 @@ struct Processor
     typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     
     virtual void GetRegName( std::ostream& sink ) const override { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }

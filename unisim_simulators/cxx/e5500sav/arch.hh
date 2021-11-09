@@ -172,7 +172,7 @@ namespace ut
     typedef unisim::util::symbolic::ScalarType ScalarType;
     
     Unknown( Arch& _arch ) : ArchExprNode( _arch ) {}
-    virtual Unknown* Mutate() const { return new Unknown(*this); }
+    virtual Unknown* Mutate() const override { return new Unknown(*this); }
     virtual void Repr( std::ostream& sink ) const { sink << "?"; }
     virtual unsigned SubCount() const { return 0; };
     virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
@@ -204,7 +204,7 @@ namespace ut
     {
       typedef unisim::util::symbolic::ScalarType ScalarType;
       XERNode( Arch& _arch ) : ArchExprNode( _arch ) {}
-      virtual XERNode* Mutate() const { return new XERNode(*this); }
+      virtual XERNode* Mutate() const override { return new XERNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
@@ -241,7 +241,7 @@ namespace ut
     struct CRNode : public ArchExprNode
     {
       CRNode( Arch& _arch ) : ArchExprNode( _arch ) {}
-      virtual CRNode* Mutate() const { return new CRNode(*this); }
+      virtual CRNode* Mutate() const override { return new CRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
@@ -339,7 +339,7 @@ namespace ut
     struct FPSCRNode : public ArchExprNode
     {
       FPSCRNode( Arch& _arch ) : ArchExprNode( _arch ) {}
-      virtual FPSCRNode* Mutate() const { return new FPSCRNode(*this); }
+      virtual FPSCRNode* Mutate() const override { return new FPSCRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
@@ -525,7 +525,7 @@ namespace ut
     struct Load : public ArchExprNode
     {
       Load( Arch& _arch, Expr const& _addr ) : ArchExprNode(_arch), addr(_addr) {}
-      virtual Load* Mutate() const { return new Load(*this); }
+      virtual Load* Mutate() const override { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };

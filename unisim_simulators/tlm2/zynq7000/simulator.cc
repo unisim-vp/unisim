@@ -278,7 +278,7 @@ MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& up
       d.Access( result );
     }
     
-    else if (Match<0x1100,-0x80> m = addr) /* ICDISER: Interrupt Set-enable Register  */ {
+    else if (Match<0x1100,-0x80U> m = addr) /* ICDISER: Interrupt Set-enable Register  */ {
       unsigned idx = m.var >> 2;
       if (idx > state32_count)
         d.Access( RAZ_WI );
@@ -289,7 +289,7 @@ MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& up
       }
     }
     
-    else if (Match<0x1180,-0x80> m = addr) /* ICDICER: Interrupt Clear-Enable Register */ {
+    else if (Match<0x1180,-0x80U> m = addr) /* ICDICER: Interrupt Clear-Enable Register */ {
       unsigned idx = m.var >> 2;
       if (idx > state32_count)
         d.Access( RAZ_WI );
@@ -300,7 +300,7 @@ MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& up
       }
     }
     
-    else if (Match<0x1400,-0x400> m = addr) /* ICDIPR: Interrupt Priority Register */ {
+    else if (Match<0x1400,-0x400U> m = addr) /* ICDIPR: Interrupt Priority Register */ {
       unsigned idx = m.var;
       if (idx < ITLinesCount)
         d.Copy( &IPRIORITYR[idx], 4 );
@@ -308,7 +308,7 @@ MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& up
         d.Access( RAZ_WI );
     }
     
-    else if (Match<0x1800,-0x400> m = addr) /* ICDIPTR: Interrupt Processor Targets Register */ {
+    else if (Match<0x1800,-0x400U> m = addr) /* ICDIPTR: Interrupt Processor Targets Register */ {
       unsigned idx = m.var;
       if (idx < 16) {
         uint32_t value = 0x01010101;
@@ -321,7 +321,7 @@ MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& up
         d.Access( RAZ_WI );
     }
     
-    else if (Match<0x1c00,-0x100> m = addr) /* ICDICFR: Interrupt Configuration Register */ {
+    else if (Match<0x1c00,-0x100U> m = addr) /* ICDICFR: Interrupt Configuration Register */ {
       unsigned idx = m.var >> 2;
       d.Access( (idx < icfgr_count) ? ICDICFR[idx] : RAZ_WI );
     }

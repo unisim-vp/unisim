@@ -112,7 +112,7 @@ struct Processor
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
     RegRead( RID _id, ScalarType::id_t _tp ) : Super(), tp(_tp), id(_id) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return tp; }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
@@ -133,7 +133,7 @@ struct Processor
     {
       if (mode == SYSTEM_MODE) mode = USER_MODE;
     }
-    virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
+    virtual ForeignRegister* Mutate() const override { return new ForeignRegister( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
 
     char const* mode_ident() const
@@ -174,7 +174,7 @@ struct Processor
     typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
@@ -604,7 +604,7 @@ public:
     typedef NeonRead this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
     NeonRead( unsigned _reg ) : Super(), reg(_reg) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<NeonRead const&>( rhs ) ); }
@@ -618,7 +618,7 @@ public:
     typedef NeonWrite this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     NeonWrite( unsigned _reg, Expr const& value ) : Super(value), reg(_reg) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
@@ -635,7 +635,7 @@ public:
     typedef unisim::util::symbolic::binsec::GetCode GetCode;
 
     NeonPartialWrite( unsigned _reg, unsigned _beg, unsigned _end, Expr const& _value ) : Super(_value), reg(_reg), beg(_beg), end(_end) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg << '_' << beg << '_' << end; }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
     {

@@ -37,6 +37,9 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/dwarf/version.hh>
+#include <unisim/util/endian/endian.hh>
+#include <iosfwd>
+#include <inttypes.h>
 
 namespace unisim {
 namespace util {
@@ -75,7 +78,7 @@ class DWARF_AddressRanges
 public:
 	DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_AddressRanges();
-	endian_type GetFileEndianness() const;
+	endian::endian_type GetFileEndianness() const;
 	uint8_t GetSegmentSize() const;
 	uint8_t GetAddressSize() const;
 	DWARF_Version GetDWARFVersion() const;

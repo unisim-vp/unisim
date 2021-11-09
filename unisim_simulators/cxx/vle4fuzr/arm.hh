@@ -95,6 +95,8 @@ struct ArmProcessor
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { throw 0; return true; }
   void     ClearExclusiveLocal() { throw 0; }
 
+  void     CheckAlignment( uint32_t addr, unsigned alignment ) {}
+
   uint32_t ReadInsn( uint32_t address );
   
   virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;

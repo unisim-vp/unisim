@@ -83,7 +83,7 @@ namespace ut
     typedef FunctionNode<SUBS> this_type;
     
     FunctionNode( char const* _ident ) : FunctionNodeBase(_ident) {}
-    virtual this_type* Mutate() const { return new this_type(*this); };
+    virtual this_type* Mutate() const override { return new this_type(*this); };
     this_type* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
     virtual unsigned SubCount() const { return SUBS; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx < SUBS) return srcs[idx]; return ExprNode::GetSub(idx); };

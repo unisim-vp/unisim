@@ -566,7 +566,7 @@ namespace review
 
     struct FTop : public unisim::util::symbolic::ExprNode
     {
-      virtual FTop* Mutate() const { return new FTop(*this); }
+      virtual FTop* Mutate() const override { return new FTop(*this); }
       virtual unsigned SubCount() const { return 0; }
       virtual int cmp(ExprNode const&) const override { return 0; }
       virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
