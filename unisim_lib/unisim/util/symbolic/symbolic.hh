@@ -111,6 +111,7 @@ namespace symbolic {
   {
     virtual ~ExprNode() {}
     ExprNode() : refs(0) {}
+    ExprNode(ExprNode const&) : refs(0) {}
     mutable uintptr_t refs;
     void Retain() const { ++refs; }
     void Release() const { if (--refs == 0) delete this; }
@@ -124,13 +125,6 @@ namespace symbolic {
     virtual OpNodeBase const*    AsOpNode() const { return 0; }
     virtual ExprNode* Mutate() const = 0;
     virtual ScalarType::id_t GetType() const = 0;
-
-    static ExprNode* renew(ExprNode* node)
-    {
-      // beware that Mutate or copy constructors copy everything,
-      // including refs. This function perform in-flight cleaning.
-      node->refs = 0; return node;
-    }
   };
 
   struct Op : public identifier::Identifier<Op>

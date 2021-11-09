@@ -79,7 +79,7 @@ namespace binsec {
       }
       ExprNode const* base()
       {
-        if (ExprNode* r = diff ? ExprNode::renew(e->Mutate()) : 0)
+        if (ExprNode* r = diff ? e->Mutate() : 0)
           {
             for (unsigned idx = 0; idx < subc; ++idx)
               const_cast<Expr&>(r->GetSub(idx)) = subs[idx];
@@ -133,7 +133,7 @@ namespace binsec {
                     BitFilter bf( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
                     bf.Retain(); // Prevent deletion of this stack-allocated object
                     Expr res( bf.Simplify() );
-                    return (res.node == &bf) ? ExprNode::renew( new BitFilter( bf ) ) : res.node;
+                    return (res.node == &bf) ? new BitFilter( bf ) : res.node;
                   }
 
               }
@@ -158,7 +158,7 @@ namespace binsec {
                       BitFilter bf( subs[idx^1], bitsize, 0, select, bitsize, false );
                       bf.Retain(); // Prevent deletion of this stack-allocated object
                       Expr res( bf.Simplify() );
-                      return (res.node == &bf) ? ExprNode::renew( new BitFilter( bf ) ) : res.node;
+                      return (res.node == &bf) ? new BitFilter( bf ) : res.node;
                     }
               }
             break;
