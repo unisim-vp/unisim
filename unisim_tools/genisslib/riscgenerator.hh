@@ -23,28 +23,6 @@
 #include <conststr.hh>
 #include <map>
 
-struct RiscOpCode : public OpCode
-{
-  uint64_t                    m_mask;
-  uint64_t                    m_bits;
-  unsigned int                m_size;
-  bool                        m_vlen;
-    
-  // RiscOpCode()
-  //   : OpCode( ConstStr() ), m_mask( 0 ), m_bits( 0 ), m_size( 0 ), m_vlen( false )
-  // {}
-  RiscOpCode( ConstStr _symbol, uint64_t mask, uint64_t bits, unsigned int size, bool vlen )
-    : OpCode( _symbol ), m_mask( mask ), m_bits( bits ), m_size( size ), m_vlen( vlen )
-  {}
-
-  virtual ~RiscOpCode() {}
-
-  // Topology methods
-  location_t                  locate( OpCode const& _oc ) const;
-  
-  std::ostream&               details( std::ostream& _sink ) const;
-};
-
 struct RiscGenerator : public Generator
 {
   unsigned int                  m_insn_ctypesize;
@@ -52,10 +30,7 @@ struct RiscGenerator : public Generator
   ConstStr                      m_insn_cpostfix;
   
   RiscGenerator( Isa& _source, Opts const& _options );
-  ~RiscGenerator();
-  
-  RiscOpCode const&             riscopcode( Operation const* _op ) const { return dynamic_cast<RiscOpCode const&>( opcode( _op ) ); }
-  RiscOpCode&                   riscopcode( Operation const* _op ) { return dynamic_cast<RiscOpCode&>( opcode( _op ) ); };
+  ~RiscGenerator() {}
   
   /* Risc specific Utilities */
   void                          finalize();

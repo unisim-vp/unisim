@@ -25,35 +25,6 @@
 #include <iosfwd>
 #include <inttypes.h>
 
-struct OpCode
-{
-  // Topology methods
-  enum location_t { Outside, Overlaps, Inside, Contains, Equal };
-  
-  OpCode( ConstStr _symbol ) : m_abovecount( 0 ), m_symbol( _symbol ) {}
-  
-  virtual ~OpCode() {}
-  virtual location_t          locate( OpCode const& _oc ) const = 0;
-  virtual std::ostream&       details( std::ostream& _sink ) const = 0;
-  
-  void                        setbelow( OpCode* _below );
-  void                        forcebelow( OpCode* _below );
-  void                        unsetbelow();
-  bool                        above( OpCode* below );
-  
-  // Topology information
-  typedef std::set<OpCode*> BelowList;
-  
-  BelowList                   m_belowlist;
-  intptr_t                    m_abovecount;
-  
-  // Debugging information
-  ConstStr                  m_symbol;
-  
-  
-  friend std::ostream&        operator << ( std::ostream& _sink, OpCode const& _oc );
-};
-
 struct Generator
 {
   enum Error { GenerationError };
@@ -62,17 +33,12 @@ struct Generator
   Opts const&                         options;
   
   unsigned int                        m_minwordsize;
-  typedef std::map<Operation const*,OpCode*> OpCodeMap;
-  OpCodeMap                           m_opcodes;
   
   Generator( Isa& _source, Opts const& _options );
   virtual ~Generator() {};
   
   Generator&                          init( unsigned int verblevel );
   virtual void                        finalize() = 0;
-  
-  OpCode const&                       opcode( Operation const* _op ) const;
-  OpCode&                             opcode( Operation const* _op );
   
   void                                toposort();
   void                                isastats();
@@ -115,22 +81,6 @@ struct Generator
   unsigned                            membersize( unsigned size ) const;
   template <typename T>
   unsigned                            membersize( T const& op ) const { return this->membersize( unsigned( op.dstsize() ) ); }
-  
-  std::ostream&                       log( unsigned int level ) const;
-};
-
-struct FieldIterator {
-  Vector<BitField> const& m_bitfields;
-  unsigned int              m_idx;
-  unsigned int              m_ref;
-  unsigned int              m_pos, m_size;
-  
-  FieldIterator( bool little_endian, Vector<BitField> const& bitfields, unsigned int maxsize );
-  
-  unsigned int      pos() { return m_pos; }
-  unsigned int      insn_size() { return (m_ref == 0) ? m_pos + m_size : m_ref - m_pos; }
-  BitField const& item();
-  bool              next();
 };
 
 #endif // __GENERATOR_HH__

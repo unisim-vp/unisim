@@ -24,39 +24,15 @@
 #include <map>
 #include <iosfwd>
 
-struct CiscOpCode : public OpCode
-{
-  uint8_t*                    m_mask;
-  uint8_t*                    m_bits;
-  unsigned int                m_prefixsize;
-  unsigned int                m_fullsize;
-  bool                        m_vlen;
-    
-  CiscOpCode( ConstStr _symbol, unsigned int _prefixsize, unsigned int _fullsize, bool _vlen );
-  ~CiscOpCode() { delete [] m_mask; }
-    
-  bool                        match( CiscOpCode const& _oc ) const;
-  void                        optimize( bool is_little_endian );
-  unsigned int                maskbytesize() const { return (m_prefixsize+7)/8; };
-  unsigned int                fullbytesize() const { return (m_fullsize+7)/8; };
-    
-  // Topology methods
-  location_t                  locate( OpCode const& _oc ) const;
-  
-  std::ostream&               details( std::ostream& _sink ) const;
-};
-
 struct CiscGenerator : public Generator
 {
   unsigned int                  m_code_capacity;
   
   CiscGenerator( Isa& _source, Opts const& _options );
-  ~CiscGenerator();
-  
-  CiscOpCode const&           ciscopcode( Operation const* _op ) const { return dynamic_cast<CiscOpCode const&>( opcode( _op ) ); }
-  CiscOpCode&                 ciscopcode( Operation const* _op ) { return dynamic_cast<CiscOpCode&>( opcode( _op ) ); };
+  ~CiscGenerator() {}
   
   /* Cisc specific instructions */
+  unsigned                      prefix_size( Operation const& op ) const;
   void                          finalize();
   void                          codetype_decl( Product& _product ) const;
   void                          codetype_impl( Product& _product ) const;

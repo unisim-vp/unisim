@@ -69,7 +69,7 @@ namespace
     return SourceCode( buf.c_str(), std::move(fl) );
   }
   
-  unsigned GetInteger(CLex::Scanner& src)
+  uint64_t GetInteger(CLex::Scanner& src)
   {
     unsigned base = 10;
     if (src.lch == '0')
@@ -80,7 +80,7 @@ namespace
         else { src.putback = true; return 0; }
       }
 
-    unsigned res = 0;
+    uint64_t res = 0;
     for (bool hasdigit = false;; hasdigit = true)
       {
         unsigned digit = 16;
@@ -150,7 +150,12 @@ namespace
           case CLex::Scanner::Number:
             {
               // OpCode
-              unsigned bits = GetInteger(src), size = GetArraySize(src);
+              uint64_t bits = GetInteger(src), size = GetArraySize(src);
+              if (size < 64 and bits >> size)
+                { 
+                  symfl.err( "error: in op %s opcode overflow (0x%x[%u])\n", symbol.str(), bits, size);
+                  throw src.unexpected();
+                }
               bitfields.push_back( new OpcodeBitField( size, bits ) );
             }
             break;

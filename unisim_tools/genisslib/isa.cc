@@ -49,6 +49,33 @@ Opts::Opts(char const* _outprefix)
   , comments( true )
 {}
 
+/**
+ *  @brief a null ouput stream useful for ignoring too verbose logs
+ */
+
+/**
+ *  @brief returns the output stream for a given level of verbosity
+ */
+std::ostream&
+Opts::log( unsigned int level ) const
+{
+  if (level > verbosity)
+    {
+      // Return a null ostream
+      static struct onullstream : public std::ostream
+      {
+        struct nullstreambuf: public std::streambuf
+        {
+          int_type overflow( int_type c ) { return traits_type::not_eof(c); }
+        };
+        onullstream() : std::ostream(0) { rdbuf(&m_sbuf); }
+        nullstreambuf m_sbuf;
+      } ons;
+      return ons;
+    }
+  return std::cerr;
+}
+
 /** Constructor of Isa instance 
  */
 Isa::Isa()
@@ -484,7 +511,7 @@ Isa::reorder( Vector<BitField>& bitfields )
 }
 
 void
-Isa::finalize()
+Isa::finalize( Opts const& options )
 {
   // if (m_is_subdecoder)
   //   m_withcache = false;
@@ -515,12 +542,250 @@ Isa::finalize()
       for (auto altsize : insnsizes)
         m_insnsizes.insert(altsize + common);
     }
+
+  // Creating OpCode structures
+  for (auto op : m_operations)
+    {
+      op->code.setcapacity(maxsize());
+      Vector<BitField> const& bitfields = op->bitfields;
+      bool vlen = false;
+      for (FieldIterator fi(bitfields, m_little_endian); fi.next(); )
+        {
+          if (fi.bitfield().as_variablesize())
+            {
+              vlen = true;
+              continue;
+            }
+        
+          if (FixedSizeBitField const* fbf = fi.bitfield().as_fixedsize())
+            {
+              if (not fbf->hasopcode())
+                continue;
+              if (vlen)
+                {
+                  op->fileloc.loc( std::cerr ) << " error: cannot have opcodes appearing in variable length part." << std::endl;
+                  throw ParseError();
+                }
+              op->code.setbits(fi.beg, fi.end, fbf->bits());
+              op->code.setmask(fi.beg, fi.end, fbf->mask());
+            }
+        }
+    }
+
+  // Performing Topological Sort
+  struct OpNode
+  {
+    OpNode(Operation const* _op)
+      : op(_op), belowlist(), abovecount(0)
+    {}
+    Operation const* op;
+    std::set<OpNode*> belowlist;
+    uintptr_t abovecount;
+    
+    void ontopof(OpNode* nbelow)
+    {
+      for (auto below : belowlist)
+        {
+          if (below == nbelow)
+            return;
+          auto loc = nbelow->op->locate( *below->op );
+          if (loc == Operation::Code::Inside)
+            return;
+          if (loc != Operation::Code::Contains)
+            continue;
+          // edge is redundant
+          below->abovecount -= 1;
+          belowlist.erase(below);
+          // No more related edges
+          break;
+        }
+      belowlist.insert(nbelow);
+      nbelow->abovecount += 1;
+    }
+
+    bool above(OpNode* op)
+    {
+      std::set<OpNode*> seen, front(belowlist);
+
+      while (front.size())
+        {
+          seen.insert(front.begin(), front.end());
+          std::set<OpNode*> visit;
+          std::swap(front, visit);
+
+          for (auto pivot : visit)
+            {
+              if (pivot == op)
+                return true;
+              for (auto node : pivot->belowlist)
+                {
+                  if (seen.count(node))
+                    continue;
+                  front.insert(node);
+                }
+            }
+        }
+      return false;
+    }
+    
+    void unlink()
+    {
+      for (auto below : belowlist)
+        below->abovecount -= 1;
+      belowlist = std::set<OpNode*>();
+    }
+  };
+
+  std::map<Operation*, OpNode> nodes;
+  for (auto op : m_operations)
+    {
+      nodes.emplace(op, op);
+    }
+    
+  // 1. Computing implicit edges
+  for (auto& n1 : nodes)
+    {    
+      for (auto& n2 : nodes)
+        {
+          if (&n2 == &n1)
+            break;
+          switch (n1.first->locate(*n2.first))
+            {
+            default: break;
+            case Operation::Code::Equal:
+              n1.first->fileloc.err( "error: operation `%s' duplicates operation `%s'", n1.first->symbol.str(), n2.first->symbol.str() );
+              n2.first->fileloc.err( "operation `%s' was declared here", n2.first->symbol.str() );
+              throw ParseError();
+              break;
+            case Operation::Code::Contains: n1.second.ontopof( &n2.second ); break;
+            case Operation::Code::Inside:   n2.second.ontopof( &n1.second ); break;
+            }
+        }
+    }
+  
+  // 2. log if verbose enough
+  if (options.verbosity >= 2)
+    {
+      for (auto& node : nodes)
+        {
+          uintptr_t count = node.second.belowlist.size();
+          if (count == 0) continue;
+          options.log(2) << "operation `" << node.first->symbol.str() << "' is a specialization of operation" << (count>1?"s ":" ");
+          char const* sep = "";
+          for (auto below : node.second.belowlist)
+            {
+              options.log(2) << sep << "`" << below->op->symbol.str() << "'";
+              sep = ", ";
+            }
+          options.log(2) << std::endl;
+        }
+    }
+  // 3. Adding explicit edges
+  for (auto const& user_order : m_user_orderings)
+    {
+      // Unrolling specialization relations
+      typedef Vector<Operation> OpV;
+      
+      struct : Isa::OOG { void with( Operation& operation ) { ops.append( &operation ); } OpV ops; } above, below;
+    
+      if (not for_ops( user_order.top_op, above ))
+        {
+          user_order.fileloc.loc( std::cerr ) << "error: no such operation or group `" << user_order.top_op.str() << "'" << std::endl;
+          throw ParseError();
+        }
+      
+      for (auto under_op : user_order.under_ops)
+        {
+          if (not for_ops( under_op, below ))
+            {
+              user_order.fileloc.loc( std::cerr ) << "error: no such operation or group `" << under_op.str() << "'" << std::endl;
+              throw ParseError();
+            }
+        }
+      
+      // Check each user specialization and insert when valid
+      FileLoc const& sloc = user_order.fileloc;
+      for (auto aop : above.ops)
+        {
+          for (auto bop : below.ops)
+            {
+              ConstStr action = Str::fmt("specialization of {!r} with {!r}", bop->symbol.str(), aop->symbol.str());
+              switch (aop->locate( *bop ))
+                {
+                default: break;
+                case Operation::Code::Outside:
+                  sloc.loc( options.log(1) ) << Str::fmt("warning: useless %s (no relation)\n", action.str()).str();
+                  break;
+                case Operation::Code::Contains:
+                  sloc.loc( options.log(1) ) << Str::fmt("warning: useless %s (implicit specialization)\n", action.str()).str();
+                  break;
+                case Operation::Code::Inside:
+                  sloc.loc( std::cerr ) << Str::fmt("error: illegal %s (would hide the former)\n", action.str()).str();
+                  throw ParseError();
+                  break;
+                case Operation::Code::Overlaps:
+                  nodes.find(aop)->second.ontopof(&nodes.find(bop)->second);
+                  options.log(2) << Str::fmt("info: forced %s\n", action.str()).str();
+                  break;
+                }          
+            }
+        }
+    }
+  
+  // 4. Finally check if overlaps are resolved
+  for (auto& n1 : nodes)
+    {
+      for (auto& n2 : nodes)
+        {
+          if (&n1 == &n2)
+            break;
+          if (n1.first->locate( *n2.first ) != Operation::Code::Overlaps) continue;
+          if (n1.second.above( &n2.second )) continue;
+          if (n2.second.above( &n1.second )) continue;
+          n1.first->fileloc.err( "error: operation `%s' conflicts with operation `%s'", n1.first->symbol.str(), n2.first->symbol.str() );
+          n2.first->fileloc.err( "operation `%s' was declared here", n2.first->symbol.str() );
+          std::cerr << "  " << n1.first->match_info(m_little_endian) << ": " << n1.first->symbol.str() << std::endl;
+          std::cerr << "  " << n2.first->match_info(m_little_endian) << ": " << n2.first->symbol.str() << std::endl;
+          throw ParseError();
+        }
+    }
+  
+  // 5. perform the topological sort itself
+  {
+    intptr_t opcount = m_operations.size();
+    Vector<Operation> noperations( opcount );
+    intptr_t
+      sopidx = opcount, // operation source table index
+      dopidx = opcount, // operation destination table index
+      inf_loop_tracker = opcount; // counter tracking infinite loop
+    
+    while( dopidx > 0 ) {
+      sopidx = (sopidx + opcount - 1) % opcount;
+      Operation* op = m_operations[sopidx];
+      if (not op) continue;
+
+      auto node = nodes.find(op);
+      assert (node != nodes.end());
+      if (node->second.abovecount > 0)
+        {
+          // There is some operations to be placed before this one 
+          --inf_loop_tracker;
+          assert( inf_loop_tracker >= 0 );
+          continue;
+        }
+      inf_loop_tracker = opcount;
+      noperations[--dopidx] = op;
+      m_operations[sopidx] = 0;
+      node->second.unlink();
+    }
+    m_operations = noperations;
+  }
 }
 
 /**
  *  @brief computes the greatest common divisor of instruction lengths (in bits).
  */
-unsigned int
+unsigned
 Isa::gcd() const
 {
   unsigned int res = *m_insnsizes.begin();
@@ -536,3 +801,34 @@ Isa::gcd() const
   return res;
 }
 
+unsigned
+Isa::maxsize() const
+{
+  return *m_insnsizes.rbegin();
+}
+
+/** Constructor of the FieldIterator object
+ *  @brief Initialize the FieldIterator
+ *  @param _bitfields the bitfields to iterate over
+ *  @param _little_endian the ISA encoding endianness
+ */
+FieldIterator::FieldIterator( BitFields const& _bitfields, bool _little_endian )
+  : bitfields(_bitfields), little_endian(_little_endian), nbf(_bitfields.begin()), bf(_bitfields.end()), beg(0), end(0)
+{}
+
+/** Move the iterator to the next item
+ *  @return iterator validity (false if moved past-the-end)
+ */
+bool
+FieldIterator::next()
+{
+  if (nbf == bitfields.end())
+    return false;
+  bf = nbf;
+  ++nbf;
+  int size = (**bf).maxsize();
+  
+  if (little_endian) { beg = end; end = end + size; }
+  else               { end = beg; beg = beg - size; }
+  return true;
+}

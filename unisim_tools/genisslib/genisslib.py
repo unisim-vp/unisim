@@ -626,6 +626,8 @@ class Isa:
                             if n in seen:
                                 continue
                             front.add(n)
+                return False
+
             def unlink(self):
                 for below in self.belowlist:
                     below.abovecount -= 1
@@ -945,6 +947,8 @@ class Scanner:
             elif top[0].isdigit():
                 bits = self.expectInt(top)
                 size = self.getArraySize()
+                if (bits >> size) != 0:
+                    self.parse_error( 'opcode overflow ({}[%u])'.format(top, size) )
                 wordlist.append( OpcodeBitField( size, bits ) )
             elif top == '?':
                 size = self.getArraySize()
@@ -2441,7 +2445,6 @@ class BufferGenerator(Generator):
             product.code( '\\x%02x' % byte )
         product.code( "\" ), %d )", codesize )
 
-
         for beg, end, bf in FieldIterator(op.bitfields, self.source.little_endian):
             if isinstance(bf, SubOpBitField):
                 raise Abort('Encode method does not work with sub-operations.')
@@ -2451,7 +2454,6 @@ class BufferGenerator(Generator):
                 if bf.lshift > 0:
                     shiftedop = "(%s >> %u)" % (shiftedop, bf.lshift)
 
-                sep = ""
                 fstart   = beg if self.source.little_endian else -end
                 fend     = end if self.source.little_endian else -beg
                 substart = fstart
@@ -2465,7 +2467,7 @@ class BufferGenerator(Generator):
                     mask = bound - 1
                     assert mask != 0
 
-                    product.code( "%s.str[%u] |= (((%s >> %u) %% %u) << %u);\n", codename, bytepos, shiftedop, srcpos, bound, pos )
+                    product.code( "%s.str[%u] |= (((%s >> %u) & 0x%x) << %u);\n", codename, bytepos, shiftedop, srcpos, mask, pos )
 
                 product.code( ";\n" )
 
@@ -2512,8 +2514,6 @@ class BufferGenerator(Generator):
                 product.code( "%s = ", bf.name )
                 opsize = self.membersize( bf.dstsize() )
 
-                # TODO: write immediately (delayed to respect order)
-                components = []
                 src, sep = beg, ''
                 while src < end:
                     nsrc = min((src+8) & -8, end)
@@ -2527,13 +2527,11 @@ class BufferGenerator(Generator):
                     if shift: component = '(%s >> %u)' % (component, shift)
                     component = '(%s & 0x%x)' % (component, mask)
                     if dst: component = '(%s << %u)' % (component, dst)
-                    #product.code( sep ).write( component )
-                    components.append(component)
+                    product.code( sep ).write( component )
                     
                     src = nsrc
-                    sep = ' | ';
+                    sep = ' | '
 
-                product.code(' | '.join(components if self.source.little_endian else reversed(components)))
                 product.code( ";\n" )
 
                 if bf.sext:
