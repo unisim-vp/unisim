@@ -62,7 +62,6 @@ struct Generator
   Opts const&                         options;
   
   unsigned int                        m_minwordsize;
-  std::set<unsigned int>              m_insnsizes;
   typedef std::map<Operation const*,OpCode*> OpCodeMap;
   OpCodeMap                           m_opcodes;
   
@@ -125,7 +124,6 @@ struct FieldIterator {
   unsigned int              m_idx;
   unsigned int              m_ref;
   unsigned int              m_pos, m_size;
-  unsigned int              m_chkpt_pos, m_chkpt_size;
   
   FieldIterator( bool little_endian, Vector<BitField> const& bitfields, unsigned int maxsize );
   

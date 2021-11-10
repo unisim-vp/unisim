@@ -29,9 +29,7 @@
 /** An operation object */
 struct Operation : virtual ReferenceCounter
 {
-  Operation( ConstStr _symbol,
-             Vector<BitField> const& _bitfields, Vector<Comment> const& _comments,
-             SourceCode* _op_condition, FileLoc const& _fileloc );
+  Operation( ConstStr _symbol, Vector<BitField> const& _bitfields, Vector<Comment> const& _comments, SourceCode* _op_condition, FileLoc const& _fileloc );
   ~Operation();
   
   void                        add( Action* _action );
@@ -43,7 +41,9 @@ struct Operation : virtual ReferenceCounter
   Vector<Comment>             comments;          /**< The list of the C comment associated with the operation */
   Vector<Variable>            variables;         /**< The list of variables associated with the operation */
   Ptr<SourceCode>             condition;         /**< The condition associated with the operation */
-  FileLoc                   fileloc;           /**< The file location where the operation was declared */
+  FileLoc                     fileloc;           /**< The file location where the operation was declared */
+  unsigned                    size;              /**< Maximum size in bits of operation's encoding */
+  bool                        vlen;              /**< Variabile encoding length */
 };
 
 std::ostream& operator<<( std::ostream& _sink, Operation const& _op );

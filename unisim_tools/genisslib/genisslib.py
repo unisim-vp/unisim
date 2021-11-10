@@ -558,29 +558,31 @@ class Isa:
     def finalize(self, log):
         if self.is_subdecoder:
             self.withcache = False
+
+        # Computing instruction size properties
         self.insnsizes = set()
         for op in self.operations:
-            common = 0
+            vlen, common = False, 0
             insnsizes = set([0])
             for bitfield in op.bitfields:
                 common += getattr(bitfield,'size',0)
                 bfsizes = getattr(bitfield,'sizes',None)
                 if bfsizes is not None:
+                    vlen = True
                     insnsizes = set(x+y for x,y in itertools.product(insnsizes, bfsizes()))
                     continue
+            op.size = max(insnsizes) + common
+            op.vlen = vlen
             self.insnsizes.update(x+common for x in insnsizes)
         self.maxsize = max(self.insnsizes)
 
         # Creating OpCode structures
         for op in self.operations:
             op.code = OpCode(self.maxsize)
-            insn_size, vlen = 0, False
+            vlen = False
             for beg, end, bf in FieldIterator(op.bitfields, self.little_endian):
-                insn_size += bf.maxsize()
                 if hasattr(bf,'sizes'):
                     vlen = True
-                    continue
-                if not hasattr(bf,'size'):
                     continue
                 fbits = getattr(bf,'bits',None)
                 if fbits is None:
@@ -589,7 +591,6 @@ class Isa:
                 assert not vlen
                 op.code.setbits(beg, end, fbits)
                 op.code.setmask(beg, end, bf.mask())
-            op.size, op.vlen = insn_size, vlen
 
         # Performing Topological Sort
         class OpNode:
@@ -2215,7 +2216,7 @@ class ScalarGenerator(Generator):
                 product.code( "%s = ", bf.name ).usercode( sdclass.nmcode ).code("::sub_decode" )
                 if tpscheme:
                     product.code( "< " ).usercode( *tpscheme ).code( " >" )
-                product.code( "( %s, ((%s >> %u) & 0x%x) )\n", addrname, codename, pos, bf.mask() );
+                product.code( "( %s, ((%s >> %u) & 0x%x) )\n", addrname, codename, pos, (1 << sdclass.maxsize())-1 );
 
                 if sdclass.minsize() != sdclass.maxsize():
                     product.code( "{\nunsigned int shortening = %u - %s->GetLength()\n", sdclass.maxsize(), bf.name );

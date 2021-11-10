@@ -141,15 +141,9 @@ namespace
           case CLex::Scanner::More:
             {
               // Separator
-              bool rewind = src.next() != CLex::Scanner::Less;
-              if (rewind)
-                {
-                  if (src.lnext != CLex::Scanner::Name or
-                      not src.expect("rewind", &CLex::Scanner::get_name) or
-                      src.next() != CLex::Scanner::Less)
-                    throw src.unexpected();
-                }
-              bitfields.push_back( new SeparatorBitField( rewind ) );
+              if (src.next() != CLex::Scanner::Less)
+                throw src.unexpected();
+              bitfields.push_back( new SeparatorBitField );
             }
             break;
             
@@ -274,7 +268,8 @@ namespace
         if (src.lnext != CLex::Scanner::Colon)
           throw src.unexpected();
       }
-    
+
+    isa.reorder( bitfields );
     return new Operation(symbol, bitfields, comments, 0, symfl);
   }
 

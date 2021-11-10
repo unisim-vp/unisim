@@ -95,12 +95,12 @@ void
 RiscGenerator::finalize()
 {
   // Finalize size information
-  if ((*m_insnsizes.rbegin()) > 64) {
-    std::cerr << "error: can't process encodings wider than 64 bits (" << (*m_insnsizes.rbegin()) << " bits).";
+  if ((*source.m_insnsizes.rbegin()) > 64) {
+    std::cerr << "error: can't process encodings wider than 64 bits (" << (*source.m_insnsizes.rbegin()) << " bits).";
     throw GenerationError;
   }
   
-  m_insn_ctypesize = least_ctype_size( (*m_insnsizes.rbegin()) );
+  m_insn_ctypesize = least_ctype_size( (*source.m_insnsizes.rbegin()) );
   m_insn_ctype = Str::fmt( "uint%d_t", m_insn_ctypesize );
   switch( m_insn_ctypesize ) {
   case 8:  m_insn_cpostfix = "U"; break;
@@ -113,37 +113,32 @@ RiscGenerator::finalize()
   Vector<Operation> const& operations = source.m_operations;
   
   // Process the opcodes needed by the decoder
-  for( Vector<Operation>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
-    Vector<BitField> const& bitfields = (**op).bitfields;
+  for (auto const& op : operations)
+    {
+      Vector<BitField> const& bitfields = op->bitfields;
     
-    bool vlen = false, outprefix = false, vword = false;
-    unsigned int insn_size = 0;
-    uint64_t mask = 0, bits = 0;
+      bool vlen = false, outprefix = false;
+      unsigned int insn_size = 0;
+      uint64_t mask = 0, bits = 0;
     
-    for (FieldIterator fi( source.m_little_endian, bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-      if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &(fi.item()) )) {
-        if (sbf->rewind and vword)
+      for (FieldIterator fi( source.m_little_endian, bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); ) {
+        if (fi.item().as_variablesize())
           {
-            (**op).fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).symbol.str() );
-            throw GenerationError;
+            vlen = true;
+            outprefix = true;
           }
-        vword = false;
+        
+        insn_size = std::max( insn_size, fi.insn_size() );
+        if (outprefix) continue;
+        if (FixedSizeBitField const* fbf = fi.item().as_fixedsize())
+          {
+            if (not fbf->hasopcode()) continue;
+            bits |= fbf->bits() << fi.pos();
+            mask |= fbf->mask() << fi.pos();
+          }
       }
-      
-      if (fi.item().sizes() > 1) {
-        vword = true;
-        vlen = true;
-        outprefix = true;
-      }
-      
-      insn_size = std::max( insn_size, fi.insn_size() );
-      
-      if (outprefix or not fi.item().hasopcode()) continue;
-      bits |= fi.item().bits() << fi.pos();
-      mask |= fi.item().mask() << fi.pos();
+      m_opcodes[op] = new RiscOpCode( op->symbol, mask, bits, insn_size, vlen );
     }
-    m_opcodes[*op] = new RiscOpCode( (**op).symbol, mask, bits, insn_size, vlen );
-  }
   
   this->toposort();
 }
@@ -164,7 +159,7 @@ RiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
   
   _product.code( "%s = 0x%llx%s;\n", _codename, oc.m_bits, m_insn_cpostfix.str() );
   
-  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); ) {
     if      (dynamic_cast<SubOpBitField const*>( &fi.item() ))
       {
         _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
@@ -192,7 +187,7 @@ RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
     _product.code( "this->gil_length = %u;\n", oc.m_size );
   }
   
-  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); ) {
     if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() )) {
       SDInstance const* sdinstance = sobf->sdinstance;
       SDClass const* sdclass = sdinstance->sdclass;
@@ -201,8 +196,7 @@ RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
       _product.code( "%s = ", sobf->symbol.str() ).usercode( sdclass->nmcode ).code("::sub_decode" );
       if (tpscheme)
         _product.code( "< " ).usercode( *tpscheme ).code( " >" );
-      _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n",
-                     _addrname, _codename, fi.pos(), sobf->mask() );
+      _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n", _addrname, _codename, fi.pos(), (1ull<<sdclass->maxsize())-1 );
 
       if (sdclass->minsize() != sdclass->maxsize()) {
         _product.code( "{\nunsigned int shortening = %u - %s->GetLength();\n",
@@ -258,9 +252,9 @@ RiscGenerator::insn_mask_code( Product& _product, Operation const& _op ) const {
 
 ConstStr
 RiscGenerator::insn_id_expr( char const* _addrname ) const {
-  if ((*m_insnsizes.rbegin()) != (*m_insnsizes.begin()))
+  if ((*source.m_insnsizes.rbegin()) != (*source.m_insnsizes.begin()))
     return _addrname;
-  return Str::fmt( "%s / %d", _addrname, ((*m_insnsizes.rbegin()) / 8) );
+  return Str::fmt( "%s / %d", _addrname, ((*source.m_insnsizes.rbegin()) / 8) );
 }
 
 void
@@ -275,8 +269,8 @@ RiscGenerator::insn_unchanged_expr( Product& _product, char const* _old, char co
 
 void
 RiscGenerator::op_getlen_decl( Product& _product ) const {
-  if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin())) {
-    _product.code( "inline unsigned int GetLength() const { return %d; }\n", (*m_insnsizes.rbegin()) );
+  if ((*source.m_insnsizes.begin()) == (*source.m_insnsizes.rbegin())) {
+    _product.code( "inline unsigned int GetLength() const { return %d; }\n", (*source.m_insnsizes.rbegin()) );
   } else {
     _product.code( "virtual unsigned int GetLength() const { return 0; };\n" );
   }
@@ -284,7 +278,7 @@ RiscGenerator::op_getlen_decl( Product& _product ) const {
 
 void
 RiscGenerator::insn_getlen_decl( Product& _product, Operation const& _op ) const {
-  if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin()))
+  if ((*source.m_insnsizes.begin()) == (*source.m_insnsizes.rbegin()))
     return;
   
   RiscOpCode const& oc = riscopcode( &_op );

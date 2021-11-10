@@ -33,51 +33,6 @@
 #include <stdexcept>
 #include <cassert>
 
-namespace
-{
-  struct OpProperties
-  {
-    std::set<unsigned int> m_insnsizes;
-    typedef std::vector<unsigned int> insnsizes_t;
-    typedef Vector<BitField>::const_iterator bfiter_t;
-  
-  
-    void
-    dig( unsigned int cursize, unsigned int rwdsize, unsigned int minsize, bfiter_t bfitr, bfiter_t bfend )
-    {
-      for (;; ++bfitr) {
-        if (bfitr == bfend) {
-          m_insnsizes.insert( std::max( cursize, minsize ) );
-          return;
-        }
-      
-        BitField const& bitfield = **bfitr;
-        if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &bitfield ))
-          {
-            if (not sbf->rewind) { rwdsize = cursize; continue; }
-            if (minsize < cursize) minsize = cursize;
-            cursize = rwdsize;
-          }
-        uintptr_t count = bitfield.sizes();
-        if (count < 1) throw std::logic_error( "empty instruction sizes list" );
-        unsigned int bfsizes[count];
-        bitfield.sizes( &bfsizes[0] );
-      
-        while (--count > 0)
-          this->dig( cursize + bfsizes[count], rwdsize, minsize, bfitr + 1, bfend );
-      
-        cursize += bfsizes[0];
-      }
-    }
-  
-    OpProperties( Operation const& op )
-    {
-      Vector<BitField> const& bitfields = op.bitfields;
-      dig( 0, 0, 0, bitfields.begin(), bitfields.end() );
-    }
-  };
-
-}
 
 Generator::Generator( Isa& _source, Opts const& _options )
   : source( _source ), options( _options ), m_minwordsize()
@@ -86,66 +41,6 @@ Generator::Generator( Isa& _source, Opts const& _options )
   // requirements from both command line and source code
   m_minwordsize = least_ctype_size( std::max( _options.minwordsize, source.m_minwordsize ) );
   
-  { // change bitfield ordering if 
-    bool rev_forder = source.m_asc_forder xor source.m_little_endian;
-  
-    if (source.m_asc_worder xor source.m_little_endian) {
-      for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vector<BitField>& bitfields = (**op).bitfields;
-        uintptr_t lo = 0, hi = bitfields.size();
-        if (hi == 0) continue;
-      
-        for (hi -= 1; lo < hi; lo ++, hi-- ) {
-          std::swap( bitfields[lo], bitfields[hi] );
-        }
-      }
-      // this operation has invert fields order
-      rev_forder = not rev_forder;
-    }
-  
-    if (rev_forder) {
-      for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vector<BitField>& bitfields = (**op).bitfields;
-      
-        uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
-        for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
-          while ((fend < fmax) and (not dynamic_cast<SeparatorBitField const*>( &*bitfields[fend] ))) fend += 1;
-          if ((fend - fbeg) < 2) continue;
-          uintptr_t lo = fbeg, hi = fend - 1;
-        
-          for ( ; lo < hi; lo ++, hi-- ) {
-            std::swap( bitfields[lo], bitfields[hi] );
-          }
-        }
-      }
-    }
-  }
-  
-  // Compute min/max sizes
-  m_insnsizes.clear();
-  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-    OpProperties opprops( **op );
-    m_insnsizes.insert( opprops.m_insnsizes.begin(), opprops.m_insnsizes.end() );
-  }
-}
-
-/**
- *  @brief computes the greatest common divisor of instruction lengths (in bits).
- */
-unsigned int
-Generator::gcd() const
-{
-  unsigned int res = *m_insnsizes.begin();
-  for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
-    unsigned int cur = *itr;
-    for (;;) {
-      unsigned int rem = cur % res;
-      if (rem == 0) break;
-      cur = res;
-      res = rem;
-    }
-  }
-  return res;
 }
 
 /**
@@ -394,16 +289,17 @@ void
 Generator::isastats()
 {
   log(1) << "Instruction Size: ";
-  if (m_insnsizes.size() == 1)
-    log(1) << (*m_insnsizes.begin());
+  if (source.m_insnsizes.size() == 1)
+    log(1) << (*source.m_insnsizes.begin());
   else
     {
       char const* sep = "[";
-      for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
-        log(1) << sep << *itr;
+      for (unsigned size : source.m_insnsizes)
+      {
+        log(1) << sep << size;
         sep = ",";
       }
-      log(1) << "] (gcd=" << this->gcd() << ")";
+      log(1) << "] (gcd=" << source.gcd() << ")";
     }
   
   log(1) << std::endl;
@@ -557,8 +453,8 @@ Generator::iss() const
     
     sink.code( " [" );
     sep = "";
-    for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); sep = ",", ++itr)
-      sink.code( "%s%u", sep, *itr );
+    for (unsigned size : source.m_insnsizes)
+      sink.code( "%s%u", sep, size );
     
     sink.code( "]\n" );
     
@@ -708,8 +604,8 @@ Generator::operation_decl( Product& _product ) const
   op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
   
-  _product.code( " static unsigned int const minsize = %d;\n", (*m_insnsizes.begin()) );
-  _product.code( " static unsigned int const maxsize = %d;\n", (*m_insnsizes.rbegin()) );
+  _product.code( " static unsigned int const minsize = %d;\n", (*source.m_insnsizes.begin()) );
+  _product.code( " static unsigned int const maxsize = %d;\n", (*source.m_insnsizes.rbegin()) );
   
   for( Vector<Variable>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
     _product.code(" ").usercode( *(**var).ctype ).code( " %s;", (**var).symbol.str() );
@@ -1400,8 +1296,7 @@ Generator::least_ctype_size( unsigned int bits ) {
 FieldIterator::FieldIterator( bool little_endian, Vector<BitField> const& bitfields, unsigned int maxsize )
   : m_bitfields( bitfields ), m_idx( (unsigned int)(-1) ),
     m_ref( little_endian ? 0 : maxsize ),
-    m_pos( m_ref ), m_size( 0 ),
-    m_chkpt_pos( m_pos ), m_chkpt_size( m_size )
+    m_pos( m_ref ), m_size( 0 )
 {}
   
 BitField const& FieldIterator::item() { return *(m_bitfields[m_idx]); }
@@ -1414,10 +1309,6 @@ FieldIterator::next() {
   if (m_ref == 0) m_pos += m_size;
   else            m_pos -= field.maxsize();
   m_size = field.maxsize();
-  if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &field )) {
-    if (sbf->rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
-    else             { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
-  }
   
   return true;
 }

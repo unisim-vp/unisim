@@ -145,58 +145,13 @@ CiscOpCode::details( std::ostream& _sink ) const
   return _sink;
 }
 
-/**
- *  @brief  A word iterator Object.
- *
- *  This class implements an iterator on words in a bitfield list
- *  (bitfield separated by separators). It computes bitfield bounds by
- *  mean of iterators, and size for current word.
- *  
- */
-
-struct BFWordIterator {
-  Vector<BitField>::const_iterator m_left, m_right, m_end;
-  unsigned int                       m_count, m_minsize, m_maxsize;
-  bool                               m_rewind, m_has_operand, m_has_subop;
-  
-  BFWordIterator( Vector<BitField> const& _bitfields )
-    : m_right( _bitfields.begin() - 1 ), m_end( _bitfields.end() ),
-      m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false ),
-      m_has_operand( false ), m_has_subop( false )
-  {}
-  
-  bool
-  next() {
-    m_left = m_right + 1;
-    if (m_left >= m_end) return false;
-    m_count = 0; m_minsize = 0; m_maxsize = 0;
-    m_has_operand = false; m_has_subop = false;
-    for (m_right = m_left; (m_right < m_end) and (not dynamic_cast<SeparatorBitField const*>( &**m_right )); ++m_right)
-      {
-        m_count += 1;
-        m_minsize += (**m_right).minsize();
-        m_maxsize += (**m_right).maxsize();
-        if      (dynamic_cast<OperandBitField const*>(&**m_right)) m_has_operand = true;
-        else if (dynamic_cast<SubOpBitField const*>(&**m_right))   m_has_subop = true;
-      }
-    SeparatorBitField const* sepbf = dynamic_cast<SeparatorBitField const*>( &**m_right );
-    if ((m_right < m_end) and sepbf) {
-      m_rewind = sepbf->rewind;
-    } else
-      m_rewind = false;
-        
-    return true;
-  }
-  
-};
-
 /** Process the isa structure and computes CISC specific data 
 */
 void
 CiscGenerator::finalize()
 {
   // Finalize size information
-  m_code_capacity = ((*m_insnsizes.rbegin()) + 7) / 8;
+  m_code_capacity = ((*source.m_insnsizes.rbegin()) + 7) / 8;
   
   Vector<Operation> const& operations = source.m_operations;
   
@@ -204,51 +159,49 @@ CiscGenerator::finalize()
   for (Vector<Operation>::const_iterator op = operations.begin(); op < operations.end(); ++ op) {
     // compute prefix size
     unsigned int prefixsize = 0, insn_size = 0;
-    bool vlen = false, outprefix = false, vword = false;
+    bool vlen = false, outprefix = false;
     
-    for (FieldIterator fi( source.m_little_endian, (**op).bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-      if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &fi.item() )) {
-        if (sbf->rewind and vword) {
-          (**op).fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).symbol.str() );
-          throw GenerationError;
-        }
-        vword = false;
-      }
+    for (FieldIterator fi( source.m_little_endian, (**op).bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); )
+      {
+        if (fi.item().as_variablesize())
+          {
+            outprefix = true;
+            vlen = true;
+          }
       
-      if (fi.item().sizes() != 1) {
-        vword = true;
-        outprefix = true;
-        vlen = true;
+        insn_size = std::max( insn_size, fi.insn_size() );
+        if (outprefix) continue;
+        if (prefixsize < fi.insn_size()) prefixsize = fi.insn_size();
       }
-      
-      insn_size = std::max( insn_size, fi.insn_size() );
-      if (outprefix) continue;
-      if (prefixsize < fi.insn_size()) prefixsize = fi.insn_size();
-    }
     
     m_opcodes[*op] = new CiscOpCode( (**op).symbol, prefixsize, insn_size, vlen );
     CiscOpCode& oc = ciscopcode( *op );
     
     // compute opcode
-    for (FieldIterator fi( source.m_little_endian, (**op).bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-      if (fi.item().sizes() != 1) break;
-      if (not fi.item().hasopcode()) continue;
-      uint64_t mask = fi.item().mask(), bits = fi.item().bits();
-      bool little_endian = source.m_little_endian;
-      unsigned int pos = little_endian ? fi.pos() : fi.insn_size();
-      while (mask) {
-        unsigned int shift = little_endian ? (pos % 8) : (-pos % 8);
-        unsigned int offset = little_endian ? (pos / 8) : ((pos-1) / 8);
-        uint8_t partial_mask = mask << shift;
-        uint8_t partial_bits = bits << shift;
-        oc.m_mask[offset] |= partial_mask;
-        oc.m_bits[offset] = (oc.m_bits[offset] & ~partial_mask) | (partial_bits & partial_mask);
-        shift = 8 - shift;
-        mask >>= shift;
-        bits >>= shift;
-        pos = little_endian ? pos + shift : pos - shift;
+    for (FieldIterator fi( source.m_little_endian, (**op).bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); )
+      {
+        if (fi.item().as_variablesize()) break;
+        if (FixedSizeBitField const* fbf = fi.item().as_fixedsize())
+          {
+            if (not fbf->hasopcode()) continue;
+            uint64_t mask = fbf->mask(), bits = fbf->bits();
+            bool little_endian = source.m_little_endian;
+            unsigned int pos = little_endian ? fi.pos() : fi.insn_size();
+            while (mask)
+              {
+                unsigned int shift = little_endian ? (pos % 8) : (-pos % 8);
+                unsigned int offset = little_endian ? (pos / 8) : ((pos-1) / 8);
+                uint8_t partial_mask = mask << shift;
+                uint8_t partial_bits = bits << shift;
+                oc.m_mask[offset] |= partial_mask;
+                oc.m_bits[offset] = (oc.m_bits[offset] & ~partial_mask) | (partial_bits & partial_mask);
+                shift = 8 - shift;
+                mask >>= shift;
+                bits >>= shift;
+                pos = little_endian ? pos + shift : pos - shift;
+              }
+          }
       }
-    }
     oc.optimize( source.m_little_endian );
   }
   
@@ -427,7 +380,7 @@ CiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
   
   bool little_endian = source.m_little_endian;
   
-  for (FieldIterator fi( little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
+  for (FieldIterator fi( little_endian, _op.bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); )
     {
     
       if (dynamic_cast<SubOpBitField const*>( &fi.item() ))
@@ -476,7 +429,7 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
   char const* dsh = little_endian ? ">>" : "<<";
   char const* ash = little_endian ? "<<" : ">>";
   
-  for (FieldIterator fi( little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
+  for (FieldIterator fi( little_endian, _op.bitfields, (*source.m_insnsizes.rbegin()) ); fi.next(); )
     {
       if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() ))
         {

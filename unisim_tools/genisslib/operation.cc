@@ -36,12 +36,15 @@
     @param lineno a line number where the operation was found
     @return an operation object
 */
-Operation::Operation( ConstStr _symbol, Vector<BitField> const& _bitfields, Vector<Comment> const& _comments,
-                          SourceCode* _op_condition, FileLoc const& _fileloc )
-  : symbol( _symbol ), bitfields( _bitfields ), comments( _comments ),
-    condition( _op_condition ), fileloc( _fileloc )
-{
-}
+Operation::Operation( ConstStr _symbol, Vector<BitField> const& _bitfields, Vector<Comment> const& _comments, SourceCode* cond, FileLoc const& floc )
+  : symbol( _symbol )
+  , bitfields( _bitfields )
+  , comments( _comments )
+  , condition( cond )
+  , fileloc( floc )
+  , size(0)
+  , vlen(false)
+{}
 
 /** Delete an operation object
     @param operation an operation object to delete

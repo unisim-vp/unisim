@@ -87,6 +87,8 @@ struct Isa
   };
   typedef std::vector<Ordering> Orderings;
   Orderings                     m_user_orderings;
+  
+  std::set<unsigned int>        m_insnsizes;
 
   Isa();
   ~Isa();
@@ -104,7 +106,10 @@ struct Isa
   ActionProto const*            actionproto( ConstStr _symbol ) const;
   SDClass const*                sdclass( std::vector<ConstStr>& _namespace ) const;
   SDInstance const*             sdinstance( ConstStr _symbol ) const;
-                                
+
+  unsigned int                  gcd() const;
+  void                          reorder( Vector<BitField>& bitfields );
+  void                          finalize();
   Generator*                    generator( Opts const& _options );
                                 
   void                          expand( std::ostream& _sink ) const;

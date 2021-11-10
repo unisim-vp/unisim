@@ -27,12 +27,13 @@
 #include <specialization.hh>
 #include <scanner.hh>
 #include <product.hh>
+#include <riscgenerator.hh>
+#include <ciscgenerator.hh>
 #include <unistd.h>
 #include <cassert>
 #include <cerrno>
 #include <iostream>
-#include <riscgenerator.hh>
-#include <ciscgenerator.hh>
+#include <algorithm>
 
 /**
  * Construct for Opts (Default global options) */
@@ -455,5 +456,83 @@ Isa::for_ops( ConstStr group_symbol, OOG& oog )
   else
     return false;
   return true;
+}
+
+void
+Isa::reorder( Vector<BitField>& bitfields )
+{
+  bool rev_forder = m_asc_forder xor m_little_endian;
+  bool rev_worder = m_asc_worder xor m_little_endian;
+  
+  // Reorder bitfield words if needed
+  if (rev_worder)
+    {
+      std::reverse(bitfields.begin(), bitfields.end());
+      // This operation has invert fields order
+      rev_forder = not rev_forder;
+    }
+
+  // Reorder bitfield within words if needed
+  if (rev_forder)
+    {
+      for (Vector<BitField>::iterator fbeg = bitfields.begin(), fend = fbeg, fmax = bitfields.end(); fbeg < fmax; fbeg = fend = fend + 1)
+        {
+          while (fend < fmax and (not dynamic_cast<SeparatorBitField const*>( &**fend ))) ++fend;
+          std::reverse(fbeg, fend);
+        }
+    }
+}
+
+void
+Isa::finalize()
+{
+  // if (m_is_subdecoder)
+  //   m_withcache = false;
+  
+  // Computing instruction size properties
+  m_insnsizes.clear();
+  for (auto& op : m_operations)
+    {
+      bool vlen = false;
+      unsigned common = 0;
+      std::set<unsigned> insnsizes = {0};
+      for (auto const& bf : op->bitfields)
+        {
+          if      (FixedSizeBitField const* fbf = bf->as_fixedsize())
+            common += fbf->size;
+          else if (VariableSizeBitField const* vbf = bf->as_variablesize())
+            {
+              vlen = true;
+              std::set<unsigned> nis;
+              for (auto s1 : insnsizes)
+                for (auto s2 : vbf->sizes())
+                  nis.insert(s1+s2);
+              std::swap(insnsizes, nis);
+            }
+        }
+      op->size = *insnsizes.rbegin() + common;
+      op->vlen = vlen;
+      for (auto altsize : insnsizes)
+        m_insnsizes.insert(altsize + common);
+    }
+}
+
+/**
+ *  @brief computes the greatest common divisor of instruction lengths (in bits).
+ */
+unsigned int
+Isa::gcd() const
+{
+  unsigned int res = *m_insnsizes.begin();
+  for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
+    unsigned int cur = *itr;
+    for (;;) {
+      unsigned int rem = cur % res;
+      if (rem == 0) break;
+      cur = res;
+      res = rem;
+    }
+  }
+  return res;
 }
 
