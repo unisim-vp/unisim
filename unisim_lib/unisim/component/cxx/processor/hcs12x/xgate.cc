@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/s12xgate.hh>
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
@@ -538,7 +539,7 @@ void XGATE::Sync()
 
 }
 
-Decoder decoder;
+opcache::OpCache<Decoder> decoder;
 
 unsigned int XGATE::step()
 {

@@ -12,6 +12,7 @@ std/sstream
 std/stdexcept
 std/string
 std/vector
+unisim/component/cxx/processor/opcache
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable

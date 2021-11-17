@@ -78,6 +78,7 @@
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 
 namespace unisim {
 namespace component {
@@ -213,7 +214,7 @@ private:
 
 
 class CPU :
-		public Decoder,
+		public opcache::OpCache<Decoder>,
 		public Client<Loader>,
 		public Client<DebugYielding>,
 		public Client<MemoryAccessReporting<physical_address_t> >,
