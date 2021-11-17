@@ -347,9 +347,9 @@ CiscGenerator::insn_decode_impl( Product& product, Operation const& op, char con
 }
 
 void
-CiscGenerator::insn_unchanged_expr( Product& _product, char const* _ref, char const* _bytes ) const
+CiscGenerator::op_match( Product& _product, char const* codename ) const
 {
-  _product.code( "%s.match( %s )", _bytes, _ref );
+  _product.code( "%s.match( GetEncoding() )", codename );
 }
 
 void

@@ -177,19 +177,30 @@ RiscGenerator::insn_match_ifexpr( Product& _product, char const* _code, char con
 }
 
 void
-RiscGenerator::insn_unchanged_expr( Product& _product, char const* _old, char const* _new ) const
+RiscGenerator::op_match( Product& _product, char const* codename ) const
 {
-  _product.code( "%s == %s", _old, _new );
+  ConstStr delta = Str::fmt( "(this->GetEncoding() ^ %s)", codename );
+  unsigned maxsize = source.maxsize();
+  bool vlen = source.m_insnsizes.size() != 1;
+  ConstStr mask = Str::fmt( "0x%llx%s", uint64_t(-1) >> (64 - maxsize), m_insn_cpostfix.str() );
+  bool skipmask = maxsize == m_insn_ctypesize;
+
+  if     (source.m_little_endian and vlen) {
+    delta = Str::fmt( "(%s << (%u - this->GetLength()))", delta.str(), maxsize );
+    skipmask = false; // Defensive programming against C type promotions
+  }
+  if (not skipmask)
+    delta = Str::fmt( "(%s & %s)", delta.str(), mask.str() );
+  if (not source.m_little_endian and vlen)
+    delta = Str::fmt( "(%s >> (%u - this->GetLength()))", delta.str(), maxsize );
+  _product.code( "%s == 0", delta.str() );
 }
 
 void
 RiscGenerator::op_getlen_decl( Product& _product ) const
 {
-  if ((*source.m_insnsizes.begin()) == (*source.m_insnsizes.rbegin())) {
-    _product.code( "inline unsigned int GetLength() const { return %d; }\n", (*source.m_insnsizes.rbegin()) );
-  } else {
-    _product.code( "virtual unsigned int GetLength() const { return 0; };\n" );
-  }
+  _product.code( source.m_insnsizes.size() == 1 ? "inline" : "virtual" );
+  _product.code( " unsigned int GetLength() const { return %d; }\n", source.maxsize() );
 }
 
 void

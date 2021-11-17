@@ -43,7 +43,6 @@ struct RiscGenerator : public Generator
   void                          insn_mask_code( Product& _product, Operation const& _op ) const;
   ConstStr                      insn_id_expr( char const* _addrname ) const;
   void                          insn_match_ifexpr( Product& _product, char const* _code, char const* _mask, char const* _bits ) const;
-  void                          insn_unchanged_expr( Product& _product, char const* _old, char const* _new ) const;
   void                          insn_decode_impl( Product& _product, Operation const& _op, char const* _codename, char const* _addrname ) const;
   void                          insn_encode_impl( Product& _product, Operation const& _op, char const* _codename ) const;
   void                          additional_impl_includes( Product& _product ) const {}
@@ -53,6 +52,7 @@ struct RiscGenerator : public Generator
   void                          insn_destructor_impl( Product& _product, Operation const& _op ) const {};
   
   void                          op_getlen_decl( Product& _product ) const;
+  void                          op_match( Product& _product, char const* codename ) const;
   void                          insn_getlen_decl( Product& _product, Operation const& _op ) const;
 };
 

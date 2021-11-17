@@ -70,7 +70,8 @@ Runner::step_instruction()
   if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
     {
       /* Thumb state */
-      Thumb2::Operation* op = thumb2iset.decode(insn_addr, insn);
+      std::unique_ptr<Thumb2::Operation> op;
+      op.reset(thumb2iset.decode(insn_addr, insn));
         
       /* update PC register value before execution */
       insn_length = op->GetLength() / 8;
@@ -87,7 +88,8 @@ Runner::step_instruction()
   else
     {
       /* Arm32 state */
-      Arm32::Operation* op = arm32iset.decode(insn_addr, insn);
+      std::unique_ptr<Arm32::Operation> op;
+      op.reset(arm32iset.decode(insn_addr, insn));
     
       /* update PC register value before execution */
       insn_length = op->GetLength() / 8;

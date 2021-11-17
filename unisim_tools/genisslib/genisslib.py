@@ -397,7 +397,7 @@ class Isa:
     def __init__(self):
         self.decoder = ('scalar',None) #< Decoder type
         self.is_subdecoder = False     #< Subdecoder or full decoder
-        self.withcache = True          #< Generate cache structure
+        self.withcache = False         #< Generate cache structure
         self.withsource = False        #< Action source code accessible or not
         self.withencode = False        #< Action source code accessible or not
         self.little_endian = False     #< Endianness of isa (false: big endian, true: little endian)
@@ -515,13 +515,13 @@ class Isa:
             if   value == 'true':  setattr(self,varname,True)
             elif value == 'false': setattr(self,varname,False)
             else:
-                raise Abort('{}: expect a boolean for property {} (got: {!r})'.format(vafl,srcname,value))
+                raise Abort('{}: expected a boolean for property {} (got: {!r})'.format(valfl,key,value))
 
         elif key == 'endianness':
             if   value == 'little': self.little_endian = True
             elif value == 'big':    self.little_endian = False
             else:
-                raise Abort('{}: expect [little|big] for property endianness (got: {!r})'.format(vafl,value))
+                raise Abort('{}: expected [little|big] for property endianness (got: {!r})'.format(valfl,value))
             return
 
         elif key in dirdict:
@@ -529,7 +529,7 @@ class Isa:
             if   value == 'descending': setattr(self,varname,False)
             elif value == 'ascending':  setattr(self,varname,True)
             else:
-                raise Abort('{}: expect a [descending|ascending] for property {} (got: {!r})'.format(vafl,srcname,value))
+                raise Abort('{}: expected a [descending|ascending] for property {} (got: {!r})'.format(valfl,key,value))
 
         elif key == 'addressclass':
             # TODO: keep (and exploit) the source code ?
@@ -537,11 +537,11 @@ class Isa:
 
         elif key == 'minwordsize':
             if not isinstance(value, int):
-                raise Abort('{}: expect an int for property minwordsize (got: {!r})'.format(vafl,value))
+                raise Abort('{}: expected an int for property minwordsize (got: {!r})'.format(valfl,value))
             self.minwordsize = value
 
         else:
-            raise Abort('{}: unknown property {}'.format(vafl,key))
+            raise Abort('{}: unknown property {}'.format(valfl,key))
 
     def dshift(self):
         return '>>' if self.little_endian else '<<'
@@ -554,6 +554,9 @@ class Isa:
 
     def rev_worder(self):
         return bool(self.asc_worder) != bool(self.little_endian)
+
+    def maxsize(self):
+        return max(self.insnsizes)
 
     def finalize(self, log):
         if self.is_subdecoder:
@@ -574,11 +577,10 @@ class Isa:
             op.size = max(insnsizes) + common
             op.vlen = vlen
             self.insnsizes.update(x+common for x in insnsizes)
-        self.maxsize = max(self.insnsizes)
 
         # Creating OpCode structures
         for op in self.operations:
-            op.code = OpCode(self.maxsize)
+            op.code = OpCode(self.maxsize())
             vlen = False
             for beg, end, bf in FieldIterator(op.bitfields, self.little_endian):
                 if hasattr(bf,'sizes'):
@@ -1503,12 +1505,15 @@ class Generator:
         product.code( " Operation(%s code, %s addr, const char *name);\n", self.codetype_constref(), self.source.addrtype )
         product.code( " virtual ~Operation();\n" )
         if self.source.withencode:
-            product.code( " virtual void Encode(%s code) const {}\n", codetype_ref().str() )
+            product.code( " virtual void Encode(%s code) const {}\n", self.codetype_ref() )
         product.code( " inline %s GetAddr() const { return addr; }\n", self.source.addrtype )
         product.code( " inline void SetAddr(%s _addr) { this->addr = _addr; }\n", self.source.addrtype )
         product.code( " inline %s GetEncoding() const { return encoding; }\n", self.codetype_constref() )
         self.op_getlen_decl( product )
         product.code( " inline const char *GetName() const { return name; }\n" )
+        product.code( " inline bool Match(%s _addr, %s _code) const { return ", self.source.addrtype, self.codetype_constref())
+        self.op_match( product, "_code" )
+        product.code( " and GetAddr() == _addr; }\n" )
 
         product.code( " static unsigned int const minsize = %d;\n", min(self.source.insnsizes) )
         product.code( " static unsigned int const maxsize = %d;\n", max(self.source.insnsizes) )
@@ -1650,7 +1655,8 @@ class Generator:
         product.code( " *(*decode)(%s code, %s addr);\n", self.codetype_constref(), self.source.addrtype )
         product.code( "};\n" )
 
-        product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" )
+        if self.source.withcache:
+            product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" )
 
         product.template_signature( self.source.tparams )
         product.code( "class Decoder\n" )
@@ -1658,7 +1664,10 @@ class Generator:
         product.code( "public:\n" )
         product.code( " typedef Operation" )
         product.template_abbrev( self.source.tparams )
-        product.code( " operation_type;\n\n" )
+        product.code( " operation_type;\n" )
+        product.code( " typedef %s address_type;\n", self.source.addrtype )
+        product.code( " typedef CodeType code_type;\n" )
+        product.code( " enum { alignment = %u };\n\n", self.source.gcd() )
         product.code( " Decoder();\n" )
         product.code( " virtual ~Decoder();\n" )
         product.code( "\n" )
@@ -1673,9 +1682,10 @@ class Generator:
             product.code( " Operation" )
             product.template_abbrev( self.source.tparams )
             product.code( " *Decode(%s addr, %s insn);\n", self.source.addrtype, self.codetype_constref() )
-            product.code( " std::vector<DecodeTableEntry" )
-            product.template_abbrev( self.source.tparams )
-            product.code( " > const& GetDecodeTable() const { return decode_table; };\n" )
+        product.code( " std::vector<DecodeTableEntry" )
+        product.template_abbrev( self.source.tparams )
+        product.code( " > const& GetDecodeTable() const { return decode_table; };\n" )
+        if self.source.withcache:
             product.code( " void InvalidateDecodingCacheEntry(%s addr);\n", self.source.addrtype )
             product.code( " void InvalidateDecodingCache();\n\n" )
         product.code( " void SetLittleEndian();\n" )
@@ -1953,9 +1963,7 @@ class Generator:
             product.code( " if(operation)\n" )
             product.code( " {\n" )
             # product.code( "  fprintf(stderr, \"hit at 0x%%08x\\n\", addr);\n" )
-            product.code( "  if(")
-            self.insn_unchanged_expr( product, "operation->GetEncoding()", "insn" )
-            product.code( " && operation->GetAddr() == addr)\n" )
+            product.code( "  if(operation->match(addr, insn))\n")
             product.code( "   return operation;\n" )
             product.code( "  delete operation;\n" )
             product.code( " }\n" )
@@ -2127,7 +2135,7 @@ class Generator:
 class ScalarGenerator(Generator):
     def __init__(self, source, options):
         Generator.__init__(self, source, options)
-        self.insn_ctype_size = least_ctype_size(self.source.maxsize)
+        self.insn_ctype_size = least_ctype_size(self.source.maxsize())
         self.insn_ctype = 'uint{}_t'.format(self.insn_ctype_size)
         self.insn_cpostfix = 'ULL'[:len(bin(max(self.insn_ctype_size,16)))-6]
 
@@ -2148,13 +2156,13 @@ class ScalarGenerator(Generator):
     def codetype_constref(self): return "CodeType"
 
     def insn_bits_code(self, product, op):
-        size = self.source.maxsize
+        size = self.source.maxsize()
         beg, end = (0, size) if self.source.little_endian else (-size, 0)
         bits = op.code.getbits(beg, end)
         product.code( "0x%x%s", bits, self.insn_cpostfix )
 
     def insn_mask_code(self, product, op):
-        size = self.source.maxsize
+        size = self.source.maxsize()
         beg, end = (0, size) if self.source.little_endian else (-size, 0)
         mask = op.code.getmask(beg, end)
         product.code( "0x%x%s", mask, self.insn_cpostfix )
@@ -2162,9 +2170,22 @@ class ScalarGenerator(Generator):
     def insn_match_ifexpr(self, product, code, mask, bits):
         product.code( "if((%s & %s) == %s)\n", code, mask, bits )
 
-    def insn_unchanged_expr(self, product, old, new ):
-        product.code( "%s == %s", old, new )
-
+    def op_match(self, product, codename):
+        delta = '(this->GetEncoding() ^ {})'.format( codename )
+        maxsize = self.source.maxsize()
+        vlen = len(self.source.insnsizes) != 1
+        mask = '0x{:x}{}'.format( (1 << maxsize)-1, self.insn_cpostfix )
+        skipmask = maxsize == self.insn_ctype_size
+        
+        if     self.source.little_endian and vlen:
+            delta = '({} << ({} - this->GetLength()))'.format(delta, maxsize)
+            skipmask = False # Defensive programming against C type promotions
+        if not skipmask:
+            delta = '({} & {})'.format(delta, mask)
+        if not self.source.little_endian and vlen:
+            delta = '({} >> ({} - this->GetLength()))'.format(delta, maxsize)
+        product.code( '%s == 0', delta )
+        
     def insn_id_expr(self, addrname):
         # TODO: generic method: addr / (gcd/8)
         if len(self.source.insnsizes) != 1:
@@ -2172,11 +2193,8 @@ class ScalarGenerator(Generator):
         return '%s / %d' % (addrname, next(iter(self.source.insnsizes))/8)
 
     def op_getlen_decl(self, product):
-        insnsizes = self.source.insnsizes
-        if len(insnsizes) == 1:
-            product.code( "inline unsigned int GetLength() const { return %d; }\n", next(iter(insnsizes)) )
-        else:
-            product.code( "virtual unsigned int GetLength() const { return 0; };\n" )
+        product.code( 'inline' if len(self.source.insnsizes) == 1 else 'virtual' )
+        product.code( " unsigned int GetLength() const { return %d; }\n", self.source.maxsize() )
 
     def insn_getlen_decl(self, product, op):
         if len(self.source.insnsizes) == 1:
@@ -2203,14 +2221,14 @@ class ScalarGenerator(Generator):
                 if bf.lshift > 0:
                     value = "(%s >> %u)" % (value, bf.lshift)
 
-                product.code( "%s |= ((%s & 0x%x) << %u);\n", codename, value, bf.mask(), beg % self.source.maxsize )
+                product.code( "%s |= ((%s & 0x%x) << %u);\n", codename, value, bf.mask(), beg % self.source.maxsize() )
 
     def insn_decode_impl(self, product, op, codename, addrname):
         if op.vlen:
             product.code( "this->gil_length = %u;\n", oc.m_size )
 
         for beg, end, bf in FieldIterator( op.bitfields, self.source.little_endian ):
-            pos = beg % self.source.maxsize
+            pos = beg % self.source.maxsize()
 
             if isinstance(bf, SubOpBitField):
                 sdinstance = bf.sdinstance;
@@ -2247,7 +2265,7 @@ class ScalarGenerator(Generator):
 class BufferGenerator(Generator):
     def __init__(self, source, options):
         Generator.__init__(self, source, options)
-        self.code_capacity = (self.source.maxsize+7) >> 3
+        self.code_capacity = (self.source.maxsize()+7) >> 3
 
     def insn_destructor_decl( self, product, op ):
         for bf in op.bitfields:
@@ -2421,8 +2439,8 @@ class BufferGenerator(Generator):
     def insn_match_ifexpr(self, product, code, mask, bits):
         product.code( "if( %s.match( %s, %s) )\n", code, bits, mask )
 
-    def insn_unchanged_expr(self, product, old, new ):
-        product.code( "%s.match( %s )", new, old )
+    def op_match(self, product, codename ):
+        product.code( "%s.match( GetEncoding() )", codename )
 
     def insn_id_expr(self, addrname):
         # TODO: generic method: addr / (gcd/8)

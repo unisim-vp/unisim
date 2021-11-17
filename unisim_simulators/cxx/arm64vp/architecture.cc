@@ -34,6 +34,7 @@
 
 #include <architecture.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/aarch64.hh>

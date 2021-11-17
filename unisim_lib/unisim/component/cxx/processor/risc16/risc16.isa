@@ -39,6 +39,7 @@
 set addressclass {uint16_t}
 set endianness big
 namespace unisim::component::cxx::processor::risc16
+set withcache_p true
 
 decl {
 

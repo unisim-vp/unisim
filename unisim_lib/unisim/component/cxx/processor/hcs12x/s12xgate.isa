@@ -43,6 +43,8 @@ set codetype buffer
 
 set addressclass {uint16_t}
 
+set withcache_p true;
+
 decl {
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>

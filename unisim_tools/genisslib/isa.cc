@@ -81,7 +81,7 @@ Opts::log( unsigned int level ) const
 Isa::Isa()
   : m_decoder( RiscDecoder )
   , m_is_subdecoder( false )
-  , m_withcache( true )
+  , m_withcache( false )
   , m_withsource( false )
   , m_withencode( false )
   , m_little_endian( false )

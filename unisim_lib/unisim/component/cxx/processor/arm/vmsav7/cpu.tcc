@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>

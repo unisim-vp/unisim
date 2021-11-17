@@ -33,6 +33,7 @@
  */
 
 #include <arch.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/likely/likely.hh>
 

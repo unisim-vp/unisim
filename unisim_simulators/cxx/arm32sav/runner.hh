@@ -70,6 +70,8 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
     static bool const     hasAdvSIMD = false;
   };
 
+  //  typedef unisim::component::cxx::processor::arm::isa::arm32::Decoder<Runner>
+
   struct Arm32 : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<Runner>
   {
     typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<Runner> Operation;

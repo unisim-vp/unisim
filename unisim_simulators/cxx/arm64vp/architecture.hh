@@ -43,6 +43,7 @@
 #include <unisim/component/cxx/processor/arm/vmsav8/system.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -84,7 +85,8 @@ struct AArch64
   
   enum { ZID=4 };
 
-  typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> Decoder;
+  typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>   A64Decoder;
+  typedef unisim::component::cxx::processor::opcache::OpCache<A64Decoder>        Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> Operation;
 
   struct InstructionInfo

@@ -49,6 +49,8 @@ subdecoder unisim::component::cxx::processor::hcs12x::XB XB
 set addressclass {uint16_t}
 //set addressclass {uint32_t}
 
+set withcache_p true;
+
 decl {
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>

@@ -65,7 +65,6 @@ struct Generator
   virtual void                        insn_mask_code( Product& _product, Operation const& _op ) const = 0;
   virtual ConstStr                  insn_id_expr( char const* _addrname ) const = 0;
   virtual void                        insn_match_ifexpr( Product& _product, char const* _code, char const* _mask, char const* _bits ) const = 0;
-  virtual void                        insn_unchanged_expr( Product& _product, char const* _old, char const* _new ) const = 0;
   virtual void                        insn_decode_impl( Product& _product, Operation const& _op, char const* _codename, char const* _addrname ) const = 0;
   virtual void                        insn_encode_impl( Product& _product, Operation const& _op, char const* _codename ) const = 0;
   virtual void                        additional_impl_includes( Product& _product ) const = 0;
@@ -74,6 +73,7 @@ struct Generator
   virtual void                        insn_destructor_decl( Product& _product, Operation const& _op ) const = 0;
   virtual void                        insn_destructor_impl( Product& _product, Operation const& _op ) const = 0;
   virtual void                        op_getlen_decl( Product& _product ) const = 0;
+  virtual void                        op_match( Product& _product, char const* _codename ) const = 0;
   virtual void                        insn_getlen_decl( Product& _product, Operation const& _op ) const = 0;
   
   static unsigned int                 least_ctype_size( unsigned int bits );

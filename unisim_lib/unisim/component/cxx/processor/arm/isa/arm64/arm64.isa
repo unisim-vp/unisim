@@ -39,7 +39,7 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little
+set endianness little;
 set addressclass {uint64_t}
 template <{typename} {ARCH}>
 

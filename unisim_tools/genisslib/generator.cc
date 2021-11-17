@@ -288,7 +288,9 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( " *(*decode)(%s code, %s addr);\n", codetype_constref().str(), source.m_addrtype.str() );
   _product.code( "};\n" );
 
-  _product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" );
+  if (source.m_withcache) {
+    _product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" );
+  }
 
   _product.template_signature( source.m_tparams );
   _product.code( "class Decoder\n" );
@@ -296,7 +298,10 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( "public:\n" );
   _product.code( " typedef Operation" );
   _product.template_abbrev( source.m_tparams );
-  _product.code( " operation_type;\n\n" );
+  _product.code( " operation_type;\n" );
+  _product.code( " typedef %s address_type;\n", source.m_addrtype.str() );
+  _product.code( " typedef CodeType code_type;\n" );
+  _product.code( " enum { alignment = %u };\n\n", source.gcd() );
   _product.code( " Decoder();\n" );
   _product.code( " virtual ~Decoder();\n" );
   _product.code( "\n" );
@@ -312,9 +317,11 @@ Generator::decoder_decl( Product& _product ) const {
     _product.code( " Operation" );
     _product.template_abbrev( source.m_tparams );
     _product.code( " *Decode(%s addr, %s insn);\n", source.m_addrtype.str(), codetype_constref().str() );
-    _product.code( " std::vector<DecodeTableEntry" );
-    _product.template_abbrev( source.m_tparams );
-    _product.code( " > const& GetDecodeTable() const { return decode_table; };\n" );
+  }
+  _product.code( " std::vector<DecodeTableEntry" );
+  _product.template_abbrev( source.m_tparams );
+  _product.code( " > const& GetDecodeTable() const { return decode_table; };\n" );
+  if (source.m_withcache) {
     _product.code( " void InvalidateDecodingCacheEntry(%s addr);\n", source.m_addrtype.str() );
     _product.code( " void InvalidateDecodingCache();\n\n" );
   }
@@ -372,6 +379,9 @@ Generator::operation_decl( Product& _product ) const
   _product.code( " inline %s GetEncoding() const { return encoding; }\n", codetype_constref().str() );
   op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
+  _product.code( " inline bool Match(%s _addr, %s _code) const { return ", source.m_addrtype.str(), codetype_constref().str());
+  op_match( _product, "_code" );
+  _product.code( " and GetAddr() == _addr; }\n" );
   
   _product.code( " static unsigned int const minsize = %d;\n", (*source.m_insnsizes.begin()) );
   _product.code( " static unsigned int const maxsize = %d;\n", (*source.m_insnsizes.rbegin()) );
@@ -1040,9 +1050,7 @@ Generator::decoder_impl( Product& _product ) const {
     _product.code( " if(operation)\n" );
     _product.code( " {\n" );
     // _product.code( "  fprintf(stderr, \"hit at 0x%%08x\\n\", addr);\n" );
-    _product.code( "  if(");
-    insn_unchanged_expr( _product, "operation->GetEncoding()", "insn" );
-    _product.code( " && operation->GetAddr() == addr)\n" );
+    _product.code( "  if(operation->match(addr, insn))\n");
     _product.code( "   return operation;\n" );
     _product.code( "  delete operation;\n" );
     _product.code( " }\n" );

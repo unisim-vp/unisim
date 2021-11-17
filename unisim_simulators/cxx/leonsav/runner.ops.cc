@@ -35,11 +35,13 @@
 #include <runner.hh>
 #include <unisim/component/cxx/processor/sparc/isa_sv8.tcc>
 
-Runner::Operation*
+std::unique_ptr<Runner::Operation>
 Runner::decode(uint32_t insn_addr, uint32_t code)
 {
-  static Decoder decoder;
-  Operation* op = current_instruction = decoder.Decode( insn_addr, code );
+  static unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Runner> decoder;
+  
+  Operation* op = current_instruction = decoder.NCDecode( insn_addr, code );
   if (not op) { struct BadWolf {}; throw BadWolf(); }
-  return op;
+  
+  return std::unique_ptr<Operation>(op);
 }

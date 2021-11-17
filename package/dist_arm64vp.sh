@@ -6,6 +6,7 @@ SIMPKG_SRCDIR=cxx/arm64vp
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/arm/vmsav8 || exit
+import unisim/component/cxx/processor/opcache || exit
 import unisim/kernel/config/xml || exit
 import unisim/kernel/config/ini || exit
 import unisim/kernel/config/json || exit

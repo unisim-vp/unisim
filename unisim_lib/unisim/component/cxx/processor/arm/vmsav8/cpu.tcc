@@ -39,6 +39,7 @@
 
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -412,8 +413,7 @@ CPU<CPU_IMPL>::StepInstruction()
     ReadInsn(insn_addr, insn);
 
     /* Decode current PC */
-    isa::arm64::Operation<CPU_IMPL>* op;
-    op = decoder.Decode(insn_addr, insn);
+    isa::arm64::Operation<CPU_IMPL>* op = decoder.Decode(insn_addr, insn);
 
     this->next_insn_addr += 4;
 

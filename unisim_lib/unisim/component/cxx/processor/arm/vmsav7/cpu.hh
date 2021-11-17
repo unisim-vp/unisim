@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -306,9 +307,9 @@ struct CPU
 
 protected:
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU_IMPL> arm32_decoder;
+  opcache::OpCache< isa::arm32::Decoder<CPU_IMPL> > arm32_decoder;
   /** Decoder for the THUMB instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU_IMPL> thumb_decoder;
+  opcache::OpCache< isa::thumb::Decoder<CPU_IMPL> > thumb_decoder;
 
   /***************************
    * Cache Interface   START *

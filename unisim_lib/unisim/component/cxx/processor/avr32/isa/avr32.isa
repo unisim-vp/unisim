@@ -47,6 +47,7 @@ set endianness big
 set codetype buffer
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
+set withcache_p true
 
 impl {
 

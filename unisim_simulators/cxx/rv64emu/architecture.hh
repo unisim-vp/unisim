@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/processor/riscv/isa_rv64.tcc>
 #include <unisim/component/cxx/processor/riscv/isa/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -53,7 +54,8 @@ struct Arch
 {
   typedef unisim::component::cxx::processor::riscv::isa::rv64::CodeType CodeType;
   typedef unisim::component::cxx::processor::riscv::isa::rv64::Operation<Arch> Operation;
-  typedef unisim::component::cxx::processor::riscv::isa::rv64::Decoder<Arch> Decoder;
+  typedef unisim::component::cxx::processor::riscv::isa::rv64::Decoder<Arch> RV64Decoder;
+  typedef unisim::component::cxx::processor::opcache::OpCache<RV64Decoder> Decoder;
 
   typedef bool  BOOL;
   typedef uint8_t  U8;
@@ -209,33 +211,7 @@ struct Arch
 
   void debug();
 
-  Operation*
-  StepInstruction()
-  {
-    /* Start new instruction */
-    uint64_t insn_addr = current_insn_addr = next_insn_addr;
-    
-    /* Fetch instruction word from memory */
-    CodeType insn = ReadInsn(insn_addr);
-
-    /* Decode instruction */
-    Operation* op = decoder.Decode(insn_addr, insn);
-    next_insn_addr += op->GetLength() / 8;
-    
-    /* Disassemble instruction */
-    if (disasm)
-      {
-        op->disasm(std::cerr << "0x" << std::hex << insn_addr << ": ");
-        std::cerr << '\n';
-      }
-
-    debug();
-    /* Execute instruction*/
-    asm volatile ("operation_execute:");
-    op->execute( *this );
-    
-    return op;
-  }
+  Operation* StepInstruction();
 
   void UndefinedInstruction( Operation const* insn )
   {

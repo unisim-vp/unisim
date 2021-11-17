@@ -2,12 +2,11 @@
 
 SIMPKG=leon
 SIMPKG_SRCDIR=cxx/leon
-SIMPKG_DSTDIR=leon
+
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib || exit
-
 import unisim/component/cxx/processor/sparc/isa/sv8 || exit
+import unisim/component/cxx/processor/opcache || exit
 
 import libc/inttypes || exit
 import std/iostream || exit
@@ -19,6 +18,7 @@ import std/vector || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source header template data isa
+dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -68,17 +68,13 @@ sys/gaislersystem.tcc \
 hw/controller.tcc \
 "
 
-UNISIM_SIMULATOR_PKG_DATA_FILES="\
+UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
 README \
 INSTALL \
 AUTHORS \
 NEWS \
 ChangeLog \
-"
-
-UNISIM_SIMULATOR_DATA_FILES="\
-${UNISIM_SIMULATOR_PKG_DATA_FILES} \
 "
 
 UNISIM_SIMULATOR_FILES="\
@@ -88,40 +84,8 @@ ${UNISIM_SIMULATOR_DATA_FILES} \
 "
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
-done
-
-for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
-# Top level
-
-output_top_configure_ac <(cat << EOF
-AC_INIT([UniSIM Leon package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-${SIMPKG}])
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_CONFIG_SUBDIRS([genisslib]) 
-AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}]) 
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-)
-
-output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG_DSTDIR}
-EXTRA_DIST = configure.cross
-EOF
-)
-
-build_top_configure
-build_top_configure_cross
 
 # Simulator
 
@@ -198,7 +162,7 @@ CLEANFILES=\
 
 \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc: \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh
 \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/sparc/isa/sv8/isa.isa
+	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/sparc/isa/sv8/isa.isa
 
 EOF
 )

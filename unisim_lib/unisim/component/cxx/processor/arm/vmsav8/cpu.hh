@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
@@ -85,6 +86,10 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef CPU<CPU_IMPL> this_type;
+  
+  typedef isa::arm64::Operation<CPU_IMPL> Operation;
+  typedef isa::arm64::Decoder<CPU_IMPL> A64Decoder;
+  typedef opcache::OpCache<A64Decoder>  Decoder;
 
   // typedef simfloat::FP FP;
   // typedef FP::F64  F64;
@@ -174,7 +179,7 @@ struct CPU
 
   void StepInstruction();
 
-  void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL> const* insn );
+  void UndefinedInstruction( Operation const* insn );
   void UndefinedInstruction();
 
   bool Cond( bool cond ) { return cond; }
@@ -456,7 +461,7 @@ protected:
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
 
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU_IMPL> decoder;
+  Decoder decoder;
 
   // // Intrusive memory accesses
   // virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
@@ -481,6 +486,12 @@ template <typename CPU, typename T>
 T FPMulAdd(CPU& cpu, T acc, T op1, T op2)
 {
   return acc + (op1 * op2);
+}
+
+template <typename CPU, typename T>
+T FPMulSub(CPU& cpu, T acc, T op1, T op2)
+{
+  return acc - (op1 * op2);
 }
 
 } // end of namespace vmsav8

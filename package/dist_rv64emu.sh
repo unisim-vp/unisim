@@ -7,6 +7,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/memory/sparse || exit
 import unisim/component/cxx/processor/riscv/isa/rv64 || exit
+import unisim/component/cxx/processor/opcache || exit
 import unisim/service/os/linux_os || exit
 import unisim/util/debug || exit
 import unisim/util/arithmetic || exit
