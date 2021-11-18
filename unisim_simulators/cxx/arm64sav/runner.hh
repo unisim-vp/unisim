@@ -106,7 +106,7 @@ struct Runner
   template <typename T>
   T vector_read(unsigned reg, unsigned sub)
   {
-    return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
+    return (vector_views[reg].GetConstStorage(&vector_data[reg][0], T(), VUConfig::BYTECOUNT))[sub];
   }
 
   U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
@@ -125,7 +125,7 @@ struct Runner
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
   {
-    (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
+    (vector_views[reg].GetStorage(&vector_data[reg][0], value, VUConfig::BYTECOUNT))[sub] = value;
   }
 
   void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
