@@ -114,8 +114,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
-AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

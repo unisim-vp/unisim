@@ -1963,7 +1963,7 @@ class Generator:
             product.code( " if(operation)\n" )
             product.code( " {\n" )
             # product.code( "  fprintf(stderr, \"hit at 0x%%08x\\n\", addr);\n" )
-            product.code( "  if(operation->match(addr, insn))\n")
+            product.code( "  if(operation->Match(addr, insn))\n")
             product.code( "   return operation;\n" )
             product.code( "  delete operation;\n" )
             product.code( " }\n" )

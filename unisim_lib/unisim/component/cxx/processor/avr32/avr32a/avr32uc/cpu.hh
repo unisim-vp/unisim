@@ -40,6 +40,7 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/config.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
@@ -123,7 +124,7 @@ private:
 
 template <class CONFIG>
 class CPU :
-	public unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>,
+	public opcache::OpCache< Decoder<CONFIG> >,
 	public Client<Loader>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugYielding>,

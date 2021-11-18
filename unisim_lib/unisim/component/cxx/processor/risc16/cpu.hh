@@ -56,12 +56,15 @@
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/component/cxx/processor/risc16/isa.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace risc16 {
+
+using unisim::component::cxx::processor::opcache::OpCache;
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Memory;
@@ -83,7 +86,7 @@ using unisim::kernel::ServiceExportBase;
 using namespace std;
 
 class CPU
-	: public Decoder
+	: public OpCache<Decoder>
 	, public Service<MemoryAccessReportingControl>
 	, public Service<Memory<uint64_t> >
 	, public Service<Disassembly<uint64_t> >

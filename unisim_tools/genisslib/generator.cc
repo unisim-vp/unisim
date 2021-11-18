@@ -1050,7 +1050,7 @@ Generator::decoder_impl( Product& _product ) const {
     _product.code( " if(operation)\n" );
     _product.code( " {\n" );
     // _product.code( "  fprintf(stderr, \"hit at 0x%%08x\\n\", addr);\n" );
-    _product.code( "  if(operation->match(addr, insn))\n");
+    _product.code( "  if(operation->Match(addr, insn))\n");
     _product.code( "   return operation;\n" );
     _product.code( "  delete operation;\n" );
     _product.code( " }\n" );

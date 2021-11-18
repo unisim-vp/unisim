@@ -59,7 +59,7 @@ using namespace std;
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "this module implements an AVR32UC CPU core")
-	, unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>()
+	, opcache::OpCache<Decoder<CONFIG> >()
 	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugYielding>(name,  parent)
@@ -675,7 +675,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	CodeType insn(CodeType::capacity * 8);
 	if (likely(Fetch(pc, &insn.str[0], CodeType::capacity)))
 	{
-		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(pc, insn);
+		operation = this->Decode(pc, insn);
 
 		if(unlikely(IsVerboseStep()))
 		{
@@ -873,7 +873,7 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	if(ReadMemory(addr, &insn.str[0], CodeType::capacity))
 	{
 		unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation=0;
-		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
+		operation = this->Decode(addr, insn);
 
 		next_addr = addr + (operation->GetLength() / 8);
 		std::stringstream sstrdisasm;
