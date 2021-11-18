@@ -19,7 +19,7 @@ EMAILS                  = "gilles.mouchard@cea.fr, yves.lhuillier@cea.fr"
 import sys, os, re, platform, itertools
 
 DEFAULT_OUTPUT =    'iss'
-GENISSLIB_VERSION = '3.0.2'
+GENISSLIB_VERSION = '4.1.0'
 GENISSLIB =         'GenISSLib'
 
 class Abort(BaseException):
