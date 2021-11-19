@@ -1777,12 +1777,6 @@ AArch64::run( uint64_t suspend_at )
           asm volatile( "arm64_operation_execute:" );
           op->execute( *this );
 
-          // uint64_t newspval = GetGSR(31);
-
-          // if (newspval != oldspval) {
-          //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
-          // }
-
           // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
           //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 

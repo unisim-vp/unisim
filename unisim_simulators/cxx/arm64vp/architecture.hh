@@ -76,6 +76,8 @@ struct AArch64Types
   typedef TaintedValue<  bool  > BOOL;
 
   template <typename T> using VectorTypeInfo = TaintedTypeInfo<T>;
+
+  typedef U8 VUByte;
   
   struct VectorByteShadow { uint8_t data[sizeof (U8)]; };
 };
@@ -188,7 +190,6 @@ struct AArch64
   //=====================================================================
 
   /** Set the next Program Counter */
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_ERET, B_DBG };
   void BranchTo( U64 addr, branch_type_t branch_type )
   {
     if (addr.ubits)

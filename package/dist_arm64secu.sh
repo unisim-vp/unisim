@@ -7,6 +7,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/tlm2/processor/arm/cortex_a53 || exit
 import unisim/component/tlm2/memory/ram || exit
+import unisim/component/cxx/processor/arm/regs64 || exit
 import unisim/component/cxx/processor/opcache || exit
 import unisim/kernel/config/xml || exit
 import unisim/kernel/config/ini || exit
