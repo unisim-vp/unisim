@@ -57,12 +57,13 @@ struct CPU
   struct VUConfig
   {
     static unsigned const BYTECOUNT = 16;
-    template <typename T> using TypeInfo = typename TYPES::VectorTypeInfo<T>;
-    typedef typename TYPES::VUByte Byte;
+    template <typename T>
+    using TypeInfo = typename TYPES::VectorTypeInfo<T>;
+    using Byte     = typename TYPES::VectorByte;
   };
   static unsigned const VECTORCOUNT = 32;
   static unsigned const GREGCOUNT = 32;
-  
+
   typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
   struct Vector { typename TYPES::VectorByteShadow data[VUConfig::BYTECOUNT]; };
 
@@ -104,7 +105,7 @@ struct CPU
     if (int(CPU_IMPL::report_gsr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gsr_access, reg, true);
     gpr[reg] = typename TYPES::U64(val);
   }
-	
+
   /// Set the value of a General-purpose or the Zero register
   template <typename T>
   void SetGZR(unsigned reg, T val)

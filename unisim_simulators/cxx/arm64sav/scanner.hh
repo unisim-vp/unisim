@@ -73,9 +73,10 @@ struct ScannerTypes
     static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
   };
 
-  template <typename T> using VectorTypeInfo = unisim::util::symbolic::vector::VUConfig::TypeInfo<T>;
+  template <typename T>
+  using  VectorTypeInfo = unisim::util::symbolic::vector::VUConfig::TypeInfo<T>;
+  using  VectorByte = unisim::util::symbolic::vector::VUConfig::Byte;
   struct VectorByteShadow { char _[sizeof(U8)]; };
-  typedef unisim::util::symbolic::vector::VUConfig::Byte VUByte;
 };
 
 struct Scanner

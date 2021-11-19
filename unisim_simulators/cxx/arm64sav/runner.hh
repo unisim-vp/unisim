@@ -38,7 +38,6 @@
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
-#include <unisim/component/cxx/vector/vector.hh>
 #include <iosfwd>
 #include <cstdlib>
 #include <cassert>
@@ -58,10 +57,10 @@ struct RunnerTypes
   typedef float        F32;
   typedef double       F64;
 
-  template <typename T> using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
-
-  typedef uint8_t VectorByteShadow;
-  typedef uint8_t VUByte;
+  template <typename T>
+  using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
+  using VectorByte = U8;
+  using VectorByteShadow = U8;
 };
 
 struct Runner
@@ -70,11 +69,8 @@ struct Runner
 {
   typedef Runner DisasmState;
 
-  static unsigned const VECTORCOUNT = 32;
-
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Runner> Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Runner> Operation;
-  typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
 
   enum ReportAccess { report_simd_access = 0, report_gzr_access = 0, report_gsr_access = 0 };
   void report(ReportAccess, unsigned, bool) {}

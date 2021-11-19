@@ -80,8 +80,9 @@ struct AArch64Types
   
   typedef TaintedValue<  bool  > BOOL;
 
-  template <typename T> using VectorTypeInfo = TaintedTypeInfo<T>;
-  typedef U8 VUByte;
+  template <typename T>
+  using  VectorTypeInfo = TaintedTypeInfo<T>;
+  using  VectorByte = U8;
   struct VectorByteShadow { uint8_t data[sizeof (U8)]; };
 };
 
