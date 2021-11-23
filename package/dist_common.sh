@@ -17,8 +17,8 @@ fi
 
 has_two_levels_dirs=no
 genisslib_imported=no
-PACKAGE_DIR=$(cd $(dirname $0); pwd)
-UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
+PACKAGE_DIR=$(cd $(dirname $BASH_SOURCE); pwd)
+UNISIM_DIR=$(cd $(dirname $(dirname $BASH_SOURCE)); pwd)
 UNISIM_TOOLS_DIR="${UNISIM_DIR}/unisim_tools"
 UNISIM_LIB_DIR="${UNISIM_DIR}/unisim_lib"
 UNISIM_SIMULATOR_DIR="${UNISIM_DIR}/unisim_simulators/${SIMPKG_SRCDIR}"
