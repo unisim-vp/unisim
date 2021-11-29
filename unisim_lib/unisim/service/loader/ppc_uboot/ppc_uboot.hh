@@ -88,11 +88,11 @@ public:
 	virtual bool Load();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Loader*) override;
+	virtual void Setup(Blob<MEMORY_ADDR>*) override;
 	virtual bool EndSetup();
 private:
 	bool SetupBlob();
-	bool SetupLoad();
 	bool LoadKernelCmdLine();
 	bool LoadRegisters();
 

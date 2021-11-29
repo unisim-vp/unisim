@@ -39,12 +39,11 @@ using unisim::kernel::VariableBase;
 
 using unisim::service::pim::PIMThread;
 
-PIM::PIM(const char *name, Object *parent) :
-	Object(name,parent),
-	filename("pim.xml"),
-	param_filename("filename", this, filename)
-{ 
-
+PIM::PIM(const char *name, Object *parent)
+	: Object(name,parent)
+	, filename("pim.xml")
+	, param_filename("filename", this, filename)
+{
 }
 
 PIM::~PIM()
@@ -53,11 +52,6 @@ PIM::~PIM()
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
 	}
 	pim_model.clear();
-
-}
-
-bool PIM::Setup() {
-	return (true);
 }
 
 // *************************************************************

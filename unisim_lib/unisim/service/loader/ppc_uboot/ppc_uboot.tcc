@@ -85,18 +85,6 @@ PPCUBoot<MEMORY_ADDR>::PPCUBoot(const char *name, Object *parent)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, logger(*this)
 {
-	loader_export.SetupDependsOn(kernel_loader_import);
-	loader_export.SetupDependsOn(device_tree_loader_import);
-	loader_export.SetupDependsOn(initrd_loader_import);
-	loader_export.SetupDependsOn(memory_import);
-	loader_export.SetupDependsOn(registers_import);
-	loader_export.SetupDependsOn(kernel_blob_import);
-	loader_export.SetupDependsOn(device_tree_blob_import);
-	loader_export.SetupDependsOn(initrd_blob_import);
-	
-	blob_export.SetupDependsOn(kernel_blob_import);
-	blob_export.SetupDependsOn(device_tree_blob_import);
-	blob_export.SetupDependsOn(initrd_blob_import);
 }
 
 template <class MEMORY_ADDR>
@@ -167,13 +155,15 @@ bool PPCUBoot<MEMORY_ADDR>::BeginSetup()
 template <class MEMORY_ADDR>
 bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 {
-	if(blob) return true;
+	if(blob)
+		return true;
 	
 	blob = new unisim::util::blob::Blob<MEMORY_ADDR>();
 	blob->Catch();
 	
 	if(kernel_blob_import && !kernel_blob)
 	{
+		kernel_blob_import.RequireSetup();
 		kernel_blob = kernel_blob_import->GetBlob();
 		if(!kernel_blob) return false;
 		kernel_blob->Catch();
@@ -182,6 +172,7 @@ bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 
 	if(device_tree_blob_import && !device_tree_blob)
 	{
+		device_tree_blob_import.RequireSetup();
 		device_tree_blob = device_tree_blob_import->GetBlob();
 		if(!device_tree_blob) return false;
 		device_tree_blob->Catch();
@@ -190,6 +181,7 @@ bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 	
 	if(initrd_blob_import && !initrd_blob)
 	{
+		initrd_blob_import.RequireSetup();
 		initrd_blob = initrd_blob_import->GetBlob();
 		if(!initrd_blob) return false;
 		initrd_blob->Catch();
@@ -224,37 +216,37 @@ bool PPCUBoot<MEMORY_ADDR>::SetupBlob()
 }
 
 template <class MEMORY_ADDR>
-bool PPCUBoot<MEMORY_ADDR>::SetupLoad()
+void PPCUBoot<MEMORY_ADDR>::Setup(Blob<uint32_t>*)
 {
-	if(!SetupBlob()) return false;
-	if(!registers_import) return false;
-	
-	ppc_cia = registers_import->GetRegister("cia");
-	ppc_r3 = registers_import->GetRegister("r3");
-	ppc_r4 = registers_import->GetRegister("r4");
-	ppc_r5 = registers_import->GetRegister("r5");
-	ppc_r6 = registers_import->GetRegister("r6");
-	ppc_r7 = registers_import->GetRegister("r7");
-	if(!ppc_cia || !ppc_r3 || !ppc_r4 || !ppc_r5 || !ppc_r6 || !ppc_r7) return false;
-	if(ppc_cia->GetSize() != sizeof(MEMORY_ADDR)) return false;
-	if(ppc_r3->GetSize() != sizeof(MEMORY_ADDR)) return false;
-	if(ppc_r4->GetSize() != sizeof(MEMORY_ADDR)) return false;
-	if(ppc_r5->GetSize() != sizeof(MEMORY_ADDR)) return false;
-	if(ppc_r6->GetSize() != sizeof(MEMORY_ADDR)) return false;
-	if(ppc_r7->GetSize() != sizeof(MEMORY_ADDR)) return false;
-
-	if(!kernel_blob || !(kernel_blob->GetCapability() & unisim::util::blob::Blob<MEMORY_ADDR>::CAP_ENTRY_POINT)) return false;
-	return true;
+	if (not SetupBlob())
+		throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class MEMORY_ADDR>
-bool PPCUBoot<MEMORY_ADDR>::Setup(ServiceExportBase *srv_export)
+void PPCUBoot<MEMORY_ADDR>::Setup(Loader*)
 {
-	if(srv_export == &loader_export) return SetupLoad();
-	if(srv_export == &blob_export) return SetupBlob();
-	
-	logger << DebugError << "Internal Error" << EndDebugError;
-	return false;
+	if(not SetupBlob() or not registers_import)
+		throw unisim::kernel::ServiceAgent::SetupError();
+        register_import.RequireSetup();
+
+        struct
+        {
+          void operator () (unisim::service::interfaces::Register *&reg, char const* name)
+          {
+            reg = registers_import->GetRegister(name);
+            if (not reg or reg->GetSize() != sizeof(MEMORY_ADDR))
+              return false;
+          }
+        } get_register;
+        get_register(ppc_cia, "cia");
+        get_register(ppc_r3, "r3");
+        get_register(ppc_r4, "r4");
+        get_register(ppc_r5, "r5");
+        get_register(ppc_r6, "r6");
+        get_register(ppc_r7, "r7");
+
+	if (!kernel_blob || !(kernel_blob->GetCapability() & unisim::util::blob::Blob<MEMORY_ADDR>::CAP_ENTRY_POINT))
+          throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class MEMORY_ADDR>

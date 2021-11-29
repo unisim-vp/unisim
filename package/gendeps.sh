@@ -456,10 +456,6 @@ echo "unisim/component/cxx/processor/arm/isa/arm32" >> "${PACKAGE_DIR}/unisim/co
 echo "unisim/component/cxx/processor/arm/isa/thumb" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
 echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
 
-echo "unisim/component/cxx/processor/arm/isa/arm32" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pmsav7/pkg_deps.txt"
-echo "unisim/component/cxx/processor/arm/isa/thumb" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pmsav7/pkg_deps.txt"
-echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pmsav7/pkg_deps.txt"
-
 echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav8/pkg_deps.txt"
 
 echo "m4/endian" >> "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"

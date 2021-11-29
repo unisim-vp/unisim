@@ -128,7 +128,8 @@ public:
 	//=====================================================================
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	void Setup(Memory<uint64_t>*) { memory_import.RequireSetup(); }
+	void Setup(Disassembly<uint64_t>*) { memory_import.RequireSetup(); }
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();

@@ -453,7 +453,8 @@ void XINT::ResetMemory() {
 
 }
 
-bool XINT::BeginSetup() {
+bool XINT::BeginSetup()
+{
 
 	Reset();
 
@@ -488,14 +489,6 @@ bool XINT::BeginSetup() {
 		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write, NULL);
 	}
 
-	return (true);
-}
-
-bool XINT::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-bool XINT::EndSetup() {
 	return (true);
 }
 

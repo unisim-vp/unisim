@@ -196,8 +196,7 @@ public:
 	void partitionDFlash_cmd();
 
 	/* Service methods */
-	/** BeginSetup
-	 * Initializes the service interface. */
+	/** Initialize the object. */
 	virtual bool BeginSetup();
 
 	virtual void Reset();

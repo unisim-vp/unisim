@@ -161,8 +161,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 {
 
-	memory_access_reporting_export.SetupDependsOn(memory_access_reporting_control_import);
-
 	counter = period;
 
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
@@ -209,16 +207,17 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 }
 
 template <class ADDRESS>
-bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
-
+bool PIMServer<ADDRESS>::SetupMemReport()
+{
 	if(memory_access_reporting_control_import)
 	{
+		memory_access_reporting_control_import.RequireSetup();
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, false);
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_FETCH_INSN, false);
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_COMMIT_INSN, false);
 	}
 
-	return (true);
+	return true;
 }
 
 template <class ADDRESS>

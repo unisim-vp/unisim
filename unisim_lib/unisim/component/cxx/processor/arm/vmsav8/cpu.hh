@@ -136,14 +136,16 @@ struct CPU
   //=              Memory interface methods (non intrusive)             =
   //=====================================================================
 
+  void Setup(unisim::service::interfaces::Memory<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
-  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size );
-  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, (uint8_t*)buffer, size ); }
+  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, (uint8_t*)buffer, size ); }
 
   //=====================================================================
   //=                   Disassembly interface methods                   =
   //=====================================================================
 
+  void Setup(unisim::service::interfaces::Disassembly<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
   virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
 
@@ -466,9 +468,9 @@ protected:
   // // Intrusive memory accesses
   // virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   // virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
-  // // Non-intrusive memory accesses
-  // virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  // virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // Non-intrusive memory accesses
+  bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
 
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported

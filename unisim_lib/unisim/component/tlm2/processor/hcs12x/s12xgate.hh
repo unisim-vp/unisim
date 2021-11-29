@@ -128,10 +128,6 @@ public:
 	virtual ~S12XGATE();
 
 	bool BeginSetup();
-	bool Setup(ServiceExportBase *srv_export);
-	bool EndSetup();
-
-	void Reset();
 
 	void Run();
 

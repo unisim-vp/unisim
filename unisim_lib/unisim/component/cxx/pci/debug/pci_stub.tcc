@@ -212,14 +212,17 @@ bool PCIStub<ADDRESS>::SetupMemoryAccessReporting()
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::Setup(ServiceExportBase *srv_export)
+void PCIStub<ADDRESS>::Setup(Memory<ADDRESS>*)
 {
-	if(srv_export == &memory_export) return SetupMemory();
-	if(srv_export == &memory_access_reporting_export) return SetupMemoryAccessReporting();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	
-	return false;
+	if (not SetupMemory())
+		throw unisim::kernel::ServiceAgent::SetupError();
+}
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::Setup(MemoryAccessReporting<ADDRESS>*)
+{
+	if (not SetupMemoryAccessReporting())
+		throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class ADDRESS>

@@ -90,7 +90,8 @@ public:
 	/* Service methods */
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool Setup(Loader*) override;
+	virtual bool Setup(Blob<T>*) override;
 	virtual bool EndSetup();
 
 	/* Service interface methods */
@@ -119,8 +120,6 @@ protected:
 
 private:
 	bool LoadStack();
-	bool SetupLoad();
-	bool SetupBlob();
 	void DumpBlob(unisim::util::blob::Blob<T> const &, int);
 	void DumpSection(unisim::util::blob::Section<T> const &, int);
 	void DumpSegment(unisim::util::blob::Segment<T> const &, int);

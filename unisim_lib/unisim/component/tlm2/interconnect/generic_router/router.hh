@@ -166,6 +166,7 @@ public:
 	 * @return true if setup is performed with success, false otherwise
 	 */
 	virtual bool BeginSetup();
+	virtual void Setup(unisim::service::interfaces::Memory<typename CONFIG::ADDRESS>*) override { for (unsigned i = 0; i < OUTPUT_SOCKETS; i++) memory_import[i]->RequireSetup(); }
 
 protected:
 	typedef typename TYPES::tlm_payload_type transaction_type;

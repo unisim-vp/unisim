@@ -900,7 +900,8 @@ void ATD10B<ATD_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& 
 //=====================================================================
 
 template <unsigned int ATD_SIZE>
-bool ATD10B<ATD_SIZE>::BeginSetup() {
+bool ATD10B<ATD_SIZE>::BeginSetup()
+{
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL0", &atdctl0_register));
 
@@ -1022,16 +1023,6 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
 
-	return (true);
-}
-
-template <unsigned int ATD_SIZE>
-bool ATD10B<ATD_SIZE>::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-template <unsigned int ATD_SIZE>
-bool ATD10B<ATD_SIZE>::EndSetup() {
 	return (true);
 }
 

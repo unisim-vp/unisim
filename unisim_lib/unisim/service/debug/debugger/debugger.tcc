@@ -466,19 +466,21 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 }
 
 template <typename CONFIG>
-bool Debugger<CONFIG>::SetupDebugInfo()
+void Debugger<CONFIG>::SetupDebugInfo()
 {
-	if(setup_debug_info_done) return true;
+	if(setup_debug_info_done)
+		return;
 	if(!blob_import)
 	{
 		logger << DebugError << "Blob import is not connected" << EndDebugError;
-		return false;
+		throw unisim::kernel::ServiceAgent::SetupError();
 	}
+        blob_import.RequireSetup();
 	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-	if(!blob) return true; // no blob
-	bool status = SetupDebugInfo(blob);
-	if(status) setup_debug_info_done = true;
-	return setup_debug_info_done;
+	if(!blob) return; // no blob
+	if(!SetupDebugInfo(blob))
+		throw unisim::kernel::ServiceAgent::SetupError();
+	setup_debug_info_done = true;
 }
 
 template <typename CONFIG>

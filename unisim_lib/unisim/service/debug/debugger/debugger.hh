@@ -286,15 +286,6 @@ private:
 		
 		unsigned int GetProcessorNumber() const { return id; }
 
-		virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export)
-		{
-			if(srv_export == &debug_yielding_export) return true;
-			if(srv_export == &memory_access_reporting_export) return true;
-			if(srv_export == &trap_reporting_export) return true;
-			dbg.logger << DebugError << "Internal Error" << EndDebugError;
-			return false;
-		}
-		
 		// From Processor
 		
 		// unisim::service::interfaces::DebugYielding
@@ -331,7 +322,16 @@ private:
 		Debugger<CONFIG>& dbg;
 		unsigned int id;
 	};
-	
+
+	template <typename IMPORT>
+	void RequireSetup( IMPORT ProcessorGate::*member )
+	{
+		for (unsigned idx = 0; idx < NUM_PROCESSORS; ++idx)
+		{
+			(prc_gate[idx]->*member).RequireSetup();
+		}
+	}
+                      
 	struct FrontEndGate
 		: unisim::kernel::Service<unisim::service::interfaces::DebugYieldingRequest>
 		, unisim::kernel::Service<unisim::service::interfaces::DebugSelecting>
@@ -399,26 +399,6 @@ private:
 			, dbg(*parent)
 			, id(_id)
 		{
-			unsigned int prc_num;
-			for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
-			{
-				backtrace_export.SetupDependsOn(*dbg.registers_import[prc_num]);
-				backtrace_export.SetupDependsOn(*dbg.memory_import[prc_num]);
-				data_object_lookup_export.SetupDependsOn(*dbg.registers_import[prc_num]);
-				data_object_lookup_export.SetupDependsOn(*dbg.memory_import[prc_num]);
-				debug_event_trigger_export.SetupDependsOn(*dbg.memory_access_reporting_control_import[prc_num]);
-				memory_export.SetupDependsOn(*dbg.memory_import[prc_num]);
-				registers_export.SetupDependsOn(*dbg.registers_import[prc_num]);
-				disasm_export.SetupDependsOn(*dbg.disasm_import[prc_num]);
-			}
-			
-			symbol_table_lookup_export.SetupDependsOn(dbg.blob_import);
-			stmt_lookup_export.SetupDependsOn(dbg.blob_import);
-			backtrace_export.SetupDependsOn(dbg.blob_import);
-			debug_info_loading_export.SetupDependsOn(dbg.blob_import);
-			data_object_lookup_export.SetupDependsOn(dbg.blob_import);
-			subprogram_lookup_export.SetupDependsOn(dbg.blob_import);
-			
 			*dbg.debug_yielding_request_export[id] >> debug_yielding_request_export;
 			*dbg.debug_selecting_export       [id] >> debug_selecting_export;
 			*dbg.debug_event_trigger_export   [id] >> debug_event_trigger_export;
@@ -435,24 +415,28 @@ private:
 			debug_event_listener_import >> *dbg.debug_event_listener_import[id];
 			debug_yielding_import       >> *dbg.debug_yielding_import[id];
 		}
+
+		virtual void Setup(interfaces::DebugEventTrigger<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import); }
+                virtual void Setup(interfaces::Memory<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_import); }
+		virtual void Setup(interfaces::Registers*) { dbg.RequireSetup(&ProcessorGate::registers_import); }
+		virtual void Setup(interfaces::Disassembly<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::disasm_import); }
 		
-		virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export)
+          	virtual void Setup(interfaces::SymbolTableLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
+          	virtual void Setup(interfaces::StatementLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
+          	virtual void Setup(interfaces::BackTrace<ADDRESS>*)
 		{
-			if(srv_export == &debug_yielding_request_export) return true;
-			if(srv_export == &debug_selecting_export) return true;
-			if(srv_export == &debug_event_trigger_export) return true;
-			if(srv_export == &disasm_export) return true;
-			if(srv_export == &memory_export) return true;
-			if(srv_export == &registers_export) return true;
-			if(srv_export == &symbol_table_lookup_export) return dbg.SetupDebugInfo();
-			if(srv_export == &stmt_lookup_export) return dbg.SetupDebugInfo();
-			if(srv_export == &backtrace_export) return dbg.SetupDebugInfo();
-			if(srv_export == &debug_info_loading_export) return dbg.SetupDebugInfo();
-			if(srv_export == &data_object_lookup_export) return dbg.SetupDebugInfo();
-			if(srv_export == &subprogram_lookup_export) return dbg.SetupDebugInfo();
-			dbg.logger << DebugError << "Internal Error" << EndDebugError;
-			return false;
+			dbg.RequireSetup(&ProcessorGate::registers_import);
+			dbg.RequireSetup(&ProcessorGate::memory_import);
+			dbg.SetupDebugInfo();
 		}
+          	virtual void Setup(interfaces::DebugInfoLoading*) { dbg.SetupDebugInfo(); }
+          	virtual void Setup(interfaces::DataObjectLookup<ADDRESS>*)
+		{
+			dbg.RequireSetup(&ProcessorGate::registers_import);
+			dbg.RequireSetup(&ProcessorGate::memory_import);
+			dbg.SetupDebugInfo();
+		}
+          	virtual void Setup(interfaces::SubProgramLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
 		
 		// From Front-end
 		
@@ -598,7 +582,8 @@ private:
 	void SetupDWARF(const typename unisim::util::blob::Blob<ADDRESS> *blob);
 	
 	bool SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *blob);
-	bool SetupDebugInfo();
+	void SetupDebugInfo();
+	void RequireSetup(int);
 	
 	void UpdateReportingRequirements(unsigned int prc_num);
 	void ScheduleFrontEnd(unsigned int front_end_num);

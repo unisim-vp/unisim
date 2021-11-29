@@ -28,11 +28,6 @@ public:
 
 	virtual ~MonitorServer();
 
-	virtual void OnDisconnect();
-	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *service_export);
-	virtual bool EndSetup();
-
 	static MonitorServer* getInstance(Object *parent);
 	static void releaseInstance();
 

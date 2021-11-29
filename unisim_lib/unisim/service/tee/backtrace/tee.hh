@@ -53,9 +53,9 @@ using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::BackTrace;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
-class Tee :
-	public Client<BackTrace<ADDRESS> >,
-	public Service<BackTrace<ADDRESS> >
+class Tee
+	: public Service<BackTrace<ADDRESS> >
+	, public Client<BackTrace<ADDRESS> >
 {
 public:
 	ServiceExport<BackTrace<ADDRESS> > backtrace_export;
@@ -63,6 +63,8 @@ public:
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
+
+	void Setup(BackTrace<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) backtrace_import[i]->RequireSetup(); }
 
 	virtual std::vector<ADDRESS> *GetBackTrace(ADDRESS pc) const;
 	virtual bool GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const;

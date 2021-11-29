@@ -86,7 +86,7 @@ public:
 	void Reset();
 
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
-	
+	virtual void Setup(unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS>*) override;
 	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////

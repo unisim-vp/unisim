@@ -71,9 +71,6 @@ CPU::CPU(const char *name, Object *_parent)
 	, requires_commit_instruction_reporting(false)
 	, logger(*this)
 {
-	disasm_export.SetupDependsOn(memory_import);
-	memory_export.SetupDependsOn(memory_import);
-	
 	Reset();
 	
 	for (unsigned int i= 0; i < 16; i++)
@@ -164,11 +161,6 @@ bool CPU::BeginSetup()
 		requires_commit_instruction_reporting = false;
 	}
 
-	return true;
-}
-
-bool CPU::Setup(ServiceExportBase *srv_export)
-{
 	return true;
 }
 

@@ -93,8 +93,7 @@ public:
 	/* Service methods */
 	virtual void ResetMemory();
 
-	/** BeginSetup
-	 * Initializes the service interface. */
+	/** Initialize the memory + perform sanity checks */
 	virtual bool BeginSetup();
 
 	/**

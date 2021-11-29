@@ -272,9 +272,9 @@ public:
 	ServiceImport<Registers> registers_import;
 	
 	PMACBootX(const char *name, Object *parent = 0);
-	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Blob<uint32_t> *srv_export) override;
+	virtual void Setup(Loader *srv_export) override;
 	virtual bool EndSetup();
 	virtual const unisim::util::blob::Blob<uint32_t> *GetBlob() const;
 	virtual bool Load();

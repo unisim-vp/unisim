@@ -64,6 +64,8 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
+	void Setup(SymbolTableLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) symbol_table_lookup_import[i]->RequireSetup(); }
+
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const;

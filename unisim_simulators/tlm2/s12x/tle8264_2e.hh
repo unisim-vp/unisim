@@ -127,10 +127,6 @@ public:
 	~TLE8264_2E();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
-
-	virtual void OnDisconnect();
 	virtual void Reset();
 
 	virtual void Stop(int exit_status);

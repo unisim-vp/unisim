@@ -155,10 +155,10 @@ public:
   void SetCycleTime( sc_core::sc_time const& cycle_time );
   void SetBusCycleTime( sc_core::sc_time const& cycle_time );
 
-private:
-  virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
-  virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
+  bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
+  bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
+private:
   /** Event used to signalize the end of a read transaction.
    * Method PhysicalReadMemory waits for this event once the read transaction has been 
    *   sent, and the nb_transport_bw notifies on it when the read transaction 

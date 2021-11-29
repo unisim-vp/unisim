@@ -53,7 +53,6 @@ namespace raw_loader {
 using unisim::kernel::Object;
 using unisim::kernel::Client;
 using unisim::kernel::Service;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugError;
@@ -63,8 +62,7 @@ using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::Memory;
 
 template <class MEMORY_ADDR>
-RawLoader<MEMORY_ADDR> ::
-RawLoader(const char *name, Object *parent)
+RawLoader<MEMORY_ADDR>::RawLoader(const char *name, Object *parent)
 	: Object(name, parent, "Raw loader")
 	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
@@ -78,25 +76,23 @@ RawLoader(const char *name, Object *parent)
 	, size(0)
 	, verbose(false)
 	, param_filename("filename", this, filename,
-			"Location of the raw file to load.")
+	                 "Location of the raw file to load.")
 	, param_base_addr("base-addr", this, base_addr,
-			"Target base address.")
+	                  "Target base address.")
 	, param_size("size", this, size,
-			"Number of bytes to copy."
-			" If 0 then all the file contents will be copied."
-			" If smaller than the file, the contents of the file will"
-			" be cropped."
-			" If bigger than the file size, all the file will be copied.")
+	             "Number of bytes to copy."
+	             " If 0 then all the file contents will be copied."
+	             " If smaller than the file, the contents of the file will"
+	             " be cropped."
+	             " If bigger than the file size, all the file will be copied.")
 	, param_verbose("verbose", this, verbose,
-			"Set verbose mode (0 not active, otherwise active).")
+	             "Set verbose mode (0 not active, otherwise active).")
 	, logger(*this)
 {
-	loader_export.SetupDependsOn(memory_import);
 }
 
 template <class MEMORY_ADDR>
-RawLoader<MEMORY_ADDR> ::
-~RawLoader()
+RawLoader<MEMORY_ADDR>::~RawLoader()
 {
 	if(blob)
 	{
@@ -106,8 +102,7 @@ RawLoader<MEMORY_ADDR> ::
 
 template <class MEMORY_ADDR>
 bool
-RawLoader<MEMORY_ADDR> ::
-BeginSetup()
+RawLoader<MEMORY_ADDR>::BeginSetup()
 {
 	if(blob)
 	{
@@ -119,17 +114,24 @@ BeginSetup()
 }
 
 template <class MEMORY_ADDR>
-bool
-RawLoader<MEMORY_ADDR> ::
-SetupLoad()
+void
+RawLoader<MEMORY_ADDR>::Setup(Loader*)
 {
-	return SetupBlob();
+	if(memory_import)
+		memory_import.RequireSetup();
+}
+
+template <class MEMORY_ADDR>
+void
+RawLoader<MEMORY_ADDR>::Setup(Blob<MEMORY_ADDR>*)
+{
+	if (not SetupBlob())
+		throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class MEMORY_ADDR>
 bool
-RawLoader<MEMORY_ADDR> ::
-SetupBlob()
+RawLoader<MEMORY_ADDR>::SetupBlob()
 {
 	if(blob) return true;
 
@@ -234,28 +236,14 @@ SetupBlob()
 
 template <class MEMORY_ADDR>
 bool
-RawLoader<MEMORY_ADDR> ::
-Setup(ServiceExportBase *srv_export)
-{
-	if(srv_export == &loader_export) return SetupLoad();
-	if(srv_export == &blob_export) return SetupBlob();
-	
-	logger << DebugError << "Internal Error" << EndDebugError;
-	return false;
-}
-
-template <class MEMORY_ADDR>
-bool
-RawLoader<MEMORY_ADDR> ::
-EndSetup()
+RawLoader<MEMORY_ADDR>::EndSetup()
 {
 	return Load();
 }
 
 template <class MEMORY_ADDR>
 bool
-RawLoader<MEMORY_ADDR> ::
-Load()
+RawLoader<MEMORY_ADDR>::Load()
 {
 	if(!blob) return true; // nothing to load
 	
@@ -299,8 +287,7 @@ Load()
 
 template <class MEMORY_ADDR>
 const typename unisim::util::blob::Blob<MEMORY_ADDR> *
-RawLoader<MEMORY_ADDR> ::
-GetBlob()
+RawLoader<MEMORY_ADDR>::GetBlob()
 const
 {
 	return blob;

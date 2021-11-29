@@ -67,7 +67,7 @@ public:
 	virtual ~Tee();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Blob<ADDRESS>*) override;
 	
 	const unisim::util::blob::Blob<ADDRESS> *GetBlob() const;
 protected:

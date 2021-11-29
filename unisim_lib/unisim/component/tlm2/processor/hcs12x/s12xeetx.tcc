@@ -603,8 +603,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 }
 
 /* Service methods */
-/** BeginSetup
- * Initializes the service interface. */
+/** Initialize the object. */
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 {

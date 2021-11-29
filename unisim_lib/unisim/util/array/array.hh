@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2016-2021,
+ *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -29,12 +29,41 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include "unisim/service/os/linux_os/linux_os.hh"
-#include "unisim/service/os/linux_os/linux_os.tcc"
+#ifndef __UNISIM_UTIL_ARRAY_ARRAY_HH__
+#define __UNISIM_UTIL_ARRAY_ARRAY_HH__
+
 #include <inttypes.h>
 
-template
-class unisim::service::os::linux_os::LinuxOS<uint32_t, uint32_t>;
+#if __cplusplus >= 201103L
+
+namespace details
+{
+  // A bit of template metaprog to construct static initializers for Objects, ServiceExports and ServiceImports
+  template <std::size_t... Indices> struct indices { using next = indices<Indices..., sizeof...(Indices)>; };
+  template <std::size_t N>  struct build_indices { using type = typename build_indices<N-1>::type::next; };
+  template <>  struct build_indices<0> { using type = indices<>; };
+
+  // Internal overload with indices tag
+  template <std::size_t... I, typename Generator>
+  std::array<typename Generator::Item, sizeof...(I)>
+  make_array(Generator&& generator, indices<I...>)
+  {
+    return std::array<typename Generator::Item, sizeof...(I)> { { (generator.make_item(I))... } };
+  }    
+}
+
+/// Construct statically initialized std::array using generator object.
+template <std::size_t N, typename Generator>
+std::array<typename Generator::Item, N>
+make_array(Generator&& generator)
+{
+  return details::make_array(std::move(generator), details::build_indices<N>::type {});
+}
+
+#endif // __cplusplus >= 201103L
+
+#endif // __UNISIM_UTIL_ARRAY_ARRAY_HH__
+

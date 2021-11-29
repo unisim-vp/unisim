@@ -163,18 +163,6 @@ bool S12XEPIM::BeginSetup() {
 	return (true);
 }
 
-
-bool S12XEPIM::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12XEPIM::EndSetup() {
-	return (true);
-}
-
-
 Register* S12XEPIM::GetRegister(const char *name)
 {
 	return registers_registry.GetRegister(name);

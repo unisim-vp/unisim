@@ -125,8 +125,8 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 
-class TLE72XXSL :
-	public sc_module
+class TLE72XXSL
+	: public sc_module
 	, public CallBackObject
 	, public Client<CharIO>
 
@@ -188,10 +188,6 @@ public:
 	//=====================================================================
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
-
-	virtual void OnDisconnect();
 	virtual void Reset();
 
 	//=====================================================================

@@ -74,8 +74,6 @@ public:
 	virtual ~Profiler();
 	
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
 	
 	virtual bool ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportCommitInstruction(ADDRESS addr, unsigned size);

@@ -48,11 +48,11 @@ using std::stringstream;
 using std::string;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
-	Object(name, parent, "This service/client implements a tee ('T'). It unifies the backtrace capability of several services that individually provides their own backtrace capability" ),
-	Client<BackTrace<ADDRESS> >(name, parent),
-	Service<BackTrace<ADDRESS> >(name, parent),
-	backtrace_export("backtrace-export", this)
+Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
+  : Object(name, parent, "This service/client implements a tee ('T'). It unifies the backtrace capability of several services that individually provides their own backtrace capability" )
+  , Service<BackTrace<ADDRESS> >(name, parent)
+  , Client<BackTrace<ADDRESS> >(name, parent)
+  , backtrace_export("backtrace-export", this)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -61,8 +61,6 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "backtrace-import[" << i << "]";
 		string import_name = sstr.str();
 		backtrace_import[i] = new ServiceImport<BackTrace<ADDRESS> >(import_name.c_str(), this);
-		
-		backtrace_export.SetupDependsOn(*backtrace_import[i]);
 	}
 }
 

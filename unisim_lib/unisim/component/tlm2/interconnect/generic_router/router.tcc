@@ -329,7 +329,6 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		std::stringstream str;
 		str << "memory-import[" << i << "]";
 		memory_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(str.str().c_str(), this);
-		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 //	/* create initiator sockets and register socket callbacks */
 //	for (unsigned int i = 0; i < MAX_OUTPUT_SOCKETS; i++)

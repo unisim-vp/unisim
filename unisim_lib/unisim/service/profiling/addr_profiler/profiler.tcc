@@ -94,18 +94,6 @@ bool Profiler<ADDRESS>::BeginSetup()
 }
 
 template <class ADDRESS>
-bool Profiler<ADDRESS>::Setup(ServiceExportBase *srv_export)
-{
-	return true;
-}
-
-template <class ADDRESS>
-bool Profiler<ADDRESS>::EndSetup()
-{
-	return true;
-}
-
-template <class ADDRESS>
 void Profiler<ADDRESS>::ProfileMemoryAccess(typename unisim::service::interfaces::Profiling<ADDRESS>::ProfileType prof_type, ADDRESS addr, uint32_t size)
 {
 	if((size > 0) && enable_prof[prof_type])

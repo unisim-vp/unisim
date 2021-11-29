@@ -477,21 +477,16 @@ bool XGATE::BeginSetup() {
 	return (true);
 }
 
-bool XGATE::Setup(ServiceExportBase *srv_export) {
+bool XGATE::EndSetup()
+{
+  if (not memory_access_reporting_import)
+    {
+      requires_memory_access_reporting = false;
+      requires_fetch_instruction_reporting = false;
+      requires_commit_instruction_reporting = false;
+    }
 
-	if (not memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_fetch_instruction_reporting = false;
-		requires_commit_instruction_reporting = false;
-	}
-
-	return (true);
-
-}
-
-bool XGATE::EndSetup() {
-
-	return (true);
+  return true;
 }
 
 void XGATE::OnDisconnect() {

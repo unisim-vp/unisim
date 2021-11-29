@@ -126,8 +126,6 @@ public:
 	void wai();
 
 	bool BeginSetup();
-	bool Setup(ServiceExportBase *srv_export);
-	bool EndSetup();
 
 	void Run();
 

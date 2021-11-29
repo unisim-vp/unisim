@@ -169,7 +169,10 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	bool SetupMemReport();
+	virtual void Setup(DebugYielding*) { SetupMemReport(); }
+	virtual void Setup(TrapReporting*) { SetupMemReport(); }
+	virtual void Setup(DebugEventListener<ADDRESS>*) { SetupMemReport(); }
 	virtual bool EndSetup();
 
 	virtual void Stop(int exit_status);

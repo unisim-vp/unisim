@@ -119,6 +119,8 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
+	virtual void Setup(Memory<ADDRESS>*);
+	virtual void Setup(MemoryAccessReporting<ADDRESS>*);
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	virtual void Reset();

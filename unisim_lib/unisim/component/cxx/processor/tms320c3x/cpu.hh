@@ -212,6 +212,7 @@ public:
 	//= Memory interface methods                              START =
 	//===============================================================
 
+	virtual void Setup(Memory<typename CONFIG::address_t>*) override;
 	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
@@ -252,6 +253,7 @@ public:
 	 * @param   next_addr  The address following the requested instruction.
 	 * @return             The disassembling of the requested instruction address.
 	 */
+	virtual void Setup(Disassembly<typename CONFIG::address_t>*) override;
 	virtual std::string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr);
 	string DisasmDir(address_t pc, uint32_t direct);
 	bool DisasmIndir(string& s, address_t pc, unsigned int mod, unsigned int ar, uint32_t disp = 1);

@@ -121,9 +121,6 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
   //                           "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
   // , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
-  disasm_export.SetupDependsOn(memory_import);
-  memory_export.SetupDependsOn(memory_import);
-
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
     unisim::kernel::VariableBase* var_reg = 0;
@@ -245,11 +242,9 @@ CPU<CPU_IMPL>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scan
  */
 template <class CPU_IMPL>
 bool
-CPU<CPU_IMPL>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
+CPU<CPU_IMPL>::ExternalReadMemory( uint64_t addr, uint8_t* buffer, uint32_t size )
 {
-  uint8_t* rbuffer = (uint8_t*)buffer;
-
-  return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, &rbuffer[0], size );
+  return memory_import->ReadMemory( addr, buffer, size );
 }
 
 /** Perform a non intrusive write access.
@@ -266,11 +261,9 @@ CPU<CPU_IMPL>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
  */
 template <class CPU_IMPL>
 bool
-CPU<CPU_IMPL>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
+CPU<CPU_IMPL>::ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, uint32_t size )
 {
-  uint8_t const* wbuffer = (uint8_t const*)buffer;
-
-  return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, &wbuffer[0], size );
+  return memory_import->WriteMemory( addr, buffer, size );
 }
 
 /** Disasm an instruction address.

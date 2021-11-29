@@ -194,8 +194,6 @@ public:
 	//=====================================================================
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
 

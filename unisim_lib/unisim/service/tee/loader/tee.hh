@@ -53,9 +53,9 @@ using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::Loader;
 
 template <unsigned int MAX_IMPORTS = 16>
-class Tee :
-	public Client<Loader>,
-	public Service<Loader>
+class Tee
+	: public Service<Loader>
+	, public Client<Loader>
 {
 public:
 	ServiceImport<Loader> *loader_import[MAX_IMPORTS];
@@ -63,6 +63,9 @@ public:
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
+
+	void Setup(Loader*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) loader_import[i]->RequireSetup(); }
+
 	virtual bool Load();
 private:
 };

@@ -104,9 +104,6 @@ public:
 	~ATD_PWM_STUB();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
-
 	virtual void Stop(int exit_status);
 
 	// Slave methods

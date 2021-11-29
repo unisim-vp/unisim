@@ -68,10 +68,11 @@ class VariableBase;
 class Simulator;
 template <class SERVICE_IF> class Client;
 template <class SERVICE_IF> class Service;
-class ServiceImportBase;
-class ServiceExportBase;
+class ServicePortBase;
 template <class SERVICE_IF> class ServiceImport;
 template <class SERVICE_IF> class ServiceExport;
+class ServiceAgent;
+class ServiceBase;
 class SignalHandler;
 class ConfigFileHelper;
 
@@ -304,8 +305,7 @@ private:
 	friend class VariableBase;
 	template <class TYPE> friend class Variable;
 	template <class TYPE> friend class VariableArray;
-	friend class ServiceImportBase;
-	friend class ServiceExportBase;
+	friend class ServicePortBase;
 	friend class SignalHandler;
 
 	static Simulator *simulator;
@@ -346,13 +346,11 @@ private:
 	void Help(std::ostream& os) const;
 	
 	void Register(Object *object);
-	void Register(ServiceImportBase *srv_import);
-	void Register(ServiceExportBase *srv_export);
+	void Register(ServicePortBase *srv_port);
 	void Register(VariableBase *variable);
 
 	void Unregister(Object *object);
-	void Unregister(ServiceImportBase *srv_import);
-	void Unregister(ServiceExportBase *srv_export);
+	void Unregister(ServicePortBase *srv_import);
 	void Unregister(VariableBase *variable);
 
 	void Initialize(VariableBase *variable);
@@ -390,8 +388,7 @@ private:
 	std::vector<CommandLineOption> command_line_options;
 
 	std::map<std::string, Object *, unisim::util::nat_sort::nat_ltstr> objects;
-	std::map<std::string, ServiceImportBase *> imports;
-	std::map<std::string, ServiceExportBase *> exports;
+	std::map<std::string, ServicePortBase *> srv_ports;
 	std::map<std::string, VariableBase *, unisim::util::nat_sort::nat_ltstr> variables;
 	std::map<std::string, ConfigFileHelper *> config_file_helpers;
 	
@@ -451,15 +448,17 @@ private:
 class Object
 {
 public:
+	Object(Object const&) = delete;
 	Object(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~Object();
 
 	virtual void OnDisconnect();
-	virtual bool BeginSetup(); // must not call any import. By contract it is called first.
-	virtual bool Setup(ServiceExportBase *service_export); // must setup an export, can call any import it depends, see ServiceExportBase::SetupDependsOn.
-	                                                       // By contract, BeginSetup has been called before.
-	virtual bool EndSetup(); // can call any import
-	                         // By contract, it is called after Setup(ServiceExportBase&)
+	/** Object initial setup routine. The routine is the first
+         * called, it must not call any import. */
+	virtual bool BeginSetup();
+	/** Object final setup routine. The routine is called after export
+	 * setup, id can call any import. */
+	virtual bool EndSetup();
 	
 	virtual void SigInt();
 	virtual void Kill();
@@ -469,16 +468,10 @@ public:
 	const char *GetObjectName() const;
 	std::string URI() const;
 
-	void Add(ServiceImportBase& srv_import);
-	void Remove(ServiceImportBase& srv_import);
-	void Add(ServiceExportBase& srv_export);
-	void Remove(ServiceExportBase& srv_export);
 	void Add(Object& object);
 	void Remove(Object& object);
 	void Add(VariableBase& var);
 	void Remove(VariableBase& var);
-	const std::list<ServiceImportBase *>& GetServiceImports() const;
-	const std::list<ServiceExportBase *>& GetServiceExports() const;
 	const std::list<Object *>& GetLeafs() const;
 	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	Object *GetParent() const;
@@ -490,6 +483,10 @@ public:
 	const char *GetDescription() const;
 	virtual void Stop(int exit_status, bool asynchronous = false);
 	void SetDescription(const char *description);
+	/** Service setup routine. The routine is called after BeginSetup, it
+	 * can call imports (see ServiceImport::RequireSetup) */
+	void AddServiceAgent( ServiceAgent const* srv_agent );
+	void DoServiceSetup();
 	
 private:
 	std::string object_name;
@@ -497,9 +494,8 @@ private:
 	std::string description;
 	Object *parent;
 	std::list<VariableBase *> variables;
-	std::list<ServiceImportBase *> srv_imports;
-	std::list<ServiceExportBase *> srv_exports;
 	std::list<Object *> leaf_objects;
+	std::set<ServiceAgent const*> srv_agents;
 	bool killed;
 };
 
@@ -517,17 +513,50 @@ public:
 //=                            Service<SERVICE_IF>                            =
 //=============================================================================
 
-template <class SERVICE_IF>
-class Service : public SERVICE_IF, virtual public Object
+// ServiceAgent objects that knows about Services actual types (able to call Setup(Service*))
+class ServiceAgent
 {
 public:
-	Service(const char *name, Object *parent = 0, const char *description = 0);
+	virtual ~ServiceAgent() {}
+	virtual void Setup( Object* ) const = 0;
+	virtual ServiceBase* GetBase( Object* ) const = 0;
+	
+	struct SetupError {};
+};
+
+class ServiceBase : virtual public Object
+{
+public:
+	ServiceBase(const char *name, Object *parent, const char *description);
+	bool NeedServiceSetup() const;
+	bool ServiceIsConnected() const { return is_connected; }
+	
+protected:
+	enum SetupState { NoSetup = 0, SetupStarted, SetupComplete  };
+	unsigned setup_state : 2;
+	unsigned is_connected : 1;
 };
 
 template <class SERVICE_IF>
-Service<SERVICE_IF>::Service(const char *_name, Object *_parent, const char *_description) :
-	Object(_name, _parent, _description)
+class Service : public ServiceBase, public SERVICE_IF
 {
+public:
+	Service(const char *name, Object *parent = 0, const char *description = 0);
+	virtual void Setup(SERVICE_IF*) {}
+	void RequireSetup() { if (NeedServiceSetup()) { Setup(this); setup_state = SetupComplete; } }
+};
+
+template <class SERVICE_IF>
+Service<SERVICE_IF>::Service(const char *_name, Object *_parent, const char *_description)
+	: Object(_name, _parent, _description)
+	, ServiceBase(_name, _parent, _description)
+{
+	static struct DerivedServiceAgent : public ServiceAgent
+	{
+		void Setup( Object* object ) const override { dynamic_cast<Service<SERVICE_IF>*>(object)->RequireSetup(); }
+		ServiceBase* GetBase( Object* object ) const  override { return dynamic_cast<Service<SERVICE_IF>*>(object); }
+	} agent;
+	this->Object::AddServiceAgent( &agent );
 }
 
 //=============================================================================
@@ -554,49 +583,34 @@ Client<SERVICE_IF>::~Client()
 }
 
 //=============================================================================
-//=                           ServiceImportBase                               =
+//=                              ServicePortBase                              =
 //=============================================================================
 
-class ServiceImportBase
+class ServicePortBase
 {
 public:
-	ServiceImportBase(const char *name, Object *owner);
-	virtual ~ServiceImportBase();
+	ServicePortBase(const char *name, Object *owner);
+	virtual ~ServicePortBase();
 	const char *GetName() const;
 	virtual void Disconnect() = 0;
-	virtual void DisconnectService() = 0;
 	virtual void Dump(std::ostream& os) const = 0;
+	virtual bool IsConnected() const = 0;
 	virtual Object *GetService() const = 0;
-	virtual ServiceExportBase *GetServiceExport() = 0;
+	virtual bool IsExport() const = 0;
 protected:
 	std::string name;
 	Object *owner;
 };
 
-//=============================================================================
-//=                           ServiceExportBase                               =
-//=============================================================================
-
-class ServiceExportBase
+template <class SERVICE_IF>
+class ServicePort : ServicePortBase
 {
 public:
-	ServiceExportBase(const char *name, Object *owner);
-	virtual ~ServiceExportBase();
-	const char *GetName() const;
-	virtual void Disconnect() = 0;
-	virtual void DisconnectClient() = 0;
-	virtual void Dump(std::ostream& os) const = 0;
-	virtual Object *GetClient() const = 0;
-	virtual Object *GetService() const = 0;
-	void SetupDependsOn(ServiceImportBase& srv_import);
-	virtual std::list<ServiceImportBase *>& GetSetupDependencies();
-
-	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
-	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
+	Service<SERVICE_IF> *service;
+	ServicePort<SERVICE_IF> *fwd_port;
+	std::list<ServiceImport<SERVICE_IF> *> bwd_ports;
+	Client<SERVICE_IF> *client;
 protected:
-	std::string name;
-	Object *owner;
-	std::list<ServiceImportBase *> setup_dependencies;
 };
 
 //=============================================================================
@@ -604,12 +618,13 @@ protected:
 //=============================================================================
 
 template <class SERVICE_IF>
-class ServiceImport : public ServiceImportBase
+class ServiceImport : public ServicePortBase
 {
 public:
 	ServiceImport(const char *name, Client<SERVICE_IF> *client);
 	ServiceImport(const char *name, Object *owner);
 	virtual ~ServiceImport();
+	virtual bool IsExport() const override { return false; }
 
  	inline operator SERVICE_IF * () const ALWAYS_INLINE;
 
@@ -627,19 +642,19 @@ public:
 	// (import1 <- import2) ==> import2
 	friend ServiceImport<SERVICE_IF>& operator << <SERVICE_IF>(ServiceImport<SERVICE_IF>& lhs, ServiceImport<SERVICE_IF>& rhs);
 
-	virtual void Disconnect();
-
-	virtual void DisconnectService();
-
 	void ResolveClient();
+
+	void Disconnect() override;
 
 	void Unbind(ServiceExport<SERVICE_IF>& srv_export);
 
-	virtual void Dump(std::ostream& os) const;
+	virtual void Dump(std::ostream& os) const override;
 
-	virtual Object *GetService() const;
+	virtual bool IsConnected() const override;
 
-	virtual ServiceExportBase *GetServiceExport();
+	virtual Service<SERVICE_IF> *GetService() const override;
+
+	void RequireSetup() const;
 
 private:
 	Service<SERVICE_IF> *service;
@@ -657,13 +672,13 @@ private:
 };
 
 template <class SERVICE_IF>
-ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *_client) :
-	ServiceImportBase(_name, _client),
-	service(0),
-	srv_export(0),
-	alias_import(0),
-	actual_imports(),
-	client(_client)
+ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *_client)
+	: ServicePortBase(_name, _client)
+	, service(0)
+	, srv_export(0)
+	, alias_import(0)
+	, actual_imports()
+	, client(_client)
 {
 #ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << std::endl;
@@ -671,13 +686,13 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *
 }
 
 template <class SERVICE_IF>
-ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
-	ServiceImportBase(_name, _owner),
-	service(0),
-	srv_export(0),
-	alias_import(0),
-	actual_imports(),
-	client(0)
+ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner)
+	: ServicePortBase(_name, _owner)
+	, service(0)
+	, srv_export(0)
+	, alias_import(0)
+	, actual_imports()
+	, client(0)
 {
 #ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".ServiceImport(" << _name << ", object " << (_owner ? _owner->GetName() : "?") << ")" << std::endl;
@@ -690,7 +705,6 @@ ServiceImport<SERVICE_IF>::~ServiceImport()
 #ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".~ServiceImport()" << std::endl;
 #endif
-	//ServiceImport<SERVICE_IF>::DisconnectService();
 	ServiceImport<SERVICE_IF>::Disconnect();
 }
 
@@ -800,12 +814,6 @@ ServiceExport<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveServiceExport()
 }
 
 template <class SERVICE_IF>
-ServiceExportBase *ServiceImport<SERVICE_IF>::GetServiceExport()
-{
-	return (ResolveServiceExport());
-}
-
-template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::ResolveClient()
 {
 	if(actual_imports.empty())
@@ -862,8 +870,6 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 	std::cerr << GetName() << ".Disconnect()" << std::endl;
 #endif
 
-	DisconnectService();
-
 	if(alias_import)
 	{
 		typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
@@ -901,26 +907,6 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 }
 
 template <class SERVICE_IF>
-void ServiceImport<SERVICE_IF>::DisconnectService()
-{
-#ifdef DEBUG_KERNEL
-	std::cerr << GetName() << ".DisconnectService()" << std::endl;
-#endif
-
-	if(alias_import)
-	{
-		alias_import->DisconnectService();
-	}
-
-	if(srv_export)
-	{
-		UnresolveService();
-		srv_export->Unbind(*this);
-		srv_export = 0;
-	}
-}
-
-template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::Dump(std::ostream& os) const
 {
 	if(alias_import)
@@ -942,9 +928,22 @@ void ServiceImport<SERVICE_IF>::Dump(std::ostream& os) const
 }
 
 template <class SERVICE_IF>
-Object *ServiceImport<SERVICE_IF>::GetService() const
+Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::GetService() const
 {
-	return (service);
+	return service;
+}
+
+template <class SERVICE_IF>
+bool ServiceImport<SERVICE_IF>::IsConnected() const
+{
+	return service and service->ServiceIsConnected();
+}
+
+template <class SERVICE_IF>
+void ServiceImport<SERVICE_IF>::RequireSetup() const
+{
+	if (service)
+		service->RequireSetup();
 }
 
 //=============================================================================
@@ -952,14 +951,13 @@ Object *ServiceImport<SERVICE_IF>::GetService() const
 //=============================================================================
 
 template <class SERVICE_IF>
-class ServiceExport : public ServiceExportBase
+class ServiceExport : public ServicePortBase
 {
 public:
 	ServiceExport(const char *name, Service<SERVICE_IF> *service);
 	ServiceExport(const char *name, Object *owner);
 	virtual ~ServiceExport();
-
-	inline bool IsConnected() const ALWAYS_INLINE;
+	virtual bool IsExport() const override { return true; }
 
 	// (import -> export) ==> export
 	friend ServiceExport<SERVICE_IF>& operator >> <SERVICE_IF>(ServiceImport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
@@ -973,7 +971,7 @@ public:
 	// (export1 <- export2) ==> export2
 	friend ServiceExport<SERVICE_IF>& operator << <SERVICE_IF>(ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
-	virtual void Disconnect();
+	virtual void Disconnect() override;
 	virtual void DisconnectClient();
 
 	void Unbind(ServiceImport<SERVICE_IF>& srv_import);
@@ -981,13 +979,12 @@ public:
 	Service<SERVICE_IF> *ResolveService(Client<SERVICE_IF> *client);
 	ServiceExport<SERVICE_IF> *ResolveServiceExport();
 
-	virtual void Dump(std::ostream& os) const;
+	virtual void Dump(std::ostream& os) const override;
 
-	virtual Object *GetClient() const;
-	virtual Object *GetService() const;
+	virtual bool IsConnected() const override;
+
+	virtual Service<SERVICE_IF> *GetService() const override;
 	
-	virtual std::list<ServiceImportBase *>& GetSetupDependencies();
-
 private:
 	std::list<ServiceExport<SERVICE_IF> *> alias_exports;
 	ServiceExport<SERVICE_IF> *actual_export;
@@ -1003,7 +1000,7 @@ private:
 
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Service<SERVICE_IF> *_service) :
-	ServiceExportBase(_name, _service),
+	ServicePortBase(_name, _service),
 	alias_exports(),
 	actual_export(0),
 	service(_service),
@@ -1014,7 +1011,7 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Service<SERVICE_IF> 
 
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
-	ServiceExportBase(_name, _owner),
+	ServicePortBase(_name, _owner),
 	alias_exports(),
 	actual_export(0),
 	service(0),
@@ -1031,12 +1028,6 @@ ServiceExport<SERVICE_IF>::~ServiceExport()
 #endif
 	//ServiceExport<SERVICE_IF>::DisconnectClient();
 	ServiceExport<SERVICE_IF>::Disconnect();
-}
-
-template <class SERVICE_IF>
-inline bool ServiceExport<SERVICE_IF>::IsConnected() const
-{
-	return (client != 0);
 }
 
 template <class SERVICE_IF>
@@ -1250,21 +1241,15 @@ void ServiceExport<SERVICE_IF>::Dump(std::ostream& os) const
 }
 
 template <class SERVICE_IF>
-Object *ServiceExport<SERVICE_IF>::GetClient() const
+bool ServiceExport<SERVICE_IF>::IsConnected() const
 {
-	return (client);
+	return service and service->ServiceIsConnected();
 }
 
 template <class SERVICE_IF>
-Object *ServiceExport<SERVICE_IF>::GetService() const
+Service<SERVICE_IF> *ServiceExport<SERVICE_IF>::GetService() const
 {
 	return (service);
-}
-
-template <class SERVICE_IF>
-std::list<ServiceImportBase *>& ServiceExport<SERVICE_IF>::GetSetupDependencies()
-{
-	return actual_export ? actual_export->GetSetupDependencies() : ServiceExportBase::GetSetupDependencies();
 }
 
 //=============================================================================
@@ -1326,6 +1311,26 @@ ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceE
 	rhs.ResolveClient();
 	return (rhs);
 }
+
+#if __cplusplus >= 201103L
+
+template <typename ITEM>
+struct Generator
+{
+  typedef ITEM Item;
+  Generator( char const* _prefix, Object* _parent, char const* _description )
+    : prefix(_prefix), parent(_parent), description(_description)
+  {}
+  char const* prefix;
+  Object* parent;
+  char const* description;
+  Item make_item( std::size_t index )
+  {
+    return Item(std::string(prefix) + '[' + std::to_string(index) + ']', parent, description);
+  }
+};
+
+#endif
 
 } // end of namespace kernel
 } // end of namespace unisim

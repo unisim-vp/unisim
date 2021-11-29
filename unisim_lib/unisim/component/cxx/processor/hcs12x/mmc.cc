@@ -141,9 +141,8 @@ void MMC::ResetMemory() {
 	
 }
 
-bool MMC::BeginSetup() {
-
-
+bool MMC::BeginSetup()
+{
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(GetName()) + ".MMCCTL0", &mmcctl0));
 
 	unisim::kernel::variable::Register<uint8_t> *mmcctl0_var = new unisim::kernel::variable::Register<uint8_t>("MMCCTL0", this, mmcctl0, "MMC Control Register (MMCCTL0)");
@@ -237,17 +236,6 @@ bool MMC::BeginSetup() {
 
 	return (true);
 }
-
-
-bool MMC::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-
-bool MMC::EndSetup() {
-	return (true);
-}
-
 
 Register* MMC::GetRegister(const char *name)
 {

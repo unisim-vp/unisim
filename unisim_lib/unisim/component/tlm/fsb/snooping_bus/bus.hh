@@ -170,7 +170,7 @@ public:
 	/** Destructor */
 	~Bus();
 
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Memory<ADDRESS_TYPE>*) override;
 	virtual void Reset();
 	
 	virtual void ResetMemory();

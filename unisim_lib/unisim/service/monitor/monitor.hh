@@ -56,8 +56,7 @@ typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
 template <class ADDRESS>
 class Monitor
-	 : public Service<Monitor_if<ADDRESS> >
-
+	: public Service<Monitor_if<ADDRESS> >
 	, public Service<DebugEventListener<ADDRESS> >
 	, public unisim::kernel::Client<DebugEventTrigger<ADDRESS> >
 	, public Client<SymbolTableLookup<ADDRESS> >
@@ -84,7 +83,6 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *service_export);
 	virtual bool EndSetup();
 
 	virtual int generate_monitor_spec(const char* file_path);

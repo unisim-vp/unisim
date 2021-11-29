@@ -159,7 +159,8 @@ void HCS12X ::wai() {
 }
 
 bool
-HCS12X ::BeginSetup() {
+HCS12X ::BeginSetup()
+{
 
 	if(!inherited::BeginSetup()) {
 		if(debug_enabled && verbose_step)
@@ -199,16 +200,6 @@ HCS12X ::BeginSetup() {
 
 	return (true);
 
-}
-
-bool
-HCS12X ::Setup(ServiceExportBase *srv_export) {
-	return (inherited::Setup(srv_export));
-}
-
-bool
-HCS12X ::EndSetup() {
-	return (inherited::EndSetup());
 }
 
 void HCS12X::computeInternalTime() {

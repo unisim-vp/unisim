@@ -141,10 +141,6 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 #if defined(HAVE_SDL)
 	param_refresh_period.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 #endif
-	video_export.SetupDependsOn(memory_import);
-	keyboard_export.SetupDependsOn(memory_import);
-	mouse_export.SetupDependsOn(memory_import);
-	
 	mouse_state.dx = 0;
 	mouse_state.dy = 0;
 	mouse_state.left_button = false;
@@ -423,8 +419,13 @@ void SDL<ADDRESS>::OnDisconnect()
 template <class ADDRESS>
 bool SDL<ADDRESS>::SetupSDL()
 {
-	if(alive) return true;
-	if(!memory_import) return false;
+	if(alive)
+		return true;
+
+	memory_import.RequireSetup();
+	
+	if(!memory_import)
+		return false;
 #if defined(HAVE_SDL)
 	if(unlikely(verbose_setup))
 	{
@@ -571,20 +572,9 @@ bool SDL<ADDRESS>::SetupSDL()
 	}
 	
 #else
-       logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
+	logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
 #endif
 	return true;
-}
-
-template <class ADDRESS>
-bool SDL<ADDRESS>::Setup(ServiceExportBase *srv_export)
-{
-	if(srv_export == &video_export) return SetupSDL();
-	if(srv_export == &keyboard_export) return SetupSDL();
-	if(srv_export == &mouse_export) return SetupSDL();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	return false;
 }
 
 template <class ADDRESS>

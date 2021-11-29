@@ -90,8 +90,7 @@ public:
 	virtual ~Memory();
 
 	/* Service methods */
-	/** Setup
-	 * Initializes the service interface. */
+	/** Initialize the memory */
 	virtual bool EndSetup();		
 	
 	/* Methods required by the TlmSendIf (Tlm send interface) */
