@@ -81,7 +81,6 @@ using unisim::kernel::Object;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 
 using namespace std;
 

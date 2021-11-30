@@ -52,7 +52,6 @@ using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 
 class CaptureTriggerStub
 	: public Object

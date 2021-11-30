@@ -85,7 +85,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
-using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::CallBackObject;

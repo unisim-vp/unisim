@@ -80,7 +80,6 @@ using unisim::kernel::logger::EndDebug;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::tlm2::PayloadFabric;
 
 using unisim::component::cxx::processor::hcs12x::address_t;

@@ -79,7 +79,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;

@@ -35,7 +35,6 @@ using unisim::kernel::Object;
 using unisim::kernel::Service;
 using unisim::kernel::VariableBase;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 

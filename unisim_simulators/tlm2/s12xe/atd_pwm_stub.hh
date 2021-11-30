@@ -69,7 +69,6 @@ using namespace tlm_utils;
 
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;

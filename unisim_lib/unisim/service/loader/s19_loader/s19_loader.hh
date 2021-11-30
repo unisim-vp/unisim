@@ -63,7 +63,6 @@ using namespace unisim::util::endian;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::variable::Parameter;

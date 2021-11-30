@@ -60,7 +60,6 @@ using unisim::service::interfaces::Video;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;

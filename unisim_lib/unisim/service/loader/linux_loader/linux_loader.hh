@@ -61,7 +61,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Object;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::ParameterArray;
 using unisim::kernel::logger::Logger;

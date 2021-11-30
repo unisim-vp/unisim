@@ -26,7 +26,6 @@ extern "C" {
 
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Monitor_if;
 

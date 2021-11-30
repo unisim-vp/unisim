@@ -93,7 +93,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::CallBackObject;
 using unisim::kernel::variable::SignalArray;

@@ -10,7 +10,6 @@
 #include <unisim/service/interfaces/monitor_if.hh>
 
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Monitor_if;
 

@@ -53,7 +53,6 @@ using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Profiling;
 using unisim::service::interfaces::MemoryAccessReporting;

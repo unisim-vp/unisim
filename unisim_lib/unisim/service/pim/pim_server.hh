@@ -102,7 +102,6 @@ using unisim::kernel::variable::Parameter;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::Simulator;

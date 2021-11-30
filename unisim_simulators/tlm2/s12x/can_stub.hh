@@ -70,7 +70,6 @@ using namespace tlm_utils;
 
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 

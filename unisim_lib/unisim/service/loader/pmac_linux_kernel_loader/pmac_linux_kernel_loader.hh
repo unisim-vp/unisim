@@ -57,7 +57,6 @@ using unisim::service::loader::pmac_bootx::PMACBootX;
 using unisim::kernel::Object;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
