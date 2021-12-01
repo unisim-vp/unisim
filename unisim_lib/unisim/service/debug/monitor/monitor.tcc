@@ -161,10 +161,10 @@ DataObject<ADDRESS>::DataObject(const char *data_location, size_t _size, unisim:
 	, reg_pc(_reg_pc)
 	, data_object(0)
 {
-	ADDRESS cia = 0;
-	reg_pc->GetValue(&cia);
+	// ADDRESS cia = 0;
+	// reg_pc->GetValue(&cia);
 
-	data_object = data_object_lookup_if->FindDataObject(data_location, cia);
+	data_object = data_object_lookup_if->FindDataObject(data_location);
 }
 
 template <typename ADDRESS>

@@ -638,15 +638,25 @@ protected:
 };
 
 template <class SERVICE_IF>
-ServicePort<SERVICE_IF>::ServicePort(const char *_name, Object *_client)
-	: ServicePortBase(_name, _client)
+ServicePort<SERVICE_IF>::ServicePort(const char *_name, Service<SERVICE_IF> *_owner)
+	: ServicePortBase(_name, _owner)
+	, service(_owner)
+	, client(0)
+{}
+
+template <class SERVICE_IF>
+ServicePort<SERVICE_IF>::ServicePort(const char *_name, Client<SERVICE_IF> *_owner)
+	: ServicePortBase(_name, _owner)
+	, service(0)
+	, client(_owner)
+{}
+
+template <class SERVICE_IF>
+ServicePort<SERVICE_IF>::ServicePort(const char *_name, Object *_owner)
+	: ServicePortBase(_name, _owner)
 	, service(0)
 	, client(0)
-{
-#ifdef DEBUG_KERNEL
-	std::cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << std::endl;
-#endif
-}
+{}
 
 template <class SERVICE_IF>
 bool ServicePort<SERVICE_IF>::IsConnected() const
@@ -715,23 +725,10 @@ template <class SERVICE_IF>
 class ServiceImport : public ServicePort<SERVICE_IF>
 {
 public:
-	ServiceImport(const char *name, Client<SERVICE_IF> *client);
-	ServiceImport(const char *name, Object *owner);
+	ServiceImport(const char *name, Client<SERVICE_IF> *client) : ServicePort<SERVICE_IF>(name, client) {}
+	ServiceImport(const char *name, Object *owner) : ServicePort<SERVICE_IF>(name, owner) {}
 	virtual bool IsExport() const override { return false; }
 };
-
-template <class SERVICE_IF>
-ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *_client)
-	: ServicePort<SERVICE_IF>(_name, _client)
-{
-	ServicePort<SERVICE_IF>::client = _client;
-}
-
-template <class SERVICE_IF>
-ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner)
-	: ServicePort<SERVICE_IF>(_name, _owner)
-{
-}
 
 //=============================================================================
 //=                          ServiceExport<SERVICE_IF>                        =
@@ -741,23 +738,10 @@ template <class SERVICE_IF>
 class ServiceExport : public ServicePort<SERVICE_IF>
 {
 public:
-	ServiceExport(const char *name, Service<SERVICE_IF> *service);
-	ServiceExport(const char *name, Object *owner);
+	ServiceExport(const char *name, Service<SERVICE_IF> *service) : ServicePort<SERVICE_IF>(name, service) {}
+	ServiceExport(const char *name, Object *owner) : ServicePort<SERVICE_IF>(name, owner) {}
 	virtual bool IsExport() const override { return true; }
 };
-
-template <class SERVICE_IF>
-ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Service<SERVICE_IF> *_service)
-	: ServicePort<SERVICE_IF>(_name, _service)
-{
-	ServicePort<SERVICE_IF>::service = _service;
-}
-
-template <class SERVICE_IF>
-ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner)
-	: ServicePort<SERVICE_IF>(_name, _owner)
-{
-}
 
 //=============================================================================
 //=                                Operators                                  =
