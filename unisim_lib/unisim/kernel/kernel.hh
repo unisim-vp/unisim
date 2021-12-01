@@ -591,64 +591,56 @@ class ServicePortBase
 public:
 	ServicePortBase(const char *name, Object *owner);
 	virtual ~ServicePortBase();
-	const char *GetName() const;
-	virtual void Dump(std::ostream& os) const = 0;
+
 	virtual bool IsConnected() const = 0;
 	virtual Object *GetService() const = 0;
 	virtual bool IsExport() const = 0;
+
+	const char *GetName() const;
+	void Dump(std::ostream& os) const;
+
+	struct Visitor { virtual ~Visitor() {} virtual void Process(ServicePortBase& port) = 0; };
+	void SpreadBwd( Visitor& visitor );
+
 protected:
+	void Connect(ServicePortBase* fwd);
+
 	std::string name;
 	Object *owner;
+	std::list<ServicePortBase *> bwd_ports;
+	ServicePortBase *fwd_port;
 };
 
 template <class SERVICE_IF>
 class ServicePort : public ServicePortBase
 {
 public:
+	ServicePort(const char *name, Service<SERVICE_IF> *owner);
+	ServicePort(const char *name, Client<SERVICE_IF> *owner);
 	ServicePort(const char *name, Object *owner);
 
 	virtual bool IsConnected() const override;
 
 	virtual Service<SERVICE_IF> *GetService() const override;
 
-	virtual void Dump(std::ostream& os) const override;
+ 	operator SERVICE_IF * () const ALWAYS_INLINE;
 
- 	inline operator SERVICE_IF * () const ALWAYS_INLINE;
+	SERVICE_IF *operator -> () const ALWAYS_INLINE;
 
-	inline SERVICE_IF *operator -> () const ALWAYS_INLINE;
-
-	void RequireSetup() const;
-	
 	void Bind(ServicePort<SERVICE_IF>& fwd);
 
-	struct Visitor { virtual ~Visitor() {} virtual void Process(ServicePort<SERVICE_IF>& port) = 0; };
-	void SpreadBwd( Visitor& visitor );
+	void RequireSetup() const;
 
 protected:
 	Service<SERVICE_IF> *service;
-	ServicePort<SERVICE_IF> *fwd_port;
-	std::list<ServicePort<SERVICE_IF> *> bwd_ports;
 	Client<SERVICE_IF> *client;
 
 };
 
 template <class SERVICE_IF>
-void
-ServicePort<SERVICE_IF>::SpreadBwd( ServicePort<SERVICE_IF>::Visitor& visitor )
-{
-	for (auto const& bwd_port : bwd_ports)
-	{
-		bwd_port->SpreadBwd(visitor);
-	}
-	visitor.Process(*this);
-}
-
-template <class SERVICE_IF>
 ServicePort<SERVICE_IF>::ServicePort(const char *_name, Object *_client)
 	: ServicePortBase(_name, _client)
 	, service(0)
-	, fwd_port(0)
-	, bwd_ports()
 	, client(0)
 {
 #ifdef DEBUG_KERNEL
@@ -684,23 +676,7 @@ SERVICE_IF *ServicePort<SERVICE_IF>::operator -> () const
 		owner->Object::Stop(-1);
 	}
 #endif
-	return (service);
-}
-
-template <class SERVICE_IF>
-void ServicePort<SERVICE_IF>::Dump(std::ostream& os) const
-{
-	if(fwd_port)
-	{
-		os << GetName() << " -> " << fwd_port->GetName() << std::endl;
-	}
-
-	typename std::list<ServicePort<SERVICE_IF> *>::const_iterator port_iter;
-
-	for(port_iter = bwd_ports.begin(); port_iter != bwd_ports.end(); port_iter++)
-	{
-		os << "# " << (*port_iter)->GetName() << " -> " << GetName() << std::endl;
-	}
+	return service;
 }
 
 template <class SERVICE_IF>
@@ -713,18 +689,7 @@ void ServicePort<SERVICE_IF>::RequireSetup() const
 template <class SERVICE_IF>
 void ServicePort<SERVICE_IF>::Bind(ServicePort<SERVICE_IF>& fwd)
 {
-	if (fwd_port)
-	{
-		std::cerr << "WARNING! Can't connect " << GetName() << " to "
-		          << fwd.GetName() << " because it is already connected to "
-		          << fwd_port->GetName() << std::endl;
-		return;
-	}
-#ifdef DEBUG_KERNEL
-	std::cerr << GetName() << " -> " << srv_export.GetName() << std::endl;
-#endif
-	fwd_port = &fwd;
-        fwd.bwd_ports.push_back(this);
+	Connect(&fwd);
 
 	if (not fwd.service)
 		return;
@@ -733,9 +698,9 @@ void ServicePort<SERVICE_IF>::Bind(ServicePort<SERVICE_IF>& fwd)
         struct ServiceAssignment : public Visitor
         {
           ServiceAssignment(Service<SERVICE_IF> *srv) : service(srv) {} Service<SERVICE_IF> *service;
-          void Process(ServicePort<SERVICE_IF>& port) override
+          void Process(ServicePortBase& port) override
           {
-            port.service = service;
+            static_cast<ServicePort<SERVICE_IF>&>(port).service = service;
           }
         } visitor( fwd.service );
         

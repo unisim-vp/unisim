@@ -1236,6 +1236,8 @@ bool ServiceBase::NeedServiceSetup() const
 ServicePortBase::ServicePortBase(const char *_name, Object *_owner)
 	: name(std::string(_owner->GetName()) + std::string(".") + std::string(_name))
 	, owner(_owner)
+	, bwd_ports()
+	, fwd_port(0)
 {
 	Simulator::Instance()->Register(this);
 }
@@ -1248,6 +1250,45 @@ ServicePortBase::~ServicePortBase()
 const char *ServicePortBase::GetName() const
 {
 	return name.c_str();
+}
+
+void ServicePortBase::Dump(std::ostream& os) const
+{
+	if(fwd_port)
+	{
+		os << GetName() << " -> " << fwd_port->GetName() << std::endl;
+	}
+
+	for(std::list<ServicePortBase*>::const_iterator port_iter = bwd_ports.begin(); port_iter != bwd_ports.end(); port_iter++)
+	{
+		os << "# " << (*port_iter)->GetName() << " -> " << GetName() << std::endl;
+	}
+}
+
+void ServicePortBase::Connect(ServicePortBase* fwd)
+{
+	if (fwd_port)
+	{
+		std::cerr << "WARNING! Can't connect " << GetName() << " to "
+		          << fwd->GetName() << " because it is already connected to "
+		          << fwd_port->GetName() << std::endl;
+		return;
+	}
+#ifdef DEBUG_KERNEL
+	std::cerr << GetName() << " -> " << srv_export.GetName() << std::endl;
+#endif
+	fwd_port = fwd;
+        fwd->bwd_ports.push_back(this);
+}
+
+void
+ServicePortBase::SpreadBwd( ServicePortBase::Visitor& visitor )
+{
+	for (auto const& bwd_port : bwd_ports)
+	{
+		bwd_port->SpreadBwd(visitor);
+	}
+	visitor.Process(*this);
 }
 
 //=============================================================================
