@@ -29,8 +29,8 @@ UNISIM brings:
   (2) A library of hardware models;
   (3) Several tools to facilitate hardware model development/debugging/exploitation.
 
-It is freely available on the web at http://www.unisim.org and through subversion
-at https://www.unisim.org/svn (use "guest" as login and no password).
+It is freely available on the web at http://www.unisim-vp.org and through subversion
+at https://www.unisim-vp.org/svn (use "guest" as login and no password).
 
 UNISIM softwares are composed of three main packages:
 - UNISIM Tools (located in sub-directory unisim_tools)
