@@ -38,6 +38,10 @@ namespace sc_dt {
 
 ///////////////////////////////// definition //////////////////////////////////
 
+const sc_q_mode SC_DEFAULT_Q_MODE_ = SC_TRN;
+const sc_o_mode SC_DEFAULT_O_MODE_ = SC_WRAP;
+const int SC_DEFAULT_N_BITS_ = 0;
+
 // Constructors and destructor
 sc_fxtype_params::sc_fxtype_params()
 {

@@ -62,25 +62,6 @@ namespace debug {
 namespace monitor {
 
 template <typename ADDRESS>
-HardwareBreakpoint<ADDRESS>::HardwareBreakpoint(ADDRESS addr, int _handle, void (*_callback)(int))
-	: unisim::util::debug::Breakpoint<ADDRESS>(addr)
-	, handle(_handle)
-	, callback(_callback)
-{
-}
-
-template <typename ADDRESS>
-HardwareBreakpoint<ADDRESS>::~HardwareBreakpoint()
-{
-}
-
-template <typename ADDRESS>
-void HardwareBreakpoint<ADDRESS>::Report() const
-{
-	(*callback)(handle);
-}
-
-template <typename ADDRESS>
 HardwareWatchpoint<ADDRESS>::HardwareWatchpoint(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, int _handle, void (*_callback)(int))
   : unisim::util::debug::Watchpoint<ADDRESS>(_mat, _mt, _addr, _size, true)
 	, handle(_handle)
@@ -100,77 +81,23 @@ void HardwareWatchpoint<ADDRESS>::Report() const
 }
 
 template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const char *source_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *_debug_event_trigger_if, typename unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, int _handle, void (*callback)(int))
-	: handle(_handle)
-	, debug_event_trigger_if(_debug_event_trigger_if)
-	, hw_breakpoints()
+SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& _source_code_location, int _handle, void (*_callback)(int))
+	: unisim::util::debug::SourceCodeBreakpoint<ADDRESS>(_source_code_location)
+	, handle(_handle)
+	, callback(_callback)
 {
-	std::string filename;
-	unsigned int lineno;
-	const char *s = source_location;
-	while(*s && (*s != ':'))
-	{
-		filename += *s;
-		s++;
-	}
-	if(*s != ':') return;
-	
-	s++;
-	
-	std::stringstream sstr_lineno(s);
-	if(!(sstr_lineno >> lineno)) return;
-	if(!sstr_lineno.eof()) return;
-	
-	std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
-	
-	stmt_lookup_if->FindStatements(stmts, filename.c_str(), lineno, 0);
-	
-	typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::size_type num_stmts = stmts.size();
-	typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::size_type stmt_num;
-	
-	for(stmt_num = 0; stmt_num < num_stmts; stmt_num++)
-	{
-		const unisim::util::debug::Statement<ADDRESS> *stmt = stmts[stmt_num];
-		
-		ADDRESS hw_breakpoint_addr = stmt->GetAddress();
-		
-		HardwareBreakpoint<ADDRESS> *hw_breakpoint = new HardwareBreakpoint<ADDRESS>(hw_breakpoint_addr, handle, callback);
-		
-		if(debug_event_trigger_if->Listen(hw_breakpoint))
-		{
-			hw_breakpoints.push_back(hw_breakpoint);
-		}
-		else
-		{
-			delete hw_breakpoint;
-		}
-	}
 }
 
 template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::~SourceCodeBreakpoint()
+void SourceCodeBreakpoint<ADDRESS>::Report() const
 {
-	typename std::vector<HardwareBreakpoint<ADDRESS> *>::size_type num_hw_breakpoints = hw_breakpoints.size();
-	typename std::vector<HardwareBreakpoint<ADDRESS> *>::size_type hw_breakpoint_num;
-	
-	for(hw_breakpoint_num = 0; hw_breakpoint_num < num_hw_breakpoints; hw_breakpoint_num++)
-	{
-		HardwareBreakpoint<ADDRESS> *hw_breakpoint = hw_breakpoints[hw_breakpoint_num];
-		
-		debug_event_trigger_if->Unlisten(hw_breakpoint);
-	}
+	(*callback)(handle);
 }
 
 template <typename ADDRESS>
-bool SourceCodeBreakpoint<ADDRESS>::Exists() const
+int SourceCodeBreakpoint<ADDRESS>::GetHandle() const
 {
-	return !hw_breakpoints.empty();
-}
-
-template <typename ADDRESS>
-void SourceCodeBreakpoint<ADDRESS>::Invalidate()
-{
-	hw_breakpoints.clear();
+	return handle;
 }
 
 template <typename ADDRESS>
@@ -266,10 +193,10 @@ bool DataObject<ADDRESS>::GetValue(void *value) const
 {
 	if(data_object)
 	{
-		ADDRESS cia = 0;
-		reg_pc->GetValue(&cia);
-
-		data_object->Seek(cia);
+// 		ADDRESS cia = 0;
+// 		reg_pc->GetValue(&cia);
+// 
+// 		data_object->Seek(cia);
 		
 		if(data_object->Exists())
 		{
@@ -349,8 +276,7 @@ Monitor<ADDRESS>::~Monitor()
 		
 		if(source_code_breakpoint)
 		{
-			source_code_breakpoint->Invalidate();
-			delete source_code_breakpoint;
+			source_code_breakpoint->Release();
 		}
 	}
 
@@ -393,12 +319,13 @@ template <typename ADDRESS>
 int Monitor<ADDRESS>::SetBreakpoint(const char *info, void (*callback)(int))
 {
 	int handle = source_code_breakpoints.size() + 1;
-	SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = new SourceCodeBreakpoint<ADDRESS>(info, debug_event_trigger_import, stmt_lookup_import, handle, callback);
-	
-	if(source_code_breakpoint)
+	unisim::util::debug::SourceCodeLocation source_code_location;
+	if(source_code_location.Parse(info))
 	{
-		if(source_code_breakpoint->Exists())
+		SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = new SourceCodeBreakpoint<ADDRESS>(source_code_location, handle, callback);
+		if(debug_event_trigger_import->Listen(source_code_breakpoint))
 		{
+			source_code_breakpoint->Catch();
 			source_code_breakpoints.push_back(source_code_breakpoint);
 			return handle;
 		}
@@ -442,9 +369,12 @@ int Monitor<ADDRESS>::DeleteBreakpoint(int handle)
 			
 			if(source_code_breakpoint)
 			{
-				delete source_code_breakpoint;
-				source_code_breakpoints[idx] = 0;
-				return 0;
+				if(debug_event_trigger_import->Unlisten(source_code_breakpoint))
+				{
+					source_code_breakpoint->Release();
+					source_code_breakpoints[idx] = 0;
+					return 0;
+				}
 			}
 		}
 	}
@@ -538,11 +468,11 @@ int Monitor<ADDRESS>::StopMe(int exit_status)
 template <typename ADDRESS>
 void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	const HardwareBreakpoint<ADDRESS> *hw_breakpoint = dynamic_cast<const HardwareBreakpoint<ADDRESS> *>(event);
-	
-	if(hw_breakpoint)
+	const SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = dynamic_cast<const SourceCodeBreakpoint<ADDRESS> *>(event);
+		
+	if(source_code_breakpoint)
 	{
-		hw_breakpoint->Report();
+		source_code_breakpoint->Report();
 	}
 	else
 	{

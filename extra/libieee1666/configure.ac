@@ -58,7 +58,7 @@ else
 fi
 
 AC_ARG_ENABLE([windows-fiber],
-	AS_HELP_STRING([--windows-fiber], [Windows Fiber coroutine system support [default=yes]]), , enable_windows_fiber=yes)
+	AS_HELP_STRING([--enable-windows-fiber], [Windows Fiber coroutine system support [default=yes]]), , enable_windows_fiber=yes)
 
 if test "x${enable_windows_fiber}" = "xyes"; then
 	LIBIEEE1666_ENABLE_WINDOWS_FIBER=1
@@ -109,6 +109,12 @@ if test "x${enable_unwind_sjlj}" = "xyes"; then
 	LIBIEEE1666_ENABLE_UNWIND_SJLJ=1
 else
 	LIBIEEE1666_ENABLE_UNWIND_SJLJ=0
+fi
+
+############################## Check configure options coherency ##############################
+
+if test ${LIBIEEE1666_ENABLE_FCONTEXT} -eq 0 && test ${LIBIEEE1666_ENABLE_PTHREAD} -eq 0 && test ${LIBIEEE1666_ENABLE_UCONTEXT} -eq 0 && test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 0; then
+	AC_MSG_ERROR([Either Boost::Context library, ucontext, Windows Fiber, or POSIX threads support must be enabled])
 fi
 
 ########## Mimics the behavior of SystemC configure to guess where libsystemc.a is installed ###############
@@ -208,20 +214,58 @@ $2
 $3;
 			]]
 		)],
-		$4; AC_MSG_RESULT([yes]),
-		$5; AC_MSG_RESULT([no])
+		eval $4; AC_MSG_RESULT([yes]),
+		eval $5; AC_MSG_RESULT([no])
 	)
 ])
 
+############################## Preset feature test variables ##########################################
+
+LIBIEEE1666_UNISTD_H=0
+LIBIEEE1666_POSIX=0
+LIBIEEE1666_WINDOWS=0
+LIBIEEE1666_WINDOWS_H=0
+LIBIEEE1666_SYS_MMAN_H=0
+LIBIEEE1666_SYSCONF=0
+LIBIEEE1666_MMAP=0
+LIBIEEE1666_MUNMAP=0
+LIBIEEE1666_MPROTECT=0
+LIBIEEE1666_GET_SYSTEM_INFO=0
+LIBIEEE1666_VIRTUAL_ALLOC=0
+LIBIEEE1666_VIRTUAL_PROTECT=0
+LIBIEEE1666_VIRTUAL_FREE=0
+LIBIEEE1666_BOOST_1_51=0
+LIBIEEE1666_BOOST_CONTEXT=0
+LIBIEEE1666_HAS_PTHREAD=0
+LIBIEEE1666_UCONTEXT_H=0
+LIBIEEE1666_GETCONTEXT=0
+LIBIEEE1666_MAKECONTEXT=0
+LIBIEEE1666_SWAPCONTEXT=0
+LIBIEEE1666_CONVERTTHREADTOFIBER=0
+LIBIEEE1666_GETCURRENTFIBER=0
+LIBIEEE1666_CREATEFIBER=0
+LIBIEEE1666_SWITCHTOFIBER=0
+LIBIEEE1666_DELETEFIBER=0
+LIBIEEE1666_EXECINFO_H=0
+LIBIEEE1666_CXXABI_H=0
+LIBIEEE1666_BACKTRACE_FUNCTION=0
+LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION=0
+LIBIEEE1666_USING_SJLJ_EXCEPTIONS=0
+LIBIEEE1666_UNWIND_H=0
+LIBIEEE1666_UNWIND_SJLJ_REGISTER=0
+LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0
+LIBIEEE1666_VALGRIND_H=0
+
 ############################## Check for POSIX.1-2001 compliance ######################################
 
-AC_CHECK_HEADER(unistd.h, LIBIEEE1666_UNISTD_H=1 , LIBIEEE1666_UNISTD_H=0)
+if test ${LIBIEEE1666_ENABLE_POSIX_GUARDED_STACK} -eq 1; then
+	AC_CHECK_HEADER(unistd.h, LIBIEEE1666_UNISTD_H=1 , LIBIEEE1666_UNISTD_H=0)
 
-if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
-	AC_MSG_CHECKING([for POSIX.1-2001 compliance]) 
-	AC_EGREP_CPP(
-		yes,
-		[[
+	if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
+		AC_MSG_CHECKING([for POSIX.1-2001 compliance]) 
+		AC_EGREP_CPP(
+			yes,
+			[[
 #define _POSIX_C_SOURCE 200112L
 #include <unistd.h>
 #ifdef _POSIX_VERSION
@@ -229,83 +273,70 @@ if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
 yes
 #endif
 #endif
-		]],
-		[LIBIEEE1666_POSIX=1],
-		[LIBIEEE1666_POSIX=0])
-else
-	LIBIEEE1666_POSIX=0
-fi
+			]],
+			[LIBIEEE1666_POSIX=1])
+	fi
 
-if test ${LIBIEEE1666_POSIX} -eq 1; then
-	AC_MSG_RESULT([yes])
-else
-	AC_MSG_RESULT([no])
+	if test ${LIBIEEE1666_POSIX} -eq 1; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+	fi
 fi
 
 ############################## Check for Windows ######################################
 
-AC_MSG_CHECKING([for Windows]) 
-AC_EGREP_CPP(yes,
-	[[
+if test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 1 || test ${LIBIEEE1666_ENABLE_WINDOWS_GUARDED_STACK} -eq 1; then
+	AC_MSG_CHECKING([for Windows]) 
+	AC_EGREP_CPP(yes,
+		[[
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 yes
 #endif
-	]],
-	LIBIEEE1666_WINDOWS=1,
-	LIBIEEE1666_WINDOWS=0)
+		]],
+		LIBIEEE1666_WINDOWS=1)
 
-if test ${LIBIEEE1666_WINDOWS} -eq 1; then
-	AC_MSG_RESULT([yes])
-else
-	AC_MSG_RESULT([no])
+	if test ${LIBIEEE1666_WINDOWS} -eq 1; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+	fi
 fi
 
 ######################################### Checking for windows.h #####################################################
 
-if test ${LIBIEEE1666_WINDOWS} -eq 1; then
-	AC_CHECK_HEADER(windows.h, LIBIEEE1666_WINDOWS_H=1, LIBIEEE1666_WINDOWS_H=0)
-else
-	LIBIEEE1666_WINDOWS_H=0
+if test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 1 || test ${LIBIEEE1666_ENABLE_WINDOWS_GUARDED_STACK} -eq 1; then
+	if test ${LIBIEEE1666_WINDOWS} -eq 1; then
+		AC_CHECK_HEADER(windows.h, LIBIEEE1666_WINDOWS_H=1)
+	fi
 fi
  
 ############################## Check for sys/mman.h, mmap, munmap and mprotect  ######################################
 
-if test ${LIBIEEE1666_POSIX} -eq 1; then
-	AC_CHECK_HEADER(sys/mman.h, LIBIEEE1666_SYS_MMAN_H=1, LIBIEEE1666_SYS_MMAN_H=0)
+if test ${LIBIEEE1666_ENABLE_POSIX_GUARDED_STACK} -eq 1; then
+	if test ${LIBIEEE1666_POSIX} -eq 1; then
+		AC_CHECK_HEADER(sys/mman.h, LIBIEEE1666_SYS_MMAN_H=1)
 
-	if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
-		LIBIEEE1666_CHECK_FUN([sysconf], [#include <unistd.h>], [sysconf(0)], [LIBIEEE1666_SYSCONF=1], [LIBIEEE1666_SYSCONF=0])
-	else
-		LIBIEEE1666_SYSCONF=0
+		if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
+			LIBIEEE1666_CHECK_FUN([sysconf], [#include <unistd.h>], [sysconf(0)], [LIBIEEE1666_SYSCONF=1])
+		fi
+		if test ${LIBIEEE1666_SYS_MMAN_H} -eq 1; then
+			LIBIEEE1666_CHECK_FUN([mmap], [#include <sys/mman.h>], [mmap(0,0,0,0,0,0)], [LIBIEEE1666_MMAP=1])
+			LIBIEEE1666_CHECK_FUN([munmap], [#include <sys/mman.h>], [munmap(0,0)], [LIBIEEE1666_MUNMAP=1])
+			LIBIEEE1666_CHECK_FUN([mprotect], [#include <sys/mman.h>], [mprotect(0,0,0)], [LIBIEEE1666_MPROTECT=1])
+		fi
 	fi
-	if test ${LIBIEEE1666_SYS_MMAN_H} -eq 1; then
-		LIBIEEE1666_CHECK_FUN([mmap], [#include <sys/mman.h>], [mmap(0,0,0,0,0,0)], [LIBIEEE1666_MMAP=1], [LIBIEEE1666_MMAP=0])
-		LIBIEEE1666_CHECK_FUN([munmap], [#include <sys/mman.h>], [munmap(0,0)], [LIBIEEE1666_MUNMAP=1], [LIBIEEE1666_MUNMAP=0])
-		LIBIEEE1666_CHECK_FUN([mprotect], [#include <sys/mman.h>], [mprotect(0,0,0)], [LIBIEEE1666_MPROTECT=1], [LIBIEEE1666_MPROTECT=0])
-	else
-		# sys/mman.h is missing
-		LIBIEEE1666_MMAP=0
-		LIBIEEE1666_MUNMAP=0
-		LIBIEEE1666_MPROTECT=0
-	fi
-else
-	LIBIEEE1666_MMAP=0
-	LIBIEEE1666_MUNMAP=0
-	LIBIEEE1666_MPROTECT=0
 fi
 
 #################### Check for GetSystemInfo, VirtualAlloc, VirtualProtect and VirtualFree #################
 
-if test ${LIBIEEE1666_WINDOWS} -eq 1 && test ${LIBIEEE1666_WINDOWS_H} -eq 1; then
-	LIBIEEE1666_CHECK_FUN([GetSystemInfo], [#include <windows.h>], [GetSystemInfo(0)], [LIBIEEE1666_GET_SYSTEM_INFO=1], [LIBIEEE1666_GET_SYSTEM_INFO=0])
-	LIBIEEE1666_CHECK_FUN([VirtualAlloc], [#include <windows.h>], [VirtualAlloc(0,0,0,0)], [LIBIEEE1666_VIRTUAL_ALLOC=1], [LIBIEEE1666_VIRTUAL_ALLOC=0])
-	LIBIEEE1666_CHECK_FUN([VirtualProtect], [#include <windows.h>], [VirtualProtect(0,0,0,0)], [LIBIEEE1666_VIRTUAL_PROTECT=1], [LIBIEEE1666_VIRTUAL_PROTECT=0])
-	LIBIEEE1666_CHECK_FUN([VirtualFree], [#include <windows.h>], [VirtualFree(0,0,0)], [LIBIEEE1666_VIRTUAL_FREE=1], [LIBIEEE1666_VIRTUAL_FREE=0])
-else
-	LIBIEEE1666_GET_SYSTEM_INFO=0
-	LIBIEEE1666_VIRTUAL_ALLOC=0
-	LIBIEEE1666_VIRTUAL_PROTECT=0
-	LIBIEEE1666_VIRTUAL_FREE=0
+if test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 1 || test ${LIBIEEE1666_ENABLE_WINDOWS_GUARDED_STACK} -eq 1; then
+	if test ${LIBIEEE1666_WINDOWS} -eq 1 && test ${LIBIEEE1666_WINDOWS_H} -eq 1; then
+		LIBIEEE1666_CHECK_FUN([GetSystemInfo], [#include <windows.h>], [GetSystemInfo(0)], [LIBIEEE1666_GET_SYSTEM_INFO=1])
+		LIBIEEE1666_CHECK_FUN([VirtualAlloc], [#include <windows.h>], [VirtualAlloc(0,0,0,0)], [LIBIEEE1666_VIRTUAL_ALLOC=1])
+		LIBIEEE1666_CHECK_FUN([VirtualProtect], [#include <windows.h>], [VirtualProtect(0,0,0,0)], [LIBIEEE1666_VIRTUAL_PROTECT=1])
+		LIBIEEE1666_CHECK_FUN([VirtualFree], [#include <windows.h>], [VirtualFree(0,0,0)], [LIBIEEE1666_VIRTUAL_FREE=1])
+	fi
 fi
 
 ######################################### check boost ####################################
@@ -314,110 +345,107 @@ AX_BOOST_BASE([1.0.0], AC_MSG_NOTICE([boost found]), AC_MSG_ERROR([boost not fou
 
 ##################################### check boost context ################################
 
-AX_BOOST_BASE([1.51.0], LIBIEEE1666_BOOST_1_51=1, LIBIEEE1666_BOOST_1_51=0)
+if test ${LIBIEEE1666_ENABLE_FCONTEXT} -eq 1; then
+	AX_BOOST_BASE([1.51.0], LIBIEEE1666_BOOST_1_51=1)
 
-if test ${LIBIEEE1666_BOOST_1_51} -eq 1; then
-	AC_MSG_NOTICE([boost >= 1.51 found])
-	CPPFLAGS="${BOOST_CPPFLAGS} ${CPPFLAGS}"
-	LDFLAGS="${BOOST_LDFLAGS} ${LDFLAGS}"
-	AX_BOOST_CONTEXT
-	LIBS="${BOOST_CONTEXT_LIB} ${LIBS}"
-else
-	AC_MSG_NOTICE([boost >= 1.51 not found])
-fi
+	if test ${LIBIEEE1666_BOOST_1_51} -eq 1; then
+		AC_MSG_NOTICE([boost >= 1.51 found])
+		CPPFLAGS="${BOOST_CPPFLAGS} ${CPPFLAGS}"
+		LDFLAGS="${BOOST_LDFLAGS} ${LDFLAGS}"
+		AX_BOOST_CONTEXT
+		LIBS="${BOOST_CONTEXT_LIB} ${LIBS}"
+	else
+		AC_MSG_NOTICE([boost >= 1.51 not found])
+	fi
 
-if test "x${ax_cv_boost_context}" = "xyes"; then
-	LIBIEEE1666_BOOST_CONTEXT=1
-else
-	LIBIEEE1666_BOOST_CONTEXT=0
+	if test "x${ax_cv_boost_context}" = "xyes"; then
+		LIBIEEE1666_BOOST_CONTEXT=1
+	fi
 fi
 
 ################################## check POSIX threads ##################################
 
-AX_PTHREAD(LIBIEEE1666_PTHREAD=1, LIBIEEE1666_PTHREAD=0)
+if test ${LIBIEEE1666_ENABLE_PTHREAD} -eq 1; then
+	AX_PTHREAD(LIBIEEE1666_HAS_PTHREAD=1)
 
-if test ${LIBIEEE1666_PTHREAD} -eq 1; then
-	AC_MSG_NOTICE([POSIX threads found])
-else
-	AC_MSG_NOTICE([POSIX threads not found])
+	if test ${LIBIEEE1666_HAS_PTHREAD} -eq 1; then
+		AC_MSG_NOTICE([POSIX threads found])
+	else
+		AC_MSG_NOTICE([POSIX threads not found])
+	fi
 fi
 
 ################################# check for ucontext #######################################
 
-AC_CHECK_HEADER(ucontext.h, LIBIEEE1666_UCONTEXT_H=1, LIBIEEE1666_UCONTEXT_H=0)
+if test ${LIBIEEE1666_ENABLE_UCONTEXT} -eq 1; then
+	AC_CHECK_HEADER(ucontext.h, LIBIEEE1666_UCONTEXT_H=1)
 
-if test ${LIBIEEE1666_UCONTEXT_H} -eq 1; then
-	LIBIEEE1666_CHECK_FUN([getcontext], [#include <ucontext.h>], [getcontext(0)], [LIBIEEE1666_GETCONTEXT=1], [LIBIEEE1666_GETCONTEXT=0])
-	LIBIEEE1666_CHECK_FUN([makecontext], [#include <ucontext.h>], [makecontext(0, 0, 0)], [LIBIEEE1666_MAKECONTEXT=1], [LIBIEEE1666_MAKECONTEXT=0])
-	LIBIEEE1666_CHECK_FUN([swapcontext], [#include <ucontext.h>], [swapcontext(0, 0)], [LIBIEEE1666_SWAPCONTEXT=1], [LIBIEEE1666_SWAPCONTEXT=0])
-else
-	LIBIEEE1666_GETCONTEXT=0
-	LIBIEEE1666_MAKECONTEXT=0
-	LIBIEEE1666_SWAPCONTEXT=0
+	if test ${LIBIEEE1666_UCONTEXT_H} -eq 1; then
+		LIBIEEE1666_CHECK_FUN([getcontext], [#include <ucontext.h>], [getcontext(0)], [LIBIEEE1666_GETCONTEXT=1])
+		LIBIEEE1666_CHECK_FUN([makecontext], [#include <ucontext.h>], [makecontext(0, 0, 0)], [LIBIEEE1666_MAKECONTEXT=1])
+		LIBIEEE1666_CHECK_FUN([swapcontext], [#include <ucontext.h>], [swapcontext(0, 0)], [LIBIEEE1666_SWAPCONTEXT=1])
+	fi
 fi
 
 ############################# check for windows fibers ######################################
 
-if test ${LIBIEEE1666_WINDOWS_H} -eq 1; then
-	LIBIEEE1666_CHECK_FUN([ConvertThreadToFiber], [#include <windows.h>], [::ConvertThreadToFiber(NULL)], [LIBIEEE1666_CONVERTTHREADTOFIBER=1], [LIBIEEE1666_CONVERTTHREADTOFIBER=0])
-	LIBIEEE1666_CHECK_FUN([GetCurrentFiber], [#include <windows.h>], [::GetCurrentFiber()], [LIBIEEE1666_GETCURRENTFIBER=1], [LIBIEEE1666_GETCURRENTFIBER=0])
-	LIBIEEE1666_CHECK_FUN([CreateFiber], [#include <windows.h>], [::CreateFiber(0, NULL, NULL)], [LIBIEEE1666_CREATEFIBER=1], [LIBIEEE1666_CREATEFIBER=0])
-	LIBIEEE1666_CHECK_FUN([SwitchToFiber], [#include <windows.h>], [SwitchToFiber(NULL)], [LIBIEEE1666_SWITCHTOFIBER=1], [LIBIEEE1666_SWITCHTOFIBER=0])
-	LIBIEEE1666_CHECK_FUN([DeleteFiber], [#include <windows.h>], [DeleteFiber(NULL)], [LIBIEEE1666_DELETEFIBER=1], [LIBIEEE1666_DELETEFIBER=0])
-else
-	LIBIEEE1666_CONVERTTHREADTOFIBER=0
-	LIBIEEE1666_GETCURRENTFIBER=0
-	LIBIEEE1666_CREATEFIBER=0
-	LIBIEEE1666_SWITCHTOFIBER=0
-	LIBIEEE1666_DELETEFIBER=0
+if test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 1; then
+	if test ${LIBIEEE1666_WINDOWS_H} -eq 1; then
+		LIBIEEE1666_CHECK_FUN([ConvertThreadToFiber], [#include <windows.h>], [::ConvertThreadToFiber(NULL)], [LIBIEEE1666_CONVERTTHREADTOFIBER=1])
+		LIBIEEE1666_CHECK_FUN([GetCurrentFiber], [#include <windows.h>], [::GetCurrentFiber()], [LIBIEEE1666_GETCURRENTFIBER=1])
+		LIBIEEE1666_CHECK_FUN([CreateFiber], [#include <windows.h>], [::CreateFiber(0, NULL, NULL)], [LIBIEEE1666_CREATEFIBER=1])
+		LIBIEEE1666_CHECK_FUN([SwitchToFiber], [#include <windows.h>], [SwitchToFiber(NULL)], [LIBIEEE1666_SWITCHTOFIBER=1])
+		LIBIEEE1666_CHECK_FUN([DeleteFiber], [#include <windows.h>], [DeleteFiber(NULL)], [LIBIEEE1666_DELETEFIBER=1])
+	fi
 fi
 
 ############################# Check for backtrace support ###################################
 
-AC_CHECK_HEADER(execinfo.h, LIBIEEE1666_EXECINFO_H=1, LIBIEEE1666_EXECINFO_H=0)
-AC_CHECK_HEADER(cxxabi.h, , LIBIEEE1666_CXXABI_H=1, LIBIEEE1666_CXXABI_H=0)
-AC_CHECK_LIB(c, backtrace, LIBIEEE1666_BACKTRACE_FUNCTION=1, LIBIEEE1666_BACKTRACE_FUNCTION=0)
-AC_CHECK_LIB(c, backtrace_symbols, LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION=1, LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION=0)
+if test ${LIBIEEE1666_ENABLE_BACKTRACE} -eq 1; then
+	AC_CHECK_HEADER(execinfo.h, LIBIEEE1666_EXECINFO_H=1)
+	AC_CHECK_HEADER(cxxabi.h, LIBIEEE1666_CXXABI_H=1)
+	AC_CHECK_LIB(c, backtrace, LIBIEEE1666_BACKTRACE_FUNCTION=1)
+	AC_CHECK_LIB(c, backtrace_symbols, LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION=1)
+fi
 
 ######################## Check whether compiler is using SJLJ exceptions ####################################
 
-AC_MSG_CHECKING([whether compiler is using SJLJ exceptions]) 
-AC_EGREP_CPP(
-	yes,
-	[[
+if test ${LIBIEEE1666_ENABLE_UNWIND_SJLJ} -eq 1; then
+	AC_MSG_CHECKING([whether compiler is using SJLJ exceptions]) 
+	AC_EGREP_CPP(
+		yes,
+		[[
 #ifdef __USING_SJLJ_EXCEPTIONS__
 yes
 #endif
-	]],
-	[LIBIEEE1666_USING_SJLJ_EXCEPTIONS=1],
-	[LIBIEEE1666_USING_SJLJ_EXCEPTIONS=0])
+		]],
+		[LIBIEEE1666_USING_SJLJ_EXCEPTIONS=1])
 
-if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1; then
-	AC_MSG_RESULT([yes])
-else
-	AC_MSG_RESULT([no])
+	if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+	fi
 fi
 
 ######################################### check for SJLJ unwind support ############################################
 
-if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1; then
-	AC_CHECK_HEADER(unwind.h, LIBIEEE1666_UNWIND_H=1, LIBIEEE1666_UNWIND_H=0)
+if test ${LIBIEEE1666_ENABLE_UNWIND_SJLJ} -eq 1; then
+	if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1; then
+		AC_CHECK_HEADER(unwind.h, LIBIEEE1666_UNWIND_H=1)
 
-	if test ${LIBIEEE1666_UNWIND_H} -eq 1; then
-		LIBIEEE1666_CHECK_FUN([_Unwind_SjLj_Register], [#include <unwind.h>], [::_Unwind_SjLj_Register(0)], [LIBIEEE1666_UNWIND_SJLJ_REGISTER=1], [LIBIEEE1666_UNWIND_SJLJ_REGISTER=0])
-		LIBIEEE1666_CHECK_FUN([_Unwind_SjLj_Unregister], [#include <unwind.h>], [::_Unwind_SjLj_Unregister(0)], [LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=1], [LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0])
-	else
-		LIBIEEE1666_UNWIND_SJLJ_REGISTER=0
-		LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0
+		if test ${LIBIEEE1666_UNWIND_H} -eq 1; then
+			LIBIEEE1666_CHECK_FUN([_Unwind_SjLj_Register], [#include <unwind.h>], [::_Unwind_SjLj_Register(0)], [LIBIEEE1666_UNWIND_SJLJ_REGISTER=1])
+			LIBIEEE1666_CHECK_FUN([_Unwind_SjLj_Unregister], [#include <unwind.h>], [::_Unwind_SjLj_Unregister(0)], [LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=1])
+		fi
 	fi
-else
-	LIBIEEE1666_UNWIND_SJLJ_REGISTER=0
-	LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0
 fi
 
 ######################## Check for valgrind "client request mechanism" ##################################
 
-AC_CHECK_HEADER(valgrind/valgrind.h, LIBIEEE1666_VALGRIND_H=1, LIBIEEE1666_VALGRIND_H=0)
+if test ${LIBIEEE1666_ENABLE_VALGRIND} -eq 1; then
+	AC_CHECK_HEADER(valgrind/valgrind.h, LIBIEEE1666_VALGRIND_H=1)
+fi
 
 ################################## host specific stuff #######################################
 
@@ -428,36 +456,38 @@ fi
 ######################## activate system dependent features if enabled and available ##########################
 
 LIBIEEE1666_SYSDEPS=
+LIBIEEE1666_POSIX_GUARDED_STACK=0
+LIBIEEE1666_FCONTEXT=0
+LIBIEEE1666_UCONTEXT=0
+LIBIEEE1666_PTHREAD=0
+LIBIEEE1666_WINDOWS_FIBER=0
+LIBIEEE1666_WINDOWS_GUARDED_STACK=0
+LIBIEEE1666_BACKTRACE=0
+LIBIEEE1666_VALGRIND=0
+LIBIEEE1666_UNWIND_SJLJ=0
 
-if test ${LIBIEEE1666_ENABLE_POSIX_GUARDED_STACK} -eq 1 && test ${LIBIEEE1666_MMAP} -eq 1 && test ${LIBIEEE1666_MUNMAP} -eq 1 && test ${LIBIEEE1666_MPROTECT} -eq 1; then
+if test ${LIBIEEE1666_ENABLE_POSIX_GUARDED_STACK} -eq 1 && test ${LIBIEEE1666_POSIX} -eq 1 && test ${LIBIEEE1666_MMAP} -eq 1 && test ${LIBIEEE1666_MUNMAP} -eq 1 && test ${LIBIEEE1666_MPROTECT} -eq 1; then
 	LIBIEEE1666_POSIX_GUARDED_STACK=1
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/posix_guarded_stack.lo"
-else
-	LIBIEEE1666_POSIX_GUARDED_STACK=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_FCONTEXT} -eq 1 && test ${LIBIEEE1666_BOOST_CONTEXT} -eq 1; then
 	LIBIEEE1666_FCONTEXT=1
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/fcontext_coroutine.lo"
-else
-	LIBIEEE1666_FCONTEXT=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_UCONTEXT} -eq 1 && test ${LIBIEEE1666_GETCONTEXT} -eq 1 && test ${LIBIEEE1666_MAKECONTEXT} -eq 1 && test ${LIBIEEE1666_SWAPCONTEXT} -eq 1; then
 	LIBIEEE1666_UCONTEXT=1
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/ucontext_coroutine.lo"
-else
-	LIBIEEE1666_UCONTEXT=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 1 && test ${LIBIEEE1666_CONVERTTHREADTOFIBER} -eq 1 & test ${LIBIEEE1666_GETCURRENTFIBER} -eq 1 && test ${LIBIEEE1666_CREATEFIBER} -eq 1 && test ${LIBIEEE1666_SWITCHTOFIBER} -eq 1 && test ${LIBIEEE1666_DELETEFIBER} -eq 1; then
 	LIBIEEE1666_WINDOWS_FIBER=1
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/windows_fiber_coroutine.lo"
-else
-	LIBIEEE1666_WINDOWS_FIBER=0
 fi
 
-if test ${LIBIEEE1666_ENABLE_PTHREAD} -eq 1 && test ${LIBIEEE1666_PTHREAD} -eq 1; then
+if test ${LIBIEEE1666_ENABLE_PTHREAD} -eq 1 && test ${LIBIEEE1666_HAS_PTHREAD} -eq 1; then
+	LIBIEEE1666_PTHREAD=1
 	LIBS="${PTHREAD_LIBS} ${LIBS}"
 	if test ${LIBIEEE1666_WINDOWS} -eq 1; then
 		LIBS="-lpthread ${LIBS}"
@@ -469,39 +499,29 @@ fi
 if test ${LIBIEEE1666_ENABLE_WINDOWS_GUARDED_STACK} -eq 1 && test ${LIBIEEE1666_GET_SYSTEM_INFO} -eq 1 && test ${LIBIEEE1666_VIRTUAL_ALLOC} -eq 1 && test ${LIBIEEE1666_VIRTUAL_PROTECT} -eq 1 && test ${LIBIEEE1666_VIRTUAL_FREE} -eq 1; then
 	LIBIEEE1666_WINDOWS_GUARDED_STACK=1
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/windows_guarded_stack.lo"
-else
-	LIBIEEE1666_WINDOWS_GUARDED_STACK=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_BACKTRACE} -eq 1 && test ${LIBIEEE1666_EXECINFO_H} -eq 1 && test ${LIBIEEE1666_CXXABI_H} -eq 1 && test ${LIBIEEE1666_BACKTRACE_FUNCTION} && test ${LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION} -eq 1; then
-
 	LIBIEEE1666_BACKTRACE=1
 
-    case "${CXX}" in
-       *g++)
-           LDFLAGS="${LDFLAGS} -rdynamic"
-           ;;
-       *)
-           ;;
-    esac
+	case "${CXX}" in
+	*g++)
+		LDFLAGS="${LDFLAGS} -rdynamic"
+		;;
+	*)
+		;;
+	esac
 
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/utilities/sysdep/backtrace.lo"
-else
-	LIBIEEE1666_BACKTRACE=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_VALGRIND} -eq 1 && test ${LIBIEEE1666_VALGRIND_H} -eq 1; then
 	LIBIEEE1666_VALGRIND=1
-else
-	LIBIEEE1666_VALGRIND=0
 fi
 
-if test ${LIBIEEE1666_ENABLE_UNWIND_SJLJ} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ_REGISTER} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ_UNREGISTER} -eq 1; then
+if test ${LIBIEEE1666_ENABLE_UNWIND_SJLJ} -eq 1 && test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ_REGISTER} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ_UNREGISTER} -eq 1; then
 	LIBIEEE1666_UNWIND_SJLJ=1
-else
-	LIBIEEE1666_UNWIND_SJLJ=0
 fi
-
 
 AC_SUBST(LIBIEEE1666_POSIX_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_FCONTEXT)
@@ -517,7 +537,7 @@ AC_SUBST(LIBIEEE1666_SYSDEPS)
 ############################## Check configuration coherency ##############################
 
 if test ${LIBIEEE1666_FCONTEXT} -eq 0 && test ${LIBIEEE1666_PTHREAD} -eq 0 && test ${LIBIEEE1666_UCONTEXT} -eq 0 && test ${LIBIEEE1666_WINDOWS_FIBER} -eq 0; then
-	AC_MSG_ERROR([Boost::Context library, ucontext, Windows Fiber, or POSIX threads support must be available])
+	AC_MSG_ERROR([Either Boost::Context library, ucontext, Windows Fiber, or POSIX threads support must be available])
 fi
 
 if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ} -eq 0; then
@@ -538,6 +558,10 @@ DEB_PACKAGE_DATE=$(date +'%a, %d %b %Y %T %z')
 
 if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
 	DEB_PACKAGE_DEV_DEPENDENCY=', libboost-context-dev (>= 1.51.0)'
+fi
+
+if test ${LIBIEEE1666_VALGRIND} -eq 1; then
+	DEB_PACKAGE_DEV_DEPENDENCY=', valgrind'
 fi
 
 AC_SUBST(LIBIEEE1666_PKG_CONFIG_CXXFLAGS)

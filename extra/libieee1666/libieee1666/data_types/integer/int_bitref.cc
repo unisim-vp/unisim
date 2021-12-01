@@ -33,6 +33,7 @@
  */
 
 #include <data_types/integer/int_bitref.h>
+#include <data_types/integer/int_base.h>
 
 namespace sc_dt {
 
@@ -40,40 +41,80 @@ namespace sc_dt {
 
 // Copy constructor
 sc_int_bitref::sc_int_bitref(const sc_int_bitref& a)
+	: sc_int_bitref_r(a)
 {
 }
 
 // Assignment operators
 sc_int_bitref& sc_int_bitref::operator = (const sc_int_bitref_r& b)
 {
+	return operator = (b.to_bool());
 }
 
 sc_int_bitref& sc_int_bitref::operator = (const sc_int_bitref& b)
 {
+	return operator = ((const sc_int_bitref_r&) b);
 }
 
 sc_int_bitref& sc_int_bitref::operator = (bool b)
 {
+	if(obj)
+	{
+		uint_type m = mask();
+		obj->value = (obj->value & ~m) | ((uint_type) b << bit_pos);
+		obj->sign_extend();
+	}
+	return *this;
 }
 
 sc_int_bitref& sc_int_bitref::operator &= (bool b)
 {
+	if(obj)
+	{
+		uint_type m = mask();
+		obj->value &= (((uint_type) b << bit_pos) | ~m);
+		obj->sign_extend();
+	}
+	return *this;
 }
 
 sc_int_bitref& sc_int_bitref::operator |= (bool b)
 {
+	if(obj)
+	{
+		obj->value |= ((uint_type) b << bit_pos);
+		obj->sign_extend();
+	}
+	return *this;
 }
 
 sc_int_bitref& sc_int_bitref::operator ^= (bool b)
 {
+	if(obj)
+	{
+		obj->value ^= ((uint_type) b << bit_pos);
+		obj->sign_extend();
+	}
+	return *this;
 }
 
 // Other methods
 void sc_int_bitref::scan(std::istream& is)
 {
+	bool b;
+	if(is >> b)
+	{
+		operator = (b);
+	}
 }
 
 sc_int_bitref::sc_int_bitref()
+	: sc_int_bitref_r()
+{
+}
+
+sc_int_bitref::sc_int_bitref(sc_int_base *_obj, int _bit_pos)
+	: sc_int_bitref_r(_obj, _bit_pos)
 {
 }
 

@@ -33,6 +33,7 @@
  */
 
 #include "utilities/vector.h"
+#include "core/kernel.h"
 
 namespace sc_core {
 
@@ -73,7 +74,7 @@ sc_object *sc_vector_base::at(size_type idx)
 	return elements[idx];
 }
 
-sc_object *sc_vector_base::at(size_type idx) const
+const sc_object *sc_vector_base::at(size_type idx) const
 {
 	return elements[idx];
 }

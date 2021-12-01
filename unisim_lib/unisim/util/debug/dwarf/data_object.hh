@@ -60,12 +60,16 @@ public:
 	~DWARF_BitVector();
 	
 	void Clear();
-	void Append(uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size);
-	void Append(const uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size);
-	bool Write(unsigned int dest_bit_offset, uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size);
-	bool Write(unsigned int dest_bit_offset, const uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size);
-	bool Read(unsigned int source_bit_offset, uint64_t& dest_value, unsigned int dest_bit_offset, unsigned int dest_bit_size) const;
-	bool Read(unsigned int source_bit_offset, uint8_t *dest_buffer, unsigned int dest_bit_offset, unsigned int dest_bit_size) const;
+	
+	// Notes:
+	//   - for buffer flavor of Append/Write/Read, bit offset passed as argument is offset of high order bit for big-endian target and low order bit for little-endian target (same convention as DWARF bit offsets), so that bit offset keeps increasing with byte address
+	//   - for scalar value flavor of Append/Write/Read, bit offset passed as argument is always low order bit (a DWARF offset has to be converted before)
+	void Append(uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size); // scalar
+	void Append(const uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size); // buffer
+	bool Write(unsigned int dest_bit_offset, uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size); // scalar
+	bool Write(unsigned int dest_bit_offset, const uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size); // buffer
+	bool Read(unsigned int source_bit_offset, uint64_t& dest_value, unsigned int dest_bit_offset, unsigned int dest_bit_size) const; // scalar
+	bool Read(unsigned int source_bit_offset, uint8_t *dest_buffer, unsigned int dest_bit_offset, unsigned int dest_bit_size) const; // buffer
 private:
 	unisim::util::endian::endian_type target_endian;
 	unsigned int bit_size;
@@ -92,15 +96,13 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, bool debug);
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type, bool debug);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type);
 	virtual ~DWARF_DataObject();
 	virtual const char *GetName() const;
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
 	virtual const unisim::util::debug::Type *GetType() const;
-	virtual void Seek(MEMORY_ADDR pc);
-	virtual bool GetPC() const;
+	virtual MEMORY_ADDR GetPC() const;
 	virtual bool Exists() const;
 	virtual bool IsOptimizedOut() const;
 	virtual bool GetAddress(MEMORY_ADDR& addr) const;
@@ -115,23 +117,24 @@ private:
 	unsigned int prc_num;
 	std::string data_object_name;
 	const CLocOperationStream c_loc_operation_stream;
-	std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
-	std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> cache;
-	bool exists;
-	MEMORY_ADDR pc;
-	const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
-	const unisim::util::debug::Type *dw_data_object_type;
+	mutable std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
+	mutable std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> cache;
+	mutable bool exists;
+	mutable bool fetched;
+	mutable MEMORY_ADDR pc;
+	mutable const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
+	mutable const unisim::util::debug::Type *dw_data_object_type;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int arch_address_size;
-	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	DWARF_BitVector bv;
-	bool debug;
+	mutable DWARF_BitVector bv;
+	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
 	
-	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type);
+	void Seek() const;
+	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type) const;
 	void InvalidateCache();
 	const DWARF_DataObjectInfo<MEMORY_ADDR> *LookupCache(MEMORY_ADDR pc) const;
 };

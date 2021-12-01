@@ -709,12 +709,11 @@ std::ostream& operator << (std::ostream& os, const DWARF_CFI<MEMORY_ADDR>& cfi)
 template <class MEMORY_ADDR>
 DWARF_CallFrameVM<MEMORY_ADDR>::DWARF_CallFrameVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, debug(false)
+	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, debug_info_stream(_dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
 	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 {
-	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -880,7 +879,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 						int64_t n = (uint64_t) factored_offset * (int64_t) dw_cie->GetDataAlignmentFactor();
 
-						if(os) *os << "DW_CFA_offset(" << (uint32_t) reg_num << "," << factored_offset.to_string(false) << ") /* r" << (uint32_t) reg_num << " = [ cfa" << (n >= 0 ? "+" : "") << n << "] */";
+						if(os) *os << "DW_CFA_offset(" << (uint32_t) reg_num << "," << factored_offset.to_string(false) << ") /* r" << (uint32_t) reg_num << " = [cfa" << (n >= 0 ? "+" : "") << n << "] */";
 
 						if(cfi)
 						{
@@ -1479,7 +1478,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								program += sz;
 								program_length -= sz;
 								
-								if(os) *os << "DW_CFA_def_cfa_register(" << reg_num.to_string(false) << ") /* cfa = r" << reg_num.to_string(false) << "+ old offset */";
+								if(os) *os << "DW_CFA_def_cfa_register(" << reg_num.to_string(false) << ") /* cfa = r" << reg_num.to_string(false) << " + old offset */";
 								
 								if(cfi)
 								{
@@ -1533,7 +1532,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								program += sz;
 								program_length -= sz;
 								
-								if(os) *os << "DW_CFA_def_cfa_offset(" << offset.to_string(false) << ") /* cfa = old register + " << offset.to_string(false) << "*/";
+								if(os) *os << "DW_CFA_def_cfa_offset(" << offset.to_string(false) << ") /* cfa = old register + " << offset.to_string(false) << " */";
 								
 								if(cfi)
 								{

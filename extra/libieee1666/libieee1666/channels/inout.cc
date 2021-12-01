@@ -33,6 +33,7 @@
  */
 
 #include "channels/inout.h"
+#include "utilities/trace_file.h"
 
 namespace sc_core {
 
@@ -184,8 +185,162 @@ sc_inout<bool>::sc_inout( const sc_inout<bool>& )
 }
 
 template <>
-inline void sc_trace<bool>( sc_trace_file*, const sc_inout<bool>&, const std::string& )
+inline void sc_trace<bool>(sc_trace_file *tf, const sc_inout<bool>& inout, const std::string& name)
 {
+	sc_trace(tf, inout.read(), name);
+}
+
+//////////////////////////////// sc_inout<sc_dt::sc_logic> /////////////////////////////////////////////
+
+sc_inout<sc_dt::sc_logic>::sc_inout()
+	: sc_port<sc_signal_inout_if<sc_dt::sc_logic>,1>()
+	, value_changed_event_finder(0)
+	, posedge_event_finder(0)
+	, negedge_event_finder(0)
+{
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> >(*this, &sc_signal_inout_if<sc_dt::sc_logic>::value_changed_event);
+	posedge_event_finder = new sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> >(*this, &sc_signal_inout_if<sc_dt::sc_logic>::posedge_event);
+	negedge_event_finder = new sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> >(*this, &sc_signal_inout_if<sc_dt::sc_logic>::negedge_event);
+}
+
+sc_inout<sc_dt::sc_logic>::sc_inout(const char *_name)
+	: sc_port<sc_signal_inout_if<sc_dt::sc_logic>,1>(_name)
+	, value_changed_event_finder(0)
+	, posedge_event_finder(0)
+	, negedge_event_finder(0)
+{
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> >(*this, &sc_signal_inout_if<sc_dt::sc_logic>::value_changed_event);
+	posedge_event_finder = new sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> >(*this, &sc_signal_inout_if<sc_dt::sc_logic>::posedge_event);
+	negedge_event_finder = new sc_event_finder_t<sc_signal_inout_if<sc_dt::sc_logic> >(*this, &sc_signal_inout_if<sc_dt::sc_logic>::negedge_event);
+}
+
+sc_inout<sc_dt::sc_logic>::~sc_inout()
+{
+	delete value_changed_event_finder;
+	delete posedge_event_finder;
+	delete negedge_event_finder;
+}
+
+void sc_inout<sc_dt::sc_logic>::initialize( const sc_dt::sc_logic& )
+{
+}
+
+void sc_inout<sc_dt::sc_logic>::initialize( const sc_signal_in_if<sc_dt::sc_logic>& )
+{
+}
+
+void sc_inout<sc_dt::sc_logic>::end_of_elaboration()
+{
+}
+
+const sc_dt::sc_logic& sc_inout<sc_dt::sc_logic>::read() const
+{
+	return (*this)->read();
+}
+
+sc_inout<sc_dt::sc_logic>::operator const sc_dt::sc_logic& () const
+{
+	return (*this)->read();
+}
+
+void sc_inout<sc_dt::sc_logic>::write(const sc_dt::sc_logic& v)
+{
+	(*this)->write(v);
+}
+
+sc_inout<sc_dt::sc_logic>& sc_inout<sc_dt::sc_logic>::operator = (const sc_dt::sc_logic& v)
+{
+	(*this)->write(v);
+	return *this;
+}
+
+sc_inout<sc_dt::sc_logic>& sc_inout<sc_dt::sc_logic>::operator = (const sc_signal_in_if<sc_dt::sc_logic>& _if)
+{
+	(*this)->write(_if.read());
+	return *this;
+}
+
+sc_inout<sc_dt::sc_logic>& sc_inout<sc_dt::sc_logic>::operator = (const sc_port< sc_signal_in_if<sc_dt::sc_logic>, 1>& port)
+{
+	(*this)->write(port->read());
+	return *this;
+}
+
+sc_inout<sc_dt::sc_logic>& sc_inout<sc_dt::sc_logic>::operator = (const sc_port< sc_signal_inout_if<sc_dt::sc_logic>, 1>& port)
+{
+	(*this)->write(port->read());
+	return *this;
+}
+
+sc_inout<sc_dt::sc_logic>& sc_inout<sc_dt::sc_logic>::operator = (const sc_inout<sc_dt::sc_logic>& port)
+{
+	(*this)->write(port->read());
+	return *this;
+}
+
+const sc_event& sc_inout<sc_dt::sc_logic>::default_event() const
+{
+	return (*this)->default_event();
+}
+
+const sc_event& sc_inout<sc_dt::sc_logic>::value_changed_event() const
+{
+	return (*this)->value_changed_event();
+}
+
+const sc_event& sc_inout<sc_dt::sc_logic>::posedge_event() const
+{
+	return (*this)->posedge_event();
+}
+
+const sc_event& sc_inout<sc_dt::sc_logic>::negedge_event() const
+{
+	return (*this)->negedge_event();
+}
+
+bool sc_inout<sc_dt::sc_logic>::event() const
+{
+	return (*this)->event();
+}
+
+bool sc_inout<sc_dt::sc_logic>::posedge() const
+{
+	return (*this)->posedge();
+}
+
+bool sc_inout<sc_dt::sc_logic>::negedge() const
+{
+	return (*this)->posedge();
+}
+
+sc_event_finder& sc_inout<sc_dt::sc_logic>::value_changed() const
+{
+	return *value_changed_event_finder;
+}
+
+sc_event_finder& sc_inout<sc_dt::sc_logic>::pos() const
+{
+	return *posedge_event_finder;
+}
+
+sc_event_finder& sc_inout<sc_dt::sc_logic>::neg() const
+{
+	return *negedge_event_finder;
+}
+
+const char* sc_inout<sc_dt::sc_logic>::kind() const
+{
+	return "sc_inout";
+}
+
+sc_inout<sc_dt::sc_logic>::sc_inout( const sc_inout<sc_dt::sc_logic>& )
+{
+}
+
+template <>
+inline void sc_trace<sc_dt::sc_logic>(sc_trace_file *tf, const sc_inout<sc_dt::sc_logic>& inout, const std::string& name)
+{
+	sc_trace(tf, inout.read(), name);
 }
 
 } // end of namespace sc_core

@@ -163,7 +163,9 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		cie_pointer = cie_pointer32;
 	}
 
-	uint8_t address_size = (dw_fmt == FMT_DWARF64) ? 8 : 4;
+	const DWARF_CIE<MEMORY_ADDR> *_dw_cie = dw_handler->FindCIE(cie_pointer, dw_fst);
+	if(!_dw_cie) return -1;
+	uint8_t address_size = _dw_cie->GetAddressSize();
 	uint64_t initial_location_pc = _section_addr + _offset + size;
 
 	switch(address_size)

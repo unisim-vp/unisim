@@ -3,6 +3,7 @@ unisim/util/debug/breakpoint_registry.hh
 unisim/util/debug/commit_insn_event.hh
 unisim/util/debug/data_object.hh
 unisim/util/debug/data_object_initializer.hh
+unisim/util/debug/decl_location.hh
 unisim/util/debug/event.hh
 unisim/util/debug/fetch_insn_event.hh
 unisim/util/debug/memory_access_type.hh
@@ -10,11 +11,15 @@ unisim/util/debug/profile.hh
 unisim/util/debug/simple_field_registry.hh
 unisim/util/debug/simple_register.hh
 unisim/util/debug/simple_register_registry.hh
+unisim/util/debug/simple_symbol_table.hh
+unisim/util/debug/source_code_breakpoint.hh
+unisim/util/debug/source_code_location.hh
 unisim/util/debug/stmt.hh
 unisim/util/debug/subprogram.hh
 unisim/util/debug/symbol.hh
 unisim/util/debug/symbol_table.hh
 unisim/util/debug/trap_event.hh
 unisim/util/debug/type.hh
+unisim/util/debug/variable.hh
 unisim/util/debug/watchpoint.hh
 unisim/util/debug/watchpoint_registry.hh

@@ -93,6 +93,9 @@ public:
 
 	static bool set_log_file_name( const char* );
 	static const char* get_log_file_name();
+	
+private:
+	static sc_actions actions_per_severity[SC_MAX_SEVERITY];
 };
 
 #define SC_REPORT_INFO_VERB( msg_type , msg, verbosity ) \

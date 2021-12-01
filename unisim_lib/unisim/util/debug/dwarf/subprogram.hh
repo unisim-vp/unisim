@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
 
 #include <unisim/util/debug/subprogram.hh>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <iosfwd>
@@ -49,21 +50,29 @@ template <class ADDRESS>
 class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
 {
 public:
-	DWARF_SubProgram();
+	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const unisim::util::debug::Type *return_type, const unisim::util::debug::DeclLocation *decl_location);
 	virtual ~DWARF_SubProgram();
 	
-	void SetReturnType(const Type *type);
 	void AddFormalParameter(const FormalParameter *formal_param);
 	
 	virtual const char *GetName() const;
+	virtual bool IsExternal() const;
+	virtual bool IsDeclaration() const;
+	virtual bool IsInline() const;
+	virtual bool IsInlined() const;
 	virtual const Type *GetReturnType() const;
 	virtual unsigned int GetArity() const;
-	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const;
+	virtual const unisim::util::debug::FormalParameter *GetFormalParameter(unsigned int idx) const;
+	virtual const unisim::util::debug::DeclLocation *GetDeclLocation() const;
 	
 private:
 	std::string name;
+	bool external_flag;
+	bool declaration_flag;
+	uint8_t inline_code;
 	const Type *return_type;
-	std::vector<const FormalParameter *> formal_params;
+	std::vector<const unisim::util::debug::FormalParameter *> formal_params;
+	const unisim::util::debug::DeclLocation *decl_location;
 };
 
 } // end of namespace dwarf

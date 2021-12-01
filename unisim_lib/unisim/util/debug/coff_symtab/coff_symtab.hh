@@ -38,7 +38,7 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/blob.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/symbol_table.hh>
+#include <unisim/util/debug/simple_symbol_table.hh>
 
 #include <iosfwd>
 #include <inttypes.h>
@@ -205,7 +205,7 @@ private:
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
 	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
-	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
+	unisim::util::debug::SimpleSymbolTable<MEMORY_ADDR> *symbol_table;
 
 	const char *GetStorageClassName(uint8_t sclass) const;
 	const char *GetStorageClassFriendlyName(uint8_t sclass) const;

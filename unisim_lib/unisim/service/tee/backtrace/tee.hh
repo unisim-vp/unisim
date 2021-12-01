@@ -66,8 +66,8 @@ public:
 
 	void Setup(BackTrace<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) backtrace_import[i]->RequireSetup(); }
 
-	virtual std::vector<ADDRESS> *GetBackTrace(ADDRESS pc) const;
-	virtual bool GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const;
+	virtual std::vector<ADDRESS> *GetBackTrace() const;
+	virtual bool GetReturnAddress(ADDRESS& ret_addr) const;
 };
 
 } // end of namespace backtrace

@@ -67,6 +67,8 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, d_ahb_if("d_ahb_if")
 	, s_ahb_if("s_ahb_if")
 	, m_clk("m_clk")
+	, m_i_ahb_clk("m_i_ahb_clk")
+	, m_d_ahb_clk("m_d_ahb_clk")
 	, m_por("m_por")
 	, p_reset_b("p_reset_b")
 	, p_nmi_b("p_nmi_b")
@@ -79,10 +81,12 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, p_voffset("p_voffset")
 	, p_iack("p_iack")
 	, m_clk_prop_proxy(m_clk)
+	, m_i_ahb_clk_prop_proxy(m_i_ahb_clk)
+	, m_d_ahb_clk_prop_proxy(m_d_ahb_clk)
 	, payload_fabric()
 	, time_per_instruction()
-	, clock_multiplier(1.0)
-	, bus_cycle_time(10.0, sc_core::SC_NS)
+	, i_ahb_cycle_time()
+	, d_ahb_cycle_time()
 	, run_time()
 	, idle_time()
 	, enable_host_idle(false)
@@ -93,7 +97,8 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, enable_dmi(false)
 	, debug_dmi(false)
 	, ahb_master_id(0)
-	, param_clock_multiplier("clock-multiplier", this, clock_multiplier, "clock multiplier")
+	, qk()
+	, d_ahb_lat_lut()
 	, param_ipc("ipc", this, ipc, "maximum instructions per cycle, typically 1 or 2")
 	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
 	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
@@ -111,8 +116,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	d_ahb_if(*this);
 	s_ahb_if(*this);
 	
-	param_clock_multiplier.SetMutable(false);
-//	param_nice_time.SetMutable(false);
 	param_ipc.SetMutable(false);
 	param_enable_host_idle.SetMutable(false);
 	param_enable_dmi.SetMutable(false);
@@ -130,8 +133,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	p_iack_process_spawn_options.set_sensitivity(&int_ack_event);
 	
 	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::P_IACK_Process, this), "P_IACK_Process", &p_iack_process_spawn_options);
-// 	SC_METHOD(P_IACK_Process);
-// 	sensitive << int_ack_event;
 	
 	SC_METHOD(ExternalEventProcess);
 	sensitive << p_reset_b.pos() << p_nmi_b.neg() << p_mcp_b.neg() << p_extint_b << p_crint_b;
@@ -151,6 +152,8 @@ void CPU<TYPES, CONFIG>::end_of_elaboration()
 	
 	clock_properties_changed_process_spawn_options.spawn_method();
 	clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+	clock_properties_changed_process_spawn_options.set_sensitivity(&m_i_ahb_clk_prop_proxy.GetClockPropertiesChangedEvent());
+	clock_properties_changed_process_spawn_options.set_sensitivity(&m_d_ahb_clk_prop_proxy.GetClockPropertiesChangedEvent());
 
 	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 	
@@ -239,6 +242,7 @@ void CPU<TYPES, CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core:
 					{
 						payload.set_response_status(tlm::TLM_OK_RESPONSE);
 					}
+					t += TransferDuration(data_length);
 					break;
 				}
 				case tlm::TLM_WRITE_COMMAND:
@@ -252,14 +256,13 @@ void CPU<TYPES, CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core:
 					{
 						payload.set_response_status(tlm::TLM_OK_RESPONSE);
 					}
+					t += TransferDuration(data_length);
 					break;
 				}
 				case tlm::TLM_IGNORE_COMMAND:
 					break;
 			}
 		}
-		
-		t += bus_cycle_time;
 	}
 	
 	payload.set_dmi_allowed(true);
@@ -282,8 +285,8 @@ bool CPU<TYPES, CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, t
 	{
 		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
 		dmi_data.set_dmi_ptr(dmi_ptr);
-		dmi_data.set_read_latency(bus_cycle_time);
-		dmi_data.set_write_latency(bus_cycle_time);
+		dmi_data.set_read_latency(TransferDuration(1));
+		dmi_data.set_write_latency(TransferDuration(1));
 		return true;
 	}
 
@@ -354,9 +357,16 @@ void CPU<TYPES, CONFIG>::Synchronize()
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CPU<TYPES, CONFIG>::AlignToBusClock()
+inline void CPU<TYPES, CONFIG>::AlignTo_IAHB_Clock()
 {
-	qk.align_to_clock(bus_cycle_time);
+	qk.align_to_clock(i_ahb_cycle_time);
+	run_time = qk.get_current_time();
+}
+
+template <typename TYPES, typename CONFIG>
+inline void CPU<TYPES, CONFIG>::AlignTo_DAHB_Clock()
+{
+	qk.align_to_clock(d_ahb_cycle_time);
 	run_time = qk.get_current_time();
 }
 
@@ -495,7 +505,7 @@ void CPU<TYPES, CONFIG>::P_IACK_Process()
 	else
 	{
 		p_iack = true;
-		int_ack_event.notify(bus_cycle_time);
+		int_ack_event.notify(d_ahb_cycle_time);
 	}
 }
 
@@ -557,9 +567,11 @@ void CPU<TYPES, CONFIG>::SampleInputs()
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::UpdateSpeed()
 {
-	bus_cycle_time = m_clk_prop_proxy.GetClockPeriod();
-	sc_core::sc_time cpu_cycle_time = bus_cycle_time / clock_multiplier;
+	const sc_core::sc_time& cpu_cycle_time = m_clk_prop_proxy.GetClockPeriod();
+	i_ahb_cycle_time = m_i_ahb_clk_prop_proxy.GetClockPeriod();
+	d_ahb_cycle_time = m_d_ahb_clk_prop_proxy.GetClockPeriod();
 	time_per_instruction = cpu_cycle_time / ipc;
+	d_ahb_lat_lut.SetBaseLatency(d_ahb_cycle_time);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -593,7 +605,7 @@ void CPU<TYPES, CONFIG>::Run()
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
-	AlignToBusClock();
+	AlignTo_IAHB_Clock();
 
 	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
 	
@@ -713,7 +725,7 @@ bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS physical_addr, void
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
 {
-	AlignToBusClock();
+	AlignTo_DAHB_Clock();
 	
 	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
 	
@@ -832,7 +844,7 @@ bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
-	AlignToBusClock();
+	AlignTo_DAHB_Clock();
 	
 	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
 

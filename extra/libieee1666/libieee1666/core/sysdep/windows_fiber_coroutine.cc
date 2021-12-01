@@ -39,7 +39,11 @@
 
 namespace sc_core {
 
+#if LONG_MAX == 0x7fffffff
 const std::size_t DEFAULT_WINDOWS_FIBER_STACK_SIZE = 128 * 1024; // 128 KB
+#else
+const std::size_t DEFAULT_WINDOWS_FIBER_STACK_SIZE = 256 * 1024; // 256 KB
+#endif
 
 /////////////////////////// sc_windows_fiber_coroutine //////////////////////////
 

@@ -625,7 +625,7 @@ void EDMA<CONFIG>::ProcessEvent(Event *event)
 
 	payload->set_dmi_allowed(false);
 	
-	sc_core::sc_time completion_time(sc_core::SC_ZERO_TIME);
+	sc_core::sc_time completion_time(master_clock_period);
 	sc_core::sc_event *completion_event = event->GetCompletionEvent();
 	
 	if(completion_event)

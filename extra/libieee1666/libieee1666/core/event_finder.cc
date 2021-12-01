@@ -41,6 +41,10 @@ sc_event_finder::sc_event_finder(const sc_port_base& _port)
 {
 }
 
+sc_event_finder::~sc_event_finder()
+{
+}
+
 const sc_port_base& sc_event_finder::get_port() const
 {
 	return base_port;

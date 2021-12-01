@@ -88,6 +88,8 @@ public:
 	d_ahb_master_if_type d_ahb_if; // data master AHB interface
 	ahb_slave_if_type s_ahb_if;  // slave AHB interface
 	sc_core::sc_in<bool>                m_clk;            // clock
+	sc_core::sc_in<bool>                m_i_ahb_clk;      // Instruction AHB clock
+	sc_core::sc_in<bool>                m_d_ahb_clk;      // Data AHB clock
 	sc_core::sc_in<bool>                m_por;            // power-on reset
 	sc_core::sc_in<bool>                p_reset_b;        // reset
 	sc_core::sc_in<bool>                p_nmi_b;          // NMI
@@ -131,7 +133,7 @@ public:
 	void Run();
 	
 protected:
-	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
+	const sc_core::sc_time& TransferDuration(unsigned int data_length) const { return d_ahb_lat_lut.Lookup((data_length + CONFIG::INCO_FSB_WIDTH - 1) / CONFIG::INCO_FSB_WIDTH); }
 	virtual bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
 	virtual bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
 	virtual bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
@@ -142,10 +144,12 @@ protected:
 
 private:
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
+	unisim::kernel::tlm2::ClockPropertiesProxy m_i_ahb_clk_prop_proxy;
+	unisim::kernel::tlm2::ClockPropertiesProxy m_d_ahb_clk_prop_proxy;
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	sc_core::sc_time time_per_instruction;
-	double clock_multiplier;
-	sc_core::sc_time bus_cycle_time;         //<! Bus (AHB) cycle time
+	sc_core::sc_time i_ahb_cycle_time;
+	sc_core::sc_time d_ahb_cycle_time;
 	sc_core::sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
 	sc_core::sc_time idle_time;              //<! total idle time
 	bool enable_host_idle;
@@ -157,8 +161,8 @@ private:
 	bool debug_dmi;
 	unsigned int ahb_master_id;
 	unisim::kernel::tlm2::QuantumKeeper qk;
+	unisim::kernel::tlm2::LatencyLookupTable d_ahb_lat_lut;  // latency lookup table based on data AHB cycle time: number of cycle -> latency time
 
-	Parameter<double> param_clock_multiplier;
 	Parameter<double> param_ipc;
 	Parameter<bool> param_enable_host_idle;
 	Parameter<bool> param_enable_dmi;
@@ -173,7 +177,8 @@ private:
 	unisim::kernel::tlm2::DMIRegionCache i_dmi_region_cache;
 	unisim::kernel::tlm2::DMIRegionCache d_dmi_region_cache;
 
-	inline void AlignToBusClock() ALWAYS_INLINE;
+	inline void AlignTo_IAHB_Clock() ALWAYS_INLINE;
+	inline void AlignTo_DAHB_Clock() ALWAYS_INLINE;
 };
 
 } // end of namespace mpc57xx

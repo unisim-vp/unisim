@@ -135,18 +135,67 @@ public:
 	// Other methods
 	void print(std::ostream& os = std::cout) const;
 	void scan(std::istream& is = std::cin);
+	
+	// Arithmetic operators
+	sc_int_base& operator += (int_type v);
+	sc_int_base& operator -= (int_type v);
+	sc_int_base& operator *= (int_type v);
+	sc_int_base& operator /= (int_type v);
+	sc_int_base& operator %= (int_type v);
+	
+	// Bitwise operators
+	sc_int_base& operator &= (int_type v);
+	sc_int_base& operator |= (int_type v);
+	sc_int_base& operator ^= (int_type v);
+	sc_int_base& operator <<= (int_type v);
+	sc_int_base& operator >>= (int_type v);
+
+	friend bool operator == (const sc_int_base& a, const sc_int_base& b);
+	friend bool operator != (const sc_int_base& a, const sc_int_base& b);
+	friend bool operator < (const sc_int_base& a, const sc_int_base& b);
+	friend bool operator <= (const sc_int_base& a, const sc_int_base& b);
+	friend bool operator > (const sc_int_base& a, const sc_int_base& b);
+	friend bool operator >= (const sc_int_base& a, const sc_int_base& b);
+	
+private:
+	friend class sc_int_bitref_r;
+	friend class sc_int_bitref;
+	friend class sc_int_subref_r;
+	friend class sc_int_subref;
+
+	int_type value;
+	int len;
+	
+	void sign_extend();
+	bool check_bit_select(int bit_pos) const;
+	bool check_part_select(int left, int right) const;
 };
+
+// Comparison operators
+bool operator == (const sc_int_base& a, const sc_int_base& b);
+bool operator != (const sc_int_base& a, const sc_int_base& b);
+bool operator < (const sc_int_base& a, const sc_int_base& b);
+bool operator <= (const sc_int_base& a, const sc_int_base& b);
+bool operator > (const sc_int_base& a, const sc_int_base& b);
+bool operator >= (const sc_int_base& a, const sc_int_base& b);
 
 ///////////////////////////////// definition //////////////////////////////////
 
 // Constructors
 template <typename T> sc_int_base::sc_int_base(const sc_generic_base<T>& a)
+	: value(a->to_int64())
+	, len(a->length())
 {
+	sign_extend();
 }
 
 // Assignment operators
 template <class T> sc_int_base& sc_int_base::operator = (const sc_generic_base<T>& a)
 {
+	value = a->to_int64();
+	len = a->length();
+	sign_extend();
+	return *this;
 }
 
 } // end of namespace sc_dt

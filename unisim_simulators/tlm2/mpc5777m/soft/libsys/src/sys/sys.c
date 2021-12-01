@@ -69,6 +69,7 @@
 #include <sys/time.h>
 #include <sys/times.h>
 #include <utime.h>
+#include <ctype.h>
 
 #undef errno
 extern int  errno;
@@ -86,12 +87,15 @@ extern char __LOCAL_IMEM;
 extern char __LOCAL_IMEM_END;
 extern char __LOCAL_DMEM;
 extern char __LOCAL_DMEM_END;
-extern char __RAMDISK;
-extern char __RAMDISK_END;
+extern char __EBI_MEM;
+extern char __EBI_MEM_END;
 extern char __SHARE;
 extern char __SHARE_END;
+extern char __CMDLINE;
+extern char __CMDLINE_END;
 
-volatile char boot_flag __attribute__ ((section (".share")));
+volatile char boot_flag[3] __attribute__ ((section (".share")));
+volatile char exit_flag[3] __attribute__ ((section (".share")));
 
 enum io_backend_id_t
 {
@@ -162,6 +166,12 @@ void _fini()
 {
 }
 
+static void periodic_task(unsigned int stm_id, unsigned int chan)
+{
+	stm_set_channel_compare(stm_id, chan, stm_get_channel_compare(stm_id, chan) + 50000); // schedule next STM_x tic 1 ms later (i.e. 50000 cycles at 50 MHz)
+	stm_clear_interrupt_flag(stm_id, chan);    // clear STM_x interrupt flag
+}
+
 void sys_init()
 {
 	unsigned int core_id = sys_get_core_id();
@@ -169,16 +179,16 @@ void sys_init()
 	icache_invalidate();
 	icache_enable();
 
-	mpu_entry_t m_text_mpu_entry;
-	memset(&m_text_mpu_entry, 0, sizeof(m_text_mpu_entry));
-	m_text_mpu_entry.mas0.b.esel = 0;
-	m_text_mpu_entry.mas0.b.shd = 1;
-	mpu_read_entry(&m_text_mpu_entry);
-	m_text_mpu_entry.mas0.b.valid = 1;
-	m_text_mpu_entry.mas0.b.sx_sr = 1;
-	m_text_mpu_entry.mas3.b.lower_bound = (uint32_t) &__FLASH;
-	m_text_mpu_entry.mas2.b.upper_bound = (uint32_t) &__FLASH_END;
-	mpu_write_entry(&m_text_mpu_entry);
+	mpu_entry_t m_flash_mpu_entry;
+	memset(&m_flash_mpu_entry, 0, sizeof(m_flash_mpu_entry));
+	m_flash_mpu_entry.mas0.b.esel = 0;
+	m_flash_mpu_entry.mas0.b.shd = 1;
+	mpu_read_entry(&m_flash_mpu_entry);
+	m_flash_mpu_entry.mas0.b.valid = 1;
+	m_flash_mpu_entry.mas0.b.sx_sr = 1;
+	m_flash_mpu_entry.mas3.b.lower_bound = (uint32_t) &__FLASH;
+	m_flash_mpu_entry.mas2.b.upper_bound = (uint32_t) &__FLASH_END - 1;
+	mpu_write_entry(&m_flash_mpu_entry);
 
 	mpu_entry_t local_imem_mpu_entry;
 	memset(&local_imem_mpu_entry, 0, sizeof(local_imem_mpu_entry));
@@ -189,7 +199,7 @@ void sys_init()
 	local_imem_mpu_entry.mas0.b.valid = 1;
 	local_imem_mpu_entry.mas0.b.sx_sr = 1;
 	local_imem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__LOCAL_IMEM;
-	local_imem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_IMEM_END;
+	local_imem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_IMEM_END - 1;
 	mpu_write_entry(&local_imem_mpu_entry);
 
 	mpu_entry_t sram_mpu_entry;
@@ -202,7 +212,7 @@ void sys_init()
 	sram_mpu_entry.mas0.b.sx_sr = 0;
 	sram_mpu_entry.mas0.b.sw = 1;
 	sram_mpu_entry.mas3.b.lower_bound = (uint32_t) &__SRAM;
-	sram_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SRAM_END;
+	sram_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SRAM_END - 1;
 	mpu_write_entry(&sram_mpu_entry);
 
 	mpu_entry_t share_mpu_entry;
@@ -216,7 +226,7 @@ void sys_init()
 	share_mpu_entry.mas0.b.sw = 1;
 	share_mpu_entry.mas0.b.i = 1;
 	share_mpu_entry.mas3.b.lower_bound = (uint32_t) &__SHARE;
-	share_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SHARE_END;
+	share_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SHARE_END - 1;
 	mpu_write_entry(&share_mpu_entry);
 
 	mpu_entry_t local_dmem_mpu_entry;
@@ -229,21 +239,21 @@ void sys_init()
 	local_dmem_mpu_entry.mas0.b.sx_sr = 0;
 	local_dmem_mpu_entry.mas0.b.sw = 1;
 	local_dmem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__LOCAL_DMEM;
-	local_dmem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_DMEM_END;
+	local_dmem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_DMEM_END - 1;
 	mpu_write_entry(&local_dmem_mpu_entry);
 	
-	mpu_entry_t m_ramdisk_mpu_entry;
-	memset(&m_ramdisk_mpu_entry, 0, sizeof(m_ramdisk_mpu_entry));
-	m_ramdisk_mpu_entry.mas0.b.esel = 3;
-	m_ramdisk_mpu_entry.mas0.b.inst = 0;
-	m_ramdisk_mpu_entry.mas0.b.shd = 0;
-	mpu_read_entry(&m_ramdisk_mpu_entry);
-	m_ramdisk_mpu_entry.mas0.b.valid = 1;
-	m_ramdisk_mpu_entry.mas0.b.sx_sr = 0;
-	m_ramdisk_mpu_entry.mas0.b.sw = 1;
-	m_ramdisk_mpu_entry.mas3.b.lower_bound = (uint32_t) &__RAMDISK;
-	m_ramdisk_mpu_entry.mas2.b.upper_bound = (uint32_t) &__RAMDISK_END;
-	mpu_write_entry(&m_ramdisk_mpu_entry);
+	mpu_entry_t m_ebi_mem_mpu_entry;
+	memset(&m_ebi_mem_mpu_entry, 0, sizeof(m_ebi_mem_mpu_entry));
+	m_ebi_mem_mpu_entry.mas0.b.esel = 3;
+	m_ebi_mem_mpu_entry.mas0.b.inst = 0;
+	m_ebi_mem_mpu_entry.mas0.b.shd = 0;
+	mpu_read_entry(&m_ebi_mem_mpu_entry);
+	m_ebi_mem_mpu_entry.mas0.b.valid = 1;
+	m_ebi_mem_mpu_entry.mas0.b.sx_sr = 0;
+	m_ebi_mem_mpu_entry.mas0.b.sw = 1;
+	m_ebi_mem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__EBI_MEM;
+	m_ebi_mem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__EBI_MEM_END - 1;
+	mpu_write_entry(&m_ebi_mem_mpu_entry);
 
 	mpu_entry_t peripheral_mpu_entry;
 	memset(&peripheral_mpu_entry, 0, sizeof(peripheral_mpu_entry));
@@ -258,6 +268,19 @@ void sys_init()
 	peripheral_mpu_entry.mas3.b.lower_bound = 0xf0000000;
 	peripheral_mpu_entry.mas2.b.upper_bound = 0xffffffff;
 	mpu_write_entry(&peripheral_mpu_entry);
+	
+	mpu_entry_t m_cmdline_mpu_entry;
+	memset(&m_cmdline_mpu_entry, 0, sizeof(m_cmdline_mpu_entry));
+	m_cmdline_mpu_entry.mas0.b.esel = 5;
+	m_cmdline_mpu_entry.mas0.b.inst = 0;
+	m_cmdline_mpu_entry.mas0.b.shd = 0;
+	mpu_read_entry(&m_cmdline_mpu_entry);
+	m_cmdline_mpu_entry.mas0.b.valid = 1;
+	m_cmdline_mpu_entry.mas0.b.sx_sr = 0;
+	m_cmdline_mpu_entry.mas0.b.sw = 1;
+	m_cmdline_mpu_entry.mas3.b.lower_bound = (uint32_t) &__CMDLINE;
+	m_cmdline_mpu_entry.mas2.b.upper_bound = (uint32_t) &__CMDLINE_END;
+	mpu_write_entry(&m_cmdline_mpu_entry);
 	
 	mpu_enable();
 	
@@ -295,7 +318,8 @@ void sys_init()
 	{
 		case 0:
 		case 1:
-			while(!boot_flag);
+			while(!boot_flag[2]);
+			boot_flag[core_id]=1;
 			break;
 			
 		case 2:
@@ -541,9 +565,16 @@ void sys_init()
 			
 			smpu_enable(1);                                                                 // SMPU_0: enable
 	
-			boot_flag = 1;
+			boot_flag[2] = 1;
 			break;
 	}
+	
+	unsigned int ebi_mem_ebi_bank = core_id;
+	
+	ebi_set_bank_port_size(ebi_mem_ebi_bank, EBI_PORT_SIZE_32);         // EBI: word addressing
+	ebi_set_bank_base_address(ebi_mem_ebi_bank, (uint32_t) &__EBI_MEM); // EBI: base address
+	ebi_set_bank_address_mask(ebi_mem_ebi_bank, ~(uint32_t) (&__EBI_MEM_END - &__EBI_MEM - 1));            // EBI: 64MB segments
+	ebi_set_bank_valid_flag(ebi_mem_ebi_bank, 1);                       // EBI: enable bank
 	
 	unsigned int fd;
 		
@@ -557,35 +588,183 @@ void sys_init()
 	assert(STDOUT_FILENO < MAX_FILE_DESCRIPTORS);
 	assert(STDERR_FILENO < MAX_FILE_DESCRIPTORS);
 	
-	assert(con_init(core_id) != 0); // using core ID as console ID
+	if(con_init(core_id) == 0) // using core ID as console ID
+	{
+		assert(false);
+	}
 
-	assert(open("/dev/tty", O_RDONLY, 0) == STDIN_FILENO);
-	assert(open("/dev/tty", O_WRONLY, 0) == STDOUT_FILENO);
-	assert(open("/dev/tty", O_WRONLY, 0) == STDERR_FILENO);
+	int fd_stdin = open("/dev/tty", O_RDONLY, 0);
+	assert(fd_stdin == STDIN_FILENO);
+	int fd_stdout = open("/dev/tty", O_WRONLY, 0);
+	assert(fd_stdout == STDOUT_FILENO);
+	int fd_stderr = open("/dev/tty", O_WRONLY, 0);
+	assert(fd_stderr == STDERR_FILENO);
 	
-	unsigned int ramdisk_ebi_bank = core_id;
-	
-	ebi_set_bank_port_size(ramdisk_ebi_bank, EBI_PORT_SIZE_32);         // EBI: word addressing
-	ebi_set_bank_base_address(ramdisk_ebi_bank, (uint32_t) &__RAMDISK); // EBI: base address
-	ebi_set_bank_address_mask(ramdisk_ebi_bank, 0xfc000000);            // EBI: 64MB segments
-	ebi_set_bank_valid_flag(ramdisk_ebi_bank, 1);                       // EBI: enable bank
-
 	ramdisk_init(&ramdisk_lfs_cfg);
 	
 	/* check if there's a littlefs file system in ramdisk */
 	char magic[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	if(ramdisk_lfs_cfg.read(&ramdisk_lfs_cfg, 0, 40, magic, 8) == 0)
 	{
-		if(memcmp(magic, "littlefs", 8) == 0)
+		root_fs = (lfs_t *) malloc(sizeof(lfs_t));
+		assert(root_fs != 0);
+		if(memcmp(magic, "littlefs", 8) != 0)
 		{
-			root_fs = (lfs_t *) malloc(sizeof(lfs_t));
-			assert(root_fs != 0);
-			/* mount littlefs root file system in ramdisk */
-			int err = lfs_mount(root_fs, &ramdisk_lfs_cfg);
-			
+			int err = lfs_format(root_fs, &ramdisk_lfs_cfg);
 			assert(err == LFS_ERR_OK);
 		}
+		
+		/* mount littlefs root file system in ramdisk */
+		int err = lfs_mount(root_fs, &ramdisk_lfs_cfg);
+		
+		assert(err == LFS_ERR_OK);
 	}
+	
+	// trigger periodic_task every 1 ms (with a 50 Mhz clock)
+	unsigned int stm_id = core_id;
+	stm_set_interrupt_handler(stm_id, 0, periodic_task); // STM_x: install a hook for STM_x channel #0 interrupts
+	stm_enable_counter(stm_id);                          // STM_x: enable STM_x counter
+	stm_set_channel_compare(stm_id, 0, 50000);           // STM_x: set STM_x channel #0 compare value to 1 ms (i.e. 50000 cycles at 50 MHz)
+	stm_enable_channel(stm_id, 0);                       // STM_x: enable STM_x channel #0
+}
+
+extern int main(int argc, char *argv[]);
+
+void __attribute__((weak)) sys_main()
+{
+	char *p;
+	int argc = 0;
+	int state;
+	for(state = 1, p = &__CMDLINE; (p <= &__CMDLINE_END) && (*p != 0) && (*p != '\r') && (*p != '\n'); p++)
+	{
+		int c = *p;
+		if(isblank(c))
+		{
+			if(state == 0)
+			{
+				state = 1;
+			}
+		}
+		else if(state == 1)
+		{
+			state = 0;
+			argc++;
+		}
+	}
+	
+	char *argv[argc + 1];
+	argv[argc] = 0;
+	if(argc)
+	{
+		char **arg = &argv[0];
+		char *s;
+		for(state = 0, s = p = &__CMDLINE; (p <= &__CMDLINE_END) && (*p != 0) && (*p != '\r') && (*p != '\n'); p++)
+		{
+			int c = *p;
+			if(isblank(c))
+			{
+				*p = 0;
+				if(state == 0)
+				{
+					state = 1;
+				}
+			}
+			else if(state == 1)
+			{
+				*arg++ = s;
+				s = p;
+				state = 0;
+			}
+		}
+		*p = 0;
+		*arg = s;
+		
+		arg = &argv[0];
+		while(*arg)
+		{
+			char *p = *arg;
+			int c = *p;
+			if(((char) c == '<') || ((char) c == '>'))
+			{
+				break;
+			}
+			arg++;
+		}
+		argc = arg - &argv[0];
+		
+		while(*arg)
+		{
+			char *p = *arg;
+			int c = *p++;
+			if(((char) c != '<') && ((char) c != '>')) return;
+			int flags = ((char) c == '<') ? O_RDONLY : (O_WRONLY | O_CREAT | O_TRUNC);
+			int newfd = ((char) c == '<') ? STDIN_FILENO : STDOUT_FILENO;
+			*arg++ = 0;
+			c = *p;
+			char *filename;
+			if(c != 0)
+			{
+				filename = p;
+			}
+			else
+			{
+				if(*arg == 0) return;
+				filename = *arg;
+				*arg++ = 0;
+			}
+			int fd = open(filename, flags, 0);
+			if(fd < 0)
+			{
+				perror(0);
+				return;
+			}
+			if(dup2(fd, newfd) < 0)
+			{
+				perror(0);
+				return;
+			}
+		}
+	}
+	main(argc, argv);
+}
+
+void sys_exit()
+{
+	while(1);
+}
+
+void _exit(int status)
+{
+	unsigned int core_id = sys_get_core_id();
+	exit_flag[core_id] = 1;
+	switch(core_id)
+	{
+		case 0:
+		case 1:
+			while(1);
+			break;
+		case 2:
+			while((boot_flag[0] && !exit_flag[0]) || (boot_flag[1] && !exit_flag[1]));
+			sys_exit();
+			break;
+	}
+	while(1);
+}
+
+int dup2(int oldfd, int newfd)
+{
+	if((oldfd >= 0) && (oldfd < MAX_FILE_DESCRIPTORS) && (newfd >= 0) && (newfd < MAX_FILE_DESCRIPTORS))
+	{
+		if(close(newfd) < 0) return -1;
+		struct file_t *file = &files[oldfd];
+		memcpy(&files[newfd], &files[oldfd], sizeof(struct file_t));
+		return 0;
+	}
+	else
+	{
+		errno = EBADF;
+	}
+	return -1;
 }
 
 int mkdir(const char *path, mode_t mode)
@@ -654,7 +833,7 @@ int rmdir(const char *path)
 
 int close(int fd)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		
@@ -701,7 +880,7 @@ int close(int fd)
  
 int fstat(int fd, struct stat *buf)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		
@@ -748,7 +927,7 @@ int fstat(int fd, struct stat *buf)
  
 int isatty(int fd)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		
@@ -771,7 +950,7 @@ int isatty(int fd)
  
 off_t lseek(int fd, off_t offset, int whence)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		
@@ -908,7 +1087,7 @@ int open(const char *path, int flags, ...)
  
 int read(int fd, void *buf, size_t nbytes)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		
@@ -918,44 +1097,13 @@ int read(int fd, void *buf, size_t nbytes)
 			{
 				if(file->io_backend_id == CONSOLE_BACK_END)
 				{
-					if(file->flags & O_NONBLOCK)
+					int err = con_read(file->io_backend.con, buf, nbytes, (file->flags & O_NONBLOCK) != 0);
+					if(err >= 0)
 					{
-						int err = con_read(file->io_backend.con, buf, nbytes, 1 /* nonblock */);
-						if(err >= 0)
-						{
-							return err;
-						}
-						errno = EIO;
-						return -1;
+						return err;
 					}
-					else
-					{
-						size_t i;
-						char *p = (char *) buf;
-						
-						int err = 0;
-						for(i = 0; i < nbytes; i++)
-						{
-							err = con_read(file->io_backend.con, &p[i], 1, 0 /* nonblock */);
-							
-							if(err >= 0)
-							{
-								if(p[i] == '\n')
-								{
-									i++;
-									break;
-								}
-							}
-							else
-							{
-								errno = EIO;
-								break;
-							}
-						}
-						
-						return (err >= 0) ? i : -1;
-					}
-					
+					errno = EIO;
+					return -1;
 				}
 				else if(file->io_backend_id == LFS_BACK_END)
 				{
@@ -992,7 +1140,7 @@ int read(int fd, void *buf, size_t nbytes)
 
 int write(int fd, const void *buf, size_t nbytes)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		
@@ -1003,7 +1151,12 @@ int write(int fd, const void *buf, size_t nbytes)
 				if(file->io_backend_id == CONSOLE_BACK_END)
 				{
 					int err = con_write(file->io_backend.con, buf, nbytes);
-					return (err >= 0) ? err : -1;
+					if(err >= 0)
+					{
+						return err;
+					}
+					errno = EIO;
+					return -1;
 				}
 				else if(file->io_backend_id == LFS_BACK_END)
 				{
@@ -1111,7 +1264,7 @@ int truncate(const char *path, off_t length)
 
 int ftruncate(int fd, off_t length)
 {
-	if(fd < MAX_FILE_DESCRIPTORS)
+	if((fd >= 0) && (fd < MAX_FILE_DESCRIPTORS))
 	{
 		struct file_t *file = &files[fd];
 		

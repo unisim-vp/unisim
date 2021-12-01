@@ -231,6 +231,9 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cctype>' "${FILEPATH}"; then
 				echo "std/cctype" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<climits>' "${FILEPATH}"; then
+				echo "std/climits" >> "${PKG_DEPS_TXT}"
+			fi
 		fi
 		
 		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then

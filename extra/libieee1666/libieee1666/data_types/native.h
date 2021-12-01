@@ -36,13 +36,22 @@
 #define __LIBIEEE1666_DATA_TYPES_NATIVE_H__
 
 #include <stdint.h>
+#include <climits>
 
 namespace sc_dt {
-	
-	typedef ::int_fast64_t int_type;
-	typedef ::uint_fast64_t uint_type;
+
+#if LONG_MAX == 0x7fffffff
 	typedef ::int64_t int64;
+#else
+	typedef long long int64;
+#endif
+#if ULONG_MAX == 0xffffffff
 	typedef ::uint64_t uint64;
+#else
+	typedef unsigned long long uint64;
+#endif
+	typedef int64 int_type;
+	typedef uint64 uint_type;
 	
 } // end of namespace sc_dt
 

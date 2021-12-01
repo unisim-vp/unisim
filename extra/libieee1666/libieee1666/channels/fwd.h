@@ -40,7 +40,8 @@ namespace sc_core {
 enum sc_writer_policy
 {
 	SC_ONE_WRITER,
-	SC_MANY_WRITERS
+	SC_MANY_WRITERS,
+	SC_UNCHECKED_WRITERS // not in IEEE1666-2011 but in SystemC >= 2.3.0
 };
 
 template <class T, sc_writer_policy WRITER_POLICY> class sc_buffer;
@@ -54,13 +55,17 @@ template <class T> class sc_fifo_out_if;
 template <class T> class sc_fifo_in;
 template <class T> class sc_fifo_out;
 template <class T> class sc_in;
+class sc_in_resolved;
 template <class T> class sc_inout;
+class sc_inout_resolved;
 class sc_mutex;
 class sc_mutex_if;
 template <class T> class sc_out;
+class sc_out_resolved;
 class sc_semaphore;
 class sc_semaphore_if;
 template <class T, sc_writer_policy WRITER_POLICY> class sc_signal;
+class sc_signal_resolved;
 template <class T> class sc_signal_in_if;
 
 } // end of namespace sc_core

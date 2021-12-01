@@ -67,8 +67,14 @@ public:
 
 	// Other methods
 	void print(std::ostream& os = std::cout) const;
-	protected:
+	
+protected:
 	sc_uint_bitref_r();
+	sc_uint_bitref_r(const sc_uint_base *obj, int bit_pos);
+	uint_type mask() const;
+	
+	sc_uint_base *obj;
+	int bit_pos;
 
 private:
 	// Disabled

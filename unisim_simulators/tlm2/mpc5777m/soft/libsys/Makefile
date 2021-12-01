@@ -70,6 +70,7 @@ LIBSYS_ASSEMBLER_ARGS= \
 -I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -DHW_INIT \
+-DDISABLE_SWT2 \
 -mcpu=e200z4 \
 -specs=nosys.specs \
 -mbig \

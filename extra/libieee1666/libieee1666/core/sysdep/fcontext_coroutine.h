@@ -44,7 +44,11 @@
 #endif
 
 #include <boost/version.hpp>
-#include <boost/context/all.hpp>
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+#include <boost/context/detail/fcontext.hpp>
+#else // boost version < 1.61.0
+#include <boost/context/fcontext.hpp>
+#endif
 
 namespace sc_core {
 
@@ -63,9 +67,12 @@ private:
 
 	friend class sc_fcontext_coroutine_system;
 	
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
+#if BOOST_VERSION >= 106100
+	sc_fcontext_coroutine *from;
+	boost::context::detail::fcontext_t fc;
+#elif BOOST_VERSION >= 105600 // boost version >= 1.56.0
 	boost::context::fcontext_t fc;
-#else
+#else // boost version < 1.56.0
 	boost::context::fcontext_t *fc;
 #endif
 #if __LIBIEEE1666_UNWIND_SJLJ__
@@ -74,10 +81,14 @@ private:
 	void (*fn)(intptr_t);
 	intptr_t arg;
 	sc_stack *stack;
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
+#if BOOST_VERSION < 105600 // boost version < 1.56.0
 	static boost::context::fcontext_t fcm;
-#endif	
+#endif
+#if BOOST_VERSION >= 106100 // boost version >= 1.61.0
+	static void entry_point(boost::context::detail::transfer_t transfer);
+#else // boost version < 1.61.0
 	static void entry_point(intptr_t self);
+#endif
 };
 
 class sc_fcontext_coroutine_system : public sc_coroutine_system

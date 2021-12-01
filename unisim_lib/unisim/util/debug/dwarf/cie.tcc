@@ -57,6 +57,8 @@ DWARF_CIE<MEMORY_ADDR>::DWARF_CIE(DWARF_Handler<MEMORY_ADDR> *_dw_handler, DWARF
 	, version(0)
 	, augmentation(0)
 	, eh_data(0)
+	, address_size(0)
+	, segment_selector_size(0)
 	, code_alignment_factor()
 	, data_alignment_factor()
 	, dw2_return_address_register(0)
@@ -220,6 +222,39 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		}
 	}
 	
+	switch(dw_ver)
+	{
+		case DW_VER4:
+			if(max_size < sizeof(address_size)) return -1;
+			memcpy(&version, rawdata, sizeof(address_size));
+			address_size = Target2Host(file_endianness, address_size);
+			rawdata += sizeof(address_size);
+			max_size -= sizeof(address_size);
+			size += sizeof(address_size);
+			break;
+		default:
+		{
+			unsigned int arch_address_size = dw_handler->GetArchAddressSize();
+			address_size = (arch_address_size < 4) ? 4 : arch_address_size; //(dw_fmt == FMT_DWARF64) ? 8 : 4;
+			break;
+		}
+	}
+	
+	switch(dw_ver)
+	{
+		case DW_VER4:
+			if(max_size < sizeof(segment_selector_size)) return -1;
+			memcpy(&version, rawdata, sizeof(segment_selector_size));
+			segment_selector_size = Target2Host(file_endianness, segment_selector_size);
+			rawdata += sizeof(segment_selector_size);
+			max_size -= sizeof(segment_selector_size);
+			size += sizeof(segment_selector_size);
+			break;
+		default:
+			segment_selector_size = 0;
+			break;
+	}
+	
 	if((sz = code_alignment_factor.Load(rawdata, max_size)) < 0) return -1;
 	rawdata += sz;
 	max_size -= sz;
@@ -317,6 +352,12 @@ template <class MEMORY_ADDR>
 unsigned int DWARF_CIE<MEMORY_ADDR>::GetId() const
 {
 	return id;
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_CIE<MEMORY_ADDR>::GetOffset() const
+{
+	return offset;
 }
 
 template <class MEMORY_ADDR>
@@ -619,6 +660,24 @@ MEMORY_ADDR DWARF_CIE<MEMORY_ADDR>::DecodePointer(MEMORY_ADDR pc, MEMORY_ADDR en
 }
 
 template <class MEMORY_ADDR>
+DWARF_FrameSectionType DWARF_CIE<MEMORY_ADDR>::GetFrameSectionType() const
+{
+	return dw_fst;
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_CIE<MEMORY_ADDR>::GetAddressSize() const
+{
+	return address_size;
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_CIE<MEMORY_ADDR>::GetSegmentSelectorSize() const
+{
+	return segment_selector_size;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_CIE<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
 	os << "<DW_CIE id=\"cie-" << id << "\" version=\"" << (uint32_t) version << "\" augmentation=\"";
@@ -667,6 +726,8 @@ std::ostream& DWARF_CIE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 		}
 		os << "</td>";
 	}
+	os << "<td>" << +address_size << "</td>";
+	os << "<td>" << +segment_selector_size << "</td>";
 	os << "<td>" << code_alignment_factor.to_string(false) << "</td><td>" << data_alignment_factor.to_string(true) << "</td><td>";
 	if(dw_ver == DW_VER2)
 	{

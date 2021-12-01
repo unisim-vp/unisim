@@ -77,7 +77,7 @@ class sc_vector_iter : public std::iterator<std::random_access_iterator_tag, T>
 // implementation-defined
 	typedef std::iterator<std::random_access_iterator_tag, T> base_type;
 	
-	typedef base_type::reference reference;
+	typedef typename base_type::reference reference;
 	
 	sc_vector_iter& operator ++ () { ++obj_iter; return *this; }
 	sc_vector_iter& operator ++ (int)  { sc_vector_iter prev(*this); ++obj_iter; return prev; };

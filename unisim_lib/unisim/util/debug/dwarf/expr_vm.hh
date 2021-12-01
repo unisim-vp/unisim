@@ -76,7 +76,7 @@ public:
 	unsigned int GetBitOffset() const;
 private:
 	MEMORY_ADDR dw_addr;
-	unsigned int dw_bit_offset;
+	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 };
 
 template <class MEMORY_ADDR>
@@ -90,7 +90,7 @@ public:
 	unsigned int GetBitOffset() const;
 private:
 	unsigned int dw_reg_num;
-	unsigned int dw_bit_offset;
+	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 };
 
 const unsigned int DW_LOC_NULL                  = 0;
@@ -124,6 +124,7 @@ public:
 	const DWARF_Block<MEMORY_ADDR> *GetImplicitBlockValue() const;
 	void SetByteSize(uint64_t byte_size);
 	void SetBitOffset(int64_t bit_offset);
+	void IncBitOffset(int64_t bit_offset);
 	void SetBitSize(uint64_t bit_size);
 	void SetEncoding(uint8_t encoding);
 	void SetRanges(const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges);
@@ -141,9 +142,9 @@ private:
 	MEMORY_ADDR dw_addr;
 	MEMORY_ADDR dw_implicit_simple_value;
 	DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value;
-	uint64_t dw_byte_size;
-	int64_t dw_bit_offset;
-	uint64_t dw_bit_size;
+	uint64_t dw_byte_size; // byte size (padding included)
+	int64_t dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
+	uint64_t dw_bit_size; // actual bit size (padding excluded)
 	uint8_t dw_encoding;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
 	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
@@ -153,7 +154,7 @@ template <class MEMORY_ADDR>
 class DWARF_ExpressionVM
 {
 public:
-	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, int prc_num);
 	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_ExpressionVM();
 	
@@ -161,12 +162,10 @@ public:
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 	void SetFrameBase(MEMORY_ADDR frame_base);
 	void SetObjectAddress(MEMORY_ADDR object_addr);
-	void SetPC(MEMORY_ADDR pc);
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unsigned int prc_num;
-	const DWARF_RegisterNumberMapping *reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	DWARF_Frame<MEMORY_ADDR> *dw_frame;
 	unisim::util::endian::endian_type file_endianness;
@@ -178,9 +177,7 @@ private:
 	bool has_frame_base;
 	MEMORY_ADDR object_addr;
 	bool has_object_addr;
-	MEMORY_ADDR pc;
-	bool has_pc;
-	bool debug;
+	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;

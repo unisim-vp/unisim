@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
 
 #include <inttypes.h>
+#include "unisim/component/cxx/memory/ram/memory.hh"
 #include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/hash_table/hash_table.hh"
@@ -98,8 +99,12 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, unisim::kernel::Obje
 	, param_initial_byte_value("initial-byte-value", this, initial_byte_value, "initial value for all bytes of memory")
 	, input_filename()
 	, param_input_filename("input-filename", this, input_filename, "Input filename")
+	, input_size(0)
+	, param_input_size("input-size", this, input_size, "Input Size in bytes")
 	, output_filename()
 	, param_output_filename("output-filename", this, output_filename, "output filename")
+	, output_size(0)
+	, param_output_size("output-size", this, output_size, "Output Size in bytes")
 	, output_file(0)
 {
 	stat_memory_usage.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -107,6 +112,8 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, unisim::kernel::Obje
 
 	param_bytesize.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_initial_byte_value.SetFormat(unisim::kernel::VariableBase::FMT_HEX);
+	param_input_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_output_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -524,6 +531,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::LoadFromInputFile()
 				else
 				{
 					std::streamsize rem_file_length = file_length;
+					if(input_size && (uint64_t(file_length) > input_size)) file_length = input_size;
 					
 					if(verbose)
 					{
@@ -543,7 +551,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::LoadFromInputFile()
 							memory_usage += PAGE_SIZE;
 						}
 						
-						std::streamsize n = (rem_file_length > PAGE_SIZE) ? PAGE_SIZE : rem_file_length;
+						std::streamsize n = (rem_file_length > std::streamsize(PAGE_SIZE)) ? std::streamsize(PAGE_SIZE) : rem_file_length;
 						
 						input_file.read((char *) page->storage, n);
 					
@@ -610,6 +618,12 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::UpdateOutputFile(PHYSICAL_ADDR addr, cons
 	if(output_file)
 	{
 		uint64_t offset = addr - org;
+		if(output_size)
+		{
+			if(offset >= output_size) return;
+			uint64_t length_to_output_size = output_size - offset;
+			if(length > length_to_output_size) length = length_to_output_size;
+		}
 		
 		output_file->seekp(offset, std::ios_base::beg);
 		

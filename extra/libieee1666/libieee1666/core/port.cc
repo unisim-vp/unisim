@@ -155,11 +155,7 @@ void sc_port_base::finalize_elaboration()
 {
 	if(elaboration_finalized) return;
 	
-	int i, j;
-	
-	std::list<sc_port_binding *>::iterator it;
-	
-	for(it = port_bindings.begin(); it != port_bindings.end(); it++)
+	for(port_bindings_t::iterator it = port_bindings.begin(); it != port_bindings.end(); it++)
 	{
 		sc_port_binding *port_binding = *it;
 		
@@ -170,7 +166,7 @@ void sc_port_base::finalize_elaboration()
 					sc_port_base *outer_port = port_binding->bound_outer_port;
 					outer_port->finalize_elaboration();
 					int num_inherited_interfaces = outer_port->get_size();
-					for(i = 0; i < num_inherited_interfaces; i++)
+					for(int i = 0; i < num_inherited_interfaces; i++)
 					{
 						add_interface(outer_port->get_interface(i));
 					}
@@ -189,7 +185,7 @@ void sc_port_base::finalize_elaboration()
 	if(terminal_inner_port)
 	{
 		int num_interfaces = get_size();
-		for(i = 0; i < num_interfaces; i++)
+		for(int i = 0; i < num_interfaces; i++)
 		{
 			sc_interface *itf = get_interface(i);
 			
@@ -213,15 +209,13 @@ void sc_port_base::finalize_elaboration()
 			break;
 	}
 	
-	int num_process_static_sensitivity = processes_static_sensitivity.size();
-
-	for(i = 0; i < num_interfaces; i++)
+	for(int i = 0; i < num_interfaces; i++)
 	{
 		sc_interface *itf = get_interface(i);
 		
-		for(j = 0; j < num_process_static_sensitivity; j++)
+		for(processes_static_sensitivity_t::iterator it = processes_static_sensitivity.begin(); it != processes_static_sensitivity.end(); ++it)
 		{
-			sc_process_static_sensitivity *process_static_sensitivity = processes_static_sensitivity[j];
+			sc_process_static_sensitivity *process_static_sensitivity = *it;
 			sc_process *process = process_static_sensitivity->process;
 			
 			switch(process_static_sensitivity->type)

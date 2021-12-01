@@ -42,7 +42,9 @@
 #include "channels/fwd.h"
 #include "channels/signal_if.h"
 #include "channels/signal.h"
+#include "data_types/bit/logic.h"
 #include <iostream>
+#include <climits>
 
 namespace sc_core {
 
@@ -75,26 +77,21 @@ private:
 	// Disabled
 	sc_signal( const sc_signal<T,WRITER_POLICY>& );
 	
+protected:
 	sc_port_base *registered_inout_port;
 	sc_object *writer;
 	sc_event signal_value_changed_event;
 	sc_dt::uint64 signal_value_changed_delta_cycle;
-	unsigned int value_index;
-	T value[2];
+	T curr_value;
+	T new_value;
 
-	friend std::ostream& operator << <T, WRITER_POLICY>(std::ostream&, const sc_signal<T,WRITER_POLICY>&);
-protected:
-	const T& current_value() const;
-	T& current_value();
-	const T& new_value() const;
-	T& new_value();
 	void toggle_value();
 	bool check_write();
 	void do_update();
 };
 
 template <sc_writer_policy WRITER_POLICY>
-class sc_signal<bool,WRITER_POLICY> : public sc_signal_inout_if<bool>, public sc_prim_channel
+class sc_signal<bool, WRITER_POLICY> : public sc_signal_inout_if<bool>, public sc_prim_channel
 {
 public:
 	sc_signal();
@@ -123,6 +120,7 @@ private:
 	// Disabled
 	sc_signal( const sc_signal<bool,WRITER_POLICY>& );
 	
+protected:
 	virtual void is_reset(const sc_process_reset& process_reset);
 	
 	sc_port_base *registered_inout_port;
@@ -132,72 +130,66 @@ private:
 	sc_event signal_negedge_event;
 	sc_dt::uint64 signal_value_changed_delta_cycle;
 	sc_dt::uint64 negedge_delta_cycle;
-	bool value[2];
+	bool curr_value;
+	bool new_value;
 	std::vector<sc_process_reset> process_resets;
 	
-	
-	friend std::ostream& operator << <bool, WRITER_POLICY>( std::ostream&, const sc_signal<bool,WRITER_POLICY>& );
-
-protected:
-	const bool& current_value() const;
-	bool& current_value();
-	const bool& new_value() const;
-	bool& new_value();
 	void toggle_value();
 	bool check_write();
 	void do_update();
 };
 
-// template <sc_writer_policy WRITER_POLICY>
-// class sc_signal<sc_dt::sc_logic,WRITER_POLICY>
-// : public sc_signal_inout_if<sc_dt::sc_logic,WRITER_POLICY>, public sc_prim_channel
-// {
-// public:
-// 	sc_signal();
-// 	explicit sc_signal( const char* );
-// 	virtual ~sc_signal();
-// 	virtual void register_port( sc_port_base&, const char* );
-// 	virtual const sc_dt::sc_logic& read() const;
-// 	operator const sc_dt::sc_logic& () const;
-// 	virtual void write( const sc_dt::sc_logic& );
-// 	sc_signal<sc_dt::sc_logic,WRITER_POLICY>& operator= ( const sc_dt::sc_logic& );
-// 	sc_signal<sc_dt::sc_logic,WRITER_POLICY>&
-// 	operator= ( const sc_signal<sc_dt::sc_logic,WRITER_POLICY>& );
-// 	virtual const sc_event& default_event() const;
-// 	virtual const sc_event& value_changed_event() const;
-// 	virtual const sc_event& posedge_event() const;
-// 	virtual const sc_event& negedge_event() const;
-// 	virtual bool event() const;
-// 	virtual bool posedge() const;
-// 	virtual bool negedge() const;
-// 	virtual void print( std::ostream& = std::cout ) const;
-// 	virtual void dump( std::ostream& = std::cout ) const;
-// 	virtual const char* kind() const;
-// protected:
-// 	virtual void update();
-// private:
-// 	// Disabled
-// 	sc_signal( const sc_signal<sc_dt::sc_logic,WRITER_POLICY>& );
-// };
-// 
-// class sc_signal_resolved : public sc_signal<sc_dt::sc_logic,SC_MANY_WRITERS>
-// {
-// public:
-// 	sc_signal_resolved();
-// 	explicit sc_signal_resolved( const char* );
-// 	virtual ~sc_signal_resolved();
-// 	virtual void register_port( sc_port_base&, const char* );
-// 	virtual void write( const sc_dt::sc_logic& );
-// 	sc_signal_resolved& operator= ( const sc_dt::sc_logic& );
-// 	sc_signal_resolved& operator= ( const sc_signal_resolved& );
-// 	virtual const char* kind() const;
-// protected:
-// 	virtual void update();
-// private:
-// 	// Disabled
-// 	sc_signal_resolved( const sc_signal_resolved& );
-// };
-// 
+template <sc_writer_policy WRITER_POLICY>
+inline std::ostream& operator << (std::ostream& os, const sc_signal<sc_dt::sc_logic, WRITER_POLICY>& s);
+
+template <sc_writer_policy WRITER_POLICY>
+class sc_signal<sc_dt::sc_logic, WRITER_POLICY> : public sc_signal_inout_if<sc_dt::sc_logic>, public sc_prim_channel
+{
+public:
+	sc_signal();
+	explicit sc_signal( const char* );
+	virtual ~sc_signal();
+	virtual void register_port( sc_port_base&, const char* );
+	virtual const sc_dt::sc_logic& read() const;
+	operator const sc_dt::sc_logic& () const;
+	virtual sc_writer_policy get_writer_policy() const;
+	virtual void write( const sc_dt::sc_logic& );
+	sc_signal<sc_dt::sc_logic,WRITER_POLICY>& operator= ( const sc_dt::sc_logic& );
+	sc_signal<sc_dt::sc_logic,WRITER_POLICY>&
+	operator= ( const sc_signal<sc_dt::sc_logic,WRITER_POLICY>& );
+	virtual const sc_event& default_event() const;
+	virtual const sc_event& value_changed_event() const;
+	virtual const sc_event& posedge_event() const;
+	virtual const sc_event& negedge_event() const;
+	virtual bool event() const;
+	virtual bool posedge() const;
+	virtual bool negedge() const;
+	virtual void print( std::ostream& = std::cout ) const;
+	virtual void dump( std::ostream& = std::cout ) const;
+	virtual const char* kind() const;
+protected:
+	virtual void update();
+private:
+	// Disabled
+	sc_signal( const sc_signal<sc_dt::sc_logic,WRITER_POLICY>& );
+
+protected:
+	sc_port_base *registered_inout_port;
+	sc_object *writer;
+	sc_event signal_value_changed_event;
+	sc_event signal_posedge_event;
+	sc_event signal_negedge_event;
+	sc_dt::uint64 signal_value_changed_delta_cycle;
+	sc_dt::uint64 negedge_delta_cycle;
+	sc_dt::sc_logic curr_value;
+	sc_dt::sc_logic new_value;
+	
+	void toggle_value();
+	bool check_write();
+	void do_update();
+};
+
+
 // template <int W>
 // class sc_signal_rv : public sc_signal<sc_dt::sc_lv<W>,SC_MANY_WRITERS>
 // {
@@ -226,8 +218,8 @@ sc_signal<T, WRITER_POLICY>::sc_signal()
 	, writer(0)
 	, signal_value_changed_event(__LIBIEEE1666_KERNEL_PREFIX__ "_value_changed_event")
 	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
-	, value_index(0)
-	, value()
+	, curr_value()
+	, new_value()
 {
 }
 
@@ -237,8 +229,8 @@ sc_signal<T, WRITER_POLICY>::sc_signal(const char* _name)
 	, registered_inout_port(0)
 	, writer(0)
 	, signal_value_changed_event(__LIBIEEE1666_KERNEL_PREFIX__ "_signal_value_changed_event")
-	, value_index(0)
-	, value()
+	, curr_value()
+	, new_value()
 {
 }
 
@@ -268,7 +260,7 @@ void sc_signal<T, WRITER_POLICY>::register_port(sc_port_base& port, const char *
 template <class T, sc_writer_policy WRITER_POLICY>
 const T& sc_signal<T, WRITER_POLICY>::read() const
 {
-	return current_value();
+	return curr_value;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -286,9 +278,9 @@ sc_writer_policy sc_signal<T, WRITER_POLICY>::get_writer_policy() const
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::write(const T& v)
 {
-	bool value_changed = !(v == current_value());
+	bool value_changed = !(v == curr_value);
 	
-	new_value() = v;
+	new_value = v;
 	
 	if(value_changed)
 	{
@@ -342,7 +334,7 @@ void sc_signal<T, WRITER_POLICY>::print(std::ostream& os) const
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::dump(std::ostream& os) const
 {
-	os << name() << ": kind=\"" << kind() << "\", current_value=" << current_value() << ", new_value=" << new_value();
+	os << name() << ": kind=\"" << kind() << "\", current_value=" << curr_value << ", new_value=" << new_value;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -354,7 +346,7 @@ const char* sc_signal<T, WRITER_POLICY>::kind() const
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::update()
 {
-	bool value_changed = !(current_value() == new_value());
+	bool value_changed = !(curr_value == new_value);
 	
 	if(value_changed)
 	{
@@ -393,39 +385,15 @@ sc_signal<T, WRITER_POLICY>::sc_signal( const sc_signal<T,WRITER_POLICY>& )
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-const T& sc_signal<T, WRITER_POLICY>::current_value() const
-{
-	return value[value_index];
-}
-
-template <class T, sc_writer_policy WRITER_POLICY>
-T& sc_signal<T, WRITER_POLICY>::current_value()
-{
-	return value[value_index];
-}
-
-template <class T, sc_writer_policy WRITER_POLICY>
-const T& sc_signal<T, WRITER_POLICY>::new_value() const
-{
-	return value[value_index ^ 1];
-}
-
-template <class T, sc_writer_policy WRITER_POLICY>
-T& sc_signal<T, WRITER_POLICY>::new_value()
-{
-	return value[value_index ^ 1];
-}
-
-template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::toggle_value()
 {
-	value_index ^= 1;
+	curr_value = new_value;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 inline std::ostream& operator << (std::ostream& os, const sc_signal<T,WRITER_POLICY>& s)
 {
-	return os << s.current_value();
+	return os << s.read();
 }
 
 ///////////////////////////// sc_signal<bool,WRITER_POLICY> ///////////////////////////////////
@@ -439,7 +407,8 @@ sc_signal<bool, WRITER_POLICY>::sc_signal()
 	, signal_posedge_event(__LIBIEEE1666_KERNEL_PREFIX__ "_signal_posedge_event")
 	, signal_negedge_event(__LIBIEEE1666_KERNEL_PREFIX__ "_signal_negedge_event")
 	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
-	, value()
+	, curr_value()
+	, new_value()
 	, process_resets()
 {
 }
@@ -453,7 +422,8 @@ sc_signal<bool, WRITER_POLICY>::sc_signal(const char *_name)
 	, signal_posedge_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_" + _name + "_signal_posedge_event").c_str())
 	, signal_negedge_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_" + _name + "_signal_negedge_event").c_str())
 	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
-	, value()
+	, curr_value()
+	, new_value()
 	, process_resets()
 {
 }
@@ -485,7 +455,7 @@ void sc_signal<bool, WRITER_POLICY>::register_port(sc_port_base& port, const cha
 template <sc_writer_policy WRITER_POLICY>
 const bool& sc_signal<bool, WRITER_POLICY>::read() const
 {
-	return current_value();
+	return curr_value;
 }
 
 template <sc_writer_policy WRITER_POLICY>
@@ -503,9 +473,9 @@ sc_writer_policy sc_signal<bool, WRITER_POLICY>::get_writer_policy() const
 template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::write(const bool& v)
 {
-	bool value_changed = !(v == current_value());
+	bool value_changed = !(v == curr_value);
 
-	new_value() = v;
+	new_value = v;
 
 	if(value_changed)
 	{
@@ -519,14 +489,14 @@ void sc_signal<bool, WRITER_POLICY>::write(const bool& v)
 }
 
 template <sc_writer_policy WRITER_POLICY>
-sc_signal<bool,WRITER_POLICY>& sc_signal<bool, WRITER_POLICY>::operator = (const bool& v)
+sc_signal<bool, WRITER_POLICY>& sc_signal<bool, WRITER_POLICY>::operator = (const bool& v)
 {
 	write(v);
 	return *this;
 }
 
 template <sc_writer_policy WRITER_POLICY>
-sc_signal<bool,WRITER_POLICY>& sc_signal<bool, WRITER_POLICY>::operator = (const sc_signal<bool, WRITER_POLICY>& s)
+sc_signal<bool, WRITER_POLICY>& sc_signal<bool, WRITER_POLICY>::operator = (const sc_signal<bool, WRITER_POLICY>& s)
 {
 	write(s.read());
 	return *this;
@@ -565,13 +535,13 @@ bool sc_signal<bool, WRITER_POLICY>::event() const
 template <sc_writer_policy WRITER_POLICY>
 bool sc_signal<bool, WRITER_POLICY>::posedge() const
 {
-	return current_value() && event();
+	return curr_value && event();
 }
 
 template <sc_writer_policy WRITER_POLICY>
 bool sc_signal<bool, WRITER_POLICY>::negedge() const
 {
-	return !current_value() && event();
+	return !curr_value && event();
 }
 
 template <sc_writer_policy WRITER_POLICY>
@@ -583,7 +553,7 @@ void sc_signal<bool, WRITER_POLICY>::print(std::ostream& os) const
 template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::dump(std::ostream& os) const
 {
-	os << name() << ": kind=\"" << kind() << "\", current_value=" << current_value() << ", new_value=" << new_value();
+	os << name() << ": kind=\"" << kind() << "\", current_value=" << curr_value << ", new_value=" << new_value;
 }
 
 template <sc_writer_policy WRITER_POLICY>
@@ -595,7 +565,7 @@ const char* sc_signal<bool, WRITER_POLICY>::kind() const
 template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::update()
 {
-	bool value_changed = !(current_value() == new_value());
+	bool value_changed = !(curr_value == new_value);
 	
 	if(value_changed)
 	{
@@ -624,7 +594,7 @@ void sc_signal<bool, WRITER_POLICY>::do_update()
 	toggle_value();
 	signal_value_changed_delta_cycle = kernel->get_delta_count();
 	signal_value_changed_event.notify(SC_ZERO_TIME);
-	if(current_value())
+	if(curr_value)
 	{
 		signal_posedge_event.notify(SC_ZERO_TIME);
 	}
@@ -641,7 +611,7 @@ void sc_signal<bool, WRITER_POLICY>::do_update()
 		{
 			const sc_process_reset& process_reset = process_resets[i];
 			
-			process_reset.reset_signal_value_changed(current_value());
+			process_reset.reset_signal_value_changed(curr_value);
 		}
 	}
 }
@@ -659,33 +629,233 @@ void sc_signal<bool, WRITER_POLICY>::is_reset(const sc_process_reset& process_re
 }
 
 template <sc_writer_policy WRITER_POLICY>
-const bool& sc_signal<bool, WRITER_POLICY>::current_value() const
-{
-	return value[0];
-}
-
-template <sc_writer_policy WRITER_POLICY>
-bool& sc_signal<bool, WRITER_POLICY>::current_value()
-{
-	return value[0];
-}
-
-template <sc_writer_policy WRITER_POLICY>
-const bool& sc_signal<bool, WRITER_POLICY>::new_value() const
-{
-	return value[1];
-}
-
-template <sc_writer_policy WRITER_POLICY>
-bool& sc_signal<bool, WRITER_POLICY>::new_value()
-{
-	return value[1];
-}
-
-template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::toggle_value()
 {
-	current_value() = new_value();
+	curr_value = new_value;
+}
+
+////////////////////////// sc_signal<sc_dt::sc_logic,WRITER_POLICY> /////////////////////////////
+
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>::sc_signal()
+	: sc_prim_channel(__LIBIEEE1666_KERNEL_PREFIX__ "_signal")
+	, registered_inout_port(0)
+	, writer(0)
+	, signal_value_changed_event(__LIBIEEE1666_KERNEL_PREFIX__ "_signal_value_changed_event")
+	, signal_posedge_event(__LIBIEEE1666_KERNEL_PREFIX__ "_signal_posedge_event")
+	, signal_negedge_event(__LIBIEEE1666_KERNEL_PREFIX__ "_signal_negedge_event")
+	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
+	, curr_value()
+	, new_value()
+{
+}
+
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>::sc_signal(const char *_name)
+	: sc_prim_channel(_name)
+	, registered_inout_port(0)
+	, writer(0)
+	, signal_value_changed_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_" + _name + "_signal_value_changed_event").c_str())
+	, signal_posedge_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_" + _name + "_signal_posedge_event").c_str())
+	, signal_negedge_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_" + _name + "_signal_negedge_event").c_str())
+	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
+	, curr_value()
+	, new_value()
+{
+}
+
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>::~sc_signal()
+{
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::register_port(sc_port_base& port, const char *if_typename)
+{
+	if(std::string(typeid(sc_signal_inout_if<bool>).name()).compare(if_typename) == 0)
+	{
+		// output port
+		if((WRITER_POLICY == SC_ONE_WRITER) && registered_inout_port && (registered_inout_port != &port))
+		{
+			throw std::runtime_error("sc_signal can't be bound to more than one output port");
+		}
+		registered_inout_port = &port;
+	}
+	else if(std::string(typeid(sc_signal_in_if<bool>).name()).compare(if_typename) != 0)
+	{
+		throw std::runtime_error("sc_signal is not bound to sc_signal_in_if<bool> nor sc_signal_inout_if<bool>");
+	}
+	
+}
+
+template <sc_writer_policy WRITER_POLICY>
+const sc_dt::sc_logic& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::read() const
+{
+	return curr_value;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>::operator const sc_dt::sc_logic& () const
+{
+	return read();
+}
+
+template <sc_writer_policy WRITER_POLICY>
+sc_writer_policy sc_signal<sc_dt::sc_logic, WRITER_POLICY>::get_writer_policy() const
+{
+	return WRITER_POLICY;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::write(const sc_dt::sc_logic& v)
+{
+	bool value_changed = !(v == curr_value);
+
+	new_value = v;
+
+	if(value_changed)
+	{
+		if(!check_write())
+		{
+			throw std::runtime_error("sc_signal<T, SC_ONE_WRITER> with multiple writers");
+		}
+		
+		request_update();
+	}
+}
+
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::operator = (const sc_dt::sc_logic& v)
+{
+	write(v);
+	return *this;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::operator = (const sc_signal<sc_dt::sc_logic, WRITER_POLICY>& s)
+{
+	write(s.read());
+	return *this;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+const sc_event& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::default_event() const
+{
+	return signal_value_changed_event;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+const sc_event& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::value_changed_event() const
+{
+	return signal_value_changed_event;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+const sc_event& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::posedge_event() const
+{
+	return signal_posedge_event;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+const sc_event& sc_signal<sc_dt::sc_logic, WRITER_POLICY>::negedge_event() const
+{
+	return signal_negedge_event;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+bool sc_signal<sc_dt::sc_logic, WRITER_POLICY>::event() const
+{
+	return signal_value_changed_delta_cycle == kernel->get_delta_count();
+}
+
+template <sc_writer_policy WRITER_POLICY>
+bool sc_signal<sc_dt::sc_logic, WRITER_POLICY>::posedge() const
+{
+	return (curr_value == sc_dt::SC_LOGIC_1) && event();
+}
+
+template <sc_writer_policy WRITER_POLICY>
+bool sc_signal<sc_dt::sc_logic, WRITER_POLICY>::negedge() const
+{
+	return (curr_value == sc_dt::SC_LOGIC_0) && event();
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::print(std::ostream& os) const
+{
+	os << *this;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::dump(std::ostream& os) const
+{
+	os << name() << ": kind=\"" << kind() << "\", current_value=" << curr_value.to_char() << ", new_value=" << new_value.to_char();
+}
+
+template <sc_writer_policy WRITER_POLICY>
+const char* sc_signal<sc_dt::sc_logic, WRITER_POLICY>::kind() const
+{
+	return "sc_signal";
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::update()
+{
+	bool value_changed = !(curr_value == new_value);
+	
+	if(value_changed)
+	{
+		do_update();
+	}
+}
+
+template <sc_writer_policy WRITER_POLICY>
+bool sc_signal<sc_dt::sc_logic, WRITER_POLICY>::check_write()
+{
+	if(WRITER_POLICY == SC_ONE_WRITER)
+	{
+		if(!writer) writer = kernel->get_current_writer();
+		
+		if(writer != kernel->get_current_writer())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::do_update()
+{
+	toggle_value();
+	signal_value_changed_delta_cycle = kernel->get_delta_count();
+	signal_value_changed_event.notify(SC_ZERO_TIME);
+	if(curr_value == sc_dt::SC_LOGIC_1)
+	{
+		signal_posedge_event.notify(SC_ZERO_TIME);
+	}
+	else if(curr_value == sc_dt::SC_LOGIC_0)
+	{
+		signal_negedge_event.notify(SC_ZERO_TIME);
+	}
+}
+
+// disabled
+template <sc_writer_policy WRITER_POLICY>
+sc_signal<sc_dt::sc_logic, WRITER_POLICY>::sc_signal( const sc_signal<sc_dt::sc_logic, WRITER_POLICY>& )
+{
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<sc_dt::sc_logic, WRITER_POLICY>::toggle_value()
+{
+	curr_value = new_value;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+inline std::ostream& operator << (std::ostream& os, const sc_signal<sc_dt::sc_logic, WRITER_POLICY>& s)
+{
+	return os << s.read().to_char();
 }
 
 } // end of namespace sc_core

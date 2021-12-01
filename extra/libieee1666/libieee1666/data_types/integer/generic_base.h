@@ -41,6 +41,19 @@ namespace sc_dt {
 
 //////////////////////////////// declaration //////////////////////////////////
 
+// Note: class sc_generic_base proxy uses curiously recurring template pattern (CRTP) and multiple inheritance
+// it provides operator -> as an efficient way for the receipt to statically call functions of derived class without resorting virtual functions.
+// non-const -> operator is concretely unused and is here only for completeness purpose.
+// An application-defined type should looks like the following:
+// class ApplicationDefinedClass : public sc_generic_base<ApplicationDefinedClass>, public sc_value_base
+// {
+// public:
+//     int length() const;
+//     uint64 to_uint64() const;
+//     int64 to_int64() const;
+//     void to_sc_unsigned(sc_unsigned&) const;
+//     void to_sc_signed(sc_signed&) const;
+// };
 template <class T>
 class sc_generic_base
 {
@@ -54,11 +67,13 @@ public:
 template <class T>
 inline const T *sc_generic_base<T>::operator -> () const
 {
+	return (const T *) this;
 }
 
 template <class T>
 inline T *sc_generic_base<T>::operator -> ()
 {
+	return (T *) this;
 }
 
 } // end of namespace sc_dt

@@ -259,7 +259,7 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_transport_fw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	if(!mod || !nb_transport_fw_cb) throw std::runtime_error("tlm_utils::passthrough_target_socket_tagged: no nb_transport_fw callback registered");
-	(mod->*nb_transport_fw_cb)(id, trans, phase, t);
+	return (mod->*nb_transport_fw_cb)(id, trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -273,14 +273,14 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 unsigned int passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::transport_dbg(transaction_type& trans)
 {
 	if(!mod || !transport_dbg_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no transport_dbg callback registered");
-	(mod->*transport_dbg_cb)(id, trans);
+	return (mod->*transport_dbg_cb)(id, trans);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 bool passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data)
 {
 	if(!mod || !get_direct_mem_ptr_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no get_direct_mem_ptr callback registered");
-	(mod->*get_direct_mem_ptr_cb)(id, trans, dmi_data);
+	return (mod->*get_direct_mem_ptr_cb)(id, trans, dmi_data);
 }
 
 } // end of namespace tlm_utils

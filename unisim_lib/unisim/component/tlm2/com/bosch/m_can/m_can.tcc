@@ -1178,7 +1178,7 @@ void M_CAN<CONFIG>::ProcessEvent(Event *event)
 
 			payload->set_dmi_allowed(false);
 			
-			sc_core::sc_time completion_time(sc_core::SC_ZERO_TIME);
+			sc_core::sc_time completion_time(master_clock_period);
 			sc_core::sc_event *completion_event = event->GetCompletionEvent();
 			
 			if(completion_event)
@@ -2379,7 +2379,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 						break;
 						
 					case CLASSIC_FILTER: // classic filter
-						match = (id & fid2) == (id & fid2);
+						match = (id & fid2) == (fid1 & fid2);
 						break;
 						
 					default: // reserved

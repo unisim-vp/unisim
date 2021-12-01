@@ -73,16 +73,98 @@ public:
 	void print(std::ostream& os = std::cout) const;
 	void scan(std::istream& is = std::cin);
 
+	// Bitwise operators
+	const sc_logic operator ~() const;
+
+	friend const sc_logic operator & (const sc_logic& a, const sc_logic& b);
+	friend const sc_logic operator & (const sc_logic& a, sc_logic_value_t b);
+	friend const sc_logic operator & (const sc_logic& a, bool b);
+	friend const sc_logic operator & (const sc_logic& a, char b);
+	friend const sc_logic operator & (const sc_logic& a, int b);
+	friend const sc_logic operator & (sc_logic_value_t a, const sc_logic& b);
+	friend const sc_logic operator & (bool a, const sc_logic& b);
+	friend const sc_logic operator & (char a, const sc_logic& b);
+	friend const sc_logic operator & (int a, const sc_logic& b);
+
+	sc_logic& operator &= (const sc_logic& b);
+	sc_logic& operator &= (sc_logic_value_t b);
+	sc_logic& operator &= (bool b);
+	sc_logic& operator &= (char b);
+	sc_logic& operator &= (int b);
+
+	friend const sc_logic operator | (const sc_logic& a, const sc_logic& b);
+	friend const sc_logic operator | (const sc_logic& a, sc_logic_value_t b);
+	friend const sc_logic operator | (const sc_logic& a, bool b);
+	friend const sc_logic operator | (const sc_logic& a, char b);
+	friend const sc_logic operator | (const sc_logic& a, int b);
+	friend const sc_logic operator | (sc_logic_value_t a, const sc_logic& b);
+	friend const sc_logic operator | (bool a, const sc_logic& b);
+	friend const sc_logic operator | (char a, const sc_logic& b);
+	friend const sc_logic operator | (int a, const sc_logic& b);
+
+	sc_logic& operator |= (const sc_logic& b);
+	sc_logic& operator |= (sc_logic_value_t b);
+	sc_logic& operator |= (bool b);
+	sc_logic& operator |= (char b);
+	sc_logic& operator |= (int b);
+
+	friend const sc_logic operator ^ (const sc_logic& a, const sc_logic& b);
+	friend const sc_logic operator ^ (const sc_logic& a, sc_logic_value_t b);
+	friend const sc_logic operator ^ (const sc_logic& a, bool b);
+	friend const sc_logic operator ^ (const sc_logic& a, char b);
+	friend const sc_logic operator ^ (const sc_logic& a, int b);
+	friend const sc_logic operator ^ (sc_logic_value_t a, const sc_logic& b);
+	friend const sc_logic operator ^ (bool a, const sc_logic& b);
+	friend const sc_logic operator ^ (char a, const sc_logic& b);
+	friend const sc_logic operator ^ (int a, const sc_logic& b);
+
+	sc_logic& operator ^= (const sc_logic& b);
+	sc_logic& operator ^= (sc_logic_value_t b);
+	sc_logic& operator ^= (bool b);
+	sc_logic& operator ^= (char b);
+	sc_logic& operator ^= (int b);
+
+	// Comparison operators
+	friend bool operator == (const sc_logic& a, const sc_logic& b);
+	friend bool operator == (const sc_logic& a, sc_logic_value_t b);
+	friend bool operator == (const sc_logic& a, bool b);
+	friend bool operator == (const sc_logic& a, char b);
+	friend bool operator == (const sc_logic& a, int b);
+	friend bool operator == (sc_logic_value_t a, const sc_logic& b);
+	friend bool operator == (bool a, const sc_logic& b);
+	friend bool operator == (char a, const sc_logic& b);
+	friend bool operator == (int a, const sc_logic& b);
+
+	friend bool operator != (const sc_logic& a, const sc_logic& b);
+	friend bool operator != (const sc_logic& a, sc_logic_value_t b);
+	friend bool operator != (const sc_logic& a, bool b);
+	friend bool operator != (const sc_logic& a, char b);
+	friend bool operator != (const sc_logic& a, int b);
+	friend bool operator != (sc_logic_value_t a, const sc_logic& b);
+	friend bool operator != (bool a, const sc_logic& b);
+	friend bool operator != (char a, const sc_logic& b);
+	friend bool operator != (int a, const sc_logic& b);
+
 private:
 	// Disabled
 	explicit sc_logic(const char *);
 	sc_logic& operator = (const char *);
+
+	static sc_logic_value_t bool2value(bool a);
+	static sc_logic_value_t char2value(char a);
+	static sc_logic_value_t int2value(int a);
+	static sc_logic_value_t and_op(sc_logic_value_t a, sc_logic_value_t b);
+	static sc_logic_value_t or_op(sc_logic_value_t a, sc_logic_value_t b);
+	static sc_logic_value_t xor_op(sc_logic_value_t a, sc_logic_value_t b);
+	static sc_logic_value_t not_op(sc_logic_value_t a);
+
+	sc_logic_value_t logic_value;
 };
 
-const sc_logic SC_LOGIC_0(Log_0);
-const sc_logic SC_LOGIC_1(Log_1);
-const sc_logic SC_LOGIC_Z(Log_Z);
-const sc_logic SC_LOGIC_X(Log_X);
+extern const sc_logic SC_LOGIC_0;
+extern const sc_logic SC_LOGIC_1;
+extern const sc_logic SC_LOGIC_Z;
+extern const sc_logic SC_LOGIC_X;
 
 } // end of namespace sc_dt
 

@@ -33,8 +33,11 @@
  */
 
 #include "channels/in.h"
+#include "utilities/trace_file.h"
 
 namespace sc_core {
+
+//////////////////////////////// sc_in<bool> /////////////////////////////////////////////
 
 sc_in<bool>::sc_in()
 	: sc_port<sc_signal_in_if<bool>,1>()
@@ -176,7 +179,154 @@ sc_in<bool>& sc_in<bool>::operator= ( const sc_in<bool>& )
 }
 
 template <>
-inline void sc_trace<bool>( sc_trace_file*, const sc_in<bool>&, const std::string& )
+inline void sc_trace<bool>( sc_trace_file *tf, const sc_in<bool>& in, const std::string& name)
+{
+	sc_trace(tf, in.read(), name);
+}
+
+/////////////////////////// sc_in<sc_dt::sc_logic> ////////////////////////////////////////
+
+sc_in<sc_dt::sc_logic>::sc_in()
+	: sc_port<sc_signal_in_if<sc_dt::sc_logic>,1>()
+	, value_changed_event_finder(0)
+	, posedge_event_finder(0)
+	, negedge_event_finder(0)
+{
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> >(*this, &sc_signal_in_if<sc_dt::sc_logic>::value_changed_event);
+	posedge_event_finder = new sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> >(*this, &sc_signal_in_if<sc_dt::sc_logic>::posedge_event);
+	negedge_event_finder = new sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> >(*this, &sc_signal_in_if<sc_dt::sc_logic>::negedge_event);
+}
+
+sc_in<sc_dt::sc_logic>::sc_in(const char *_name)
+	: sc_port<sc_signal_in_if<sc_dt::sc_logic>,1>(_name)
+	, value_changed_event_finder(0)
+	, posedge_event_finder(0)
+	, negedge_event_finder(0)
+{
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> >(*this, &sc_signal_in_if<sc_dt::sc_logic>::value_changed_event);
+	posedge_event_finder = new sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> >(*this, &sc_signal_in_if<sc_dt::sc_logic>::posedge_event);
+	negedge_event_finder = new sc_event_finder_t<sc_signal_in_if<sc_dt::sc_logic> >(*this, &sc_signal_in_if<sc_dt::sc_logic>::negedge_event);
+}
+
+sc_in<sc_dt::sc_logic>::~sc_in()
+{
+	delete value_changed_event_finder;
+	delete posedge_event_finder;
+	delete negedge_event_finder;
+}
+
+void sc_in<sc_dt::sc_logic>::bind(const sc_signal_in_if<sc_dt::sc_logic>& _if)
+{
+	sc_port_base::bind(const_cast<sc_signal_in_if<sc_dt::sc_logic>&>(_if));
+}
+
+void sc_in<sc_dt::sc_logic>::operator() (const sc_signal_in_if<sc_dt::sc_logic>& _if)
+{
+	sc_in<sc_dt::sc_logic>::bind(_if);
+}
+
+void sc_in<sc_dt::sc_logic>::bind(sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& port)
+{
+	sc_port_base::bind(port);
+}
+
+void sc_in<sc_dt::sc_logic>::operator() (sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& port)
+{
+	sc_in<sc_dt::sc_logic>::bind(port);
+}
+
+void sc_in<sc_dt::sc_logic>::bind(sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& port)
+{
+	sc_port_base::bind(port);
+}
+
+void sc_in<sc_dt::sc_logic>::operator() (sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& port)
+{
+	sc_in<sc_dt::sc_logic>::bind(port);
+}
+
+void sc_in<sc_dt::sc_logic>::end_of_elaboration()
+{
+}
+
+const sc_dt::sc_logic& sc_in<sc_dt::sc_logic>::read() const
+{
+	return (*this)->read();
+}
+
+sc_in<sc_dt::sc_logic>::operator const sc_dt::sc_logic& () const
+{
+	return (*this)->read();
+}
+
+const sc_event& sc_in<sc_dt::sc_logic>::default_event() const
+{
+	return (*this)->default_event();
+}
+
+const sc_event& sc_in<sc_dt::sc_logic>::value_changed_event() const
+{
+	return (*this)->value_changed_event();
+}
+
+const sc_event& sc_in<sc_dt::sc_logic>::posedge_event() const
+{
+	return (*this)->posedge_event();
+}
+
+const sc_event& sc_in<sc_dt::sc_logic>::negedge_event() const
+{
+	return (*this)->negedge_event();
+}
+
+bool sc_in<sc_dt::sc_logic>::event() const
+{
+	return (*this)->event();
+}
+
+bool sc_in<sc_dt::sc_logic>::posedge() const
+{
+	return (*this)->posedge();
+}
+
+bool sc_in<sc_dt::sc_logic>::negedge() const
+{
+	return (*this)->posedge();
+}
+
+sc_event_finder& sc_in<sc_dt::sc_logic>::value_changed() const
+{
+	return *value_changed_event_finder;
+}
+
+sc_event_finder& sc_in<sc_dt::sc_logic>::pos() const
+{
+	return *posedge_event_finder;
+}
+
+sc_event_finder& sc_in<sc_dt::sc_logic>::neg() const
+{
+	return *negedge_event_finder;
+}
+
+const char* sc_in<sc_dt::sc_logic>::kind() const
+{
+	return "sc_in";
+}
+
+// Disabled
+sc_in<sc_dt::sc_logic>::sc_in(const sc_in<sc_dt::sc_logic>&)
+{
+}
+
+// Disabled
+sc_in<sc_dt::sc_logic>& sc_in<sc_dt::sc_logic>::operator= ( const sc_in<sc_dt::sc_logic>& )
+{
+	return *this;
+}
+
+template <>
+inline void sc_trace<sc_dt::sc_logic>( sc_trace_file*, const sc_in<sc_dt::sc_logic>&, const std::string& )
 {
 }
 

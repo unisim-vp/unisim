@@ -36,6 +36,7 @@
 #define __LIBIEEE1666_DATA_TYPES_FWD_H__
 
 #include <data_types/native.h>
+#include <string>
 
 namespace sc_dt {
 
@@ -54,6 +55,8 @@ enum sc_numrep
 	SC_HEX_SM,
 	SC_CSD
 };
+
+inline const std::string to_string(sc_numrep numrep);
 
 enum sc_logic_value_t
 {
@@ -101,9 +104,9 @@ enum sc_context_begin
 	SC_LATER
 };
 
-const sc_q_mode SC_DEFAULT_Q_MODE_ = SC_TRN;
-const sc_o_mode SC_DEFAULT_O_MODE_ = SC_WRAP;
-const int SC_DEFAULT_N_BITS_ = 0;
+extern const sc_q_mode SC_DEFAULT_Q_MODE_;
+extern const sc_o_mode SC_DEFAULT_O_MODE_;
+extern const int SC_DEFAULT_N_BITS_;
 
 template <class T1, class T2> class sc_concref;
 class sc_logic;
@@ -169,6 +172,26 @@ class sc_fxcast_context;
 template <class T> const T sc_abs(const T& v);
 template <class T> const T sc_max(const T& a, const T& b);
 template <class T> const T sc_min(const T& a, const T& b);
+
+inline const std::string to_string(sc_numrep numrep)
+{
+	switch(numrep)
+	{
+		case SC_NOBASE: return std::string("SC_NOBASE");
+		case SC_BIN   : return std::string("SC_BIN");
+		case SC_OCT   : return std::string("SC_OCT");
+		case SC_DEC   : return std::string("SC_DEC");
+		case SC_HEX   : return std::string("SC_HEX");
+		case SC_BIN_US: return std::string("SC_BIN_US");
+		case SC_BIN_SM: return std::string("SC_BIN_SM");
+		case SC_OCT_US: return std::string("SC_OCT_US");
+		case SC_OCT_SM: return std::string("SC_OCT_SM");
+		case SC_HEX_US: return std::string("SC_HEX_US");
+		case SC_HEX_SM: return std::string("SC_HEX_SM");
+		case SC_CSD   : return std::string("SC_CSD");
+	}
+	return std::string();
+}
 
 } // end of namespace sc_dt
 

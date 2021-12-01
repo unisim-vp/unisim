@@ -69,7 +69,7 @@ void dspi_2_tfff_rfdf(unsigned int dspi_id, enum DSPI_REQ dspi_req)
 }
 #endif
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	swt_set_service_mode(2, SMD_KEYED_SERVICE_SEQUENCE); // SWT_2: select keyed service sequence for SWT_2
 	swt_set_service_key(2, 1234);                        // SWT_2: set SWT_2 service key
@@ -79,8 +79,8 @@ int main(void)
 	// trigger periodic_task every 200 us (with a 50 Mhz clock)
 	stm_set_interrupt_handler(2, 0, periodic_task); // STM_2: install a hook for STM_2 channel #0 interrupts
 	stm_enable_counter(2);                          // STM_2: enable STM_2 counter
-	stm_set_channel_compare(2, 0, 10000);           // STM_2: set STM_2 channel #0 compare value to 200 us (i.e. 10000 cycles at 50 MHz)
-	stm_enable_channel(2, 0);                       // STM_2: enable STM_2 channel #0
+	stm_set_channel_compare(2, 1, 10000);           // STM_2: set STM_2 channel #1 compare value to 200 us (i.e. 10000 cycles at 50 MHz)
+	stm_enable_channel(2, 1);                       // STM_2: enable STM_2 channel #1
 	
 	// trigger periodic_task2 every 300 us (with a 80 MHz clock)
 	pit_set_timer_interrupt_handler(0, 0, periodic_task2); // PIT_0: install a hook for PIT_0 timer #0 interrupts
