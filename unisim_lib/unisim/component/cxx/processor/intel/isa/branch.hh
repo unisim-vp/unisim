@@ -539,15 +539,13 @@ struct Leave : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,ENTER_LEAVE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (ic.opsize() != ARCH::GR::SIZE)
-    return 0;
   
   if (auto _ = match( ic, opcode( "\xc8" ) & Imm<16>() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new Enter<ARCH,16>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
-      else if (ic.opsize() == 32) return new Enter<ARCH,32>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
-      else if (ic.opsize() == 64) return new Enter<ARCH,64>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
+      else if (!ic.mode64()) return new Enter<ARCH,32>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
+      else if (ic.mode64()) return new Enter<ARCH,64>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
       else return 0;
     }
   
@@ -555,8 +553,8 @@ template <class ARCH> struct DC<ARCH,ENTER_LEAVE> { Operation<ARCH>* get( InputC
   
     {
       if      (ic.opsize() == 16) return new Leave<ARCH,GOw>( _.opbase() );
-      else if (ic.opsize() == 32) return new Leave<ARCH,GOd>( _.opbase() );
-      else if (ic.opsize() == 64) return new Leave<ARCH,GOq>( _.opbase() );
+      else if (!ic.mode64()) return new Leave<ARCH,GOd>( _.opbase() );
+      else if (ic.mode64()) return new Leave<ARCH,GOq>( _.opbase() );
     }
   return 0;
 }};
