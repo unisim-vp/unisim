@@ -4,9 +4,21 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=1.0.9
+VERSION=0.0.1
 
 source "$(dirname $0)/dist_common.sh"
+
+function includes()
+{
+    local SEARCH_PATH=$1/$2
+    local SRC_FILES=$(find ${SEARCH_PATH} -name *.cc)
+    for i in $(gcc -MM -I$1 -I${SEARCH_PATH} ${SRC_FILES} |\
+		   tr '\n\\' ' ' |\
+		   sed -e 's/[^ ][^ ]*\.o: [ ]*[^ ][^ ]*//g' |\
+		   sort -u); do
+        realpath --relative-to=${SEARCH_PATH} $i
+    done
+}
 
 # ARMv7
 
@@ -51,35 +63,54 @@ import std/string || exit
 import std/vector || exit
 import sys/mman || exit
 
-copy isa source header template data
-dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
+copy source header template data
 
 AARCH32_SRCDIR=cxx/armsec
 AARCH32_DSTDIR=aarch32
-AARCH32_ISA_FILES="\
+AARCH32_SRC_FILES="\
 decoder.hh \
 decoder.cc \
-top_thumb.isa \
-top_arm32.isa \
+"
+AARCH32_ISA_FILES="\
+top_arm32 \
+top_thumb \
 "
 
-for file in ${AARCH32_ISA_FILES}; do
+for file in ${AARCH32_SRC_FILES}; do
     dist_copy "${UNISIM_SIMULATOR_DIR}/${AARCH32_SRCDIR}/${file}" \
               "${DEST_DIR}/${AARCH32_DSTDIR}/${file}"
 done
 
+for isa in ${AARCH32_ISA_FILES}; do
+    ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
+		       -o ${DEST_DIR}/${AARCH32_DSTDIR}/${isa} \
+		       -w 8 -I ${UNISIM_LIB_DIR} \
+		       ${UNISIM_SIMULATOR_DIR}/${AARCH32_SRCDIR}/${isa}.isa
+done
+
 AARCH64_SRCDIR=cxx/aarch64dba
 AARCH64_DSTDIR=aarch64
-AARCH64_ISA_FILES="\
+AARCH64_SRC_FILES="\
 decoder.hh \
 decoder.cc \
-aarch64dec.isa \
 "
 
-for file in ${AARCH64_ISA_FILES}; do
+AARCH64_ISA_FILES="\
+aarch64dec \
+"
+
+for file in ${AARCH64_SRC_FILES}; do
     dist_copy "${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${file}" \
     "${DEST_DIR}/${AARCH64_DSTDIR}/${file}"
 done
+
+for isa in ${AARCH64_ISA_FILES}; do
+    ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
+		       -o ${DEST_DIR}/${AARCH64_DSTDIR}/${isa} \
+		       -w 8 -I ${UNISIM_LIB_DIR} \
+		       ${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${isa}.isa
+done
+
 
 AMD64_SRCDIR=cxx/amd64dba
 AMD64_DSTDIR=amd64
@@ -101,6 +132,7 @@ arm32dba.cc arm32dba.ml \
 aarch64dba.cc aarch64dba.ml \
 amd64dba.cc amd64dba.ml \
 unittest.ml \
+unittest.expected \
 "
 
 for file in ${UNISIM_SIMULATOR_SOURCE_FILES}; do
@@ -180,23 +212,21 @@ INSTALLATION
 
 Requirements:
   - GCC/G++
-  - python
-  - OCaml (>= 4.05)
-  - dune (>= 2.8)
+  - dune (>= 3.0)
 
 Building instructions:
-```console
+\`\`\`console
 $ dune build @install
-```
+\`\`\`
 
 Installing (optional):
-```console
+\`\`\`console
 $ dune install
-```
+\`\`\`
 EOF
 
 cat << EOF > "${DEST_DIR}/dune-project"
-(lang dune 2.8)
+(lang dune 3.0)
 (generate_opam_files true)
 
 (name unisim_archisec)
@@ -214,9 +244,11 @@ cat << EOF > "${DEST_DIR}/dune-project"
 (package
  (name unisim_archisec)
  (synopsis "UNISIM-VP DBA decoder")
- (description "UNISIM-VP decoder.")
+ (description "
+UNISIM ARCHISEC is a companion project of the binary analysis platform
+BINSEC. It exposes disassembly metadata and DBA (Dynamic Bitvector Automata)
+semantics of several instruction set architectures, including ARM and x86.")
  (depends
-  (ocaml (>= 4.05))
   (conf-gcc :build)
   (conf-g++ :build)))
 EOF
@@ -225,17 +257,11 @@ cat <<EOF > "${DEST_DIR}/unisim_archisec.opam.template"
 available: [ os = "linux" & (os-distribution != "ol" & os-distribution != "centos" | os-version >= 8) ]
 EOF
 
-cat <<EOF > "${DEST_DIR}/dune"
-(rule
- (target .unisim-full-tree)
- (deps
-  (source_tree unisim)
-  (source_tree aarch32)
-  (source_tree aarch64)
-  (source_tree amd64))
- (action
-  (write-file %{target} "")))
+echo -n > "${DEST_DIR}/dune"
 
+UTIL_INCLUDES=$(includes ${DEST_DIR} unisim/util)
+
+cat <<EOF >> "${DEST_DIR}/dune"
 (subdir
  unisim/util
  (include_subdirs unqualified)
@@ -244,35 +270,25 @@ cat <<EOF > "${DEST_DIR}/dune"
   (name util)
   (foreign_stubs
    (language cxx)
-   (names (:standard))
-   (flags :standard -I ../..)
-   (extra_deps ../../.unisim-full-tree))
-  (c_library_flags :standard -lstdc++)))
+   (names :standard)
+   (flags :standard -I../..)
+   (extra_deps ${UTIL_INCLUDES}))))
+EOF
 
-(rule
- (targets top_arm32.hh top_arm32.tcc)
- (deps
-  (:gen ./genisslib.py)
-  (:src aarch32/top_arm32.isa))
- (action
-  (no-infer (run %{gen} -o top_arm32 -w 8 -I . %{src}))))
+echo >> "${DEST_DIR}/dune"
 
-(rule
- (targets top_thumb.hh top_thumb.tcc)
- (deps
-  (:gen ./genisslib.py)
-  (:src aarch32/top_thumb.isa))
- (action
-  (no-infer (run %{gen} -o top_thumb -w 8 -I . %{src}))))
+ARM_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/arm)
+AARCH32_INCLUDES=$(includes ${DEST_DIR} aarch32)
 
+cat <<EOF >> "${DEST_DIR}/dune"
 (subdir
  unisim/component/cxx/processor/arm
  (foreign_library
   (archive_name arm)
   (language cxx)
-  (names (:standard))
-  (flags :standard -I ../../../../..)
-  (extra_deps ../../../../../.unisim-full-tree)))
+  (names (:standard \ simfloat))
+  (flags (:standard -I../../../../..))
+  (extra_deps ${ARM_INCLUDES})))
 
 (subdir
  aarch32
@@ -280,11 +296,8 @@ cat <<EOF > "${DEST_DIR}/dune"
   (archive_name aarch32)
   (language cxx)
   (names (:standard))
-  (flags :standard -I ..)
-  (extra_deps
-   ../.unisim-full-tree
-   ../top_arm32.hh ../top_arm32.tcc
-   ../top_thumb.hh ../top_thumb.tcc)))
+  (flags :standard -I. -I..)
+  (extra_deps ${AARCH32_INCLUDES})))
 
 (library
  (public_name unisim_archisec.arm32dba)
@@ -296,26 +309,25 @@ cat <<EOF > "${DEST_DIR}/dune"
  (foreign_stubs
   (language cxx)
   (names arm32dba)
-  (flags :standard -I .))
- (c_library_flags :standard -lstdc++)
+  (flags :standard -I.))
  (libraries util))
+EOF
 
-(rule
- (targets aarch64dec.hh aarch64dec.tcc)
- (deps
-  (:gen ./genisslib.py)
-  (:src aarch64/aarch64dec.isa))
- (action
-  (no-infer (run %{gen} -o aarch64dec -w 8 -I . %{src}))))
+echo >> "${DEST_DIR}/dune"
 
+ARM64_INCLUDES=$(includes ${DEST_DIR} \
+			  unisim/component/cxx/processor/arm/isa/arm64)
+AARCH64_INCLUDES=$(includes ${DEST_DIR} aarch64)
+
+cat <<EOF >> "${DEST_DIR}/dune"
 (subdir
  unisim/component/cxx/processor/arm/isa/arm64
  (foreign_library
   (archive_name arm64)
   (language cxx)
   (names (:standard))
-  (flags :standard -I ../../../../../../..)
-  (extra_deps ../../../../../../../.unisim-full-tree)))
+  (flags :standard -I../../../../../../..)
+  (extra_deps ${ARM64_INCLUDES})))
 
 (subdir
  aarch64
@@ -323,10 +335,8 @@ cat <<EOF > "${DEST_DIR}/dune"
   (archive_name aarch64)
   (language cxx)
   (names (:standard))
-  (flags :standard -I ..)
-  (extra_deps
-   ../.unisim-full-tree
-   ../aarch64dec.hh ../aarch64dec.tcc)))
+  (flags :standard -I. -I..)
+  (extra_deps ${AARCH64_INCLUDES})))
 
 (library
  (public_name unisim_archisec.aarch64dba)
@@ -338,10 +348,16 @@ cat <<EOF > "${DEST_DIR}/dune"
  (foreign_stubs
   (language cxx)
   (names aarch64dba)
-  (flags :standard -I .))
- (c_library_flags :standard -lstdc++)
+  (flags :standard -I.))
  (libraries util))
+EOF
 
+echo >> "${DEST_DIR}/dune"
+
+INTEL_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/intel)
+AMD64_INCLUDES=$(includes ${DEST_DIR} amd64)
+
+cat <<EOF >> "${DEST_DIR}/dune"
 (subdir
  unisim/component/cxx/processor/intel
  (include_subdirs unqualified)
@@ -349,8 +365,8 @@ cat <<EOF > "${DEST_DIR}/dune"
   (archive_name intel)
   (language cxx)
   (names (:standard))
-  (flags :standard -I ../../../../..)
-  (extra_deps ../../../../../.unisim-full-tree)))
+  (flags :standard -I../../../../..)
+  (extra_deps ${INTEL_INCLUDES})))
 
 (subdir
  amd64
@@ -358,8 +374,8 @@ cat <<EOF > "${DEST_DIR}/dune"
  (archive_name amd64)
  (language cxx)
  (names (:standard))
- (flags :standard -I .. -I.)
- (extra_deps ../.unisim-full-tree)))
+ (flags :standard -I. -I..)
+ (extra_deps ${AMD64_INCLUDES})))
 
 (library
  (public_name unisim_archisec.amd64dba)
@@ -371,10 +387,13 @@ cat <<EOF > "${DEST_DIR}/dune"
  (foreign_stubs
   (language cxx)
   (names amd64dba)
-  (flags :standard -I .))
- (c_library_flags :standard -lstdc++)
+  (flags :standard -I.))
  (libraries util))
+EOF
 
+echo >> "${DEST_DIR}/dune"
+
+cat <<EOF >> "${DEST_DIR}/dune"
 (test
  (name unittest)
  (modes native)
@@ -382,61 +401,7 @@ cat <<EOF > "${DEST_DIR}/dune"
  (libraries arm32dba aarch64dba amd64dba))
 EOF
 
-cat << EOF > "${DEST_DIR}/unittest.expected"
-Amd64dba.decode ~m64:false ~addr:0x4000L "55"
-(address . 0x00004000)
-(opcode . "55")
-(size . 1)
-(mnemonic . "push %ebp")
-(0x00004000,0) nxt_esp<32> := (esp<32> - 0x00000004); goto 1
-(0x00004000,1) @[nxt_esp<32>,<-,4] := ebp<32>; goto 2
-(0x00004000,2) esp<32> := nxt_esp<32>; goto 3
-(0x00004000,3) goto (0x00004001,0)
-
-Amd64dba.decode ~m64:true ~addr:0x4000L "55"
-(address . 0x0000000000004000)
-(opcode . "55")
-(size . 1)
-(mnemonic . "push %rbp")
-(0x0000000000004000,0) nxt_rsp<64> := (rsp<64> - 0x0000000000000008); goto 1
-(0x0000000000004000,1) @[nxt_rsp<64>,<-,8] := rbp<64>; goto 2
-(0x0000000000004000,2) rsp<64> := nxt_rsp<64>; goto 3
-(0x0000000000004000,3) goto (0x0000000000004001,0)
-
-Arm32dba.decode ~thumb:false ~addr:0x4000l 0xe2543210l
-(address . 0x00004000)
-(opcode . 0xe2543210)
-(size . 4)
-(mnemonic . "subs	r3, r4, #1")
-(0x00004000,0) nxt_r3<32> := (r4<32> - 0x00000001); goto 1
-(0x00004000,1) nxt_n<1> := (nxt_r3<32> <s 0x00000000); goto 2
-(0x00004000,2) nxt_z<1> := (nxt_r3<32> = 0x00000000); goto 3
-(0x00004000,3) nxt_c<1> := (r4<32> >=u 0x00000001); goto 4
-(0x00004000,4) nxt_v<1> := (nxt_n<1> xor (r4<32> <s 0x00000001)); goto 5
-(0x00004000,5) r3<32> := nxt_r3<32>; goto 6
-(0x00004000,6) n<1> := nxt_n<1>; goto 7
-(0x00004000,7) z<1> := nxt_z<1>; goto 8
-(0x00004000,8) c<1> := nxt_c<1>; goto 9
-(0x00004000,9) v<1> := nxt_v<1>; goto 10
-(0x00004000,10) goto (0x00004004,0)
-
-Arm32dba.decode ~thumb:true ~addr:0x4000l 0x000af04fl
-(address . 0x00004000)
-(opcode . 0x000af04f)
-(size . 4)
-(mnemonic . "mov.w	r0, #10")
-(0x00004000,0) if (((((((((((((((1<1> or z<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>) or 0<1>)  goto 2 else goto 1
-(0x00004000,1) goto (0x00004004,0)
-(0x00004000,2) r0<32> := 0x0000000a; goto 1
-
-Aarch64dba.decode ~addr:0x4000L 0x18000020l
-(address . 0x0000000000004000)
-(opcode . 0x18000020)
-(size . 4)
-(mnemonic . "ldr	w0, 0x4004")
-(0x0000000000004000,0) nxt_x0<64> := (extu @[0x0000000000004004,<-,4] 64); goto 1
-(0x0000000000004000,1) x0<64> := nxt_x0<64>; goto 2
-(0x0000000000004000,2) goto (0x0000000000004004,0)
-EOF
+dune format-dune-file ${DEST_DIR}/dune > ${DEST_DIR}/dune.formatted
+mv ${DEST_DIR}/dune.formatted ${DEST_DIR}/dune
 
 echo "Distribution is up-to-date"
