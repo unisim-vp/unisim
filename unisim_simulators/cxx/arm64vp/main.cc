@@ -37,6 +37,7 @@
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/service/netstreamer/netstreamer.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -97,6 +98,16 @@ struct MMapped : AArch64::Page::Free
 private:
   ~MMapped() { close(fd); }
 };
+
+bool
+load_snapshot(AArch64& arch, char const* shot_filename)
+{
+  if (access(shot_filename, R_OK) != 0)
+    return false;
+  arch.load_snapshot(shot_filename);
+  std::cerr << "Starting at " << std::dec << arch.insn_counter << " instructions." << std::endl;
+  return true;
+}
 
 bool
 load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
@@ -211,6 +222,8 @@ void simdefault(unisim::kernel::Simulator* sim)
   sim->SetVariable("netstreamer.tcp-port", 1234);
   sim->SetVariable("netstreamer.filter-null-character", true);
   sim->SetVariable("netstreamer.verbose", false);
+
+  new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
 
 int
@@ -228,9 +241,13 @@ main(int argc, char *argv[])
 
   arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
-  
-  if (simulator.Setup() != simulator.ST_OK_TO_START)
-    return 1;
+
+  switch (simulator.Setup())
+    {
+    case simulator.ST_ERROR:         return 1;
+    case simulator.ST_OK_DONT_START: return 0;
+    default: break;
+    }
 
   /* Start asynchronous reception loop */
   // host_term.Start();
@@ -252,10 +269,8 @@ main(int argc, char *argv[])
     }
 
   // Loading image
-  // if (not load_linux(arch, "Image", "device_tree.dtb"))
-  //   return 1;
-  arch.load_snapshot("uvp.shot");
-  std::cerr << "Starting at " << std::dec << arch.insn_counter << " instructions." << std::endl;
+  if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb"))
+    return 1;
 
   signal(SIGUSR1, usr_handler);
   signal(SIGUSR2, usr_handler);
