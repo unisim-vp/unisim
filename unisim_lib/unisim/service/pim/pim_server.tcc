@@ -1712,7 +1712,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				if(stmt_lookup_import)
 				{
-					stmt = stmt_lookup_import->FindStatement(source_filename.c_str(), convertTo<unsigned int>(lineno), convertTo<unsigned int>(colno));
+					stmt = stmt_lookup_import->FindStatement(unisim::util::debug::SourceCodeLocation(source_filename.c_str(), convertTo<unsigned int>(lineno), convertTo<unsigned int>(colno)));
 				}
 
 				if(stmt)
