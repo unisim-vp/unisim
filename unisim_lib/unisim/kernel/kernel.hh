@@ -239,7 +239,7 @@ class Simulator
 public:
 	typedef enum
 	{
-		ST_OK_TO_START,
+		ST_OK_TO_START = 0,
 		ST_OK_DONT_START,
 		ST_WARNING,
 		ST_ERROR
@@ -623,9 +623,9 @@ public:
 
 	virtual Service<SERVICE_IF> *GetService() const override;
 
- 	operator SERVICE_IF * () const ALWAYS_INLINE;
+	operator SERVICE_IF * () const;
 
-	SERVICE_IF *operator -> () const ALWAYS_INLINE;
+	SERVICE_IF *operator -> () const;
 
 	void Bind(ServicePort<SERVICE_IF>& fwd);
 
