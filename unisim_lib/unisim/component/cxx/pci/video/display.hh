@@ -60,15 +60,14 @@ using unisim::service::interfaces::Video;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 
 template <class ADDRESS>
-class Display :
-	public Service<Memory<ADDRESS> >,
-	public Client<Video<ADDRESS> >
+class Display
+	: public Service<Memory<ADDRESS> >
+	, public Client<Video<ADDRESS> >
 {
 public:
 	typedef Register<uint32_t> reg32_t;
@@ -84,7 +83,7 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Memory<ADDRESS>*) override;
 	virtual bool EndSetup();
 	virtual void Reset();
 	virtual void ResetMemory();

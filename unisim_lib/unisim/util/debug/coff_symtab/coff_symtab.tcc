@@ -73,7 +73,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 {
 	if(symbol_table) delete symbol_table;
 	
-	symbol_table = new SymbolTable<MEMORY_ADDR>();
+	symbol_table = new SimpleSymbolTable<MEMORY_ADDR>();
 
 	if(!blob) return;
 	

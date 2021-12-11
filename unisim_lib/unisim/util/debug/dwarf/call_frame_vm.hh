@@ -278,7 +278,7 @@ public:
 	const DWARF_CFI<MEMORY_ADDR> *ComputeCFI(const DWARF_FDE<MEMORY_ADDR> *dw_fde);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	bool debug;
+	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;

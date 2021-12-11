@@ -104,6 +104,7 @@ public:
 	void GetOption(Option opt, bool& flag) const;
 	
 	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *GetDWARFHandler() const;
 	
 	typedef typename unisim::util::debug::Symbol<MEMORY_ADDR> Symbol;
 
@@ -114,20 +115,22 @@ public:
 	const Symbol *FindSymbolByName(const char *name, typename Symbol::Type type) const;
 	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr, typename Symbol::Type type) const;
 	
+	unisim::util::debug::SymbolTable<MEMORY_ADDR> const *GetSymbolTable() const;
+	
 	const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 
-	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num, MEMORY_ADDR pc) const;
-	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num) const;
+	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR& ret_addr) const;
 	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(unsigned int prc_num, const char *data_object_name, const char *filename  = 0, const char *compilation_unit_name = 0) const;
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name, MEMORY_ADDR pc) const;
-	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name) const;
+	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	
 private:
 	std::ostream *debug_info_stream;
 	std::ostream *debug_warning_stream;

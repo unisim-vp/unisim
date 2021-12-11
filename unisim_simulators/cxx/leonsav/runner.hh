@@ -59,14 +59,13 @@ struct Runner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<
   typedef float        F32;
   typedef double       F64;
 
-  typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Runner> Decoder;
   typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Runner> Operation;
 
   typedef unisim::component::cxx::processor::sparc::ASI ASI;
   typedef unisim::component::cxx::processor::sparc::Trap_t Trap_t;
 
   void step_instruction();
-  Operation* decode(uint32_t insn_addr, uint32_t code);
+  std::unique_ptr<Operation> decode(uint32_t insn_addr, uint32_t code);
   void run(Interface::testcode_t testcode, uint32_t* data);
   static void dont(char const*);
 
@@ -167,9 +166,9 @@ struct Runner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<
   void DelayBranch(U32 target) { nnpc = target; }
   void SetAnnul(bool annul) { dont("annul"); }
 
-  // bool asr_perm(unsigned) { return false; }
-  // U32 rdasr(unsigned) { dont("asr"); return U32(); }
-  // void wrasr(unsigned, U32) { dont("asr"); }
+  bool asr_perm(unsigned) { return false; }
+  U32 rdasr(unsigned) { dont("asr"); return U32(); }
+  void wrasr(unsigned, U32) { dont("asr"); }
 
   U32 GetWIM() { dont("wim"); return U32(); }
   U32 GetTBR() { dont("tbr"); return U32(); }

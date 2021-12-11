@@ -50,7 +50,6 @@ using unisim::kernel::Object;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::Blob;
 
@@ -67,7 +66,7 @@ public:
 	virtual ~Tee();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Blob<ADDRESS>*) override;
 	
 	const unisim::util::blob::Blob<ADDRESS> *GetBlob() const;
 protected:

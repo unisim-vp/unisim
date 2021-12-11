@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
@@ -128,9 +129,6 @@ CPU::CPU(const char *name, Object *parent)
 	, stat_store_counter("data-store-counter", this, data_store_counter)
 	, param_max_inst("max-inst",this,max_inst)
 {
-	disasm_export.SetupDependsOn(memory_import);
-	memory_export.SetupDependsOn(memory_import);
-	
 	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_periodic_trap.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
@@ -1003,7 +1001,8 @@ void EBLB::exchange(unsigned int rrSrc, unsigned int rrDst) {
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool CPU::BeginSetup() {
+bool CPU::BeginSetup()
+{
 
 	/* check verbose settings */
 	if(debug_enabled && verbose_all) {
@@ -1048,8 +1047,8 @@ bool CPU::BeginSetup() {
 	return (true);
 }
 
-bool CPU::Setup(ServiceExportBase *srv_export) {
-
+bool CPU::EndSetup()
+{
 	if (not memory_access_reporting_import)
 	{
 		requires_memory_access_reporting = false;
@@ -1057,11 +1056,7 @@ bool CPU::Setup(ServiceExportBase *srv_export) {
 		requires_fetch_instruction_reporting = false;
 	}
 
-	return (true);
-}
-
-bool CPU::EndSetup() {
-	return (true);
+	return true;
 }
 
 void CPU::OnDisconnect()

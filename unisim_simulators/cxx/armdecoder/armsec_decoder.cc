@@ -279,7 +279,7 @@ public:
         DomainBitValue alt(Empty(), source);
         alt.setToConstant(fConstant);
         alt.applyBinaryAssign(operation, source, constantFunction);
-        return std::move(alt);
+        return alt;
       }
       else
         return DomainBitValue(constantFunction(fConstant, source.fConstant));
@@ -616,7 +616,7 @@ public:
         this_type alt(Empty(), source);
         alt.setToConstant(uConstant);
         alt.applyBinaryAssign(signedOperation, unsignedOperation, source, constantFunction);
-        return std::move(alt);
+        return alt;
       }
       else
         return this_type(constantFunction(uConstant, source.uConstant));
@@ -640,7 +640,7 @@ public:
         this_type alt(Empty(), source);
         alt.setToConstant(uConstant);
         alt.applyBinaryAssign(operation, source, constantFunction);
-        return std::move(alt);
+        return alt;
       }
       else
         return this_type(constantFunction(uConstant, source.uConstant));
@@ -1051,7 +1051,7 @@ public:
         this_type alt(Empty(), source);
         alt.setToConstant(vtConstant);
         alt.applyBinaryAssign(operation, source, constantFunction);
-        return std::move(alt);
+        return alt;
       }
       else
         return this_type(constantFunction(vtConstant, source.vtConstant));
@@ -1302,6 +1302,44 @@ struct FP
     { dst = src.template castToMultiFloat<fpT, sizeof(fpT)>(); /* [TODO] fracbits? */ }
 };
 
+struct No {};
+template <typename S, typename D> D _neoncast_(S const& s) { return D(s); }
+template <class P, typename T> struct TTP {};
+template <class P> struct TTP<P,typename P::U8>  { enum {size= 8}; typedef typename P::U8  U; static U ucast(typename P::U8  const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::S8>  { enum {size= 8}; typedef typename P::U8  U; static U ucast(typename P::S8  const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::U16> { enum {size=16}; typedef typename P::U16 U; static U ucast(typename P::U16 const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::S16> { enum {size=16}; typedef typename P::U16 U; static U ucast(typename P::S16 const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::U32> { enum {size=32}; typedef typename P::U32 U; static U ucast(typename P::U32 const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::S32> { enum {size=32}; typedef typename P::U32 U; static U ucast(typename P::S32 const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::U64> { enum {size=64}; typedef typename P::U64 U; static U ucast(typename P::U64 const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::S64> { enum {size=64}; typedef typename P::U64 U; static U ucast(typename P::S64 const& v) { return U(v); } };
+template <class P> struct TTP<P,typename P::F32> { enum {size=32}; typedef typename P::U32 U; static U ucast(typename P::F32 const& v) { throw No(); return U(v); } };
+template <class P> struct TTP<P,typename P::F64> { enum {size=64}; typedef typename P::U64 U; static U ucast(typename P::F64 const& v) { throw No(); return U(v); } };
+
+template <class OP>
+DomainMultiBitValue<OP> NeonSHL( DomainMultiBitValue<OP> const& op, DomainMultiBitValue<int8_t> const& sh )
+{
+  struct CantDoThat {};
+  throw CantDoThat();
+  return DomainMultiBitValue<OP>();
+}
+
+template <class OP>
+DomainMultiBitValue<OP> Minimum( DomainMultiBitValue<OP> const& a, DomainMultiBitValue<OP> const& b )
+{
+  struct CantDoThat {};
+  throw CantDoThat();
+  return DomainMultiBitValue<OP>();
+}
+
+template <class OP>
+DomainMultiBitValue<OP> Maximum( DomainMultiBitValue<OP> const& a, DomainMultiBitValue<OP> const& b )
+{
+  struct CantDoThat {};
+  throw CantDoThat();
+  return DomainMultiBitValue<OP>();
+}
+
 
 struct Processor
 {
@@ -1355,11 +1393,13 @@ struct Processor
     
   struct CP15Reg
   {
-    virtual            ~CP15Reg() {}
-    virtual unsigned    RequiredPL() { return 1; }
-    virtual void        Write( Processor& proc, U32 const& value ) { throw Unimplemented(); }
-    virtual U32         Read( Processor& proc ) { throw Unimplemented(); return U32(); }
-    virtual char const* Describe() = 0;
+    void CheckPermissions( uint8_t, uint8_t, uint8_t, uint8_t, Processor& cpu, bool ) const { /*cpu.RequiresPL(1);*/ }
+    virtual U32 Read(uint8_t, uint8_t, uint8_t, uint8_t, Processor&) const { throw Unimplemented(); return U32(); }
+    virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t, Processor&, U32 const&) const { throw Unimplemented(); }
+    virtual void Describe(uint8_t crn, uint8_t op1, uint8_t crm, uint8_t op2, std::ostream& sink ) const
+    {
+      sink << "CR15{crn=" << crn << ", op1=" << op1 << ", crm=" << crm << ", op2=" << op2 << "}";
+    }
   };
 
   //   =====================================================================
@@ -2003,14 +2043,14 @@ public:
   Mode&  CurrentMode() { /* throw Unimplemented(); */ return mode; }
   Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
   
-  CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  static CP15Reg const* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
-  U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
-  { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
-  void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value )
-  { CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value ); }
-  char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
-  { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe(); }
+  // U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+  // { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
+  // void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value )
+  // { CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value ); }
+  // char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+  // { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe(); }
 
   //   ====================================================================
   //   =         Vector and Floating-point Registers access methods       =
@@ -2053,26 +2093,41 @@ public:
        U64(xpr).moveToRegisterValue(*memoryState, RLStartNeonRegs + reg, domainFunctions);
   }
 
-  U32  GetVSU( unsigned idx ) { return U32( eneonread( idx / 2, 4, (idx*4) & 4 ) ); }
+  U32  GetVSU( unsigned idx ) { return U32( U64( eneonread( idx / 2, 4, (idx*4) & 4 ) ) ); }
   void SetVSU( unsigned idx, U32 val ) { eneonwrite( idx / 2, 4, (idx*4) & 4, U64(val) ); }
-  U64  GetVDU( unsigned idx ) { return eneonread( idx, 8, 0 ); }
+  U64  GetVDU( unsigned idx ) { return U64( eneonread( idx, 8, 0 ) ); }
   void SetVDU( unsigned idx, U64 val ) { eneonwrite( idx, 8, 0, U64(val) ); }
   F32  GetVSR( unsigned idx ) { return F32(); }
   void SetVSR( unsigned idx, F32 val ) {}
   F64  GetVDR( unsigned idx ) { return F64(); }
   void SetVDR( unsigned idx, F64 val ) {}
 
-  static unsigned usizeof( U8 const& )  { return  1; }
-  static unsigned usizeof( U16 const& ) { return  2; }
-  static unsigned usizeof( U32 const& ) { return  4; }
-  static unsigned usizeof( U64 const& ) { return  8; }
+  // Get|Set elements
+  template <class ELEMT>
+  void SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
+  {
+    typedef TTP<Processor, ELEMT> TTP;
+    unsigned const usz = TTP::size/8;
+    eneonwrite( reg, usz, usz*idx, U64(TTP::ucast(value)) );
+  }
 
-  template <typename T> T ucast( T const& x ) { return x; }
-  U8 ucast( S8 const& x ) { return U8(x); }
-  U16 ucast( S16 const& x ) { return U16(x); }
-  U32 ucast( S32 const& x ) { return U32(x); }
-  U64 ucast( S64 const& x ) { return U64(x); }
-  
+  template <class ELEMT>
+  ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait )
+  {
+    typedef TTP<Processor, ELEMT> TTP;
+    unsigned const usz = TTP::size/8; 
+    return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) );
+  }
+
+  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
+  {
+    struct CantDoThat {};
+    throw CantDoThat();
+    return U8();
+    // auto r = idx/elts;
+    // return Test(r < regs) ? GetVDE((r0 + r) % 32, idx % elts, U8()) : oob;
+  }
+
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
@@ -2102,7 +2157,8 @@ public:
   void MemWrite32( U32 const& addr, U32 const& value )     { return memoryState->valueStore(addr, value); }
   void MemWrite16( U32 const& addr, U16 const& value )     { return memoryState->valueStore(addr, value); }
   void MemWrite8( U32 const& addr, U8 const& value )       { return memoryState->valueStore(addr, value); }
-    
+
+  void CheckAlignment( U32 const& addr, unsigned ) {}
   void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
   bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
   void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
@@ -2328,7 +2384,7 @@ bool CheckCondition( Processor& state, Processor::ITCond const& cond )
     ((cc == U8(14)) and DomainBitValue(true)));
 }
 
-Processor::CP15Reg&
+Processor::CP15Reg const*
 Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
@@ -2344,7 +2400,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ctr").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 0, 0, 0, 5 ):
@@ -2355,7 +2411,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("mpidr").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 0, 0, 1, 0 ):
@@ -2366,7 +2422,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("id_pfr0").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 0, 1, 0, 0 ):
@@ -2377,7 +2433,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ccsidr").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 0, 1, 0, 1 ):
@@ -2388,7 +2444,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("clidr").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 0, 2, 0, 0 ):
@@ -2401,7 +2457,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("csselr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
       
       /****************************
@@ -2417,7 +2473,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("sctlr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 1, 0, 0, 1 ):
@@ -2430,7 +2486,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("actlr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 1, 0, 0, 2 ):
@@ -2443,7 +2499,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("cpacr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 1, 0, 1, 2 ):
@@ -2456,7 +2512,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("nsacr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
       /*******************************************
@@ -2472,7 +2528,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ttbr0").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 2, 0, 0, 1 ):
@@ -2485,7 +2541,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ttbr1").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 2, 0, 0, 2 ):
@@ -2498,7 +2554,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           U32 Read( Processor& proc )
             { return U32(proc.memoryState->getRegisterValueAsElement(RegID("ttbcr").code), proc); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 3, 0, 0, 0 ):
@@ -2511,7 +2567,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dacr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
 
@@ -2528,7 +2584,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dfsr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 5, 0, 0, 1 ):
@@ -2541,7 +2597,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ifsr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 0 ):
@@ -2554,7 +2610,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dfar").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 2 ):
@@ -2567,7 +2623,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("ifar").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
       /***************************************************************
@@ -2584,7 +2640,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("icialluis").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 1, 6 ):
@@ -2597,7 +2653,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("bpiallis").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 5, 0 ):
@@ -2610,7 +2666,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("iciallu").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 5, 1 ):
@@ -2623,7 +2679,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("icimvau").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 5, 6 ):
@@ -2636,7 +2692,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("bpiall").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 6, 1 ):
@@ -2649,7 +2705,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dcimvac").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 6, 2 ):
@@ -2662,7 +2718,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dcisw").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 7, 0, 10, 1 ):
@@ -2675,7 +2731,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccmvac").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 10, 2 ):
@@ -2688,7 +2744,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccsw").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 7, 0, 11, 1 ):
@@ -2701,7 +2757,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccmvau").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 7, 0, 14, 1 ):
@@ -2714,7 +2770,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("dccimvac").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
           
       /******************************
@@ -2731,7 +2787,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("tlbiallis").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 8, 0, 7, 0 ):
@@ -2744,7 +2800,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("tlbiall").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     case CP15ENCODE( 8, 0, 7, 2 ):
@@ -2757,7 +2813,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("tlbiasid").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 12, 0, 0, 0 ):
@@ -2770,7 +2826,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("vbar").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
           
       /***********************************/
@@ -2787,7 +2843,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("contextidr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
       /* BOARD specific */
@@ -2802,7 +2858,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("diagcr").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
           
     case CP15ENCODE( 15, 4, 0, 0 ):
@@ -2815,7 +2871,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
           void Write( Processor& proc, U32 const& value )
             { return U32(value).moveToRegisterValue(*proc.memoryState, RegID("cbar").code, proc.domainFunctions); }
         } x;
-        return x;
+        return &x;
       } break;
 
     }
@@ -2823,7 +2879,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
   static struct CP15Error : public CP15Reg {
     char const* Describe() { return "Unknown CP15 register"; }
   } err;
-  return err;
+  return &err;
 }
 
 void

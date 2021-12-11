@@ -451,13 +451,14 @@ void sc_method_process::reset(bool async)
 	
 	next_trigger_type = NEXT_TRIGGER_DEFAULT; // restore static sensitivity
 
+	// deschedule target process
+	kernel->untrigger(this);
+	
 	// immediate notification of reset
 	method_process_reset_event.notify();
 
 	if(!method_process_terminated)
 	{
-		// deschedule target process
-		kernel->untrigger(this);
 
 		if(kernel->get_current_method_process() == this)
 		{

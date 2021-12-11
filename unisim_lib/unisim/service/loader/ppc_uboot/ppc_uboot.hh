@@ -53,7 +53,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Object;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Registers;
@@ -88,11 +87,11 @@ public:
 	virtual bool Load();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Loader*) override;
+	virtual void Setup(Blob<MEMORY_ADDR>*) override;
 	virtual bool EndSetup();
 private:
 	bool SetupBlob();
-	bool SetupLoad();
 	bool LoadKernelCmdLine();
 	bool LoadRegisters();
 

@@ -39,6 +39,7 @@
 #include "core/event.h"
 #include "core/reset.h"
 #include "channels/fwd.h"
+#include "data_types/bit/logic.h"
 
 namespace sc_core {
 
@@ -79,24 +80,24 @@ private:
 	virtual void is_reset(const sc_process_reset& process_reset) {}
 };
 
-// template <>
-// class sc_signal_in_if<sc_dt::sc_logic> : virtual public sc_interface
-// {
-// public:
-// 	virtual const T& read() const = 0;
-// 	virtual const sc_event& value_changed_event() const = 0;
-// 	virtual const sc_event& posedge_event() const = 0;
-// 	virtual const sc_event& negedge_event() const = 0;
-// 	virtual bool event() const = 0;
-// 	virtual bool posedge() const = 0;
-// 	virtual bool negedge() const = 0;
-// protected:
-// 	sc_signal_in_if();
-// private:
-// 	// Disabled
-// 	sc_signal_in_if( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	sc_signal_in_if<sc_dt::sc_logic>& operator= ( const sc_signal_in_if<sc_dt::sc_logic>& );
-// };
+template <>
+class sc_signal_in_if<sc_dt::sc_logic> : virtual public sc_interface
+{
+public:
+	virtual const sc_dt::sc_logic& read() const = 0;
+	virtual const sc_event& value_changed_event() const = 0;
+	virtual const sc_event& posedge_event() const = 0;
+	virtual const sc_event& negedge_event() const = 0;
+	virtual bool event() const = 0;
+	virtual bool posedge() const = 0;
+	virtual bool negedge() const = 0;
+protected:
+	sc_signal_in_if();
+private:
+	// Disabled
+	sc_signal_in_if( const sc_signal_in_if<sc_dt::sc_logic>& );
+	sc_signal_in_if<sc_dt::sc_logic>& operator= ( const sc_signal_in_if<sc_dt::sc_logic>& );
+};
 
 template <class T>
 class sc_signal_write_if : virtual public sc_interface

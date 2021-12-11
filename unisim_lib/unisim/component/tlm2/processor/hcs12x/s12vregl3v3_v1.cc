@@ -153,23 +153,13 @@ void S12VREGL3V3::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay
 //=====================================================================
 
 
-bool S12VREGL3V3::BeginSetup() {
+bool S12VREGL3V3::BeginSetup()
+{
 
 	Reset();
 
 	ComputeInternalTime();
 
-	return (true);
-}
-
-
-bool S12VREGL3V3::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12VREGL3V3::EndSetup() {
 	return (true);
 }
 

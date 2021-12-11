@@ -147,9 +147,6 @@ LinuxLoader<T>::LinuxLoader(const char *name, Object *parent)
 	}
 	SetupArgsAndEnvs();
 
-	loader_export.SetupDependsOn(memory_import);
-	loader_export.SetupDependsOn(loader_import);
-	loader_export.SetupDependsOn(blob_import);
 }
 
 template<class T>
@@ -244,8 +241,8 @@ LinuxLoader<T>::BeginSetup()
 }
 
 template<class T>
-bool
-LinuxLoader<T>::SetupLoad()
+void
+LinuxLoader<T>::Setup(Loader*)
 {
 	/* check that mem and elf_loader are available */
 	if(!memory_import) {
@@ -254,24 +251,25 @@ LinuxLoader<T>::SetupLoad()
 				<< __LINE__ << "): "
 				<< "Trying to execute LinuxLoader without a memory service connected."
 				<< EndDebugError;
-		return false;
+		throw unisim::kernel::ServiceAgent::SetupError();
 	}
+	memory_import.RequireSetup();
 	if(!loader_import) {
 		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
 				<< __FILE__ << ":"
 				<< __LINE__ << "): "
 				<< "Trying to execute LinuxLoader without an elf_loader service connected."
 				<< EndDebugError;
-		return false;
+		throw unisim::kernel::ServiceAgent::SetupError();
 	}
+        loader_import.RequireSetup();
 
-	return true;
+	blob_import.RequireSetup();
 }
 
 template <class T>
 void
-LinuxLoader<T> ::
-DumpSegment(unisim::util::blob::Segment<T> const &s, int indent)
+LinuxLoader<T>::DumpSegment(unisim::util::blob::Segment<T> const &s, int indent)
 {
 	std::string s_indent_pre(indent + 1, '*');
 	std::stringstream ss_indent;
@@ -329,8 +327,7 @@ DumpSegment(unisim::util::blob::Segment<T> const &s, int indent)
 
 template <class T>
 void
-LinuxLoader<T> ::
-DumpSection(unisim::util::blob::Section<T> const &s, int indent)
+LinuxLoader<T>::DumpSection(unisim::util::blob::Section<T> const &s, int indent)
 {
 	std::string s_indent_pre(indent + 1, '-');
 	std::stringstream ss_indent;
@@ -401,8 +398,7 @@ DumpSection(unisim::util::blob::Section<T> const &s, int indent)
 
 template <class T>
 void
-LinuxLoader<T> ::
-DumpBlob(unisim::util::blob::Blob<T> const &b, int indent)
+LinuxLoader<T>::DumpBlob(unisim::util::blob::Blob<T> const &b, int indent)
 {
 	std::string s_indent_pre(indent + 1, '+');
 	std::stringstream ss_indent;
@@ -497,14 +493,20 @@ DumpBlob(unisim::util::blob::Blob<T> const &b, int indent)
 	if ( indent == 0 )
 		logger << EndDebugInfo;
 }
+
 template<class T>
-bool
-LinuxLoader<T>::SetupBlob()
+void
+LinuxLoader<T>::Setup(Blob<T>*)
 {
-	if(blob) return true;
-	if(!loader_import) return false;
+	if(blob) return;
+	if(!loader_import)
+		throw unisim::kernel::ServiceAgent::SetupError();
+	if(!blob_import)
+		throw unisim::kernel::ServiceAgent::SetupError();
+	blob_import.RequireSetup();
 	const unisim::util::blob::Blob<T> *loader_blob = blob_import->GetBlob();
-	if(!loader_blob) return false;
+	if(!loader_blob)
+		throw unisim::kernel::ServiceAgent::SetupError();
 
 	DumpBlob(*loader_blob, 0);
 	T entry_point = loader_blob->GetEntryPoint();
@@ -765,19 +767,6 @@ LinuxLoader<T>::SetupBlob()
 	blob->Catch();
 	blob->AddBlob(loader_blob);
 	blob->AddBlob(stack_blob);
-
-	return true;
-}
-
-template<class T>
-bool
-LinuxLoader<T>::Setup(ServiceExportBase *srv_export)
-{
-	if(srv_export == &loader_export) return SetupLoad();
-	if(srv_export == &blob_export) return SetupBlob();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	return false;
 }
 
 template<class T>
@@ -788,8 +777,7 @@ LinuxLoader<T>::EndSetup() {
 
 template<class T>
 bool
-LinuxLoader<T>::
-Load()
+LinuxLoader<T>::Load()
 {
 	if(!loader_import->Load()) return false;
 	return LoadStack();
@@ -797,8 +785,7 @@ Load()
 
 template <class T>
 bool
-LinuxLoader<T>::
-LoadStack()
+LinuxLoader<T>::LoadStack()
 {
 	if(!memory_import) return false;
 	if(!stack_blob) return false;
@@ -831,16 +818,14 @@ LoadStack()
 
 template<class T>
 const typename unisim::util::blob::Blob<T> *
-LinuxLoader<T>::
-GetBlob()
+LinuxLoader<T>::GetBlob()
 {
 	return blob;
 }
 
 template<class T>
 void
-LinuxLoader<T>::
-Log(T addr, const uint8_t *value, uint32_t size)
+LinuxLoader<T>::Log(T addr, const uint8_t *value, uint32_t size)
 {
 	logger << DebugInfo
 			<< "0x" << std::hex << (unsigned long int)addr << std::dec

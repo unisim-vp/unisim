@@ -147,12 +147,10 @@ bool Display<ADDRESS>::SetupFrameBuffer()
 }
 
 template <class ADDRESS>
-bool Display<ADDRESS>::Setup(ServiceExportBase *srv_export)
+void Display<ADDRESS>::Setup(Memory<ADDRESS>*)
 {
-	if(srv_export == &memory_export) return SetupFrameBuffer();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	return false;
+	if (not SetupFrameBuffer())
+		throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class ADDRESS>

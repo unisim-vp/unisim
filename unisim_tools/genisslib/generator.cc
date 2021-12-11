@@ -33,51 +33,6 @@
 #include <stdexcept>
 #include <cassert>
 
-namespace
-{
-  struct OpProperties
-  {
-    std::set<unsigned int> m_insnsizes;
-    typedef std::vector<unsigned int> insnsizes_t;
-    typedef Vector<BitField>::const_iterator bfiter_t;
-  
-  
-    void
-    dig( unsigned int cursize, unsigned int rwdsize, unsigned int minsize, bfiter_t bfitr, bfiter_t bfend )
-    {
-      for (;; ++bfitr) {
-        if (bfitr == bfend) {
-          m_insnsizes.insert( std::max( cursize, minsize ) );
-          return;
-        }
-      
-        BitField const& bitfield = **bfitr;
-        if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &bitfield ))
-          {
-            if (not sbf->rewind) { rwdsize = cursize; continue; }
-            if (minsize < cursize) minsize = cursize;
-            cursize = rwdsize;
-          }
-        uintptr_t count = bitfield.sizes();
-        if (count < 1) throw std::logic_error( "empty instruction sizes list" );
-        unsigned int bfsizes[count];
-        bitfield.sizes( &bfsizes[0] );
-      
-        while (--count > 0)
-          this->dig( cursize + bfsizes[count], rwdsize, minsize, bfitr + 1, bfend );
-      
-        cursize += bfsizes[0];
-      }
-    }
-  
-    OpProperties( Operation const& op )
-    {
-      Vector<BitField> const& bitfields = op.bitfields;
-      dig( 0, 0, 0, bitfields.begin(), bitfields.end() );
-    }
-  };
-
-}
 
 Generator::Generator( Isa& _source, Opts const& _options )
   : source( _source ), options( _options ), m_minwordsize()
@@ -86,304 +41,13 @@ Generator::Generator( Isa& _source, Opts const& _options )
   // requirements from both command line and source code
   m_minwordsize = least_ctype_size( std::max( _options.minwordsize, source.m_minwordsize ) );
   
-  { // change bitfield ordering if 
-    bool rev_forder = source.m_asc_forder xor source.m_little_endian;
-  
-    if (source.m_asc_worder xor source.m_little_endian) {
-      for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vector<BitField>& bitfields = (**op).bitfields;
-        uintptr_t lo = 0, hi = bitfields.size();
-        if (hi == 0) continue;
-      
-        for (hi -= 1; lo < hi; lo ++, hi-- ) {
-          std::swap( bitfields[lo], bitfields[hi] );
-        }
-      }
-      // this operation has invert fields order
-      rev_forder = not rev_forder;
-    }
-  
-    if (rev_forder) {
-      for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vector<BitField>& bitfields = (**op).bitfields;
-      
-        uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
-        for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
-          while ((fend < fmax) and (not dynamic_cast<SeparatorBitField const*>( &*bitfields[fend] ))) fend += 1;
-          if ((fend - fbeg) < 2) continue;
-          uintptr_t lo = fbeg, hi = fend - 1;
-        
-          for ( ; lo < hi; lo ++, hi-- ) {
-            std::swap( bitfields[lo], bitfields[hi] );
-          }
-        }
-      }
-    }
-  }
-  
-  // Compute min/max sizes
-  m_insnsizes.clear();
-  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-    OpProperties opprops( **op );
-    m_insnsizes.insert( opprops.m_insnsizes.begin(), opprops.m_insnsizes.end() );
-  }
 }
 
-/**
- *  @brief computes the greatest common divisor of instruction lengths (in bits).
- */
-unsigned int
-Generator::gcd() const
-{
-  unsigned int res = *m_insnsizes.begin();
-  for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
-    unsigned int cur = *itr;
-    for (;;) {
-      unsigned int rem = cur % res;
-      if (rem == 0) break;
-      cur = res;
-      res = rem;
-    }
-  }
-  return res;
-}
-
-/**
- *  @brief a null ouput stream useful for ignoring too verbose logs
- */
-struct onullstream: public std::ostream
-{
-  struct nullstreambuf: public std::streambuf
-  {
-    int_type overflow( int_type c ) { return traits_type::not_eof(c); }
-  };
-  onullstream() : std::ostream(0) { rdbuf(&m_sbuf); }
-  nullstreambuf m_sbuf;
-};
-
-/**
- *  @brief returns the output stream for a given level of verbosity
- */
-std::ostream&
-Generator::log( unsigned int level ) const
-{
-  if (level > options.verbosity) {
-    // Return a null ostream
-    static onullstream ons;
-    return ons;
-  }
-  return std::cerr;
-}
-
-namespace {
-  struct BelowScanner
-  {
-    typedef OpCode::BelowList BelowList;
-    BelowList seen;
-    OpCode* target;
-    BelowScanner( OpCode* _target ) : target( _target ) {}
-  
-    bool findfrom( OpCode* start )
-    {
-      for (BelowList::const_iterator itr = start->m_belowlist.begin(), end = start->m_belowlist.end(); itr != end; ++itr) {
-        if (not seen.insert( *itr ).second) continue; /* already seen */
-        if ((*itr == target) or findfrom( *itr )) return true;
-      }
-      return false;
-    }
-  };
-};
-
-bool
-OpCode::above( OpCode* below )
-{
-  return BelowScanner( below ).findfrom( this );
-}
-
-
-/*
- *  @brief update the topology; linking subject to argument opcode
- *  @param _below the object being linked to
- */
-void
-OpCode::setbelow( OpCode* _below )
-{
-  for (std::set<OpCode*>::iterator itr = m_belowlist.begin(), end = m_belowlist.end(); itr != end; ++itr) {
-    if (*itr == _below) return;
-    OpCode::location_t loc = _below->locate( **itr );
-    if (loc == OpCode::Inside) return;
-    if (loc != OpCode::Contains) continue;
-    // Redundant  edge ... removing
-    (**itr).m_abovecount -= 1;
-    m_belowlist.erase( itr );
-    // Normally no more than one redundant edge ... stopping here.
-    break;
-  }
-  m_belowlist.insert( _below );
-  _below->m_abovecount += 1;
-}
-  
-/*
- *  @brief update the topology; linking subject to argument opcode
- *  @param _below the object being linked to
- */
-void
-OpCode::forcebelow( OpCode* _below )
-{
-  m_belowlist.insert( _below );
-  _below->m_abovecount += 1;
-}
-  
-/*
- *  @brief update the topology; unlink subject opcode
- */
-void
-OpCode::unsetbelow()
-{
-  for (std::set<OpCode*>::iterator itr = m_belowlist.begin(), end = m_belowlist.end(); itr != end; ++itr)
-    (**itr).m_abovecount -= 1;
-  m_belowlist.clear();
-}
-
-std::ostream& operator<<( std::ostream& _sink, OpCode const& _oc ) { return _oc.details( _sink ); }
-  
 /* Generates the topological graph of operations, checks for conflicts (overlapping encodings), and sort operations accordingly.
  */
 void
 Generator::toposort()
 {
-  Vector<Operation>& operations = source.m_operations;
-  
-  // Finalizing ordering graph
-  
-  // Adding implicit edges.
-  for (OpCodeMap::iterator oitr1 = m_opcodes.begin(), oend1 = m_opcodes.end(); oitr1 != oend1; ++oitr1) {
-    OpCode& opcode1( *oitr1->second );
-    for (OpCodeMap::iterator oitr2 = m_opcodes.begin(); oitr2 != oitr1; ++oitr2) {
-      OpCode& opcode2( *oitr2->second );
-      switch (opcode1.locate( opcode2 )) {
-      default: break;
-      case OpCode::Equal:
-        oitr1->first->fileloc.err( "error: operation `%s' duplicates operation `%s'", oitr1->first->symbol.str(), oitr2->first->symbol.str() );
-        oitr2->first->fileloc.err( "operation `%s' was declared here", oitr2->first->symbol.str() );
-        std::cerr << oitr1->first->symbol.str() << ": " << opcode1 << std::endl;
-        std::cerr << oitr2->first->symbol.str() << ": " << opcode2 << std::endl;
-        throw GenerationError;
-        break;
-      case OpCode::Contains: opcode1.setbelow( &opcode2 ); break;
-      case OpCode::Inside:   opcode2.setbelow( &opcode1 ); break;
-      }
-    }
-  }
-  // Informing about implicit specialization 
-  if (options.verbosity >= 2) {
-    for (OpCodeMap::iterator oitr = m_opcodes.begin(), oend = m_opcodes.end(); oitr != oend; ++oitr) {
-      OpCode& opc( *oitr->second );
-      uintptr_t count = opc.m_belowlist.size();
-      if (count == 0) continue;
-      log(2) << "operation `" << opc.m_symbol.str() << "' is a specialization of operation" << (count>1?"s ":" ");
-      char const* sep = "";
-      for (OpCode::BelowList::iterator bitr = opc.m_belowlist.begin(), bend = opc.m_belowlist.end(); bitr != bend; ++bitr) {
-        log(2) << sep << "`" << (**bitr).m_symbol.str() << "'";
-        sep = ", ";
-      }
-      log(2) << std::endl;
-    }
-  }
-  // Adding explicit edges (user specified)
-  for (Isa::Orderings::iterator itr = source.m_user_orderings.begin(), end = source.m_user_orderings.end(); itr != end; ++itr) {
-    // Unrolling specialization relations
-    typedef Vector<Operation> OpV;
-    
-    struct : Isa::OOG { void with( Operation& operation ) { ops.append( &operation ); } OpV ops; } above, below;
-    
-    if (not source.for_ops( itr->top_op, above ))
-      {
-        itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << itr->top_op.str() << "'" << std::endl;
-        throw GenerationError;
-      }
-    
-    for (std::vector<ConstStr>::const_iterator symitr = itr->under_ops.begin(), symend = itr->under_ops.end(); symitr != symend; ++symitr)
-      {
-        if (not source.for_ops( *symitr, below ))
-          {
-            itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
-            throw GenerationError;
-          }
-      }
-    
-    // Check each user specialization and insert when valid
-    for (OpV::iterator aoitr = above.ops.begin(), aoend = above.ops.end(); aoitr != aoend; ++aoitr) {
-      OpCode& opcode1( opcode( *aoitr ) );
-      for (OpV::iterator boitr = below.ops.begin(), boend = below.ops.end(); boitr != boend; ++boitr) {
-        OpCode& opcode2( opcode( *boitr ) );
-        switch (opcode1.locate( opcode2 )) {
-        default: break;
-        case OpCode::Outside:
-          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).symbol.str() << "'"
-                                     << " with `" << (**aoitr).symbol.str() << "' as no effect (no relationship).\n";
-          break;
-        case OpCode::Contains:
-          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).symbol.str() << "'"
-                                     << " with `" << (**aoitr).symbol.str() << "' as no effect (implicit specialization).\n";
-          break;
-        case OpCode::Inside:
-          itr->fileloc.loc( std::cerr ) << "error: cant specialize `" << (**boitr).symbol.str() << "'"
-                                        << " with `" << (**aoitr).symbol.str() << "' (would hide the former).\n";
-          throw GenerationError;
-          break;
-        case OpCode::Overlaps:
-          opcode1.forcebelow( &opcode2 );
-          log(2) << "operation `" << (**aoitr).symbol.str() << "' is a forced specialization of operation `" << (**boitr).symbol.str() << "'" << std::endl;
-          break;
-        }          
-      }
-    }
-  }
-  
-  // Finally check if overlaps are resolved
-  for (OpCodeMap::iterator oitr1 = m_opcodes.begin(), oend1 = m_opcodes.end(); oitr1 != oend1; ++oitr1) {
-    for (OpCodeMap::iterator oitr2 = m_opcodes.begin(); oitr2 != oitr1; ++oitr2) {
-      if (oitr1->second->locate( *oitr2->second ) != OpCode::Overlaps) continue;
-      if (oitr1->second->above( oitr2->second )) continue;
-      if (oitr2->second->above( oitr1->second )) continue;
-      oitr1->first->fileloc.err( "error: operation `%s' conflicts with operation `%s'", oitr1->first->symbol.str(), oitr2->first->symbol.str() );
-      oitr2->first->fileloc.err( "operation `%s' was declared here", oitr2->first->symbol.str() );
-      std::cerr << oitr1->first->symbol.str() << ": " << (*oitr1->second) << std::endl;
-      std::cerr << oitr2->first->symbol.str() << ": " << (*oitr2->second) << std::endl;
-      throw GenerationError;
-    }
-  }
-
-  // Topological sort to fix potential precedence problems
-  {
-    intptr_t opcount = operations.size();
-    Vector<Operation> noperations( opcount );
-    intptr_t
-      sopidx = opcount, // operation source table index
-      dopidx = opcount, // operation destination table index
-      inf_loop_tracker = opcount; // counter tracking infinite loop
-    
-    while( dopidx > 0 ) {
-      sopidx = (sopidx + opcount - 1) % opcount;
-      Operation* op = operations[sopidx];
-      if (not op) continue;
-      
-      OpCode& oc = opcode( op );
-      if (oc.m_abovecount > 0)
-        {
-          // There is some operations to be placed before this one 
-          --inf_loop_tracker;
-          assert( inf_loop_tracker >= 0 );
-          continue;
-        }
-      inf_loop_tracker = opcount;
-      noperations[--dopidx] = op;
-      operations[sopidx] = 0;
-      oc.unsetbelow();
-    }
-    operations = noperations;
-  }
 }
 
 /** Dumps ISA statistics
@@ -393,39 +57,40 @@ Generator::toposort()
 void
 Generator::isastats()
 {
-  log(1) << "Instruction Size: ";
-  if (m_insnsizes.size() == 1)
-    log(1) << (*m_insnsizes.begin());
+  options.log(1) << "Instruction Size: ";
+  if (source.m_insnsizes.size() == 1)
+    options.log(1) << (*source.m_insnsizes.begin());
   else
     {
       char const* sep = "[";
-      for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
-        log(1) << sep << *itr;
+      for (unsigned size : source.m_insnsizes)
+      {
+        options.log(1) << sep << size;
         sep = ",";
       }
-      log(1) << "] (gcd=" << this->gcd() << ")";
+      options.log(1) << "] (gcd=" << source.gcd() << ")";
     }
   
-  log(1) << std::endl;
-  log(1) << "Instruction Set Encoding: " << (source.m_little_endian ? "little-endian" : "big-endian") << "\n";
+  options.log(1) << std::endl;
+  options.log(1) << "Instruction Set Encoding: " << (source.m_little_endian ? "little-endian" : "big-endian") << "\n";
   /* Statistics about operation and actions */
-  log(1) << "Operation count: " << source.m_operations.size() << "\n";
+  options.log(1) << "Operation count: " << source.m_operations.size() << "\n";
   {
-    log(3) << "Operations (actions details):\n";
+    options.log(3) << "Operations (actions details):\n";
     typedef std::map<ActionProto const*,uint64_t> ActionCount;
     ActionCount actioncount;
     for (Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op) {
-      log(3) << "  " << (**op).symbol.str() << ':';
+      options.log(3) << "  " << (**op).symbol.str() << ':';
       for (Vector<Action>::const_iterator action = (**op).actions.begin(); action < (**op).actions.end(); ++ action) {
         ActionProto const* ap = (**action).m_actionproto;
-        log(3) << " ." << ap->m_symbol.str();
+        options.log(3) << " ." << ap->m_symbol.str();
         actioncount[ap] += 1;
       }
-      log(3) << '\n';
+      options.log(3) << '\n';
     }
-    log(1) << "Action count:\n";
+    options.log(1) << "Action count:\n";
     for (ActionCount::const_iterator itr = actioncount.begin(); itr != actioncount.end(); ++itr) {
-      log(1) << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
+      options.log(1) << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
     }
   }
 }
@@ -557,8 +222,8 @@ Generator::iss() const
     
     sink.code( " [" );
     sep = "";
-    for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); sep = ",", ++itr)
-      sink.code( "%s%u", sep, *itr );
+    for (unsigned size : source.m_insnsizes)
+      sink.code( "%s%u", sep, size );
     
     sink.code( "]\n" );
     
@@ -623,7 +288,9 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( " *(*decode)(%s code, %s addr);\n", codetype_constref().str(), source.m_addrtype.str() );
   _product.code( "};\n" );
 
-  _product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" );
+  if (source.m_withcache) {
+    _product.code( "const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;\n" );
+  }
 
   _product.template_signature( source.m_tparams );
   _product.code( "class Decoder\n" );
@@ -631,7 +298,10 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( "public:\n" );
   _product.code( " typedef Operation" );
   _product.template_abbrev( source.m_tparams );
-  _product.code( " operation_type;\n\n" );
+  _product.code( " operation_type;\n" );
+  _product.code( " typedef %s address_type;\n", source.m_addrtype.str() );
+  _product.code( " typedef CodeType code_type;\n" );
+  _product.code( " enum { alignment = %u };\n\n", source.gcd() );
   _product.code( " Decoder();\n" );
   _product.code( " virtual ~Decoder();\n" );
   _product.code( "\n" );
@@ -647,9 +317,11 @@ Generator::decoder_decl( Product& _product ) const {
     _product.code( " Operation" );
     _product.template_abbrev( source.m_tparams );
     _product.code( " *Decode(%s addr, %s insn);\n", source.m_addrtype.str(), codetype_constref().str() );
-    _product.code( " std::vector<DecodeTableEntry" );
-    _product.template_abbrev( source.m_tparams );
-    _product.code( " > const& GetDecodeTable() const { return decode_table; };\n" );
+  }
+  _product.code( " std::vector<DecodeTableEntry" );
+  _product.template_abbrev( source.m_tparams );
+  _product.code( " > const& GetDecodeTable() const { return decode_table; };\n" );
+  if (source.m_withcache) {
     _product.code( " void InvalidateDecodingCacheEntry(%s addr);\n", source.m_addrtype.str() );
     _product.code( " void InvalidateDecodingCache();\n\n" );
   }
@@ -707,9 +379,12 @@ Generator::operation_decl( Product& _product ) const
   _product.code( " inline %s GetEncoding() const { return encoding; }\n", codetype_constref().str() );
   op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
+  _product.code( " inline bool Match(%s _addr, %s _code) const { return ", source.m_addrtype.str(), codetype_constref().str());
+  op_match( _product, "_code" );
+  _product.code( " and GetAddr() == _addr; }\n" );
   
-  _product.code( " static unsigned int const minsize = %d;\n", (*m_insnsizes.begin()) );
-  _product.code( " static unsigned int const maxsize = %d;\n", (*m_insnsizes.rbegin()) );
+  _product.code( " static unsigned int const minsize = %d;\n", (*source.m_insnsizes.begin()) );
+  _product.code( " static unsigned int const maxsize = %d;\n", (*source.m_insnsizes.rbegin()) );
   
   for( Vector<Variable>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
     _product.code(" ").usercode( *(**var).ctype ).code( " %s;", (**var).symbol.str() );
@@ -1375,9 +1050,7 @@ Generator::decoder_impl( Product& _product ) const {
     _product.code( " if(operation)\n" );
     _product.code( " {\n" );
     // _product.code( "  fprintf(stderr, \"hit at 0x%%08x\\n\", addr);\n" );
-    _product.code( "  if(");
-    insn_unchanged_expr( _product, "operation->GetEncoding()", "insn" );
-    _product.code( " && operation->GetAddr() == addr)\n" );
+    _product.code( "  if(operation->Match(addr, insn))\n");
     _product.code( "   return operation;\n" );
     _product.code( "  delete operation;\n" );
     _product.code( " }\n" );
@@ -1396,45 +1069,3 @@ Generator::least_ctype_size( unsigned int bits ) {
   while (size < bits) size *= 2;
   return size;
 }
-
-FieldIterator::FieldIterator( bool little_endian, Vector<BitField> const& bitfields, unsigned int maxsize )
-  : m_bitfields( bitfields ), m_idx( (unsigned int)(-1) ),
-    m_ref( little_endian ? 0 : maxsize ),
-    m_pos( m_ref ), m_size( 0 ),
-    m_chkpt_pos( m_pos ), m_chkpt_size( m_size )
-{}
-  
-BitField const& FieldIterator::item() { return *(m_bitfields[m_idx]); }
-
-bool
-FieldIterator::next() {
-  if ((m_idx+1) >= m_bitfields.size()) return false;
-  m_idx += 1;
-  BitField const& field = *(m_bitfields[m_idx]);
-  if (m_ref == 0) m_pos += m_size;
-  else            m_pos -= field.maxsize();
-  m_size = field.maxsize();
-  if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &field )) {
-    if (sbf->rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
-    else             { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
-  }
-  
-  return true;
-}
-
-OpCode const&
-Generator::opcode( Operation const* _op ) const
-{
-  OpCodeMap::const_iterator res = m_opcodes.find( _op );
-  assert( res != m_opcodes.end() );
-  return *res->second;
-}
-
-OpCode&
-Generator::opcode( Operation const* _op )
-{
-  OpCodeMap::iterator res = m_opcodes.find( _op );
-  assert( res != m_opcodes.end() );
-  return *res->second;
-}
-

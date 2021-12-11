@@ -450,34 +450,34 @@ Simulator::Simulator(int argc, char **argv)
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
-	*(registersTee->registers_import[0]) >> cpu->registers_export;
-	*(registersTee->registers_import[1]) >> mmc->registers_export;
-	*(registersTee->registers_import[2]) >> s12xint->registers_export;
-	*(registersTee->registers_import[3]) >> crg->registers_export;
-	*(registersTee->registers_import[4]) >> atd1->registers_export;
-	*(registersTee->registers_import[5]) >> atd0->registers_export;
-	*(registersTee->registers_import[6]) >> pwm->registers_export;
-	*(registersTee->registers_import[7]) >> ect->registers_export;
-	*(registersTee->registers_import[8]) >> pit->registers_export;
-	*(registersTee->registers_import[9]) >> xgate->registers_export;
+	registersTee->registers_import_n(0) >> cpu->registers_export;
+	registersTee->registers_import_n(1) >> mmc->registers_export;
+	registersTee->registers_import_n(2) >> s12xint->registers_export;
+	registersTee->registers_import_n(3) >> crg->registers_export;
+	registersTee->registers_import_n(4) >> atd1->registers_export;
+	registersTee->registers_import_n(5) >> atd0->registers_export;
+	registersTee->registers_import_n(6) >> pwm->registers_export;
+	registersTee->registers_import_n(7) >> ect->registers_export;
+	registersTee->registers_import_n(8) >> pit->registers_export;
+	registersTee->registers_import_n(9) >> xgate->registers_export;
 
-	*(registersTee->registers_import[10]) >> global_eeprom->registers_export;
+	registersTee->registers_import_n(0) >> global_eeprom->registers_export;
 
-	*(registersTee->registers_import[11]) >> sci0->registers_export;
-	*(registersTee->registers_import[12]) >> sci1->registers_export;
-	*(registersTee->registers_import[13]) >> sci2->registers_export;
-	*(registersTee->registers_import[14]) >> sci3->registers_export;
-	*(registersTee->registers_import[15]) >> sci4->registers_export;
-	*(registersTee->registers_import[16]) >> sci5->registers_export;
+	registersTee->registers_import_n(1) >> sci0->registers_export;
+	registersTee->registers_import_n(2) >> sci1->registers_export;
+	registersTee->registers_import_n(3) >> sci2->registers_export;
+	registersTee->registers_import_n(4) >> sci3->registers_export;
+	registersTee->registers_import_n(5) >> sci4->registers_export;
+	registersTee->registers_import_n(6) >> sci5->registers_export;
 
-	*(registersTee->registers_import[17]) >> can0->registers_export;
-	*(registersTee->registers_import[18]) >> can1->registers_export;
-	*(registersTee->registers_import[19]) >> can2->registers_export;
-	*(registersTee->registers_import[20]) >> can3->registers_export;
-	*(registersTee->registers_import[21]) >> can4->registers_export;
-	*(registersTee->registers_import[22]) >> spi0->registers_export;
-	*(registersTee->registers_import[23]) >> spi1->registers_export;
-	*(registersTee->registers_import[24]) >> spi2->registers_export;
+	registersTee->registers_import_n(7) >> can0->registers_export;
+	registersTee->registers_import_n(8) >> can1->registers_export;
+	registersTee->registers_import_n(9) >> can2->registers_export;
+	registersTee->registers_import_n(0) >> can3->registers_export;
+	registersTee->registers_import_n(1) >> can4->registers_export;
+	registersTee->registers_import_n(2) >> spi0->registers_export;
+	registersTee->registers_import_n(3) >> spi1->registers_export;
+	registersTee->registers_import_n(4) >> spi2->registers_export;
 
 // ***********************************************************
 	cpu->loader_import >> loader->loader_export;
@@ -580,12 +580,12 @@ Simulator::Simulator(int argc, char **argv)
 	}
 	
 	sci0->char_io_import >> sci_char_io_tee->char_io_export;
-	(*sci_char_io_tee->char_io_import[0]) >> sci_telnet->char_io_export;
-	(*sci_char_io_tee->char_io_import[1]) >> sci_web_terminal->char_io_export;
+	sci_char_io_tee->char_io_import_n(0) >> sci_telnet->char_io_export;
+	sci_char_io_tee->char_io_import_n(1) >> sci_web_terminal->char_io_export;
 
 	spi0->char_io_import >> spi_char_io_tee->char_io_export;
-	(*spi_char_io_tee->char_io_import[0]) >> spi_telnet->char_io_export;
-	(*spi_char_io_tee->char_io_import[1]) >> sci_web_terminal->char_io_export;
+	spi_char_io_tee->char_io_import_n(0) >> spi_telnet->char_io_export;
+	spi_char_io_tee->char_io_import_n(1) >> sci_web_terminal->char_io_export;
 
 	*loader->memory_import[0] >>  mmc->memory_export;
 	loader->registers_import >> cpu->registers_export;

@@ -681,22 +681,7 @@ bool TLE72XXSL::BeginSetup() {
 
 	ComputeInternalTime();
 
-	return (true);
-}
-
-
-bool TLE72XXSL::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool TLE72XXSL::EndSetup() {
-	return (true);
-}
-
-
-void TLE72XXSL::OnDisconnect() {
+	return true;
 }
 
 

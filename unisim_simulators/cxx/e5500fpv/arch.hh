@@ -38,6 +38,7 @@
 #include <core.hh>
 #include <top_ppc64.hh>
 #include <unisim/component/cxx/processor/powerpc/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/reg/core/register.tcc>
@@ -74,7 +75,8 @@ struct Arch
   , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
 {
   typedef ::MSR MSR;
-  typedef unisim::component::cxx::processor::powerpc::ppc64::Decoder                             Decoder;
+  typedef unisim::component::cxx::processor::powerpc::ppc64::Decoder                             PPC64Decoder;
+  typedef unisim::component::cxx::processor::opcache::OpCache<PPC64Decoder>                      Decoder;
   typedef unisim::component::cxx::processor::powerpc::ppc64::Operation                           Operation;
   typedef unisim::service::interfaces::LinuxOS                                                   LinuxOS;
   

@@ -432,14 +432,14 @@ bool CachePowerEstimator::BeginSetup()
 	return true;
 }
 
-bool CachePowerEstimator::SetupCacti()
+void CachePowerEstimator::SetupCacti()
 {
-	if(!profiles.empty()) return true;
+	if(!profiles.empty()) return;
 #if defined(HAVE_CACTI4_2)
 	if(!time_import)
 	{
 		logger << DebugError << "no time service is connected." << EndDebugError;
-		return false;
+		throw unisim::kernel::ServiceAgent::SetupError();
 	}
 
 	cacti = new Cacti4_2();
@@ -513,21 +513,10 @@ bool CachePowerEstimator::SetupCacti()
 	}
 	
 	SetPowerMode(min_cycle_time, default_voltage); // this create and select the default power profile
-	return true;
 #else
 	logger << DebugError << "Cacti 4.2 is not available." << EndDebugError;
-	return false;
+	throw unisim::kernel::ServiceAgent::SetupError();
 #endif
-}
-
-bool CachePowerEstimator::Setup(ServiceExportBase *srv_export)
-{
-	if(srv_export == &power_estimator_export) return SetupCacti();
-	if(srv_export == &power_mode_export) return SetupCacti();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	
-	return false;
 }
 
 } // end of namespace power

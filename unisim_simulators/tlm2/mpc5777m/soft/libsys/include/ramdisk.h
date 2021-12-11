@@ -37,7 +37,7 @@
 
 #include "lfs.h"
 
-#define RAMDISK_BLOCK_SIZE 512
+#define RAMDISK_BLOCK_SIZE 4096
 
 void ramdisk_init(struct lfs_config *ramdisk_lfs_cfg);
 

@@ -136,4 +136,5 @@ int main(void)
 		counter++;
 		PPC_WAIT;
 	}
+	return 0;
 }

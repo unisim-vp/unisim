@@ -33,6 +33,7 @@
  */
 
 #include "architecture.hh"
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -87,3 +88,32 @@ Arch::MemDump64(uint64_t addr)
   std::cerr << '"' << std::endl;
 }
 
+template class unisim::component::cxx::processor::opcache::OpCache< unisim::component::cxx::processor::riscv::isa::rv64::Decoder<Arch> >;
+
+Arch::Operation*
+Arch::StepInstruction()
+{
+  /* Start new instruction */
+  uint64_t insn_addr = current_insn_addr = next_insn_addr;
+    
+  /* Fetch instruction word from memory */
+  CodeType insn = ReadInsn(insn_addr);
+
+  /* Decode instruction */
+  Operation* op = decoder.Decode(insn_addr, insn);
+  next_insn_addr += op->GetLength() / 8;
+    
+  /* Disassemble instruction */
+  if (disasm)
+    {
+      op->disasm(std::cerr << "0x" << std::hex << insn_addr << ": ");
+      std::cerr << '\n';
+    }
+
+  debug();
+  /* Execute instruction*/
+  asm volatile ("operation_execute:");
+  op->execute( *this );
+    
+  return op;
+}

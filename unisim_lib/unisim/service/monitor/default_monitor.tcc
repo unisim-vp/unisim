@@ -46,12 +46,6 @@ bool DefaultMonitor<ADDRESS>::BeginSetup()
 }
 
 template <class ADDRESS>
-bool DefaultMonitor<ADDRESS>::Setup(ServiceExportBase *service_export)
-{
-	return true;
-}
-
-template <class ADDRESS>
 bool DefaultMonitor<ADDRESS>::EndSetup()
 {
 	return true;

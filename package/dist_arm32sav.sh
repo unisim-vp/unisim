@@ -46,7 +46,8 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 $(files header) \
-$(files template)"
+$(files template) \
+"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 

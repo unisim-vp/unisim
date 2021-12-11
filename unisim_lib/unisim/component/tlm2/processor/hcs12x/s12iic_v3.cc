@@ -163,17 +163,6 @@ bool S12IIC::BeginSetup() {
 }
 
 
-bool S12IIC::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12IIC::EndSetup() {
-	return (true);
-}
-
-
 Register* S12IIC::GetRegister(const char *name)
 {
 	return registers_registry.GetRegister(name);

@@ -165,17 +165,6 @@ bool RESERVED::BeginSetup() {
 }
 
 
-bool RESERVED::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool RESERVED::EndSetup() {
-	return (true);
-}
-
-
 Register* RESERVED::GetRegister(const char *name)
 {
 	return registers_registry.GetRegister(name);

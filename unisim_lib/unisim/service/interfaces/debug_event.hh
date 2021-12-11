@@ -43,6 +43,24 @@
 namespace unisim {
 namespace service {
 namespace interfaces {
+	
+template <class ADDRESS>
+class DebugEventScanner : public ServiceInterface
+{
+public:
+	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) = 0;
+};
+
+namespace detail
+{
+template <class ADDRESS, class CONTAINER> class DebugEventScannerInserter;
+template <class ADDRESS, class CONTAINER> class DebugEventScannerFrontInserter;
+template <class ADDRESS, class CONTAINER> class DebugEventScannerBackInserter;
+} // end of namespace detail
+
+template <class ADDRESS, class CONTAINER> detail::DebugEventScannerInserter<ADDRESS, CONTAINER> DebugEventScannerInserter(CONTAINER& container, typename CONTAINER::iterator iter);
+template <class ADDRESS, class CONTAINER> detail::DebugEventScannerFrontInserter<ADDRESS, CONTAINER> DebugEventScannerFrontInserter(CONTAINER& container, typename CONTAINER::iterator iter);
+template <class ADDRESS, class CONTAINER> detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter);
 
 template <class ADDRESS>
 class DebugEventTrigger : public ServiceInterface
@@ -52,7 +70,7 @@ public:
 	virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) = 0;
 	virtual bool Unlisten(unisim::util::debug::Event<ADDRESS> *event) = 0;
 	virtual bool IsEventListened(unisim::util::debug::Event<ADDRESS> *event) const = 0;
-	virtual void EnumerateListenedEvents(std::list<unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type = unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) const = 0;
+	virtual void ScanListenedEvents(DebugEventScanner<ADDRESS>& scanner) const = 0;
 	virtual void ClearEvents() = 0;
 	
 	// idem potent interface: anonymous events
@@ -70,6 +88,62 @@ class DebugEventListener : public ServiceInterface
 public:
 	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event) = 0;
 };
+
+namespace detail
+{
+
+template <class ADDRESS, class CONTAINER>
+class DebugEventScannerInserter : DebugEventScanner<ADDRESS>
+{
+public:
+	DebugEventScannerInserter(CONTAINER& _container, typename CONTAINER::iterator _iter) : container(_container), iter(_iter) {}
+	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) { container.insert(event); }
+private:
+	CONTAINER& container;
+	typename CONTAINER::iterator iter;
+};
+
+template <class ADDRESS, class CONTAINER>
+class DebugEventScannerFrontInserter : DebugEventScanner<ADDRESS>
+{
+public:
+	DebugEventScannerFrontInserter(CONTAINER& _container, typename CONTAINER::iterator _iter) : container(_container), iter(_iter) {}
+	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) { container.push_front(event); }
+private:
+	CONTAINER& container;
+	typename CONTAINER::iterator iter;
+};
+
+template <class ADDRESS, class CONTAINER>
+class DebugEventScannerBackInserter : DebugEventScanner<ADDRESS>
+{
+public:
+	DebugEventScannerBackInserter(CONTAINER& _container, typename CONTAINER::iterator _iter) : container(_container), iter(_iter) {}
+	virtual void Append(unisim::util::debug::Event<ADDRESS> *event) { container.push_back(event); }
+private:
+	CONTAINER& container;
+	typename CONTAINER::iterator iter;
+};
+
+} // end of namespace detail
+
+template <class ADDRESS, class CONTAINER>
+detail::DebugEventScannerInserter<ADDRESS, CONTAINER> DebugEventScannerInserter(CONTAINER& container, typename CONTAINER::iterator iter)
+{
+	return detail::DebugEventScannerInserter<ADDRESS, CONTAINER>(container, iter);
+}
+
+template <class ADDRESS, class CONTAINER>
+detail::DebugEventScannerFrontInserter<ADDRESS, CONTAINER> DebugEventScannerFrontInserter(CONTAINER& container, typename CONTAINER::iterator iter)
+{
+	return detail::DebugEventScannerFrontInserter<ADDRESS, CONTAINER>(container, iter);
+}
+
+template <class ADDRESS, class CONTAINER>
+detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter)
+{
+	return detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER>(container, iter);
+}
 
 } // end of namespace interfaces
 } // end of namespace service

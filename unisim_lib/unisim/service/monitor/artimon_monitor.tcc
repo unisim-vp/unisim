@@ -29,31 +29,6 @@ ArtimonMonitor<ADDRESS>::~ArtimonMonitor()
 }
 
 template <class ADDRESS>
-void ArtimonMonitor<ADDRESS>::OnDisconnect()
-{
-
-}
-
-template <class ADDRESS>
-bool ArtimonMonitor<ADDRESS>::BeginSetup()
-{
-
-	return true;
-}
-
-template <class ADDRESS>
-bool ArtimonMonitor<ADDRESS>::Setup(ServiceExportBase *service_export)
-{
-	return true;
-}
-
-template <class ADDRESS>
-bool ArtimonMonitor<ADDRESS>::EndSetup()
-{
-	return true;
-}
-
-template <class ADDRESS>
 int ArtimonMonitor<ADDRESS>::generate_monitor_spec(const char* file_path)
 {
 //	std::cout << "ARTiMon:: generate_monitor_spec() " << file_path << std::endl;

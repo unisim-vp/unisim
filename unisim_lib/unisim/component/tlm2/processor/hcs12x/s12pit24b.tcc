@@ -503,16 +503,6 @@ bool S12PIT24B<PIT_SIZE>::BeginSetup() {
 	return (true);
 }
 
-template <uint8_t PIT_SIZE>
-bool S12PIT24B<PIT_SIZE>::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-template <uint8_t PIT_SIZE>
-bool S12PIT24B<PIT_SIZE>::EndSetup() {
-	return (true);
-}
 
 template <uint8_t PIT_SIZE>
 Register* S12PIT24B<PIT_SIZE>::GetRegister(const char *name)

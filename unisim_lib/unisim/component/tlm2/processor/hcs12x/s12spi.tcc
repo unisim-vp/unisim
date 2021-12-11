@@ -812,20 +812,6 @@ bool S12SPI<SPI_VERSION>::BeginSetup() {
 	return (true);
 }
 
-
-template <unsigned int SPI_VERSION>
-bool S12SPI<SPI_VERSION>::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-template <unsigned int SPI_VERSION>
-bool S12SPI<SPI_VERSION>::EndSetup() {
-	return (true);
-}
-
-
 template <unsigned int SPI_VERSION>
 Register* S12SPI<SPI_VERSION>::GetRegister(const char *name)
 {

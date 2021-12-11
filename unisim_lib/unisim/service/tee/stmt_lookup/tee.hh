@@ -53,9 +53,9 @@ using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::StatementLookup;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
-class Tee :
-	public Client<StatementLookup<ADDRESS> >,
-	public Service<StatementLookup<ADDRESS> >
+class Tee
+	: public Service<StatementLookup<ADDRESS> >
+	, public Client<StatementLookup<ADDRESS> >
 {
 public:
 	ServiceExport<StatementLookup<ADDRESS> > stmt_lookup_export;
@@ -64,11 +64,13 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
+	void Setup(StatementLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) stmt_lookup_import[i]->RequireSetup(); }
+
 	virtual void GetStatements(std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
-	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 };
 
 } // end of namespace stmt_lookup

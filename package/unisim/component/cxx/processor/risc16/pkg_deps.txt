@@ -5,6 +5,7 @@ std/iostream
 std/map
 std/sstream
 std/vector
+unisim/component/cxx/processor/opcache
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable

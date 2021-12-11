@@ -870,16 +870,43 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 	param_screen_height("screen-height", this, screen_height, "screen height in pixels"),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
-	loader_export.SetupDependsOn(blob_import);
 	loader_export.SetupDependsOn(loader_import);
 	loader_export.SetupDependsOn(memory_import);
 	loader_export.SetupDependsOn(registers_import);
 	
-	blob_export.SetupDependsOn(blob_import);
 }
 
-void PMACBootX::OnDisconnect()
+void PMACBootX::Setup(Blob<uint32_t>*)
 {
+	if(not SetupBlob())
+		throw unisim::kernel::ServiceAgent::SetupError();    
+}
+
+void PMACBootX::Setup(Loader*)
+{
+	if(not SetupBlob())
+		throw unisim::kernel::ServiceAgent::SetupError();    
+	
+	if(!loader_import)
+	{
+		logger << DebugError << "No loader connected" << EndDebugError;
+		throw unisim::kernel::ServiceAgent::SetupError();    
+	}
+        loader_import.RequireSetup();
+	
+	if(!memory_import)
+	{
+		logger << DebugError << "No memory connected" << EndDebugError;
+		throw unisim::kernel::ServiceAgent::SetupError();    
+	}
+	memory_import.RequireSetup();
+
+	if(!registers_import)
+	{
+		logger << DebugError << "No CPU connected" << EndDebugError;
+		throw unisim::kernel::ServiceAgent::SetupError();    
+	}
+        registers_import.RequireSetup();
 }
 
 bool PMACBootX::BeginSetup()
@@ -893,15 +920,17 @@ bool PMACBootX::BeginSetup()
 	return true;
 }
 
-bool PMACBootX::SetupBlob()
+void PMACBootX::SetupBlob()
 {
-	if(blob) return true;
+	if(blob)
+		return true;
 	if(!blob_import)
 	{
 		logger << DebugError << "no kernel loader connected" << EndDebugError;
 		return false;
 	}
-	
+	blob_import.RequireSetup();
+
 	const unisim::util::blob::Blob<uint32_t> *kernel_blob = blob_import->GetBlob();
 	
 	if(!kernel_blob)
@@ -945,41 +974,6 @@ bool PMACBootX::SetupBlob()
 	blob->AddBlob(kernel_blob);
 	
 	return true;
-}
-
-bool PMACBootX::SetupLoad()
-{
-	if(!SetupBlob()) return false;
-	if(!blob) return false;
-	
-	if(!loader_import)
-	{
-		logger << DebugError << "No loader connected" << EndDebugError;
-		return false;
-	}
-	
-	if(!memory_import)
-	{
-		logger << DebugError << "No memory connected" << EndDebugError;
-		return false;
-	}
-
-	if(!registers_import)
-	{
-		logger << DebugError << "No CPU connected" << EndDebugError;
-		return false;
-	}
-	
-	return true;
-}
-
-bool PMACBootX::Setup(ServiceExportBase *srv_export)
-{
-	if(srv_export == &blob_export) return SetupBlob();
-	if(srv_export == &loader_export) return SetupLoad();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	return false;
 }
 
 bool PMACBootX::EndSetup()

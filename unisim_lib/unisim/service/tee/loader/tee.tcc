@@ -50,8 +50,8 @@ using std::string;
 template <unsigned int MAX_IMPORTS>
 Tee<MAX_IMPORTS>::Tee(const char *name, Object *parent)
 	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the loader capability of several services that individually provides their own loader capability" )
-	, Client<Loader>(name, parent)
 	, Service<Loader>(name, parent)
+	, Client<Loader>(name, parent)
 	, loader_export("loader-export", this)
 {
 	unsigned int i;
@@ -61,8 +61,6 @@ Tee<MAX_IMPORTS>::Tee(const char *name, Object *parent)
 		sstr << "loader-import[" << i << "]";
 		string import_name = sstr.str();
 		loader_import[i] = new ServiceImport<Loader>(import_name.c_str(), this);
-		
-		loader_export.SetupDependsOn(*loader_import[i]);
 	}
 }
 

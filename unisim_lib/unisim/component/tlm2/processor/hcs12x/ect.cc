@@ -1564,7 +1564,8 @@ void ECT::runChannelOutputCompareAction(uint8_t ioc_index) {
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool ECT::BeginSetup() {
+bool ECT::BeginSetup()
+{
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".TIOS", &tios_register));
 
@@ -1829,14 +1830,6 @@ bool ECT::BeginSetup() {
 
 	computeInternalTime();
 
-	return (true);
-}
-
-bool ECT::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-bool ECT::EndSetup() {
 	return (true);
 }
 

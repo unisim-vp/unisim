@@ -135,15 +135,7 @@ bool CAN_STUB::BeginSetup() {
 
 	watchdog_delay = sc_time(1, SC_US);
 
-	return (true);
-}
-
-bool CAN_STUB::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-bool CAN_STUB::EndSetup() {
-	return (true);
+	return true;
 }
 
 void CAN_STUB::Stop(int exit_status) {

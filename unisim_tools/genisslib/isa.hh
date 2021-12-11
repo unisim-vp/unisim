@@ -48,6 +48,7 @@ struct Opts
   virtual ConstStr        locate( char const* _name ) const = 0;
   virtual char const*     appname() const = 0;
   virtual char const*     appversion() const = 0;
+  std::ostream&           log( unsigned int level ) const;
 };
 
 struct Isa
@@ -87,10 +88,12 @@ struct Isa
   };
   typedef std::vector<Ordering> Orderings;
   Orderings                     m_user_orderings;
-
+  
+  std::set<unsigned int>        m_insnsizes;
+  
   Isa();
   ~Isa();
-  
+
   void                          add( Operation* _op );
   Operation*                    operation( ConstStr _symbol );
   void                          check_name_validity(char const* kind, ConstStr symbol, FileLoc const& fl);
@@ -104,7 +107,11 @@ struct Isa
   ActionProto const*            actionproto( ConstStr _symbol ) const;
   SDClass const*                sdclass( std::vector<ConstStr>& _namespace ) const;
   SDInstance const*             sdinstance( ConstStr _symbol ) const;
-                                
+
+  unsigned                      maxsize() const;
+  unsigned                      gcd() const;
+  void                          reorder( Vector<BitField>& bitfields );
+  void                          finalize( Opts const& _options );
   Generator*                    generator( Opts const& _options );
                                 
   void                          expand( std::ostream& _sink ) const;
@@ -125,6 +132,25 @@ struct Isa
   struct ParseError {};
   
   void                          group_command( ConstStr _symbol, ConstStr _command, FileLoc const& fl );
+};
+
+struct FieldIterator
+{
+  // Inputs
+  typedef Vector<BitField> BitFields;
+  
+  BitFields const& bitfields;
+  bool             little_endian;
+
+  // State
+  BitFields::const_iterator nbf, bf;
+  int                       beg, end;
+  
+  FieldIterator( BitFields const& bitfields, bool _little_endian );
+  bool              next();
+  unsigned          pos(unsigned maxsize) { return beg + (beg < 0 ? maxsize : 0); }
+  
+  BitField const&   bitfield() { return **bf; }
 };
 
 #endif // __ISA_HH__

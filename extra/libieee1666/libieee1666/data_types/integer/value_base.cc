@@ -42,20 +42,25 @@ void sc_value_base::concat_clear_data(bool to_ones)
 {
 }
 
-bool sc_value_base::concat_get_ctrl(/*implementation-defined*/ unsigned int *dst_p, int low_i) const
+bool sc_value_base::concat_get_ctrl(concat_word *dst_p, int low_i) const
 {
+	return false;
 }
 
-bool sc_value_base::concat_get_data(/*implementation-defined*/ unsigned int *dst_p, int low_i) const
+bool sc_value_base::concat_get_data(concat_word *dst_p, int low_i) const
 {
+	return false;
 }
 
 uint64 sc_value_base::concat_get_uint64() const
 {
+	return 0;
 }
 
 int sc_value_base::concat_length(bool *xz_present_p) const
 {
+	if(xz_present_p) *xz_present_p = false;
+	return 0;
 }
 
 void sc_value_base::concat_set(int64 src, int low_i)

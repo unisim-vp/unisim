@@ -67,6 +67,11 @@ enum {
 };
 
 class sc_trace_file;
+class sc_vcd_trace_file;
+class sc_vcd_module;
+class sc_vcd_variable_base;
+template <typename T> struct sc_vcd_type_trait;
+template <class T> class sc_vcd_variable;
 class sc_report;
 class sc_report_handler;
 class sc_vector_base;

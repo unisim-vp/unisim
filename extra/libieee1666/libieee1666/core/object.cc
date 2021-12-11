@@ -208,19 +208,15 @@ sc_object& sc_object::operator = (const sc_object& object)
 
 sc_object::~sc_object()
 {
-	unsigned int i;
-
-	unsigned int num_child_events = child_events.size();
-	for(i = 0; i < num_child_events; i++)
+	for(child_events_t::iterator it = child_events.begin(); it != child_events.end(); ++it)
 	{
-		sc_event *child_event = child_events[i];
+		sc_event *child_event = *it;
 		child_event->parent_object = 0;
 	}
 
-	unsigned int num_child_objects = child_objects.size();
-	for(i = 0; i < num_child_objects; i++)
+	for(child_objects_t::iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 	{
-		sc_object *child_object = child_objects[i];
+		sc_object *child_object = *it;
 		child_object->parent_object = 0;
 	}
 	
@@ -240,15 +236,13 @@ void sc_object::add_child_event(sc_event *event)
 
 void sc_object::remove_child_object(sc_object *object)
 {
-	unsigned int num_child_objects = child_objects.size();
-	unsigned int i;
-	for(i = 0; i < num_child_objects; i++)
+	for(child_objects_t::iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 	{
-		sc_object *child_object = child_objects[i];
+		sc_object *child_object = *it;
 		
 		if(child_object == object)
 		{
-			child_objects[i] = child_objects[num_child_objects - 1];
+			*it = child_objects.back();
 			child_objects.pop_back();
 			break;
 		}
@@ -257,13 +251,12 @@ void sc_object::remove_child_object(sc_object *object)
 
 void sc_object::remove_child_event(sc_event *event)
 {
-	unsigned int num_child_events = child_events.size();
-	unsigned int i;
-	for(i = 0; i < num_child_events; i++)
+	for(child_events_t::iterator it = child_events.begin(); it != child_events.end(); ++it)
 	{
-		if(child_events[i] == event)
+		sc_event *child_event = *it;
+		if(child_event == event)
 		{
-			child_events[i] = child_events[num_child_events - 1];
+			*it = child_events.back();
 			child_events.pop_back();
 			break;
 		}
@@ -272,11 +265,9 @@ void sc_object::remove_child_event(sc_event *event)
 
 sc_object *sc_object::find_child_object(const char *name) const
 {
-	unsigned int n_child_objects = child_objects.size();
-	unsigned int i;
-	for(i = 0; i < n_child_objects; i++)
+	for(child_objects_t::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 	{
-		sc_object *child_object = child_objects[i];
+		sc_object *child_object = *it;
 		if(strcmp(child_object->name(), name) == 0) return child_object;
 	}
 	return 0;
@@ -288,17 +279,15 @@ void sc_object::dump_hierarchy(std::ostream& os, unsigned int indent) const
 	for(i = 0; i < indent; i++) os << "\t";
 	indent++;
 	os << "- object " << name() << std::endl;
-	unsigned int num_child_events = child_events.size();
-	for(i = 0; i < num_child_events; i++)
+	for(child_events_t::const_iterator it = child_events.begin(); it != child_events.end(); ++it)
 	{
-		sc_event *child_event = child_events[i];
+		sc_event *child_event = *it;
 		for(unsigned int j = 0; j < indent; j++) os << "\t";
 		os << "- event " << child_event->name() << std::endl;
 	}
-	unsigned int n_child_objects = child_objects.size();
-	for(i = 0; i < n_child_objects; i++)
+	for(child_objects_t::const_iterator it = child_objects.begin(); it != child_objects.end(); ++it)
 	{
-		sc_object *child_object = child_objects[i];
+		sc_object *child_object = *it;
 		child_object->dump_hierarchy(os, indent);
 	}
 }

@@ -6,6 +6,7 @@ std/map
 std/sstream
 std/stdexcept
 unisim/component/cxx/processor/avr32/avr32a
+unisim/component/cxx/processor/opcache
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable

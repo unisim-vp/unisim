@@ -36,6 +36,8 @@
 
 namespace sc_core {
 
+sc_actions sc_report_handler::actions_per_severity[SC_MAX_SEVERITY];
+
 void sc_report_handler::report( sc_severity , const char* msg_type , const char* msg , const char* file , int line )
 {
 }
@@ -45,8 +47,15 @@ void sc_report_handler::report( sc_severity , const char* msg_type , const char*
 {
 }
 
-sc_actions sc_report_handler::set_actions( sc_severity , sc_actions )
+sc_actions sc_report_handler::set_actions(sc_severity severity, sc_actions actions)
 {
+	if(severity < SC_MAX_SEVERITY)
+	{
+		sc_actions old_actions = actions_per_severity[severity];
+		actions_per_severity[severity] = actions;
+		return old_actions;
+	}
+	return SC_UNSPECIFIED;
 }
 
 sc_actions sc_report_handler::set_actions( const char * msg_type , sc_actions )

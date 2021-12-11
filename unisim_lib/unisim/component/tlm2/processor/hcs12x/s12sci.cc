@@ -998,7 +998,8 @@ void S12SCI::ComputeBaudRate() {
 //=====================================================================
 
 
-bool S12SCI::BeginSetup() {
+bool S12SCI::BeginSetup()
+{
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SCIBDH", &scibdh_register));
 
@@ -1070,17 +1071,6 @@ bool S12SCI::BeginSetup() {
 
 	ComputeInternalTime();
 
-	return (true);
-}
-
-
-bool S12SCI::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12SCI::EndSetup() {
 	return (true);
 }
 

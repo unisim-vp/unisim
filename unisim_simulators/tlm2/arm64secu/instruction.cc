@@ -35,10 +35,12 @@
 #include <architecture.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <iostream>
 #include <iomanip>
 
-template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
+template class unisim::component::cxx::processor::opcache::OpCache< unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64> >;
+//template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
 
 AArch64::Operation*
 AArch64::fetch_and_decode(uint64_t insn_addr)

@@ -47,7 +47,7 @@ Runner::Thumb2::~Thumb2()
 Runner::Thumb2::Operation*
 Runner::Thumb2::decode(uint32_t addr, uint32_t code)
 {
-  try { return Decode(addr,code); }
+  try { return NCDecode(addr,code); }
   catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("undefined"); }
   return 0;
 }

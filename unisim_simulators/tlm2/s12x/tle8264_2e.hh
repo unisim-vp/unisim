@@ -35,7 +35,6 @@ using namespace tlm_utils;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Signal;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
@@ -127,10 +126,6 @@ public:
 	~TLE8264_2E();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
-
-	virtual void OnDisconnect();
 	virtual void Reset();
 
 	virtual void Stop(int exit_status);

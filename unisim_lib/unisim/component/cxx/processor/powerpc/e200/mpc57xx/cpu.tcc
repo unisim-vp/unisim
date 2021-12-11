@@ -176,8 +176,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, tmcfg0(static_cast<typename CONFIG::CPU *>(this))
 	, local_memory_gate("local-memory-gate", this)
 {
-	disasm_export.SetupDependsOn(this->memory_import);
-	
 	local_memory_export >> local_memory_gate.local_memory_export;
 	
 	param_processor_version.SetMutable(false);
@@ -685,6 +683,12 @@ template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::SetVectorOffset(EFFECTIVE_ADDRESS value)
 {
 	vector_offset = value & 0xfffffffcUL;
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS>*)
+{
+	this->memory_import.RequireSetup();
 }
 
 template <typename TYPES, typename CONFIG>

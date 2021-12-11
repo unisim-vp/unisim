@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
@@ -85,6 +86,10 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef CPU<CPU_IMPL> this_type;
+  
+  typedef isa::arm64::Operation<CPU_IMPL> Operation;
+  typedef isa::arm64::Decoder<CPU_IMPL> A64Decoder;
+  typedef opcache::OpCache<A64Decoder>  Decoder;
 
   // typedef simfloat::FP FP;
   // typedef FP::F64  F64;
@@ -131,14 +136,16 @@ struct CPU
   //=              Memory interface methods (non intrusive)             =
   //=====================================================================
 
+  void Setup(unisim::service::interfaces::Memory<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
-  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size );
-  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, (uint8_t*)buffer, size ); }
+  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, (uint8_t*)buffer, size ); }
 
   //=====================================================================
   //=                   Disassembly interface methods                   =
   //=====================================================================
 
+  void Setup(unisim::service::interfaces::Disassembly<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
   virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
 
@@ -174,7 +181,7 @@ struct CPU
 
   void StepInstruction();
 
-  void UndefinedInstruction( isa::arm64::Operation<CPU_IMPL> const* insn );
+  void UndefinedInstruction( Operation const* insn );
   void UndefinedInstruction();
 
   bool Cond( bool cond ) { return cond; }
@@ -456,14 +463,14 @@ protected:
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
 
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU_IMPL> decoder;
+  Decoder decoder;
 
   // // Intrusive memory accesses
   // virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   // virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
-  // // Non-intrusive memory accesses
-  // virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  // virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // Non-intrusive memory accesses
+  bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
 
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
@@ -481,6 +488,12 @@ template <typename CPU, typename T>
 T FPMulAdd(CPU& cpu, T acc, T op1, T op2)
 {
   return acc + (op1 * op2);
+}
+
+template <typename CPU, typename T>
+T FPMulSub(CPU& cpu, T acc, T op1, T op2)
+{
+  return acc - (op1 * op2);
 }
 
 } // end of namespace vmsav8

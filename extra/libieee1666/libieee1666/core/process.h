@@ -129,7 +129,8 @@ private:
 	bool flag_dont_initialize;
 	bool automatic_process_owner;
 	bool trigger_requested;
-	std::vector<sc_process_reset_bind_info> process_reset_bind_infos;
+	typedef std::vector<sc_process_reset_bind_info> process_reset_bind_infos_t;
+	process_reset_bind_infos_t process_reset_bind_infos;
 
 	unsigned int ref_count;
 

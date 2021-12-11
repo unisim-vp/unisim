@@ -160,42 +160,29 @@ bool S12XGATE::BeginSetup() {
 
 }
 
-bool S12XGATE::Setup(ServiceExportBase *srv_export) {
-	return (inherited::Setup(srv_export));
-}
-
-bool S12XGATE::EndSetup() {
-	return (inherited::EndSetup());
-}
-
-void S12XGATE::Reset() {
-	inherited::Reset();
-}
-
 void
-S12XGATE ::
-Stop(int ret) {
-
+S12XGATE::Stop(int ret)
+{
 	Object::Stop(-1);
 }
 
 
 void
-S12XGATE ::
-Sync() {
+S12XGATE::Sync()
+{
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
 	wait(time_spent);
 }
 
-void S12XGATE::
-enbale_xgate() {
+void S12XGATE::enbale_xgate()
+{
 	xgate_enabled = true;
 	xgate_enable_event.notify();
 }
 
-void S12XGATE::
-disable_xgate() {
+void S12XGATE::disable_xgate()
+{
 	xgate_enabled = false;
 	state = IDLE;
 
@@ -203,17 +190,14 @@ disable_xgate() {
 	setXGSWT(0x0000);
 }
 
-void S12XGATE::
-triggerChannelThread() {
-
+void S12XGATE::triggerChannelThread()
+{
 	xgate_newthread_event.notify();
-
 }
 
 
-void S12XGATE::
-Run() {
-
+void S12XGATE::Run()
+{
 /**
  *
  * 4.7.4 Thread Execution
@@ -358,8 +342,8 @@ Run() {
 	}
 }
 
-void S12XGATE::handleAsynchronousInterrupt() {
-
+void S12XGATE::handleAsynchronousInterrupt()
+{
 	/**
 	 * Low priority threads (interrupt levels 1 to 3) can be interrupted by high priority threads (interrupt levels 4 to 7).
 	 * High priority threads are not interruptible.
@@ -393,17 +377,18 @@ void S12XGATE::handleAsynchronousInterrupt() {
 
 }
 
-void S12XGATE::riseErrorCondition() {
+void S12XGATE::riseErrorCondition()
+{
 	inherited::riseErrorCondition();
 }
 
-tlm_sync_enum S12XGATE::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t) {
-
+tlm_sync_enum S12XGATE::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
 	return (TLM_ACCEPTED);
 }
 
-tlm_sync_enum S12XGATE::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t) {
-
+tlm_sync_enum S12XGATE::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
 	// check XGE bit. is S12X_INT request enabled ?
 	if (isINTRequestEnabled()) {
 		triggerChannelThread();
@@ -462,7 +447,8 @@ address_t S12XGATE ::getIntVector(unsigned int& priority)
 
 }
 
-void S12XGATE::assertInterrupt(unsigned int offset, bool isXGATE_flag) {
+void S12XGATE::assertInterrupt(unsigned int offset, bool isXGATE_flag)
+{
 
 
 	if (!inherited::isInterruptEnabled()) return;
@@ -501,7 +487,8 @@ void S12XGATE::assertInterrupt(unsigned int offset, bool isXGATE_flag) {
 
 }
 
-void S12XGATE::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+void S12XGATE::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay)
+{
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -511,7 +498,8 @@ void S12XGATE::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 	computeInternalTime();
 }
 
-void S12XGATE::computeInternalTime() {
+void S12XGATE::computeInternalTime()
+{
 
 	// TODO: check if the following notice is truth for XGATE as well as for CPU12
 

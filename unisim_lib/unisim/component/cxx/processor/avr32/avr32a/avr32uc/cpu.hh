@@ -40,6 +40,7 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/config.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
@@ -123,7 +124,7 @@ private:
 
 template <class CONFIG>
 class CPU :
-	public unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>,
+	public opcache::OpCache< Decoder<CONFIG> >,
 	public Client<Loader>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugYielding>,
@@ -347,8 +348,7 @@ public:
 	inline void SetSR_N(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_N_MASK) | ((val << CONFIG::SR_N_OFFSET) & CONFIG::SR_N_MASK)); }
 	inline void SetSR_Z(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_Z_MASK) | ((val << CONFIG::SR_Z_OFFSET) & CONFIG::SR_Z_MASK)); }
 	inline void SetSR_C(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_C_MASK) | ((val << CONFIG::SR_C_OFFSET) & CONFIG::SR_C_MASK)); }
-	
-	      
+
 	inline void SetEvba(uint32_t val) ALWAYS_INLINE { evba=val;}
 	inline void SetAcba(uint32_t val) ALWAYS_INLINE { acba=val;}
 	inline void SetCpucr(uint32_t val) ALWAYS_INLINE {cpucr=val;}
@@ -367,6 +367,11 @@ public:
 	//=====================================================================
 	
 	virtual bool BeginSetup();
+	// virtual void Setup(MemoryAccessReportingControl*) {}
+	virtual void Setup(Disassembly<typename CONFIG::address_t> *) { memory_import.RequireSetup(); }
+	// virtual void Setup(unisim::service::interfaces::Registers*) {}
+	virtual void Setup(Memory<typename CONFIG::address_t> *) { memory_import.RequireSetup(); }
+	// virtual void Setup(MemoryInjection<typename CONFIG::address_t> *) {}
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
 	

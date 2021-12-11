@@ -447,13 +447,13 @@ uint64_t DWARF_StatementProgram<MEMORY_ADDR>::GetOffset() const
 template <class MEMORY_ADDR>
 const DWARF_Filename *DWARF_StatementProgram<MEMORY_ADDR>::GetFilename(unsigned int filename_idx) const
 {
-	return &filenames[filename_idx];
+	return (filename_idx < filenames.size()) ? &filenames[filename_idx] : 0;
 }
 
 template <class MEMORY_ADDR>
 const char *DWARF_StatementProgram<MEMORY_ADDR>::GetIncludeDirectory(unsigned int include_directory_idx) const
 {
-	return include_directories[include_directory_idx];
+	return (include_directory_idx < include_directories.size()) ? include_directories[include_directory_idx] : 0;
 }
 
 } // end of namespace dwarf

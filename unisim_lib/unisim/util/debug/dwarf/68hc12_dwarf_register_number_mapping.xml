@@ -1,6 +1,7 @@
 <dw_reg_num_mapping>
 	<architecture name="68hc12">
 		<stack_pointer dw_reg_num="15"/>
+		<program_counter name="PC"/>
 		<register dw_reg_num="0" arch_reg="A"/>
 		<register dw_reg_num="1" arch_reg="B"/>
 		<register dw_reg_num="3" arch_reg="D"/>

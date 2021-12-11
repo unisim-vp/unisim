@@ -33,6 +33,8 @@
  */
 
 #include <data_types/integer/int_subref.h>
+#include <data_types/integer/int_base.h>
+#include <data_types/util.h>
 
 namespace sc_dt {
 
@@ -40,52 +42,75 @@ namespace sc_dt {
 
 // Copy constructor
 sc_int_subref::sc_int_subref(const sc_int_subref& a)
+	: sc_int_subref_r(a)
 {
 }
 
 // Assignment operators
 sc_int_subref& sc_int_subref::operator = (int_type v)
 {
+	if(obj)
+	{
+		uint_type m = mask();
+		obj->value = (obj->value & ~m) | (((uint_type) v << right) & m);
+		obj->sign_extend();
+	}
+	return *this;
 }
 
 sc_int_subref& sc_int_subref::operator = (const sc_int_base& a)
 {
+	return operator = (a.value);
 }
 
 sc_int_subref& sc_int_subref::operator = (const sc_int_subref_r & a)
 {
+	return operator = ((uint_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (const sc_int_subref& a)
 {
+	return operator = ((const sc_int_subref_r&) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (const char *a)
 {
+	int_type v;
+	if(string_to_int(a, v))
+	{
+		operator = (v);
+	}
+	return *this;
 }
 
 sc_int_subref& sc_int_subref::operator = (unsigned long a)
 {
+	return operator = ((int_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (long a)
 {
+	return operator = ((int_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (unsigned int a)
 {
+	return operator = ((int_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (int a)
 {
+	return operator = ((int_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (uint64 a)
 {
+	return operator = ((int_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (double a)
 {
+	return operator = ((int_type) a);
 }
 
 sc_int_subref& sc_int_subref::operator = (const sc_signed&)
@@ -107,9 +132,19 @@ sc_int_subref& sc_int_subref::operator = (const sc_lv_base&)
 // Other methods
 void sc_int_subref::scan(std::istream& is)
 {
+	std::string s;
+	if(is >> s)
+	{
+		operator = (s.c_str());
+	}
 }
 
 sc_int_subref::sc_int_subref()
+{
+}
+
+sc_int_subref::sc_int_subref(sc_int_base *_obj, int _left, int _right)
+	: sc_int_subref_r(_obj, _left, _right)
 {
 }
 

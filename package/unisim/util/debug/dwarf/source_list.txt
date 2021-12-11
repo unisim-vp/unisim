@@ -10,3 +10,4 @@ unisim/util/debug/dwarf/filename.cc
 unisim/util/debug/dwarf/leb128.cc
 unisim/util/debug/dwarf/ml.cc
 unisim/util/debug/dwarf/register_number_mapping.cc
+unisim/util/debug/dwarf/variable.cc

@@ -46,6 +46,7 @@
 #include <unisim/util/debug/data_object_initializer.hh>
 #include <unisim/util/debug/data_object_initializer.tcc>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/debug/source_code_breakpoint.hh>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -322,6 +323,12 @@ void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDR
 		(*std_output_stream) << "-> Received " << (*trap_event) << std::endl;
 		trap = true;
 	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT))
+	{
+		const unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = static_cast<const unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+		(*std_output_stream) << "-> Reached " << (*source_code_breakpoint) << std::endl;
+		trap = true;
+	}
 }
 
 template <class ADDRESS>
@@ -347,12 +354,13 @@ void InlineDebugger<ADDRESS>::DebugYield()
 	ADDRESS cont_addr;
 	unsigned int size;
 	ADDRESS next_addr;
+	uint64_t int_value;
 
 	program_counter->GetValue(cia);
 	
 	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
 	{
-		DeleteBreakpoint(cont_until_addr);
+		DeleteBreakpointAt(cont_until_addr);
 	}
 
 	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
@@ -742,10 +750,23 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					break;
 				}
 
-				if(IsBreakCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), addr))
+				if(IsBreakCommand(parm[0].c_str()))
 				{
-					recognized = true;
-					SetBreakpoint(addr);
+					if(ParseAddr(parm[1].c_str(), addr))
+					{
+						recognized = true;
+						SetBreakpoint(addr);
+					}
+					else
+					{
+						unisim::util::debug::SourceCodeLocation source_code_location;
+						
+						if(source_code_location.Parse(parm[1].c_str()))
+						{
+							recognized = true;
+							SetBreakpoint(source_code_location);
+						}
+					}
 					break;
 				}
 
@@ -756,20 +777,13 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					break;
 				}
 
-				if(IsDeleteCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), addr))
+				if(IsDeleteCommand(parm[0].c_str()) && ParseIntegerValue(parm[1].c_str(), int_value))
 				{
 					recognized = true;
-					DeleteBreakpoint(addr);
+					DeleteBreakpointWatchpoint(int_value);
 					break;
 				}
 				
-				if(IsDeleteWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
-				{
-					recognized = true;
-					DeleteWriteWatchpoint(addr, size);
-					break;
-				}
-
 				if(IsContinueCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), cont_addr))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
@@ -887,21 +901,6 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					{
 						recognized = true;
 						SetWriteWatchpoint(addr, size);
-					}
-					break;
-				}
-				
-				if(IsDeleteWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
-				{
-					if(strcmp(parm[2].c_str(), "read") == 0)
-					{
-						recognized = true;
-						DeleteReadWatchpoint(addr, size);
-					}
-					if(strcmp(parm[2].c_str(), "write") == 0)
-					{
-						recognized = true;
-						DeleteWriteWatchpoint(addr, size);
 					}
 					break;
 				}
@@ -1258,11 +1257,8 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "    and stores. The debugger will return to command line prompt once a load," << std::endl;
 	(*std_output_stream) << "    or a store will access to 'symbol' or 'address'." << std::endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
-	(*std_output_stream) << "<del | delete> <symbol | *address | filename:lineno>" << std::endl;
-	(*std_output_stream) << "    delete the breakpoint at 'symbol', 'address', or 'filename:lineno'" << std::endl << std::endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << std::endl;
-	(*std_output_stream) << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << std::endl;
-	(*std_output_stream) << "    delete the watchpoint at 'symbol' or 'address'" << std::endl;
+	(*std_output_stream) << "<del | delete> <breakpoint/watchpoint ID>" << std::endl;
+	(*std_output_stream) << "    delete the breakpoint/watchpoint" << std::endl << std::endl;
 	(*std_output_stream) << "============================== MISCELLANEOUS ===================================" << std::endl;
 	(*std_output_stream) << "<sources>" << std::endl;
 	(*std_output_stream) << "    Locate source files" << std::endl;
@@ -1400,6 +1396,24 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::SetBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location)
+{
+	if(debug_event_trigger_import)
+	{
+		unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = new unisim::util::debug::SourceCodeBreakpoint<ADDRESS>(source_code_location);
+		if(debug_event_trigger_import->Listen(source_code_breakpoint))
+		{
+			return;
+		}
+		else
+		{
+			delete source_code_breakpoint;
+		}
+	}
+	(*std_output_stream) << "Can't set breakpoint at " << source_code_location << std::endl;
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
 	if(debug_event_trigger_import)
@@ -1426,7 +1440,7 @@ void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
+void InlineDebugger<ADDRESS>::DeleteBreakpointAt(ADDRESS addr)
 {
 	if(debug_event_trigger_import)
 	{
@@ -1439,138 +1453,239 @@ void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
+void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 {
-	if(debug_event_trigger_import)
+	struct EventRemover : unisim::service::interfaces::DebugEventScanner<ADDRESS>
 	{
-		if(debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+		EventRemover(InlineDebugger<ADDRESS>& _inline_debugger, int _id)
+			: inline_debugger(_inline_debugger)
+			, id(_id)
+			, event_to_unlisten(0)
 		{
-			return;
 		}
-	}
-	(*std_output_stream) << "Can't remove read watchpoint at 0x" << std::hex << addr << std::dec << " (" << size << " bytes)" << std::endl;
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
-{
-	if(debug_event_trigger_import)
-	{
-		if(debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+		
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
 		{
-			return;
+			int event_id = -1;
+			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT)
+			{
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+				event_id = brkp->GetId();
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT)
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
+				event_id = src_code_brkp->GetId();
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT)
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+				event_id = wp->GetId();
+			}
+			
+			if((event_id >= 0) && (event_id == id)) event_to_unlisten = event;
 		}
-	}
-	(*std_output_stream) << "Can't remove write watchpoint at 0x" << std::hex << addr << std::dec << " (" << size << " bytes)" << std::endl;
+		
+		void Apply()
+		{
+			if(event_to_unlisten)
+			{
+				inline_debugger.debug_event_trigger_import->Unlisten(event_to_unlisten);
+			}
+		}
+		
+	private:
+		InlineDebugger<ADDRESS>& inline_debugger;
+		int id;
+		unisim::util::debug::Event<ADDRESS> *event_to_unlisten;
+	};
+	
+	EventRemover event_remover(*this, id);
+	debug_event_trigger_import->ScanListenedEvents(event_remover);
+	event_remover.Apply();
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBreakpoints()
 {
-	std::list<unisim::util::debug::Event<ADDRESS> *> events;
-	debug_event_trigger_import->EnumerateListenedEvents(events, unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT);
-	typename std::list<unisim::util::debug::Event<ADDRESS> *>::const_iterator iter;
-
-	for(iter = events.begin(); iter != events.end(); iter++)
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
 	{
-		unisim::util::debug::Event<ADDRESS> *event = *iter;
-		unisim::util::debug::Breakpoint<ADDRESS> *brkp = (unisim::util::debug::Breakpoint<ADDRESS> *) event;
-		ADDRESS addr = brkp->GetAddress();
-		
-		(*std_output_stream) << "*0x" << std::hex << (addr / memory_atom_size) << std::dec << " (";
-		
-		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
-		
-		if(symbol)
+		DebugEventScanner(InlineDebugger<ADDRESS>& _inline_debugger)
+			: inline_debugger(_inline_debugger)
 		{
-			(*std_output_stream) << symbol->GetFriendlyName(addr);
 		}
-		else
-		{
-			(*std_output_stream) << "?";
-		}
-		(*std_output_stream) << ")";
 		
-		const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
-		
-		if(stmt)
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
 		{
-			const char *source_filename = stmt->GetSourceFilename();
-			if(source_filename)
+			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT)
 			{
-				unsigned int lineno = stmt->GetLineNo();
-				unsigned int colno = stmt->GetColNo();
-				std::string source_path;
-				const char *source_dirname = stmt->GetSourceDirname();
-				if(source_dirname)
+				unisim::util::debug::Breakpoint<ADDRESS> *brkp = (unisim::util::debug::Breakpoint<ADDRESS> *) event;
+				
+				unsigned int id = brkp->GetId();
+				ADDRESS addr = brkp->GetAddress();
+				
+				(*inline_debugger.std_output_stream) << "#" << id << " *0x" << std::hex << (addr / inline_debugger.memory_atom_size) << std::dec << " (";
+				
+				const unisim::util::debug::Symbol<ADDRESS> *symbol = inline_debugger.symbol_table_lookup_import->FindSymbolByAddr(addr);
+				
+				if(symbol)
 				{
-					source_path += source_dirname;
-					source_path += '/';
+					(*inline_debugger.std_output_stream) << symbol->GetFriendlyName(addr);
 				}
-				source_path += source_filename;
-				(*std_output_stream) << " in ";
-				DumpSource(source_path.c_str(), lineno, colno, 1);
+				else
+				{
+					(*inline_debugger.std_output_stream) << "?";
+				}
+				(*inline_debugger.std_output_stream) << ")";
+				
+				const unisim::util::debug::Statement<ADDRESS> *stmt = inline_debugger.FindStatement(addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
+				
+				if(stmt)
+				{
+					const char *source_filename = stmt->GetSourceFilename();
+					if(source_filename)
+					{
+						unsigned int lineno = stmt->GetLineNo();
+						unsigned int colno = stmt->GetColNo();
+						std::string source_path;
+						const char *source_dirname = stmt->GetSourceDirname();
+						if(source_dirname)
+						{
+							source_path += source_dirname;
+							source_path += '/';
+						}
+						source_path += source_filename;
+						(*inline_debugger.std_output_stream) << " in ";
+						inline_debugger.DumpSource(source_path.c_str(), lineno, colno, 1);
+					}
+					else
+					{
+						(*inline_debugger.std_output_stream) << std::endl;
+					}
+				}
+				else
+				{
+					(*inline_debugger.std_output_stream) << std::endl;
+				}
+			}
+			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT)
+			{
+				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = (unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *) event;
+				
+				unsigned int id = src_code_brkp->GetId();
+				const unisim::util::debug::SourceCodeLocation& src_code_loc = src_code_brkp->GetSourceCodeLocation();
+				
+				(*inline_debugger.std_output_stream) << "#" << id << " " << src_code_loc;
+				
+				const unisim::util::debug::Statement<ADDRESS> *stmt = inline_debugger.stmt_lookup_import->FindStatement(src_code_loc);
+				
+				if(stmt)
+				{
+					const char *source_filename = stmt->GetSourceFilename();
+					if(source_filename)
+					{
+						unsigned int lineno = stmt->GetLineNo();
+						unsigned int colno = stmt->GetColNo();
+						std::string source_path;
+						const char *source_dirname = stmt->GetSourceDirname();
+						if(source_dirname)
+						{
+							source_path += source_dirname;
+							source_path += '/';
+						}
+						source_path += source_filename;
+						(*inline_debugger.std_output_stream) << " in ";
+						inline_debugger.DumpSource(source_path.c_str(), lineno, colno, 1);
+					}
+					else
+					{
+						(*inline_debugger.std_output_stream) << std::endl;
+					}
+				}
+				else
+				{
+					(*inline_debugger.std_output_stream) << std::endl;
+				}
 			}
 		}
-
-		(*std_output_stream) << std::endl;
-	}
+		
+	private:
+		InlineDebugger<ADDRESS>& inline_debugger;
+	};
+	
+	DebugEventScanner event_scanner(*this);
+	debug_event_trigger_import->ScanListenedEvents(event_scanner);
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpWatchpoints()
 {
-	std::list<unisim::util::debug::Event<ADDRESS> *> events;
-	debug_event_trigger_import->EnumerateListenedEvents(events, unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT);
-	typename std::list<unisim::util::debug::Event<ADDRESS> *>::const_iterator iter;
-
-	for(iter = events.begin(); iter != events.end(); iter++)
+	struct DebugEventScanner : unisim::service::interfaces::DebugEventScanner<ADDRESS>
 	{
-		unisim::util::debug::Event<ADDRESS> *event = *iter;
-		unisim::util::debug::Watchpoint<ADDRESS> *wt = (unisim::util::debug::Watchpoint<ADDRESS> *) event;
-		ADDRESS addr = wt->GetAddress();
-		uint32_t size = wt->GetSize();
-		unisim::util::debug::MemoryAccessType mat = wt->GetMemoryAccessType();
-		unisim::util::debug::MemoryType mt = wt->GetMemoryType();
-		
-		switch(mt)
+		DebugEventScanner(InlineDebugger<ADDRESS>& _inline_debugger)
+			: inline_debugger(_inline_debugger)
 		{
-			case unisim::util::debug::MT_INSN:
-				(*std_output_stream) << "insn"; // it should never occur
-				break;
-			case unisim::util::debug::MT_DATA:
-				(*std_output_stream) << "data";
-				break;
 		}
-		(*std_output_stream) << " ";
-		switch(mat)
-		{
-			case unisim::util::debug::MAT_READ:
-				(*std_output_stream) << " read";
-				break;
-			case unisim::util::debug::MAT_WRITE:
-				(*std_output_stream) << "write";
-				break;
-			default:
-				(*std_output_stream) << "  (?)";
-				break;
-		}
-		(*std_output_stream) << " ";
 		
-		(*std_output_stream) << "*0x" << std::hex << (addr / memory_atom_size) << std::dec << "#" << (size / memory_atom_size) << " (";
-		
-		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
-		
-		if(symbol)
+		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
 		{
-			(*std_output_stream) << symbol->GetFriendlyName(addr);
+			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT)
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = (unisim::util::debug::Watchpoint<ADDRESS> *) event;
+				ADDRESS addr = wp->GetAddress();
+				uint32_t size = wp->GetSize();
+				unisim::util::debug::MemoryAccessType mat = wp->GetMemoryAccessType();
+				unisim::util::debug::MemoryType mt = wp->GetMemoryType();
+				unsigned int id = wp->GetId();
+				
+				(*inline_debugger.std_output_stream) << "#" << id << " ";
+				
+				switch(mt)
+				{
+					case unisim::util::debug::MT_INSN:
+						(*inline_debugger.std_output_stream) << "insn"; // it should never occur
+						break;
+					case unisim::util::debug::MT_DATA:
+						(*inline_debugger.std_output_stream) << "data";
+						break;
+				}
+				(*inline_debugger.std_output_stream) << " ";
+				switch(mat)
+				{
+					case unisim::util::debug::MAT_READ:
+						(*inline_debugger.std_output_stream) << " read";
+						break;
+					case unisim::util::debug::MAT_WRITE:
+						(*inline_debugger.std_output_stream) << "write";
+						break;
+					default:
+						(*inline_debugger.std_output_stream) << "  (?)";
+						break;
+				}
+				(*inline_debugger.std_output_stream) << " ";
+				
+				(*inline_debugger.std_output_stream) << "*0x" << std::hex << (addr / inline_debugger.memory_atom_size) << std::dec << "#" << (size / inline_debugger.memory_atom_size) << " (";
+				
+				const unisim::util::debug::Symbol<ADDRESS> *symbol = inline_debugger.symbol_table_lookup_import->FindSymbolByAddr(addr);
+				
+				if(symbol)
+				{
+					(*inline_debugger.std_output_stream) << symbol->GetFriendlyName(addr);
+				}
+				else
+				{
+					(*inline_debugger.std_output_stream) << "?";
+				}
+				(*inline_debugger.std_output_stream) << ")" << std::endl;
+			}
 		}
-		else
-		{
-			(*std_output_stream) << "?";
-		}
-		(*std_output_stream) << ")" << std::endl;
-	}
+		
+	private:
+		InlineDebugger<ADDRESS>& inline_debugger;
+	};
+	
+	DebugEventScanner event_scanner(*this);
+	debug_event_trigger_import->ScanListenedEvents(event_scanner);
 }
 
 
@@ -2234,7 +2349,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBackTrace()
 {
-	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
+	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace();
 	
 	if(backtrace)
 	{
@@ -2301,7 +2416,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace()
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS& ret_addr) const
 {
-	return backtrace_import->GetReturnAddress(cia, ret_addr);
+	return backtrace_import->GetReturnAddress(ret_addr);
 }
 
 template <class ADDRESS>
@@ -2375,30 +2490,9 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 
 	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
-	if(symbol)
+	if(symbol && ((symbol->GetType() == unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT) || (symbol->GetType() == unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC)))
 	{
 		addr = symbol->GetAddress();
-		return true;
-	}
-	
-	std::string filename;
-	unsigned int lineno;
-	while(*s && *s != ':')
-	{
-		filename += *s;
-		s++;
-	}
-	if(*s == ':') s++;
-	
-	std::stringstream sstr_lineno(s);
-	if(!(sstr_lineno >> lineno)) return false;
-	if(!sstr_lineno.eof()) return false;
-	
-	const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(filename.c_str(), lineno, 0);
-	
-	if(stmt)
-	{
-		addr = stmt->GetAddress();
 		return true;
 	}
 	
@@ -2736,7 +2830,7 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -2837,7 +2931,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 		{
 			// requesting address of data object
 			data_object_name++; // skip '&'
-			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 			
 			if(data_object)
 			{
@@ -2859,7 +2953,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 		}
 		else
 		{
-			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 			// requesting value of data object
 			if(data_object)
 			{
@@ -2885,7 +2979,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name)
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -2985,7 +3079,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, const 
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -3115,7 +3209,7 @@ void InlineDebugger<ADDRESS>::ListDataObjects(typename unisim::service::interfac
 	if(data_object_lookup_import)
 	{
 		std::set<std::string> data_object_name_set;
-		data_object_lookup_import->EnumerateDataObjectNames(data_object_name_set, cia, scope);
+		data_object_lookup_import->EnumerateDataObjectNames(data_object_name_set, scope);
 		
 		std::set<std::string>::const_iterator it;
 		for(it = data_object_name_set.begin(); it != data_object_name_set.end(); it++)
@@ -3134,7 +3228,7 @@ void InlineDebugger<ADDRESS>::TrackDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
 		if(data_object)
 		{
@@ -3174,7 +3268,7 @@ void InlineDebugger<ADDRESS>::PrintTrackedDataObjects()
 	{
 		unisim::util::debug::DataObject<ADDRESS> *data_object = *it;
 		
-		data_object->Seek(cia);
+// 		data_object->Seek(cia);
 		
 		PrintDataObject(data_object);
 	}
@@ -3188,7 +3282,8 @@ void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObjec
 	if(data_object->Exists())
 	{
 		const unisim::util::debug::Type *data_object_type = data_object->GetType();
-		(*std_output_stream) << data_object_type->BuildCDecl(data_object_name) << ";" << std::endl;
+		(*std_output_stream) << "Type of Data Object \"" << data_object_name << "\" is \"";
+		(*std_output_stream) << data_object_type->BuildCDecl(0, true) << "\"" << std::endl;
 	}
 	else
 	{
@@ -3199,7 +3294,7 @@ void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObjec
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::PrintDataObjectType(const char *data_object_name)
 {
-	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
 	
 	if(data_object)
 	{
@@ -3218,18 +3313,7 @@ void InlineDebugger<ADDRESS>::InfoSubProgram(const char *subprogram_name)
 	
 	if(subprogram)
 	{
-		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" found" << std::endl;
-		(*std_output_stream) << "Arity: " << subprogram->GetArity() << std::endl;
-		for(unsigned i = 0; i < subprogram->GetArity(); i++)
-		{
-			const unisim::util::debug::FormalParameter *formal_param = subprogram->GetFormalParameter(i);
-			
-			const char *formal_param_name = formal_param->GetName();
-			const unisim::util::debug::Type *formal_param_type = formal_param->GetType();
-			(*std_output_stream) << "Type of parameter #" << i << ": " << formal_param_type->BuildCDecl(formal_param_name) << std::endl;
-		}
-		
-		delete subprogram;
+		(*std_output_stream) << subprogram->BuildCDecl() << ";" << std::endl;
 	}
 	else
 	{
@@ -3376,12 +3460,6 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsDeleteCommand(const char *cmd) const
 {
 	return strcmp(cmd, "del") == 0 || strcmp(cmd, "delete") == 0;
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsDeleteWatchCommand(const char *cmd) const
-{
-	return strcmp(cmd, "delw") == 0 || strcmp(cmd, "delwatch") == 0;
 }
 
 template <class ADDRESS>

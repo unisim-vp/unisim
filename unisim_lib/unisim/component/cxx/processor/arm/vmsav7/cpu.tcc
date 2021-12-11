@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -160,9 +161,6 @@ CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
                             "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
-  disasm_export.SetupDependsOn(memory_import);
-  memory_export.SetupDependsOn(memory_import);
-
   // Set the right format for various of the variables
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -190,7 +188,7 @@ CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
                  << " address  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f" << std::endl
                  << HexDump<8>(addr).s();
 
-      if (not cpu.ExternalReadMemory( addr, &buffer[0], 16 )) {
+      if (not static_cast<CPU_IMPL&>(cpu).ExternalReadMemory( addr, &buffer[0], 16 )) {
         cpu.logger <<       " ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??" << std::endl;
       } else {
         for (int idx = 0; idx < 16; ++idx)
@@ -487,7 +485,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
   TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_write, size );
 
   // Send the request to the memory interface
-  if (not PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
     DataAbort(addr, loc.address, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
   }
 
@@ -554,7 +552,7 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PhysicalReadMemory(mva, loc.address, &data[0], size, loc.attributes)) {
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(mva, loc.address, &data[0], size, loc.attributes)) {
     DataAbort(addr, loc.address, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
   }
 
@@ -721,7 +719,7 @@ CPU<CPU_IMPL>::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalReadMemory(ef_addr, ef_addr, &rbuffer[index], 1, 0))
+      if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(ef_addr, ef_addr, &rbuffer[index], 1, 0))
         return false;
     }
 
@@ -746,7 +744,7 @@ CPU<CPU_IMPL>::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t si
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalWriteMemory( ef_addr, ef_addr, &wbuffer[index], 1, 0 ))
+      if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( ef_addr, ef_addr, &wbuffer[index], 1, 0 ))
         return false;
     }
 
@@ -775,6 +773,14 @@ CPU<CPU_IMPL>::RequiresMemoryAccessReporting( unisim::service::interfaces::Memor
     }
 }
 
+/** Perform a non intrusive read access. Local implementation using memory_import (see CPU::ReadMemory) */
+template <class CPU_IMPL>
+bool
+CPU<CPU_IMPL>::ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size )
+{
+  return memory_import->ReadMemory( addr, buffer, size );
+}
+
 /** Perform a non intrusive read access.
  *
  *   This method performs non-intrusive read. This method does not
@@ -800,7 +806,7 @@ CPU<CPU_IMPL>::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
       try {
 	AddressDescriptor loc(addr + index);
         TranslateAddress<QuietAccess>( loc, true, mat_read, 1 );
-        if (not ExternalReadMemory( loc.address, &rbuffer[index], 1 ))
+        if (not static_cast<CPU_IMPL*>(this)->ExternalReadMemory( loc.address, &rbuffer[index], 1 ))
           return false;
       }
       catch (DataAbortException const& x)
@@ -808,6 +814,14 @@ CPU<CPU_IMPL>::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
     }
 
   return true;
+}
+
+/** Perform a non intrusive write access. Local implementation using memory_import (see CPU::WriteMemory) */
+template <class CPU_IMPL>
+bool
+CPU<CPU_IMPL>::ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
+{
+  return memory_import->WriteMemory( addr, buffer, size );
 }
 
 /** Perform a non intrusive write access.
@@ -834,7 +848,7 @@ CPU<CPU_IMPL>::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
       try {
 	AddressDescriptor loc(addr + index);
         TranslateAddress<QuietAccess>( loc, true, mat_write, 1 );
-        if (not ExternalWriteMemory( loc.address, &wbuffer[index], 1 ))
+        if (not static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( loc.address, &wbuffer[index], 1 ))
           return false;
       } catch (DataAbortException const& x)
         { return false; }
@@ -961,7 +975,7 @@ CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& l
 
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalFetchMemory(mva & -(IPB_LINE_SIZE), line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalFetchMemory(mva & -(IPB_LINE_SIZE), line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
     DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
 
@@ -1396,8 +1410,8 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
     uint32_t attrs=0;
     MemAttrs::type().Set(attrs,MemAttrs::Normal);
 
-    if (POLICY::DEBUG) success = ExternalReadMemory( l1descaddr, erd.data(), 4 );
-    else               success = PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
+    if (POLICY::DEBUG) success = static_cast<CPU_IMPL*>(this)->ExternalReadMemory( l1descaddr, erd.data(), 4 );
+    else               success = static_cast<CPU_IMPL*>(this)->PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
     if (not success)
       DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalOnWalk, false, false, false, false, false);
   }
@@ -1419,8 +1433,8 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
     {
       bool success;
-      if (POLICY::DEBUG) success = ExternalReadMemory( l2descaddr, erd.data(), 4 );
-      else               success = PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
+      if (POLICY::DEBUG) success = static_cast<CPU_IMPL*>(this)->ExternalReadMemory( l2descaddr, erd.data(), 4 );
+      else               success = static_cast<CPU_IMPL*>(this)->PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
       if (not success)
         DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalOnWalk, false,false,false,false,false);
     }

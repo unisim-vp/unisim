@@ -37,6 +37,7 @@
 #include <utils/trace.hh>
 #include <utils/cfmt.hh>
 #include <unisim/component/cxx/processor/sparc/isa_sv8.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <cstring>
 #include <iostream>
 

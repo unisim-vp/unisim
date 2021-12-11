@@ -34,6 +34,7 @@
 
 #include <architecture.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/aarch64.hh>
@@ -54,9 +55,6 @@ AArch64::AArch64()
   , mmu()
   , ipb()
   , decoder()
-  , gpr()
-  , vector_views()
-  , vectors()
   , fpcr()
   , fpsr()
   , sp_el()
@@ -1778,12 +1776,6 @@ AArch64::run( uint64_t suspend_at )
           /* Execute instruction */
           asm volatile( "arm64_operation_execute:" );
           op->execute( *this );
-
-          // uint64_t newspval = GetGSR(31);
-
-          // if (newspval != oldspval) {
-          //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
-          // }
 
           // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
           //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);

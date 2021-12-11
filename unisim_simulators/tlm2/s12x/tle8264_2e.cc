@@ -76,28 +76,15 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 
 TLE8264_2E::~TLE8264_2E() { }
 
-bool TLE8264_2E::BeginSetup() {
-
+bool TLE8264_2E::BeginSetup()
+{
 	Reset();
 
-	return (true);
+	return true;
 }
 
-
-bool TLE8264_2E::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool TLE8264_2E::EndSetup() {
-	return (true);
-}
-
-void TLE8264_2E::OnDisconnect() {
-}
-
-void TLE8264_2E::Reset() {
+void TLE8264_2E::Reset()
+{
 
 	wk_state_register = WK_STATE_DEFAULT;
 	wd_refresh = false;

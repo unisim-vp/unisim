@@ -60,23 +60,6 @@ private:
 	sc_out( const sc_out<T>& );
 };
 
-// class sc_out_resolved : public sc_inout_resolved
-// {
-// public:
-// 	sc_out_resolved();
-// 	explicit sc_out_resolved( const char* );
-// 	virtual ~sc_out_resolved();
-// 	sc_out_resolved& operator= ( const sc_dt::sc_logic& );
-// 	sc_out_resolved& operator= ( const sc_signal_in_if<sc_dt::sc_logic>& );
-// 	sc_out_resolved& operator= ( const sc_port<sc_signal_in_if<sc_dt::sc_logic>, 1>& );
-// 	sc_out_resolved& operator= ( const sc_port<sc_signal_inout_if<sc_dt::sc_logic>, 1>& );
-// 	sc_out_resolved& operator= ( const sc_out_resolved& );
-// 	virtual const char* kind() const;
-// private:
-// 	// Disabled
-// 	sc_out_resolved( const sc_out_resolved& );
-// };
-// 
 // template <int W>
 // class sc_out_rv : public sc_inout_rv<W>
 // {

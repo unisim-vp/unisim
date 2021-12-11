@@ -18,17 +18,17 @@ op lsa (0[6]:rs[5]:rt[5]:rd[5]:0[3]:i[2]:5[6]);
 
 lsa.disasm = { sink << "lsa\t" << PrintGPR(rd) << ',' << PrintGPR(rs) << ',' << PrintGPR(rt) << ',' << PrintHex(i+1); };
 
-op rorv (0[6]:rs[5]:rt[5]:rd[5]:0[5]:0x46[6]);
+op rorv (0[6]:rs[5]:rt[5]:rd[5]:0[4]:1[1]:0x6[6]);
 
 rorv.disasm = { sink << "rorv\t" << PrintGPR(rd) << ',' << PrintGPR(rt) << ',' << PrintGPR(rs); };
 
 op ror (0[6]:0[4]:1[1]:rt[5]:rd[5]:sa[5]:2[6]);
 ror.disasm = { sink << "rorv\t" << PrintGPR(rd) << ',' << PrintGPR(rt) << ',' << PrintI(sa); };
 
-op mflhxu(0[6]:0[5]:0[5]:rc[5]:0[5]:0x52[6]);
+op mflhxu(0[6]:0[5]:0[5]:rc[5]:1[5]:0x12[6]);
 mflhxu.disasm = { sink << "mflhxu\t" << PrintGPR(rc); };
 
-op mtlhx(0[6]:ra[5]:0[5]:0[5]:0[5]:0x53[6]);
+op mtlhx(0[6]:ra[5]:0[5]:0[5]:1[5]:0x13[6]);
 mtlhx.disasm = { sink << "mtlhx\t" << PrintGPR(ra); };
 
 op jr_hb(0[6]:ra[5]:0[5]:0[5]:0x10[5]:0x08[6]);

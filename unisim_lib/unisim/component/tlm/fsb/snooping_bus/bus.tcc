@@ -189,17 +189,17 @@ Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> ::
 	delete chipset_inport;
 }
 
-template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
-		unsigned int NUM_PROCS>
-bool
-Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
-SetupMemory() {
+template <class ADDRESS_TYPE, unsigned int DATA_SIZE, unsigned int NUM_PROCS>
+void
+Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS>::Setup(Memory<ADDRESS_TYPE>*)
+{
 	if(!memory_import) {
 		logger << DebugError << LOCATION << ", "
 			<< "No memory connected" << endl
 			<< EndDebugError;
-		return false;
+                throw unisim::kernel::ServiceAgent::SetupError();
 	}
+        memory_import.RequireSetup();
 
 	if(unlikely(verbose)) {
 		logger << DebugInfo << LOCATION << ", "
@@ -209,21 +209,8 @@ SetupMemory() {
 	if(cycle_time == sc_core::SC_ZERO_TIME) {
 		logger << DebugError << LOCATION << ", "
 			<< "cycle_time should be bigger than 0" << EndDebugError;
-		return false;
+                throw unisim::kernel::ServiceAgent::SetupError();
 	}
-	return true;
-}
-
-template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
-		unsigned int NUM_PROCS>
-bool
-Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
-Setup(ServiceExportBase *srv_export) {
-	if(srv_export == &memory_export) return SetupMemory();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	
-	return false;
 }
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,

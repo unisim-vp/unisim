@@ -63,7 +63,6 @@ using namespace unisim::util::endian;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::variable::Parameter;
@@ -74,9 +73,9 @@ using unisim::service::interfaces::Loader;
 #define GLOBAL_CPU12_RESET_ADDR	0xFFBFFE 	//is the global Reset Vector Address offset for the CPU12
 
 template <class MEMORY_ADDR>
-class S19_Loader :
-	public Client<Memory<MEMORY_ADDR> >,
-	public Service<Loader>
+class S19_Loader
+	: public Service<Loader>
+	, public Client<Memory<MEMORY_ADDR> >
 {
 public:
 
@@ -99,9 +98,7 @@ public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
 	ServiceExport<Loader> loader_export;
 
-	virtual void OnDisconnect();
-	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Loader*) override;
 	virtual bool EndSetup();
 	virtual void Reset();
 	virtual MEMORY_ADDR GetEntryPoint() const;

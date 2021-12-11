@@ -35,6 +35,7 @@
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/processor/mips/isa/mipsel.tcc>
 #include <unisim/component/cxx/processor/mips/isa/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/debug/simple_register.hh>
 #include <linuxsystem.hh>
 #include <iostream>
@@ -47,7 +48,8 @@ struct Arch
 {
   typedef unisim::component::cxx::processor::mips::isa::CodeType CodeType;
   typedef unisim::component::cxx::processor::mips::isa::Operation<Arch> Operation;
-  typedef unisim::component::cxx::processor::mips::isa::Decoder<Arch> Decoder;
+  typedef unisim::component::cxx::processor::mips::isa::Decoder<Arch> M32Decoder;
+  typedef unisim::component::cxx::processor::opcache::OpCache<M32Decoder> Decoder;
 
   typedef bool  BOOL;
   typedef uint8_t  U8;

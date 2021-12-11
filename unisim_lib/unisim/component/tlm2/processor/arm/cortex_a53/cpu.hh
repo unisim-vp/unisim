@@ -154,11 +154,11 @@ private:
 
   friend PCPU;
   // Intrusive memory accesses
-  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
-  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
-  // Non-itrusive memory accesses
-  virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
-  virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
+  bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
+  // Non-intrusive memory accesses
+  bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
 
 public:
   // System Registers

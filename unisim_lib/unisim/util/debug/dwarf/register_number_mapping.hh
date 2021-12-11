@@ -57,10 +57,11 @@ public:
 	
 	bool Load(const char *filename, const char *architecture);
 	void Map(unsigned int dw_reg_num, unisim::service::interfaces::Register *arch_reg);
-	unisim::service::interfaces::Register *GetArchReg(unsigned int dw_reg_num);
-	const unisim::service::interfaces::Register *GetArchReg(unsigned int dw_reg_num) const;
+	unisim::service::interfaces::Register *GetRegister(unsigned int dw_reg_num);
+	const unisim::service::interfaces::Register *GetRegister(unsigned int dw_reg_num) const;
 	void EnumRegisterNumbers(std::set<unsigned int>& reg_num_set) const;
-	unsigned int GetSPRegNum() const;
+	bool GetStackPointerRegisterNumber(unsigned int& sp_reg_num) const;
+	unisim::service::interfaces::Register *GetProgramCounterRegister() const;
 	friend std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
 private:
 	std::ostream& debug_info_stream;
@@ -68,7 +69,9 @@ private:
 	std::ostream& debug_error_stream;
 	unisim::service::interfaces::Registers *regs_if;
 	std::map<unsigned int, unisim::service::interfaces::Register *> reg_num_mapping;
+	bool has_sp_reg_num;
 	unsigned int sp_reg_num;
+	unisim::service::interfaces::Register *program_counter;
 	
 	bool Load(unisim::util::xml::Node *xml_node);
 };

@@ -618,7 +618,7 @@ CPU<CPU_IMPL>::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
     // Using memory service interface instead
-    return PCPU::memory_import->ReadMemory(addr, buffer, size);
+    return this->PCPU::ExternalReadMemory(addr, buffer, size);
   }
 
   Transaction trans( payload_fabric );
@@ -651,7 +651,7 @@ CPU<CPU_IMPL>::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t s
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
     // Using memory service interface instead
-    return PCPU::memory_import->WriteMemory(addr, buffer, size);
+    return this->PCPU::ExternalWriteMemory(addr, buffer, size);
   }
 
   Transaction trans( payload_fabric );

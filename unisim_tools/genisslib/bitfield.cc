@@ -48,7 +48,7 @@ OpcodeBitField::OpcodeBitField( unsigned int _size, unsigned int _value )
     @param _src the bitfield object to copy
 */
 OpcodeBitField::OpcodeBitField( OpcodeBitField const& _src )
-  : FixedSizeBitField( _src.size ), value( _src.value )
+  : FixedSizeBitField( _src ), value( _src.value )
 {}
 
 /** Dump an opcode bitfield object into a stream
@@ -75,7 +75,7 @@ OperandBitField::OperandBitField( unsigned int _size, ConstStr _symbol, int _lsh
     @param _src the source bitfield object to copy
 */
 OperandBitField::OperandBitField( OperandBitField const& _src )
-  : FixedSizeBitField( _src.size ), symbol( _src.symbol ), lshift( _src.lshift ), size_modifier( _src.size_modifier ), sext( _src.sext )
+  : FixedSizeBitField( _src ), symbol( _src.symbol ), lshift( _src.lshift ), size_modifier( _src.size_modifier ), sext( _src.sext )
 {}
 
 /** Dump an operand bitfield object into a stream
@@ -116,7 +116,7 @@ UnusedBitField::UnusedBitField( unsigned int _size )
     @param _src the source bitfield object to copy
 */
 UnusedBitField::UnusedBitField( UnusedBitField const& _src )
-  : FixedSizeBitField( _src.size )
+  : FixedSizeBitField( _src )
 {}
 
 /** Dump an unused bitfield object into a stream
@@ -128,18 +128,10 @@ UnusedBitField::fills( std::ostream& sink ) const
   sink << "?[" << size << "]";
 }
 
-SeparatorBitField::SeparatorBitField( bool _rewind )
-  : rewind( _rewind )
-{}
-
-SeparatorBitField::SeparatorBitField( SeparatorBitField const& _src )
-  : BitField(), rewind(false)
-{}
-
 void
 SeparatorBitField::fills( std::ostream& sink ) const
 {
-  sink << (rewind ? "> rewind <" : "> <" );
+  sink << "> <";
 }
 
 /** Dump an bitfield object into a stream
@@ -169,17 +161,10 @@ SubOpBitField::fills( std::ostream& sink ) const
   sink << symbol << '[' << sdinstance->symbol << ']';
 }
 
-uintptr_t
-SubOpBitField::sizes() const { return sdinstance->sdclass->m_insnsizes.size(); }
-
-void
-SubOpBitField::sizes( unsigned int* _sizes ) const
+std::set<unsigned> const& SubOpBitField::sizes() const
 {
-  std::copy( sdinstance->sdclass->m_insnsizes.begin(), sdinstance->sdclass->m_insnsizes.end(), _sizes );
+  return sdinstance->sdclass->m_insnsizes;
 }
-
-unsigned int SubOpBitField::minsize() const { return sdinstance->sdclass->minsize(); }
-unsigned int SubOpBitField::maxsize() const { return sdinstance->sdclass->maxsize(); }
 
 
 /**

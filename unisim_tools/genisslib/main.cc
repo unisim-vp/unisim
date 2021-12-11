@@ -238,6 +238,8 @@ GIL_MAIN (int argc, char** argv, char** envp)
     // Specialization
     if (gil.specialization)
       isa.specialize();
+
+    isa.finalize( gil );
     
     struct Gen {
       Gen( Generator* _gen ) : gen(_gen) {} Generator* gen;

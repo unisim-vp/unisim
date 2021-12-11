@@ -315,8 +315,8 @@ tlm_sync_enum S12MPU::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, 
 //=====================================================================
 
 
-bool S12MPU::BeginSetup() {
-
+bool S12MPU::BeginSetup()
+{
 	Reset();
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".MPUFLG", &mpuflg_register));
@@ -367,17 +367,6 @@ bool S12MPU::BeginSetup() {
 		}
 	}
 
-	return (true);
-}
-
-
-bool S12MPU::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12MPU::EndSetup() {
 	return (true);
 }
 

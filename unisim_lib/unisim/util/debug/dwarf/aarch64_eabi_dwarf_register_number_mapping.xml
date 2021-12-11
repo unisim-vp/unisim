@@ -1,6 +1,7 @@
 <dw_reg_num_mapping>
 	<architecture name="aarch64">
 		<stack_pointer dw_reg_num="31"/>
+		<program_counter name="pc"/>
 		<register dw_reg_num="0" arch_reg="x0"/>
 		<register dw_reg_num="1" arch_reg="x1"/>
 		<register dw_reg_num="2" arch_reg="x2"/>

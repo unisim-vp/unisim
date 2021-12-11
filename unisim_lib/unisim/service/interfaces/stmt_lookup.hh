@@ -37,6 +37,7 @@
 
 #include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/stmt.hh>
+#include <unisim/util/debug/source_code_location.hh>
 #include <map>
 #include <vector>
 
@@ -59,8 +60,8 @@ public:
 	virtual void GetStatements(std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const = 0;
 };
 
 } // end of namespace interfaces

@@ -63,7 +63,6 @@ using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SnoopingFSBRequest;
@@ -170,7 +169,7 @@ public:
 	/** Destructor */
 	~Bus();
 
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Memory<ADDRESS_TYPE>*) override;
 	virtual void Reset();
 	
 	virtual void ResetMemory();

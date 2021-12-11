@@ -96,6 +96,20 @@ public:
 	const sc_int<W> operator ++ (int); // Postfix
 	sc_int<W>& operator -- ();         // Prefix
 	const sc_int<W> operator -- (int); // Postfix
+
+	// Arithmetic operators
+	sc_int<W>& operator += (int_type v);
+	sc_int<W>& operator -= (int_type v);
+	sc_int<W>& operator *= (int_type v);
+	sc_int<W>& operator /= (int_type v);
+	sc_int<W>& operator %= (int_type v);
+	
+	// Bitwise operators
+	sc_int<W>& operator &= (int_type v);
+	sc_int<W>& operator |= (int_type v);
+	sc_int<W>& operator ^= (int_type v);
+	sc_int<W>& operator <<= (int_type v);
+	sc_int<W>& operator >>= (int_type v);
 };
 
 ///////////////////////////////// definition //////////////////////////////////
@@ -104,208 +118,287 @@ public:
 
 template <int W>
 sc_int<W>::sc_int()
+	: sc_int_base(W)
 {
 }
 
 template <int W>
 sc_int<W>::sc_int(int_type v)
+	: sc_int_base(W, v)
 {
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_int<W>& a)
+	: sc_int_base(a)
 {
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_int_base& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_int_subref_r& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 template <class T> sc_int<W>::sc_int(const sc_generic_base<T>& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_signed& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_unsigned& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_fxval& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_fxval_fast& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_fxnum& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_fxnum_fast& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_bv_base& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const sc_lv_base& a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(const char *a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(unsigned long a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(long a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(unsigned int a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(int a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(uint64 a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 template <int W>
 sc_int<W>::sc_int(double a)
+	: sc_int_base(W)
 {
+	sc_int_base::operator = (a);
 }
 
 // Assignment operators
 template <int W>
 sc_int<W>& sc_int<W>::operator = (int_type v)
 {
+	sc_int_base::operator = (v);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_int_base& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_int_subref_r& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_int<W>& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 template <class T> sc_int<W>& sc_int<W>::operator = (const sc_generic_base<T>& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_signed& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_unsigned& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_fxval& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_fxval_fast& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_fxnum& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_fxnum_fast& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_bv_base& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const sc_lv_base& a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (const char *a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (unsigned long a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (long a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (unsigned int a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (int a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (uint64 a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator = (double a)
 {
+	sc_int_base::operator = (a);
+	return *this;
 }
 
 // Prefix and postfix increment and decrement operators
@@ -313,21 +406,99 @@ sc_int<W>& sc_int<W>::operator = (double a)
 template <int W>
 sc_int<W>& sc_int<W>::operator ++ ()          // Prefix
 {
+	sc_int_base::operator ++ ();
+	return *this;
 }
 
 template <int W>
 const sc_int<W> sc_int<W>::operator ++ (int)  // Postfix
 {
+	return sc_int<W>(sc_int_base::operator ++ (0));
 }
 
 template <int W>
 sc_int<W>& sc_int<W>::operator -- ()          // Prefix
 {
+	sc_int_base::operator -- ();
+	return *this;
 }
 
 template <int W>
 const sc_int<W> sc_int<W>::operator -- (int)  // Postfix
 {
+	return sc_int<W>(sc_int_base::operator -- (0));
+}
+
+// Arithmetic operators
+template <int W>
+sc_int<W>& sc_int<W>::operator += (int_type v)
+{
+	sc_int_base::operator += (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator -= (int_type v)
+{
+	sc_int_base::operator -= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator *= (int_type v)
+{
+	sc_int_base::operator *= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator /= (int_type v)
+{
+	sc_int_base::operator /= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator %= (int_type v)
+{
+	sc_int_base::operator %= (v);
+	return *this;
+}
+
+// Bitwise operators
+template <int W>
+sc_int<W>& sc_int<W>::operator &= (int_type v)
+{
+	sc_int_base::operator &= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator |= (int_type v)
+{
+	sc_int_base::operator |= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator ^= (int_type v)
+{
+	sc_int_base::operator ^= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator <<= (int_type v)
+{
+	sc_int_base::operator <<= (v);
+	return *this;
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator >>= (int_type v)
+{
+	sc_int_base::operator >>= (v);
+	return *this;
 }
 
 } // end of namespace sc_dt

@@ -6,6 +6,7 @@ std/set
 std/stdexcept
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa/arm64
+unisim/component/cxx/processor/opcache
 unisim/component/cxx/vector
 unisim/kernel/logger
 unisim/kernel/variable

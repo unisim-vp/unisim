@@ -142,7 +142,7 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	if(!mod || !nb_transport_bw_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no nb_transport_bw callback registered");
-	(mod->*nb_transport_bw_cb)(trans, phase, t);
+	return (mod->*nb_transport_bw_cb)(trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -199,7 +199,7 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	if(!mod || !nb_transport_bw_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket_tagged: no nb_transport_bw callback registered");
-	(mod->*nb_transport_bw_cb)(id, trans, phase, t);
+	return (mod->*nb_transport_bw_cb)(id, trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>

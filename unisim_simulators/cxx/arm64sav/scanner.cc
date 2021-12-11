@@ -42,12 +42,9 @@ Scanner::Scanner( Interface& iif )
   : interface(iif)
   , path(iif.behavior.get())
   , stores()
-  , gpr()
   , flags()
   , current_insn_addr()
   , next_insn_addr(newRegRead(Scanner::PC()))
-  , vector_views()
-  , vector_data()
 {
   for (Flag reg; reg.next();)
     flags[reg.idx()] = BOOL(newRegRead( reg ));
@@ -57,8 +54,6 @@ Scanner::Scanner( Interface& iif )
 
 Scanner::~Scanner()
 {
-  for (unsigned reg = 0; reg < VREGCOUNT; reg++)
-    vector_views[reg].Clear( &vector_data[reg][0] );
 }
 
 
@@ -73,9 +68,9 @@ Scanner::close( Scanner const& ref )
       path->add_update( new GRegWrite( reg, interface.gregs.index(reg), gpr[reg].expr ) );
 
   // Vector Registers
-  for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
+  for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
     if (interface.vregs.modified(reg))
-      path->add_update( new VRegWrite( reg, interface.vregs.index(reg), vector_views[reg].GetConstStorage( &vector_data[reg][0], NeonRegister(), VUConfig::BYTECOUNT )->expr ) );
+      path->add_update( new VRegWrite( reg, interface.vregs.index(reg), vector_views[reg].GetConstStorage( &vectors[reg], NeonRegister(), VUConfig::BYTECOUNT )->expr ) );
 
   // Flags
   for (Flag reg; reg.next();)
@@ -89,9 +84,29 @@ Scanner::close( Scanner const& ref )
 }
   
 void
-Scanner::gregtouch( unsigned reg, bool write )
+Scanner::report( AccessReport acc, unsigned reg, bool is_write )
 {
-  unsigned idx = interface.gregs.touch(reg,write);
+  if (acc == report_simd_access)
+    {
+      unsigned idx = interface.vregs.touch(reg, is_write);
+      VectorView& vv = vector_views[reg];
+      if (vv.transfer == vv.initial)
+        {
+          NeonRegister v( new VRegRead( reg, idx ) );
+          *(vv.GetStorage( &vectors[reg], v, VUConfig::BYTECOUNT )) = v;
+        }
+      return;
+    }
+
+  // acc == report_gsr_access or acc == report_gzr_access
+  if (reg == 31)
+    {
+      if (acc == report_gsr_access)
+        dont("SP access");
+      return;
+    }
+
+  unsigned idx = interface.gregs.touch(reg,is_write);
   if (not gpr[reg].expr.node)
     gpr[reg].expr = new GRegRead( reg, idx );
 }

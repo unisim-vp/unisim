@@ -893,7 +893,8 @@ void S12MSCAN::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 //=====================================================================
 
 
-bool S12MSCAN::BeginSetup() {
+bool S12MSCAN::BeginSetup()
+{
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".CANCTL0", &canctl0_register));
 
@@ -1091,16 +1092,6 @@ bool S12MSCAN::BeginSetup() {
 	return (true);
 }
 
-
-bool S12MSCAN::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12MSCAN::EndSetup() {
-	return (true);
-}
 
 
 Register* S12MSCAN::GetRegister(const char *name)

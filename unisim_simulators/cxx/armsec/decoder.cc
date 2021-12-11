@@ -806,7 +806,6 @@ public:
   S32 neoncast( S32 const&, Expr const& x ) { return S32(U32(x)); }
   S64 neoncast( S64 const&, Expr const& x ) { return S64(U64(x)); }
 
-
   // Get|Set elements
   template <class ELEMT>
   void SetVDE( unsigned reg, unsigned idx, ELEMT const& value )

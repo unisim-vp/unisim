@@ -47,7 +47,7 @@ Runner::step_instruction()
   uint32_t code = MemRead(uint32_t(), insn_asi(), insn_addr);
     
   asm volatile ("operation_decode:");
-  Operation* operation = decode(insn_addr, code);
+  std::unique_ptr<Operation> operation = decode(insn_addr, code);
 
   if (disasm)
     {

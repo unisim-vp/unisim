@@ -43,6 +43,7 @@ namespace unisim::component::cxx::processor::tms320c3x::isa::tms320c3x
 set endianness little
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}, {bool} {DEBUG}>
+set withcache_p true
 
 decl {
 #include <iosfwd>

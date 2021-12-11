@@ -443,7 +443,7 @@ main( int argc, char** argv )
        {insn_scan, "INSN_SCAN", "0"},
        {ttl_reset, "TTL_RESET", "10000"},
        {insn_pong, "INSN_PONG", "0x100000"},
-       {insn_skip, "INSN_SKIP", 0},
+       {insn_skip, "INSN_SKIP", ""},
       };
 
   for (unsigned idx = 0, end = sizeof params / sizeof params[0]; idx < end; ++idx)
@@ -469,7 +469,7 @@ main( int argc, char** argv )
   if (updated)
       checker.write_repos( reposname );
 
-  if (insn_skip)
+  if (*insn_skip)
     {
       checker.filter_out( insn_skip );
     }

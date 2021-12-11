@@ -256,14 +256,11 @@ template <class PHYSICAL_ADDR,
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
 		class PCI_ADDR,
 		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
-bool 
-MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
-	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-Setup(ServiceExportBase *srv_export) {
-	if(srv_export == &memory_export) return SetupMemory();
-
-	logger << DebugError << "Internal error" << EndDebugError;
-	return false;
+void
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::Setup(Memory<PHYSICAL_ADDR>*)OA
+{
+	if(not SetupMemory())
+		throw unsim::kernel::ServiceAgent::SetupError();
 }
 
 template <class PHYSICAL_ADDR, 
