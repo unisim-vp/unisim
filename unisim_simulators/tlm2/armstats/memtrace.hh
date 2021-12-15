@@ -56,10 +56,7 @@ struct AccessLog
 
   void ReportAccess(StorageAttr const& storage_attr, addr_t addr, addr_t size)
   {
-    addr_t const granularity = 4;
-    char mode = storage_attr.mode();
-    for (addr_t cur = addr, end = addr + size; cur < end; cur += granularity)
-      sink << mode << ",0x" << std::hex << cur << std::endl;
+    sink << storage_attr.mode() << ",0x" << std::hex << addr << ',' << std::dec << size << std::endl;
   }
   void ReportInsn(addr_t addr)
   {
@@ -206,16 +203,16 @@ struct MemTrace
   bool ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size ) override
   {
     StorageAttr storage_attr(mat, mtp);
-    alog.ReportAccess(storage_attr, addr, size);
-
-    static std::vector<char> buffer;
-    if (size > 0x10000) throw 0;
-    if (size > buffer.size()) buffer.resize(size);
-
-    if (mat == unisim::util::debug::MAT_WRITE)
-      mss.DataStore(addr, addr, &buffer[0], size, storage_attr);
-    else
-      mss.DataLoad(addr, addr, &buffer[0], size, storage_attr);
+    uint32_t const granularity = 4;
+    for (uint32_t cur = addr & -granularity, end = addr + size; cur < end; cur += granularity)
+      {
+        alog.ReportAccess(storage_attr, cur, 4);
+        uint8_t buffer[granularity];
+        if (mat == unisim::util::debug::MAT_WRITE)
+          mss.DataStore(cur, cur, &buffer[0], granularity, storage_attr);
+        else
+          mss.DataLoad(cur, cur, &buffer[0], granularity, storage_attr);
+      }
     
     if (requires_memory_access_reporting and memory_access_reporting_import)
       return memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);

@@ -113,9 +113,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, std::ostream& wcache_l
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
   cpu.master_socket( memory.slave_sock );
-  instrumenter->Bind("HARDWARE.cpu.nIRQm", "HARDWARE.nIRQm");
-  instrumenter->Bind("HARDWARE.cpu.nFIQm", "HARDWARE.nFIQm");
-  instrumenter->Bind("HARDWARE.cpu.nRESETm", "HARDWARE.nRESETm");
+  instrumenter->Bind("simulator.cpu.nIRQm", "simulator.nIRQm");
+  instrumenter->Bind("simulator.cpu.nFIQm", "simulator.nFIQm");
+  instrumenter->Bind("simulator.cpu.nRESETm", "simulator.nRESETm");
   
   
   // CPU <-> Memory connections
@@ -317,19 +317,19 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("logger.std_err", true);
   sim->SetVariable("logger.std_err_color", true);
 
-  sim->SetVariable("HARDWARE.cpu.default-endianness",   "little-endian");
-  sim->SetVariable("HARDWARE.cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
-  sim->SetVariable("HARDWARE.cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
-  sim->SetVariable("HARDWARE.cpu.icache.size",          0x020000); // 128 KB
-  sim->SetVariable("HARDWARE.cpu.dcache.size",          0x020000); // 128 KB
-  sim->SetVariable("HARDWARE.cpu.nice-time",            "1 ms"); // 1ms
-  sim->SetVariable("HARDWARE.cpu.ipc",                  1.0);
-  sim->SetVariable("HARDWARE.cpu.voltage",              1.8 * 1e3); // 1800 mV
-  sim->SetVariable("HARDWARE.cpu.enable-dmi",           true); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable("HARDWARE.memory.bytesize",          0xffffffffUL); 
-  sim->SetVariable("HARDWARE.memory.cycle-time",        "31250 ps");
-  sim->SetVariable("HARDWARE.memory.read-latency",      "31250 ps");
-  sim->SetVariable("HARDWARE.memory.write-latency",     "0 ps");
+  sim->SetVariable("simulator.cpu.default-endianness",   "little-endian");
+  sim->SetVariable("simulator.cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
+  sim->SetVariable("simulator.cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
+  sim->SetVariable("simulator.cpu.icache.size",          0x020000); // 128 KB
+  sim->SetVariable("simulator.cpu.dcache.size",          0x020000); // 128 KB
+  sim->SetVariable("simulator.cpu.nice-time",            "1 ms"); // 1ms
+  sim->SetVariable("simulator.cpu.ipc",                  1.0);
+  sim->SetVariable("simulator.cpu.voltage",              1.8 * 1e3); // 1800 mV
+  sim->SetVariable("simulator.cpu.enable-dmi",           true); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable("simulator.memory.bytesize",          0xffffffffUL); 
+  sim->SetVariable("simulator.memory.cycle-time",        "31250 ps");
+  sim->SetVariable("simulator.memory.read-latency",      "31250 ps");
+  sim->SetVariable("simulator.memory.write-latency",     "0 ps");
   sim->SetVariable("linux-os.system",          "arm-eabi");
   sim->SetVariable("linux-os.endianness",      "little-endian");
   sim->SetVariable("linux-os.memory-page-size",0x01000UL);
