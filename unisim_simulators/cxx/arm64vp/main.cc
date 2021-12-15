@@ -226,6 +226,122 @@ void simdefault(unisim::kernel::Simulator* sim)
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
 
+struct StreamSpy
+  : public unisim::kernel::Service<unisim::service::interfaces::CharIO>
+  , public unisim::kernel::Client<unisim::service::interfaces::CharIO>
+{
+  struct Pending
+  {
+    virtual ~Pending() {}
+    virtual Pending* GetChar(char& ch) = 0;
+  };
+
+  struct StrPending : public Pending
+  {
+    StrPending(char const* _str) : str(_str) {}
+    virtual Pending* GetChar(char& ch) override
+    {
+      ch = *str++;
+      if (*str) { return this; }
+      delete this;
+      return 0;
+    }
+    char const* str;
+  };
+
+  struct Reader
+  {
+    virtual ~Reader() {}
+    virtual Reader* PutChar(StreamSpy& spy, char ch) = 0;
+  };
+
+  
+  struct S0Reader : public Reader
+  {
+    void reset() { expect = "qemuarm64 login: "; }
+    S0Reader() : expect() { reset(); }
+    virtual Reader* PutChar(StreamSpy& spy, char ch) override
+    {
+      if (*expect != ch) { reset(); return this; }
+      if (*++expect) { return this; }
+      spy.pending = new StrPending("root\r");
+      delete this;
+      return new S1Reader();
+    }
+    char const* expect;
+  };
+
+  struct S1Reader : public Reader
+  {
+    void reset() { expect = "root@qemuarm64:~# "; }
+    S1Reader() : expect() { reset(); }
+    virtual Reader* PutChar(StreamSpy& spy, char ch) override
+    {
+      if (*expect != ch) { reset(); return this; }
+      if (*++expect) { return this; }
+      spy.pending = new StrPending("su - demo\r");
+      delete this;
+      return new S2Reader;
+    }
+    char const* expect;
+  };
+  
+  struct S2Reader : public Reader
+  {
+    void reset() { expect = "qemuarm64:~$ "; }
+    S2Reader() : expect() { reset(); }
+    virtual Reader* PutChar(StreamSpy& spy, char ch) override
+    {
+      if (*expect != ch) { reset(); return this; }
+      if (*++expect) { return this; }
+      spy.arch.suspend = true;
+      spy.arch.silence( &AArch64::handle_suspend );
+      spy.arch.notify( 0, &AArch64::handle_suspend );
+      delete this;
+      return 0;
+    }
+    char const* expect;
+  };
+  
+  StreamSpy(char const* name, unisim::kernel::Object* parent, AArch64& _arch)
+    : unisim::kernel::Object(name, parent)
+    , unisim::kernel::Service<unisim::service::interfaces::CharIO>(name, parent)
+    , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
+    , pending()
+    , reader( new S0Reader() )
+    , char_io_import("char-io-import", this)
+    , char_io_export("char-io-export", this)
+    , arch(_arch)
+  {}
+
+  void Setup(unisim::service::interfaces::CharIO*) { char_io_import.RequireSetup(); }
+  
+  virtual void ResetCharIO() override { char_io_import->ResetCharIO(); }
+  virtual bool GetChar(char& ch) override
+  {
+    if (pending)
+      {
+        pending = pending->GetChar(ch);
+        return true;
+      }
+    return char_io_import->GetChar(ch);
+  }
+  virtual void PutChar(char ch) override
+  {
+    reader = reader->PutChar(*this, ch);
+    char_io_import->PutChar(ch);
+  }
+  virtual void FlushChars() override { char_io_import->FlushChars(); }
+
+  Pending* pending;
+  Reader* reader;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
+
+  AArch64& arch;
+};
+  
+
 int
 main(int argc, char *argv[])
 {
@@ -236,10 +352,14 @@ main(int argc, char *argv[])
   // unisim::service::http_server::HttpServer http_server("http-server");
   // unisim::service::web_terminal::WebTerminal web_terminal("web-terminal");
   unisim::service::netstreamer::NetStreamer netstreamer("netstreamer");
-  
+
   AArch64 arch;
 
-  arch.uart.char_io_import >> netstreamer.char_io_export;
+  StreamSpy stream_spy("stream-spy", 0, arch);
+
+  arch.uart.char_io_import >> stream_spy.char_io_export;
+  stream_spy.char_io_import >> netstreamer.char_io_export;
+  // arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
   switch (simulator.Setup())

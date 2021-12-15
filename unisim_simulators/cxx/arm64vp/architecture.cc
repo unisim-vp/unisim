@@ -1400,7 +1400,7 @@ AArch64::map_uart(uint64_t base_addr)
       if ((req.addr & -4) == 0x0)
         {
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
-          char ch;
+          char ch = '\0';
           if (not req.write and not uart.rx_pop( ch )) { U8 x(0,-1); return req.tainted_access(x);  }
           if (not req.access( ch ))                    { return false; }
           if (    req.write)                           { uart.tx_push( ch ); /*suspend_at_prompt(arch, ch);*/ }
@@ -1426,7 +1426,7 @@ AArch64::map_uart(uint64_t base_addr)
       if (req.addr == 0x44)
         {
           if (not req.write) return error(req.dev, "Cannot read Interrupt Clear Register" );
-          uint16_t icr;
+          uint16_t icr = 0;
           if (not req.access(icr)) return false;
           uart.RIS &= ~icr;
           return true;
@@ -1975,7 +1975,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
   bool perm_w = (ap & 6) == 2;
   bool perm_x = not ((perm_w and wxn) or (el ? trans.pxn or (trans.ap & 6) == 2 : trans.xn));
 
-  bool fail;
+  bool fail = true;
   switch (mat)
     {
     case mem_acc_type::read:               fail = not perm_r; break;
@@ -1983,6 +1983,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     case mem_acc_type::write:              fail = not perm_w; break;
     case mem_acc_type::exec:               fail = not perm_x; break;
     case mem_acc_type::debug:              fail = false; break;
+    default: throw 0;
     }
 
   if (fail)

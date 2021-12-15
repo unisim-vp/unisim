@@ -80,6 +80,14 @@ template <typename SRC> bool EqUBits( typename TX<SRC>::as_mask ubits, SRC lhs, 
 inline bool EqUBits( uint32_t ubits, float lhs, float rhs ) { return ubits; }
 inline bool EqUBits( uint64_t ubits, double lhs, double rhs ) { return ubits; }
 
+template <typename DST, typename SRC>
+DST TypePunning( SRC value )
+{
+  union { DST as_dst; SRC as_src; } tmp;
+  tmp.as_src = value;
+  return tmp.as_dst;
+}
+
 template <typename VALUE_TYPE>
 struct TaintedValue
 { 
@@ -90,7 +98,7 @@ struct TaintedValue
   value_type value; /* concrete value */
   ubits_type ubits; /* uninitialized bits */
   
-  ubits_type value_as_mask() const { return *reinterpret_cast<ubits_type const*>(&value); }
+  ubits_type value_as_mask() const { return TypePunning<ubits_type>(value); }
     
   TaintedValue() : value(), ubits(-1) {}
 
@@ -184,7 +192,7 @@ struct TaintedTypeInfo
         value <<= 8; value |= ubits_type( src[idx].value );
         ubits <<= 8; ubits |= ubits_type( src[idx].ubits );
       }
-    dst.value = *reinterpret_cast<value_type const*>(&value);
+    dst.value = TypePunning<value_type>(value);
     dst.ubits = ubits;
   }
   static void Destroy( T& obj ) { obj.~T(); }
