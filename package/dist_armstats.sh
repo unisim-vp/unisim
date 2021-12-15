@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SIMPKG=armemu
-SIMPKG_SRCDIR=tlm2/armemu
+SIMPKG=armstats
+SIMPKG_SRCDIR=tlm2/armstats
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -18,6 +18,7 @@ import unisim/kernel/logger/xml_file || exit
 import unisim/kernel/logger/netstream || exit
 import unisim/component/tlm2/processor/arm/cortex_a9 || exit
 import unisim/component/tlm2/memory/ram || exit
+import unisim/util/cache || exit
 import unisim/util/likely || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/time/host_time || exit
@@ -64,10 +65,12 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 simulator.cc \
+memtrace.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
+memtrace.hh \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
@@ -92,7 +95,7 @@ done
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM ARMemu C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM ARMv7 C++ simulator with mem tracing], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -131,20 +134,7 @@ libtool: \$(LIBTOOL_DEPS)
 
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-#unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
-unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-
-# Static Library
-noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
-libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
-
-# Dynamic Plugin
-lib_LTLIBRARIES = libunisim-${SIMPKG}-plugin-${SIMULATOR_VERSION}.la
-libunisim_${AM_SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_SOURCE_FILES}
-libunisim_${AM_SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN
-libunisim_${AM_SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}

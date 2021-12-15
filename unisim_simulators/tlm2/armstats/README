@@ -1,0 +1,3 @@
+This package contains:
+  - armstats: an ARMv7 application level simulator with memory trace
+See INSTALL for installation instructions.
