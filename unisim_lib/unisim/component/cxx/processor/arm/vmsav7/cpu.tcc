@@ -490,7 +490,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
   }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
+  this->ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
 
 /** Performs an unaligned read access.
@@ -557,7 +557,7 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
   }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+  this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 
   /* Compute return value */
   uint32_t value;
@@ -979,9 +979,7 @@ CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& l
     DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
 
-  if (unlikely(requires_memory_access_reporting))
-    memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
+  this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
 }
 
 /** Reads ARM32 instructions from the memory system

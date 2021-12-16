@@ -253,7 +253,7 @@ struct AArch64
         ubits <<= 8; ubits |= bits_type( ubuf[idx] );
       }
     
-    ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr.value, size);
+    this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr.value, size);
     
     return T(*reinterpret_cast<value_type const*>(&value), ubits);
   }
@@ -292,7 +292,7 @@ struct AArch64
           memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
       }
 
-    ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr.value, size);
+    this->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr.value, size);
   }
 
   void MemWrite64(U64 addr, U64 val) { memory_write(pstate.GetEL(), addr, val); }

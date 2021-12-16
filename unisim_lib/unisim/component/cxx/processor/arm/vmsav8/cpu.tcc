@@ -496,9 +496,7 @@ CPU<CPU_IMPL>::IPB::get(CPU<CPU_IMPL>& core, U64 address)
         }
       base_address = req_base_address;
 
-      if (unlikely(core.requires_memory_access_reporting and core.memory_access_reporting_import))
-        core.memory_access_reporting_import->
-          ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, LINE_SIZE);
+      core.ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, LINE_SIZE);
     }
 
   return &bytes[idx];
@@ -572,7 +570,7 @@ CPU<CPU_IMPL>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
     }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+  this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 }
 
 /** Performs a memory write access.
@@ -592,7 +590,7 @@ CPU<CPU_IMPL>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
     }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
+  this->ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
 
 /** CallSupervisor
