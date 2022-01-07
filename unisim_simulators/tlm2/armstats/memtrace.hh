@@ -56,7 +56,9 @@ struct AccessLog
 
   void ReportAccess(StorageAttr const& storage_attr, addr_t addr, addr_t size)
   {
-    sink << storage_attr.mode() << ",0x" << std::hex << addr << ',' << std::dec << size << std::endl;
+    uint32_t const granularity = 4;
+    for (uint32_t cur = addr & -granularity, end = addr + size; cur < end; cur += granularity)
+      sink << storage_attr.mode() << ",0x" << std::hex << cur << ',' << std::dec << granularity << std::endl;
   }
   void ReportInsn(addr_t addr)
   {
@@ -94,8 +96,8 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
     static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
-    static const unsigned int BLOCK_SIZE                                = 4;
-    static const unsigned int BLOCKS_PER_LINE                           = 8;
+    static const unsigned int BLOCK_SIZE                                = 32;
+    static const unsigned int BLOCKS_PER_LINE                           = 1;
     
     //    typedef CACHE_CPU CPU;
     struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
@@ -123,9 +125,51 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
   } l1d;
   L1D* GetCache(const L1D* ) ALWAYS_INLINE { return &l1d; }
   
+  // Cache memories
+  struct I1D_CONFIG
+  {
+    static const unsigned int SIZE                                      = 4096;
+    static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_BACK_AND_NO_WRITE_ALLOCATE_POLICY;
+    static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+    static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
+    static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
+    static const unsigned int ASSOCIATIVITY                             = 4;
+    static const unsigned int BLOCK_SIZE                                = 32;
+    static const unsigned int BLOCKS_PER_LINE                           = 1;
+    
+    //    typedef CACHE_CPU CPU;
+    struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
+    struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
+    struct SET_STATUS : unisim::util::cache::CacheSetStatus { unisim::util::cache::LRU_ReplacementPolicy<ASSOCIATIVITY> lru; };
+  };
+  
+  struct I1D : public unisim::util::cache::Cache<MSSConfig, I1D_CONFIG, I1D>
+  {
+    static const char *GetCacheName() { return "I1D"; }
+    bool IsEnabled() const { return true; }
+
+    static bool IsStaticWriteAllocate() { return true; }
+
+    bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, I1D>& access)
+    {
+      access.way = access.set->Status().lru.Select();
+      // Choosen line [access.set, access.way] is:
+      // 1. written to old memory location if its valid and dirty 
+      // 2. read from new memory location
+      return true;
+    }
+
+    void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSSConfig, I1D>& access)
+    {
+      access.set->Status().lru.UpdateOnAccess(access.way);
+      // Hit line [access.set, access.way] is sent to processor
+    }
+  } i1d;
+  I1D* GetCache(const I1D* ) { return &i1d; }
+  
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1D> DATA_CACHE_HIERARCHY;
 
-  typedef unisim::util::cache::CacheHierarchy<MSSConfig> INSTRUCTION_CACHE_HIERARCHY;
+  typedef unisim::util::cache::CacheHierarchy<MSSConfig, I1D> INSTRUCTION_CACHE_HIERARCHY;
   // typedef MSSConfig::STORAGE_ATTR STORAGE_ATTR;
   
   bool DataBusWrite(uint32_t addr, void const* buffer, unsigned int size, StorageAttr const& storage_attr)
@@ -140,6 +184,13 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
     ReportAccess(storage_attr, addr, size);
     return true;
   }
+
+  bool InstructionBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr)
+  {
+    ReportAccess(storage_attr, addr, size);
+    return true;
+  }
+
 };
 
 struct MemTrace
@@ -203,16 +254,14 @@ struct MemTrace
   bool ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size ) override
   {
     StorageAttr storage_attr(mat, mtp);
-    uint32_t const granularity = 4;
-    for (uint32_t cur = addr & -granularity, end = addr + size; cur < end; cur += granularity)
-      {
-        alog.ReportAccess(storage_attr, cur, 4);
-        uint8_t buffer[granularity];
-        if (mat == unisim::util::debug::MAT_WRITE)
-          mss.DataStore(cur, cur, &buffer[0], granularity, storage_attr);
-        else
-          mss.DataLoad(cur, cur, &buffer[0], granularity, storage_attr);
-      }
+    alog.ReportAccess(storage_attr, addr, size);
+    uint8_t buffer[size];
+    if (mat == unisim::util::debug::MAT_WRITE)
+      mss.DataStore(addr, addr, &buffer[0], size, storage_attr);
+    else if (mtp == unisim::util::debug::MT_DATA)
+      mss.DataLoad(addr, addr, &buffer[0], size, storage_attr);
+    else
+      mss.InstructionFetch(addr, addr, &buffer[0], size, storage_attr);
     
     if (requires_memory_access_reporting and memory_access_reporting_import)
       return memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);

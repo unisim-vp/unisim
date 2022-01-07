@@ -179,11 +179,9 @@ struct Scanner
   };
 
   struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
-  struct FReg { static ScalarType::id_t const scalar_type = ScalarType::F64;  static char const* name() { return "FReg"; } };
   struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
 
   typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
-  typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
   /**/                           typedef VRWrite<GReg> GRegWrite;
 
   struct SP {
