@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,6 +36,8 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__
 
 #include <inttypes.h>
+#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/execute.hh>
 
 namespace unisim {
 namespace component {
@@ -99,6 +101,90 @@ OUT PolyMod2(IN value, uint32_t _poly)
   
   return OUT(value);
 }
+
+  template <class ARCH, typename FLOAT>
+  FLOAT FPNaN( ARCH& arch, FLOAT value )
+  {
+    if (arch.Test( arch.GetFPSR( DN )))
+      return defaultnan( value );
+    return clearsignaling( value );
+  }
+  
+  template <class ARCH, unsigned posT>
+  void FPProcessException( ARCH& arch, RegisterField<posT,1> const& rf )
+  {
+    RegisterField<posT+8,1> const enable;
+    if (arch.Test(arch.GetFPSR( enable )))
+      arch.FPTrap( posT );
+    else
+      arch.SetFPCR( rf, 1 );
+  }
+    
+  template <typename operT>
+  struct OutNaN
+  {
+    operT result;
+    bool invalid;
+
+    operator bool () const { return invalid; }
+    operator operT () const { return result; }
+  };
+  
+  template <typename ARCH, typename operT>
+  OutNaN<operT> FPProcessNaNs(ARCH& arch, std::initializer_list<operT> l)
+  {
+    OutNaN<operT> nan = {operT(), false};
+    
+    for (auto val : l)
+      {
+        if (not arch.Test( isnan( val )) )
+          continue;
+
+        if (arch.Test( issignaling( val ) ))
+          {
+            FPProcessException( arch, IOC );
+            return {FPNaN( arch, val ), true};
+          }
+
+        if (not nan.invalid)
+          nan = {FPNaN( arch, val ), true};
+      }
+    
+    return nan;
+  }
+  
+  template <typename operT, typename ARCH>
+  operT FPAdd( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+      return nan;
+
+    return arch.FPRound( op1 + op2 );
+  }
+
+  template <typename operT, typename ARCH>
+  operT FPMin( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+      return nan;
+    
+    // TODO: The use of FPRound() covers the case where there is a trapped
+    // underflow// for a denormalized number even though the result is
+    // exact.
+    return Minimum(op1, op2);
+  }
+
+  template <typename operT, typename ARCH>
+  operT FPMax( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+      return nan;
+    
+    // TODO: The use of FPRound() covers the case where there is a trapped
+    // underflow// for a denormalized number even though the result is
+    // exact.
+    return Maximum(op1, op2);
+  }
 
 } // end of namespace arm64
 } // end of namespace isa

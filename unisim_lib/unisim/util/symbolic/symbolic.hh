@@ -763,13 +763,13 @@ namespace symbolic {
 
     struct IsNaNNode : public ExprNode
     {
-      IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
+      IsNaNNode( Expr const& _src, bool _signaling, bool _quiet ) : src(_src), signaling(_signaling), quiet(_quiet) {} Expr src; bool signaling, quiet;
       virtual IsNaNNode* Mutate() const override { return new IsNaNNode( *this ); }
-      virtual void Repr( std::ostream& sink ) const override { sink << "IsNaN(" << src << ")"; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "IsNaN(" << src << ", " << int(signaling) << ", " << int(quiet) << ")"; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<IsNaNNode const&>( rhs ) ); }
-      int compare( IsNaNNode const& rhs ) const { return int(signaling) - int(rhs.signaling); }
+      int compare( IsNaNNode const& rhs ) const { if (int delta = int(signaling) - int(rhs.signaling)) return delta; return int(quiet) - int(rhs.quiet); }
       virtual unsigned SubCount() const override { return 1; };
-      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; };
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       virtual ScalarType::id_t GetType() const override { return ScalarType::BOOL; }
     };
 
@@ -777,14 +777,14 @@ namespace symbolic {
     SmartValue<bool>
     IsSNaN( FLOAT const& op )
     {
-      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, true ) ) );
+      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, true, false ) ) );
     }
 
     template <typename FLOAT> static
     SmartValue<bool>
     IsQNaN( FLOAT const& op )
     {
-      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, false ) ) );
+      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, false, true ) ) );
     }
 
     template <typename FLOAT, class ARCH> static
@@ -940,6 +940,18 @@ namespace symbolic {
     }
 
   };
+
+  template <typename FTP>
+  SmartValue<bool> isnan( FTP const& op )
+  {
+    return SmartValue<bool>( Expr( new FP::IsNaNNode( op.expr, true, true ) ) );
+  }
+
+  template <typename FTP>
+  SmartValue<bool> issignaling( FTP const& op )
+  {
+    return SmartValue<bool>( Expr( new FP::IsNaNNode( op.expr, true, false ) ) );
+  }
 
   template <class T>
   struct Choice

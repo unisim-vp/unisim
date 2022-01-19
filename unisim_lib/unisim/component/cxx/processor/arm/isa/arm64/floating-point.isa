@@ -2287,7 +2287,7 @@ fmax_s.disasm = {
 };
 
 fmax_s.execute = {
-  cpu.SetVF32(rd, Maximum(cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+  cpu.SetVF32(rd, FPMax(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
 };
 
 op fmax_d( 0b00011110011[11] : rm[5] : 0b010010[6] : rn[5] : rd[5] );
@@ -2297,7 +2297,7 @@ fmax_d.disasm = {
 };
 
 fmax_d.execute = {
-  cpu.SetVF64(rd, Maximum(cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
+  cpu.SetVF64(rd, FPMax(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 op fmax_vs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
@@ -2308,7 +2308,7 @@ fmax_vs.disasm = {
 
 fmax_vs.execute = {
   for (unsigned e=0, end=2<<q; e < end; ++e)
-    cpu.SetVF32(rd, e, Maximum(cpu.GetVF32(rn, e), cpu.GetVF32(rm, e)));
+    cpu.SetVF32(rd, e, FPMax(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rm, e)));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -2320,7 +2320,7 @@ fmax_v2d.disasm = {
 
 fmax_v2d.execute = {
   for (unsigned e=0, end=2; e < end; ++e)
-    cpu.SetVF64(rd, e, Maximum(cpu.GetVF64(rn, e), cpu.GetVF64(rm, e)));
+    cpu.SetVF64(rd, e, FPMax(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rm, e)));
 };
 
 /*
@@ -2424,7 +2424,7 @@ fmin_s.disasm = {
 };
 
 fmin_s.execute = {
-  cpu.SetVF32(rd, Minimum(cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+  cpu.SetVF32(rd, FPMin(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
 };
 
 op fmin_d( 0b00011110011[11] : rm[5] : 0b010110[6] : rn[5] : rd[5] );
@@ -2434,7 +2434,7 @@ fmin_d.disasm = {
 };
 
 fmin_d.execute = {
-  cpu.SetVF64(rd, Minimum(cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
+  cpu.SetVF64(rd, FPMin(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 op fmin_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
@@ -2445,7 +2445,7 @@ fmin_vs.disasm = {
 
 fmin_vs.execute = {
   for (unsigned e=0, end=2<<q; e < end; ++e)
-    cpu.SetVF32(rd, e, Minimum(cpu.GetVF32(rn, e), cpu.GetVF32(rm, e)));
+    cpu.SetVF32(rd, e, FPMin(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rm, e)));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -2457,7 +2457,7 @@ fmin_v2d.disasm = {
 
 fmin_v2d.execute = {
   for (unsigned e=0, end=2; e < end; ++e)
-    cpu.SetVF64(rd, e, Minimum(cpu.GetVF64(rn, e), cpu.GetVF64(rm, e)));
+    cpu.SetVF64(rd, e, FPMin(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rm, e)));
 };
 
 /*

@@ -38,6 +38,7 @@
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <iosfwd>
 #include <cstdlib>
 #include <cassert>
@@ -135,6 +136,9 @@ struct Runner
   uint32_t   nzcv;
   U64   current_insn_addr, next_insn_addr;
 };
+
+template <unsigned posT> void FPProcessException( Runner&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <typename FLOAT> FLOAT FPNaN( Runner&, FLOAT value ) { return value; }
 
 template <typename T> T FPMulAdd(Runner& cpu, T const& acc, T const& op1, T const& op2) { return acc + (op1 * op2); }
 template <typename T> T FPMulSub(Runner& cpu, T const& acc, T const& op1, T const& op2) { return acc - (op1 * op2); }

@@ -33,6 +33,9 @@
  */
 
 #include <runner.hh>
+#include <cmath>
+using std::isnan;
+
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 

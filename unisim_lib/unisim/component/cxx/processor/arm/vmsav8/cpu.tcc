@@ -176,10 +176,6 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
 template <class CPU_IMPL>
 CPU<CPU_IMPL>::~CPU()
 {
-  for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
-    {
-      vector_views[reg].Clear(&vector_data[reg][0]);
-    }
 }
 
 /** Get a register by its name.

@@ -33,6 +33,9 @@
  */
  
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
+#include <cmath>
+using std::isnan;
+
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.tcc>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/logger/logger.hh>

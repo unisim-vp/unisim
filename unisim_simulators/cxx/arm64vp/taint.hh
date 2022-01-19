@@ -256,6 +256,9 @@ TaintedValue<double> fabs( TaintedValue<double> const& _value );
 TaintedValue<float> sqrt( TaintedValue<float> const& _value );
 TaintedValue<double> sqrt( TaintedValue<double> const& _value );
 
+// TaintedValue<bool> isnan( TaintedValue<float> const& _value );
+// TaintedValue<bool> isnan( TaintedValue<double> const& _value );
+
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
 

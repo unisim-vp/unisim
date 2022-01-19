@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
@@ -65,6 +66,29 @@ namespace processor {
 namespace arm {
 namespace vmsav8 {
 
+struct ArchTypes
+{
+  // typedef simfloat::FP FP;
+  // typedef FP::F64  F64;
+  // typedef FP::F32  F32;
+  typedef uint8_t      U8;
+  typedef uint16_t     U16;
+  typedef uint32_t     U32;
+  typedef uint64_t     U64;
+  typedef int8_t       S8;
+  typedef int16_t      S16;
+  typedef int32_t      S32;
+  typedef int64_t      S64;
+  typedef bool         BOOL;
+  typedef float        F32;
+  typedef double       F64;
+
+  template <typename T>
+  using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
+  using VectorByte = U8;
+  using VectorByteShadow = U8;
+};
+
 /** Armv8 cpu
  *
  * Defines and implements architectural state of armv8 processors.
@@ -73,6 +97,8 @@ namespace vmsav8 {
 template <typename CPU_IMPL>
 struct CPU
   : public virtual unisim::kernel::Object
+  , public ArchTypes
+  , regs64::CPU<CPU_IMPL, ArchTypes>
   , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
   , public unisim::kernel::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
@@ -91,26 +117,13 @@ struct CPU
   typedef isa::arm64::Decoder<CPU_IMPL> A64Decoder;
   typedef opcache::OpCache<A64Decoder>  Decoder;
 
-  // typedef simfloat::FP FP;
-  // typedef FP::F64  F64;
-  // typedef FP::F32  F32;
-  typedef uint8_t  U8;
-  typedef uint16_t U16;
-  typedef uint32_t U32;
-  typedef uint64_t U64;
-  typedef int8_t   S8;
-  typedef int16_t  S16;
-  typedef int32_t  S32;
-  typedef int64_t  S64;
-  typedef bool     BOOL;
-
-  typedef float    F32;
-  typedef double   F64;
-
   typedef U64      UREG;
   typedef S64      SREG;
 
   typedef this_type DisasmState;
+
+  using typename regs64::CPU<CPU_IMPL, ArchTypes>::branch_type_t;
+  using          regs64::CPU<CPU_IMPL, ArchTypes>::gpr;
 
   /**********************************************************************
    ***                   Constructors / Destructors                   ***
@@ -186,111 +199,14 @@ struct CPU
 
   bool Cond( bool cond ) { return cond; }
 
-  //=====================================================================
-  //=             General Purpose Registers access methods              =
-  //=====================================================================
-
-  /** Get the value contained by a General-purpose or Stack Register.
-   *
-   * @param id the register index
-   * @return the value contained by the register
-   */
-  uint64_t GetGSR(unsigned id) const
-  {
-    return gpr[id];
-  }
-
-  /** Get the value contained by a General-purpose or Zero Register.
-   *
-   * @param id the register index
-   * @return the value contained by the register
-   */
-  uint64_t GetGZR(unsigned id) const
-  {
-    return (id != 31) ? gpr[id] : 0;
-  }
-
-  /** Set the value of a General-purpose or Stack Register
-   *
-   * @param id the register index
-   * @param val the value to set
-   */
-  void SetGSR(unsigned id, uint64_t val)
-  {
-    gpr[id] = val;
-  }
-	
-  /** Set the value of a General-purpose or Zero Register
-   *
-   * @param id the register index
-   * @param val the value to set
-   */
-  void SetGZR(unsigned id, uint64_t val)
-  {
-    if (id != 31) gpr[id] = val;
-  }
-
   //====================================================================
-  //=                Vector Registers access methods
+  //=                    Registers access methods
   //====================================================================
 
-  template <typename T>
-  T vector_read(unsigned reg, unsigned sub)
-  {
-    return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
-  }
+  enum AccessReport { report_simd_access=0, report_gsr_access=0, report_gzr_access=0 };
+  void report(AccessReport, unsigned, bool) const {}
 
-  U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
-  U16 GetVU16( unsigned reg, unsigned sub ) { return vector_read<U16>(reg, sub); }
-  U32 GetVU32( unsigned reg, unsigned sub ) { return vector_read<U32>(reg, sub); }
-  U64 GetVU64( unsigned reg, unsigned sub ) { return vector_read<U64>(reg, sub); }
-  S8  GetVS8 ( unsigned reg, unsigned sub ) { return vector_read<S8> (reg, sub); }
-  S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
-  S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
-  S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
-  F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<F32>(reg, sub); }
-  F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<F64>(reg, sub); }
-
-  U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? GetVU8((r0 + r) % 32, idx % elts) : oob; }
-
-  template <typename T>
-  void vector_write(unsigned reg, unsigned sub, T value )
-  {
-    (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
-  }
-
-  void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
-  void SetVU16( unsigned reg, unsigned sub, U16 value ) { vector_write( reg, sub, value ); }
-  void SetVU32( unsigned reg, unsigned sub, U32 value ) { vector_write( reg, sub, value ); }
-  void SetVU64( unsigned reg, unsigned sub, U64 value ) { vector_write( reg, sub, value ); }
-  void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { vector_write( reg, sub, value ); }
-  void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
-  void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
-  void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
-  void SetVF32( unsigned reg, unsigned sub, F32 value ) { vector_write( reg, sub, value ); }
-  void SetVF64( unsigned reg, unsigned sub, F64 value ) { vector_write( reg, sub, value ); }
-
-  template <typename T>
-  void vector_write(unsigned reg, T value )
-  {
-    *(vector_views[reg].GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
-  }
-
-  void SetVU8 ( unsigned reg, U8 value )  { vector_write(reg, value); }
-  void SetVU16( unsigned reg, U16 value ) { vector_write(reg, value); }
-  void SetVU32( unsigned reg, U32 value ) { vector_write(reg, value); }
-  void SetVU64( unsigned reg, U64 value ) { vector_write(reg, value); }
-  void SetVS8 ( unsigned reg, S8 value )  { vector_write(reg, value); }
-  void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
-  void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
-  void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
-  void SetVF32( unsigned reg, F32 value ) { vector_write(reg, value); }
-  void SetVF64( unsigned reg, F64 value ) { vector_write(reg, value); }
-
-  void ClearHighV( unsigned reg, unsigned bytes )
-  {
-    vector_views[reg].Truncate(bytes);
-  }
+  U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? this->GetVU8((r0 + r) % 32, idx % elts) : oob; }
 
   //=====================================================================
   //=              Special/System Registers access methods              =
@@ -340,7 +256,6 @@ struct CPU
   //=====================================================================
 
   /** Set the next Program Counter */
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   bool Test( bool cond ) { return cond; }
   void CallSupervisor( uint32_t imm );
@@ -424,25 +339,12 @@ protected:
    ***                       Architectural state                      ***
    **********************************************************************/
 
-  uint64_t gpr[32];
   uint32_t nzcv;
   uint64_t current_insn_addr, next_insn_addr;
 
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register
 
   virtual void          ResetSystemRegisters();
-
-  static unsigned const VECTORCOUNT = 32;
-
-  struct VUConfig
-  {
-    static unsigned const BYTECOUNT = 16;
-    template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
-    typedef U8 Byte;
-  };
-  unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
-
-  uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
 
 protected:
   virtual void Sync() = 0;

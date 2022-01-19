@@ -76,3 +76,6 @@ TaintedValue<double> fabs(TaintedValue<double> const& v)  { return TaintedValue<
 
 TaintedValue<float>  sqrt(TaintedValue<float> const& v) { return TaintedValue<float>(sqrtf(v.value), v.ubits ? -1 : 0); }
 TaintedValue<double> sqrt(TaintedValue<double> const& v)  { return TaintedValue<double>(sqrt(v.value), v.ubits ? -1 : 0); }
+
+// TaintedValue<float>  isnan(TaintedValue<float> const& v) { return TaintedValue<float>(sqrtf(v.value), v.ubits ? -1 : 0); }
+// TaintedValue<double> isnan(TaintedValue<double> const& v)  { return TaintedValue<double>(sqrt(v.value), v.ubits ? -1 : 0); }

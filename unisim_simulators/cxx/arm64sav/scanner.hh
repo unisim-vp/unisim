@@ -38,6 +38,7 @@
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
@@ -420,6 +421,9 @@ struct Scanner
   BOOL           flags[Flag::end];
   U64            current_insn_addr, next_insn_addr;
 };
+
+template <unsigned posT> void FPProcessException( Scanner&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <typename FLOAT> FLOAT FPNaN( Scanner&, FLOAT value ) { return value; }
 
 template <class FTP> FTP FPMulAdd(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }
 template <class FTP> FTP FPMulSub(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }

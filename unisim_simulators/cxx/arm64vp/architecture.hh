@@ -858,6 +858,19 @@ public:
   // std::set<Zone, Zone::Above> diskpages;
 };
 
+struct OutNaN
+{
+  operator bool () const { return false; }
+  template <typename T>
+  operator TaintedValue<T> () const { return TaintedValue<T>(T(0)); }
+};
+
+template <typename operT>
+OutNaN FPProcessNaNs(AArch64& arch, std::initializer_list<operT> l)
+{
+  return OutNaN();
+}
+
 template <typename T>
 T FPMulAdd(AArch64& cpu, T const& acc, T const& op1, T const& op2)
 {
