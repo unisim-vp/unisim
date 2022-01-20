@@ -44,6 +44,10 @@ namespace processor {
 namespace arm {
 namespace regs64 {
 
+template <typename TYPES, typename T> struct SetGType : public std::false_type {};
+template <typename TYPES> struct SetGType<TYPES, typename TYPES::U32> : public std::true_type {};
+template <typename TYPES> struct SetGType<TYPES, typename TYPES::U64> : public std::true_type {};
+
 /// Implement the base register architecture of aarch64 (general purpose and SIMD)
 template <typename CPU_IMPL, typename TYPES>
 struct CPU
@@ -102,6 +106,7 @@ struct CPU
   template <typename T>
   void SetGSR(unsigned reg, T val)
   {
+    static_assert(SetGType<TYPES, T>::value, "T must be U32 or U64");
     if (int(CPU_IMPL::report_gsr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gsr_access, reg, true);
     gpr[reg] = typename TYPES::U64(val);
   }
@@ -110,6 +115,7 @@ struct CPU
   template <typename T>
   void SetGZR(unsigned reg, T val)
   {
+    static_assert(SetGType<TYPES, T>::value, "T must be U32 or U64");
     if (int(CPU_IMPL::report_gzr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gzr_access, reg, true);
     if (reg != 31) gpr[reg] = typename TYPES::U64( val );
   }

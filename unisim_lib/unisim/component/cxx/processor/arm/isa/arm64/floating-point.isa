@@ -1189,7 +1189,7 @@ fcvtas_ws.disasm = {
 };
 
 fcvtas_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(round(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(round(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtas_wd( 0b0001111001100100000000[22] : rn[5] : rd[5] );
@@ -1199,7 +1199,7 @@ fcvtas_wd.disasm = {
 };
 
 fcvtas_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(round(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(round(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtas_xs( 0b1001111000100100000000[22] : rn[5] : rd[5] );
@@ -1209,7 +1209,7 @@ fcvtas_xs.disasm = {
 };
 
 fcvtas_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(round(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(round(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtas_xd( 0b1001111001100100000000[22] : rn[5] : rd[5] );
@@ -1219,7 +1219,7 @@ fcvtas_xd.disasm = {
 };
 
 fcvtas_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(round(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(round(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtas_vss( 0b0[1] : q[1] : 0b00111000100001110010[20] : rn[5] : rd[5] );
@@ -1377,7 +1377,7 @@ fcvtms_ws.disasm = {
 };
 
 fcvtms_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(floor(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(floor(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtms_wd( 0b0001111001110000000000[22] : rn[5] : rd[5] );
@@ -1387,7 +1387,7 @@ fcvtms_wd.disasm = {
 };
 
 fcvtms_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(floor(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(floor(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtms_xs( 0b1001111000110000000000[22] : rn[5] : rd[5] );
@@ -1397,7 +1397,7 @@ fcvtms_xs.disasm = {
 };
 
 fcvtms_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(floor(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(floor(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtms_xd( 0b1001111001110000000000[22] : rn[5] : rd[5] );
@@ -1407,7 +1407,7 @@ fcvtms_xd.disasm = {
 };
 
 fcvtms_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(floor(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(floor(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtms_vss( 0b0[1] : q[1] : 0b00111000100001101110[20] : rn[5] : rd[5] );
@@ -1565,7 +1565,7 @@ fcvtns_ws.disasm = {
 };
 
 fcvtns_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(round(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(round(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtns_wd( 0b0001111001100000000000[22] : rn[5] : rd[5] );
@@ -1575,7 +1575,7 @@ fcvtns_wd.disasm = {
 };
 
 fcvtns_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(round(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(round(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtns_xs( 0b1001111000100000000000[22] : rn[5] : rd[5] );
@@ -1585,7 +1585,7 @@ fcvtns_xs.disasm = {
 };
 
 fcvtns_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(round(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(round(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtns_xd( 0b1001111001100000000000[22] : rn[5] : rd[5] );
@@ -1595,7 +1595,7 @@ fcvtns_xd.disasm = {
 };
 
 fcvtns_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(round(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(round(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtns_vss( 0b0[1] : q[1] : 0b00111000100001101010[20] : rn[5] : rd[5] );
@@ -1729,7 +1729,7 @@ fcvtps_ws.disasm = {
 };
 
 fcvtps_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(ceil(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(ceil(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtps_wd( 0b0001111001101000000000[22] : rn[5] : rd[5] );
@@ -1739,7 +1739,7 @@ fcvtps_wd.disasm = {
 };
 
 fcvtps_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(ceil(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(ceil(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtps_xs( 0b1001111000101000000000[22] : rn[5] : rd[5] );
@@ -1749,7 +1749,7 @@ fcvtps_xs.disasm = {
 };
 
 fcvtps_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(ceil(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(ceil(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtps_xd( 0b1001111001101000000000[22] : rn[5] : rd[5] );
@@ -1759,7 +1759,7 @@ fcvtps_xd.disasm = {
 };
 
 fcvtps_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(ceil(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(ceil(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtps_vss( 0b0[1] : q[1] : 0b00111010100001101010[20] : rn[5] : rd[5] );
@@ -1911,7 +1911,7 @@ fcvtzs_ws.disasm = {
 };
 
 fcvtzs_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(trunc(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(trunc(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtzs_wd( 0b0001111001111000000000[22] : rn[5] : rd[5] );
@@ -1921,7 +1921,7 @@ fcvtzs_wd.disasm = {
 };
 
 fcvtzs_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S32(trunc(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(trunc(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtzs_xs( 0b1001111000111000000000[22] : rn[5] : rd[5] );
@@ -1931,7 +1931,7 @@ fcvtzs_xs.disasm = {
 };
 
 fcvtzs_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(trunc(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(trunc(cpu.GetVF32(rn,0)))));
 };
 
 op fcvtzs_xd( 0b1001111001111000000000[22] : rn[5] : rd[5] );
@@ -1941,7 +1941,7 @@ fcvtzs_xd.disasm = {
 };
 
 fcvtzs_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::S64(trunc(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(trunc(cpu.GetVF64(rn,0)))));
 };
 
 op fcvtzs_vss( 0b0[1] : q[1] : 0b00111010100001101110[20] : rn[5] : rd[5] );
