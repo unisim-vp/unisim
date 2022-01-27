@@ -37,6 +37,7 @@
 #include <iomanip>
 #include <ostream>
 #include <cmath>
+#include <ieee754.h>
 
 void
 Runner::step_instruction()
@@ -113,3 +114,18 @@ Runner::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 index, U8 oo
   return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
 }
 
+float clearsignaling( float value )
+{
+  ieee754_float u;
+  u.f = value;
+  u.ieee_nan.quiet_nan = 1;
+  return u.f;
+}
+
+double clearsignaling( double value )
+{
+  ieee754_double u;
+  u.d = value;
+  u.ieee_nan.quiet_nan = 1;
+  return u.d;
+}

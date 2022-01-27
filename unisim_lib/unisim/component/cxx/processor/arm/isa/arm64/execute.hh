@@ -152,14 +152,45 @@ OUT PolyMod2(IN value, uint32_t _poly)
     
     return nan;
   }
-  
+
+  struct NearestTieEven { template <typename T> static T roundint(T op) { return nearbyint(op); } };
+  struct NearestTieAway { template <typename T> static T roundint(T op) { return round(op); } };
+  struct TowardZero     { template <typename T> static T roundint(T op) { return trunc(op); } };
+  struct TowardNegInf   { template <typename T> static T roundint(T op) { return floor(op); } };
+  struct TowardPosInf   { template <typename T> static T roundint(T op) { return ceil(op); } };
+
+  template <typename ARCH, typename RMODE, typename FLOAT>
+  FLOAT FPRoundInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact)
+  {
+    if (auto nan = FPProcessNaNs(arch, {op}))
+      return nan;
+
+    FLOAT res = rmode.roundint(op);
+
+    if (exact and arch.Test(res != op))
+      FPProcessException( arch, IXC );
+
+    return res;
+  }
+
+  template <typename ARCH, typename operT> operT FPRound( ARCH& arch, operT op ) { return op; }
+
   template <typename operT, typename ARCH>
   operT FPAdd( ARCH& arch, operT op1, operT op2 )
   {
     if (auto nan = FPProcessNaNs(arch, {op1, op2}))
       return nan;
 
-    return arch.FPRound( op1 + op2 );
+    return FPRound(arch, op1 + op2);
+  }
+
+  template <typename operT, typename ARCH>
+  operT FPMul( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+      return nan;
+
+    return FPRound(arch, op1 * op2);
   }
 
   template <typename operT, typename ARCH>
@@ -167,11 +198,13 @@ OUT PolyMod2(IN value, uint32_t _poly)
   {
     if (auto nan = FPProcessNaNs(arch, {op1, op2}))
       return nan;
-    
+
+    operT res  = Minimum(op1, op2);
+
     // TODO: The use of FPRound() covers the case where there is a trapped
     // underflow// for a denormalized number even though the result is
     // exact.
-    return Minimum(op1, op2);
+    return res;
   }
 
   template <typename operT, typename ARCH>
@@ -179,11 +212,13 @@ OUT PolyMod2(IN value, uint32_t _poly)
   {
     if (auto nan = FPProcessNaNs(arch, {op1, op2}))
       return nan;
-    
+
+    operT res = Maximum(op1, op2);
+
     // TODO: The use of FPRound() covers the case where there is a trapped
     // underflow// for a denormalized number even though the result is
     // exact.
-    return Maximum(op1, op2);
+    return res;
   }
 
 } // end of namespace arm64

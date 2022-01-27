@@ -447,6 +447,7 @@ namespace symbolic {
   template <typename OUT, unsigned S, typename TIN>
   OUT PolyMod2(SmartValue<TIN> const& value, uint32_t _poly) { return sav::make_weirdop<OUT>(PM2(S,_poly),value); }
   
+  template <typename F>  SmartValue<F> nearbyint(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "nearbyint", v ); }
   template <typename F>  SmartValue<F> round(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "round", v ); }
   template <typename F>  SmartValue<F> ceil(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "ceil", v ); }
   template <typename F>  SmartValue<F> floor(SmartValue<F> const& v) { return sav::make_weirdop< SmartValue<F> >( "floor", v ); }

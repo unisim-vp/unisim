@@ -387,8 +387,8 @@ namespace arm {
   }
   
   // Min Max operations. Note: Fall back for native-like types.
-  template <typename T> T const& Minimum( T const& l, T const& r ) { return l < r ? l : r; }
-  template <typename T> T const& Maximum( T const& l, T const& r ) { return l > r ? l : r; }
+  template <typename T> T const& Minimum( T const& l, T const& r ) { return std::min(l, r); }
+  template <typename T> T const& Maximum( T const& l, T const& r ) { return std::max(l, r); }
 
   /******************/
   /* Floating Point */

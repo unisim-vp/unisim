@@ -138,7 +138,9 @@ struct Runner
 };
 
 template <unsigned posT> void FPProcessException( Runner&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
-template <typename FLOAT> FLOAT FPNaN( Runner&, FLOAT value ) { return value; }
+extern float clearsignaling( float );
+extern double clearsignaling( double );
+template <typename FLOAT> FLOAT FPNaN( Runner&, FLOAT value ) { return clearsignaling(value); }
 
 template <typename T> T FPMulAdd(Runner& cpu, T const& acc, T const& op1, T const& op2) { return acc + (op1 * op2); }
 template <typename T> T FPMulSub(Runner& cpu, T const& acc, T const& op1, T const& op2) { return acc - (op1 * op2); }
