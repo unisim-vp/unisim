@@ -32,12 +32,14 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
+
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
+using unisim::util::arithmetic::RotateRight;
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
@@ -60,6 +62,8 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+
+
 namespace vmsav7 {
 
 // using unisim::kernel::Object;

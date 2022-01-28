@@ -39,12 +39,18 @@
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/kernel/kernel.hh>
 
+struct MemTrace;
+
 struct StorageAttr
 {
-  StorageAttr() : mat(), mtp() {}
-  StorageAttr(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mtp) : mat(_mat), mtp(_mtp) {}
+  StorageAttr() : memtrace(0), mat(), mtp() {}
+  StorageAttr(MemTrace* _memtrace, unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mtp)
+    : memtrace(_memtrace), mat(_mat), mtp(_mtp)
+  {}
+  MemTrace* memtrace;
   unisim::util::debug::MemoryAccessType mat;
   unisim::util::debug::MemoryType mtp;
+  
   char mode() const { return mat == unisim::util::debug::MAT_WRITE ? 'w' : mtp == unisim::util::debug::MT_INSN ? 'f' : 'r'; }
 };
 
@@ -75,11 +81,11 @@ struct MSSConfig
   typedef uint32_t ADDRESS;
 };
 
-struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,MemorySubSystem>, public AccessLog
+struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,MemorySubSystem>
 {
   typedef unisim::util::cache::MemorySubSystem<MSSConfig,MemorySubSystem> BaseMSS;
   
-  MemorySubSystem( std::ostream& sink ) : BaseMSS(), AccessLog(sink) {}
+  MemorySubSystem() : BaseMSS() {}
   
   bool IsStorageCacheable(StorageAttr storage_attr) const { return true; }
 
@@ -115,12 +121,18 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
     bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
     {
       access.way = access.set->Status().lru.Select();
+      // Choosen line [access.set, access.way] is:
+      // 1. written to old memory location if its valid and dirty 
+      // 2. read from new memory location
+      // access.storage_attr.memtrace
       return true;
     }
 
     void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
     {
       access.set->Status().lru.UpdateOnAccess(access.way);
+      // Hit line [access.set, access.way] is sent to processor
+      // access.storage_attr.memtrace
     }
   } l1d;
   L1D* GetCache(const L1D* ) ALWAYS_INLINE { return &l1d; }
@@ -156,6 +168,7 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
       // Choosen line [access.set, access.way] is:
       // 1. written to old memory location if its valid and dirty 
       // 2. read from new memory location
+      // access.storage_attr.memtrace
       return true;
     }
 
@@ -163,6 +176,7 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
     {
       access.set->Status().lru.UpdateOnAccess(access.way);
       // Hit line [access.set, access.way] is sent to processor
+      // access.storage_attr.memtrace
     }
   } i1d;
   I1D* GetCache(const I1D* ) { return &i1d; }
@@ -172,25 +186,11 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, I1D> INSTRUCTION_CACHE_HIERARCHY;
   // typedef MSSConfig::STORAGE_ATTR STORAGE_ATTR;
   
-  bool DataBusWrite(uint32_t addr, void const* buffer, unsigned int size, StorageAttr const& storage_attr)
-  {
-    ReportAccess(storage_attr, addr, size);
-    return true;
-  }
+  bool DataBusWrite(uint32_t addr, void const* buffer, unsigned int size, StorageAttr const& storage_attr);
 
-  bool DataBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr, bool rwitm)
-  {
-    // Todo handle with-intend-to-modify property
-    ReportAccess(storage_attr, addr, size);
-    return true;
-  }
+  bool DataBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr, bool rwitm);
 
-  bool InstructionBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr)
-  {
-    ReportAccess(storage_attr, addr, size);
-    return true;
-  }
-
+  bool InstructionBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr);
 };
 
 struct MemTrace
@@ -212,8 +212,9 @@ struct MemTrace
     , requires_memory_access_reporting(false)
     , requires_fetch_instruction_reporting(false)
     , requires_commit_instruction_reporting(false)
-    , mss(wcache_log)
-    , alog(ncache_log)
+    , mss()
+    , nclog_sink(ncache_log)
+    , wclog_sink(wcache_log)
   {}
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<uint32_t>> memory_access_reporting_export;
@@ -227,7 +228,8 @@ struct MemTrace
   bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
 
   MemorySubSystem mss;
-  AccessLog alog;
+  AccessLog nclog_sink;
+  AccessLog wclog_sink;
   
   // unisim::service::interfaces::MemoryAccessReportingControl
   void Setup(unisim::service::interfaces::MemoryAccessReportingControl*)
@@ -253,8 +255,8 @@ struct MemTrace
 
   bool ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size ) override
   {
-    StorageAttr storage_attr(mat, mtp);
-    alog.ReportAccess(storage_attr, addr, size);
+    StorageAttr storage_attr(this, mat, mtp);
+    nclog_sink.ReportAccess(storage_attr, addr, size);
     uint8_t buffer[size];
     if (mat == unisim::util::debug::MAT_WRITE)
       mss.DataStore(addr, addr, &buffer[0], size, storage_attr);
@@ -271,8 +273,8 @@ struct MemTrace
 
   void ReportFetchInstruction(uint32_t insn_addr) override
   {
-    alog.ReportInsn(insn_addr);
-    mss.ReportInsn(insn_addr);
+    nclog_sink.ReportInsn(insn_addr);
+    wclog_sink.ReportInsn(insn_addr);
     if (requires_fetch_instruction_reporting and memory_access_reporting_import)
       memory_access_reporting_import->ReportFetchInstruction(insn_addr);
   }

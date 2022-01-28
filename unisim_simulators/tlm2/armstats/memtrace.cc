@@ -34,3 +34,25 @@
 
 #include <memtrace.hh>
 
+bool
+MemorySubSystem::DataBusWrite(uint32_t addr, void const* buffer, unsigned int size, StorageAttr const& storage_attr)
+{
+  storage_attr.memtrace->wclog_sink.ReportAccess(storage_attr, addr, size);
+  return true;
+}
+
+bool
+MemorySubSystem::DataBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr, bool rwitm)
+{
+  // Todo handle with-intend-to-modify property
+  storage_attr.memtrace->wclog_sink.ReportAccess(storage_attr, addr, size);
+  return true;
+}
+
+bool
+MemorySubSystem::InstructionBusRead(uint32_t addr, void* buffer, unsigned int size, StorageAttr const& storage_attr)
+{
+  storage_attr.memtrace->wclog_sink.ReportAccess(storage_attr, addr, size);
+  return true;
+}
+
