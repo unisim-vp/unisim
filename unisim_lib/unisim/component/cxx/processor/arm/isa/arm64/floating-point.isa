@@ -45,7 +45,7 @@ fabd_s.disasm = {
 };
 
 fabd_s.execute = {
-  cpu.SetVF32(rd, fabs(cpu.GetVF32(rn,0) - cpu.GetVF32(rm,0)));
+  cpu.SetVF32(rd, fabs(FPSub(cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0))));
 };
 
 op fabd_d( 0b01111110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
@@ -55,7 +55,7 @@ fabd_d.disasm = {
 };
 
 fabd_d.execute = {
-  cpu.SetVF64(rd, fabs(cpu.GetVF64(rn,0) - cpu.GetVF64(rm,0)));
+  cpu.SetVF64(rd, fabs(FPSub(cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0))));
 };
 
 op fabd_vs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
@@ -3657,7 +3657,7 @@ fsub_s.disasm = {
 };
 
 fsub_s.execute = {
-  cpu.SetVF32(rd, cpu.GetVF32(rn,0) - cpu.GetVF32(rm,0));
+  cpu.SetVF32(rd, FPSub(cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0)));
 };
 
 op fsub_d( 0b00011110011[11] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
@@ -3667,7 +3667,7 @@ fsub_d.disasm = {
 };
 
 fsub_d.execute = {
-  cpu.SetVF64(rd, cpu.GetVF64(rn,0) - cpu.GetVF64(rm,0));
+  cpu.SetVF64(rd, FPSub(cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0)));
 };
 
 op fsub_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
@@ -3678,7 +3678,7 @@ fsub_vs.disasm = {
 
 fsub_vs.execute = {
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, cpu.GetVF32(rn, idx) - cpu.GetVF32(rm, idx));
+    cpu.SetVF32(rd, idx, FPSub(cpu, cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx)));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -3690,7 +3690,7 @@ fsub_v2d.disasm = {
 
 fsub_v2d.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
-    cpu.SetVF64(rd, idx, cpu.GetVF64(rn, idx) - cpu.GetVF64(rm, idx));
+    cpu.SetVF64(rd, idx, FPSub(cpu, cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx)));
 };
 
 /*
