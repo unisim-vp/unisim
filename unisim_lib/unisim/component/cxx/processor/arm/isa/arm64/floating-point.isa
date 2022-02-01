@@ -2735,7 +2735,7 @@ fmov_dd.disasm = {
 };
 
 fmov_dd.execute = {
-  cpu.SetVF64( rd, cpu.GetVF64(rn,0));
+  cpu.SetVF64(rd, cpu.GetVF64(rn,0));
 };
 
 /*
@@ -3354,7 +3354,7 @@ frintm_s.disasm = {
 };
 
 frintm_s.execute = {
-  cpu.SetVF32(rd, floor(cpu.GetVF32(rn,0)));
+  cpu.SetVF32(rd, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), false));
 };
 
 op frintm_d( 0b0001111001100101010000[22] : rn[5] : rd[5] );
@@ -3364,7 +3364,7 @@ frintm_d.disasm = {
 };
 
 frintm_d.execute = {
-  cpu.SetVF64(rd, floor(cpu.GetVF64(rn,0)));
+  cpu.SetVF64(rd, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), false));
 };
 
 op frintm_vs( 0b0[1] : q[1] : 0b00111000100001100110[20] : rn[5] : rd[5] );
@@ -3438,7 +3438,7 @@ frintp_s.disasm = {
 };
 
 frintp_s.execute = {
-  cpu.SetVF32(rd, ceil(cpu.GetVF32(rn,0)));
+  cpu.SetVF32(rd, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), false));
 };
 
 op frintp_d( 0b0001111001100100110000[22] : rn[5] : rd[5] );
@@ -3448,7 +3448,7 @@ frintp_d.disasm = {
 };
 
 frintp_d.execute = {
-  cpu.SetVF64(rd, ceil(cpu.GetVF64(rn,0)));
+  cpu.SetVF64(rd, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), false));
 };
 
 op frintp_vs( 0b0[1] : q[1] : 0b00111010100001100010[20] : rn[5] : rd[5] );
@@ -3514,7 +3514,7 @@ frintz_s.disasm = {
 };
 
 frintz_s.execute = {
-  cpu.SetVF32(rd, trunc(cpu.GetVF32(rn,0)));
+  cpu.SetVF32(rd, FPRoundInt(cpu, TowardZero(), cpu.GetVF32(rn,0), false));
 };
 
 op frintz_d( 0b0001111001100101110000[22] : rn[5] : rd[5] );
@@ -3524,7 +3524,7 @@ frintz_d.disasm = {
 };
 
 frintz_d.execute = {
-  cpu.SetVF64(rd, trunc(cpu.GetVF64(rn,0)));
+  cpu.SetVF64(rd, FPRoundInt(cpu, TowardZero(), cpu.GetVF64(rn,0), false));
 };
 
 op frintz_vs( 0b0[1] : q[1] : 0b00111010100001100110[20] : rn[5] : rd[5] );

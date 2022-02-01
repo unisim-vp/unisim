@@ -136,7 +136,8 @@ namespace symbolic {
         Add, Sub, Div, Divu, Mod, Modu, Mul, Min, Max,
         Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
         BSwp, BSR, BSF, POPCNT, Not, Neg,
-        FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow, FTrunc, FFloor,
+        FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
+        FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
         Cast,
         end
       } code;
@@ -187,8 +188,13 @@ namespace symbolic {
         case   FDen: return "FDen";
         case   FMod: return "FMod";
         case   FPow: return "FPow";
-        case FTrunc: return "FTrunc";
         case FFloor: return "FFloor";
+        case FCeil:  return "FCeil";
+        case FRound: return "FRound";
+        case FTrunc: return "FTrunc";
+        case  FNear: return "FNear";
+        case  FMax: return "FMax";
+        case  FMin: return "FMin";
         case   Cast: return "Cast";
         case    end: break;
         }
@@ -405,7 +411,9 @@ namespace symbolic {
       switch (op.code)
         {
         case Op::BSwp: case Op::Not: case Op::Neg:  case Op::BSR:   case Op::BSF:  case Op::POPCNT:
-        case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs: case Op::FMod: case Op::FPow: case Op::FTrunc: case Op::FFloor:
+        case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs: case Op::FMod: case Op::FPow:
+        case Op::FFloor: case Op::FCeil: case Op::FTrunc: case Op::FRound: case Op::FNear:
+        case Op::FMax: case Op::FMin:
         case Op::Xor:  case Op::And: case Op::Or:
         case Op::Lsl:  case Op::Lsr: case Op::Asr:  case Op::Ror:   case Op::Rol:
         case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max:
@@ -503,8 +511,13 @@ namespace symbolic {
         case Op::FCmp:   break;
         case Op::FMod:   break;
         case Op::FPow:   break;
-        case Op::FTrunc: break;
         case Op::FFloor: break;
+        case Op::FCeil: break;
+        case Op::FTrunc: break;
+        case Op::FRound: break;
+        case Op::FNear: break;
+        case Op::FMax: break;
+        case Op::FMin: break;
 
         case Op::Cast: /* Should have been handled elsewhere */
         case Op::end:   throw std::logic_error("???");
@@ -717,8 +730,14 @@ namespace symbolic {
 
   template <typename FTP>  FTP fneg( FTP const& value ) { return FTP( make_operation( "FNeg", value.expr ) ); }
   template <typename FTP>  FTP fabs( FTP const& value ) { return FTP( make_operation( "FAbs", value.expr ) ); }
-  template <typename FTP>  FTP trunc( FTP const& value ) { return FTP( make_operation( "FTrunc", value.expr ) ); }
+  template <typename FTP>  FTP ceil( FTP const& value ) { return FTP( make_operation( "FCeil", value.expr ) ); }
   template <typename FTP>  FTP floor( FTP const& value ) { return FTP( make_operation( "FFloor", value.expr ) ); }
+  template <typename FTP>  FTP trunc( FTP const& value ) { return FTP( make_operation( "FTrunc", value.expr ) ); }
+  template <typename FTP>  FTP round( FTP const& value ) { return FTP( make_operation( "FRound", value.expr ) ); }
+  template <typename FTP>  FTP nearbyint( FTP const& value ) { return FTP( make_operation( "FNear", value.expr ) ); }
+  template <typename FTP>  FTP sqrt( FTP const& value ) { return FTP( make_operation( "FSqrt", value.expr ) ); }
+  template <typename FTP>  FTP fmin( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMin", l.expr, r.expr ) ); }
+  template <typename FTP>  FTP fmax( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMax", l.expr, r.expr ) ); }
 
   struct FP
   {
