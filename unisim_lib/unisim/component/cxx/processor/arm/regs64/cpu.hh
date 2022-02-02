@@ -62,7 +62,7 @@ struct CPU
   {
     static unsigned const BYTECOUNT = 16;
     template <typename T>
-    using TypeInfo = typename TYPES::VectorTypeInfo<T>;
+    using TypeInfo = typename TYPES::template VectorTypeInfo<T>;
     using Byte     = typename TYPES::VectorByte;
   };
   static unsigned const VECTORCOUNT = 32;

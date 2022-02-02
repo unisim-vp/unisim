@@ -883,4 +883,6 @@ T FPMulSub(AArch64& cpu, T const& acc, T const& op1, T const& op2)
   return acc - (op1 * op2);
 }
 
+template <unsigned posT> void FPProcessException( AArch64&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

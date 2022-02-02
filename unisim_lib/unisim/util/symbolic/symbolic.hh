@@ -728,7 +728,6 @@ namespace symbolic {
   template <typename FTP>
   FTP fmodulo( FTP const& left, FTP const& right ) { return FTP( make_operation( "FMod", left.expr, right.expr ) ); }
 
-  template <typename FTP>  FTP fneg( FTP const& value ) { return FTP( make_operation( "FNeg", value.expr ) ); }
   template <typename FTP>  FTP fabs( FTP const& value ) { return FTP( make_operation( "FAbs", value.expr ) ); }
   template <typename FTP>  FTP ceil( FTP const& value ) { return FTP( make_operation( "FCeil", value.expr ) ); }
   template <typename FTP>  FTP floor( FTP const& value ) { return FTP( make_operation( "FFloor", value.expr ) ); }

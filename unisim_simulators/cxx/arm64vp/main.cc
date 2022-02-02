@@ -184,7 +184,7 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
      */
     arch.SetGSR(0, AArch64::U64(base));
     for (unsigned idx = 1; idx < 4; ++idx)
-      arch.SetGSR(idx, 0/*AArch64::U64(0xdeadbeefbadfeed0 + idx,-1)*/);
+      arch.SetGSR(idx, AArch64::U64(0/*0xdeadbeefbadfeed0 + idx,-1*/));
   }
 
   return true;
@@ -314,7 +314,7 @@ struct StreamSpy
     , arch(_arch)
   {}
 
-  void Setup(unisim::service::interfaces::CharIO*) { char_io_import.RequireSetup(); }
+  void Setup(unisim::service::interfaces::CharIO*) override { char_io_import.RequireSetup(); }
   
   virtual void ResetCharIO() override { char_io_import->ResetCharIO(); }
   virtual bool GetChar(char& ch) override

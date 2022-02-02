@@ -238,23 +238,33 @@ void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
   PrintHex(sink, ml, value, tv.ubits);
 }
 
-TaintedValue<float> round( TaintedValue<float> const& _value );
-TaintedValue<double> round( TaintedValue<double> const& _value );
-
-TaintedValue<float> floor( TaintedValue<float> const& _value );
-TaintedValue<double> floor( TaintedValue<double> const& _value );
+TaintedValue<float> fabs( TaintedValue<float> const& _value );
+TaintedValue<double> fabs( TaintedValue<double> const& _value );
 
 TaintedValue<float> ceil( TaintedValue<float> const& _value );
 TaintedValue<double> ceil( TaintedValue<double> const& _value );
 
+TaintedValue<float> floor( TaintedValue<float> const& _value );
+TaintedValue<double> floor( TaintedValue<double> const& _value );
+
 TaintedValue<float> trunc( TaintedValue<float> const& _value );
 TaintedValue<double> trunc( TaintedValue<double> const& _value );
 
-TaintedValue<float> fabs( TaintedValue<float> const& _value );
-TaintedValue<double> fabs( TaintedValue<double> const& _value );
+TaintedValue<float> round( TaintedValue<float> const& _value );
+TaintedValue<double> round( TaintedValue<double> const& _value );
+
+TaintedValue<float> nearbyint( TaintedValue<float> const& _value );
+TaintedValue<double> nearbyint( TaintedValue<double> const& _value );
 
 TaintedValue<float> sqrt( TaintedValue<float> const& _value );
 TaintedValue<double> sqrt( TaintedValue<double> const& _value );
+
+TaintedValue<float> fmin( TaintedValue<float> const&, TaintedValue<float> const& );
+TaintedValue<double> fmin( TaintedValue<double> const&, TaintedValue<double> const& );
+
+TaintedValue<float> fmax( TaintedValue<float> const&, TaintedValue<float> const& );
+TaintedValue<double> fmax( TaintedValue<double> const&, TaintedValue<double> const& );
+
 
 // TaintedValue<bool> isnan( TaintedValue<float> const& _value );
 // TaintedValue<bool> isnan( TaintedValue<double> const& _value );
