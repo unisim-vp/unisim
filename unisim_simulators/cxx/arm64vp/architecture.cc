@@ -342,7 +342,7 @@ AArch64::CallSupervisor( unsigned imm )
   get_el(target_el).ESR = U32(0)
     | U32(0x15) << 26 // exception class AArch64.SVC
     | U32(1) << 25 // IL Instruction Length == 32 bits
-    | U32(0,0b111111111) << 16 // Res0
+    | PartiallyDefined<uint32_t>(0,0b111111111) << 16 // Res0
     | U32(imm);
 
   TakeException(1, 0x0, next_insn_addr);
@@ -534,8 +534,8 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
   U32 esr = U32(0)
     | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (cpu.pstate.GetEL() == target_el)) << 26 // exception class
     | U32(1) << 25 // IL Instruction Length
-    | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
-    | U32(0,0b1111) << 10
+    | PartiallyDefined<uint32_t>(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
+    | PartiallyDefined<uint32_t>(0,0b1111) << 10
     | U32(0) << 9 // IsExternalAbort(fault)
     | U32(mat == mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
@@ -1401,7 +1401,7 @@ AArch64::map_uart(uint64_t base_addr)
         {
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
           char ch = '\0';
-          if (not req.write and not uart.rx_pop( ch )) { U8 x(0,-1); return req.tainted_access(x);  }
+          if (not req.write and not uart.rx_pop( ch )) { U8 x = PartiallyDefined<uint8_t>(0,-1); return req.tainted_access(x);  }
           if (not req.access( ch ))                    { return false; }
           if (    req.write)                           { uart.tx_push( ch ); /*suspend_at_prompt(arch, ch);*/ }
           return true;
@@ -1527,8 +1527,8 @@ AArch64::map_gic(uint64_t base_addr)
             arch.gic.ack_interrupt(int_id);
 
           U32 reg = U32(0)
-            | U32(0,0x7ffff)     << 13  // Reserved
-            | U32(0,0x7)         << 10  // CPUID
+            | PartiallyDefined<uint32_t>(0,0x7ffff)     << 13  // Reserved
+            | PartiallyDefined<uint32_t>(0,0x7)         << 10  // CPUID
             | U32(int_id)        <<  0; // An product identifier (linux wants 0bx..x0000)
 
           return req.tainted_access(reg);
@@ -1557,10 +1557,10 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.write) return error(req.dev, "Cannot write GICC_IIDR" );
           U32 reg = U32(0)
-            | U32(0,0xff0)       << 20  // An product identifier (linux wants 0bx..x0000)
-            | U32(2)             << 16  // Architecture version (GICv2)
-            | U32(0,0xf)         << 12  // Revision
-            | U32(0x43b)         <<  0; // The JEP106 identity and continuation code of ARM.
+            | PartiallyDefined<uint32_t>(0,0xff0) << 20  // An product identifier (linux wants 0bx..x0000)
+            | U32(2)                              << 16  // Architecture version (GICv2)
+            | PartiallyDefined<uint32_t>(0,0xf)   << 12  // Revision
+            | U32(0x43b)                          <<  0; // The JEP106 identity and continuation code of ARM.
 
           return req.tainted_access(reg);
         }
@@ -1572,12 +1572,12 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.write) return error(req.dev, "Cannot write GICD_TYPER" );
           U32 reg = U32(0)
-            | U32(0,0xffff)      << 16  // Reserved
-            | U32(0,0x1f)        << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
-            | U32(0,1)           << 10  // Indicates whether the GIC implements the Security Extensions
-            | U32(0,3)           <<  8  // Reserved
-            | U32(0)             <<  5  // Indicates the number of implemented CPU interfaces
-            | U32(arch.gic.ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
+            | PartiallyDefined<uint32_t>(0,0xffff) << 16  // Reserved
+            | PartiallyDefined<uint32_t>(0,0x1f)   << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
+            | PartiallyDefined<uint32_t>(0,1)      << 10  // Indicates whether the GIC implements the Security Extensions
+            | PartiallyDefined<uint32_t>(0,3)      <<  8  // Reserved
+            | U32(0)                               <<  5  // Indicates the number of implemented CPU interfaces
+            | U32(arch.gic.ITLinesNumber)          <<  0; // Indicates the maximum number of interrupts that the GIC supports
           return req.tainted_access(reg);
         }
 

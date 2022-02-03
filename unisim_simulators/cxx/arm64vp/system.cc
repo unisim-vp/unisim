@@ -587,7 +587,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return U64(cpu.pstate.GetEL() << 2);
-            //return U64(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
+            //return PartiallyDefined<uint64_t>(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
           }
         } x; return &x;
       } break;
@@ -661,7 +661,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               {
                 MMU::TLB::Entry entry(addr.value);
                 cpu.translate_address(entry, cpu.pstate.GetEL(), op2 ? mem_acc_type::write : mem_acc_type::read);
-                cpu.el1.PAR = U64(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
+                cpu.el1.PAR = PartiallyDefined<uint64_t>(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
               }
             catch (AArch64::DataAbort const& x)
               {
@@ -1091,22 +1091,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return
-              U64(0b0001)         << 60 | // Indicates support for Random Number instructions
-              U64(0b0010)         << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
-              U64(0b0010)         << 52 | // Indicates support for flag manipulation instructions
-              U64(0b0000)         << 48 | // Indicates support for FMLAL and FMLSL instructions
-              U64(0b0000)         << 44 | // Indicates support for Dot Product instructions
-              U64(0b0000)         << 40 | // Indicates support for SM4 instructions
-              U64(0b0000)         << 36 | // Indicates support for SM3 instructions
-              U64(0b0000)         << 32 | // Indicates support for SHA3 instructions
-              U64(0b0001)         << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
-              U64(0,0b1111)       << 24 | // Reserved, RES0.
-              U64(0b0010)         << 20 | // Indicates support for Atomic instructions
-              U64(0b0001)         << 16 | // Indicates support for CRC32 instructions
-              U64(0b0000)         << 12 | // Indicates support for SHA2 instructions (TODO)
-              U64(0b0000)         <<  8 | // Indicates support for SHA1 instructions (TODO)
-              U64(0b0000)         <<  4 | // Indicates support for AES instructions (TODO)
-              U64(0,0b1111)       <<  0;  // Reserved, RES0.
+              U64(0b0001)                          << 60 | // Indicates support for Random Number instructions
+              U64(0b0010)                          << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
+              U64(0b0010)                          << 52 | // Indicates support for flag manipulation instructions
+              U64(0b0000)                          << 48 | // Indicates support for FMLAL and FMLSL instructions
+              U64(0b0000)                          << 44 | // Indicates support for Dot Product instructions
+              U64(0b0000)                          << 40 | // Indicates support for SM4 instructions
+              U64(0b0000)                          << 36 | // Indicates support for SM3 instructions
+              U64(0b0000)                          << 32 | // Indicates support for SHA3 instructions
+              U64(0b0001)                          << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
+              PartiallyDefined<uint64_t>(0,0b1111) << 24 | // Reserved, RES0.
+              U64(0b0010)                          << 20 | // Indicates support for Atomic instructions
+              U64(0b0001)                          << 16 | // Indicates support for CRC32 instructions
+              U64(0b0000)                          << 12 | // Indicates support for SHA2 instructions (TODO)
+              U64(0b0000)                          <<  8 | // Indicates support for SHA1 instructions (TODO)
+              U64(0b0000)                          <<  4 | // Indicates support for AES instructions (TODO)
+              PartiallyDefined<uint64_t>(0,0b1111) <<  0;  // Reserved, RES0.
           }
         } x; return &x;
       } break;
@@ -1179,22 +1179,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return
-              U64(0b0000)           << 60 | // Speculative use of faulting data
-              U64(0b0000)           << 56 | // Speculative use of out of context branch targets
-              U64(0,0b1111)         << 52 | // RES0
-              U64(0b0000)           << 48 | // Data Independent Timing
-              U64(0b0000)           << 44 | // Indicates support for Activity Monitors Extension
-              U64(0b0000)           << 40 | // Indicates support for MPAM Extension
-              U64(0b0000)           << 36 | // Secure EL2
-              U64(0b0000)           << 32 | // Scalable Vector Extension
-              U64(0b0000)           << 28 | // RAS Extension version
-              U64(0b0000)           << 24 | // System register GIC CPU interface
-              U64(0b0000)           << 20 | // Advanced SIMD (implemented)
-              U64(0b0000)           << 16 | // Floating-point (implemented)
-              U64(0b0000)           << 12 | // EL3 Exception level handling (not implemented)
-              U64(0b0001)           <<  8 | // EL2 Exception level handling (executed in AArch64 state only)
-              U64(0b0001)           <<  4 | // EL1 Exception level handling (executed in AArch64 state only) 
-              U64(0b0001)           <<  0;  // EL0 Exception level handling (executed in AArch64 state only) 
+              U64(0b0000)                          << 60 | // Speculative use of faulting data
+              U64(0b0000)                          << 56 | // Speculative use of out of context branch targets
+              PartiallyDefined<uint64_t>(0,0b1111) << 52 | // RES0
+              U64(0b0000)                          << 48 | // Data Independent Timing
+              U64(0b0000)                          << 44 | // Indicates support for Activity Monitors Extension
+              U64(0b0000)                          << 40 | // Indicates support for MPAM Extension
+              U64(0b0000)                          << 36 | // Secure EL2
+              U64(0b0000)                          << 32 | // Scalable Vector Extension
+              U64(0b0000)                          << 28 | // RAS Extension version
+              U64(0b0000)                          << 24 | // System register GIC CPU interface
+              U64(0b0000)                          << 20 | // Advanced SIMD (implemented)
+              U64(0b0000)                          << 16 | // Floating-point (implemented)
+              U64(0b0000)                          << 12 | // EL3 Exception level handling (not implemented)
+              U64(0b0001)                          <<  8 | // EL2 Exception level handling (executed in AArch64 state only)
+              U64(0b0001)                          <<  4 | // EL1 Exception level handling (executed in AArch64 state only) 
+              U64(0b0001)                          <<  0;  // EL0 Exception level handling (executed in AArch64 state only) 
           }
         } x; return &x;
       } break;
@@ -1207,12 +1207,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return
-              U64(0,-1)             << 20 | // Reserved, RES0
-              U64(0b0000)           << 16 | // MPAM Extension fractional field
-              U64(0b0000)           << 12 | // RAS Extension fractional field
-              U64(0b0000)           <<  8 | // Support for the Memory Tagging Extension
-              U64(0b0000)           <<  4 | // Speculative Store Bypassing controls in AArch64 state
-              U64(0b0000)           <<  0;  // Branch Target Identification mechanism support
+              PartiallyDefined<uint64_t>(0,-1) << 20 | // Reserved, RES0
+              U64(0b0000)                      << 16 | // MPAM Extension fractional field
+              U64(0b0000)                      << 12 | // RAS Extension fractional field
+              U64(0b0000)                      <<  8 | // Support for the Memory Tagging Extension
+              U64(0b0000)                      <<  4 | // Speculative Store Bypassing controls in AArch64 state
+              U64(0b0000)                      <<  0;  // Branch Target Identification mechanism support
           }
         } x; return &x;
       } break;
@@ -1410,15 +1410,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
           {
             return U64(0)
-              | U64(0, 0xffffff)  << 40  // Reserved, RES0.
-              | U64(0)            << 32  // Aff3, Affinity level 3.
-              | U64(1, 1)         << 31  // Reserved, RES1.
-              | U64(1)            << 30  // U, bit [30] Uniprocessor system.
-              | U64(0, 0x1f)      << 25  // Bits [29:25] Reserved, RES0.
-              | U64(0)            << 24  // MT, bit [24] Lowest level of affinity consists of multi-threaded logical processors.
-              | U64(0)            << 16  // Aff2, Affinity level 2.
-              | U64(0)            <<  8  // Aff1, Affinity level 1.
-              | U64(0)            <<  0  // Aff0, Affinity level 0.
+              | PartiallyDefined<uint64_t>(0, 0xffffff) << 40  // Reserved, RES0.
+              | U64(0)                                  << 32  // Aff3, Affinity level 3.
+              | PartiallyDefined<uint64_t>(1, 1)        << 31  // Reserved, RES1.
+              | U64(1)                                  << 30  // U, bit [30] Uniprocessor system.
+              | PartiallyDefined<uint64_t>(0, 0x1f)     << 25  // Bits [29:25] Reserved, RES0.
+              | U64(0)                                  << 24  // MT, bit [24] Lowest level of affinity consists of multi-threaded logical processors.
+              | U64(0)                                  << 16  // Aff2, Affinity level 2.
+              | U64(0)                                  <<  8  // Aff1, Affinity level 1.
+              | U64(0)                                  <<  0  // Aff0, Affinity level 0.
               ;
           }
         } x; return &x;

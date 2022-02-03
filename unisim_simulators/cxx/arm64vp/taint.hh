@@ -88,6 +88,8 @@ DST TypePunning( SRC value )
   return tmp.as_dst;
 }
 
+struct TVCtor {};
+
 template <typename VALUE_TYPE>
 struct TaintedValue
 { 
@@ -101,8 +103,7 @@ struct TaintedValue
   ubits_type value_as_mask() const { return TypePunning<ubits_type>(value); }
     
   TaintedValue() : value(), ubits(-1) {}
-
-  TaintedValue(value_type _value, ubits_type _ubits) : value(_value), ubits(_ubits) {}
+  TaintedValue(TVCtor, value_type _value, ubits_type _ubits) : value(_value), ubits(_ubits) {}
   explicit TaintedValue( value_type _value ) : value(_value), ubits(0) {}
 
   template <typename SRC_VALUE_TYPE>
@@ -112,19 +113,19 @@ struct TaintedValue
   
   static bool const is_signed = std::numeric_limits<value_type>::is_signed;
 
-  template <typename SHT> this_type operator << (SHT sh) const { return this_type(value << sh, ubits << sh); }
-  template <typename SHT> this_type operator >> (SHT sh) const { return this_type(value >> sh, value_type(ubits) >> sh); }
+  template <typename SHT> this_type operator << (SHT sh) const { return this_type(TVCtor(), value << sh, ubits << sh); }
+  template <typename SHT> this_type operator >> (SHT sh) const { return this_type(TVCtor(), value >> sh, value_type(ubits) >> sh); }
   
   template <typename SHT> this_type& operator <<= (SHT sh) { value <<= sh; ubits <<= sh; return *this; }
   template <typename SHT> this_type& operator >>= (SHT sh) { value >>= sh; ubits = value_type(ubits) >> sh; return *this; }
 
   template <typename SHT> this_type operator << (TaintedValue<SHT> const& sh) const
-  { return this_type(value << sh.value, sh.ubits ? -1 : (ubits << sh.value) ); }
+  { return this_type(TVCtor(), value << sh.value, sh.ubits ? -1 : (ubits << sh.value) ); }
   template <typename SHT> this_type operator >> (TaintedValue<SHT> const& sh) const
-  { return this_type(value >> sh.value, sh.ubits ? -1 : (value_type(ubits) >> sh.value) ); }
+  { return this_type(TVCtor(), value >> sh.value, sh.ubits ? -1 : (value_type(ubits) >> sh.value) ); }
 
-  this_type operator - () const { return this_type( -value, ubits ? -1 : 0 ); }
-  this_type operator ~ () const { return this_type( ~value, ubits ); }
+  this_type operator - () const { return this_type( TVCtor(), -value, ubits ? -1 : 0 ); }
+  this_type operator ~ () const { return this_type( TVCtor(), ~value, ubits ); }
 
   this_type& operator += ( this_type const& other ) { value += other.value; ubits = (ubits or other.ubits) ? -1 : 0; return *this; }
   this_type& operator -= ( this_type const& other ) { value -= other.value; ubits = (ubits or other.ubits) ? -1 : 0; return *this; }
@@ -136,32 +137,34 @@ struct TaintedValue
   this_type& operator &= ( this_type const& other ) { value &= other.value; ubits = (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits); return *this; }
   this_type& operator |= ( this_type const& other ) { value |= other.value; ubits = (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits); return *this; }
 
-  this_type operator + ( this_type const& other ) const { return this_type( value + other.value, (ubits or other.ubits) ? -1 : 0 ); }
-  this_type operator - ( this_type const& other ) const { return this_type( value - other.value, (ubits or other.ubits) ? -1 : 0 ); }
-  this_type operator * ( this_type const& other ) const { return this_type( value * other.value, (ubits or other.ubits) ? -1 : 0 ); }
-  this_type operator / ( this_type const& other ) const { return this_type( value / other.value, (ubits or other.ubits) ? -1 : 0 ); }
-  this_type operator % ( this_type const& other ) const { return this_type( value % other.value, (ubits or other.ubits) ? -1 : 0 ); }
+  this_type operator + ( this_type const& other ) const { return this_type( TVCtor(), value + other.value, (ubits or other.ubits) ? -1 : 0 ); }
+  this_type operator - ( this_type const& other ) const { return this_type( TVCtor(), value - other.value, (ubits or other.ubits) ? -1 : 0 ); }
+  this_type operator * ( this_type const& other ) const { return this_type( TVCtor(), value * other.value, (ubits or other.ubits) ? -1 : 0 ); }
+  this_type operator / ( this_type const& other ) const { return this_type( TVCtor(), value / other.value, (ubits or other.ubits) ? -1 : 0 ); }
+  this_type operator % ( this_type const& other ) const { return this_type( TVCtor(), value % other.value, (ubits or other.ubits) ? -1 : 0 ); }
   
-  this_type operator ^ ( this_type const& other ) const { return this_type( value ^ other.value, ubits | other.ubits ); }
-  this_type operator & ( this_type const& other ) const { return this_type( value & other.value, (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits) ); }
-  this_type operator | ( this_type const& other ) const { return this_type( value | other.value, (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits) ); }
+  this_type operator ^ ( this_type const& other ) const { return this_type( TVCtor(), value ^ other.value, ubits | other.ubits ); }
+  this_type operator & ( this_type const& other ) const { return this_type( TVCtor(), value & other.value, (ubits | other.ubits) & (value | ubits) & (other.value | other.ubits) ); }
+  this_type operator | ( this_type const& other ) const { return this_type( TVCtor(), value | other.value, (ubits | other.ubits) & (~value | ubits) & (~other.value | other.ubits) ); }
 
-  TaintedValue<bool> operator == ( this_type const& r ) const { return TaintedValue<bool>( value == r.value, EqUBits(ubits|r.ubits, value, r.value) ); }
-  TaintedValue<bool> operator != ( this_type const& r ) const { return TaintedValue<bool>( value != r.value, EqUBits(ubits|r.ubits, value, r.value) ); }
-  TaintedValue<bool> operator <= ( this_type const& other ) const { return TaintedValue<bool>( value <= other.value, ubits or other.ubits ); }
-  TaintedValue<bool> operator >= ( this_type const& other ) const { return TaintedValue<bool>( value >= other.value, ubits or other.ubits ); }
-  TaintedValue<bool> operator < ( this_type const& other ) const  { return TaintedValue<bool>( value <  other.value, ubits or other.ubits ); }
-  TaintedValue<bool> operator > ( this_type const& other ) const  { return TaintedValue<bool>( value >  other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator == ( this_type const& r ) const { return TaintedValue<bool>( TVCtor(), value == r.value, EqUBits(ubits|r.ubits, value, r.value) ); }
+  TaintedValue<bool> operator != ( this_type const& r ) const { return TaintedValue<bool>( TVCtor(), value != r.value, EqUBits(ubits|r.ubits, value, r.value) ); }
+  TaintedValue<bool> operator <= ( this_type const& other ) const { return TaintedValue<bool>( TVCtor(), value <= other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator >= ( this_type const& other ) const { return TaintedValue<bool>( TVCtor(), value >= other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator < ( this_type const& other ) const  { return TaintedValue<bool>( TVCtor(), value <  other.value, ubits or other.ubits ); }
+  TaintedValue<bool> operator > ( this_type const& other ) const  { return TaintedValue<bool>( TVCtor(), value >  other.value, ubits or other.ubits ); }
 
   TaintedValue<bool> operator ! () const
-  { AssertBool<value_type>::check(); return TaintedValue<bool>( not value, ubits ); }
+  { AssertBool<value_type>::check(); return TaintedValue<bool>( TVCtor(), not value, ubits ); }
 
   TaintedValue<bool> operator && ( TaintedValue<bool> const& other ) const
-  { AssertBool<value_type>::check(); return TaintedValue<bool>( value and other.value, ubits or other.ubits ); }
+  { AssertBool<value_type>::check(); return TaintedValue<bool>( TVCtor(), value and other.value, ubits or other.ubits ); }
 
   TaintedValue<bool> operator || ( TaintedValue<bool> const& other ) const
-  { AssertBool<value_type>::check(); return TaintedValue<bool>( value or other.value, ubits or other.ubits ); }
+  { AssertBool<value_type>::check(); return TaintedValue<bool>( TVCtor(), value or other.value, ubits or other.ubits ); }
 };
+
+template <typename T> TaintedValue<T> PartiallyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
 
 template <typename T>
 struct TaintedTypeInfo
@@ -202,19 +205,19 @@ struct TaintedTypeInfo
 template <typename UTP>
 UTP RotateRight( UTP const& value, uint8_t sh )
 {
-  return UTP( unisim::util::arithmetic::RotateRight(value.value, sh), unisim::util::arithmetic::RotateRight(value.ubits, sh) );
+  return UTP( TVCtor(), unisim::util::arithmetic::RotateRight(value.value, sh), unisim::util::arithmetic::RotateRight(value.ubits, sh) );
 }
 template <typename UTP, typename STP>
 UTP RotateRight( UTP const& value, STP const& sh )
 {
-  return UTP( unisim::util::arithmetic::RotateRight(value.value, sh.value), sh.ubits ? -1 : unisim::util::arithmetic::RotateRight(value.ubits, sh.value) );
+  return UTP( TVCtor(), unisim::util::arithmetic::RotateRight(value.value, sh.value), sh.ubits ? -1 : unisim::util::arithmetic::RotateRight(value.ubits, sh.value) );
 }
 
 template <typename UTP>
 UTP BitScanReverse( UTP const& value )
 {
   auto bit = unisim::util::arithmetic::BitScanReverse(value.value);
-  return UTP( bit, (value.ubits >> bit) ? -1 : 0 );
+  return UTP( TVCtor(), bit, (value.ubits >> bit) ? -1 : 0 );
 }
 
 extern void Print( std::ostream& sink, unsigned minlength, unsigned radix, uint64_t vbits, uint64_t ubits );
@@ -265,19 +268,18 @@ TaintedValue<double> fmin( TaintedValue<double> const&, TaintedValue<double> con
 TaintedValue<float> fmax( TaintedValue<float> const&, TaintedValue<float> const& );
 TaintedValue<double> fmax( TaintedValue<double> const&, TaintedValue<double> const& );
 
-
 // TaintedValue<bool> isnan( TaintedValue<float> const& _value );
 // TaintedValue<bool> isnan( TaintedValue<double> const& _value );
 
 template <typename T>
-TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
+TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(TVCtor(), unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
 
 template <typename T>
 TaintedValue<T> Minimum(TaintedValue<T> const& l, TaintedValue<T> const& r)
-{ return TaintedValue<T>(std::min(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
+{ return TaintedValue<T>(TVCtor(), std::min(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
 
 template <typename T>
 TaintedValue<T> Maximum(TaintedValue<T> const& l, TaintedValue<T> const& r)
-{ return TaintedValue<T>(std::max(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
+{ return TaintedValue<T>(TVCtor(), std::max(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
 
 #endif /* __ARM64VP_TAINT_HH__ */

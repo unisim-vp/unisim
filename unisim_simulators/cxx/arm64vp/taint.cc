@@ -59,30 +59,30 @@ void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t 
   _.recurse(sink, minlength, logradix, vbits, ubits);
 }
 
-TaintedValue<float>  fabs(TaintedValue<float> const& v) { return TaintedValue<float>(fabsf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> fabs(TaintedValue<double> const& v)  { return TaintedValue<double>(fabs(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  fabs(TaintedValue<float> const& v) { return PartiallyDefined(fabsf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> fabs(TaintedValue<double> const& v)  { return PartiallyDefined(fabs(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  ceil(TaintedValue<float> const& v) { return TaintedValue<float>(ceilf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> ceil(TaintedValue<double> const& v)  { return TaintedValue<double>(ceil(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  ceil(TaintedValue<float> const& v) { return PartiallyDefined(ceilf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> ceil(TaintedValue<double> const& v)  { return PartiallyDefined(ceil(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  floor(TaintedValue<float> const& v) { return TaintedValue<float>(floorf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> floor(TaintedValue<double> const& v)  { return TaintedValue<double>(floor(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  floor(TaintedValue<float> const& v) { return PartiallyDefined(floorf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> floor(TaintedValue<double> const& v)  { return PartiallyDefined(floor(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  trunc(TaintedValue<float> const& v) { return TaintedValue<float>(truncf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> trunc(TaintedValue<double> const& v)  { return TaintedValue<double>(trunc(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  trunc(TaintedValue<float> const& v) { return PartiallyDefined(truncf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> trunc(TaintedValue<double> const& v)  { return PartiallyDefined(trunc(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  round(TaintedValue<float> const& v) { return TaintedValue<float>(roundf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> round(TaintedValue<double> const& v)  { return TaintedValue<double>(round(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  round(TaintedValue<float> const& v) { return PartiallyDefined(roundf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> round(TaintedValue<double> const& v)  { return PartiallyDefined(round(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  nearbyint(TaintedValue<float> const& v) { return TaintedValue<float>(nearbyintf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> nearbyint(TaintedValue<double> const& v)  { return TaintedValue<double>(nearbyint(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  nearbyint(TaintedValue<float> const& v) { return PartiallyDefined(nearbyintf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> nearbyint(TaintedValue<double> const& v)  { return PartiallyDefined(nearbyint(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  sqrt(TaintedValue<float> const& v) { return TaintedValue<float>(sqrtf(v.value), v.ubits ? -1 : 0); }
-TaintedValue<double> sqrt(TaintedValue<double> const& v)  { return TaintedValue<double>(sqrt(v.value), v.ubits ? -1 : 0); }
+TaintedValue<float>  sqrt(TaintedValue<float> const& v) { return PartiallyDefined(sqrtf(v.value), v.ubits ? -1 : 0); }
+TaintedValue<double> sqrt(TaintedValue<double> const& v)  { return PartiallyDefined(sqrt(v.value), v.ubits ? -1 : 0); }
 
-TaintedValue<float>  fmin(TaintedValue<float> const& l, TaintedValue<float> const& r) { return TaintedValue<float>(fminf(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
-TaintedValue<double> fmin(TaintedValue<double> const& l, TaintedValue<double> const& r)  { return TaintedValue<double>(fmin(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
+TaintedValue<float>  fmin(TaintedValue<float> const& l, TaintedValue<float> const& r) { return PartiallyDefined(fminf(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
+TaintedValue<double> fmin(TaintedValue<double> const& l, TaintedValue<double> const& r)  { return PartiallyDefined(fmin(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
 
-TaintedValue<float>  fmax(TaintedValue<float> const& l, TaintedValue<float> const& r) { return TaintedValue<float>(fmaxf(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
-TaintedValue<double> fmax(TaintedValue<double> const& l, TaintedValue<double> const& r)  { return TaintedValue<double>(fmax(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
+TaintedValue<float>  fmax(TaintedValue<float> const& l, TaintedValue<float> const& r) { return PartiallyDefined(fmaxf(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
+TaintedValue<double> fmax(TaintedValue<double> const& l, TaintedValue<double> const& r)  { return PartiallyDefined(fmax(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
 

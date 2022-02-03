@@ -304,7 +304,8 @@ struct AArch64
     struct Bad {};
     if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
 
-    unsigned const size = sizeof (typename T::value_type);
+    typedef typename T::value_type value_type;
+    unsigned const size = sizeof (value_type);
     MMU::TLB::Entry entry( addr.value );
     translate_address(entry, el, mem_acc_type::read);
     
@@ -331,7 +332,6 @@ struct AArch64
         memory_fault(mf, "read", addr.value, entry.pa, size);
       }
     
-    typedef typename T::value_type value_type;
     typedef typename TX<value_type>::as_mask bits_type;
 
     bits_type value = 0, ubits = 0;
@@ -340,8 +340,11 @@ struct AArch64
         value <<= 8; value |= bits_type( dbuf[idx] );
         ubits <<= 8; ubits |= bits_type( ubuf[idx] );
       }
+
+    T res(*reinterpret_cast<value_type const*>(&value));
+    res.ubits = ubits;
     
-    return T(*reinterpret_cast<value_type const*>(&value), ubits);
+    return res;
   }
 
   void MemDump64(uint64_t addr);
@@ -379,7 +382,11 @@ struct AArch64
         if (entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
           {
             for (unsigned byte = 0; byte < size; ++byte)
-              memory_write(el,U64(addr.value+byte),U8(dbuf[byte],ubuf[byte]));
+              {
+                U8 u8(dbuf[byte]);
+                u8.ubits = ubuf[byte];
+                memory_write(el,U64(addr.value+byte),u8);
+              }
           }
       }
     catch (Device const& device)
