@@ -34,6 +34,7 @@
 
 #include <decoder.hh>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cstdlib>
 #include <cstring>
@@ -60,33 +61,72 @@ bool getbytes( std::vector<uint8_t>& res, char const* arg )
   return res.size();
 }
 
-char const* usage()
+void usage( std::ostream& sink, char const* progname )
 {
-  return
-    "usage: <program> x86|intel64 <address> <encoding>\n";
+  sink << "usage:\n"
+       << "  " << progname << " x86|intel64 <address> <encoding>\n"
+       << "  " << progname << " x86|intel64 <file>\n";
+}
+
+bool process( intel::Decoder& decoder, std::ostream& sink, char const* as, char const* cs )
+{
+  uint64_t addr;
+  std::vector<uint8_t> code;
+
+  if (not getu64(addr, as) or not getbytes(code, cs))
+    {
+      std::cerr << "<addr> and <code> should be numeric values (got " << as << " and " << cs << ").\n";
+      return false;
+    }
+
+  decoder.process( sink, addr, std::move(code) );
+  return true;
 }
 
 int
 main( int argc, char** argv )
 {
-  if (argc != 4)
+  if (argc < 2)
     {
-      std::cerr << "Wrong number of CLI arguments.\n" << usage();
-      return 1;
-    }
-
-  uint64_t addr;
-  std::vector<uint8_t> code;
-
-  if (not getu64(addr, argv[2]) or not getbytes(code, argv[3]))
-    {
-      std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
+      std::cerr << "Missing mode (x86|intel64)\n";
+      usage(std::cerr, argv[0]);
       return 1;
     }
 
   intel::Decoder decoder;
   decoder.mode64 = strcmp("intel64", argv[1]) == 0;
-  decoder.process( std::cout, addr, std::move(code) );
+  
+  if (argc == 3)
+    {
+      std::ifstream source(argv[2]);
+      if (not source.good())
+        {
+          std::cerr << "Cannot open " << argv[2] << "\n";
+          usage(std::cerr, argv[0]);
+          return 1;
+        }
+      
+      std::string abuf, cbuf;
+      for (;;)
+        {
+          if (not (source >> abuf).good() or not getline(source, cbuf).good()) break;
+          std::ofstream sink("/dev/null");
+          if (not process(decoder, sink, abuf.c_str(), cbuf.c_str()))
+            { usage(std::cerr, argv[0]); return 1; }
+        }
+      
+      return 0;
+    }
+  
+  if (argc != 4)
+    {
+      std::cerr << "Wrong number of CLI arguments.\n";
+      usage(std::cerr, argv[0]);
+      return 1;
+    }
+
+  if (not process(decoder, std::cout, argv[2], argv[3] ))
+    { usage(std::cerr, argv[0]); return 1; }
   
   return 0;
 }
