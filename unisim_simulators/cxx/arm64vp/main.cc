@@ -230,111 +230,73 @@ struct StreamSpy
   : public unisim::kernel::Service<unisim::service::interfaces::CharIO>
   , public unisim::kernel::Client<unisim::service::interfaces::CharIO>
 {
-  struct Pending
-  {
-    virtual ~Pending() {}
-    virtual Pending* GetChar(char& ch) = 0;
-  };
-
-  struct StrPending : public Pending
-  {
-    StrPending(char const* _str) : str(_str) {}
-    virtual Pending* GetChar(char& ch) override
-    {
-      ch = *str++;
-      if (*str) { return this; }
-      delete this;
-      return 0;
-    }
-    char const* str;
-  };
-
-  struct Reader
-  {
-    virtual ~Reader() {}
-    virtual Reader* PutChar(StreamSpy& spy, char ch) = 0;
-  };
-
-  
-  struct S0Reader : public Reader
-  {
-    void reset() { expect = "qemuarm64 login: "; }
-    S0Reader() : expect() { reset(); }
-    virtual Reader* PutChar(StreamSpy& spy, char ch) override
-    {
-      if (*expect != ch) { reset(); return this; }
-      if (*++expect) { return this; }
-      spy.pending = new StrPending("root\r");
-      delete this;
-      return new S1Reader();
-    }
-    char const* expect;
-  };
-
-  struct S1Reader : public Reader
-  {
-    void reset() { expect = "root@qemuarm64:~# "; }
-    S1Reader() : expect() { reset(); }
-    virtual Reader* PutChar(StreamSpy& spy, char ch) override
-    {
-      if (*expect != ch) { reset(); return this; }
-      if (*++expect) { return this; }
-      spy.pending = new StrPending("su - demo\r");
-      delete this;
-      return new S2Reader;
-    }
-    char const* expect;
-  };
-  
-  struct S2Reader : public Reader
-  {
-    void reset() { expect = "qemuarm64:~$ "; }
-    S2Reader() : expect() { reset(); }
-    virtual Reader* PutChar(StreamSpy& spy, char ch) override
-    {
-      if (*expect != ch) { reset(); return this; }
-      if (*++expect) { return this; }
-      spy.arch.suspend = true;
-      spy.arch.silence( &AArch64::handle_suspend );
-      spy.arch.notify( 0, &AArch64::handle_suspend );
-      delete this;
-      return 0;
-    }
-    char const* expect;
-  };
-  
   StreamSpy(char const* name, unisim::kernel::Object* parent, AArch64& _arch)
     : unisim::kernel::Object(name, parent)
     , unisim::kernel::Service<unisim::service::interfaces::CharIO>(name, parent)
     , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
-    , pending()
-    , reader( new S0Reader() )
+    , outgoing()
+    , incoming()
+    , expect()
+    , step()
     , char_io_import("char-io-import", this)
     , char_io_export("char-io-export", this)
     , arch(_arch)
-  {}
+  {
+    advance(0, "qemuarm64 login: ", &StreamSpy::step1);
+  }
+
+  void step1()
+  {
+    advance("root\r", "root@qemuarm64:~#", &StreamSpy::step2);
+  }
+
+  void step2()
+  {
+    advance("su - demo\r", "qemuarm64:~$ ", &StreamSpy::step3);
+  }
+  
+  void step3()
+  {
+    advance(0,0,0);
+    arch.suspend = true;
+    arch.silence( &AArch64::handle_suspend );
+    arch.notify( 0, &AArch64::handle_suspend );
+  }
+  
+  typedef void (StreamSpy::*step_t)();
+  
+  void advance(char const* _out, char const* _in, step_t _step)
+  {
+    if (outgoing and *outgoing) throw 0;
+    outgoing = _out;
+    incoming = _in;
+    expect = _in;
+    step = _step;
+  }
 
   void Setup(unisim::service::interfaces::CharIO*) override { char_io_import.RequireSetup(); }
   
   virtual void ResetCharIO() override { char_io_import->ResetCharIO(); }
   virtual bool GetChar(char& ch) override
   {
-    if (pending)
-      {
-        pending = pending->GetChar(ch);
-        return true;
-      }
-    return char_io_import->GetChar(ch);
+    if (not outgoing or not *outgoing) return char_io_import->GetChar(ch);
+    ch = *outgoing++;
+    return true;
   }
   virtual void PutChar(char ch) override
   {
-    reader = reader->PutChar(*this, ch);
     char_io_import->PutChar(ch);
+    if (not ch) return;
+    if (incoming and *expect != ch) { expect = incoming; return; }
+    if (*++expect) return;
+    (this->*step)();
   }
   virtual void FlushChars() override { char_io_import->FlushChars(); }
 
-  Pending* pending;
-  Reader* reader;
+  char const* outgoing;
+  char const* incoming;
+  char const* expect;
+  step_t step;
   unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
   unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
 
