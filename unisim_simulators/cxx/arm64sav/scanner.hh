@@ -446,6 +446,9 @@ namespace symbolic {
   // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
   template <typename OUT, unsigned S, typename TIN>
   OUT PolyMod2(SmartValue<TIN> const& value, uint32_t _poly) { return sav::make_weirdop<OUT>(PM2(S,_poly),value); }
+
+  template <typename OP>
+  OP NeonSHL(OP const& op, SmartValue<int8_t> const& sh) { return sav::make_weirdop<OP>("NeonSHL", op, sh); }
   
 }
 }
