@@ -2025,18 +2025,6 @@ ins_vdx.execute = {
  * end of INS (general)
  *******************************************************************/
 
-op neg_dd( 0b0111111011100000101110[22] : rn[5] : rd[5] );
-
-neg_dd.disasm = {
-  sink << "neg\t" << DisasmD(rd) << ", " << DisasmD(rn);
-};
-
-op neg_v2d2d( 0b0110111011100000101110[22] : rn[5] : rd[5] );
-
-neg_v2d2d.disasm = {
-  sink << "neg\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3);
-};
-
 op pmull( 0b00001110111[11] : rm[5] : 0b111000[6] : rn[5] : rd[5] );
 
 pmull.disasm = {
@@ -6365,23 +6353,91 @@ mvni_vsmsl.execute = {
  * end of MVNI
  *******************************************************************/
 
-op neg_vbb( 0b0[1] : q[1] : 0b10111000100000101110[20] : rn[5] : rd[5] );
+/*******************************************************************
+ * NEG
+ *
+ * Negate
+ */
 
-neg_vbb.disasm = {
+op neg_vb( 0b0[1] : q[1] : 0b10111000100000101110[20] : rn[5] : rd[5] );
+
+neg_vb.disasm = {
   sink << "neg\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0);
 };
 
-op neg_vhh( 0b0[1] : q[1] : 0b10111001100000101110[20] : rn[5] : rd[5] );
+neg_vb.execute = {
+  unsigned const elements = 8<<q;
 
-neg_vhh.disasm = {
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS8(rd, e, -cpu.GetVS8(rn, e));
+    }
+  
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op neg_vh( 0b0[1] : q[1] : 0b10111001100000101110[20] : rn[5] : rd[5] );
+
+neg_vh.disasm = {
   sink << "neg\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1);
 };
 
-op neg_vss( 0b0[1] : q[1] : 0b10111010100000101110[20] : rn[5] : rd[5] );
+neg_vh.execute = {
+  unsigned const elements = 4<<q;
 
-neg_vss.disasm = {
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS16(rd, e, -cpu.GetVS16(rn, e));
+    }
+  
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op neg_vs( 0b0[1] : q[1] : 0b10111010100000101110[20] : rn[5] : rd[5] );
+
+neg_vs.disasm = {
   sink << "neg\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
+
+neg_vs.execute = {
+  unsigned const elements = 2<<q;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS32(rd, e, -cpu.GetVS32(rn, e));
+    }
+  
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op neg_v2d( 0b0110111011100000101110[22] : rn[5] : rd[5] );
+
+neg_v2d.disasm = {
+  sink << "neg\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3);
+};
+
+neg_v2d.execute = {
+  unsigned const elements = 2;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS64(rd, e, -cpu.GetVS64(rn, e));
+    }
+};
+
+op neg_d( 0b0111111011100000101110[22] : rn[5] : rd[5] );
+
+neg_d.disasm = {
+  sink << "neg\t" << DisasmD(rd) << ", " << DisasmD(rn);
+};
+
+neg_d.execute = {
+  cpu.SetVS64(rd, -cpu.GetVS64(rn, 0));
+};
+
+/*
+ * end of NEG
+ *******************************************************************/
 
 op orn_vbvbvb( 0b0[1] : q[1] : 0b001110111[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 
