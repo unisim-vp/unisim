@@ -5469,18 +5469,6 @@ ursra_ddi.disasm = {
   sink << "ursra\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
 };
 
-op ushl_ddd( 0b01111110111[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
-
-ushl_ddd.disasm = {
-  sink << "ushl\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
-};
-
-op ushl_v2dv2dv2d( 0b01101110111[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
-
-ushl_v2dv2dv2d.disasm = {
-  sink << "ushl\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
-};
-
 op ushll2_v2d4si( 0b01101111001[11] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
 
 ushll2_v2d4si.disasm = {
@@ -7149,6 +7137,12 @@ sshl_vsvsvs.disasm = {
   sink << "sshl\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+/*******************************************************************
+ * SSHR
+ *
+ * Signed Shift Right (immediate).
+ */
+
 op  sshr_vbbi( 0b0[1] : q[1] : 0b00111100001[11] : lro[3] : 0b00[2] : sm[2] : 1[2] : rn[5] : rd[5] );
 sshr_vbbi.var round : {uint8_t} = {uint8_t(sm >> 1 << 7) >> lro}, shift : {unsigned} = {8 - lro};
 
@@ -7236,6 +7230,10 @@ sshr_v2d2di.execute = {
       cpu.SetVU64(rd, idx, res);
     }
 };
+
+/*
+ * end of SSHR
+ *******************************************************************/
 
 op sub_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
 
@@ -7876,23 +7874,94 @@ ursqrte_vss.disasm = {
   sink << "ursqrte\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
-op ushl_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+/*******************************************************************
+ * USHL
+ *
+ * Unsigned Shift Left (register).
+ */
 
-ushl_vbvbvb.disasm = {
+op ushl_d( 0b01111110111[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+
+ushl_d.disasm = {
+  sink << "ushl\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+ushl_d.execute = {
+  cpu.SetVU64(rd, NeonSHL(cpu.GetVU64(rn, 0), typename ARCH::S8(cpu.GetVU64(rm, 0))));
+};
+
+op ushl_vb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+
+ushl_vb.disasm = {
   sink << "ushl\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
-op ushl_vhvhvh( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+ushl_vb.execute = {
+  unsigned const elements = 8<<q;
 
-ushl_vhvhvh.disasm = {
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVU8(rd, e, NeonSHL(cpu.GetVU8(rn, e), typename ARCH::S8(cpu.GetVU8(rm, e))));
+    }
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op ushl_vh( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+
+ushl_vh.disasm = {
   sink << "ushl\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
 
-op ushl_vsvsvs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+ushl_vh.execute = {
+  unsigned const elements = 4<<q;
 
-ushl_vsvsvs.disasm = {
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVU16(rd, e, NeonSHL(cpu.GetVU16(rn, e), typename ARCH::S8(cpu.GetVU16(rm, e))));
+    }
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op ushl_vs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+
+ushl_vs.disasm = {
   sink << "ushl\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+ushl_vs.execute = {
+  unsigned const elements = 2<<q;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVU32(rd, e, NeonSHL(cpu.GetVU32(rn, e), typename ARCH::S8(cpu.GetVU32(rm, e))));
+    }
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+op ushl_v2d( 0b01101110111[11] : rm[5] : 0b010001[6] : rn[5] : rd[5] );
+
+ushl_v2d.disasm = {
+  sink << "ushl\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
+};
+
+ushl_v2d.execute = {
+  unsigned const elements = 2;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVU64(rd, e, NeonSHL(cpu.GetVU64(rn, e), typename ARCH::S8(cpu.GetVU64(rm, e))));
+    }
+};
+
+/*
+ * end of USHL
+ *******************************************************************/
+
+/*******************************************************************
+ * USHR
+ *
+ * Unsigned Shift Right (immediate).
+ */
 
 op ushr_vbbi( 0b0[1] : q[1] : 0b10111100001[11] : lro[3] : 0[2] : sm[2] : 1[2] : rn[5] : rd[5] );
 ushr_vbbi.var round : {uint8_t} = {uint8_t(sm >> 1 << 7) >> lro}, shift : {unsigned} = {8 - lro};
@@ -7976,6 +8045,10 @@ ushr_v2d2di.execute = {
       cpu.SetVU64(rd, idx, res);
     }
 };
+
+/*
+ * end of USHR
+ *******************************************************************/
 
 op usqadd_vbb( 0b0[1] : q[1] : 0b10111000100000001110[20] : rn[5] : rd[5] );
 

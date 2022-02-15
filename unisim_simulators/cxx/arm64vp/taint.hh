@@ -35,6 +35,7 @@
 #ifndef __ARM64VP_TAINT_HH__
 #define __ARM64VP_TAINT_HH__
 
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <algorithm>
 #include <limits>
@@ -281,5 +282,9 @@ TaintedValue<T> Minimum(TaintedValue<T> const& l, TaintedValue<T> const& r)
 template <typename T>
 TaintedValue<T> Maximum(TaintedValue<T> const& l, TaintedValue<T> const& r)
 { return TaintedValue<T>(TVCtor(), std::max(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
+
+template <typename T>
+TaintedValue<T> NeonSHL(TaintedValue<T> const& op, TaintedValue<int8_t> const& sh)
+{ return TaintedValue<T>(TVCtor(), unisim::component::cxx::processor::arm::NeonSHL( op.value, sh.value ), (op.ubits or sh.ubits) ? -1 : 0); }
 
 #endif /* __ARM64VP_TAINT_HH__ */
