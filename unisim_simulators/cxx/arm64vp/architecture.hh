@@ -215,6 +215,16 @@ struct AArch64
   {
     MMU() : MAIR_EL1(), TCR_EL1(), TTBR0_EL1(), TTBR1_EL1() {}
 
+    void Set( uint64_t MMU::* reg, U64 const& value )
+    {
+      if (value.ubits) { struct Bad {}; raise( Bad () ); }
+      (this->*reg) = value.value;
+    }
+
+    void SetTCR( U64 const& value ) { this->Set(&MMU::TCR_EL1, value); }
+    void SetTTBR0( U64 const& value ) { this->Set(&MMU::TTBR0_EL1, value); }
+    void SetTTBR1( U64 const& value ) { this->Set(&MMU::TTBR1_EL1, value); }
+
     uint64_t MAIR_EL1;
     uint64_t TCR_EL1;
     uint64_t TTBR0_EL1;
@@ -225,18 +235,6 @@ struct AArch64
     {
       return (unisim::component::cxx::processor::arm::vmsav8::tcr::A1.Get(TCR_EL1) ? TTBR1_EL1 : TTBR0_EL1) >> 48;
     }
-
-    // MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
-    // uint32_t ttbcr; /*< Translation Table Base Control Register */
-    // uint32_t ttbr0; /*< Translation Table Base Register 0 */
-    // uint32_t ttbr1; /*< Translation Table Base Register 1 */
-    // uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
-    // uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
-    // uint32_t dacr;
-
-    // uint16_t attr_cache[64];
-
-    // void refresh_attr_cache( bool tre );
 
     struct TLB
     {
@@ -274,10 +272,11 @@ struct AArch64
       void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
       enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
-      void invalidate(bool nis, bool ll, unsigned cond, AArch64& cpu, U64 const& arg);
+      void Invalidate(bool nis, bool ll, unsigned cond, AArch64& cpu, U64 const& arg);
 
       TLB();
 
+    private:
       /* 64-bit-keys:
        * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
        *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1

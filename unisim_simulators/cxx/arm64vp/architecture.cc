@@ -407,12 +407,12 @@ AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_
 }
 
 void
-AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AArch64::U64 const& arg)
+AArch64::MMU::TLB::Invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AArch64::U64 const& arg)
 {
   if (not nis)
     {
       cpu.TODO(); // Should send to all Inner Shareable PE...
-      return invalidate(true, ll, type, cpu, arg);
+      return Invalidate(true, ll, type, cpu, arg);
     }
 
   struct Bad {};
@@ -433,7 +433,7 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
       uint64_t key = keys[idx];
       unsigned rsh = key & 63;
 
-      if (ll and rsh > 15) /* rsh = blocksize - 1; */
+      if (ll and rsh > 15) /* rsh = blocksize - 1; last level in {12,14,16} (see TTBR.TG) */
         continue;
 
       if (type == 2 and ((vakey ^ key) >> 48)) // by asid
