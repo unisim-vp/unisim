@@ -311,24 +311,23 @@ AArch64::TODO()
 void
 AArch64::CallSupervisor( unsigned imm )
 {
-  static std::ofstream strace("strace.log");
-  
-  static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
-  {
-    typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
-    typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
+  //  static std::ofstream strace("strace.log");
+  // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
+  // {
+  //   typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
+  //   typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
 
-    Arm64LinuxOS( AArch64* _cpu )
-      : ThisLinux( strace, strace, strace, _cpu, _cpu, _cpu )
-    {
-      SetTargetSystem(new Arm64Target(*this));
-    }
-    ~Arm64LinuxOS() { delete GetTargetSystem(); }
-  } arm64_linux_os( this );
+  //   Arm64LinuxOS( AArch64* cpu )
+  //     : ThisLinux( AArch64::ptlog(), AArch64::ptlog(), AArch64::ptlog(), cpu, cpu, cpu )
+  //   {
+  //     SetTargetSystem(new Arm64Target(*this));
+  //   }
+  //   ~Arm64LinuxOS() { delete GetTargetSystem(); }
+  // } arm64_linux_os( this );
 
-  strace << last_insn(0) << "\n\t";
-  //  strace << "SVC@" << std::hex << current_insn_addr;
-  arm64_linux_os.LogSystemCall( imm );
+  // AArch64::ptlog() << last_insn(0) << "\n\t";
+  // //  strace << "SVC@" << std::hex << current_insn_addr;
+  // arm64_linux_os.LogSystemCall( imm );
 
   //  if UsingAArch32() then AArch32.ITAdvance();
   // SSAdvance();
@@ -407,12 +406,12 @@ AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_
 }
 
 void
-AArch64::MMU::TLB::Invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AArch64::U64 const& arg)
+AArch64::MMU::TLB::Invalidate(AArch64& cpu, bool nis, bool ll, unsigned type, AArch64::U64 const& arg)
 {
   if (not nis)
     {
       cpu.TODO(); // Should send to all Inner Shareable PE...
-      return Invalidate(true, ll, type, cpu, arg);
+      return Invalidate(cpu, true, ll, type, arg);
     }
 
   struct Bad {};
@@ -425,6 +424,8 @@ AArch64::MMU::TLB::Invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
     case 3: ubit_issue = 0x00000fffffffffffull; break;
     }
   if (arg.ubits & ubit_issue) raise( Bad() );
+
+  //  AArch64::ptlog() << cpu.last_insn(0) << " (X=" << std::hex << arg.value << std::dec << ")\n";
 
   uint64_t vakey = (((arg.value << 12) << 15 ) >> 16) | ((arg.value >> 48) << 48) | 1;
 
@@ -2292,3 +2293,11 @@ AArch64::sync(SnapShot& snapshot)
   snapshot.sync(CPACR);
   snapshot.sync(random);
 }
+
+// std::ofstream&
+// AArch64::ptlog()
+// {
+//   static std::ofstream sink("ptlog");
+//   return sink;
+// }
+

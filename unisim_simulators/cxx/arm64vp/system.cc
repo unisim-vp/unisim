@@ -558,7 +558,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
           virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t op2, AArch64& cpu, U64 arg) const override
           {
-            cpu.mmu.tlb.Invalidate(crm&4,op2&4,op2&3,cpu,arg);
+            cpu.mmu.tlb.Invalidate(cpu, crm&4, op2&4, op2&3, arg);
           }
         } x; return &x;
       } break;
@@ -1544,7 +1544,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Control Register (EL1)"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.mmu.TCR_EL1); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.mmu.SetTCR( value ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.mmu.SetTCR(cpu, value); }
         } x; return &x;
       } break;
 
@@ -1619,7 +1619,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 0 (EL1)"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.mmu.TTBR0_EL1); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.mmu.SetTTBR0( value ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.mmu.SetTTBR0(cpu, value); }
         } x; return &x;
       } break;
 
@@ -1645,7 +1645,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 1"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.mmu.TTBR1_EL1); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.mmu.SetTTBR1( value ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.mmu.SetTTBR1(cpu, value); }
         } x; return &x;
       } break;
 

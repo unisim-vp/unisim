@@ -215,15 +215,16 @@ struct AArch64
   {
     MMU() : MAIR_EL1(), TCR_EL1(), TTBR0_EL1(), TTBR1_EL1() {}
 
-    void Set( uint64_t MMU::* reg, U64 const& value )
+    void Set(AArch64& cpu, char const* name, uint64_t MMU::* reg, U64 const& value )
     {
       if (value.ubits) { struct Bad {}; raise( Bad () ); }
+      //      AArch64::ptlog() << std::dec << cpu.insn_counter << "\t" << name << " <- " << std::hex << value.value << std::dec << '\n';
       (this->*reg) = value.value;
     }
 
-    void SetTCR( U64 const& value ) { this->Set(&MMU::TCR_EL1, value); }
-    void SetTTBR0( U64 const& value ) { this->Set(&MMU::TTBR0_EL1, value); }
-    void SetTTBR1( U64 const& value ) { this->Set(&MMU::TTBR1_EL1, value); }
+    void SetTCR(AArch64& cpu, U64 const& value)   { this->Set(cpu, "tcr",   &MMU::TCR_EL1,   value); }
+    void SetTTBR0(AArch64& cpu, U64 const& value) { this->Set(cpu, "ttbr0", &MMU::TTBR0_EL1, value); }
+    void SetTTBR1(AArch64& cpu, U64 const& value) { this->Set(cpu, "ttbr1", &MMU::TTBR1_EL1, value); }
 
     uint64_t MAIR_EL1;
     uint64_t TCR_EL1;
@@ -272,7 +273,7 @@ struct AArch64
       void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
       enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
-      void Invalidate(bool nis, bool ll, unsigned cond, AArch64& cpu, U64 const& arg);
+      void Invalidate(AArch64& cpu, bool nis, bool ll, unsigned cond, U64 const& arg);
 
       TLB();
 
@@ -654,6 +655,8 @@ struct AArch64
 
     void SetEL(AArch64& cpu, unsigned el)
     {
+      el &= 3;
+      //      cpu.ptlog() << std::dec << cpu.insn_counter << "\tel <- " << el << '\n';
       selsp(cpu) = cpu.gpr[31];
       EL = el;
       cpu.gpr[31] = selsp(cpu);
@@ -825,6 +828,7 @@ public:
   RTC      rtc;
   
   typedef VIOVolatileDisk Disk;
+  // typedef VIOStreamDisk Disk;
   Disk     disk;
   //VIOConsole  vioconsole; 
 
@@ -862,6 +866,7 @@ public:
   // void viocapture(uint64_t base, uint64_t size);
   // void checkvio(uint64_t base, unsigned size);
   // std::set<Zone, Zone::Above> diskpages;
+  // static std::ofstream& ptlog();
 };
 
 struct OutNaN
