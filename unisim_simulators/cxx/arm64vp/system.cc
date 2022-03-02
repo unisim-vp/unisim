@@ -2578,6 +2578,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b011,0b1111,0b0001,0b111): // s3_3_c15_c1_7: Taint Swap
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "IMP_TAINT_SWAP_EL0"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "Taint Swap register"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return cpu.tvreg; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.tvreg = SwapTaint(value); }
+        } x; return &x;
+      } break;
     }
 
   /*  System instructions with immediate, CRm used as immediate field,

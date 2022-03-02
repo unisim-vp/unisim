@@ -854,6 +854,7 @@ public:
   U64      TPIDRRO;
   uint32_t CPACR;
 
+  U64      tvreg;
   uint64_t bdaddr;
   uint32_t random;
   bool     terminate;
