@@ -81,6 +81,43 @@ struct AArch64Types
   struct VectorByteShadow { uint8_t data[sizeof (U8)]; };
 };
 
+struct ArchDisk : public VIODisk
+{
+  ArchDisk() : VIODisk() {}
+  virtual void read(uint8_t* bytes, uint64_t size) = 0;
+  virtual void write(uint8_t const* bytes, uint64_t size) = 0;
+  void read(VIOAccess const& vioa, uint64_t addr, uint64_t size) override;
+  void write(VIOAccess const& vioa, uint64_t addr, uint64_t size) override;
+};
+
+struct StreamDisk : public ArchDisk
+{
+  StreamDisk() : ArchDisk(), storage(), diskpos() {}
+  
+  void open(char const* filename);
+  void seek(uint64_t pos) override { diskpos = pos; storage.seekg(pos); }
+  void read(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); diskpos += size; }
+  void write(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); diskpos += size; }
+  
+  std::fstream storage;
+  uint64_t diskpos;
+};
+
+struct VolatileDisk : public ArchDisk
+{
+  VolatileDisk() : ArchDisk(), storage(), diskpos(), disksize() {}
+  ~VolatileDisk();
+
+  void open(char const* filename);
+  void seek(uint64_t pos) override { diskpos = pos; }
+  void read(uint8_t* bytes, uint64_t size) override{ std::copy(data(0), data(size), bytes); diskpos += size; }
+  void write(uint8_t const* bytes, uint64_t size) override { std::copy(&bytes[0], &bytes[size], data(0)); diskpos += size; }
+  uint8_t* data(uintptr_t pos) { return &storage[diskpos+pos]; }
+  
+  uint8_t* storage;
+  uintptr_t diskpos, disksize;
+};
+
 struct AArch64
   : AArch64Types
   , public unisim::component::cxx::processor::arm::regs64::CPU<AArch64, AArch64Types>
@@ -793,7 +830,6 @@ struct AArch64
 
   void map_virtio_placeholder(unsigned id, uint64_t base_addr);
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
-  //  void map_virtio_console(uint64_t base_addr, unsigned irq);
 
   struct Suspend {};
   void handle_suspend();
@@ -827,8 +863,8 @@ public:
   Timer    vt;
   RTC      rtc;
   
-  typedef VIOVolatileDisk Disk;
-  // typedef VIOStreamDisk Disk;
+  typedef VolatileDisk Disk;
+  // typedef StreamDisk Disk;
   Disk     disk;
   //VIOConsole  vioconsole; 
 

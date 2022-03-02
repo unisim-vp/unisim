@@ -35,11 +35,6 @@
 #include <viodisk.hh>
 #include <debug.hh>
 #include <iostream>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 VIODisk::VIODisk()
   : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
@@ -264,18 +259,12 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               break;
             case In:
               if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
-                {
-                  disk.read(itr.slice.bytes, itr.slice.size);
-                }
+              disk.read(vioa, buf, len);
               wlen += len;
               break;
             case Out:
               if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              for (VIOAccess::Iterator itr(buf, len, false); itr.next(vioa);)
-                {
-                  disk.write(itr.slice.bytes, itr.slice.size);
-                }
+              disk.write(vioa, buf, len);
               break;
             case Flush: std::cerr << "TODO: Flush\n"; raise( Bad() );
             case Discard: std::cerr << "TODO: Discard\n"; raise( Bad() );
@@ -365,73 +354,6 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       InterruptStatus |= 1;
       vioa.notify();
     }
-  return true;
-}
-
-VIOVolatileDisk::~VIOVolatileDisk()
-{
-  munmap(storage, disksize);
-}
-
-void
-VIOVolatileDisk::open(char const* filename)
-{
-  struct Error {};
-  int fd = ::open(filename,O_RDONLY);
-  struct stat info;
-  if (fstat(fd, &info) < 0)
-    throw Error();
-  Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
-  disksize = Capacity * BLKSIZE;
-  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-  ::close(fd);
-  if (not storage)
-    throw Error();
-}
-
-void
-VIOStreamDisk::open(char const* filename)
-{
-  storage.open(filename);
-  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
-  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
-  Capacity = size / BLKSIZE;
-}
-
-uint64_t
-VIOAccess::read(uint64_t addr, unsigned size) const
-{
-  uint64_t res = 0, wbyte = 0;
-
-  for (Iterator itr(addr, size, false); itr.next(*this);)
-    {
-      for (uint64_t rbyte = 0; rbyte < itr.slice.size; ++rbyte, ++wbyte)
-        res |= uint64_t(itr.slice.bytes[rbyte]) << 8*wbyte;
-    }
-  
-  return res;
-}
-
-void
-VIOAccess::write(uint64_t addr, unsigned size, uint64_t value) const
-{
-  uint64_t rbyte = 0;
-  
-  for (Iterator itr(addr, size, true); itr.next(*this);)
-    {
-      for (uint64_t wbyte = 0; wbyte < itr.slice.size; ++rbyte, ++wbyte)
-        itr.slice.bytes[wbyte] = value >> 8*rbyte;
-    }
-}
-
-bool
-VIOAccess::Iterator::next(VIOAccess const& vioa)
-{
-  if (uint64_t nleft = left - slice.size)
-    { left = nleft; ptr += slice.size; }
-  else
-    return false;
-  slice = vioa.access(ptr, left, write);
   return true;
 }
 

@@ -43,6 +43,10 @@
 #include <iomanip>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 AArch64::AArch64()
   : regmap()
@@ -1192,30 +1196,60 @@ AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 }
 
 namespace {
+  //  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
+  
   struct VIOA : public VIOAccess
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
 
-    VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
+    uint64_t read(uint64_t addr, unsigned size) const override
     {
-      AArch64::Page const& page = core.get_page(addr);
-      VIOAccess::Slice res{page.data_abs(addr), page.size_from(addr)};
-      if      (res.size > size) res.size = size;
-      else if (size > res.size) size = res.size;
-
       struct Bad {};
-      uint8_t* chunk_udat = page.udat_abs(addr);
-      if (write) { std::fill(&chunk_udat[0], &chunk_udat[res.size], 0); }
-      else if (std::any_of(&chunk_udat[0], &chunk_udat[res.size], [](uint8_t b) { return b != 0; } )) throw Bad();
-
+      uint8_t dbuf[size], ubuf[size];
+      if (core.get_page(addr).read(addr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
+      uint64_t res = 0;
+      for (unsigned idx = size; idx-- > 0;)
+        { if (ubuf[idx]) raise( Bad() ); res = (res << 8) | dbuf[idx]; }
       return res;
     }
-
-    void flag(uint64_t addr) const override
+    
+    void write(uint64_t addr, unsigned size, uint64_t value) const override
     {
-      AArch64::Page const& page = core.get_page(addr);
-      *page.udat_abs(addr) = 0xff;
+      struct Bad {};
+      uint8_t dbuf[size], ubuf[size];
+      for (unsigned idx = 0; idx < size; ++idx)
+        { dbuf[idx] = value & 0xff; value >>= 8; }
+      std::fill(&ubuf[0], &ubuf[size], 0);
+      if (core.get_page(addr).write(addr,&dbuf[0],&ubuf[0],size) != size)
+        throw Bad {};
     }
+  
+    struct Iterator
+    {
+      Iterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
+      AArch64::Page const* page;
+      uint64_t ptr, left, pbytes;
+      bool next(AArch64& core)
+      {
+        if (uint64_t nleft = left - pbytes)
+          { left = nleft; ptr += pbytes; }
+        else
+          return false;
+        page = &core.get_page(ptr);
+        pbytes = std::min(page->size_from(ptr), left);
+        return true;
+      }
+      uint8_t*  slice_data() const { return page->data_abs(ptr); }
+      uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
+      uintptr_t slice_size() const { return pbytes; }
+      
+    };
+
+    // void flag(uint64_t addr) const override
+    // {
+    //   AArch64::Page const& page = core.get_page(addr);
+    //   *page.udat_abs(addr) = 0xff;
+    // }
 
     void notify() const override
     {
@@ -1225,61 +1259,60 @@ namespace {
   };
 }
 
-// void
-// AArch64::map_virtio_console(uint64_t base_addr, unsigned irq)
-// {
-//   static struct : public Device::Effect
-//   {
-//     virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Virtio Block Device (console)"; }
+void
+ArchDisk::read(VIOAccess const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
+  for (VIOA::Iterator itr(addr, size); itr.next(core);)
+    {
+      uint8_t* udat = itr.slice_udat();
+      std::fill(&udat[0], &udat[itr.slice_size()], 0);
+      read(itr.slice_data(), itr.pbytes);
+    }
+}
 
-//     virtual bool access(AArch64& arch, Device::Request& req) const override
-//     {
-//       //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
-//       //      std::cerr << '\n';
-//       VIOConsole& vioconsole = arch.vioconsole;
-//       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
-//         return false;
+void
+ArchDisk::write(VIOAccess const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
+  for (VIOA::Iterator itr(addr, size); itr.next(core);)
+    {
+      uint8_t const* udat = itr.slice_udat();
+      if (std::any_of(&udat[0], &udat[itr.slice_size()], [](uint8_t b) { return b != 0; } ))
+        { struct Bad {}; throw Bad(); }
+      write(itr.slice_data(), itr.slice_size());
+    }
+}
 
-//       if (req.size == 4)
-//         {
-//           //          uint32_t tmp;
-//           switch (req.addr)
-//             {
-//             case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
-//             case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
-//             case 0x08: return req.ro<uint32_t>(3);                       /* Virtio Subsystem Device ID: block device */
-//             case 0x0c: return req.ro(vioconsole.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
-//             // case 0x10: return req.ro(vioconsole.ClaimedFeatures());         /* features supported by the device */
-//             // case 0x14: return req.wo(vioconsole.DeviceFeaturesSel);         /* Device (host) features word selection. */
-//             // case 0x20: return req.wo(tmp) and vioconsole.UsedFeatures(tmp); /* features used by the driver  */
-//             // case 0x24: return req.wo(vioconsole.DriverFeaturesSel);         /* Activated (guest) features word selection */
-//             // case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
-//             // case 0x34: return req.ro(vioconsole.QueueNumMax());             /* Maximum virtual queue size */
-//             // case 0x38: return req.wo(vioconsole.rq.size);                   /* Virtual queue size */
-//             // case 0x44: return req.access(vioconsole.rq.ready)               /* Virtual queue ready bit */
-//             //     and (not req.write or vioconsole.SetupQueue(vioa));
-//             // case 0x50: return req.wo(tmp) and vioconsole.ReadQueue(vioa);   /* Queue notifier */
-//             // case 0x60: return req.ro(vioconsole.InterruptStatus);           /* Interrupt status */
-//             // case 0x64: return req.wo(tmp) and vioconsole.InterruptAck(tmp); /* Interrupt status */
-//             // case 0x70: return req.access(vioconsole.Status)                 /* Device status */
-//             //     and (not req.write or vioconsole.CheckStatus());
-//             // case 0x80:
-//             // case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.desc_area))[req.addr >> 2 & 1]);
-//             // case 0x90:
-//             // case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.driver_area))[req.addr >> 2 & 1]);
-//             // case 0xa0:
-//             // case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
-//             // case 0xfc: return req.ro(viodisk.ConfigGeneration);
-//             }
-//         }
+VolatileDisk::~VolatileDisk()
+{
+  munmap(storage, disksize);
+}
 
-//       return false;
-//     }
+void
+VolatileDisk::open(char const* filename)
+{
+  struct Error {};
+  int fd = ::open(filename,O_RDONLY);
+  struct stat info;
+  if (fstat(fd, &info) < 0)
+    throw Error();
+  Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
+  disksize = Capacity * BLKSIZE;
+  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  ::close(fd);
+  if (not storage)
+    throw Error();
+}
 
-//   } virtio_console_effect;
-
-//   devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_console_effect, irq) );
-// }
+void
+StreamDisk::open(char const* filename)
+{
+  storage.open(filename);
+  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
+  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
+  Capacity = size / BLKSIZE;
+}
 
 void
 AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
