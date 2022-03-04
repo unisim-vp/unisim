@@ -81,6 +81,28 @@ struct AArch64Types
   struct VectorByteShadow { uint8_t data[sizeof (U8)]; };
 };
 
+struct Zone
+{
+  uint64_t hi() const { return last; }
+
+  // bool operator < (Zone const& p) const { return last < p.base; }
+  // bool operator > (Zone const& p) const { return p.last < base; }
+
+  struct Above
+  {
+    using is_transparent = void;
+    bool operator() (Zone const& a, Zone const& b) const { return a.base > b.last; }
+    bool operator() (Zone const& a, uint64_t b) const { return a.base > b; }
+  };
+
+  Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
+
+  uint64_t size() const { return last - base + 1; }
+
+  uint64_t    base;
+  uint64_t    last;
+};
+
 struct ArchDisk : public VIODisk
 {
   ArchDisk() : VIODisk() {}
@@ -92,15 +114,15 @@ struct ArchDisk : public VIODisk
 
 struct StreamDisk : public ArchDisk
 {
-  StreamDisk() : ArchDisk(), storage(), diskpos() {}
+  StreamDisk() : ArchDisk(), storage() {}
   
   void open(char const* filename);
-  void seek(uint64_t pos) override { diskpos = pos; storage.seekg(pos); }
-  void read(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); diskpos += size; }
-  void write(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); diskpos += size; }
+  void seek(uint64_t pos) override { storage.seekg(pos); }
+  uint64_t tell() override { return storage.tellg(); }
+  void read(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); }
+  void write(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); }
   
   std::fstream storage;
-  uint64_t diskpos;
 };
 
 struct VolatileDisk : public ArchDisk
@@ -110,10 +132,12 @@ struct VolatileDisk : public ArchDisk
 
   void open(char const* filename);
   void seek(uint64_t pos) override { diskpos = pos; }
+  uint64_t tell() override { return diskpos; }
   void read(uint8_t* bytes, uint64_t size) override{ std::copy(data(0), data(size), bytes); diskpos += size; }
   void write(uint8_t const* bytes, uint64_t size) override { std::copy(&bytes[0], &bytes[size], data(0)); diskpos += size; }
-  uint8_t* data(uintptr_t pos) { return &storage[diskpos+pos]; }
+  void sync(SnapShot& snapshot) override;
   
+  uint8_t* data(uintptr_t pos) { return &storage[diskpos+pos]; }
   uint8_t* storage;
   uintptr_t diskpos, disksize;
 };
@@ -500,28 +524,6 @@ struct AArch64
    ***                       Architectural state                      ***
    **********************************************************************/
 
-  struct Zone
-  {
-    uint64_t hi() const { return last; }
-
-    // bool operator < (Zone const& p) const { return last < p.base; }
-    // bool operator > (Zone const& p) const { return p.last < base; }
-
-    struct Above
-    {
-      using is_transparent = void;
-      bool operator() (Zone const& a, Zone const& b) const { return a.base > b.last; }
-      bool operator() (Zone const& a, uint64_t b) const { return a.base > b; }
-    };
-
-    Zone(uint64_t _base, uint64_t _last) : base(_base), last(_last) {}
-
-    uint64_t size() const { return last - base + 1; }
-
-    uint64_t    base;
-    uint64_t    last;
-  };
-
   struct Page : public Zone
   {
     struct Free
@@ -549,7 +551,6 @@ struct AArch64
     ~Page();
 
     void sync( SnapShot& );
-    void save( SnapShot& ) const;
     uint64_t write(uint64_t addr, uint8_t const* dbuf, uint8_t const* ubuf, uint64_t count) const
     {
       uint64_t cnt = std::min(count,last-addr+1), start = addr-base;

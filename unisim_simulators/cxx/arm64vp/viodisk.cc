@@ -374,6 +374,9 @@ VIODisk::sync(SnapShot& snapshot)
     snapshot.sync(*reg);
   rq.sync(snapshot);
   snapshot.sync(WriteBack);
+  uint64_t diskpos = tell();
+  snapshot.sync(diskpos);
+  seek(diskpos);
 }
 
 void

@@ -84,13 +84,12 @@ struct VIODisk
 
   enum { BLKSIZE = 512 };
   
-  //  virtual void open(char const* filename) = 0;
   virtual void seek(uint64_t pos) = 0;
+  virtual uint64_t tell() = 0;
   virtual void read(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
   virtual void write(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
   
-  
-  void sync(SnapShot& snapshot);
+  virtual void sync(SnapShot& snapshot);
   void reset();
   
   // Generic Config

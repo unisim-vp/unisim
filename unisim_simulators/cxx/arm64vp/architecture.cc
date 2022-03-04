@@ -1306,6 +1306,13 @@ VolatileDisk::open(char const* filename)
 }
 
 void
+VolatileDisk::sync(SnapShot& snapshot)
+{
+  std::cerr << "VolatileDisk storage lost...\n";
+  VIODisk::sync(snapshot);
+}
+
+void
 StreamDisk::open(char const* filename)
 {
   storage.open(filename);
@@ -1403,24 +1410,6 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
   devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_disk_effect, irq) );
 }
 
-// namespace
-// {
-//   void suspend_at_prompt(AArch64& arch, char ch)
-//   {
-//     static std::ofstream toto("toto");
-//     toto.write(&ch, 1);
-//     toto.flush();
-//     static char const* expect = "";
-//     if (ch != *expect) expect = "qemuarm64 login";
-//     else if (not *++expect)
-//       {
-//         arch.suspend = true;
-//         arch.silence( &AArch64::handle_suspend );
-//         arch.notify( 0, &AArch64::handle_suspend );
-//       }
-//   }
-// }
-
 void
 AArch64::map_uart(uint64_t base_addr)
 {
@@ -1438,7 +1427,7 @@ AArch64::map_uart(uint64_t base_addr)
           char ch = '\0';
           if (not req.write and not uart.rx_pop( ch )) { U8 x = PartiallyDefined<uint8_t>(0,-1); return req.tainted_access(x);  }
           if (not req.access( ch ))                    { return false; }
-          if (    req.write)                           { uart.tx_push( ch ); /*suspend_at_prompt(arch, ch);*/ }
+          if (    req.write)                           { uart.tx_push( ch ); }
           return true;
         }
 
@@ -2161,13 +2150,6 @@ AArch64::Page::sync(SnapShot& snapshot)
 }
 
 void
-AArch64::Page::save(SnapShot& snapshot) const
-{
-  if (snapshot.is_load()) throw 0;
-  const_cast<AArch64::Page*>(this)->sync(snapshot);
-}
-
-void
 AArch64::RTC::sync(SnapShot& snapshot)
 {
   snapshot.sync(LR);
@@ -2280,8 +2262,8 @@ AArch64::sync(SnapShot& snapshot)
   if (snapshot.is_save())
     {
       snapshot.save(pages.size());
-      for (auto const& pg : pages)
-        pg.save(snapshot);
+      for (auto& pg : pages)
+        const_cast<Page&>(pg).sync(snapshot);
     }
   else
     {
