@@ -106,10 +106,85 @@ struct Zone
 struct ArchDisk : public VIODisk
 {
   ArchDisk() : VIODisk() {}
-  virtual void read(uint8_t* bytes, uint64_t size) = 0;
-  virtual void write(uint8_t const* bytes, uint64_t size) = 0;
+
+  virtual void dread(uint8_t* bytes, uint64_t size) = 0;
+  void         uread(uint8_t* udat, uint64_t size);
+  virtual void dwrite(uint8_t const* bytes, uint64_t size) = 0;
+  void         uwrite(uint8_t const* udat, uint64_t size);
+
   void read(VIOAccess const& vioa, uint64_t addr, uint64_t size) override;
   void write(VIOAccess const& vioa, uint64_t addr, uint64_t size) override;
+
+  struct Page
+  {
+    struct Below
+    {
+      using is_transparent = void;
+      bool operator() (Page const& a, Page const& b) const { return a.base < b.base; }
+      bool operator() (Page const& a, uint64_t b) const { return a.base < b; }
+    };
+
+    Page(uint64_t _base) : base(_base), udat(new uint8_t[1<<shift]) {}
+    Page(Page&& pg) : base(pg.base), udat(pg.udat) { pg.udat = 0; }
+    Page(const Page&) = delete;
+    ~Page() { delete [] udat; }
+
+    enum { shift = 12 };
+
+    static uint64_t index( uint64_t addr ) { return (addr >> shift) << shift; }
+    static uint64_t size_from( uint64_t addr ) { return (~addr % (1<<shift)) + 1; }
+
+    void write(uint64_t pos, uint64_t size, uint8_t const* src) const { std::copy( &src[0], &src[size], &udat[pos % (1 << shift)] ); }
+    void read(uint64_t pos, uint64_t size, uint8_t* dst) const { uint8_t const* src = &udat[pos % (1 << shift)]; std::copy( &src[0], &src[size], dst ); }
+
+    uint64_t    base;
+    uint8_t*    udat;
+  };
+
+  // struct Page : public Zone
+  // {
+  //   Page(uint64_t base, uint64_t last);
+  //   Page(Page&& page) : Zone(page), udat(page.udat) { page.udat = 0; }
+  //   Page() : Zone(0,0), data(0), udat(0), free(&Free::nop) {}
+  //   Page( Page const& ) = delete;
+  //   Page( SnapShot& snapshot ) : Zone(0,0), data(0), udat(0), free(&Free::nop)  { sync(snapshot); }
+  //   ~Page() { delete [] udat; }
+
+  //   void sync( SnapShot& );
+  //   uint64_t write(uint64_t addr, uint8_t const* ubuf, uint64_t count) const
+  //   {
+  //     uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+  //     std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
+  //     return cnt;
+  //   }
+  //   uint64_t read(uint64_t addr, uint8_t* ubuf, uint64_t count) const
+  //   {
+  //     uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+  //     std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
+  //     return cnt;
+  //   }
+
+  //   uint64_t size_from(uint64_t addr) const { return last - addr + 1; }
+  //   uint8_t* data_beg() const { return &data[0]; }
+  //   uint8_t* data_end() const { return &data[size()]; }
+  //   uint8_t* udat_beg() const { return &udat[0]; }
+  //   uint8_t* udat_end() const { return &udat[size()]; }
+  //   uint8_t* data_abs(uint64_t addr) const { return &data[addr-base]; }
+  //   uint8_t* udat_abs(uint64_t addr) const { return &udat[addr-base]; }
+  //   uint8_t* data_rel(uint64_t offset) const { return &data[offset]; }
+  //   uint8_t* udat_rel(uint64_t offset) const { return &udat[offset]; }
+    
+  //   bool has_data() const { return data; }
+  //   void set_data(uint8_t* _data) { data = _data; }
+  //   bool has_udat() const { return data; }
+  //   void set_udat(uint8_t* _udat) { udat = _udat; }
+    
+  // private:
+  //   uint8_t*    udat;
+  // };
+
+  typedef std::set<Page, Page::Below> Pages;
+  Pages    upages;
 };
 
 struct StreamDisk : public ArchDisk
@@ -119,8 +194,8 @@ struct StreamDisk : public ArchDisk
   void open(char const* filename);
   void seek(uint64_t pos) override { storage.seekg(pos); }
   uint64_t tell() override { return storage.tellg(); }
-  void read(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); }
-  void write(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); }
+  void dread(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); }
+  void dwrite(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); }
   
   std::fstream storage;
 };
@@ -133,8 +208,8 @@ struct VolatileDisk : public ArchDisk
   void open(char const* filename);
   void seek(uint64_t pos) override { diskpos = pos; }
   uint64_t tell() override { return diskpos; }
-  void read(uint8_t* bytes, uint64_t size) override{ std::copy(data(0), data(size), bytes); diskpos += size; }
-  void write(uint8_t const* bytes, uint64_t size) override { std::copy(&bytes[0], &bytes[size], data(0)); diskpos += size; }
+  void dread(uint8_t* bytes, uint64_t size) override{ std::copy(data(0), data(size), bytes); diskpos += size; }
+  void dwrite(uint8_t const* bytes, uint64_t size) override { std::copy(&bytes[0], &bytes[size], data(0)); diskpos += size; }
   void sync(SnapShot& snapshot) override;
   
   uint8_t* data(uintptr_t pos) { return &storage[diskpos+pos]; }
@@ -532,9 +607,9 @@ struct AArch64
       virtual void free (Page&) const {};
       static Free nop;
     };
-    /* Standard buffer (de)allocation */
+    /* Constructor with standard buffer (de)allocation */
     Page(uint64_t base, uint64_t last);
-    /* Custom buffer (de)allocation */
+    /* Constructor with custom buffer (de)allocation */
     Page(uint64_t _base, uint64_t _last, uint8_t* _data, uint8_t* _udat, Free* _free)
       : Zone(_base, _last), data(_data), udat(_udat), free(_free)
     {}

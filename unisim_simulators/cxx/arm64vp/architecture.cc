@@ -1242,7 +1242,6 @@ namespace {
       uint8_t*  slice_data() const { return page->data_abs(ptr); }
       uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
       uintptr_t slice_size() const { return pbytes; }
-      
     };
 
     // void flag(uint64_t addr) const override
@@ -1260,15 +1259,71 @@ namespace {
 }
 
 void
+ArchDisk::uread(uint8_t* udat, uint64_t size)
+{
+  uint64_t pos = tell();
+  auto itr = upages.lower_bound(Page::index(pos));
+
+  struct { char const* sep = "[Tainted] Disk read "; auto next() { auto r = sep; sep = " "; return r; } } sep;
+  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+    {
+      psize = std::min(Page::size_from(pos), left);
+      
+      if (itr == upages.end() or itr->base > pos)
+        std::fill(&udat[0], &udat[psize], 0);
+      else
+        {
+          std::cerr << sep.next() << std::hex << pos;
+          itr->read(pos, psize, udat);
+          ++itr;
+        }
+    }
+  std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
+}
+
+void
 ArchDisk::read(VIOAccess const& vioa, uint64_t addr, uint64_t size)
 {
   AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
   for (VIOA::Iterator itr(addr, size); itr.next(core);)
     {
-      uint8_t* udat = itr.slice_udat();
-      std::fill(&udat[0], &udat[itr.slice_size()], 0);
-      read(itr.slice_data(), itr.pbytes);
+      uread(itr.slice_udat(), itr.slice_size());
+      dread(itr.slice_data(), itr.slice_size());
     }
+}
+
+void
+ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
+{
+  uint64_t pos = tell();
+  auto itr = upages.lower_bound(Page::index(pos));
+  
+  struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
+  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+    {
+      psize = std::min(Page::size_from(pos), left);
+      bool has_udat = std::any_of(&udat[0], &udat[psize], [](uint8_t b) { return b != 0; } );
+
+      if (itr == upages.end() or itr->base > pos)
+        {
+          if (not has_udat) continue;
+          std::cerr << sep.next() << '+' << std::hex << pos;
+          itr = upages.insert(itr, pos);
+        }
+      else if (not has_udat and Page::index(psize))
+        {
+          std::cerr << sep.next() << '-' << std::hex << pos;
+          itr = upages.erase(itr);
+          continue;
+        }
+      else
+        {
+          std::cerr << sep.next() << '!' << std::hex << pos;
+        }
+      itr->write(pos, psize, udat);
+      ++itr;
+    }
+  std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
 }
 
 void
@@ -1277,10 +1332,8 @@ ArchDisk::write(VIOAccess const& vioa, uint64_t addr, uint64_t size)
   AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
   for (VIOA::Iterator itr(addr, size); itr.next(core);)
     {
-      uint8_t const* udat = itr.slice_udat();
-      if (std::any_of(&udat[0], &udat[itr.slice_size()], [](uint8_t b) { return b != 0; } ))
-        { struct Bad {}; throw Bad(); }
-      write(itr.slice_data(), itr.slice_size());
+      uwrite(itr.slice_udat(), itr.slice_size());
+      dwrite(itr.slice_data(), itr.slice_size());
     }
 }
 
