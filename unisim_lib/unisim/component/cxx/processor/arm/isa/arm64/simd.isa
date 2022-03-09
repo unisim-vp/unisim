@@ -6292,11 +6292,28 @@ mul_vsvsvsi.disasm = {
   sink << "mul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
 };
 
-op mvn_vbb( 0b0[1] : q[1] : 0b10111000100000010110[20] : rn[5] : rd[5] );
+/*******************************************************************
+ * MVN
+ *
+ * Bitwise NOT (vector).
+ */
 
-mvn_vbb.disasm = {
+op mvn_vb( 0b0[1] : q[1] : 0b10111000100000010110[20] : rn[5] : rd[5] );
+
+mvn_vb.disasm = {
   sink << "mvn\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0);
 };
+
+mvn_vb.execute = {
+  /* Using a U64 arrangement (by convention arm exhibit a U8 arrangement) */
+  for (unsigned idx = 0, end=1<<q; idx < end; ++idx)
+    cpu.SetVU64(rd, idx, ~cpu.GetVU64(rn, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
+/*
+ * end of MVN
+ *******************************************************************/
 
 /*******************************************************************
  * MVNI
