@@ -806,119 +806,125 @@ AArch64::PState::AsSPSR() const
 bool
 AArch64::concretize(bool possible)
 {
-  // static std::set<uint64_t> seen;
-  // if (seen.insert(current_insn_addr).second)
-  //   uninitialized_error("condition");
-  // return possible;
- 
-  struct ShouldNotHappen {};
-  
-  if (   current_insn_addr == 0xffffffc0105c70f8
-    //or current_insn_addr == 0xffffffc0109fb270
-         )
-    { // <__pi_strlen>:
-      // ...
-      // ffffffc0105c70f8:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
-      // ffffffc0105c70fc:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
-      gpr[5].ubits = 0;
-      gpr[6].ubits = 0;
-      return possible;
-    }
-
-  if (current_insn_addr == 0xffffffc0102868fc or
-      current_insn_addr == 0xffffffc010286914)
-    { // <hashlen_string>:
-      // ...
-      // ffffffc0102868fc:       54fffe80        b.eq    ffffffc010285e1c <hashlen_string+0x34>  // b.none
-      // ...
-      // ffffffc010286914:       b40000e2        cbz     x2, ffffffc010285e80 <hashlen_string+0x98>
-      gpr[2].ubits = 0;
-      gpr[3].ubits = 0;
-      return possible;
-    }
-
-  if (current_insn_addr == 0xffffffc010238bdc)
-    {
-      // link_path_walk.part.0:
-      // ...
-      // ffffffc010238bd8:	f201c042	ands    x2, x2, #0x8080808080808080
-      // ffffffc010238bdc:	54fffde0	b.eq
-      gpr[2].ubits = 0;
-      gpr[3].ubits = 0;
-      gpr[5].ubits = 0;
-      nzcv.ubits = 0;
-      if ((gpr[2].value == 0) != possible) raise( ShouldNotHappen() );
-      return possible;
-    }
-
-  if ((current_insn_addr | 0x380)  == 0xffffffc01008238c or
-      (current_insn_addr | 0x180)  == 0xffffffc010082594)
-    {
-      // <vectors>:
-      // ...
-      // tbnz    w0, #14
-      /* we're forced to definitely lose x0 undefined bits... */
-      gpr[31].ubits = 0;
-      gpr[0].ubits = 0;
-      if (bool(gpr[0].value >> 14 & 1) != possible) raise( ShouldNotHappen() );
-      return possible;
-    }
-
-  // if (current_insn_addr == 0xffffffc0109fb120)
-  //   {
-  //     // <__pi_strcmp>:
-  //     // ...
-  //     // orr     x6, x5, x4
-  //     // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
-  //     gpr[2].ubits = 0;
-  //     gpr[3].ubits = 0;
-  //     gpr[6].ubits = 0;
-  //     return possible;
-  //   }
-
-  // if (current_insn_addr == 0xffffffc01062b630)
-  //   {
-  //     // <amba_device_try_add>:
-  //     // ...
-  //     // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
-  //     gpr[3].ubits = 0;
-  //     if (possible) raise( ShouldNotHappen() );
-  //     return possible;
-  //   }
-
-  if (current_insn_addr == 0xffffffc010008cbc)
-    {
-      return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
-    }
-
-  if (current_insn_addr == 0xffffffc0105c70c4)
-    {
-      return possible;
-    }
-
-  // if (current_insn_addr == 0xffffffc0105c70c4)
-  //   {
-  //     gpr[0].ubits = 0;
-  //     return possible;
-  //   }
-
-  // static struct { uint64_t address; bool result; }
-  // exceptions [] =
-  //   {
-  //    {0xff3, false}, /* has_mismatched_cache_type */
-  //   };
-
-  // static uintptr_t idx =0;
-  // uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
-
-  // if (idx < end and exceptions[idx].address == current_insn_addr)
-  //   return exceptions[idx++].result;
-
-  uninitialized_error("condition");
-
-  struct Bad {}; raise( Bad() );
   return possible;
 }
+
+// bool
+// AArch64::concretize(bool possible)
+// {
+//   // static std::set<uint64_t> seen;
+//   // if (seen.insert(current_insn_addr).second)
+//   //   uninitialized_error("condition");
+//   // return possible;
+ 
+//   struct ShouldNotHappen {};
+  
+//   if (   current_insn_addr == 0xffffffc0105c70f8
+//     //or current_insn_addr == 0xffffffc0109fb270
+//          )
+//     { // <__pi_strlen>:
+//       // ...
+//       // ffffffc0105c70f8:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
+//       // ffffffc0105c70fc:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
+//       gpr[5].ubits = 0;
+//       gpr[6].ubits = 0;
+//       return possible;
+//     }
+
+//   if (current_insn_addr == 0xffffffc0102868fc or
+//       current_insn_addr == 0xffffffc010286914)
+//     { // <hashlen_string>:
+//       // ...
+//       // ffffffc0102868fc:       54fffe80        b.eq    ffffffc010285e1c <hashlen_string+0x34>  // b.none
+//       // ...
+//       // ffffffc010286914:       b40000e2        cbz     x2, ffffffc010285e80 <hashlen_string+0x98>
+//       gpr[2].ubits = 0;
+//       gpr[3].ubits = 0;
+//       return possible;
+//     }
+
+//   if (current_insn_addr == 0xffffffc010238bdc)
+//     {
+//       // link_path_walk.part.0:
+//       // ...
+//       // ffffffc010238bd8:	f201c042	ands    x2, x2, #0x8080808080808080
+//       // ffffffc010238bdc:	54fffde0	b.eq
+//       gpr[2].ubits = 0;
+//       gpr[3].ubits = 0;
+//       gpr[5].ubits = 0;
+//       nzcv.ubits = 0;
+//       if ((gpr[2].value == 0) != possible) raise( ShouldNotHappen() );
+//       return possible;
+//     }
+
+//   if ((current_insn_addr | 0x380)  == 0xffffffc01008238c or
+//       (current_insn_addr | 0x180)  == 0xffffffc010082594)
+//     {
+//       // <vectors>:
+//       // ...
+//       // tbnz    w0, #14
+//       /* we're forced to definitely lose x0 undefined bits... */
+//       gpr[31].ubits = 0;
+//       gpr[0].ubits = 0;
+//       if (bool(gpr[0].value >> 14 & 1) != possible) raise( ShouldNotHappen() );
+//       return possible;
+//     }
+
+//   // if (current_insn_addr == 0xffffffc0109fb120)
+//   //   {
+//   //     // <__pi_strcmp>:
+//   //     // ...
+//   //     // orr     x6, x5, x4
+//   //     // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
+//   //     gpr[2].ubits = 0;
+//   //     gpr[3].ubits = 0;
+//   //     gpr[6].ubits = 0;
+//   //     return possible;
+//   //   }
+
+//   // if (current_insn_addr == 0xffffffc01062b630)
+//   //   {
+//   //     // <amba_device_try_add>:
+//   //     // ...
+//   //     // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
+//   //     gpr[3].ubits = 0;
+//   //     if (possible) raise( ShouldNotHappen() );
+//   //     return possible;
+//   //   }
+
+//   if (current_insn_addr == 0xffffffc010008cbc)
+//     {
+//       return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
+//     }
+
+//   if (current_insn_addr == 0xffffffc0105c70c4)
+//     {
+//       return possible;
+//     }
+
+//   // if (current_insn_addr == 0xffffffc0105c70c4)
+//   //   {
+//   //     gpr[0].ubits = 0;
+//   //     return possible;
+//   //   }
+
+//   // static struct { uint64_t address; bool result; }
+//   // exceptions [] =
+//   //   {
+//   //    {0xff3, false}, /* has_mismatched_cache_type */
+//   //   };
+
+//   // static uintptr_t idx =0;
+//   // uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
+
+//   // if (idx < end and exceptions[idx].address == current_insn_addr)
+//   //   return exceptions[idx++].result;
+
+//   uninitialized_error("condition");
+
+//   struct Bad {}; raise( Bad() );
+//   return possible;
+// }
 
 void
 AArch64::uninitialized_error( char const* rsrc )
@@ -1273,12 +1279,13 @@ ArchDisk::uread(uint8_t* udat, uint64_t size)
         std::fill(&udat[0], &udat[psize], 0);
       else
         {
-          std::cerr << sep.next() << std::hex << pos;
+          std::cerr << sep.next() << '.' << std::hex << pos;
           itr->read(pos, psize, udat);
           ++itr;
         }
     }
-  std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
+  if (*sep.sep == ' ')
+    std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
 }
 
 void
@@ -1323,7 +1330,8 @@ ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
       itr->write(pos, psize, udat);
       ++itr;
     }
-  std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
+  if (*sep.sep == ' ')
+    std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
 }
 
 void
