@@ -81,12 +81,15 @@ for file in ${AARCH32_SRC_FILES}; do
               "${DEST_DIR}/${AARCH32_DSTDIR}/${file}"
 done
 
+mkdir -p ${AARCH32_DSTDIR}
 for isa in ${AARCH32_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${DEST_DIR}/${AARCH32_DSTDIR}/${isa} \
-		       -w 8 -I ${UNISIM_LIB_DIR} \
+		       -o ${AARCH32_DSTDIR}/${isa} \
+		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH32_SRCDIR}/${isa}.isa
 done
+rsync --remove-source-files -a ${AARCH32_DSTDIR}/* ${DEST_DIR}/${AARCH32_DSTDIR}
+rm -r ${AARCH32_DSTDIR}
 
 AARCH64_SRCDIR=cxx/aarch64dba
 AARCH64_DSTDIR=aarch64
@@ -104,12 +107,15 @@ for file in ${AARCH64_SRC_FILES}; do
     "${DEST_DIR}/${AARCH64_DSTDIR}/${file}"
 done
 
+mkdir -p ${AARCH64_DSTDIR}
 for isa in ${AARCH64_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${DEST_DIR}/${AARCH64_DSTDIR}/${isa} \
-		       -w 8 -I ${UNISIM_LIB_DIR} \
+		       -o ${AARCH64_DSTDIR}/${isa} \
+		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${isa}.isa
 done
+rsync --remove-source-files -a ${AARCH64_DSTDIR}/* ${DEST_DIR}/${AARCH64_DSTDIR}
+rm -r ${AARCH64_DSTDIR}
 
 
 AMD64_SRCDIR=cxx/amd64dba
@@ -196,6 +202,12 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.1 (2022-03-14)
+
+- update build system (dune 3.0) and improve dependency tracking
+- fix memory leak issues
+- various bug fixes and code improvements
+
 ## 0.0.0 (2021-10-05)
 
 Initial release.
