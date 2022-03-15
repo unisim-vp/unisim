@@ -1137,7 +1137,7 @@ fcvt_sd.disasm = {
 };
 
 fcvt_sd.execute = {
-  cpu.SetVF32(rd, typename ARCH::F32(cpu.GetVF64(rn,0)));
+  cpu.SetVF32(rd, FPConvert<typename ARCH::F32>(cpu, cpu.GetVF64(rn,0)));
 };
 
 op fcvt_dh( 0b0001111011100010110000[22] : rn[5] : rd[5] );
@@ -1153,7 +1153,7 @@ fcvt_ds.disasm = {
 };
 
 fcvt_ds.execute = {
-  cpu.SetVF64(rd, typename ARCH::F64(cpu.GetVF32(rn,0)));
+  cpu.SetVF64(rd, FPConvert<typename ARCH::F64>(cpu, cpu.GetVF32(rn,0)));
 };
 
 /*******************************************************************

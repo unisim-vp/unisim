@@ -141,48 +141,6 @@ struct ArchDisk : public VIODisk
     uint8_t*    udat;
   };
 
-  // struct Page : public Zone
-  // {
-  //   Page(uint64_t base, uint64_t last);
-  //   Page(Page&& page) : Zone(page), udat(page.udat) { page.udat = 0; }
-  //   Page() : Zone(0,0), data(0), udat(0), free(&Free::nop) {}
-  //   Page( Page const& ) = delete;
-  //   Page( SnapShot& snapshot ) : Zone(0,0), data(0), udat(0), free(&Free::nop)  { sync(snapshot); }
-  //   ~Page() { delete [] udat; }
-
-  //   void sync( SnapShot& );
-  //   uint64_t write(uint64_t addr, uint8_t const* ubuf, uint64_t count) const
-  //   {
-  //     uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
-  //     std::copy( &ubuf[0], &ubuf[cnt], &udat[start] );
-  //     return cnt;
-  //   }
-  //   uint64_t read(uint64_t addr, uint8_t* ubuf, uint64_t count) const
-  //   {
-  //     uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
-  //     std::copy( &udat[start], &udat[start+cnt], &ubuf[0] );
-  //     return cnt;
-  //   }
-
-  //   uint64_t size_from(uint64_t addr) const { return last - addr + 1; }
-  //   uint8_t* data_beg() const { return &data[0]; }
-  //   uint8_t* data_end() const { return &data[size()]; }
-  //   uint8_t* udat_beg() const { return &udat[0]; }
-  //   uint8_t* udat_end() const { return &udat[size()]; }
-  //   uint8_t* data_abs(uint64_t addr) const { return &data[addr-base]; }
-  //   uint8_t* udat_abs(uint64_t addr) const { return &udat[addr-base]; }
-  //   uint8_t* data_rel(uint64_t offset) const { return &data[offset]; }
-  //   uint8_t* udat_rel(uint64_t offset) const { return &udat[offset]; }
-    
-  //   bool has_data() const { return data; }
-  //   void set_data(uint8_t* _data) { data = _data; }
-  //   bool has_udat() const { return data; }
-  //   void set_udat(uint8_t* _udat) { udat = _udat; }
-    
-  // private:
-  //   uint8_t*    udat;
-  // };
-
   typedef std::set<Page, Page::Below> Pages;
   Pages    upages;
 };
@@ -276,10 +234,73 @@ struct AArch64
   void TODO();
 
   //====================================================================
-  //=                 Special  Registers access methods
+  //=                 Value-tainting management methods                 
   //====================================================================
 
+  template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, 0); }
+  //  template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
+
+  template <typename T> void fprocess( T& value )
+  {
+    if (not value.ubits) return;
+    uint64_t const tfpstep = 0x1000000;
+    ++tfpcount;
+    if ((tfpcount % tfpstep) == 0)
+      std::cerr << "[FPTaints] " << (tfpcount / tfpstep) << "\n";
+  }
+
+  template <typename UNIT, typename T> T untaint(UNIT const& unit, TaintedValue<T> const& value)
+  {
+    if (value.ubits) raise( unit );
+    return value.value;
+  }
+
+  struct SBZTV {};
+  template <typename T>
+  T untaint(SBZTV const& sbz, TaintedValue<T> const& value)
+  {
+    if (value.value | value.ubits) raise( sbz );
+    return 0;
+  }
+
+  struct SerialTV {};
+  template <typename T>
+  T untaint(SerialTV const& sbz, TaintedValue<T> const& chr)
+  {
+    if (chr.ubits)
+      {
+        Print(std::cerr << "Serial tainted output: ", chr);
+        std::cerr << " -> " << std::hex << unsigned(chr.value);
+        if (32 <= chr.value and chr.value <= 126) std::cerr << " '" << char(chr.value) << "'";
+        std::cerr << "\n";
+      }
+    return chr.value;
+  }
+
+  struct AddrTV {};
+  uint64_t untaint(AddrTV const&, U64 const& addr)
+  {
+    return addr.value;
+  }
+
+  struct CondTV {};
+  bool untaint(CondTV const&, BOOL const& cond)
+  {
+    return cond.value;
+  }
+
+  struct TVU8TV {};
   U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value);
+
+  typedef unisim::component::cxx::processor::arm::regs64::CPU<AArch64, AArch64Types> regs64;
+  void SetVF32( unsigned reg, unsigned sub, F32 value ) { fprocess(value); regs64::SetVF32( reg, sub, value ); }
+  void SetVF64( unsigned reg, unsigned sub, F64 value ) { fprocess(value); regs64::SetVF64( reg, sub, value ); }
+  void SetVF32( unsigned reg, F32 value ) { fprocess(value); regs64::SetVF32( reg, value ); }
+  void SetVF64( unsigned reg, F64 value ) { fprocess(value); regs64::SetVF64( reg, value ); }
+
+  //====================================================================
+  //=              Vector Registers special access methods              
+  //====================================================================
 
   //=====================================================================
   //=              Special/System Registers access methods              =
@@ -327,17 +348,11 @@ struct AArch64
   /** Set the next Program Counter */
   void BranchTo( U64 addr, branch_type_t branch_type )
   {
-    if (addr.ubits)
-      {
-        uninitialized_error("branch target");
-        struct Bad {}; raise( Bad() );
-      }
-    next_insn_addr = addr.value;
+    next_insn_addr = untaint(AddrTV(), addr);
   }
-  bool concretize(bool);
   bool Test( bool cond ) { return cond; }
-  // template <typename T> bool Test( TaintedValue<T> const& cond ) { BOOL c(cond); if (c.ubits) return concretize(); return cond.value; }
-  bool Test( BOOL const& cond ) { if (cond.ubits) return concretize(cond.value); return cond.value; }
+
+  bool Test( BOOL const& cond ) { return untaint(CondTV(), cond); }
   void CallSupervisor( unsigned imm );
   void CallHypervisor( unsigned imm );
 
@@ -351,11 +366,12 @@ struct AArch64
   {
     MMU() : MAIR_EL1(), TCR_EL1(), TTBR0_EL1(), TTBR1_EL1() {}
 
+    struct TTblTV {};
+
     void Set(AArch64& cpu, char const* name, uint64_t MMU::* reg, U64 const& value )
     {
-      if (value.ubits) { struct Bad {}; raise( Bad () ); }
       //      AArch64::ptlog() << std::dec << cpu.insn_counter << "\t" << name << " <- " << std::hex << value.value << std::dec << '\n';
-      (this->*reg) = value.value;
+      (this->*reg) = cpu.untaint(TTblTV(), value);
     }
 
     void SetTCR(AArch64& cpu, U64 const& value)   { this->Set(cpu, "tcr",   &MMU::TCR_EL1,   value); }
@@ -437,12 +453,10 @@ struct AArch64
   T
   memory_read(unsigned el, U64 addr)
   {
-    struct Bad {};
-    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
-
     typedef typename T::value_type value_type;
     unsigned const size = sizeof (value_type);
-    MMU::TLB::Entry entry( addr.value );
+
+    MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
     translate_address(entry, el, mem_acc_type::read);
     
     uint8_t dbuf[size], ubuf[size];
@@ -496,11 +510,9 @@ struct AArch64
   void
   memory_write(unsigned el, U64 addr, T src)
   {
-    struct Bad {};
-    if (addr.ubits) { uninitialized_error("address"); raise( Bad() ); }
-
     unsigned const size = sizeof (typename T::value_type);
-    MMU::TLB::Entry entry( addr.value );
+
+    MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
     translate_address(entry, el, mem_acc_type::write);
 
     typedef typename TX<typename T::value_type>::as_mask bits_type;
@@ -749,10 +761,11 @@ struct AArch64
     
     U64& selsp(AArch64& cpu) { return cpu.sp_el[SP ? EL : 0]; }
     U64 GetDAIF() const { return U64(D << 9 | A << 8 | I << 7 | F << 6); }
+    struct DAIFTV {};
     void SetDAIF(AArch64& cpu, U64 const& xt)
     {
-      if (xt.ubits) { struct Bad {}; raise( Bad() ); }
-      D = xt.value>>9; A = xt.value>>8; I = xt.value>>7; F = xt.value>>6;
+      uint64_t value = cpu.untaint(DAIFTV(), xt);
+      D = value >> 9; A = value >> 8; I = value >> 7; F = value >> 6;
       cpu.gic.program(cpu);
     }
 
@@ -866,9 +879,9 @@ struct AArch64
     void sync( SnapShot& );
     uint16_t flags() const;
     uint16_t mis() const { return RIS & IMSC; }
-    bool rx_pop(char& ch);
+    void rx_pop(AArch64& arch, U8& ch);
     bool rx_push();
-    void tx_push(char ch);
+    void tx_push(AArch64& arch, U8 ch);
     void tx_pop();
     
     enum { RX_INT = 0x10, TX_INT = 0x20 };
@@ -972,6 +985,7 @@ public:
   bool     terminate;
   bool     disasm;
   bool     suspend;
+  uint64_t tfpcount;
 
   // /*QESCAPTURE*/
   // bool QESCapture();

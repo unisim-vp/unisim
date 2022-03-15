@@ -199,6 +199,15 @@ OUT PolyMod2(IN value, uint32_t _poly)
 
   template <typename ARCH, typename operT> operT FPRound( ARCH& arch, operT op ) { return op; }
 
+  template <typename DST, typename ARCH, typename SRC>
+  DST FPConvert( ARCH& arch, SRC op )
+  {
+    if (FPProcessNaNs(arch, {op}))
+      return DST(op);
+
+    return FPRound(arch, DST(op));
+  }
+
   template <typename operT, typename ARCH>
   operT FPSub( ARCH& arch, operT op1, operT op2 )
   {

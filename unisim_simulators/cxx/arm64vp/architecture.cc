@@ -78,6 +78,7 @@ AArch64::AArch64()
   , terminate(false)
   , disasm(false)
   , suspend(false)
+  , tfpcount(0)
 {
   for (int idx = 0; idx < 32; ++idx)
     {
@@ -346,7 +347,7 @@ AArch64::CallSupervisor( unsigned imm )
   get_el(target_el).ESR = U32(0)
     | U32(0x15) << 26 // exception class AArch64.SVC
     | U32(1) << 25 // IL Instruction Length == 32 bits
-    | PartiallyDefined<uint32_t>(0,0b111111111) << 16 // Res0
+    | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
     | U32(imm);
 
   TakeException(1, 0x0, next_insn_addr);
@@ -364,12 +365,8 @@ AArch64::CallHypervisor( uint32_t imm )
 
   if (imm == 0)
     {
-      U64 const& arg0 = gpr[0];
-
-      if (arg0.ubits)
-        raise( Bad() );
-
-      switch (arg0.value)
+      struct HVCTV {};
+      switch (untaint(HVCTV(), gpr[0]))
         {
         default:
           raise( Bad() );
@@ -428,11 +425,12 @@ AArch64::MMU::TLB::Invalidate(AArch64& cpu, bool nis, bool ll, unsigned type, AA
     case 2: ubit_issue = 0xffff000000000000ull; break;
     case 3: ubit_issue = 0x00000fffffffffffull; break;
     }
-  if (arg.ubits & ubit_issue) raise( Bad() );
+  struct TLBITV {};
+  uint64_t argval = cpu.untaint(TLBITV(), arg & AArch64::U64(ubit_issue));
 
-  //  AArch64::ptlog() << cpu.last_insn(0) << " (X=" << std::hex << arg.value << std::dec << ")\n";
+  //  AArch64::ptlog() << cpu.last_insn(0) << " (X=" << std::hex << argval << std::dec << ")\n";
 
-  uint64_t vakey = (((arg.value << 12) << 15 ) >> 16) | ((arg.value >> 48) << 48) | 1;
+  uint64_t vakey = (((argval << 12) << 15 ) >> 16) | ((argval >> 48) << 48) | 1;
 
   for (unsigned idx = 0; idx < kcount; ++idx)
     {
@@ -540,8 +538,8 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
   U32 esr = U32(0)
     | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (cpu.pstate.GetEL() == target_el)) << 26 // exception class
     | U32(1) << 25 // IL Instruction Length
-    | PartiallyDefined<uint32_t>(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
-    | PartiallyDefined<uint32_t>(0,0b1111) << 10
+    | cpu.PartlyDefined<uint32_t>(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
+    | cpu.PartlyDefined<uint32_t>(0,0b1111) << 10
     | U32(0) << 9 // IsExternalAbort(fault)
     | U32(mat == mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
@@ -743,9 +741,9 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
 {
   struct Bad {};
   nzcv = U8(spsr >> 28);
-  spsr = (spsr << 4) >> 4;
-  if (spsr.ubits) raise( Bad() );
-  uint32_t psr = spsr.value;
+
+  struct PSRTV {};
+  uint32_t psr = untaint(PSRTV(), (spsr << 4) >> 4);
 
   if (psr & 0x10) raise( Bad() ); /* No AArch32 */
   /* spsr checks causing an "Illegal return" */
@@ -803,14 +801,8 @@ AArch64::PState::AsSPSR() const
   return spsr;
 }
 
-bool
-AArch64::concretize(bool possible)
-{
-  return possible;
-}
-
 // bool
-// AArch64::concretize(bool possible)
+// AArch64::untaint(CondTV const&, BOOL const& possible)
 // {
 //   // static std::set<uint64_t> seen;
 //   // if (seen.insert(current_insn_addr).second)
@@ -1003,11 +995,13 @@ struct AArch64::Device::Request
     struct Undefined {};
     struct _
     {
-      typedef T value_type; _(value_type& _v) : value(_v) {}
-      T& value; struct U {
-        U& operator >> (int) { return *this; } U& operator << (int) { return *this; }
-        operator uint8_t() { return 0; } U& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
-      } ubits;
+      typedef T value_type;
+      struct Ubits
+      {
+        Ubits& operator >> (int) { return *this; } Ubits& operator << (int) { return *this; }
+        operator uint8_t() { return 0; } Ubits& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
+      };
+      _(value_type& _v) : value(_v) {} T& value; Ubits ubits;
     } _(reg);
     try { return tainted_access ( _ ); } catch(Undefined const&) {}
     return false;
@@ -1270,7 +1264,7 @@ ArchDisk::uread(uint8_t* udat, uint64_t size)
   uint64_t pos = tell();
   auto itr = upages.lower_bound(Page::index(pos));
 
-  struct { char const* sep = "[Tainted] Disk read "; auto next() { auto r = sep; sep = " "; return r; } } sep;
+  // struct { char const* sep = "[Tainted] Disk read "; auto next() { auto r = sep; sep = " "; return r; } } sep;
   for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
     {
       psize = std::min(Page::size_from(pos), left);
@@ -1279,13 +1273,13 @@ ArchDisk::uread(uint8_t* udat, uint64_t size)
         std::fill(&udat[0], &udat[psize], 0);
       else
         {
-          std::cerr << sep.next() << '.' << std::hex << pos;
+          // std::cerr << sep.next() << '.' << std::hex << pos;
           itr->read(pos, psize, udat);
           ++itr;
         }
     }
-  if (*sep.sep == ' ')
-    std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
+  // if (*sep.sep == ' ')
+  //   std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
 }
 
 void
@@ -1305,7 +1299,7 @@ ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
   uint64_t pos = tell();
   auto itr = upages.lower_bound(Page::index(pos));
   
-  struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
+  // struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
   for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
     {
       psize = std::min(Page::size_from(pos), left);
@@ -1314,24 +1308,24 @@ ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
       if (itr == upages.end() or itr->base > pos)
         {
           if (not has_udat) continue;
-          std::cerr << sep.next() << '+' << std::hex << pos;
+          // std::cerr << sep.next() << '+' << std::hex << pos;
           itr = upages.insert(itr, pos);
         }
       else if (not has_udat and Page::index(psize))
         {
-          std::cerr << sep.next() << '-' << std::hex << pos;
+          // std::cerr << sep.next() << '-' << std::hex << pos;
           itr = upages.erase(itr);
           continue;
         }
       else
         {
-          std::cerr << sep.next() << '!' << std::hex << pos;
+          // std::cerr << sep.next() << '!' << std::hex << pos;
         }
       itr->write(pos, psize, udat);
       ++itr;
     }
-  if (*sep.sep == ' ')
-    std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
+  // if (*sep.sep == ' ')
+  //   std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
 }
 
 void
@@ -1369,7 +1363,8 @@ VolatileDisk::open(char const* filename)
 void
 VolatileDisk::sync(SnapShot& snapshot)
 {
-  std::cerr << "VolatileDisk storage lost...\n";
+  if (snapshot.is_save())
+    std::cerr << "VolatileDisk storage lost...\n";
   VIODisk::sync(snapshot);
 }
 
@@ -1485,10 +1480,10 @@ AArch64::map_uart(uint64_t base_addr)
       if ((req.addr & -4) == 0x0)
         {
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
-          char ch = '\0';
-          if (not req.write and not uart.rx_pop( ch )) { U8 x = PartiallyDefined<uint8_t>(0,-1); return req.tainted_access(x);  }
-          if (not req.access( ch ))                    { return false; }
-          if (    req.write)                           { uart.tx_push( ch ); }
+          U8 chr = U8('\0');
+          if (not req.write)                 { uart.rx_pop( arch, chr );  }
+          if (not req.tainted_access( chr )) { return false; }
+          if (    req.write)                 { uart.tx_push( arch, chr ); }
           return true;
         }
 
@@ -1568,25 +1563,6 @@ AArch64::handle_uart()
 // }
 
 void
-AArch64::UART::tx_push(char ch)
-{
-  tx_count += 1;
-  char_io_import->PutChar(ch);
-}
-
-void
-AArch64::UART::tx_pop()
-{
-  if (tx_count == 0)
-    return;
-
-  char_io_import->FlushChars();
-
-  tx_count = 0; // Infinite throughput
-  RIS |= TX_INT;
-}
-
-void
 AArch64::map_gic(uint64_t base_addr)
 {
   static struct : public Device::Effect
@@ -1612,9 +1588,9 @@ AArch64::map_gic(uint64_t base_addr)
             arch.gic.ack_interrupt(int_id);
 
           U32 reg = U32(0)
-            | PartiallyDefined<uint32_t>(0,0x7ffff)     << 13  // Reserved
-            | PartiallyDefined<uint32_t>(0,0x7)         << 10  // CPUID
-            | U32(int_id)        <<  0; // An product identifier (linux wants 0bx..x0000)
+            | arch.PartlyDefined<uint32_t>(0,0x7ffff) << 13  // Reserved
+            | arch.PartlyDefined<uint32_t>(0,0x7)     << 10  // CPUID
+            | U32(int_id)                             <<  0; // An product identifier (linux wants 0bx..x0000)
 
           return req.tainted_access(reg);
         }
@@ -1625,9 +1601,9 @@ AArch64::map_gic(uint64_t base_addr)
           U32 reg;
           if (not req.tainted_access(reg))
             return false;
-          unsigned int_id = 0xffff;
-          { U32 field = reg & U32(0x3ff); if (field.ubits) { struct Bad {}; raise( Bad() ); }; int_id = field.value; }
-          arch.gic.eoi_interrupt(int_id);
+
+          struct GICLine {};
+          arch.gic.eoi_interrupt( arch.untaint(GICLine(), reg & U32(0x3ff)) );
           return true;
         }
 
@@ -1642,10 +1618,10 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.write) return error(req.dev, "Cannot write GICC_IIDR" );
           U32 reg = U32(0)
-            | PartiallyDefined<uint32_t>(0,0xff0) << 20  // An product identifier (linux wants 0bx..x0000)
-            | U32(2)                              << 16  // Architecture version (GICv2)
-            | PartiallyDefined<uint32_t>(0,0xf)   << 12  // Revision
-            | U32(0x43b)                          <<  0; // The JEP106 identity and continuation code of ARM.
+            | arch.PartlyDefined<uint32_t>(0,0xff0) << 20  // An product identifier (linux wants 0bx..x0000)
+            | U32(2)                                << 16  // Architecture version (GICv2)
+            | arch.PartlyDefined<uint32_t>(0,0xf)   << 12  // Revision
+            | U32(0x43b)                            <<  0; // The JEP106 identity and continuation code of ARM.
 
           return req.tainted_access(reg);
         }
@@ -1657,12 +1633,12 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.write) return error(req.dev, "Cannot write GICD_TYPER" );
           U32 reg = U32(0)
-            | PartiallyDefined<uint32_t>(0,0xffff) << 16  // Reserved
-            | PartiallyDefined<uint32_t>(0,0x1f)   << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
-            | PartiallyDefined<uint32_t>(0,1)      << 10  // Indicates whether the GIC implements the Security Extensions
-            | PartiallyDefined<uint32_t>(0,3)      <<  8  // Reserved
-            | U32(0)                               <<  5  // Indicates the number of implemented CPU interfaces
-            | U32(arch.gic.ITLinesNumber)          <<  0; // Indicates the maximum number of interrupts that the GIC supports
+            | arch.PartlyDefined<uint32_t>(0,0xffff) << 16  // Reserved
+            | arch.PartlyDefined<uint32_t>(0,0x1f)   << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
+            | arch.PartlyDefined<uint32_t>(0,1)      << 10  // Indicates whether the GIC implements the Security Extensions
+            | arch.PartlyDefined<uint32_t>(0,3)      <<  8  // Reserved
+            | U32(0)                                 <<  5  // Indicates the number of implemented CPU interfaces
+            | U32(arch.gic.ITLinesNumber)            <<  0; // Indicates the maximum number of interrupts that the GIC supports
           return req.tainted_access(reg);
         }
 
@@ -1972,10 +1948,11 @@ void
 AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
 {
   struct Bad {};
-  if (addr.ubits) raise( Bad() );
-  if ((size | addr.value) & (size - 1)) raise( Bad() );
+
+  uint64_t va = untaint(AddrTV(), addr);
+  if ((size | va) & (size - 1)) raise( Bad() );
   /* TODO: should be an Alignment-related DataAbort */
-  MMU::TLB::Entry entry(addr.value);
+  MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::read);
   // By design, access cannot cross mmu page boundaries
   excmon.set(entry.pa, size);
@@ -1985,9 +1962,10 @@ bool
 AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
 {
   struct Bad {};
-  if (addr.ubits) raise( Bad() );
-  if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
-  MMU::TLB::Entry entry(addr.value);
+
+  uint64_t va = untaint(AddrTV(), addr);
+  if ((size | va) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
+  MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::write);
   // By design, access cannot cross mmu page boundaries
   bool passed = excmon.pass( entry.pa, size );
@@ -2093,15 +2071,36 @@ AArch64::UART::rx_push()
   return rx_valid;
 }
 
-bool
-AArch64::UART::rx_pop(char& ch)
+void
+AArch64::UART::rx_pop(AArch64& arch, AArch64::U8& chr)
 {
-  if (not rx_push())
-    return false;
-  ch = rx_value;
-  rx_valid = false;
-  RIS &= ~RX_INT;
-  return true;
+  if (rx_push())
+    {
+      chr = U8(rx_value);
+      rx_valid = false;
+      RIS &= ~RX_INT;
+    }
+  else
+    chr = arch.PartlyDefined<uint8_t>(0,-1);
+}
+
+void
+AArch64::UART::tx_push(AArch64& arch, U8 chr)
+{
+  tx_count += 1;
+  char_io_import->PutChar(arch.untaint(SerialTV(), chr));
+}
+
+void
+AArch64::UART::tx_pop()
+{
+  if (tx_count == 0)
+    return;
+
+  char_io_import->FlushChars();
+
+  tx_count = 0; // Infinite throughput
+  RIS |= TX_INT;
 }
 
 // AArch64::NELock::NELock(AArch64& a)
@@ -2171,6 +2170,8 @@ AArch64::save_snapshot( char const* filename )
   std::unique_ptr<SnapShot> snapshot = SnapShot::gzsave(filename);
 
   sync( *snapshot );
+
+  std::cerr << "tfpcount: " << tfpcount << std::endl;
 }
 
 void
@@ -2255,10 +2256,10 @@ AArch64::GIC::sync(SnapShot& snapshot)
 AArch64::U8
 AArch64::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value)
 {
-  struct Bad {};
-  if (index.ubits) raise( Bad() );
-  unsigned e = index.value % elements, r = index.value / elements;
-  return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
+  unsigned idx = untaint(TVU8TV(), index), e = idx % elements, r = idx / elements;
+  U8 res = (r < regs ? GetVU8((reg0+r)%32, e) : oob_value);
+  if (index.ubits) res.ubits = -1;
+  return res;
 }
 
 void

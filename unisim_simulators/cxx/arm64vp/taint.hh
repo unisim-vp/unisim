@@ -165,10 +165,6 @@ struct TaintedValue
   { AssertBool<value_type>::check(); return TaintedValue<bool>( TVCtor(), value or other.value, ubits or other.ubits ); }
 };
 
-template <typename T> TaintedValue<T> PartiallyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
-
-template <typename T> TaintedValue<T> SwapTaint(TaintedValue<T> const& value) { return TaintedValue<T>(TVCtor(), value.ubits, value.value); }
-
 template <typename T>
 struct TaintedTypeInfo
 {

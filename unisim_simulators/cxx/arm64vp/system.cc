@@ -272,7 +272,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Invalidate instruction cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
+            cpu.untaint(AddrTV(), addr);
             cpu.ipb.base_address = -1; /* systematic invalidation is cheaper than va translation ;-) */
           }
         } x; return &x;
@@ -286,12 +286,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Zero data cache by address"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
             uint64_t const zsize = 4 << cpu.ZID;
             // ZID value should be so MMU page bounds are not crossed
-            MMU::TLB::Entry entry(addr.value & -zsize);
+            MMU::TLB::Entry entry(cpu.untaint(AddrTV(), addr & U64(-zsize)));
             cpu.translate_address(entry, cpu.pstate.GetEL(), mem_acc_type::write);
-            uint8_t buffer[zsize] = {0};
+            uint8_t buffer[zsize];
+            std::fill(&buffer[0], &buffer[zsize], uint8_t(0));
             if (cpu.get_page(entry.pa).write(entry.pa, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
           }
@@ -325,7 +325,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
+            cpu.untaint(AddrTV(), addr);
             // No caches, so normally nothing to do...
           }
         } x; return &x;
@@ -344,7 +344,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
+            cpu.untaint(AddrTV(), addr);
             // No caches, so normally nothing to do...
           }
         } x; return &x;
@@ -357,8 +357,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean and Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; raise( Bad () ); }
-            // No caches, so normally nothing to do...
+            cpu.untaint(AddrTV(), addr);
+            /* No caches, so normally nothing to do... */
           }
         } x; return &x;
       } break;
@@ -587,7 +587,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return U64(cpu.pstate.GetEL() << 2);
-            //return PartiallyDefined<uint64_t>(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
+            //return cpu.PartlyDefined<uint64_t>(cpu.pstate.EL << 2, ~uint64_t(0b11 << 2));
           }
         } x; return &x;
       } break;
@@ -656,12 +656,11 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Stage 1 address translation, as if " << (e.op2 ? "writing to" : "reading from") << " EL1"; }
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t op2, AArch64& cpu, U64 addr) const override
           {
-            if (addr.ubits) { struct Bad {}; raise( Bad() ); }
             try
               {
-                MMU::TLB::Entry entry(addr.value);
+                MMU::TLB::Entry entry(cpu.untaint(AddrTV(), addr));
                 cpu.translate_address(entry, cpu.pstate.GetEL(), op2 ? mem_acc_type::write : mem_acc_type::read);
-                cpu.el1.PAR = PartiallyDefined<uint64_t>(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
+                cpu.el1.PAR = cpu.PartlyDefined<uint64_t>(entry.pa & 0x000ffffffffff000ull, 0xfff0000000000380ull);
               }
             catch (AArch64::DataAbort const& x)
               {
@@ -905,12 +904,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CPACR_EL1"; }
-          void Describe(Encoding, std::ostream& sink) const override
-          { sink << "Architectural Feature Access Control Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.CPACR = value.value; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          { return U64(cpu.CPACR); }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "Architectural Feature Access Control Register"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.CPACR = cpu.untaint(Bad(), value); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.CPACR); }
         } x; return &x;
       } break;
 
@@ -1091,22 +1087,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return
-              U64(0b0001)                          << 60 | // Indicates support for Random Number instructions
-              U64(0b0010)                          << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
-              U64(0b0010)                          << 52 | // Indicates support for flag manipulation instructions
-              U64(0b0000)                          << 48 | // Indicates support for FMLAL and FMLSL instructions
-              U64(0b0000)                          << 44 | // Indicates support for Dot Product instructions
-              U64(0b0000)                          << 40 | // Indicates support for SM4 instructions
-              U64(0b0000)                          << 36 | // Indicates support for SM3 instructions
-              U64(0b0000)                          << 32 | // Indicates support for SHA3 instructions
-              U64(0b0001)                          << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
-              PartiallyDefined<uint64_t>(0,0b1111) << 24 | // Reserved, RES0.
-              U64(0b0010)                          << 20 | // Indicates support for Atomic instructions
-              U64(0b0001)                          << 16 | // Indicates support for CRC32 instructions
-              U64(0b0000)                          << 12 | // Indicates support for SHA2 instructions (TODO)
-              U64(0b0000)                          <<  8 | // Indicates support for SHA1 instructions (TODO)
-              U64(0b0000)                          <<  4 | // Indicates support for AES instructions (TODO)
-              PartiallyDefined<uint64_t>(0,0b1111) <<  0;  // Reserved, RES0.
+              U64(0b0001)                           << 60 | // Indicates support for Random Number instructions
+              U64(0b0010)                           << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
+              U64(0b0010)                           << 52 | // Indicates support for flag manipulation instructions
+              U64(0b0000)                           << 48 | // Indicates support for FMLAL and FMLSL instructions
+              U64(0b0000)                           << 44 | // Indicates support for Dot Product instructions
+              U64(0b0000)                           << 40 | // Indicates support for SM4 instructions
+              U64(0b0000)                           << 36 | // Indicates support for SM3 instructions
+              U64(0b0000)                           << 32 | // Indicates support for SHA3 instructions
+              U64(0b0001)                           << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
+              cpu.PartlyDefined<uint64_t>(0,0b1111) << 24 | // Reserved, RES0.
+              U64(0b0010)                           << 20 | // Indicates support for Atomic instructions
+              U64(0b0001)                           << 16 | // Indicates support for CRC32 instructions
+              U64(0b0000)                           << 12 | // Indicates support for SHA2 instructions (TODO)
+              U64(0b0000)                           <<  8 | // Indicates support for SHA1 instructions (TODO)
+              U64(0b0000)                           <<  4 | // Indicates support for AES instructions (TODO)
+              cpu.PartlyDefined<uint64_t>(0,0b1111) <<  0;  // Reserved, RES0.
           }
         } x; return &x;
       } break;
@@ -1181,7 +1177,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             return
               U64(0b0000)                          << 60 | // Speculative use of faulting data
               U64(0b0000)                          << 56 | // Speculative use of out of context branch targets
-              PartiallyDefined<uint64_t>(0,0b1111) << 52 | // RES0
+              cpu.PartlyDefined<uint64_t>(0,0b1111) << 52 | // RES0
               U64(0b0000)                          << 48 | // Data Independent Timing
               U64(0b0000)                          << 44 | // Indicates support for Activity Monitors Extension
               U64(0b0000)                          << 40 | // Indicates support for MPAM Extension
@@ -1207,7 +1203,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           {
             return
-              PartiallyDefined<uint64_t>(0,-1) << 20 | // Reserved, RES0
+              cpu.PartlyDefined<uint64_t>(0,-1) << 20 | // Reserved, RES0
               U64(0b0000)                      << 16 | // MPAM Extension fractional field
               U64(0b0000)                      << 12 | // RAS Extension fractional field
               U64(0b0000)                      <<  8 | // Support for the Memory Tagging Extension
@@ -1359,10 +1355,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Memory Attribute Indirection Register (EL1)"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.mmu.MAIR_EL1 = value.value; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
-          { return U64(cpu.mmu.MAIR_EL1); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.mmu.MAIR_EL1 = cpu.untaint(Bad(), value); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.mmu.MAIR_EL1); }
         } x; return &x;
       } break;
 
@@ -1410,15 +1404,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
           {
             return U64(0)
-              | PartiallyDefined<uint64_t>(0, 0xffffff) << 40  // Reserved, RES0.
-              | U64(0)                                  << 32  // Aff3, Affinity level 3.
-              | PartiallyDefined<uint64_t>(1, 1)        << 31  // Reserved, RES1.
-              | U64(1)                                  << 30  // U, bit [30] Uniprocessor system.
-              | PartiallyDefined<uint64_t>(0, 0x1f)     << 25  // Bits [29:25] Reserved, RES0.
-              | U64(0)                                  << 24  // MT, bit [24] Lowest level of affinity consists of multi-threaded logical processors.
-              | U64(0)                                  << 16  // Aff2, Affinity level 2.
-              | U64(0)                                  <<  8  // Aff1, Affinity level 1.
-              | U64(0)                                  <<  0  // Aff0, Affinity level 0.
+              | cpu.PartlyDefined<uint64_t>(0, 0xffffff) << 40  // Reserved, RES0.
+              | U64(0)                                   << 32  // Aff3, Affinity level 3.
+              | cpu.PartlyDefined<uint64_t>(1, 1)        << 31  // Reserved, RES1.
+              | U64(1)                                   << 30  // U, bit [30] Uniprocessor system.
+              | cpu.PartlyDefined<uint64_t>(0, 0x1f)     << 25  // Bits [29:25] Reserved, RES0.
+              | U64(0)                                   << 24  // MT, bit [24] Lowest level of affinity consists of multi-threaded logical processors.
+              | U64(0)                                   << 16  // Aff2, Affinity level 2.
+              | U64(0)                                   <<  8  // Aff1, Affinity level 1.
+              | U64(0)                                   <<  0  // Aff0, Affinity level 0.
               ;
           }
         } x; return &x;
@@ -1532,8 +1526,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).SCTLR); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
           {
-            if (value.ubits) { struct Bad {}; raise( Bad() ); }
-            cpu.get_el(GetExceptionLevel(op1)).SetSCTLR(cpu, value.value);
+            struct Bad {};
+            cpu.get_el(GetExceptionLevel(op1)).SetSCTLR(cpu, cpu.untaint(Bad(), value));
           }
         } x; return &x;
       } break;
@@ -1850,8 +1844,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MDSCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor Debug System Control Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.TODO(); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.untaint(Bad (), value); cpu.TODO(); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
           { return U64(); }
         } x; return &x;
@@ -1862,7 +1855,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "OSDLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Double Lock Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.untaint(SBZTV(), value); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
@@ -1896,7 +1889,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "OSLAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Lock Access Register"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.untaint(SBZTV(), value); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
@@ -2092,8 +2085,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTKCTL_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Kernel Control register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.kctl); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_kctl( cpu, value.value ); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.vt.write_kctl( cpu, cpu.untaint(Bad(), value) ); }
         } x; return &x;
       } break;
 
@@ -2159,8 +2151,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CTL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer Control register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.read_ctl(cpu)); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_ctl(cpu, value.value); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.vt.write_ctl(cpu, cpu.untaint(Bad(), value)); }
         } x; return &x;
       } break;
 
@@ -2170,8 +2161,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer CompareValue register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.vt.cval); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_cval(cpu, value.value); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.vt.write_cval(cpu, cpu.untaint(Bad(), value)); }
         } x; return &x;
       } break;
 
@@ -2181,8 +2171,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_TVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer TimerValue register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(uint32_t(cpu.vt.read_tval(cpu))); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
-          { if (value.ubits) { struct Bad {}; raise( Bad () ); } cpu.vt.write_tval(cpu, value.value); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { struct Bad {}; cpu.vt.write_tval(cpu, cpu.untaint(Bad(), value)); }
         } x; return &x;
       } break;
 
@@ -2584,7 +2573,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "IMP_TAINT_SWAP_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Taint Swap register"; }
           U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return cpu.tvreg; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.tvreg = SwapTaint(value); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { std::swap(value.value, value.ubits); cpu.tvreg = value; }
         } x; return &x;
       } break;
     }
@@ -2653,7 +2642,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGBCR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Breakpoint Control Register #" << std::dec << int(e.crm); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.untaint(SBZTV(), value); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
@@ -2663,7 +2652,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGBVR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Breakpoint Value Register #" << std::dec << int(e.crm); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.untaint(SBZTV(), value); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
@@ -2673,7 +2662,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGWCR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Watchpoint Control Register#" << std::dec << int(e.crm); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.untaint(SBZTV(), value); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
@@ -2683,7 +2672,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGWVR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Watchpoint Value Register#" << std::dec << int(e.crm); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { if (value.ubits | value.value) { struct Bad {}; raise( Bad () ); } }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.untaint(SBZTV(), value); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
         } x; return &x;
       } break;
