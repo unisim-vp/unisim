@@ -17,8 +17,8 @@ fi
 
 has_two_levels_dirs=no
 genisslib_imported=no
-PACKAGE_DIR=$(cd $(dirname $0); pwd)
-UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
+PACKAGE_DIR=$(cd $(dirname $BASH_SOURCE); pwd)
+UNISIM_DIR=$(cd $(dirname $(dirname $BASH_SOURCE)); pwd)
 UNISIM_TOOLS_DIR="${UNISIM_DIR}/unisim_tools"
 UNISIM_LIB_DIR="${UNISIM_DIR}/unisim_lib"
 UNISIM_SIMULATOR_DIR="${UNISIM_DIR}/unisim_simulators/${SIMPKG_SRCDIR}"
@@ -68,51 +68,45 @@ function import()
 	return 1
 }
 
-function files()
+function list_pkg()
 {
+	local SEPFMT="$1"
+	shift
 	while [ $# -ne 0 ]; do
-		local LIST_NAME="$1"
-		local FOUND='no'
+		local ONLY_IN
+		local LIST_NAME
+		IFS=: read LIST_NAME ONLY_IN <<<$1
+		local SEP=""
 		for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
 			LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
 			if [ -e "${LIST_FILENAME}" ]; then
 				local FILENAME
 				while IFS= read -r FILENAME; do
-					FOUND='yes'
-					echo -n " ${FILENAME}"
+					if [[ ${FILENAME} != ${ONLY_IN}* ]]; then
+						continue;
+					fi
+					echo -n "${SEP}${FILENAME}"
+					SEP="$SEPFMT"
 				done < "${LIST_FILENAME}"
 			fi
 		done
-	
-		if [ "${FOUND}" != 'yes' ]; then
-			echo -e "\033[33mWARNING! There are no files in List \"${LIST_NAME}\"\033[0m" >&2
-		fi
 		
+#		if [ "${SEP}" == "" ]; then
+#			echo -e "\033[33mWARNING! There are no lines in List \"${LIST_NAME}\"\033[0m" >&2
+#		fi
 		shift
 	done
 }
 
+function files()
+{
+	list_pkg " " "$@"
+}
+
 function lines()
 {
-	while [ $# -ne 0 ]; do
-		local LIST_NAME="$1"
-		local FOUND='no'
-		for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
-			LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
-			if [ -e "${LIST_FILENAME}" ]; then
-				local LINE
-				while IFS= read -r LINE; do
-					FOUND='yes'
-					echo "${LINE}"
-				done < "${LIST_FILENAME}"
-			fi
-		done
-		
-		if [ "${FOUND}" != 'yes' ]; then
-			echo -e "\033[33mWARNING! There are no lines in List \"${LIST_NAME}\"\033[0m" >&2
-		fi
-		shift
-	done
+	list_pkg $'\n' "$@"
+	echo
 }
 
 function pkg_deps_changed()

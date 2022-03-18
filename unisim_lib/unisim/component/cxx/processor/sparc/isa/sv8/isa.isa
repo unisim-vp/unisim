@@ -60,7 +60,7 @@ action {void} execute( {ARCH&} {cpu} ) const {
 }
 
 action {void} disasm( {std::ostream&} {sink}, {uint32_t} {pc} ) const {
-  sink << "?";
+  sink << "<unknown instruction>";
 }
 
 include "unisim/component/cxx/processor/sparc/isa/sv8/memory.isa"

@@ -69,8 +69,6 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
 		sstr << "blob-import[" << i << "]";
 		string import_name = sstr.str();
 		blob_import[i] = new ServiceImport<Blob<ADDRESS> >(import_name.c_str(), this);
-		
-		blob_export.SetupDependsOn(*blob_import[i]);
 	}
 }
 
@@ -90,12 +88,10 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-bool Tee<ADDRESS, MAX_IMPORTS>::Setup(ServiceExportBase *srv_export)
+void Tee<ADDRESS, MAX_IMPORTS>::Setup(Blob<ADDRESS>*)
 {
-	if(srv_export == &blob_export) return SetupBlob();
-	
-	logger << DebugError << "Internal error" << EndDebugError;
-	return false;
+	if (not SetupBlob())
+		throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
@@ -124,6 +120,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 		{
 			if(*blob_import[i])
 			{
+				blob_import[i]->RequireSetup();
 				const unisim::util::blob::Blob<ADDRESS> *lower_blob = (*blob_import[i])->GetBlob();
 				if(lower_blob)
 				{

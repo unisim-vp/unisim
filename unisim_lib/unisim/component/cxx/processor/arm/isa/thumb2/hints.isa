@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 /**********************************************
 
        HINTS INSTRUCTIONS
@@ -50,7 +50,6 @@ nopw.disasm = {
 };
 
 nopw.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /*
@@ -94,7 +93,6 @@ dmb.disasm = {
 };
 
 dmb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* DSB instruction */
@@ -107,7 +105,6 @@ dsb.disasm = {
 };
 
 dsb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* ISB instruction */
@@ -120,8 +117,6 @@ isb.disasm = {
 };
 
 isb.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
 };
 
 { ARCH::Config::insns7 }:                               \
@@ -144,7 +139,7 @@ wfi.execute = {
   //   WriteHSR('000001', HSRString);
   //   TakeHypTrapException();
   // } else
-  
+
   cpu.WaitForInterrupt();
 };
 
@@ -173,7 +168,7 @@ wfi_w.execute = {
   //   WriteHSR('000001', HSRString);
   //   TakeHypTrapException();
   // } else
-  
+
   cpu.WaitForInterrupt();
 };
 

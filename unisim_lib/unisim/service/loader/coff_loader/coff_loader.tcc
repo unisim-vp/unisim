@@ -70,7 +70,6 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, logger(*this)
 {
-	loader_export.SetupDependsOn(memory_import);
 }
 
 template <class MEMORY_ADDR>
@@ -106,14 +105,9 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 }
 
 template <class MEMORY_ADDR>
-bool CoffLoader<MEMORY_ADDR>::Setup(ServiceExportBase *srv_export)
+void CoffLoader<MEMORY_ADDR>::Setup(Loader*)
 {
-	if(srv_export == &loader_export) return coff_loader != 0;
-	if(srv_export == &blob_export) return coff_loader != 0;
-	if(srv_export == &symbol_table_lookup_export) return coff_loader != 0;
-
-	logger << DebugError << "Internal Error" << EndDebugError;
-	return false;
+  memory_import.RequireSetup();
 }
 
 template <class MEMORY_ADDR>

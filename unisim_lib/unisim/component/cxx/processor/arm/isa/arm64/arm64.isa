@@ -39,7 +39,7 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little
+set endianness little;
 set addressclass {uint64_t}
 template <{typename} {ARCH}>
 
@@ -53,12 +53,14 @@ impl {
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <iostream>
+#include <cmath>
 
 #include <unisim/util/likely/likely.hh>
 #define evenly(x) (x)
 
 using unisim::util::arithmetic::RotateRight;
 using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::arithmetic::PopCount;
 
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/component/cxx/processor/arm/execute.hh>

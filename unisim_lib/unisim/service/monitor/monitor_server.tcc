@@ -44,30 +44,6 @@ MonitorServer<ADDRESS>::~MonitorServer()
 }
 
 template <class ADDRESS>
-void MonitorServer<ADDRESS>::OnDisconnect()
-{
-
-}
-
-template <class ADDRESS>
-bool MonitorServer<ADDRESS>::BeginSetup()
-{
-	return true;
-}
-
-template <class ADDRESS>
-bool MonitorServer<ADDRESS>::Setup(ServiceExportBase *service_export)
-{
-	return true;
-}
-
-template <class ADDRESS>
-bool MonitorServer<ADDRESS>::EndSetup()
-{
-	return true;
-}
-
-template <class ADDRESS>
 MonitorServer<ADDRESS>* MonitorServer<ADDRESS>::getInstance(Object *parent)
 {
 	if (singleton == NULL) {

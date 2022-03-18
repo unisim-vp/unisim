@@ -42,6 +42,7 @@
 #include <unisim/component/cxx/processor/sparc/isa_sv8.hh>
 #include <unisim/component/cxx/processor/sparc/trap.hh>
 #include <unisim/component/cxx/processor/sparc/asi.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/truth_table/truth_table.hh>
 #include <iosfwd>
 #include <inttypes.h>
@@ -108,7 +109,8 @@ namespace Star
     typedef unisim::component::cxx::processor::sparc::ASI ASI;
     
     // Decoder
-    typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Arch> Decoder;
+    typedef unisim::component::cxx::processor::sparc::isa::sv8::Decoder<Arch> SV8Decoder;
+    typedef unisim::component::cxx::processor::opcache::OpCache<SV8Decoder> Decoder;
     typedef unisim::component::cxx::processor::sparc::isa::sv8::Operation<Arch> Operation;
 
     // Memory system

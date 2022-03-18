@@ -50,18 +50,20 @@ namespace SSv8 {
   {
     char const* _imgpath = argv[0];
     // Loading image
-    Trace::chan("sys") << "\n*** Image load ***" << endl;
+    Trace::chan("sys") << "\n*** Image load ***" << std::endl;
     {
-      ifstream imgsrc( _imgpath );
+      std::ifstream imgsrc( _imgpath );
       if( not imgsrc.good() ) {
-        std::cerr << "Can't open image file: " << _imgpath << endl;
+        std::cerr << "Can't open image file: " << _imgpath << std::endl;
         throw OpenError;
       }
-      ptrdiff_t size = imgsrc.seekg( 0, ios::end ).tellg();
-      uint8_t text[size];
-      imgsrc.seekg( 0, ios::beg ).read( (char*)text, size );
+      ptrdiff_t size = imgsrc.seekg( 0, std::ios::end ).tellg();
+
+      std::vector<uint8_t> text;
+      text.resize(size);
+      imgsrc.seekg( 0, std::ios::beg ).read( (char*)&text[0], size );
       
-      SSv8::Image image( text, size );
+      SSv8::Image image( &text[0], size );
       
       Trace::chan("sys") << "\nProgramHeaders:\n";
       for( uint32_t idx = 0; idx < image.phnum(); ++idx ) {
@@ -81,7 +83,7 @@ namespace SSv8 {
           m_arch.memcpy( programhdr.vaddr(), prog.m_base, prog.m_size );
         } break;
         default:
-          cerr << "Not a statically compiled program (p_type: " << programhdr.type() << ")." << endl;
+          std::cerr << "Not a statically compiled program (p_type: " << programhdr.type() << ")." << std::endl;
           throw ImageError;
         }
       }

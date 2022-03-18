@@ -2,7 +2,7 @@
  *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
- *  
+ *
  * FUZR RENAULT CEA FILE
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
@@ -74,7 +74,7 @@ struct ArmBranch
 {
   typedef ArmProcessor::Config Config;
   struct InsnBranch {};
-  
+
   typedef x::XValue<double>   F64;
   typedef x::XValue<float>    F32;
   typedef x::XValue<bool>     BOOL;
@@ -91,13 +91,13 @@ struct ArmBranch
     : path(&root), r15(addr + (_thumb?4:8)), insn_addr(addr), next_insn_addr(addr+length), thumb(_thumb), has_branch(false)
   {
   }
-  
+
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   ActionNode* path;
   U32 r15, insn_addr, next_insn_addr;
   bool thumb, has_branch;
   BOOL next_thumb;
-  
+
   U32 GetGPR(int idx) { if (idx != 15) return U32(); return r15; }
   void SetGPR(int idx, U32 val)
   {
@@ -110,7 +110,7 @@ struct ArmBranch
     if (idx != 15) return;
     this->BranchExchange( val, B_JMP );
   }
-  
+
   void BranchExchange(U32 target, branch_type_t branch_type)
   {
     next_thumb = BOOL(target & U32(1));
@@ -126,14 +126,19 @@ struct ArmBranch
   U32 GetCIA() { return this->insn_addr; }
   U32 GetNIA() { return this->next_insn_addr; }
 
-  U32  GetVU32( unsigned idx ) { return U32( 0 ); }
+  U32  GetVU32( unsigned idx ) { return U32(); }
   void SetVU32( unsigned idx, U32 val ) {}
-  U64  GetVU64( unsigned idx ) { return U64( 0 ); }
+  U64  GetVU64( unsigned idx ) { return U64(); }
   void SetVU64( unsigned idx, U64 val ) {}
-  F32  GetVSR( unsigned idx ) { return F32( 0 ); }
+  F32  GetVSR( unsigned idx ) { return F32(); }
   void SetVSR( unsigned idx, F32 val ) {}
-  F64  GetVDR( unsigned idx ) { return F64( 0 ); }
+  F64  GetVDR( unsigned idx ) { return F64(); }
   void SetVDR( unsigned idx, F64 val ) {}
+
+  template <class ELEMT> void SetVDE( unsigned reg, unsigned idx, ELEMT const& value ) {}
+  template <class ELEMT> ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait ) { return ELEMT(); }
+
+  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { return U8(); }
 
   U32  GetVSU( unsigned idx ) { return U32(); }
   void SetVSU( unsigned idx, U32 val ) {}
@@ -145,7 +150,7 @@ struct ArmBranch
     template <typename F, typename V> void Set( F, V ) {}
     template <typename F> U32 Get( F ) { return U32(); }
   } xpsr;
-  
+
   PSR&     CPSR() { return xpsr; };
 
   void SetCPSR( U32 const&, uint32_t ) {}
@@ -184,7 +189,7 @@ struct ArmBranch
   U32  MemRead32( U32 const& ) { return U32(); }
   U16  MemRead16( U32 const& ) { return U16(); }
   U8    MemRead8( U32 const& ) { return  U8(); }
-  
+
   void MemUWrite32( U32 const&, U32 const& ) {}
   void MemUWrite16( U32 const&, U16 const& ) {}
   void  MemWrite32( U32 const&, U32 const& ) {}
@@ -215,6 +220,8 @@ struct ArmBranch
   void SetExclusiveMonitors( U32 const&, int ) {}
   bool ExclusiveMonitorsPass( U32 const&, int ) { return true; }
   void ClearExclusiveLocal() {}
+  void CheckAlignment( U32 addr, unsigned alignment ) {}
+
   bool IntegerZeroDivide( BOOL const& ) { return false; }
   void BKPT( int ) {  }
 
@@ -235,7 +242,7 @@ struct ArmBranch
   U32 FPSCR, FPEXC;
   U32 RoundTowardsZeroFPSCR() { return U32(); }
   U32 RoundToNearestFPSCR() { return U32(); }
-  
+
   struct FP
   {
     template <typename T> static T Abs(T) { return T(); }
@@ -251,7 +258,7 @@ struct ArmBranch
     template <typename T> static void Sub( T&, T const&, ArmBranch&, U32 const& ) {}
     template <typename T> static void Div( T&, T const&, ArmBranch&, U32 const& ) {}
     template <typename T> static void Mul( T&, T const&, ArmBranch&, U32 const& ) {}
-    
+
     template <typename T> static BOOL IsSNaN(T const&) { return BOOL(); }
     template <typename T> static BOOL IsQNaN(T const&) { return BOOL(); }
     template <typename T> static BOOL IsInvalidMulAdd( T&, T const&, T const&, U32 const& ) { return BOOL(); }
@@ -306,8 +313,8 @@ ArmProcessor::Step( Decoder& decoder )
 
   // Instruction boundary next_insn_addr becomes current_insn_addr
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
-  
-  // Fetch 
+
+  // Fetch
   CodeType insn = ReadInsn(insn_addr);
 
   // Decode
@@ -322,19 +329,21 @@ ArmProcessor::Step( Decoder& decoder )
       delete op;
       op = page.ops[insn_offset] = decoder.NCDecode( insn_addr, insn );
       insn_length = op->GetLength() / 8;
-        
+
       {
         auto bop = AMO<Decoder>::bdecoder.NCDecode( insn_addr, insn );
-          
+
         ActionNode root;
         for (bool end = false; not end;)
           {
             ArmBranch ab( root, insn_addr, insn_length, AMO<Decoder>::thumb );
-            bop->execute( ab );
+            using unisim::component::cxx::processor::arm::CheckCondition;
+            if (AMO<Decoder>::thumb ? CheckCondition(ab, ab.itcond()) : CheckCondition(ab, op->GetEncoding() >> 28))
+              bop->execute( ab );
             op->branch.update( ab.has_branch, ab.next_insn_addr );
             end = ab.path->close();
           }
-    
+
         delete bop;
       }
     }
@@ -352,7 +361,8 @@ ArmProcessor::Step( Decoder& decoder )
   this->gpr[15] = insn_addr + (AMO<Decoder>::thumb ? 4 : 8);
   this->next_insn_addr = insn_addr + insn_length;
 
-  op->execute( *this );
+  if (CheckCondition(*this, AMO<Decoder>::thumb ? itcond() : op->GetEncoding() >> 28))
+    op->execute( *this );
 
   if (AMO<Decoder>::thumb)
     this->ITAdvance();
@@ -379,7 +389,7 @@ ArmProcessor::Disasm( Decoder& decoder )
     insn_tag = insn_idx / ArmProcessor::OPPAGESIZE,
     insn_offset = insn_idx % ArmProcessor::OPPAGESIZE;
   OpPage& page = AMO<Decoder>::GetOpPage(*this, insn_tag);
-  
+
   if (Operation* op = page.ops[insn_offset])
     {
       std::ostringstream buf;
@@ -398,7 +408,7 @@ ArmProcessor::get_asm()
     Disasm(thumb_decoder);
   else
     Disasm(arm32_decoder);
-  
+
   return asmbuf.c_str();
 }
 
@@ -448,7 +458,7 @@ ArmProcessor::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
   uint32_t const lo_mask = size - 1;
   if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
-  
+
   if (unlikely(misalignment and not unisim::component::cxx::processor::arm::sctlr::A.Get( this->SCTLR )))
     {
       uint32_t eaddr = addr;
@@ -471,7 +481,7 @@ ArmProcessor::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint32_t const lo_mask = size - 1;
   if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
-  
+
   if (unlikely(misalignment))
     MemoryException(1/*Write*/, addr, "misalignment");
 
@@ -485,7 +495,7 @@ ArmProcessor::PerformUReadAccess( uint32_t addr, uint32_t size )
   uint32_t const lo_mask = size - 1;
   if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
-  
+
   if (unlikely(misalignment and not unisim::component::cxx::processor::arm::sctlr::A.Get( this->SCTLR )))
     {
       uint32_t result = 0;
@@ -508,14 +518,14 @@ ArmProcessor::PerformReadAccess( uint32_t addr, uint32_t size )
   uint32_t const lo_mask = size - 1;
   if (unlikely((lo_mask > 3) or (size & lo_mask))) { struct BadSize {}; throw BadSize(); }
   uint32_t misalignment = addr & lo_mask;
-  
+
   if (unlikely(misalignment))
     MemoryException(0/*Read*/, addr, "misalignment");
 
   uint64_t value = 0;
   unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
   PhysicalReadMemory(addr, size, endianness, &value);
-  
+
   return value;
 }
 
@@ -546,3 +556,4 @@ ArmProcessor::BKPT( int bkpt )
   buf << "ProcessorException('breakpoint'," << std::dec << bkpt << ")";
   abort(buf.str());
 }
+

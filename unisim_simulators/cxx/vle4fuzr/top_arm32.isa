@@ -10,8 +10,6 @@
 
 include "unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
-set withcache_p false;
-
 decl {
   #include <emu.hh>
 }

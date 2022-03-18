@@ -109,7 +109,6 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_debug_dwarf("debug-dwarf", this, debug_dwarf,
 			"Enable/Disable debugging of DWARF")
 {
-	loader_export.SetupDependsOn(memory_import);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -194,16 +193,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup(ServiceExportBase *srv_export)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup(Loader*)
 {
-	if(srv_export == &symbol_table_lookup_export) return elf_loader != 0;
-	if(srv_export == &loader_export) return elf_loader != 0;
-	if(srv_export == &blob_export) return elf_loader != 0;
-	if(srv_export == &stmt_lookup_export) return elf_loader != 0;
-	if(srv_export == &backtrace_export) return elf_loader != 0;
-
-	logger << DebugError << "Internal Error" << EndDebugError;
-	return false;
+	memory_import.RequireSetup();
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

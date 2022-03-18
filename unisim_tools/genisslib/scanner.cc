@@ -69,7 +69,7 @@ namespace
     return SourceCode( buf.c_str(), std::move(fl) );
   }
   
-  unsigned GetInteger(CLex::Scanner& src)
+  uint64_t GetInteger(CLex::Scanner& src)
   {
     unsigned base = 10;
     if (src.lch == '0')
@@ -80,7 +80,7 @@ namespace
         else { src.putback = true; return 0; }
       }
 
-    unsigned res = 0;
+    uint64_t res = 0;
     for (bool hasdigit = false;; hasdigit = true)
       {
         unsigned digit = 16;
@@ -141,22 +141,21 @@ namespace
           case CLex::Scanner::More:
             {
               // Separator
-              bool rewind = src.next() != CLex::Scanner::Less;
-              if (rewind)
-                {
-                  if (src.lnext != CLex::Scanner::Name or
-                      not src.expect("rewind", &CLex::Scanner::get_name) or
-                      src.next() != CLex::Scanner::Less)
-                    throw src.unexpected();
-                }
-              bitfields.push_back( new SeparatorBitField( rewind ) );
+              if (src.next() != CLex::Scanner::Less)
+                throw src.unexpected();
+              bitfields.push_back( new SeparatorBitField );
             }
             break;
             
           case CLex::Scanner::Number:
             {
               // OpCode
-              unsigned bits = GetInteger(src), size = GetArraySize(src);
+              uint64_t bits = GetInteger(src), size = GetArraySize(src);
+              if (size < 64 and bits >> size)
+                { 
+                  symfl.err( "error: in op %s opcode overflow (0x%x[%u])\n", symbol.str(), bits, size);
+                  throw src.unexpected();
+                }
               bitfields.push_back( new OpcodeBitField( size, bits ) );
             }
             break;
@@ -207,7 +206,7 @@ namespace
           default:
             {
               // Operand
-              int shift = 0;
+              int lshift = 0;
               bool sext = false;
               std::string buf;
               
@@ -222,7 +221,7 @@ namespace
                             throw src.unexpected();
                           if (src.next() != CLex::Scanner::Number)
                             throw src.unexpected();
-                          shift = -GetInteger(src);
+                          lshift = GetInteger(src);
                           if (src.next() != CLex::Scanner::More)
                             throw src.unexpected();
                         }
@@ -263,7 +262,7 @@ namespace
               
               unsigned size = GetArraySize(src);
 
-              bitfields.push_back( new OperandBitField( size, symbol, shift, final_size, sext ) );
+              bitfields.push_back( new OperandBitField( size, symbol, lshift, final_size, sext ) );
             }
             break;
           }
@@ -274,7 +273,8 @@ namespace
         if (src.lnext != CLex::Scanner::Colon)
           throw src.unexpected();
       }
-    
+
+    isa.reorder( bitfields );
     return new Operation(symbol, bitfields, comments, 0, symfl);
   }
 
@@ -297,13 +297,16 @@ namespace
         if (source.next() != CLex::Scanner::ObjectOpening)
           throw source.unexpected();
         SourceCode* c_type = new SourceCode(GetSourceCode(source));
-        if (source.next() != CLex::Scanner::Assign)
-          { var_list.push_back( new Variable( varname, c_type, 0 ) ); break; }
-        if (source.next() != CLex::Scanner::ObjectOpening)
-          throw source.unexpected();
-        SourceCode* c_init = new SourceCode(GetSourceCode(source));
+        SourceCode* c_init = 0;
+        if (source.next() == CLex::Scanner::Assign)
+          {
+            if (source.next() != CLex::Scanner::ObjectOpening)
+              throw source.unexpected();
+            c_init = new SourceCode(GetSourceCode(source));
+            source.next();
+          }
         var_list.push_back( new Variable( varname, c_type, c_init ) );
-        if (source.next() != CLex::Scanner::Comma)
+        if (source.lnext != CLex::Scanner::Comma)
           break;
       }
   }
@@ -564,7 +567,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                     if (sdclass)
                       {
                         sdloc.err( "error: subdecoder class redeclared." );
-                        sdclass->m_fileloc.err( "subdecoder class previously declared here." );
+                        sdclass->nmcode.fileloc.err( "subdecoder class previously declared here." );
                         throw CLex::Scanner::Unexpected();
                       }
   
@@ -695,20 +698,21 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                   }
                 else if (source.lnext == CLex::Scanner::GroupOpening)
                   {
-                    do {
-                      FileLoc def; char const* err = 0;
-                      if  (Operation* prev_op = isa.operation( symbol ))
-                        { err = "operation"; def = prev_op->fileloc; }
-                      else if (Group* prev_gr = isa.group( symbol ))
-                        { err =     "group"; def = prev_gr->fileloc; }
-                      else
-                        break;
+                    isa.check_name_validity("group", symbol, symfl);
+                    // do {
+                    //   FileLoc def; char const* err = 0;
+                    //   if  (Operation* prev_op = isa.operation( symbol ))
+                    //     { err = "operation"; def = prev_op->fileloc; }
+                    //   else if (Group* prev_gr = isa.group( symbol ))
+                    //     { err =     "group"; def = prev_gr->fileloc; }
+                    //   else
+                    //     break;
                       
-                      symfl.err( "error: %s name conflicts with %s `%s'", err, err, symbol.str() );
-                      def.err( "%s `%s' previously defined here", err, symbol.str() );
-                      throw CLex::Scanner::Unexpected();
+                    //   symfl.err( "error: %s name conflicts with %s `%s'", err, err, symbol.str() );
+                    //   def.err( "%s `%s' previously defined here", err, symbol.str() );
+                    //   throw CLex::Scanner::Unexpected();
                       
-                    } while (0);
+                    // } while (0);
                     
                     struct : Isa::OOG
                     {

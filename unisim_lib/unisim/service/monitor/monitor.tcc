@@ -76,12 +76,6 @@ bool Monitor<ADDRESS>::BeginSetup()
 }
 
 template <class ADDRESS>
-bool Monitor<ADDRESS>::Setup(ServiceExportBase *service_export)
-{
-	return true;
-}
-
-template <class ADDRESS>
 bool Monitor<ADDRESS>::EndSetup()
 {
 	bool has_architecture_endian = false;

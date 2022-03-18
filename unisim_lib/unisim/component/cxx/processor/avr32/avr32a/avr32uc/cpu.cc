@@ -35,6 +35,7 @@
  
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/config.hh>
 
 namespace unisim {

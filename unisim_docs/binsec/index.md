@@ -17,10 +17,10 @@ UNISIM-VP is available on frama-c's git, so you just have to clone its base dire
 
     $ git clone git@git.frama-c.com:unisim-vp/unisim.git "$USIMDIR"/unisim
 
-The official branch for binsec stable decoders is armsec, so better stick to it.
+The official branch for binsec stable decoders is binsec, so better stick to it.
 
     $ cd "$USIMDIR"/unisim
-    $ git checkout armsec
+    $ git checkout binsec
 
 ## Installing a decoder
 

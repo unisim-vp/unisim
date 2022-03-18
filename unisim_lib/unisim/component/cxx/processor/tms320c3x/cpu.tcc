@@ -152,9 +152,6 @@ CPU(const char *name,
 	param_verbose_all("verbose-all", this, verbose_all),
 	param_verbose_setup("verbose-setup", this, verbose_setup)
 {
-	disasm_export.SetupDependsOn(memory_import);
-	memory_export.SetupDependsOn(memory_import);
-  
 	regs[REG_ST].SetLoWriteMask(ST_WRITE_MASK);
 	regs[REG_IE].SetLoWriteMask(IE_WRITE_MASK);
 	regs[REG_IF].SetLoWriteMask(IF_WRITE_MASK);
@@ -348,6 +345,13 @@ CPU<CONFIG, DEBUG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type
 
 template<class CONFIG, bool DEBUG>
 void
+CPU<CONFIG, DEBUG>::Setup(Memory<typename CONFIG::address_t>*)
+{
+	memory_import.RequireSetup();
+}
+
+template<class CONFIG, bool DEBUG>
+void
 CPU<CONFIG, DEBUG> ::
 ResetMemory()
 {
@@ -506,6 +510,13 @@ CPU<CONFIG, DEBUG>::ScanRegisters( unisim::service::interfaces::RegisterScanner&
 //===============================================================
 //= DebugDisasmInterface interface methods                START =
 //===============================================================
+
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG>::Setup(Disassembly<typename CONFIG::address_t>*)
+{
+	memory_import.RequireSetup();
+}
 
 /**
  * Returns a string with the disassembling for the instruction found

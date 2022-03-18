@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2020,
+ *  Copyright (c) 2009-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,116 +32,14 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <arch.hh>
-#include <unisim/util/symbolic/binsec/binsec.hh>
-#include <unisim/util/symbolic/symbolic.hh>
+#include <decoder.hh>
 #include <iostream>
-#include <cstdint>
+#include <fstream>
+#include <vector>
+#include <cstdlib>
+#include <cstring>
+#include <inttypes.h>
 
-struct InstructionAddress : public unisim::util::symbolic::binsec::ASExprNode
-{
-  InstructionAddress() {}
-  virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
-  virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<InstructionAddress const&>( rhs ) ); }
-  int compare( InstructionAddress const& rhs ) const { return 0; }
-};
-
-struct Translator
-{
-  typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
-  typedef unisim::util::symbolic::binsec::dbx print_dbx;
-  
-  Translator(uint64_t _addr, std::vector<uint8_t>&& _code)
-    : code(std::move(_code)), addr(_addr), coderoot(new ActionNode)
-  {}
-  ~Translator() { delete coderoot; }
-
-  template <class MODE>
-  void
-  extract( MODE const&, std::ostream& sink )
-  {
-    typedef Processor<MODE> Proc;
-    typedef typename Proc::nat_addr_t addr_t;
-    typedef unisim::component::cxx::processor::intel::Operation<Proc> Operation;
-    
-    sink << "(address . " << print_dbx(MODE::GREGSIZE, addr) << ")\n";
-  
-    // Instruction decoding
-    struct Instruction
-    {
-      Instruction(addr_t address, uint8_t* bytes) : operation()
-      {
-        operation = Proc::Decode(address, bytes);
-      }
-      ~Instruction() { delete operation; }
-      Operation* operator -> () { return operation; }
-      Operation& operator * () { return *operation; }
-      Operation* operation;
-    };
-    Instruction instruction( addr, &code[0] );
-
-    if (instruction->length > code.size()) { struct LengthError {}; throw LengthError(); }
-    code.resize(instruction->length);
-
-    sink << "(opcode . \"";
-    char const* sep = "";
-    for (auto byte : code) { sink << sep; sep = " "; for (int n = 0; n < 2; n++, byte <<=4) sink << "0123456789abcdef"[byte>>4&15]; }
-    sink << "\")\n(size . " << code.size() << ")\n";
-    
-    typename Proc::addr_t insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
-    // Proc::U32      insn_addr = Expr(new InstructionAddress()); //< symbolic instruction address
-    Proc reference;
-    
-    // Disassemble
-    sink << "(mnemonic . \"";
-    try { instruction->disasm( sink ); }
-    catch (...) { sink << "(bad)"; }
-    sink << "\")\n";
-    
-    // Get actions
-    for (bool end = false; not end;)
-      {
-        Proc state;
-        state.path = coderoot;
-        state.step(*instruction);
-        end = state.close(reference);
-      }
-    coderoot->simplify();
-    coderoot->commit_stats();
-  }
-
-  void translate( bool mode64, std::ostream& sink )
-  {
-    try
-      {
-        if (mode64)
-          extract( Intel64(), sink );
-        else
-          extract( Compat32(), sink );
-      }
-    catch (ProcessorBase::Undefined const&)
-      {
-        sink << "(undefined)\n";
-        return;
-      }
-    catch (...)
-      {
-        sink << "(unimplemented)\n";
-        return;
-      }
-
-    // Translate to DBA
-    unisim::util::symbolic::binsec::Program program;
-    program.Generate( coderoot );
-    for (auto stmt : program)
-      sink << "(" << print_dbx(mode64 ? 8 : 4, addr) << ',' << stmt.first << ") " << stmt.second << std::endl;
-  }
-  
-  std::vector<uint8_t> code;
-  uint64_t addr;
-  ActionNode* coderoot;
-};
-  
 bool getu64( uint64_t& res, char const* arg )
 {
   char *end;
@@ -163,34 +61,72 @@ bool getbytes( std::vector<uint8_t>& res, char const* arg )
   return res.size();
 }
 
-char const* usage()
+void usage( std::ostream& sink, char const* progname )
 {
-  return
-    "usage: <program> x86|intel64 <address> <encoding>\n";
+  sink << "usage:\n"
+       << "  " << progname << " x86|intel64 <address> <encoding>\n"
+       << "  " << progname << " x86|intel64 <file>\n";
+}
+
+bool process( intel::Decoder& decoder, std::ostream& sink, char const* as, char const* cs )
+{
+  uint64_t addr;
+  std::vector<uint8_t> code;
+
+  if (not getu64(addr, as) or not getbytes(code, cs))
+    {
+      std::cerr << "<addr> and <code> should be numeric values (got " << as << " and " << cs << ").\n";
+      return false;
+    }
+
+  decoder.process( sink, addr, std::move(code) );
+  return true;
 }
 
 int
 main( int argc, char** argv )
 {
+  if (argc < 2)
+    {
+      std::cerr << "Missing mode (x86|intel64)\n";
+      usage(std::cerr, argv[0]);
+      return 1;
+    }
+
+  intel::Decoder decoder;
+  decoder.mode64 = strcmp("intel64", argv[1]) == 0;
+  
+  if (argc == 3)
+    {
+      std::ifstream source(argv[2]);
+      if (not source.good())
+        {
+          std::cerr << "Cannot open " << argv[2] << "\n";
+          usage(std::cerr, argv[0]);
+          return 1;
+        }
+      
+      std::string abuf, cbuf;
+      for (;;)
+        {
+          if (not (source >> abuf).good() or not getline(source, cbuf).good()) break;
+          std::ofstream sink("/dev/null");
+          if (not process(decoder, sink, abuf.c_str(), cbuf.c_str()))
+            { usage(std::cerr, argv[0]); return 1; }
+        }
+      
+      return 0;
+    }
+  
   if (argc != 4)
     {
-      std::cerr << "Wrong number of CLI arguments.\n" << usage();
+      std::cerr << "Wrong number of CLI arguments.\n";
+      usage(std::cerr, argv[0]);
       return 1;
     }
 
-  uint64_t addr;
-  std::vector<uint8_t> code;
-
-  if (not getu64(addr, argv[2]) or not getbytes(code, argv[3]))
-    {
-      std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
-      return 1;
-    }
-
-  bool mode64 = (strcmp("intel64", argv[1]) == 0);
-
-  Translator actset( addr, std::move(code) );
-  actset.translate( mode64, std::cout );
+  if (not process(decoder, std::cout, argv[2], argv[3] ))
+    { usage(std::cerr, argv[0]); return 1; }
   
   return 0;
 }

@@ -38,7 +38,7 @@
 
 VIODisk::VIODisk()
   : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
-  , rq(), storage(), Capacity(0), WriteBack(1)
+  , rq(), Capacity(0), WriteBack(1)
 {}
 
 void
@@ -209,10 +209,9 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
   
   struct Request
   {
-    Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type(), diskpos(), status() {}
+    Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type(), status() {}
     enum { Head, Body, Status } state; VIOAccess const& vioa; VIODisk& disk;
     enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
-    uint64_t diskpos;
     enum { OK, IOERR, UNSUPP } status;
 
     uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last)
@@ -245,8 +244,7 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               /* Nothing to do for now */
               break;
             case In: case Out:
-              diskpos = 512*vioa.read(buf + 8, 8);
-              disk.storage.seekg(diskpos);
+              disk.seek(VIODisk::BLKSIZE*vioa.read(buf + 8, 8));
               break;
             }
           
@@ -261,20 +259,12 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               break;
             case In:
               if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              for (VIOAccess::Iterator itr(buf, len, true); itr.next(vioa);)
-                {
-                  disk.storage.read((char*)itr.slice.bytes, itr.slice.size);
-                  diskpos += itr.slice.size;
-                }
+              disk.read(vioa, buf, len);
               wlen += len;
               break;
             case Out:
               if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              for (VIOAccess::Iterator itr(buf, len, false); itr.next(vioa);)
-                {
-                  disk.storage.write((char const*)itr.slice.bytes, itr.slice.size);
-                  diskpos += itr.slice.size;
-                }
+              disk.write(vioa, buf, len);
               break;
             case Flush: std::cerr << "TODO: Flush\n"; raise( Bad() );
             case Discard: std::cerr << "TODO: Discard\n"; raise( Bad() );
@@ -368,52 +358,6 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
 }
 
 void
-VIODisk::open(char const* filename)
-{
-  storage.open(filename);
-  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
-  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
-  Capacity = size / 512;
-}
-
-uint64_t
-VIOAccess::read(uint64_t addr, unsigned size) const
-{
-  uint64_t res = 0, wbyte = 0;
-
-  for (Iterator itr(addr, size, false); itr.next(*this);)
-    {
-      for (uint64_t rbyte = 0; rbyte < itr.slice.size; ++rbyte, ++wbyte)
-        res |= uint64_t(itr.slice.bytes[rbyte]) << 8*wbyte;
-    }
-  
-  return res;
-}
-
-void
-VIOAccess::write(uint64_t addr, unsigned size, uint64_t value) const
-{
-  uint64_t rbyte = 0;
-  
-  for (Iterator itr(addr, size, true); itr.next(*this);)
-    {
-      for (uint64_t wbyte = 0; wbyte < itr.slice.size; ++rbyte, ++wbyte)
-        itr.slice.bytes[wbyte] = value >> 8*rbyte;
-    }
-}
-
-bool
-VIOAccess::Iterator::next(VIOAccess const& vioa)
-{
-  if (uint64_t nleft = left - slice.size)
-    { left = nleft; ptr += slice.size; }
-  else
-    return false;
-  slice = vioa.access(ptr, left, write);
-  return true;
-}
-
-void
 VIOQueue::sync(SnapShot& snapshot)
 {
   snapshot.sync(size);
@@ -430,6 +374,9 @@ VIODisk::sync(SnapShot& snapshot)
     snapshot.sync(*reg);
   rq.sync(snapshot);
   snapshot.sync(WriteBack);
+  uint64_t diskpos = tell();
+  snapshot.sync(diskpos);
+  seek(diskpos);
 }
 
 void

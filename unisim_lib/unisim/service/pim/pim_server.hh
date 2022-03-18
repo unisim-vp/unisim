@@ -102,7 +102,6 @@ using unisim::kernel::variable::Parameter;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::Simulator;
@@ -169,7 +168,10 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	bool SetupMemReport();
+	virtual void Setup(DebugYielding*) { SetupMemReport(); }
+	virtual void Setup(TrapReporting*) { SetupMemReport(); }
+	virtual void Setup(DebugEventListener<ADDRESS>*) { SetupMemReport(); }
 	virtual bool EndSetup();
 
 	virtual void Stop(int exit_status);

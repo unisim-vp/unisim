@@ -70,7 +70,6 @@ using namespace tlm_utils;
 
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
@@ -81,10 +80,9 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_CAN_ProtocolTypes;
 
 using unisim::kernel::tlm2::PayloadFabric;
 
-class CAN_STUB :
-	public Object
+class CAN_STUB
+	: public Object
 	, public sc_module
-
 	, virtual public tlm_fw_transport_if<UNISIM_CAN_ProtocolTypes >
 	, virtual public tlm_bw_transport_if<UNISIM_CAN_ProtocolTypes >
 
@@ -98,8 +96,6 @@ public:
 	~CAN_STUB();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
 
 	virtual void Stop(int exit_status);
 

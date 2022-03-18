@@ -53,9 +53,9 @@ using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::StatementLookup;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
-class Tee :
-	public Client<StatementLookup<ADDRESS> >,
-	public Service<StatementLookup<ADDRESS> >
+class Tee
+	: public Service<StatementLookup<ADDRESS> >
+	, public Client<StatementLookup<ADDRESS> >
 {
 public:
 	ServiceExport<StatementLookup<ADDRESS> > stmt_lookup_export;
@@ -63,6 +63,8 @@ public:
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
+
+	void Setup(StatementLookup<ADDRESS>*) override { for(unsigned i = 0; i < MAX_IMPORTS; i++) stmt_lookup_import[i]->RequireSetup(); }
 
 	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;

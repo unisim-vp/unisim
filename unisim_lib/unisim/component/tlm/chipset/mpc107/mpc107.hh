@@ -108,7 +108,6 @@ using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SnoopingFSBRequest;
@@ -224,7 +223,7 @@ public:
 	/* Initialization methods of the service */
 	virtual void Reset();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool Setup(Memory<PHYSICAL_ADDR>*);
 		
 	/* Methods to implement for Service<MemoryInterface<PHYSICAL_ADDR> > */
 	virtual void ResetMemory();

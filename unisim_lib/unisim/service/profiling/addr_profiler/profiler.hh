@@ -53,7 +53,6 @@ using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Profiling;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -74,8 +73,6 @@ public:
 	virtual ~Profiler();
 	
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
 	
 	virtual bool ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportCommitInstruction(ADDRESS addr, unsigned size);

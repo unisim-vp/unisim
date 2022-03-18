@@ -109,14 +109,6 @@ bool ATD_PWM_STUB::BeginSetup() {
 	return (true);
 }
 
-bool ATD_PWM_STUB::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-bool ATD_PWM_STUB::EndSetup() {
-	return (true);
-}
-
 void ATD_PWM_STUB::Stop(int exit_status) {
 	terminated = true;
 }

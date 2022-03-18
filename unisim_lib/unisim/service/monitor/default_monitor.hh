@@ -10,7 +10,6 @@
 #include <unisim/service/interfaces/monitor_if.hh>
 
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Monitor_if;
 
@@ -30,7 +29,6 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *service_export);
 	virtual bool EndSetup();
 
 	virtual int generate_monitor_spec(const char* file_path);

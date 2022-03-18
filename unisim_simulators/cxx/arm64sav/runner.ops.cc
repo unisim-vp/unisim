@@ -33,13 +33,19 @@
  */
 
 #include <runner.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <cmath>
+using std::isnan;
+using std::min;
+using std::max;
 
-Runner::Operation*
+#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
+
+std::unique_ptr<Runner::Operation>
 Runner::decode(uint64_t insn_addr, uint32_t code)
 {
   static Decoder decoder;
-  Operation* op = current_instruction = decoder.Decode( insn_addr, code );
+  Operation* op = current_instruction = decoder.NCDecode( insn_addr, code );
   if (not op) { struct BadWolf {}; throw BadWolf(); }
-  return op;
+  return std::unique_ptr<Operation>( op );
 }

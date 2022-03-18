@@ -48,6 +48,8 @@ Scanner::Scanner( Interface& iif )
   , flags()
   , current_insn_addr(newRegRead(PC()))
   , next_insn_addr()
+  , vector_views()
+  , vector_data()
 {
   for (Flag reg; reg.next();)
     flags[reg.idx()] = BOOL(newRegRead( reg ));
@@ -55,12 +57,19 @@ Scanner::Scanner( Interface& iif )
   //gpr[31] = newRegRead(SP());
 }
 
+Scanner::~Scanner()
+{
+  for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
+    vector_views[reg].Clear(&vector_data[reg][0]);
+}
+
 void
 Scanner::step( Arm32::Operation const& op )
 {
   next_insn_addr = current_insn_addr + U32(4);
   gpr[15] = current_insn_addr + U32(8);
-  op.execute(*this);
+  if (unisim::component::cxx::processor::arm::CheckCondition(*this, op.GetEncoding() >> 28))
+    op.execute(*this);
 }
 
 void
@@ -68,7 +77,8 @@ Scanner::step( Thumb2::Operation const& op )
 {
   next_insn_addr = current_insn_addr + U32(op.GetLength()/16);
   gpr[15] = current_insn_addr + U32(4);
-  op.execute(*this);
+  if (unisim::component::cxx::processor::arm::CheckCondition(*this, itcond()))
+    op.execute(*this);
 }
   
 
@@ -111,3 +121,31 @@ Scanner::concretize(unisim::util::symbolic::Expr cond)
   path = path->next( predicate );
   return predicate;
 }
+
+namespace
+{
+  struct OpTVU8
+  {
+    OpTVU8(int _reg0, int _elements, int _regs) : reg0(_reg0), elements(_elements), regs(_regs) {} int reg0, elements, regs;
+    friend std::ostream& operator << (std::ostream& sink, OpTVU8 const& op)
+    { return (sink << "tvu8[" << op.reg0 << ", " << op.elements << ", " << op.regs << "]"); }
+    friend int strcmp(OpTVU8 const& a, OpTVU8 const& b)
+    {
+      if (int delta = a.reg0 - b.reg0) return delta;
+      if (int delta = a.elements - b.elements) return delta;
+      return a.regs - b.regs;
+    }
+  };
+}
+
+Scanner::U8
+Scanner::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, Scanner::U8 const& index, Scanner::U8 const& oob_value)
+{
+  // All regs from input list are potentially accessed
+  for (unsigned reg = 0; reg < regs; ++reg)
+    for (unsigned idx = 0; idx < elements; ++idx)
+      GetVDE((reg0+reg)%32,idx,U8());
+
+  return unisim::util::sav::make_weirdop<U8>(OpTVU8(reg0, elements, regs), index, oob_value);
+}
+

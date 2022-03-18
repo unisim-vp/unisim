@@ -38,6 +38,7 @@
 #include <systemc>
 #include <tlm>
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.hh>
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <inttypes.h>
 
@@ -47,27 +48,6 @@ namespace tlm2 {
 namespace processor {
 namespace arm {
 namespace cortex_a53 {
-
-// struct ConfigCA53
-// {
-//   //=====================================================================
-//   //=                  ARM architecture model description               =
-//   //=====================================================================
-  
-//   // Following a standard armv7 configuration
-//   // static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
-//   static bool const     insns4T = true;
-//   static bool const     insns5E = true;
-//   static bool const     insns5J = true;
-//   static bool const     insns5T = true;
-//   static bool const     insns6  = true;
-//   static bool const     insnsRM = true;
-//   static bool const     insnsT2 = true;
-//   static bool const     insns7  = true;
-//   static bool const     hasVFP  = true;
-//   static bool const     hasAdvSIMD = false;
-// };
-
 
 struct CPU
   : public sc_core::sc_module
@@ -154,11 +134,11 @@ private:
 
   friend PCPU;
   // Intrusive memory accesses
-  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
-  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
-  // Non-itrusive memory accesses
-  virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
-  virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
+  bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
+  // Non-intrusive memory accesses
+  bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
 
 public:
   // System Registers
@@ -169,6 +149,9 @@ public:
 
   void PrefetchMemory(unsigned op, uint64_t addr);
 };
+
+template <unsigned posT> void FPProcessException( CPU&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <typename FLOAT> FLOAT FPNaN( CPU&, FLOAT value ) { return value; }
 
 } // end of namespace cortex_a53
 } // end of namespace arm

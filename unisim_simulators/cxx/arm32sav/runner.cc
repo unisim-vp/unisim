@@ -34,6 +34,7 @@
 
 #include <runner.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <iomanip>
 #include <ostream>
 #include <cmath>
@@ -42,7 +43,7 @@ Runner::Runner( char const* name )
   : unisim::kernel::Object( name, 0 )
   , CPU(name,0)
 {
-  cpsr.Set(unisim::component::cxx::processor::arm::M, this->USER_MODE);
+  cpsr.Set(unisim::component::cxx::processor::arm::M, unisim::component::cxx::processor::arm::PSR::USER_MODE);
 }
 
 Runner::~Runner()
@@ -69,7 +70,8 @@ Runner::step_instruction()
   if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
     {
       /* Thumb state */
-      Thumb2::Operation* op = thumb2iset.decode(insn_addr, insn);
+      std::unique_ptr<Thumb2::Operation> op;
+      op.reset(thumb2iset.decode(insn_addr, insn));
         
       /* update PC register value before execution */
       insn_length = op->GetLength() / 8;
@@ -78,14 +80,16 @@ Runner::step_instruction()
         
       /* Execute instruction */
       asm volatile( "thumb_operation_execute:" );
-      op->execute( *this );
-        
+      if (unisim::component::cxx::processor::arm::CheckCondition(*this, itcond()))
+        op->execute( *this );
+
       this->ITAdvance();
     }
   else
     {
       /* Arm32 state */
-      Arm32::Operation* op = arm32iset.decode(insn_addr, insn);
+      std::unique_ptr<Arm32::Operation> op;
+      op.reset(arm32iset.decode(insn_addr, insn));
     
       /* update PC register value before execution */
       insn_length = op->GetLength() / 8;
@@ -94,7 +98,8 @@ Runner::step_instruction()
         
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
-      op->execute( *this );
+      if (unisim::component::cxx::processor::arm::CheckCondition(*this, insn >> 28))
+        op->execute( *this );
     }
 }
 

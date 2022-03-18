@@ -256,6 +256,54 @@ namespace arm {
     return sink;
   }
   
+  void DisasmBunch::operator () ( std::ostream& sink ) const
+  {
+    struct DisasmD : public DisasmObject
+    {
+      DisasmD(unsigned _idx, DisasmBunch const& _db) : idx(_idx), db(_db) {} unsigned idx; DisasmBunch const& db;
+      void operator() ( std::ostream& sink ) const
+      {
+        sink << DisasmV(idx,3);
+        switch (db.lane) {
+        case Each:   break;
+        case All:    sink << "[]"; break;
+        case Single: sink << "[" << std::dec << db.lane_index << "]"; break;
+        }
+      }
+    };
+    
+    sink << '{';
+    if ((regs <= 2) or ((rid+regs) > 32) or double_spacing)
+      {
+        char const* sep = "";
+        
+        for (unsigned idx = 0, end = regs << double_spacing; idx < end; sep = ", ", idx += (1 << double_spacing))
+          sink << sep << DisasmD((rid+idx)%32, *this);
+      }
+    else
+      sink << DisasmD(rid, *this) << "-" << DisasmD(rid+regs-1, *this);
+    sink << '}';
+  }
+
+  void DisasmNeonMemoryRR::operator () (std::ostream& sink) const
+  {
+    sink << "[" << DisasmRegister(rb);
+    if (align) sink << " :" << align;
+    sink << "]";
+    if      (ra == 13) sink << "!";
+    else if (ra != 15) sink << ", " << DisasmRegister(ra);
+  }
+
+  void DisasmV::operator () (std::ostream& sink) const
+  {
+    sink << "bjsdq"[scale] << std::dec << vn;
+  }
+  
+  void DisasmVIdx::operator () (std::ostream& sink) const
+  {
+    sink << "[" << idx << "]";
+  }
+  
 
 } // end of namespace arm
 } // end of namespace processor

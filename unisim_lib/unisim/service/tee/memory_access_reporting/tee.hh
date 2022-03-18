@@ -57,18 +57,22 @@ template <unsigned int MAX_IMPORTS>
 class ControlSelector;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
-class Tee :
-	public Client<MemoryAccessReporting<ADDRESS> >,
-	public Service<MemoryAccessReporting<ADDRESS> >
+class Tee
+  	: public Service<MemoryAccessReporting<ADDRESS> >
+  	, public Client<MemoryAccessReporting<ADDRESS> >
 {
 public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > in;
 	ServiceImport<MemoryAccessReporting<ADDRESS> > *out[MAX_IMPORTS];
+	ServiceImport<MemoryAccessReporting<ADDRESS> >& out_n(unsigned idx) { return *out[idx]; }
 	ServiceImport<MemoryAccessReportingControl> out_control;
 	ServiceExport<MemoryAccessReportingControl> *in_control[MAX_IMPORTS];
+	ServiceExport<MemoryAccessReportingControl>& in_control_n(unsigned idx) { return *in_control[idx]; }
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
+
+	virtual void Setup(MemoryAccessReporting<ADDRESS>*) override;
 	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
@@ -76,35 +80,28 @@ public:
 	virtual void ReportFetchInstruction(ADDRESS next_addr);
 
 private:
-	ControlSelector<MAX_IMPORTS> *control_selector[MAX_IMPORTS];
+	void RequiresMemoryAccessReporting(unsigned int index, unisim::service::interfaces::MemoryAccessReportingType type, bool report);
+
+	struct ControlSelector
+		: public Service<MemoryAccessReportingControl>
+	{
+		ServiceExport<MemoryAccessReportingControl> in;
+	
+		ControlSelector(const char *name, Tee* _tee, unsigned int index);
+		
+		virtual void Setup(MemoryAccessReportingControl*) override;
+		virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType, bool report);
+
+		Tee& tee;
+		unsigned int index;
+	};
+
+	ControlSelector *control_selector[MAX_IMPORTS];
 	bool requires_memory_access_reporting[MAX_IMPORTS];
 	bool requires_fetch_instruction_reporting[MAX_IMPORTS];
 	bool requires_commit_instruction_reporting[MAX_IMPORTS];
 };
 
-template <unsigned int MAX_IMPORTS>
-class ControlSelector :
-	public Client<MemoryAccessReportingControl>,
-	public Service<MemoryAccessReportingControl> 
-{
-public:
-	ServiceExport<MemoryAccessReportingControl> in;
-	ServiceImport<MemoryAccessReportingControl> out;
-
-	ControlSelector(unsigned int index,
-			bool *requires_memory_access_reporting,
-			bool *requires_fetch_instruction_reporting,
-			bool *requires_commit_instruction_reporting,
-			const char *name, Object *parent = 0);
-	~ControlSelector();
-	
-	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType, bool report);
-private:
-	unsigned int index;
-	bool *requires_memory_access_reporting;
-	bool *requires_fetch_instruction_reporting;
-	bool *requires_commit_instruction_reporting;
-};
 
 } // end of namespace memory_access_reporting
 } // end of namespace tee

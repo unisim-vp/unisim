@@ -88,7 +88,7 @@ private:
 	
 	struct ContextStack
 	{
-		ContextStack(const DataObjectDeserializer<ADDRESS>& data_object_serializer);
+		ContextStack(const DataObjectDeserializer<ADDRESS>& data_object_deserializer);
 		
 		bool Visit(const unisim::util::json::JSON_Value& value);
 		bool Visit(const unisim::util::json::JSON_String& value);
@@ -120,7 +120,7 @@ private:
 			unsigned int index;
 		};
 		
-		const DataObjectDeserializer<ADDRESS>& data_object_serializer;
+		const DataObjectDeserializer<ADDRESS>& data_object_deserializer;
 		typedef std::vector<Context> Stack;
 		Stack stack;
 		unsigned int status;

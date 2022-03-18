@@ -67,7 +67,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Object;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::variable::Parameter;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::SymbolTable;
@@ -102,7 +101,7 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual void Setup(Loader*) override;
 	virtual bool EndSetup();
 
 	// unisim::service::interfaces::Loader

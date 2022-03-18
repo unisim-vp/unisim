@@ -140,7 +140,7 @@ namespace ut
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {}
-    virtual SourceReg* Mutate() const { return new SourceReg(*this); }
+    virtual SourceReg* Mutate() const override { return new SourceReg(*this); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; };
@@ -157,7 +157,7 @@ namespace ut
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
-    virtual MixNode* Mutate() const { return new MixNode(*this); }
+    virtual MixNode* Mutate() const override { return new MixNode(*this); }
     virtual ScalarType::id_t GetType() const { return left->GetType(); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
@@ -182,7 +182,7 @@ namespace ut
   template <typename T>
   struct Unknown : public UnknownBase
   {
-    virtual UnknownBase* Mutate() const { return new Unknown<T>(*this); }
+    virtual UnknownBase* Mutate() const override { return new Unknown<T>(*this); }
     virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<T>::GetType(); }
   };
   
@@ -208,7 +208,7 @@ namespace ut
     
     struct XERNode : public ExprNode
     {
-      virtual XERNode* Mutate() const { return new XERNode(*this); }
+      virtual XERNode* Mutate() const override { return new XERNode(*this); }
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
@@ -244,7 +244,7 @@ namespace ut
     
     struct CRNode : public ExprNode
     {
-      virtual CRNode* Mutate() const { return new CRNode(*this); }
+      virtual CRNode* Mutate() const override { return new CRNode(*this); }
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
@@ -316,7 +316,7 @@ namespace ut
     
     struct SPEFSCRNode : public ExprNode
     {
-      virtual SPEFSCRNode* Mutate() const { return new SPEFSCRNode(*this); }
+      virtual SPEFSCRNode* Mutate() const override { return new SPEFSCRNode(*this); }
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
@@ -427,7 +427,7 @@ namespace ut
     struct CIA : public ExprNode
     {
       CIA() {}
-      virtual CIA* Mutate() const { return new CIA(*this) ; }
+      virtual CIA* Mutate() const override { return new CIA(*this) ; }
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
       virtual unsigned SubCount() const { return 0; };
@@ -445,7 +445,7 @@ namespace ut
     struct Load : public ExprNode
     {
       Load( Expr const& _addr ) : addr(_addr) {}
-      virtual Load* Mutate() const { return new Load(*this); }
+      virtual Load* Mutate() const override { return new Load(*this); }
       virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false,BITS); }
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
@@ -734,7 +734,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     
     MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
-    virtual MaskNode* Mutate() const { return new MaskNode(*this); }
+    virtual MaskNode* Mutate() const override { return new MaskNode(*this); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };

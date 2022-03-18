@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2009-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+ * Authors: Reda Nouacer (reda.nouacer@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef __UNISIM_SERVICE_TEE_REGISTERS_HH__
@@ -38,7 +38,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/kernel/kernel.hh>
-#include <sstream>
+#include <string>
 #include <cstdint>
 
 namespace unisim {
@@ -46,75 +46,68 @@ namespace service {
 namespace tee {
 namespace registers {
 
+  using unisim::service::interfaces::Registers;
 
-using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Register;
-using unisim::kernel::Object;
-using unisim::kernel::Client;
-using unisim::kernel::Service;
-using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceImport;
+  template <unsigned NUM_EXPORTS=16>
+  struct RegistersTee
+    : public unisim::kernel::Service<Registers>
+    , public unisim::kernel::Client<Registers>
+  {
+    unisim::kernel::ServiceExport<Registers> registers_export;
+    unisim::kernel::ServiceImport<Registers> *registers_import[NUM_EXPORTS];
+    unisim::kernel::ServiceImport<Registers>& registers_import_n(unsigned idx) { return *registers_import[idx]; }
 
-template <uint8_t size = 16 >
-class RegistersTee :
-	public Service<Registers>,
-	public Client<Registers>
-{
-public:
-	ServiceExport<Registers> registers_export;
-	ServiceImport<Registers> *registers_import[size];
+    RegistersTee(const char* name, unisim::kernel::Object *parent = 0)
+      : unisim::kernel::Object(name, parent)
+      , Service<Registers>(name, parent)
+      , Client<Registers>(name, parent)
+      , registers_export("registers_export", this)
+      , registers_import()
+    {
+      for (unsigned i=0; i<NUM_EXPORTS; i++)
+        registers_import[i] = new unisim::kernel::ServiceImport<Registers>((std::string("registers-import-") + std::to_string(i)).c_str(), this);
+    }
 
-	RegistersTee(const char* name, Object *parent = 0) :
-		Object(name, parent),
-		Service<Registers>(name, parent),
-		Client<Registers>(name, parent),
+    ~RegistersTee()
+    {
+      for (unsigned i=0; i<NUM_EXPORTS; i++)
+        delete registers_import[i];
+    }
 
-		registers_export("registers_export", this)
-	{
+    void Setup(Registers*) override
+    {
+      for (unsigned i=0; i<NUM_EXPORTS; i++)
+        registers_import_n(i).RequireSetup();
+    }
 
-		for (uint8_t i=0; i<size; i++) {
-			std::ostringstream out;
-			out << "registers-import-" << i;
-			registers_import[i] = new ServiceImport<Registers>(out.str().c_str(), this);
-			registers_export.SetupDependsOn(*registers_import[i]);
-		}
 
-	}
-
-	~RegistersTee() {
-		for (uint8_t i=0; i<size; i++) {
-			if (registers_import[i]) {
-				delete registers_import[i];
-				registers_import[i] = NULL;
-			}
-		}
-
-	}
-
-	Register *GetRegister(const char *name) {
-		Register* reg = NULL;
-
-		for (uint8_t i=0; ((reg == NULL) && (i < size)); i++) {
-			if (*registers_import[i]) {
-				reg = (*registers_import[i])->GetRegister(name);
-			}
-		}
-
-		return reg;
-	}
-
+    unisim::service::interfaces::Register* GetRegister(const char *name)
+    {
+      for (unsigned i=0; i<NUM_EXPORTS; i++)
+        {
+          if (not registers_import_n(i))
+            continue;
+          if (unisim::service::interfaces::Register* reg = registers_import_n(i)->GetRegister(name))
+            return reg;
+        }
+      return 0;
+    }
 
     void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
     {
-    	// TODO
+      for (unsigned i=0; i<NUM_EXPORTS; i++)
+        {
+          if (not registers_import_n(i))
+            continue;
+          registers_import_n(i)->ScanRegisters( scanner );
+        }
     }
-
-};
+  };
 
 } // end registers
-} // end tee 
+} // end tee
 } // end service
-} // end unisim 
+} // end unisim
 
 #endif
 

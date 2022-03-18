@@ -59,7 +59,6 @@ using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::ParameterArray;
@@ -217,12 +216,6 @@ public:
 				new ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
 		}
 
-		for(unsigned int i = 0; i < NUM_MASTERS; i++){
-			for (unsigned int j = 0; j < NUM_TARGETS; j++) {
-				memory_export[i]->SetupDependsOn(*memory_import[j]);
-			}
-		}
-
 		for (unsigned int i = 0; i < NUM_TARGETS; i++) {
 			for (unsigned int j = 0; j < NUM_BARS; j++) {
 				devmap[i][j] = NULL;
@@ -327,25 +320,24 @@ public:
 		return true;
 	}
 
-	virtual bool SetupMemory()
+	bool SetupMemory()
 	{
-    	for(unsigned int i = 0; i < NUM_TARGETS; i++)
+	    	for (unsigned int i = 0; i < NUM_TARGETS; i++)
 			if(!memory_import[i])
 				return false;
 			
 		return true;
 	}
 
-	virtual bool Setup(ServiceExportBase *srv_export)
+	virtual void Setup(unisim::service::interfaces::Memory<ADDRESS_TYPE>*) override
 	{
-		for(unsigned int i = 0; i < NUM_MASTERS; i++)
+		for (unsigned int j = 0; j < NUM_TARGETS; j++)
 		{
-			if(srv_export == memory_export[i]) return SetupMemory();
+			memory_import[j]->RequireSetup();
 		}
 		
-		logger << DebugError << "Internal error" << EndDebugError;
-		
-		return false;
+		if (not SetupMemory())
+			throw unisim::kernel::ServiceAgent::SetupError();
 	}
 
 	virtual bool EndSetup() {

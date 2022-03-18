@@ -71,7 +71,6 @@ public:
 	virtual ~RawLoader();
 
 	virtual bool BeginSetup();
-	virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	
 	virtual bool Load();
@@ -79,7 +78,8 @@ public:
 
 private:
 	bool SetupBlob();
-	bool SetupLoad();
+	virtual void Setup(unisim::service::interfaces::Blob<MEMORY_ADDR>*);
+	virtual void Setup(unisim::service::interfaces::Loader*);
 
 	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	std::string filename;

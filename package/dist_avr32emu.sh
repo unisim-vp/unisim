@@ -1,10 +1,9 @@
 #!/bin/bash
+
 SIMPKG=avr32emu
 SIMPKG_SRCDIR=tlm2/avr32emu
-SIMPKG_DSTDIR=avr32emu
-source "$(dirname $0)/dist_common.sh"
 
-import_genisslib || exit
+source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa || exit
 import unisim/component/tlm2/processor/avr32/avr32uc || exit
@@ -40,6 +39,7 @@ import std/stdexcept || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source isa header template data
+dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -58,18 +58,9 @@ memory_router.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+simulator.tcc \
 simulator.hh \
 config.hh \
-"
-
-UNISIM_SIMULATOR_TEMPLATE_FILES="\
-simulator.tcc \
-"
-
-UNISIM_SIMULATOR_PKG_DATA_FILES="\
-COPYING \
-NEWS \
-ChangeLog \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
@@ -88,88 +79,12 @@ main.cc \
 UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \
 ${UNISIM_SIMULATOR_HEADER_FILES} \
-${UNISIM_SIMULATOR_TEMPLATE_FILES} \
-${UNISIM_SIMULATOR_EXTRA_FILES} \
 ${UNISIM_SIMULATOR_DATA_FILES} \
 ${UNISIM_SIMULATOR_TESTBENCH_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
-done
-
-for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
-# Top level
-
-cat << EOF > "${DEST_DIR}/AUTHORS"
-Julien Lisita <julien.lisita@cea.fr>
-Gilles Mouchard <gilles.mouchard@cea.fr>
-EOF
-
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - UNISIM GenISSLib: an instruction set simulator generator
-  - UNISIM AVR32EMU Simulator: An user level AVR32A simulator with support of ELF32 binaries and AVR32 Newlib system call translation.
-See INSTALL for installation instructions.
-EOF
-
-cat << EOF > "${DEST_DIR}/INSTALL"
-INSTALLATION
-------------
-
-Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - GNU flex
-  - GNU bison
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
-
-
-Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
-  $ make
-
-Note: Configure option '--with-tlm20' is no longer needed with SystemC >= 2.3
-
-Installing (optional):
-  $ make install
-EOF
-
-output_top_configure_ac <(cat << EOF
-AC_INIT([UNISIM AVR32EMU Simulator Package], [${SIMULATOR_VERSION}], [Julien Lisita <julien.lisita@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-${SIMPKG}])
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_CONFIG_SUBDIRS([genisslib])
-AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}])
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-)
-
-output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG_DSTDIR}
-EXTRA_DIST = configure.cross
-EOF
-)
-
-build_top_configure
-build_top_configure_cross
 
 # Simulator
 
@@ -200,8 +115,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
-AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-avr32emu-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
@@ -242,10 +155,11 @@ CLEANFILES=\
 	
 \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc: \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh
 \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa
+	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa
 EOF
 )
 
 build_simulator_configure
 
 echo "Distribution is up-to-date"
+

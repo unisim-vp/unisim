@@ -1,0 +1,4996 @@
+/*
+ *  Copyright (c) 2021,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+             RISC-V 64 ISA DESCRIPTION
+
+**********************************************/
+
+namespace unisim::component::cxx::processor::riscv::isa::rv64
+set addressclass {uint64_t};
+set codetype scalar;
+set endianness little;
+template <{typename} {ARCH}>
+
+decl {
+#include <iosfwd>
+#include <stdint.h>
+}; // end of decl
+
+impl {
+#include <unisim/component/cxx/processor/riscv/isa/disasm.hh>
+#include <iostream>
+};
+
+action {void} disasm({std::ostream&} {sink}) const {
+  sink << "; Unknown RISC-V instruction";
+};
+
+action {void} execute({ARCH &} {cpu}) const {
+  cpu.UndefinedInstruction( this );
+}
+
+op add16(0b100000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+add16.disasm = {
+  sink << "add16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op add32(0b100000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+add32.disasm = {
+  sink << "add32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op add64(0b1100000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+add64.disasm = {
+  sink << "add64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op add8(0b100100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+add8.disasm = {
+  sink << "add8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op addi(sext imm[12] : rs1[5] : 0b0[3] : rd[5] : 0b10011[7]);
+
+addi.disasm = {
+  sink << "addi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+addi.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) + typename ARCH::UREG(imm));
+};
+
+op add(0b0[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+add.disasm = {
+  sink << "add\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+add.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) + cpu.GetGPR(rs2));
+};
+
+op addiw(sext imm[12] : rs1[5] : 0b0[3] : rd[5] : 0b11011[7]);
+
+addiw.disasm = {
+  sink << "addiw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+addiw.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+  
+  cpu.SetGPR(rd, U64(S32(cpu.GetGPR(rs1)) + S32(imm)));
+};
+
+op add_uw(0b100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b111011[7]);
+
+add_uw.disasm = {
+  sink << "add.uw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op addw(0b0[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b111011[7]);
+
+addw.disasm = {
+  sink << "addw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+addw.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(typename ARCH::S32(cpu.GetGPR(rs1) + cpu.GetGPR(rs2))));
+};
+
+op aes32dsi(bs[2] : 0b11101[5] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes32dsi.disasm = {
+  sink << "aes32dsi";
+};
+
+op aes32dsmi(bs[2] : 0b11111[5] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes32dsmi.disasm = {
+  sink << "aes32dsmi";
+};
+
+op aes32esi(bs[2] : 0b11001[5] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes32esi.disasm = {
+  sink << "aes32esi";
+};
+
+op aes32esmi(bs[2] : 0b11011[5] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes32esmi.disasm = {
+  sink << "aes32esmi";
+};
+
+op aes64ds(0b11101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes64ds.disasm = {
+  sink << "aes64ds\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op aes64dsm(0b11111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes64dsm.disasm = {
+  sink << "aes64dsm\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op aes64es(0b11001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes64es.disasm = {
+  sink << "aes64es\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op aes64esm(0b11011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes64esm.disasm = {
+  sink << "aes64esm\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op aes64im(0b1100000000[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+aes64im.disasm = {
+  sink << "aes64im";
+};
+
+op aes64ks1i(0b110001[8] : rcon[4] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+aes64ks1i.disasm = {
+  sink << "aes64ks1i";
+};
+
+op aes64ks2(0b111111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+aes64ks2.disasm = {
+  sink << "aes64ks2\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op amoadd_d(0b0[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amoadd_d.disasm = {
+  sink << "amoadd.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoadd_w(0b0[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amoadd_w.disasm = {
+  sink << "amoadd.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoand_d(0b1100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amoand_d.disasm = {
+  sink << "amoand.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoand_w(0b1100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amoand_w.disasm = {
+  sink << "amoand.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amomax_d(0b10100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amomax_d.disasm = {
+  sink << "amomax.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amomaxu_d(0b11100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amomaxu_d.disasm = {
+  sink << "amomaxu.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amomaxu_w(0b11100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amomaxu_w.disasm = {
+  sink << "amomaxu.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amomax_w(0b10100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amomax_w.disasm = {
+  sink << "amomax.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amomin_d(0b10000[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amomin_d.disasm = {
+  sink << "amomin.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amominu_d(0b11000[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amominu_d.disasm = {
+  sink << "amominu.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amominu_w(0b11000[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amominu_w.disasm = {
+  sink << "amominu.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amomin_w(0b10000[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amomin_w.disasm = {
+  sink << "amomin.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoor_d(0b1000[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amoor_d.disasm = {
+  sink << "amoor.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoor_w(0b1000[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amoor_w.disasm = {
+  sink << "amoor.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoswap_d(0b1[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amoswap_d.disasm = {
+  sink << "amoswap.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoswap_w(0b1[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amoswap_w.disasm = {
+  sink << "amoswap.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoxor_d(0b100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+amoxor_d.disasm = {
+  sink << "amoxor.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op amoxor_w(0b100[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+amoxor_w.disasm = {
+  sink << "amoxor.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op andi(sext imm[12] : rs1[5] : 0b111[3] : rd[5] : 0b10011[7]);
+
+andi.disasm = {
+  sink << "andi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+andi.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) & typename ARCH::UREG(imm));
+};
+
+op andr(0b0[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
+
+andr.disasm = {
+  sink << "and\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+andr.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) & cpu.GetGPR(rs2));
+};
+
+op andn(0b100000[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
+
+andn.disasm = {
+  sink << "andn\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+andn.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) & ~cpu.GetGPR(rs2));
+};
+
+op auipc(shl<12> imm[20] : rd[5] : 0b10111[7]);
+
+auipc.disasm = {
+  //  sink << "auipc\t" << PrintGPR(rd) << "," << PrintHex(GetAddr() + imm);
+  sink << "auipc\t" << PrintGPR(rd) << "," << PrintHex(imm >> 12);
+};
+
+auipc.execute = {
+  cpu.SetGPR(rd, cpu.GetPC() + imm);
+};
+
+op ave(0b1110000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ave.disasm = {
+  sink << "ave\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bclri(0b10010[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+bclri.disasm = {
+  sink << "bclri\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op bclr(0b100100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+bclr.disasm = {
+  sink << "bclr\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bcompress(0b100[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+bcompress.disasm = {
+  sink << "bcompress\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bcompressw(0b100[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b111011[7]);
+
+bcompressw.disasm = {
+  sink << "bcompressw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bdecompress(0b100100[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+bdecompress.disasm = {
+  sink << "bdecompress\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bdecompressw(0b100100[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b111011[7]);
+
+bdecompressw.disasm = {
+  sink << "bdecompressw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bexti(0b10010[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+bexti.disasm = {
+  sink << "bexti\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op bext(0b100100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+bext.disasm = {
+  sink << "bext\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bfp(0b100100[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
+
+bfp.disasm = {
+  sink << "bfp\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bfpw(0b100100[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b111011[7]);
+
+bfpw.disasm = {
+  sink << "bfpw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op binvi(0b11010[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+binvi.disasm = {
+  sink << "binvi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op binv(0b110100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+binv.disasm = {
+  sink << "binv\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bitrevi(0b111010[6] : imm[6] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+bitrevi.disasm = {
+  sink << "bitrevi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op bitrev(0b1110011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+bitrev.disasm = {
+  sink << "bitrev\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bmatflip(0b11000000011[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+bmatflip.disasm = {
+  sink << "bmatflip";
+};
+
+op bmator(0b100[7] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b110011[7]);
+
+bmator.disasm = {
+  sink << "bmator\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op bmatxor(0b100100[7] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b110011[7]);
+
+bmatxor.disasm = {
+  sink << "bmatxor\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op beq(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b0[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+beq.var imm : {int16_t} = {im3|im2|im1|im0};
+
+beq.disasm = {
+  sink << "beq\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+beq.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) == cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bne(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b1[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bne.var imm : {int16_t} = {im3|im2|im1|im0};
+
+bne.disasm = {
+  sink << "bne\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bne.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) != cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op blt(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b100[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+blt.var imm : {int16_t} = {im3|im2|im1|im0};
+
+blt.disasm = {
+  sink << "blt\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+blt.execute = {
+  typedef typename ARCH::SREG SREG;
+  
+  if (cpu.Test(SREG(cpu.GetGPR(rs1)) < SREG(cpu.GetGPR(rs2))))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bge(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b101[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bge.var imm : {int16_t} = {im3|im2|im1|im0};
+
+bge.disasm = {
+  sink << "bge\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bge.execute = {
+  typedef typename ARCH::SREG SREG;
+  
+  if (cpu.Test(SREG(cpu.GetGPR(rs1)) >= SREG(cpu.GetGPR(rs2))))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bltu(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b110[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bltu.var imm : {int16_t} = {im3|im2|im1|im0};
+
+bltu.disasm = {
+  sink << "bltu\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bltu.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) < cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bgeu(shl<12> sext im3[1] : shl<5> im1[6] : rs2[5] : rs1[5] : 0b111[3] : shl<1> im0[4] : shl<11> im2[1] : 0b1100011[7]);
+bgeu.var imm : {int16_t} = {im3|im2|im1|im0};
+
+bgeu.disasm = {
+  sink << "bgeu\t" << PrintGPR(rs1) << "," << PrintGPR(rs2) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+bgeu.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) >= cpu.GetGPR(rs2)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op bpick(rs3[5] : 0b0[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b1110111[7]);
+
+bpick.disasm = {
+  sink << "bpick";
+};
+
+op bseti(0b1010[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+bseti.disasm = {
+  sink << "bseti\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op bset(0b10100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+bset.disasm = {
+  sink << "bset\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op c_addi4spn(0b0[3] : shl<4> im2[2] : shl<6> im3[4] : shl<2> im0[1] : shl<3> im1[1] : rds[3] : 0b0[2]);
+c_addi4spn.var imm : {uint16_t} = {im3|im2|im1|im0}, rd : {uint8_t} = {rds+8};
+
+c_addi4spn.disasm = {
+  sink << "c.addi4spn\t" << PrintGPR(rd) << ",sp," << PrintI(imm);
+};
+
+c_addi4spn.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(2) + typename ARCH::UREG(imm));
+};
+
+op c_addi16sp(0b11[3] : shl<9> sext im4[1] : 0b10[5] : shl<4> im0[1] : shl<6> im2[1] : shl<7> im3[2] : shl<5> im1[1] : 0b1[2]);
+c_addi16sp.var imm : {int16_t} = {im4|im3|im2|im1|im0};
+
+c_addi16sp.disasm = {
+  sink << "c.addi16sp\tsp," << PrintI(imm);
+};
+
+c_addi16sp.execute = {
+  cpu.SetGPR(2, cpu.GetGPR(2) + typename ARCH::UREG(imm));
+};
+
+op c_addi(0b0[3] : shl<5> sext im1[1] : rs1[5] : im0[5] : 0b1[2]);
+c_addi.var imm : {int8_t} = {im1|im0};
+
+c_addi.disasm = {
+  sink << "c.addi\t" << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+c_addi.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) + typename ARCH::UREG(imm));
+};
+
+op c_addiw(0b001[3] : shl<5> sext im1[1] : rd[5] : im0[5] : 0b01[2]);
+c_addiw.var imm : {int8_t} = {im1|im0};
+
+c_addiw.disasm = {
+  sink << "c.addiw\t" << PrintGPR(rd) << "," << PrintI(imm);
+};
+
+c_addiw.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+  
+  cpu.SetGPR(rd, U64(S32(cpu.GetGPR(rd)) + S32(imm)));
+};
+
+op c_add(0b1001[4] : rs1[5] : rs2[5] : 0b10[2]);
+
+c_add.disasm = {
+  sink << "c.add\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_add.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) + cpu.GetGPR(rs2));
+};
+
+op c_addw(0b100111[6] : rs1s[3] : 0b1[2] : rs2s[3] : 0b1[2]);
+c_addw.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_addw.disasm = {
+  sink << "c.addw\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_addw.execute = {
+  cpu.SetGPR(rs1, typename ARCH::UREG(typename ARCH::S32(cpu.GetGPR(rs1) + cpu.GetGPR(rs2))));
+};
+
+op c_andi(0b100[3] : shl<5> sext im1[1] : 0b10[2] : rs1s[3] : im0[5] : 0b1[2]);
+c_andi.var rs1 : {int8_t} = {rs1s+8}, imm : {int8_t} = {im1|im0};
+
+c_andi.disasm = {
+  sink << "c.andi\t" << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+c_andi.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) & typename ARCH::U64(imm));
+};
+
+op c_and(0b100011[6] : rs1s[3] : 0b11[2] : rs2s[3] : 0b1[2]);
+c_and.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_and.disasm = {
+  sink << "c.and\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_and.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) & cpu.GetGPR(rs2));
+};
+
+op c_beqz(0b110[3] : shl<8> sext im4[1] : shl<3> im1[2] : rs1s[3] : shl<6> im3[2] : shl<1> im0[2] : shl<5> im2[1] : 0b1[2]);
+c_beqz.var imm : {int16_t} = {im4|im3|im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8};
+
+c_beqz.disasm = {
+  sink << "c.beqz\t" << PrintGPR(rs1) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+c_beqz.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) == typename ARCH::UREG(0)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op c_bnez(0b111[3] : shl<8> sext im4[1] : shl<3> im1[2] : rs1s[3] : shl<6> im3[2] : shl<1> im0[2] : shl<5> im2[1] : 0b1[2]);
+c_bnez.var imm : {int16_t} = {im4|im3|im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8};
+
+c_bnez.disasm = {
+  sink << "c.bnez\t" << PrintGPR(rs1) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+c_bnez.execute = {
+  if (cpu.Test(cpu.GetGPR(rs1) != typename ARCH::UREG(0)))
+    cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op c_ebreak(0b1001000000000010[16]);
+
+c_ebreak.disasm = {
+  sink << "c.ebreak";
+};
+
+op c_fld(0b1[3] : shl<3> im0[3] : rs1s[3] : shl<6> im1[2] : rs2s[3] : 0b0[2]);
+c_fld.var imm : {uint32_t} = {im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_fld.disasm = {
+  sink << "c.fld\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op c_fldsp(0b1[3] : shl<5> im1[1] : rd[5] : shl<3> im0[2] : shl<6> im2[3] : 0b10[2]);
+c_fldsp.var imm : {uint32_t} = {im2|im1|im0};
+
+c_fldsp.disasm = {
+  sink << "c.fldsp\t" << PrintFPR(rd) << "," << PrintI(imm) << "(sp)";
+};
+
+// op c_flw(0b11[3] : shl<3> im1[3] : rs1s[3] : shl<2> im0[1] : shl<6> im2[1] : rs2s[3] : 0b0[2]);
+// c_flw.var imm : {uint32_t} = {im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+// c_flw.disasm = {
+//   sink << "c.flw";
+// };
+
+// op c_flwsp(0b11[3] : shl<5> im1[1] : rd[5] : shl<2> im0[3] : shl<6> im2[2] : 0b10[2]);
+// c_flwsp.var imm : {uint32_t} = {im2|im1|im0};
+
+// c_flwsp.disasm = {
+//   sink << "c.flwsp";
+// };
+
+op c_fsd(0b101[3] : shl<3> im0[3] : rs1s[3] : shl<6> im1[2] : rs2s[3] : 0b0[2]);
+c_fsd.var imm : {uint32_t} = {im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_fsd.disasm = {
+  sink << "c.fsd\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op c_fsdsp(0b101[3] : shl<3> im0[3] : shl<6> im1[3] : rs2[5] : 0b10[2]);
+c_fsdsp.var imm : {uint32_t} = {im1|im0};
+
+c_fsdsp.disasm = {
+  sink << "c.fsdsp\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(sp)";
+};
+
+// op c_fsw(0b111[3] : shl<3> im1[3] : rs1s[3] : shl<2> im0[1] : shl<6> im2[1] : rs2s[3] : 0b0[2]);
+// c_fsw.var imm : {uint32_t} = {im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+// c_fsw.disasm = {
+//   sink << "c.fsw";
+// };
+
+// op c_fswsp(0b111[3] : shl<2> im0[4] : shl<6> im1[2] : rs2[5] : 0b10[2]);
+// c_fswsp.var imm : {uint32_t} = {im1|im0};
+
+// c_fswsp.disasm = {
+//   sink << "c.fswsp";
+// };
+
+// op c_jal(0b1[3] : shl<11> sext im7[1] : shl<4> im1[1] : shl<8> im5[2] : shl<10> im6[1] : shl<6> im3[1] : shl<7> im4[1] : shl<1> im0[3] : shl<5> im2[1] : 0b1[2]);
+// c_jal.var imm : {int16_t} = {im7|im6|im5|im4|im3|im2|im1|im0};
+
+// c_jal.disasm = {
+//   sink << "c.jal";
+// };
+
+op c_jalr(0b1001[4] : rs1[5] : 0b10[7]);
+
+c_jalr.disasm = {
+  sink << "c.jalr\t" << PrintGPR(rs1);
+};
+
+c_jalr.execute = {
+  typedef typename ARCH::UREG UREG;
+  
+  UREG target = cpu.GetGPR(rs1);
+  cpu.SetGPR(1, cpu.GetPC() + UREG(2));
+  cpu.Branch(target, cpu.B_JMP);
+};
+
+op c_j(0b101[3] : shl<11> sext im7[1] : shl<4> im1[1] : shl<8> im5[2] : shl<10> im6[1] : shl<6> im3[1] : shl<7> im4[1] : shl<1> im0[3] : shl<5> im2[1] : 0b1[2]);
+c_j.var imm : {int16_t} = {im7|im6|im5|im4|im3|im2|im1|im0};
+
+c_j.disasm = {
+  sink << "c.j\t" << PrintHex(this->GetAddr() + imm);
+};
+
+c_j.execute = {
+  cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op c_jr(0b1000[4] : rs1[5] : 0b10[7]);
+
+c_jr.disasm = {
+  sink << "c.jr\t" << PrintGPR(rs1);
+};
+
+c_jr.execute = {
+  cpu.Branch(cpu.GetGPR(rs1), cpu.B_JMP);
+};
+
+op c_li(0b10[3] : shl<5> sext im1[1] : rd[5] : im0[5] : 0b1[2]);
+c_li.var imm : {int8_t} = {im1|im0};
+
+c_li.disasm = {
+  sink << "c.li\t" << PrintGPR(rd) << "," << PrintI(imm);
+};
+
+c_li.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(imm));
+};
+
+op clmulh(0b101[7] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b110011[7]);
+
+clmulh.disasm = {
+  sink << "clmulh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op clmul(0b101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+clmul.disasm = {
+  sink << "clmul\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op clmulr(0b101[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b110011[7]);
+
+clmulr.disasm = {
+  sink << "clmulr\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op clo16(0b101011101011[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clo16.disasm = {
+  sink << "clo16";
+};
+
+op clo32(0b101011111011[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clo32.disasm = {
+  sink << "clo32";
+};
+
+op clo8(0b101011100011[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clo8.disasm = {
+  sink << "clo8";
+};
+
+op clrs16(0b101011101000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clrs16.disasm = {
+  sink << "clrs16";
+};
+
+op clrs32(0b101011111000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clrs32.disasm = {
+  sink << "clrs32";
+};
+
+op clrs8(0b101011100000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clrs8.disasm = {
+  sink << "clrs8";
+};
+
+op c_lui(0b11[3] : shl<17> sext im1[1] : rd[5] : shl<12>im0[5] : 0b1[2]);
+c_lui.var imm : {int32_t} = {im1|im0};
+
+c_lui.disasm = {
+  sink << "c.lui\t" << PrintGPR(rd) << "," << PrintHex(imm >> 12);
+};
+
+c_lui.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(imm));
+};
+
+op c_lw(0b10[3] : shl<3> im1[3] : rs1s[3] : shl<2> im0[1] : shl<6> im2[1] : rds[3] : 0b0[2]);
+c_lw.var imm : {uint32_t} = {im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rd : {uint8_t} = {rds+8};
+
+c_lw.disasm = {
+  sink << "c.lw\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+c_lw.execute = {
+  typedef typename ARCH::UREG UREG;
+
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::S32())));
+};
+
+op c_lwsp(0b10[3] : shl<5> im1[1] : rd[5] : shl<2> im0[3] : shl<6> im2[2] : 0b10[2]);
+c_lwsp.var imm : {uint32_t} = {im2|im1|im0};
+
+c_lwsp.disasm = {
+  sink << "c.lwsp\t" << PrintGPR(rd) << "," << PrintI(imm) << "(sp)";
+};
+
+c_lwsp.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(2) + UREG(imm), typename ARCH::S32())));
+};
+
+op c_ld(0b11[3] : shl<3> im0[3] : rs1s[3] : shl<6> im1[2] : rds[3] : 0b0[2]);
+c_ld.var imm : {uint32_t} = {im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rd : {uint8_t} = {rds+8};
+
+c_ld.disasm = {
+  sink << "c.ld\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+c_ld.execute = {
+  cpu.SetGPR(rd, cpu.MemRead(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64()));
+};
+
+op c_ldsp(0b11[3] : shl<5> im1[1] : rd[5] : shl<3> im0[2] : shl<6> im2[3] : 0b10[2]);
+c_ldsp.var imm : {uint32_t} = {im2|im1|im0};
+
+c_ldsp.disasm = {
+  sink << "c.ldsp\t" << PrintGPR(rd) << "," << PrintI(imm) << "(sp)";
+};
+
+c_ldsp.execute = {
+  cpu.SetGPR(rd, cpu.MemRead(cpu.GetGPR(2) + typename ARCH::UREG(imm), typename ARCH::U64()));
+};
+
+op c_sd(0b111[3] : shl<3> im0[3] : rs1s[3] : shl<6> im1[2] : rs2s[3] : 0b0[2]);
+c_sd.var imm : {uint32_t} = {im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_sd.disasm = {
+  sink << "c.sd\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+c_sd.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64(cpu.GetGPR(rs2)));
+};
+
+op c_sdsp(0b111[3] : shl<3> im0[3] : shl<6> im1[3] : rs2[5] : 0b10[2]);
+c_sdsp.var imm : {uint32_t} = {im1|im0};
+
+c_sdsp.disasm = {
+  sink << "c.sdsp\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(sp)";
+};
+
+c_sdsp.execute = {
+  cpu.MemWrite(cpu.GetGPR(2) + typename ARCH::UREG(imm), typename ARCH::U64(cpu.GetGPR(rs2)));
+};
+
+op clz16(0b101011101001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clz16.disasm = {
+  sink << "clz16";
+};
+
+op clz32(0b101011111001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clz32.disasm = {
+  sink << "clz32";
+};
+
+op clz8(0b101011100001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+clz8.disasm = {
+  sink << "clz8";
+};
+
+op clz(0b11000000000[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+clz.disasm = {
+  sink << "clz";
+};
+
+op clzw(0b11000000000[12] : rs1[5] : 0b1[3] : rd[5] : 0b11011[7]);
+
+clzw.disasm = {
+  sink << "clzw";
+};
+
+op cmix(rs3[5] : 0b11[2] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+cmix.disasm = {
+  sink << "cmix";
+};
+
+op cmov(rs3[5] : 0b11[2] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+cmov.disasm = {
+  sink << "cmov\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op cmpeq16(0b100110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+cmpeq16.disasm = {
+  sink << "cmpeq16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op cmpeq8(0b100111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+cmpeq8.disasm = {
+  sink << "cmpeq8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op c_mv(0b1000[4] : rd[5] : rs2[5] : 0b10[2]);
+
+c_mv.disasm = {
+  sink << "c.mv\t" << PrintGPR(rd) << "," << PrintGPR(rs2);
+};
+
+c_mv.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs2));
+};
+
+op c_or(0b100011[6] : rs1s[3] : 0b10[2] : rs2s[3] : 0b1[2]);
+c_or.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_or.disasm = {
+  sink << "c.or\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_or.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) | cpu.GetGPR(rs2));
+};
+
+op cpop(0b11000000010[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+cpop.disasm = {
+  sink << "cpop\t" << PrintGPR(rd) << "," << PrintGPR(rs1);
+};
+
+op cpopw(0b11000000010[12] : rs1[5] : 0b1[3] : rd[5] : 0b11011[7]);
+
+cpopw.disasm = {
+  sink << "cpopw\t" << PrintGPR(rd) << "," << PrintGPR(rs1);
+};
+
+op cras16(0b100010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+cras16.disasm = {
+  sink << "cras16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op cras32(0b100010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+cras32.disasm = {
+  sink << "cras32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op crc32_b(0b11000010000[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32_b.disasm = {
+  sink << "crc32.b";
+};
+
+op crc32c_b(0b11000011000[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32c_b.disasm = {
+  sink << "crc32c.b";
+};
+
+op crc32c_d(0b11000011011[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32c_d.disasm = {
+  sink << "crc32c.d";
+};
+
+op crc32c_h(0b11000011001[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32c_h.disasm = {
+  sink << "crc32c.h";
+};
+
+op crc32c_w(0b11000011010[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32c_w.disasm = {
+  sink << "crc32c.w";
+};
+
+op crc32_d(0b11000010011[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32_d.disasm = {
+  sink << "crc32.d";
+};
+
+op crc32_h(0b11000010001[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32_h.disasm = {
+  sink << "crc32.h";
+};
+
+op crc32_w(0b11000010010[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+crc32_w.disasm = {
+  sink << "crc32.w";
+};
+
+op crsa16(0b100011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+crsa16.disasm = {
+  sink << "crsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op crsa32(0b100011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+crsa32.disasm = {
+  sink << "crsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op c_slli(0b0[3] : shl<5> im1[1] : rs1[5] : im0[5] : 0b10[2]);
+c_slli.var imm : {uint8_t} = {im1|im0};
+
+c_slli.disasm = {
+  sink << "c.slli\t" << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+c_slli.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) << unsigned(imm));
+};
+
+op c_slli64(0b0[3] : 0[1] : rs1[5] : 0[5] : 0b10[2]);
+
+c_slli64.disasm = {
+  sink << "c.slli64\t" << PrintGPR(rs1);
+};
+
+op c_srai(0b100[3] : shl<5> im1[1] : 0b1[2] : rs1s[3] : im0[5] : 0b1[2]);
+c_srai.var rs1 : {uint8_t} = {rs1s+8}, imm : {uint32_t} = {im1|im0};
+
+c_srai.disasm = {
+  sink << "c.srai\t" << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+c_srai.execute = {
+  cpu.SetGPR(rs1, typename ARCH::UREG( typename ARCH::SREG(cpu.GetGPR(rs1)) >> unsigned(imm)));
+};
+
+op c_srai64(0b100[3] : 0[1] : 0b1[2] : rs1s[3] : 0[5] : 0b1[2]);
+c_srai64.var rs1 : {uint8_t} = {rs1s+8};
+
+c_srai64.disasm = {
+  sink << "c.srai64\t" << PrintGPR(rs1);
+};
+
+op c_srli(0b100[3] : shl<5> im1[1] : 0b0[2] : rs1s[3] : im0[5] : 0b1[2]);
+c_srli.var rs1 : {uint8_t} = {rs1s+8}, imm : {uint32_t} = {im1|im0};
+
+c_srli.disasm = {
+  sink << "c.srli\t" << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+c_srli.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) >> unsigned(imm));
+};
+
+op c_srli64(0b100[3] : 0[1] : 0b0[2] : rs1s[3] : 0[5] : 0b1[2]);
+c_srli64.var rs1 : {uint8_t} = {rs1s+8};
+
+c_srli64.disasm = {
+  sink << "c.srli64\t" << PrintGPR(rs1);
+};
+
+op csrrci(csr[12] : rs1[5] : 0b111[3] : rd[5] : 0b1110011[7]);
+
+csrrci.disasm = {
+  sink << "csrrci\t" << PrintGPR(rd) << "," << PrintHex(csr) << "," << PrintI(rs1);
+};
+
+op csrrc(csr[12] : rs1[5] : 0b11[3] : rd[5] : 0b1110011[7]);
+
+csrrc.disasm = {
+  sink << "csrrc\t" << PrintGPR(rd) << "," << PrintHex(csr) << "," << PrintGPR(rs1);
+};
+
+op csrrsi(csr[12] : rs1[5] : 0b110[3] : rd[5] : 0b1110011[7]);
+
+csrrsi.disasm = {
+  sink << "csrrsi\t" << PrintGPR(rd) << "," << PrintHex(csr) << "," << PrintI(rs1);
+};
+
+op csrrs(csr[12] : rs1[5] : 0b10[3] : rd[5] : 0b1110011[7]);
+
+csrrs.disasm = {
+  sink << "csrrs\t" << PrintGPR(rd) << "," << PrintHex(csr) << "," << PrintGPR(rs1);
+};
+
+op csrrwi(csr[12] : rs1[5] : 0b101[3] : rd[5] : 0b1110011[7]);
+
+csrrwi.disasm = {
+  sink << "csrrwi\t" << PrintGPR(rd) << "," << PrintHex(csr) << "," << PrintI(rs1);
+};
+
+op csrrw(csr[12] : rs1[5] : 0b1[3] : rd[5] : 0b1110011[7]);
+
+csrrw.disasm = {
+  sink << "csrrw\t" << PrintGPR(rd) << "," << PrintHex(csr) << "," << PrintGPR(rs1);
+};
+
+op c_sub(0b100011[6] : rs1s[3] : 0b0[2] : rs2s[3] : 0b1[2]);
+c_sub.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_sub.disasm = {
+  sink << "c.sub\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_sub.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) - cpu.GetGPR(rs2));
+};
+
+op c_subw(0b100111[6] : rs1s[3] : 0b0[2] : rs2s[3] : 0b1[2]);
+c_subw.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_subw.disasm = {
+  sink << "c.subw\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_subw.execute = {
+  cpu.SetGPR(rs1, typename ARCH::UREG(typename ARCH::S32(cpu.GetGPR(rs1) - cpu.GetGPR(rs2))));
+};
+
+op c_sw(0b110[3] : shl<3> im1[3] : rs1s[3] : shl<2> im0[1] : shl<6> im2[1] : rs2s[3] : 0b0[2]);
+c_sw.var imm : {uint32_t} = {im2|im1|im0}, rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_sw.disasm = {
+  sink << "c.sw\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+c_sw.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U32(cpu.GetGPR(rs2)));
+};
+
+op c_swsp(0b110[3] : shl<2> im0[4] : shl<6> im1[2] : rs2[5] : 0b10[2]);
+c_swsp.var imm : {uint32_t} = {im1|im0};
+
+c_swsp.disasm = {
+  sink << "c.swsp\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(sp)";
+};
+
+c_swsp.execute = {
+  cpu.MemWrite(cpu.GetGPR(2) + typename ARCH::UREG(imm), typename ARCH::U32(cpu.GetGPR(rs2)));
+};
+
+op ctz(0b11000000001[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+ctz.disasm = {
+  sink << "ctz";
+};
+
+op ctzw(0b11000000001[12] : rs1[5] : 0b1[3] : rd[5] : 0b11011[7]);
+
+ctzw.disasm = {
+  sink << "ctzw";
+};
+
+op c_xor(0b100011[6] : rs1s[3] : 0b1[2] : rs2s[3] : 0b1[2]);
+c_xor.var rs1 : {uint8_t} = {rs1s+8}, rs2 : {uint8_t} = {rs2s+8};
+
+c_xor.disasm = {
+  sink << "c.xor\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+c_xor.execute = {
+  cpu.SetGPR(rs1, cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2));
+};
+
+op div(0b1[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+div.disasm = {
+  sink << "div\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op divu(0b1[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+divu.disasm = {
+  sink << "divu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op divuw(0b1[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+divuw.disasm = {
+  sink << "divuw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op divw(0b1[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b111011[7]);
+
+divw.disasm = {
+  sink << "divw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op dret(0b1111011001000000000000001110011[32]);
+
+dret.disasm = {
+  sink << "dret";
+};
+
+op ebreak(0b00000000000100000000000001110011[32]);
+
+ebreak.disasm = {
+  sink << "ebreak";
+};
+
+op ecall(0b00000000000000000000000001110011[32]);
+
+ecall.disasm = {
+  sink << "ecall";
+};
+
+ecall.execute = {
+  cpu.ECall();
+};
+
+op fadd_d(0b1[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fadd_d.disasm = {
+  sink << "fadd.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fadd_h(0b10[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fadd_h.disasm = {
+  sink << "fadd.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fadd_q(0b11[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fadd_q.disasm = {
+  sink << "fadd.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fadd_s(0b0[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fadd_s.disasm = {
+  sink << "fadd.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fclass_d(0b111000100000[12] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fclass_d.disasm = {
+  sink << "fclass.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+};
+
+op fclass_h(0b111001000000[12] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fclass_h.disasm = {
+  sink << "fclass.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+};
+
+op fclass_q(0b111001100000[12] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fclass_q.disasm = {
+  sink << "fclass.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+};
+
+op fclass_s(0b111000000000[12] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fclass_s.disasm = {
+  sink << "fclass.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+};
+
+op fcvt_d_h(0b10000100010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_h.disasm = {
+  sink << "fcvt.d.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_d_l(0b110100100010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_l.disasm = {
+  sink << "fcvt.d.l\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_d_lu(0b110100100011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_lu.disasm = {
+  sink << "fcvt.d.lu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_d_q(0b10000100011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_q.disasm = {
+  sink << "fcvt.d.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_d_s(0b10000100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_s.disasm = {
+  sink << "fcvt.d.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_d_w(0b110100100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_w.disasm = {
+  sink << "fcvt.d.s\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_d_wu(0b110100100001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_d_wu.disasm = {
+  sink << "fcvt.d.wu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_d(0b10001000001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_d.disasm = {
+  sink << "fcvt.h.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_l(0b110101000010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_l.disasm = {
+  sink << "fcvt.h.l\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_lu(0b110101000011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_lu.disasm = {
+  sink << "fcvt.h.lu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_q(0b10001000011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_q.disasm = {
+  sink << "fcvt.h.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_s(0b10001000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_s.disasm = {
+  sink << "fcvt.h.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_w(0b110101000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_w.disasm = {
+  sink << "fcvt.h.w\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_h_wu(0b110101000001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_h_wu.disasm = {
+  sink << "fcvt.h.wu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_l_d(0b110000100010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_l_d.disasm = {
+  sink << "fcvt.l.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_l_h(0b110001000010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_l_h.disasm = {
+  sink << "fcvt.l.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_l_q(0b110001100010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_l_q.disasm = {
+  sink << "fcvt.l.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_l_s(0b110000000010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_l_s.disasm = {
+  sink << "fcvt.l.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_lu_d(0b110000100011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_lu_d.disasm = {
+  sink << "fcvt.lu.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_lu_h(0b110001000011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_lu_h.disasm = {
+  sink << "fcvt.lu.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_lu_q(0b110001100011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_lu_q.disasm = {
+  sink << "fcvt.lu.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_lu_s(0b110000000011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_lu_s.disasm = {
+  sink << "fcvt.lu.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_d(0b10001100001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_d.disasm = {
+  sink << "fcvt.q.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_h(0b10001100010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_h.disasm = {
+  sink << "fcvt.q.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_l(0b110101100010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_l.disasm = {
+  sink << "fcvt.q.l\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_lu(0b110101100011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_lu.disasm = {
+  sink << "fcvt.q.lu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_s(0b10001100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_s.disasm = {
+  sink << "fcvt.q.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_w(0b110101100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_w.disasm = {
+  sink << "fcvt.q.w\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_q_wu(0b110101100001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_q_wu.disasm = {
+  sink << "fcvt.q.wu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  //  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_d(0b10000000001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_d.disasm = {
+  sink << "fcvt.s.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_h(0b10000000010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_h.disasm = {
+  sink << "fcvt.s.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_l(0b110100000010[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_l.disasm = {
+  sink << "fcvt.s.l\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_lu(0b110100000011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_lu.disasm = {
+  sink << "fcvt.s.lu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_q(0b10000000011[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_q.disasm = {
+  sink << "fcvt.s.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_w(0b110100000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_w.disasm = {
+  sink << "fcvt.s.w\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_s_wu(0b110100000001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_s_wu.disasm = {
+  sink << "fcvt.s.wu\t" << PrintFPR(rd) << "," << PrintGPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_w_d(0b110000100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_w_d.disasm = {
+  sink << "fcvt.w.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_w_h(0b110001000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_w_h.disasm = {
+  sink << "fcvt.w.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_w_q(0b110001100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_w_q.disasm = {
+  sink << "fcvt.w.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_w_s(0b110000000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_w_s.disasm = {
+  sink << "fcvt.w.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_wu_d(0b110000100001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_wu_d.disasm = {
+  sink << "fcvt.wu.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_wu_h(0b110001000001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_wu_h.disasm = {
+  sink << "fcvt.wu.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_wu_q(0b110001100001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_wu_q.disasm = {
+  sink << "fcvt.wu.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fcvt_wu_s(0b110000000001[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fcvt_wu_s.disasm = {
+  sink << "fcvt.wu.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fdiv_d(0b1101[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fdiv_d.disasm = {
+  sink << "fdiv.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fdiv_h(0b1110[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fdiv_h.disasm = {
+  sink << "fdiv.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fdiv_q(0b1111[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fdiv_q.disasm = {
+  sink << "fdiv.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fdiv_s(0b1100[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fdiv_s.disasm = {
+  sink << "fdiv.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fence_i(imm[12] : ?[5] : 0b1[3] : rd[5] : 0b1111[7]);
+
+fence_i.disasm = {
+  sink << "fence.i";
+};
+
+op fence(0b0[4] : iorw1[4] : iorw2[4] : ?[5] : 0b0[3] : rd[5] : 0b1111[7]);
+
+fence.disasm = {
+  sink << "fence\t" << PrintIORW(iorw1) << "," << PrintIORW(iorw2);
+};
+
+op feq_d(0b1010001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+feq_d.disasm = {
+  sink << "feq.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op feq_h(0b1010010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+feq_h.disasm = {
+  sink << "feq.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op feq_q(0b1010011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+feq_q.disasm = {
+  sink << "feq.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op feq_s(0b1010000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+feq_s.disasm = {
+  sink << "feq.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fld(sext imm[12] : rs1[5] : 0b11[3] : rd[5] : 0b111[7]);
+
+fld.disasm = {
+  sink << "fld\t" << PrintFPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op fle_d(0b1010001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fle_d.disasm = {
+  sink << "fle.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fle_h(0b1010010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fle_h.disasm = {
+  sink << "fle.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fle_q(0b1010011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fle_q.disasm = {
+  sink << "fle.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fle_s(0b1010000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fle_s.disasm = {
+  sink << "fle.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op flh(sext imm[12] : rs1[5] : 0b1[3] : rd[5] : 0b111[7]);
+
+flh.disasm = {
+  sink << "flh\t" << PrintFPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op flq(sext imm[12] : rs1[5] : 0b100[3] : rd[5] : 0b111[7]);
+
+flq.disasm = {
+  sink << "flq\t" << PrintFPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op flt_d(0b1010001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+flt_d.disasm = {
+  sink << "flt.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op flt_h(0b1010010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+flt_h.disasm = {
+  sink << "flt.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op flt_q(0b1010011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+flt_q.disasm = {
+  sink << "flt.q\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op flt_s(0b1010000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+flt_s.disasm = {
+  sink << "flt.s\t" << PrintGPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op flw(sext imm[12] : rs1[5] : 0b10[3] : rd[5] : 0b111[7]);
+
+flw.disasm = {
+  sink << "flw\t" << PrintFPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op fmadd_d(rs3[5] : 0b1[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000011[7]);
+
+fmadd_d.disasm = {
+  sink << "fmadd.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmadd_h(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000011[7]);
+
+fmadd_h.disasm = {
+  sink << "fmadd.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmadd_q(rs3[5] : 0b11[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000011[7]);
+
+fmadd_q.disasm = {
+  sink << "fmadd.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmadd_s(rs3[5] : 0b0[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000011[7]);
+
+fmadd_s.disasm = {
+  sink << "fmadd.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmax_d(0b10101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fmax_d.disasm = {
+  sink << "fmax.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmax_h(0b10110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fmax_h.disasm = {
+  sink << "fmax.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmax_q(0b10111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fmax_q.disasm = {
+  sink << "fmax.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmax_s(0b10100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fmax_s.disasm = {
+  sink << "fmax.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmin_d(0b10101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmin_d.disasm = {
+  sink << "fmin.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmin_h(0b10110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmin_h.disasm = {
+  sink << "fmin.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmin_q(0b10111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmin_q.disasm = {
+  sink << "fmin.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmin_s(0b10100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmin_s.disasm = {
+  sink << "fmin.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fmsub_d(rs3[5] : 0b1[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000111[7]);
+
+fmsub_d.disasm = {
+  sink << "fmsub.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmsub_h(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000111[7]);
+
+fmsub_h.disasm = {
+  sink << "fmsub.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmsub_q(rs3[5] : 0b11[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000111[7]);
+
+fmsub_q.disasm = {
+  sink << "fmsub.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmsub_s(rs3[5] : 0b0[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1000111[7]);
+
+fmsub_s.disasm = {
+  sink << "fmsub.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmul_d(0b1001[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fmul_d.disasm = {
+  sink << "fmul.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmul_h(0b1010[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fmul_h.disasm = {
+  sink << "fmul.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmul_q(0b1011[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fmul_q.disasm = {
+  sink << "fmul.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmul_s(0b1000[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fmul_s.disasm = {
+  sink << "fmul.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fmv_d_x(0b111100100000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmv_d_x.disasm = {
+  sink << "fmv.d.x\t" << PrintFPR(rd) << "," << PrintGPR(rs1);;
+};
+
+op fmv_h_x(0b111101000000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmv_h_x.disasm = {
+  sink << "fmv.h.x\t" << PrintFPR(rd) << "," << PrintGPR(rs1);;
+};
+
+op fmv_w_x(0b111100000000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmv_w_x.disasm = {
+  sink << "fmv.w.x\t" << PrintFPR(rd) << "," << PrintGPR(rs1);;
+};
+
+op fmv_x_d(0b111000100000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmv_x_d.disasm = {
+  sink << "fmv.x.d\t" << PrintGPR(rd) << "," << PrintFPR(rs1);;
+};
+
+op fmv_x_h(0b111001000000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmv_x_h.disasm = {
+  sink << "fmv.x.h\t" << PrintGPR(rd) << "," << PrintFPR(rs1);;
+};
+
+op fmv_x_w(0b111000000000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fmv_x_w.disasm = {
+  sink << "fmv.x.w\t" << PrintGPR(rd) << "," << PrintFPR(rs1);
+};
+
+op fnmadd_d(rs3[5] : 0b1[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001111[7]);
+
+fnmadd_d.disasm = {
+  sink << "fnmadd.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmadd_h(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001111[7]);
+
+fnmadd_h.disasm = {
+  sink << "fnmadd.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmadd_q(rs3[5] : 0b11[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001111[7]);
+
+fnmadd_q.disasm = {
+  sink << "fnmadd.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmadd_s(rs3[5] : 0b0[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001111[7]);
+
+fnmadd_s.disasm = {
+  sink << "fnmadd.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmsub_d(rs3[5] : 0b1[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001011[7]);
+
+fnmsub_d.disasm = {
+  sink << "fnmsub.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmsub_h(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001011[7]);
+
+fnmsub_h.disasm = {
+  sink << "fnmsub.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmsub_q(rs3[5] : 0b11[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001011[7]);
+
+fnmsub_q.disasm = {
+  sink << "fnmsub.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fnmsub_s(rs3[5] : 0b0[2] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1001011[7]);
+
+fnmsub_s.disasm = {
+  sink << "fnmsub.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2) << "," << PrintFPR(rs3);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsd(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b11[3] : im0[5] : 0b100111[7]);
+fsd.var imm : {int16_t} = {im1|im0};
+
+fsd.disasm = {
+  sink << "fsd\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op fsgnj_d(0b10001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fsgnj_d.disasm = {
+  sink << "fsgnj.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnj_h(0b10010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fsgnj_h.disasm = {
+  sink << "fsgnj.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjn_d(0b10001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fsgnjn_d.disasm = {
+  sink << "fsgnjn.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjn_h(0b10010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fsgnjn_h.disasm = {
+  sink << "fsgnjn.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjn_q(0b10011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fsgnjn_q.disasm = {
+  sink << "fsgnjn.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjn_s(0b10000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1010011[7]);
+
+fsgnjn_s.disasm = {
+  sink << "fsgnjn.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnj_q(0b10011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fsgnj_q.disasm = {
+  sink << "fsgnj.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnj_s(0b10000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1010011[7]);
+
+fsgnj_s.disasm = {
+  sink << "fsgnj.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjx_d(0b10001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+fsgnjx_d.disasm = {
+  sink << "fsgnjx.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjx_h(0b10010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+fsgnjx_h.disasm = {
+  sink << "fsgnjx.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjx_q(0b10011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+fsgnjx_q.disasm = {
+  sink << "fsgnjx.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsgnjx_s(0b10000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1010011[7]);
+
+fsgnjx_s.disasm = {
+  sink << "fsgnjx.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsh(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b1[3] : im0[5] : 0b100111[7]);
+fsh.var imm : {int16_t} = {im1|im0};
+
+fsh.disasm = {
+  sink << "fsh\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op fsl(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+fsl.disasm = {
+  sink << "fsl";
+};
+
+op fslw(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b111011[7]);
+
+fslw.disasm = {
+  sink << "fslw";
+};
+
+op fsq(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b100[3] : im0[5] : 0b100111[7]);
+fsq.var imm : {int16_t} = {im1|im0};
+
+fsq.disasm = {
+  sink << "fsq\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op fsqrt_d(0b10110100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsqrt_d.disasm = {
+  sink << "fsqrt.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsqrt_h(0b10111000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsqrt_h.disasm = {
+  sink << "fsqrt.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsqrt_q(0b10111100000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsqrt_q.disasm = {
+  sink << "fsqrt.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsqrt_s(0b10110000000[12] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsqrt_s.disasm = {
+  sink << "fsqrt.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsri(rs3[5] : 0b1[1] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+fsri.disasm = {
+  sink << "fsri";
+};
+
+op fsr(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+fsr.disasm = {
+  sink << "fsr\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsriw(rs3[5] : 0b10[2] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+fsriw.disasm = {
+  sink << "fsriw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op fsrw(rs3[5] : 0b10[2] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+fsrw.disasm = {
+  sink << "fsrw\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+};
+
+op fsub_d(0b101[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsub_d.disasm = {
+  sink << "fsub.d\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsub_h(0b110[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsub_h.disasm = {
+  sink << "fsub.h\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsub_q(0b111[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsub_q.disasm = {
+  sink << "fsub.q\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsub_s(0b100[7] : rs2[5] : rs1[5] : rm[3] : rd[5] : 0b1010011[7]);
+
+fsub_s.disasm = {
+  sink << "fsub.s\t" << PrintFPR(rd) << "," << PrintFPR(rs1) << "," << PrintFPR(rs2);
+  if (rm != 7) sink << "," << PrintRM(rm);
+};
+
+op fsw(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b10[3] : im0[5] : 0b100111[7]);
+fsw.var imm : {int16_t} = {im1|im0};
+
+fsw.disasm = {
+  sink << "fsw\t" << PrintFPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+op gorci(0b1010[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+gorci.disasm = {
+  sink << "gorci\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op gorc(0b10100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+gorc.disasm = {
+  sink << "gorc\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op gorciw(0b10100[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+gorciw.disasm = {
+  sink << "gorciw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op gorcw(0b10100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+gorcw.disasm = {
+  sink << "gorcw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op grevi(0b11010[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+grevi.disasm = {
+  sink << "grevi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op grev(0b110100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+grev.disasm = {
+  sink << "grev\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op greviw(0b110100[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+greviw.disasm = {
+  sink << "greviw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op grevw(0b110100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+grevw.disasm = {
+  sink << "grevw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op hfence_gvma(0b110001[7] : ?[10] : 0b1110011[15]);
+
+hfence_gvma.disasm = {
+  sink << "hfence.gvma";
+};
+
+op hfence_vvma(0b10001[7] : ?[10] : 0b1110011[15]);
+
+hfence_vvma.disasm = {
+  sink << "hfence.vvma";
+};
+
+op hlv_b(0b11000000000[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_b.disasm = {
+  sink << "hlv.b";
+};
+
+op hlv_bu(0b11000000001[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_bu.disasm = {
+  sink << "hlv.bu";
+};
+
+op hlv_d(0b11011000000[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_d.disasm = {
+  sink << "hlv.d";
+};
+
+op hlv_h(0b11001000000[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_h.disasm = {
+  sink << "hlv.h";
+};
+
+op hlv_hu(0b11001000001[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_hu.disasm = {
+  sink << "hlv.hu";
+};
+
+op hlv_w(0b11010000000[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_w.disasm = {
+  sink << "hlv.w";
+};
+
+op hlv_wu(0b11010000001[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlv_wu.disasm = {
+  sink << "hlv.wu";
+};
+
+op hlvx_hu(0b11001000011[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlvx_hu.disasm = {
+  sink << "hlvx.hu";
+};
+
+op hlvx_wu(0b11010000011[12] : rs1[5] : 0b100[3] : rd[5] : 0b1110011[7]);
+
+hlvx_wu.disasm = {
+  sink << "hlvx.wu";
+};
+
+op hsv_b(0b110001[7] : rs2[5] : rs1[5] : 0b100000001110011[15]);
+
+hsv_b.disasm = {
+  sink << "hsv.b";
+};
+
+op hsv_d(0b110111[7] : rs2[5] : rs1[5] : 0b100000001110011[15]);
+
+hsv_d.disasm = {
+  sink << "hsv.d";
+};
+
+op hsv_h(0b110011[7] : rs2[5] : rs1[5] : 0b100000001110011[15]);
+
+hsv_h.disasm = {
+  sink << "hsv.h";
+};
+
+op hsv_w(0b110101[7] : rs2[5] : rs1[5] : 0b100000001110011[15]);
+
+hsv_w.disasm = {
+  sink << "hsv.w";
+};
+
+op insb(0b101011000[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+insb.disasm = {
+  sink << "insb";
+};
+
+op jal(shl<20> sext im3[1] : shl<1> im0[10] : shl<11> im1[1] : shl<12> im2[8] : rd[5] : 0b1101111[7]);
+jal.var imm : {int32_t} = {im3|im2|im1|im0};
+
+jal.disasm = {
+  sink << "jal\t" << PrintGPR(rd) << "," << PrintHex(this->GetAddr() + imm);
+};
+
+jal.execute = {
+  cpu.SetGPR(rd, cpu.GetNPC());
+  cpu.Branch(cpu.GetPC() + typename ARCH::UREG(imm), cpu.B_JMP);
+};
+
+op jalr(sext imm[12] : rs1[5] : 0b0[3] : rd[5] : 0b1100111[7]);
+
+jalr.disasm = {
+  sink << "jalr\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+jalr.execute = {
+  typedef typename ARCH::UREG UREG;
+  
+  UREG target = cpu.GetGPR(rs1) + UREG(imm);
+  cpu.SetGPR(rd, cpu.GetPC() + UREG(4));
+  cpu.Branch(target, cpu.B_JMP);
+};
+
+op kabs16(0b101011010001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kabs16.disasm = {
+  sink << "kabs16";
+};
+
+op kabs32(0b101011010010[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kabs32.disasm = {
+  sink << "kabs32";
+};
+
+op kabs8(0b101011010000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kabs8.disasm = {
+  sink << "kabs8";
+};
+
+op kabsw(0b101011010100[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kabsw.disasm = {
+  sink << "kabsw";
+};
+
+op kadd16(0b1000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kadd16.disasm = {
+  sink << "kadd16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kadd32(0b1000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kadd32.disasm = {
+  sink << "kadd32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kadd64(0b1001000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kadd64.disasm = {
+  sink << "kadd64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kadd8(0b1100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kadd8.disasm = {
+  sink << "kadd8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kaddh(0b10[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kaddh.disasm = {
+  sink << "kaddh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kaddw(0b0[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kaddw.disasm = {
+  sink << "kaddw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kcras16(0b1010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kcras16.disasm = {
+  sink << "kcras16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kcras32(0b1010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kcras32.disasm = {
+  sink << "kcras32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kcrsa16(0b1011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kcrsa16.disasm = {
+  sink << "kcrsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kcrsa32(0b1011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kcrsa32.disasm = {
+  sink << "kcrsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmabb16(0b1101100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmabb16.disasm = {
+  sink << "kdmabb16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmabb(0b1101001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmabb.disasm = {
+  sink << "kdmabb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmabt16(0b1110100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmabt16.disasm = {
+  sink << "kdmabt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmabt(0b1110001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmabt.disasm = {
+  sink << "kdmabt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmatt16(0b1111100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmatt16.disasm = {
+  sink << "kdmatt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmatt(0b1111001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmatt.disasm = {
+  sink << "kdmatt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmbb16(0b1101101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmbb16.disasm = {
+  sink << "kdmbb16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmbb(0b101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmbb.disasm = {
+  sink << "kdmbb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmbt16(0b1110101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmbt16.disasm = {
+  sink << "kdmbt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmbt(0b1101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmbt.disasm = {
+  sink << "kdmbt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmtt16(0b1111101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmtt16.disasm = {
+  sink << "kdmtt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kdmtt(0b10101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kdmtt.disasm = {
+  sink << "kdmtt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khm16(0b1000011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+khm16.disasm = {
+  sink << "khm16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khm8(0b1000111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+khm8.disasm = {
+  sink << "khm8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmbb16(0b1101110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+khmbb16.disasm = {
+  sink << "khmbb16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmbb(0b110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+khmbb.disasm = {
+  sink << "khmbb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmbt16(0b1110110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+khmbt16.disasm = {
+  sink << "khmbt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmbt(0b1110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+khmbt.disasm = {
+  sink << "khmbt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmtt16(0b1111110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+khmtt16.disasm = {
+  sink << "khmtt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmtt(0b10110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+khmtt.disasm = {
+  sink << "khmtt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmx16(0b1001011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+khmx16.disasm = {
+  sink << "khmx16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op khmx8(0b1001111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+khmx8.disasm = {
+  sink << "khmx8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmabb32(0b101101[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmabb32.disasm = {
+  sink << "kmabb32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmabb(0b101101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmabb.disasm = {
+  sink << "kmabb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmabt32(0b110101[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmabt32.disasm = {
+  sink << "kmabt32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmabt(0b110101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmabt.disasm = {
+  sink << "kmabt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmada(0b100100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmada.disasm = {
+  sink << "kmada\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmadrs32(0b110110[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmadrs32.disasm = {
+  sink << "kmadrs32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmadrs(0b110110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmadrs.disasm = {
+  sink << "kmadrs\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmads32(0b101110[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmads32.disasm = {
+  sink << "kmads32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmads(0b101110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmads.disasm = {
+  sink << "kmads\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmar64(0b1001010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmar64.disasm = {
+  sink << "kmar64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmatt32(0b111101[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmatt32.disasm = {
+  sink << "kmatt32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmatt(0b111101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmatt.disasm = {
+  sink << "kmatt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmaxda32(0b100101[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmaxda32.disasm = {
+  sink << "kmaxda32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmaxda(0b100101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmaxda.disasm = {
+  sink << "kmaxda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmaxds32(0b111110[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmaxds32.disasm = {
+  sink << "kmaxds32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmaxds(0b111110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmaxds.disasm = {
+  sink << "kmaxds\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmda32(0b11100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmda32.disasm = {
+  sink << "kmda32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmda(0b11100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmda.disasm = {
+  sink << "kmda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmac(0b110000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmac.disasm = {
+  sink << "kmmac\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmac_u(0b111000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmac_u.disasm = {
+  sink << "kmmac.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawb2(0b1100111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawb2.disasm = {
+  sink << "kmmawb2\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawb2_u(0b1101111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawb2_u.disasm = {
+  sink << "kmmawb2.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawb(0b100011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawb.disasm = {
+  sink << "kmmawb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawb_u(0b101011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawb_u.disasm = {
+  sink << "kmmawb.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawt2(0b1110111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawt2.disasm = {
+  sink << "kmmawt2\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawt2_u(0b1111111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawt2_u.disasm = {
+  sink << "kmmawt2.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawt(0b110011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawt.disasm = {
+  sink << "kmmawt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmawt_u(0b111011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmawt_u.disasm = {
+  sink << "kmmawt.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmsb(0b100001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmsb.disasm = {
+  sink << "kmmsb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmsb_u(0b101001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmsb_u.disasm = {
+  sink << "kmmsb.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmwb2(0b1000111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmwb2.disasm = {
+  sink << "kmmwb2\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmwb2_u(0b1001111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmwb2_u.disasm = {
+  sink << "kmmwb2.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmwt2(0b1010111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmwt2.disasm = {
+  sink << "kmmwt2\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmmwt2_u(0b1011111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmmwt2_u.disasm = {
+  sink << "kmmwt2.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmsda32(0b100110[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmsda32.disasm = {
+  sink << "kmsda32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmsda(0b100110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmsda.disasm = {
+  sink << "kmsda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmsr64(0b1001011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmsr64.disasm = {
+  sink << "kmsr64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmsxda32(0b100111[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmsxda32.disasm = {
+  sink << "kmsxda32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmsxda(0b100111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmsxda.disasm = {
+  sink << "kmsxda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmxda32(0b11101[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kmxda32.disasm = {
+  sink << "kmxda32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kmxda(0b11101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kmxda.disasm = {
+  sink << "kmxda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksll16(0b110010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ksll16.disasm = {
+  sink << "ksll16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksll32(0b110010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ksll32.disasm = {
+  sink << "ksll32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksll8(0b110110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ksll8.disasm = {
+  sink << "ksll8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslli16(0b1110101[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kslli16.disasm = {
+  sink << "kslli16";
+};
+
+op kslli32(0b1000010[7] : imm[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kslli32.disasm = {
+  sink << "kslli32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op kslli8(0b11111001[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kslli8.disasm = {
+  sink << "kslli8";
+};
+
+op kslliw(0b11011[7] : imm[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kslliw.disasm = {
+  sink << "kslliw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op ksllw(0b10011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ksllw.disasm = {
+  sink << "ksllw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslra16(0b101011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kslra16.disasm = {
+  sink << "kslra16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslra16_u(0b110011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kslra16_u.disasm = {
+  sink << "kslra16.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslra32(0b101011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kslra32.disasm = {
+  sink << "kslra32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslra32_u(0b110011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kslra32_u.disasm = {
+  sink << "kslra32.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslra8(0b101111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kslra8.disasm = {
+  sink << "kslra8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslra8_u(0b110111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+kslra8_u.disasm = {
+  sink << "kslra8.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslraw(0b110111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kslraw.disasm = {
+  sink << "kslraw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kslraw_u(0b111111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kslraw_u.disasm = {
+  sink << "kslraw.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kstas16(0b1100010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kstas16.disasm = {
+  sink << "kstas16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kstas32(0b1100000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kstas32.disasm = {
+  sink << "kstas32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kstsa16(0b1100011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kstsa16.disasm = {
+  sink << "kstsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kstsa32(0b1100001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+kstsa32.disasm = {
+  sink << "kstsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksub16(0b1001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ksub16.disasm = {
+  sink << "ksub16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksub32(0b1001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ksub32.disasm = {
+  sink << "ksub32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksub64(0b1001001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ksub64.disasm = {
+  sink << "ksub64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksub8(0b1101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ksub8.disasm = {
+  sink << "ksub8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksubh(0b11[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ksubh.disasm = {
+  sink << "ksubh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ksubw(0b1[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ksubw.disasm = {
+  sink << "ksubw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kwmmul(0b110001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kwmmul.disasm = {
+  sink << "kwmmul\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op kwmmul_u(0b111001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+kwmmul_u.disasm = {
+  sink << "kwmmul.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op lb(sext imm[12] : rs1[5] : 0b0[3] : rd[5] : 0b11[7]);
+
+lb.disasm = {
+  sink << "lb\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lb.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::S8())));
+};
+
+op lbu(sext imm[12] : rs1[5] : 0b100[3] : rd[5] : 0b11[7]);
+
+lbu.disasm = {
+  sink << "lbu\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lbu.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::U8())));
+};
+
+op ld(sext imm[12] : rs1[5] : 0b11[3] : rd[5] : 0b11[7]);
+
+ld.disasm = {
+  sink << "ld\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+ld.execute = {
+  cpu.SetGPR(rd, cpu.MemRead(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64()));
+};
+
+op lh(sext imm[12] : rs1[5] : 0b1[3] : rd[5] : 0b11[7]);
+
+lh.disasm = {
+  sink << "lh\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lh.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::S16())));
+};
+
+op lhu(sext imm[12] : rs1[5] : 0b101[3] : rd[5] : 0b11[7]);
+
+lhu.disasm = {
+  sink << "lhu\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lhu.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::U16())));
+};
+
+op lr_d(0b10[5] : aqrl[2] : 0b0[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+lr_d.disasm = {
+  sink << "lr.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op lr_w(0b10[5] : aqrl[2] : 0b0[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+lr_w.disasm = {
+  sink << "lr.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op lui(shl<12> imm[20] : rd[5] : 0b110111[7]);
+
+lui.disasm = {
+  sink << "lui\t" << PrintGPR(rd) << "," << PrintHex(imm >> 12);
+};
+
+lui.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(imm));
+};
+
+op lw(sext imm[12] : rs1[5] : 0b10[3] : rd[5] : 0b11[7]);
+
+lw.disasm = {
+  sink << "lw\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lw.execute = {
+  typedef typename ARCH::UREG UREG;
+
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::S32())));
+};
+
+op lwu(sext imm[12] : rs1[5] : 0b110[3] : rd[5] : 0b11[7]);
+
+lwu.disasm = {
+  sink << "lwu\t" << PrintGPR(rd) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+lwu.execute = {
+  typedef typename ARCH::UREG UREG;
+  cpu.SetGPR(rd, UREG(cpu.MemRead(cpu.GetGPR(rs1) + UREG(imm), typename ARCH::U32())));
+};
+
+op maddr32(0b1100010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+maddr32.disasm = {
+  sink << "maddr32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op max(0b101[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+max.disasm = {
+  sink << "max\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op maxu(0b101[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
+
+maxu.disasm = {
+  sink << "maxu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op maxw(0b1111001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+maxw.disasm = {
+  sink << "maxw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op min(0b101[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+min.disasm = {
+  sink << "min\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op minu(0b101[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+minu.disasm = {
+  sink << "minu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op minw(0b1111000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+minw.disasm = {
+  sink << "minw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mret(0b110000001000000000000001110011[32]);
+
+mret.disasm = {
+  sink << "mret";
+};
+
+op msubr32(0b1100011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+msubr32.disasm = {
+  sink << "msubr32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mulh(0b1[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+mulh.disasm = {
+  sink << "mulh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mulhsu(0b1[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b110011[7]);
+
+mulhsu.disasm = {
+  sink << "mulhsu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mulhu(0b1[7] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b110011[7]);
+
+mulhu.disasm = {
+  sink << "mulhu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mul(0b1[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+mul.disasm = {
+  sink << "mul\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+mul.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) * cpu.GetGPR(rs2));
+};
+
+op mulr64(0b1111000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+mulr64.disasm = {
+  sink << "mulr64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mulsr64(0b1110000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+mulsr64.disasm = {
+  sink << "mulsr64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op mulw(0b1[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b111011[7]);
+
+mulw.disasm = {
+  sink << "mulw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ori(sext imm[12] : rs1[5] : 0b110[3] : rd[5] : 0b10011[7]);
+
+ori.disasm = {
+  sink << "ori\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+ori.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) | typename ARCH::UREG(imm));
+};
+
+op orr(0b0[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+orr.disasm = {
+  sink << "or\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+orr.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) | cpu.GetGPR(rs2));
+};
+
+op orn(0b100000[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+orn.disasm = {
+  sink << "orn\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+orn.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) | ~cpu.GetGPR(rs2));
+};
+
+op packh(0b100[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
+
+packh.disasm = {
+  sink << "packh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pack(0b100[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+pack.disasm = {
+  sink << "pack\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op packu(0b100100[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+packu.disasm = {
+  sink << "packu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op packuw(0b100100[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b111011[7]);
+
+packuw.disasm = {
+  sink << "packuw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op packw(0b100[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b111011[7]);
+
+packw.disasm = {
+  sink << "packw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pbsada(0b1111111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+pbsada.disasm = {
+  sink << "pbsada\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pbsad(0b1111110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+pbsad.disasm = {
+  sink << "pbsad\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pkbb16(0b111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+pkbb16.disasm = {
+  sink << "pkbb16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pkbb32(0b111[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+pkbb32.disasm = {
+  sink << "pkbb32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pkbt16(0b1111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+pkbt16.disasm = {
+  sink << "pkbt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pkbt32(0b1111[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+pkbt32.disasm = {
+  sink << "pkbt32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pktb16(0b11111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+pktb16.disasm = {
+  sink << "pktb16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pktb32(0b11111[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+pktb32.disasm = {
+  sink << "pktb32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pktt16(0b10111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+pktt16.disasm = {
+  sink << "pktt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op pktt32(0b10111[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+pktt32.disasm = {
+  sink << "pktt32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op radd16(0b0[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+radd16.disasm = {
+  sink << "radd16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op radd32(0b0[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+radd32.disasm = {
+  sink << "radd32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op radd64(0b1000000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+radd64.disasm = {
+  sink << "radd64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op radd8(0b100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+radd8.disasm = {
+  sink << "radd8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op raddw(0b10000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+raddw.disasm = {
+  sink << "raddw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rcras16(0b10[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+rcras16.disasm = {
+  sink << "rcras16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rcras32(0b10[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rcras32.disasm = {
+  sink << "rcras32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rcrsa16(0b11[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+rcrsa16.disasm = {
+  sink << "rcrsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rcrsa32(0b11[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rcrsa32.disasm = {
+  sink << "rcrsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rem(0b1[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+rem.disasm = {
+  sink << "rem\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op remu(0b1[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b110011[7]);
+
+remu.disasm = {
+  sink << "remu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op remuw(0b1[7] : rs2[5] : rs1[5] : 0b111[3] : rd[5] : 0b111011[7]);
+
+remuw.disasm = {
+  sink << "remuw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op remw(0b1[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b111011[7]);
+
+remw.disasm = {
+  sink << "remw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rol(0b110000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+rol.disasm = {
+  sink << "rol\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rolw(0b110000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b111011[7]);
+
+rolw.disasm = {
+  sink << "rolw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rori(0b11000[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+rori.disasm = {
+  sink << "rori\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op ror(0b110000[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+ror.disasm = {
+  sink << "ror\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op roriw(0b110000[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+roriw.disasm = {
+  sink << "roriw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op rorw(0b110000[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+rorw.disasm = {
+  sink << "rorw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rstas16(0b1011010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rstas16.disasm = {
+  sink << "rstas16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rstas32(0b1011000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rstas32.disasm = {
+  sink << "rstas32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rstsa16(0b1011011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rstsa16.disasm = {
+  sink << "rstsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rstsa32(0b1011001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rstsa32.disasm = {
+  sink << "rstsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rsub16(0b1[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+rsub16.disasm = {
+  sink << "rsub16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rsub32(0b1[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+rsub32.disasm = {
+  sink << "rsub32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rsub64(0b1000001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+rsub64.disasm = {
+  sink << "rsub64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rsub8(0b101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+rsub8.disasm = {
+  sink << "rsub8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op rsubw(0b10001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+rsubw.disasm = {
+  sink << "rsubw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sb(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b0[3] : im0[5] : 0b100011[7]);
+sb.var imm : {int16_t} = {im1|im0};
+
+sb.disasm = {
+  sink << "sb\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+sb.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U8(cpu.GetGPR(rs2)));
+};
+
+op sc_d(0b11[5] : aqrl[2] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b101111[7]);
+
+sc_d.disasm = {
+  sink << "sc.d" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op sclip16(0b10000100[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sclip16.disasm = {
+  sink << "sclip16";
+};
+
+op sclip32(0b1110010[7] : imm[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sclip32.disasm = {
+  sink << "sclip32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op sclip8(0b100011000[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sclip8.disasm = {
+  sink << "sclip8";
+};
+
+op scmple16(0b1110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+scmple16.disasm = {
+  sink << "scmple16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op scmple8(0b1111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+scmple8.disasm = {
+  sink << "scmple8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op scmplt16(0b110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+scmplt16.disasm = {
+  sink << "scmplt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op scmplt8(0b111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+scmplt8.disasm = {
+  sink << "scmplt8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sc_w(0b11[5] : aqrl[2] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b101111[7]);
+
+sc_w.disasm = {
+  sink << "sc.w" << PrintAQRL(aqrl) << "\t" << PrintGPR(rd) << "," << PrintGPR(rs2) << ",(" << PrintGPR(rs1) << ")";
+};
+
+op sd(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b11[3] : im0[5] : 0b100011[7]);
+sd.var imm : {int16_t} = {im1|im0};
+
+sd.disasm = {
+  sink << "sd\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+sd.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U64(cpu.GetGPR(rs2)));
+};
+
+op sext_b(0b11000000100[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sext_b.disasm = {
+  sink << "sext.b";
+};
+
+op sext_h(0b11000000101[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sext_h.disasm = {
+  sink << "sext.h";
+};
+
+op sfence_vma(0b1001[7] : rs2[5] : rs1[5] : 0b1110011[15]);
+
+sfence_vma.disasm = {
+  sink << "sfence.vma\t" << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh1add(0b10000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b110011[7]);
+
+sh1add.disasm = {
+  sink << "sh1add\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh1add_uw(0b10000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b111011[7]);
+
+sh1add_uw.disasm = {
+  sink << "sh1add.uw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh2add(0b10000[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+sh2add.disasm = {
+  sink << "sh2add\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh2add_uw(0b10000[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b111011[7]);
+
+sh2add_uw.disasm = {
+  sink << "sh2add.uw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh3add(0b10000[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+sh3add.disasm = {
+  sink << "sh3add\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh3add_uw(0b10000[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b111011[7]);
+
+sh3add_uw.disasm = {
+  sink << "sh3add.uw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sha256sig0(0b100000010[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha256sig0.disasm = {
+  sink << "sha256sig0";
+};
+
+op sha256sig1(0b100000011[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha256sig1.disasm = {
+  sink << "sha256sig1";
+};
+
+op sha256sum0(0b100000000[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha256sum0.disasm = {
+  sink << "sha256sum0";
+};
+
+op sha256sum1(0b100000001[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha256sum1.disasm = {
+  sink << "sha256sum1";
+};
+
+op sha512sig0h(0b101110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sha512sig0h.disasm = {
+  sink << "sha512sig0h\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sha512sig0(0b100000110[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha512sig0.disasm = {
+  sink << "sha512sig0";
+};
+
+op sha512sig0l(0b101010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sha512sig0l.disasm = {
+  sink << "sha512sig0l\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sha512sig1h(0b101111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sha512sig1h.disasm = {
+  sink << "sha512sig1h\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sha512sig1(0b100000111[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha512sig1.disasm = {
+  sink << "sha512sig1";
+};
+
+op sha512sig1l(0b101011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sha512sig1l.disasm = {
+  sink << "sha512sig1l\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sha512sum0(0b100000100[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha512sum0.disasm = {
+  sink << "sha512sum0";
+};
+
+op sha512sum0r(0b101000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sha512sum0r.disasm = {
+  sink << "sha512sum0r\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sha512sum1(0b100000101[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sha512sum1.disasm = {
+  sink << "sha512sum1";
+};
+
+op sha512sum1r(0b101001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sha512sum1r.disasm = {
+  sink << "sha512sum1r\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op shfli(0b100[7] : imm[5] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+shfli.disasm = {
+  sink << "shfli\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op shfl(0b100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+shfl.disasm = {
+  sink << "shfl\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op shflw(0b100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b111011[7]);
+
+shflw.disasm = {
+  sink << "shflw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sh(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b1[3] : im0[5] : 0b100011[7]);
+sh.var imm : {int16_t} = {im1|im0};
+
+sh.disasm = {
+  sink << "sh\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+};
+
+sh.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U16(cpu.GetGPR(rs2)));
+};
+
+op sll16(0b101010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sll16.disasm = {
+  sink << "sll16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sll32(0b101010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+sll32.disasm = {
+  sink << "sll32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sll8(0b101110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sll8.disasm = {
+  sink << "sll8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op slli16(0b1110100[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+slli16.disasm = {
+  sink << "slli16";
+};
+
+op slli32(0b111010[7] : imm[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+slli32.disasm = {
+  sink << "slli32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op slli8(0b11111000[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+slli8.disasm = {
+  sink << "slli8";
+};
+
+op slli(0b0[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+slli.disasm = {
+  sink << "slli\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+slli.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) << unsigned(imm));
+};
+
+op sll(0b0[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+sll.disasm = {
+  sink << "sll\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+sll.execute = {
+  typedef typename ARCH::U8 U8;
+  
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) << (U8(cpu.GetGPR(rs2) & U8(0x3f))));
+};
+
+op slli_uw(0b10[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b11011[7]);
+
+slli_uw.disasm = {
+  sink << "slli.uw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op slliw(0b0[7] : imm[5] : rs1[5] : 0b1[3] : rd[5] : 0b11011[7]);
+
+slliw.disasm = {
+  sink << "slliw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+slliw.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(typename ARCH::S32(cpu.GetGPR(rs1) << unsigned(imm))));
+};
+
+op sllw(0b0[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b111011[7]);
+
+sllw.disasm = {
+  sink << "sllw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+sllw.execute = {
+  typedef typename ARCH::U8 U8;
+
+  cpu.SetGPR(rd, typename ARCH::UREG(typename ARCH::S32(cpu.GetGPR(rs1) << (U8(cpu.GetGPR(rs2)) & U8(0x1f)))));
+};
+
+op sloi(0b1000[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sloi.disasm = {
+  sink << "sloi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op slo(0b10000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b110011[7]);
+
+slo.disasm = {
+  sink << "slo\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sloiw(0b10000[7] : imm[5] : rs1[5] : 0b1[3] : rd[5] : 0b11011[7]);
+
+sloiw.disasm = {
+  sink << "sloiw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op slow(0b10000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b111011[7]);
+
+slow.disasm = {
+  sink << "slow\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op slti(sext imm[12] : rs1[5] : 0b10[3] : rd[5] : 0b10011[7]);
+
+slti.disasm = {
+  sink << "slti\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+slti.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(cpu.Test(typename ARCH::SREG(cpu.GetGPR(rs1)) < typename ARCH::SREG(imm))));
+};
+
+op slt(0b0[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b110011[7]);
+
+slt.disasm = {
+  sink << "slt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+slt.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(cpu.Test(typename ARCH::SREG(cpu.GetGPR(rs1)) < typename ARCH::SREG(cpu.GetGPR(rs2)))));
+};
+
+op sltiu(sext imm[12] : rs1[5] : 0b11[3] : rd[5] : 0b10011[7]);
+
+sltiu.disasm = {
+  sink << "sltiu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+sltiu.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(cpu.Test(typename ARCH::UREG(cpu.GetGPR(rs1)) < typename ARCH::UREG(imm))));
+};
+
+op sltu(0b0[7] : rs2[5] : rs1[5] : 0b11[3] : rd[5] : 0b110011[7]);
+
+sltu.disasm = {
+  sink << "sltu\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+sltu.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(cpu.Test(typename ARCH::UREG(cpu.GetGPR(rs1)) < typename ARCH::UREG(cpu.GetGPR(rs2)))));
+};
+
+op sm3p0(0b100001000[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sm3p0.disasm = {
+  sink << "sm3p0";
+};
+
+op sm3p1(0b100001001[12] : rs1[5] : 0b1[3] : rd[5] : 0b10011[7]);
+
+sm3p1.disasm = {
+  sink << "sm3p1";
+};
+
+op sm4ed(bs[2] : 0b11000[5] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sm4ed.disasm = {
+  sink << "sm4ed";
+};
+
+op sm4ks(bs[2] : 0b11010[5] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sm4ks.disasm = {
+  sink << "sm4ks";
+};
+
+op smalbb(0b1000100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smalbb.disasm = {
+  sink << "smalbb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smalbt(0b1001100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smalbt.disasm = {
+  sink << "smalbt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smalda(0b1000110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smalda.disasm = {
+  sink << "smalda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smaldrs(0b1001101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smaldrs.disasm = {
+  sink << "smaldrs\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smalds(0b1000101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smalds.disasm = {
+  sink << "smalds\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smal(0b101111[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smal.disasm = {
+  sink << "smal\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smaltt(0b1010100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smaltt.disasm = {
+  sink << "smaltt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smalxda(0b1001110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smalxda.disasm = {
+  sink << "smalxda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smalxds(0b1010101[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smalxds.disasm = {
+  sink << "smalxds\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smaqa(0b1100100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smaqa.disasm = {
+  sink << "smaqa\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smaqa_su(0b1100101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smaqa_su.disasm = {
+  sink << "smaqa.su\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smar64(0b1000010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smar64.disasm = {
+  sink << "smar64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smax16(0b1000001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smax16.disasm = {
+  sink << "smax16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smax32(0b1001001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smax32.disasm = {
+  sink << "smax32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smax8(0b1000101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smax8.disasm = {
+  sink << "smax8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smbb16(0b100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smbb16.disasm = {
+  sink << "smbb16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smbt16(0b1100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smbt16.disasm = {
+  sink << "smbt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smbt32(0b1100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smbt32.disasm = {
+  sink << "smbt32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smdrs32(0b110100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smdrs32.disasm = {
+  sink << "smdrs32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smdrs(0b110100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smdrs.disasm = {
+  sink << "smdrs\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smds32(0b101100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smds32.disasm = {
+  sink << "smds32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smds(0b101100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smds.disasm = {
+  sink << "smds\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smin16(0b1000000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smin16.disasm = {
+  sink << "smin16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smin32(0b1001000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smin32.disasm = {
+  sink << "smin32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smin8(0b1000100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smin8.disasm = {
+  sink << "smin8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smmul(0b100000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smmul.disasm = {
+  sink << "smmul\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smmul_u(0b101000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smmul_u.disasm = {
+  sink << "smmul.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smmwb(0b100010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smmwb.disasm = {
+  sink << "smmwb\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smmwb_u(0b101010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smmwb_u.disasm = {
+  sink << "smmwb.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smmwt(0b110010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smmwt.disasm = {
+  sink << "smmwt\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smmwt_u(0b111010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smmwt_u.disasm = {
+  sink << "smmwt.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smslda(0b1010110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smslda.disasm = {
+  sink << "smslda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smslxda(0b1011110[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smslxda.disasm = {
+  sink << "smslxda\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smsr64(0b1000011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smsr64.disasm = {
+  sink << "smsr64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smtt16(0b10100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smtt16.disasm = {
+  sink << "smtt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smtt32(0b10100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smtt32.disasm = {
+  sink << "smtt32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smul16(0b1010000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smul16.disasm = {
+  sink << "smul16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smul8(0b1010100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smul8.disasm = {
+  sink << "smul8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smulx16(0b1010001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smulx16.disasm = {
+  sink << "smulx16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smulx8(0b1010101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+smulx8.disasm = {
+  sink << "smulx8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smxds32(0b111100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+smxds32.disasm = {
+  sink << "smxds32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op smxds(0b111100[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+smxds.disasm = {
+  sink << "smxds\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sra16(0b101000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sra16.disasm = {
+  sink << "sra16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sra16_u(0b110000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sra16_u.disasm = {
+  sink << "sra16.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sra32(0b101000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+sra32.disasm = {
+  sink << "sra32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sra32_u(0b110000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+sra32_u.disasm = {
+  sink << "sra32.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sra8(0b101100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sra8.disasm = {
+  sink << "sra8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sra8_u(0b110100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sra8_u.disasm = {
+  sink << "sra8.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srai16(0b1110000[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srai16.disasm = {
+  sink << "srai16";
+};
+
+op srai16_u(0b1110001[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srai16_u.disasm = {
+  sink << "srai16.u";
+};
+
+op srai32(0b111000[7] : imm[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+srai32.disasm = {
+  sink << "srai32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op srai32_u(0b1000000[7] : imm[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+srai32_u.disasm = {
+  sink << "srai32.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op srai8(0b11110000[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srai8.disasm = {
+  sink << "srai8";
+};
+
+op srai8_u(0b11110001[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srai8_u.disasm = {
+  sink << "srai8.u";
+};
+
+op srai(0b10000[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+srai.disasm = {
+  sink << "srai\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+srai.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG( typename ARCH::SREG(cpu.GetGPR(rs1)) >> unsigned(imm)));
+};
+
+op sra(0b100000[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+sra.disasm = {
+  sink << "sra\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srai_u(0b110101[6] : imm[6] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+srai_u.disasm = {
+  sink << "srai.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op sraiw(0b100000[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+sraiw.disasm = {
+  sink << "sraiw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+sraiw.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG( typename ARCH::S32(cpu.GetGPR(rs1)) >> unsigned(imm)));
+};
+
+op sraiw_u(0b11010[7] : imm[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+sraiw_u.disasm = {
+  sink << "sraiw.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op sra_u(0b10010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+sra_u.disasm = {
+  sink << "sra.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sraw(0b100000[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+sraw.disasm = {
+  sink << "sraw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sret(0b10000001000000000000001110011[32]);
+
+sret.disasm = {
+  sink << "sret";
+};
+
+op srl16(0b101001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srl16.disasm = {
+  sink << "srl16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srl16_u(0b110001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srl16_u.disasm = {
+  sink << "srl16.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srl32(0b101001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+srl32.disasm = {
+  sink << "srl32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srl32_u(0b110001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+srl32_u.disasm = {
+  sink << "srl32.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srl8(0b101101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srl8.disasm = {
+  sink << "srl8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srl8_u(0b110101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srl8_u.disasm = {
+  sink << "srl8.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srli16(0b1110010[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srli16.disasm = {
+  sink << "srli16";
+};
+
+op srli16_u(0b1110011[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srli16_u.disasm = {
+  sink << "srli16.u";
+};
+
+op srli32(0b111001[7] : imm[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+srli32.disasm = {
+  sink << "srli32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op srli32_u(0b1000001[7] : imm[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+srli32_u.disasm = {
+  sink << "srli32.u\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op srli8(0b11110100[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srli8.disasm = {
+  sink << "srli8";
+};
+
+op srli8_u(0b11110101[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+srli8_u.disasm = {
+  sink << "srli8.u";
+};
+
+op srli(0b0[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+srli.disasm = {
+  sink << "srli\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+srli.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) >> unsigned(imm));
+};
+
+op srl(0b0[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+srl.disasm = {
+  sink << "srl\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op srliw(0b0[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+srliw.disasm = {
+  sink << "srliw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op srlw(0b0[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+srlw.disasm = {
+  sink << "srlw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sroi(0b1000[6] : imm[6] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+sroi.disasm = {
+  sink << "sroi\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op sro(0b10000[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+sro.disasm = {
+  sink << "sro\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sroiw(0b10000[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b11011[7]);
+
+sroiw.disasm = {
+  sink << "sroiw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op srow(0b10000[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+srow.disasm = {
+  sink << "srow\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op stas16(0b1111010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+stas16.disasm = {
+  sink << "stas16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op stas32(0b1111000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+stas32.disasm = {
+  sink << "stas32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op stsa16(0b1111011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+stsa16.disasm = {
+  sink << "stsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op stsa32(0b1111001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+stsa32.disasm = {
+  sink << "stsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sub16(0b100001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sub16.disasm = {
+  sink << "sub16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sub32(0b100001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+sub32.disasm = {
+  sink << "sub32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sub64(0b1100001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+sub64.disasm = {
+  sink << "sub64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sub8(0b100101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sub8.disasm = {
+  sink << "sub8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op sub(0b100000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+sub.disasm = {
+  sink << "sub\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+sub.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) - cpu.GetGPR(rs2));
+};
+
+op subw(0b100000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b111011[7]);
+
+subw.disasm = {
+  sink << "subw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+subw.execute = {
+  cpu.SetGPR(rd, typename ARCH::UREG(typename ARCH::S32(cpu.GetGPR(rs1) - cpu.GetGPR(rs2))));
+};
+
+op sunpkd810(0b101011001000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sunpkd810.disasm = {
+  sink << "sunpkd810";
+};
+
+op sunpkd820(0b101011001001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sunpkd820.disasm = {
+  sink << "sunpkd820";
+};
+
+op sunpkd830(0b101011001010[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sunpkd830.disasm = {
+  sink << "sunpkd830";
+};
+
+op sunpkd831(0b101011001011[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sunpkd831.disasm = {
+  sink << "sunpkd831";
+};
+
+op sunpkd832(0b101011010011[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+sunpkd832.disasm = {
+  sink << "sunpkd832";
+};
+
+op swap16(0b101011011001[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+swap16.disasm = {
+  sink << "swap16";
+};
+
+op swap8(0b101011011000[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+swap8.disasm = {
+  sink << "swap8";
+};
+
+op sw(shl<5> sext im1[7] : rs2[5] : rs1[5] : 0b10[3] : im0[5] : 0b100011[7]);
+sw.var imm : {int16_t} = {im1|im0};
+
+sw.disasm = {
+  sink << "sw\t" << PrintGPR(rs2) << "," << PrintI(imm) << "(" << PrintGPR(rs1) << ")";
+  //  if (rs1 == 0 or rs1 == 4) sink << " # " << PrintHex(imm);
+};
+
+sw.execute = {
+  cpu.MemWrite(cpu.GetGPR(rs1) + typename ARCH::UREG(imm), typename ARCH::U32(cpu.GetGPR(rs2)));
+};
+
+op uclip16(0b10000101[8] : imm4[4] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uclip16.disasm = {
+  sink << "uclip16";
+};
+
+op uclip32(0b1111010[7] : imm[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uclip32.disasm = {
+  sink << "uclip32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op uclip8(0b100011010[9] : imm3[3] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uclip8.disasm = {
+  sink << "uclip8";
+};
+
+op ucmple16(0b11110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ucmple16.disasm = {
+  sink << "ucmple16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ucmple8(0b11111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ucmple8.disasm = {
+  sink << "ucmple8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ucmplt16(0b10110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ucmplt16.disasm = {
+  sink << "ucmplt16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ucmplt8(0b10111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ucmplt8.disasm = {
+  sink << "ucmplt8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukadd16(0b11000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ukadd16.disasm = {
+  sink << "ukadd16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukadd32(0b11000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukadd32.disasm = {
+  sink << "ukadd32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukadd64(0b1011000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ukadd64.disasm = {
+  sink << "ukadd64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukadd8(0b11100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ukadd8.disasm = {
+  sink << "ukadd8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukaddh(0b1010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ukaddh.disasm = {
+  sink << "ukaddh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukaddw(0b1000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ukaddw.disasm = {
+  sink << "ukaddw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukcras16(0b11010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ukcras16.disasm = {
+  sink << "ukcras16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukcras32(0b11010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukcras32.disasm = {
+  sink << "ukcras32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukcrsa16(0b11011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ukcrsa16.disasm = {
+  sink << "ukcrsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukcrsa32(0b11011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukcrsa32.disasm = {
+  sink << "ukcrsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukmar64(0b1011010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ukmar64.disasm = {
+  sink << "ukmar64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukmsr64(0b1011011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ukmsr64.disasm = {
+  sink << "ukmsr64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukstas16(0b1110010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukstas16.disasm = {
+  sink << "ukstas16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukstas32(0b1110000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukstas32.disasm = {
+  sink << "ukstas32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukstsa16(0b1110011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukstsa16.disasm = {
+  sink << "ukstsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ukstsa32(0b1110001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ukstsa32.disasm = {
+  sink << "ukstsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uksub16(0b11001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uksub16.disasm = {
+  sink << "uksub16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uksub32(0b11001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+uksub32.disasm = {
+  sink << "uksub32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uksub64(0b1011001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+uksub64.disasm = {
+  sink << "uksub64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uksub8(0b11101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uksub8.disasm = {
+  sink << "uksub8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uksubh(0b1011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+uksubh.disasm = {
+  sink << "uksubh\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uksubw(0b1001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+uksubw.disasm = {
+  sink << "uksubw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umaqa(0b1100110[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umaqa.disasm = {
+  sink << "umaqa\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umar64(0b1010010[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+umar64.disasm = {
+  sink << "umar64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umax16(0b1001001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umax16.disasm = {
+  sink << "umax16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umax32(0b1010001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+umax32.disasm = {
+  sink << "umax32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umax8(0b1001101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umax8.disasm = {
+  sink << "umax8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umin16(0b1001000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umin16.disasm = {
+  sink << "umin16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umin32(0b1010000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+umin32.disasm = {
+  sink << "umin32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umin8(0b1001100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umin8.disasm = {
+  sink << "umin8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umsr64(0b1010011[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+umsr64.disasm = {
+  sink << "umsr64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umul16(0b1011000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umul16.disasm = {
+  sink << "umul16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umul8(0b1011100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umul8.disasm = {
+  sink << "umul8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umulx16(0b1011001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umulx16.disasm = {
+  sink << "umulx16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op umulx8(0b1011101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+umulx8.disasm = {
+  sink << "umulx8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op unshfli(0b100[7] : imm[5] : rs1[5] : 0b101[3] : rd[5] : 0b10011[7]);
+
+unshfli.disasm = {
+  sink << "unshfli\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op unshfl(0b100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b110011[7]);
+
+unshfl.disasm = {
+  sink << "unshfl\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op unshflw(0b100[7] : rs2[5] : rs1[5] : 0b101[3] : rd[5] : 0b111011[7]);
+
+unshflw.disasm = {
+  sink << "unshflw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uradd16(0b10000[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uradd16.disasm = {
+  sink << "uradd16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uradd32(0b10000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+uradd32.disasm = {
+  sink << "uradd32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uradd64(0b1010000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+uradd64.disasm = {
+  sink << "uradd64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uradd8(0b10100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+uradd8.disasm = {
+  sink << "uradd8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op uraddw(0b11000[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+uraddw.disasm = {
+  sink << "uraddw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urcras16(0b10010[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+urcras16.disasm = {
+  sink << "urcras16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urcras32(0b10010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+urcras32.disasm = {
+  sink << "urcras32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urcrsa16(0b10011[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+urcrsa16.disasm = {
+  sink << "urcrsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urcrsa32(0b10011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+urcrsa32.disasm = {
+  sink << "urcrsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urstas16(0b1101010[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+urstas16.disasm = {
+  sink << "urstas16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urstas32(0b1101000[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+urstas32.disasm = {
+  sink << "urstas32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urstsa16(0b1101011[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+urstsa16.disasm = {
+  sink << "urstsa16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op urstsa32(0b1101001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+urstsa32.disasm = {
+  sink << "urstsa32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ursub16(0b10001[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ursub16.disasm = {
+  sink << "ursub16\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ursub32(0b10001[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b1110111[7]);
+
+ursub32.disasm = {
+  sink << "ursub32\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ursub64(0b1010001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ursub64.disasm = {
+  sink << "ursub64\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ursub8(0b10101[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+ursub8.disasm = {
+  sink << "ursub8\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op ursubw(0b11001[7] : rs2[5] : rs1[5] : 0b1[3] : rd[5] : 0b1110111[7]);
+
+ursubw.disasm = {
+  sink << "ursubw\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op wexti(0b1101111[7] : imm[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+wexti.disasm = {
+  sink << "wexti\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintHex(imm);
+};
+
+op wext(0b1100111[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+wext.disasm = {
+  sink << "wext\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op wfi(0b10000010100000000000001110011[32]);
+
+wfi.disasm = {
+  sink << "wfi";
+};
+
+op xnor(0b100000[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+xnor.disasm = {
+  sink << "xnor\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op xori(sext imm[12] : rs1[5] : 0b100[3] : rd[5] : 0b10011[7]);
+
+xori.disasm = {
+  sink << "xori\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintI(imm);
+};
+
+xori.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) ^ typename ARCH::UREG(imm));
+};
+
+op xorr(0b0[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+xorr.disasm = {
+  sink << "xor\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+xorr.execute = {
+  cpu.SetGPR(rd, cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2));
+};
+
+op xperm_b(0b10100[7] : rs2[5] : rs1[5] : 0b100[3] : rd[5] : 0b110011[7]);
+
+xperm_b.disasm = {
+  sink << "xperm.b\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op xperm_h(0b10100[7] : rs2[5] : rs1[5] : 0b110[3] : rd[5] : 0b110011[7]);
+
+xperm_h.disasm = {
+  sink << "xperm.h\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op xperm_n(0b10100[7] : rs2[5] : rs1[5] : 0b10[3] : rd[5] : 0b110011[7]);
+
+xperm_n.disasm = {
+  sink << "xperm.n\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op xperm_w(0b10100[7] : rs2[5] : rs1[5] : 0b0[3] : rd[5] : 0b110011[7]);
+
+xperm_w.disasm = {
+  sink << "xperm.w\t" << PrintGPR(rd) << "," << PrintGPR(rs1) << "," << PrintGPR(rs2);
+};
+
+op zunpkd810(0b101011001100[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+zunpkd810.disasm = {
+  sink << "zunpkd810";
+};
+
+op zunpkd820(0b101011001101[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+zunpkd820.disasm = {
+  sink << "zunpkd820";
+};
+
+op zunpkd830(0b101011001110[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+zunpkd830.disasm = {
+  sink << "zunpkd830";
+};
+
+op zunpkd831(0b101011001111[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+zunpkd831.disasm = {
+  sink << "zunpkd831";
+};
+
+op zunpkd832(0b101011010111[12] : rs1[5] : 0b0[3] : rd[5] : 0b1110111[7]);
+
+zunpkd832.disasm = {
+  sink << "zunpkd832";
+};
+

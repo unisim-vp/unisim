@@ -33,6 +33,9 @@
  */
  
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
+#include <cmath>
+using std::isnan;
+
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.tcc>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -525,8 +528,8 @@ CPU::ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size )
   {
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
-    // Using memory service interface instead
-    return PCPU::memory_import->ReadMemory(addr, buffer, size);
+    // Using Parent Implementation
+    return PCPU::ExternalReadMemory(addr, buffer, size);
   }
 
   Transaction trans( payload_fabric );
@@ -559,7 +562,7 @@ CPU::ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
     // Using memory service interface instead
-    return PCPU::memory_import->WriteMemory(addr, buffer, size);
+    return PCPU::WriteMemory(addr, buffer, size);
   }
 
   Transaction trans( payload_fabric );
@@ -592,8 +595,8 @@ CPU::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint
     case SYSENCODE(0b11,0b011,0b0000,0b0000,0b111): // 2.23: DCZID_EL0, Data Cache Zero ID register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DCZID_EL0"; }
-          char const* Describe() const { return "Data Cache Zero ID register"; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DCZID_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Data Cache Zero ID register"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU& cpu) const override
           { return 4; /* TODO: DZP should depend on SCTLR_EL1 and HCR_EL2 */ }
         } x; return &x;

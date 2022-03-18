@@ -221,6 +221,7 @@ namespace review
     };
 
     Arch( Interface& iif );
+    ~Arch();
 
     Interface&                     interface;
     unisim::util::sav::ActionNode* path;
@@ -565,7 +566,7 @@ namespace review
 
     struct FTop : public unisim::util::symbolic::ExprNode
     {
-      virtual FTop* Mutate() const { return new FTop(*this); }
+      virtual FTop* Mutate() const override { return new FTop(*this); }
       virtual unsigned SubCount() const { return 0; }
       virtual int cmp(ExprNode const&) const override { return 0; }
       virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
@@ -939,78 +940,13 @@ namespace review
 
   };
 
-  template <unsigned SUBCOUNT, class OP>
-  struct WeirdOpBase : public unisim::util::symbolic::ExprNode
-  {
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef WeirdOpBase<SUBCOUNT,OP> this_type;
-    WeirdOpBase( OP && _op ) : op(_op) {}
-    virtual void Repr(std::ostream& sink) const override
-    {
-      sink << "WeirdOp<" << ScalarType(GetType()).name << "," << SUBCOUNT << "," << op << ">( ";
-      char const* sep = "";
-      for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
-        sink << sep << subs[idx];
-      sink << " )";
-    }
-    virtual unsigned SubCount() const override { return SUBCOUNT; }
-    virtual Expr const& GetSub(unsigned idx) const override { if (idx >= SUBCOUNT) return ExprNode::GetSub(idx); return subs[idx]; }
-    virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<WeirdOpBase const&>( brhs )); }
-    int compare( this_type const& rhs ) const { return strcmp( op, rhs.op ); }
-
-    OP op;
-    Expr subs[SUBCOUNT];
-  };
-
-  template <class T, unsigned SUBCOUNT, class OP>
-  struct WeirdOp : public WeirdOpBase<SUBCOUNT,OP>
-  {
-    typedef WeirdOpBase<SUBCOUNT,OP> base_type;
-    typedef WeirdOp<T,SUBCOUNT,OP>   this_type;
-
-    WeirdOp( OP && name ) : base_type(std::move(name)) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual typename base_type::ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType(); }
-  };
-
-  template <class OUT, class OP, class T1>
-  unisim::util::symbolic::Expr
-  make_weirdop( OP && op, T1 const& op1 )
-  {
-    auto x = new WeirdOp<OUT,1,OP>(std::move(op));
-    x->subs[0] = op1.expr;
-    return x;
-  }
-
-  template <class OUT, class OP, class T1, class T2>
-  unisim::util::symbolic::Expr
-  make_weirdop( OP && op, T1 const& op1, T2 const& op2 )
-  {
-    auto x = new WeirdOp<OUT,2,OP>(op);
-    x->subs[0] = op1.expr;
-    x->subs[1] = op2.expr;
-    return x;
-  }
-
-  template <class OUT, class OP, class T1, class T2, class T3>
-  unisim::util::symbolic::Expr
-  make_weirdop( OP && op, T1 const& op1, T2 const& op2, T3 const& op3 )
-  {
-    auto x = new WeirdOp<OUT,3,OP>(op);
-    x->subs[0] = op1.expr;
-    x->subs[1] = op2.expr;
-    x->subs[2] = op3.expr;
-    return x;
-  }
-
   template <class ARCH, typename INT>
   void eval_div64( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
     if (arch.Test(divisor == INT(0))) arch._DE();
 
-    INT nlo = make_weirdop<INT>("div.lo",hi,lo,divisor);
-    INT nhi = make_weirdop<INT>("div.hi",hi,lo,divisor);
+    INT nlo = unisim::util::sav::make_weirdop<INT>("div.lo",hi,lo,divisor);
+    INT nhi = unisim::util::sav::make_weirdop<INT>("div.hi",hi,lo,divisor);
     lo = nlo;
     hi = nhi;
   }
@@ -1020,12 +956,12 @@ namespace review
   {
     typedef typename ARCH::bit_t bit_t;
 
-    INT   nlo = make_weirdop<INT>("mul.lo",lo,multiplier);
-    INT   nhi = make_weirdop<INT>("mul.hi",lo,multiplier);
+    INT   nlo = unisim::util::sav::make_weirdop<INT>("mul.lo",lo,multiplier);
+    INT   nhi = unisim::util::sav::make_weirdop<INT>("mul.hi",lo,multiplier);
     lo = nlo;
     hi = nhi;
 
-    bit_t ovf = make_weirdop<bit_t>("mul.of",nlo,nhi);
+    bit_t ovf = unisim::util::sav::make_weirdop<bit_t>("mul.of",nlo,nhi);
     arch.flagwrite( ARCH::FLAG::OF, ovf );
     arch.flagwrite( ARCH::FLAG::CF, ovf );
   }
@@ -1035,9 +971,10 @@ namespace review
   inline void eval_mul( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
   inline void eval_mul( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
 
-  inline Arch::f64_t eval_fprem ( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem", dividend, modulus); }
-  inline Arch::f64_t eval_fprem1( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem1", dividend, modulus); }
-
+  inline Arch::f64_t eval_fprem ( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus )
+  { return unisim::util::sav::make_weirdop<Arch::f64_t>("fprem", dividend, modulus); }
+  inline Arch::f64_t eval_fprem1( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus )
+  { return unisim::util::sav::make_weirdop<Arch::f64_t>("fprem1", dividend, modulus); }
 } // end of namespace review
 
 #endif // AMD64SAV_ARCH_HH

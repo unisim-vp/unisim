@@ -2,10 +2,8 @@
 
 SIMPKG=mpc57sav
 SIMPKG_SRCDIR=cxx/mpc57sav
-SIMPKG_DSTDIR=mpc57sav
-source "$(dirname $0)/dist_common.sh"
 
-import_genisslib || exit
+source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit
 import unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs || exit
@@ -35,6 +33,7 @@ import std/vector || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source isa isa_vle header template data
+dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -62,12 +61,6 @@ arch.hh \
 testutils.hh \
 "
 
-UNISIM_SIMULATOR_PKG_DATA_FILES="\
-COPYING \
-NEWS \
-ChangeLog \
-"
-
 UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
 README \
@@ -77,77 +70,15 @@ NEWS \
 ChangeLog \
 "
 
-UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
+UNISIM_SIMULATOR_FILES="\
+${UNISIM_SIMULATOR_SOURCE_FILES} \
+${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_DATA_FILES} \
+"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
-done
-
-for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
-# Top level
-
-cat << EOF > "${DEST_DIR}/AUTHORS"
-Yves Lhuillier <yves.lhuillier@cea.fr>
-EOF
-
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - mpc57sav: an MPC57 V5 user level simulator
-  - UNISIM GenISSLib (will not be installed): an instruction set simulator generator
-
-See INSTALL for installation instructions.
-EOF
-
-cat << EOF > "${DEST_DIR}/INSTALL"
-INSTALLATION
-------------
-
-Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - GNU flex
-  - GNU bison
-
-
-Building instructions:
-  $ ./configure
-  $ make
-
-Installing (optional):
-  $ make install
-EOF
-
-output_top_configure_ac <(cat << EOF
-AC_INIT([UNISIM mpc57xx simulator validation tests generator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_CONFIG_SUBDIRS([genisslib]) 
-AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}]) 
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-)
-
-output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG_DSTDIR}
-EXTRA_DIST = configure.cross
-EOF
-)
-
-build_top_configure
 
 # Simulator
 
@@ -176,8 +107,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
-AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
@@ -219,7 +148,7 @@ CLEANFILES=\
 
 \$(top_builddir)/top_mpc57.cc: \$(top_builddir)/top_mpc57.hh
 \$(top_builddir)/top_mpc57.hh: ${UNISIM_SIMULATOR_ISA_FILES} ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_mpc57 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_mpc57.isa
+	\$(top_srcdir)/genisslib.py \$(GILFLAGS) -o \$(top_builddir)/top_mpc57 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_mpc57.isa
 
 EOF
 )

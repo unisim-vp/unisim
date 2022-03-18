@@ -56,53 +56,22 @@ FProduct::~FProduct() { delete m_sink; }
     @param _source the SourceCode object to dump
  */
 Product&
-Product::usercode( SourceCode const& source )
+Product::usercode( SourceCode const& source, char const* before, char const* after )
 {
-  return usercode( source.fileloc, "%s", source.content.str() );
-}
-
-/** Output source code with surrounding braces into the output file
-    Also generate #line in the output file to link the C compiler error to the original source code
-    @param _source the SourceCode object to dump
- */
-Product&
-Product::usercode( SourceCode const& source, char const* fmt )
-{
-  return usercode( source.fileloc, fmt, source.content.str() );
-}
-
-/** Output source code into the output file
-    Also generate #line in the output file to link the C compiler error to the original source code
-    @param filename the name of the file where source code was found
-    @param lineno the line number where source code was found
-    @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
-*/
-Product&
-Product::usercode( FileLoc const& _fileloc, char const* _fmt, ... ) {
-  if (m_sourcelines) {
-    require_newline();
-    code( "#line %u \"%s\"\n", _fileloc.getline(), _fileloc.getname().str() );
-  }
-  va_list args;
-  for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
-    /* stack allocation */
-    char storage[capacity];
-    /* Try to print in the allocated space. */
-    va_start( args, _fmt );
-    size = vsnprintf( storage, capacity, _fmt, args );
-    va_end( args );
-    /* If it didn't work, retry */
-    if (size < 0 or size >= capacity) continue;
-    
-    /* Now storage is ok... */
-    write( storage );
-    break;
-  }
+  if (m_sourcelines)
+    {
+      require_newline();
+      code( "#line %u \"%s\"\n", source.fileloc.getline(), source.fileloc.getname().str() );
+    }
+  if (before) write( before );
+  write( source.content.str() );
+  if (after) write( after );
   
-  if (m_sourcelines) {
-    require_newline();
-    code( "#line %u \"%s\"\n", m_lineno + 1, m_filename.str() );
-  }
+  if (m_sourcelines)
+    {
+      require_newline();
+      code( "#line %u \"%s\"\n", m_lineno + 1, m_filename.str() );
+    }
   return *this;
 }
 
@@ -111,7 +80,8 @@ Product::usercode( FileLoc const& _fileloc, char const* _fmt, ... ) {
 */
 
 Product&
-Product::code( char const* _fmt, ... ) {
+Product::code( char const* _fmt, ... )
+{
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
     /* stack allocation */
@@ -157,36 +127,37 @@ Product::ns_enter( std::vector<ConstStr> const& _namespace ) {
 }
 
 Product&
-Product::template_signature( Vector<CodePair> const& _tparams ) {
-  if( _tparams.empty() ) return *this;
+Product::template_signature( Vector<CodePair> const& tparams )
+{
+  if (tparams.empty()) return *this;
 
   code( "template <" );
-  
-  bool intra = false;
-  for( Vector<CodePair>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
-    if (intra) code( "," ); else intra = true;
-    usercode( (**tp).ctype->fileloc, "\t%s", (**tp).ctype->content.str() );
-    usercode( (**tp).csymbol->fileloc, "\t%s", (**tp).csymbol->content.str() );
-  }
-  
+  char const* sep = "";
+  for (auto const& tp : tparams)
+    {
+      code( sep ), sep = ",";
+      code("\t").usercode(*tp->ctype).code("\t").usercode(*tp->csymbol);
+    }
   code( ">\n" );
+  
   return *this;
 }
 
 
 Product&
-Product::template_abbrev( Vector<CodePair> const& _tparams ) {
-  if( _tparams.empty() ) return *this;
+Product::template_abbrev( Vector<CodePair> const& tparams )
+{
+  if (tparams.empty()) return *this;
 
   code( "<" );
-
-  bool intra = false;
-  for( Vector<CodePair>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
-    if (intra) code( "," ); else intra = true;
-    usercode( (**tp).csymbol->fileloc, "\t%s", (**tp).csymbol->content.str() );
-  }
-  
+  char const* sep = "";
+  for (auto const& tp : tparams)
+    {
+      code( sep ), sep = ",";
+      code("\t").usercode( *tp->csymbol );
+    }
   code( ">" );
+  
   return *this;
 }
 
@@ -272,11 +243,6 @@ Product::write( char const* _ptr )
   }
   return *this;
 }
-
-/** \brief flush the line buffer
- *
- */
-void Product::flush() { if( not m_line.empty() ) write( "\n" ); }
 
 void FProduct::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
 

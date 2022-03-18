@@ -86,16 +86,14 @@ class Linux
   virtual ~Linux();
 
   /* Service methods */
-  virtual void OnDisconnect();
-  virtual bool BeginSetup();
-  virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export);
-  virtual bool EndSetup();
+  virtual bool BeginSetup() override;
+  virtual void Setup(unisim::service::interfaces::LinuxOS*) override;
 
   /* Service interface methods */
-  virtual void ExecuteSystemCall(int id);
+  virtual void ExecuteSystemCall(int id) override;
   //virtual bool Load();
 
-  virtual const unisim::util::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
+  virtual const unisim::util::blob::Blob<ADDRESS_TYPE> *GetBlob() const override;
   
   virtual void SetupTargetSystem() = 0;
   

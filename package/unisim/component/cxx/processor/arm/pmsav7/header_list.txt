@@ -1,2 +1,0 @@
-unisim/component/cxx/processor/arm/pmsav7/cp15.hh
-unisim/component/cxx/processor/arm/pmsav7/cpu.hh

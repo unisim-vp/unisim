@@ -12,6 +12,10 @@ Building instructions:
   $ cd <my-build-dir>
   $ ./configure <options>
   $ make
+
+Note: for a typical SAV (symbolic auto verification), you can configure as:
+
+  $ ./configure --disable-shared --host=aarch64-<your_vendor>-<your_os> LDFLAGS=--static
   
 Installing (optional):
   $ make install

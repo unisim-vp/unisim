@@ -35,6 +35,7 @@
 #include <test.hh>
 #include <scanner.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <algorithm>
 #include <sstream>
 
 Interface::Interface( std::string const& disasm )
@@ -42,7 +43,7 @@ Interface::Interface( std::string const& disasm )
   , gilname()
   , gregs()
   , grmap()
-    //  , vregs()
+  , vregs()
   , behavior(std::make_shared<unisim::util::sav::ActionNode>())
   , memrange()
   , base_addr()
@@ -86,7 +87,7 @@ Interface::Interface( unisim::component::cxx::processor::arm::isa::thumb::Operat
 {
   init(*this, insn);
 }
-  
+
 void
 Interface::start()
 {
@@ -137,12 +138,13 @@ Interface::start()
 uintptr_t
 Interface::workcells() const
 {
-  uintptr_t count = 0;
-  count += gregs.used();
-  count += 1; // placeholder for nzcv
-  uintptr_t memcells = memspread() / 4;
-  if (count < memcells) count = memcells;
-  return  count;
+  uint32_t size = 0;
+  size += 4*gregs.used();
+  size += 8*vregs.used();
+  size += 4; // placeholder for nzcv
+  size = std::max(size, memspread());
+  if (size % 4) throw "WTF";
+  return size / 4;
 }
     
 void
@@ -245,3 +247,20 @@ TestLess::operator () ( Interface const& a, Interface const& b ) const
 
   return comparator.process( *a.behavior, *b.behavior ) < 0;
 }
+
+uint32_t
+Interface::vrmap() const
+{
+  uint32_t map = 0;
+  for (unsigned reg = 0; reg < vregs.count(); ++reg)
+    {
+      if (not vregs.accessed(reg))
+        continue;
+      map |= 1 << reg;
+    }
+  return map;
+}
+  
+unsigned Interface::Vitr::operator* () const { return __builtin_ctz(map); }
+bool Interface::Vitr::operator != (Vitr const& rhs) const { return map != rhs.map; }
+void Interface::Vitr::operator ++ () { map = map & (map -1); }

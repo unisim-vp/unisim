@@ -538,8 +538,10 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 {
 	// set the environment to be used
-	if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp_);
-	else target_envp_ = envp_;
+	if (apply_host_environnement_)
+		GetHostEnvironment(envp_, &target_envp_);
+	else
+		target_envp_ = envp_;
 
 	// create the root blob that will be used to store the image that will be
 	// loaded

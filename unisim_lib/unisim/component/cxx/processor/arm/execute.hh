@@ -47,8 +47,6 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-  using unisim::util::arithmetic::RotateRight;
-  
   namespace CondTruthTable {
     template <uintptr_t Tbit, uintptr_t Tbits = 16>
     struct Source {
@@ -292,7 +290,7 @@ namespace arm {
     BOOL const scr_fw( false ); // prevents Non-secure masking of FIQs that are taken to Monitor mode
     BOOL const have_virt_ext( false ); // HaveVirtExt()
 
-    BOOL privileged = core.CPSR().Get(M) != U32(core.USER_MODE);
+    BOOL privileged = core.CPSR().Get(M) != U32(PSR::USER_MODE);
     
     if (A.Get( psr_mask ) and not core.Test
         (privileged and (is_secure or  scr_aw or have_virt_ext)))
@@ -358,7 +356,40 @@ namespace arm {
     uint32_t m_reglist, m_offset, m_inca, m_incb;
     int32_t  m_dir, m_reg;
   };
+
+  template <typename T> struct OverShift {};
+  template <> struct OverShift<int8_t>   { static int8_t const size = 8; };
+  template <> struct OverShift<int16_t>  { static int8_t const size = 16; };
+  template <> struct OverShift<int32_t>  { static int8_t const size = 32; };
+  template <> struct OverShift<int64_t>  { static int8_t const size = 64; };
+  template <> struct OverShift<uint8_t>  { static int8_t const size = 8; };
+  template <> struct OverShift<uint16_t> { static int8_t const size = 16; };
+  template <> struct OverShift<uint32_t> { static int8_t const size = 32; };
+  template <> struct OverShift<uint64_t> { static int8_t const size = 64; };
   
+  template <class OP>
+  OP NeonSHL( OP op, int8_t sh )
+  {
+    if (sh >= OverShift<OP>::size)
+      return OP(0);
+
+    if (sh >= 0)
+      return op << sh;
+
+    if (sh <= -OverShift<OP>::size)
+      {
+        if (std::numeric_limits<OP>::is_signed)
+          return op >> (OverShift<OP>::size-1);
+        else
+          return OP(0);
+      }
+    return op >> -sh;
+  }
+  
+  // Min Max operations. Note: Fall back for native-like types.
+  template <typename T> T const& Minimum( T const& l, T const& r ) { return std::min(l, r); }
+  template <typename T> T const& Maximum( T const& l, T const& r ) { return std::max(l, r); }
+
   /******************/
   /* Floating Point */
   /******************/
@@ -407,7 +438,6 @@ namespace arm {
       rf.Set( arch.FPSCR, 1u );
   }
     
-  
   template <typename ARCH, typename FPCTRL, typename operT>
   struct __FPProcessNaN__
   {

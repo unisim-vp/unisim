@@ -33,6 +33,11 @@
  */
 
 #include "architecture.hh"
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
+#include <unisim/service/netstreamer/netstreamer.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -41,6 +46,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 struct MMapped : AArch64::Page::Free
 {
@@ -92,6 +98,16 @@ struct MMapped : AArch64::Page::Free
 private:
   ~MMapped() { close(fd); }
 };
+
+bool
+load_snapshot(AArch64& arch, char const* shot_filename)
+{
+  if (access(shot_filename, R_OK) != 0)
+    return false;
+  arch.load_snapshot(shot_filename);
+  std::cerr << "Starting at " << std::dec << arch.insn_counter << " instructions." << std::endl;
+  return true;
+}
 
 bool
 load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
@@ -168,7 +184,7 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
      */
     arch.SetGSR(0, AArch64::U64(base));
     for (unsigned idx = 1; idx < 4; ++idx)
-      arch.SetGSR(idx, 0/*AArch64::U64(0xdeadbeefbadfeed0 + idx,-1)*/);
+      arch.SetGSR(idx, AArch64::U64(0/*0xdeadbeefbadfeed0 + idx,-1*/));
   }
 
   return true;
@@ -177,15 +193,147 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
 //  [AArch64 boot info] https://www.kernel.org/doc/Documentation/arm64/booting.txt
 //  [Yocto dtb generation] runqemu qemuparams="-machine dumpdtb=device_tree_from_qemu.dtb"
 
+AArch64* core_instance(AArch64* new_arch)
+{
+  static AArch64* instance = 0;
+  if (new_arch) instance = new_arch;
+  return instance;
+}
+
+void usr_handler(int signum)
+{
+  struct Bad {};
+  switch (signum)
+    {
+    default: throw Bad();
+    case SIGUSR1:
+      core_instance(0)->suspend = true;
+      break;
+    case SIGUSR2:
+      core_instance(0)->terminate = true;
+      break;
+    }
+}
+
+void simdefault(unisim::kernel::Simulator* sim)
+{
+  sim->SetVariable("http-server.http-port", 12360);
+  sim->SetVariable("web-terminal.verbose", false);
+  sim->SetVariable("netstreamer.tcp-port", 1234);
+  sim->SetVariable("netstreamer.filter-null-character", true);
+  sim->SetVariable("netstreamer.verbose", false);
+
+  new unisim::kernel::config::json::JSONConfigFileHelper(sim);
+}
+
+struct StreamSpy
+  : public unisim::kernel::Service<unisim::service::interfaces::CharIO>
+  , public unisim::kernel::Client<unisim::service::interfaces::CharIO>
+{
+  StreamSpy(char const* name, unisim::kernel::Object* parent, AArch64& _arch)
+    : unisim::kernel::Object(name, parent)
+    , unisim::kernel::Service<unisim::service::interfaces::CharIO>(name, parent)
+    , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
+    , outgoing()
+    , incoming()
+    , expect()
+    , step()
+    , char_io_import("char-io-import", this)
+    , char_io_export("char-io-export", this)
+    , arch(_arch)
+  {
+    advance(0, "qemuarm64 login: ", &StreamSpy::step1);
+  }
+
+  void step1()
+  {
+    advance("root\r", "root@qemuarm64:~#", &StreamSpy::step2);
+  }
+
+  void step2()
+  {
+    advance("su - demo\r", "qemuarm64:~$ ", &StreamSpy::step3);
+  }
+  
+  void step3()
+  {
+    advance(0,0,0);
+    arch.suspend = true;
+    arch.silence( &AArch64::handle_suspend );
+    arch.notify( 0, &AArch64::handle_suspend );
+  }
+  
+  typedef void (StreamSpy::*step_t)();
+  
+  void advance(char const* _out, char const* _in, step_t _step)
+  {
+    if (outgoing and *outgoing) throw 0;
+    outgoing = _out;
+    incoming = _in;
+    expect = _in;
+    step = _step;
+  }
+
+  void Setup(unisim::service::interfaces::CharIO*) override { char_io_import.RequireSetup(); }
+  
+  virtual void ResetCharIO() override { char_io_import->ResetCharIO(); }
+  virtual bool GetChar(char& ch) override
+  {
+    if (not outgoing or not *outgoing) return char_io_import->GetChar(ch);
+    ch = *outgoing++;
+    return true;
+  }
+  virtual void PutChar(char ch) override
+  {
+    char_io_import->PutChar(ch);
+    if (not ch) return;
+    if (incoming and *expect != ch) { expect = incoming; return; }
+    if (*++expect) return;
+    (this->*step)();
+  }
+  virtual void FlushChars() override { char_io_import->FlushChars(); }
+
+  char const* outgoing;
+  char const* incoming;
+  char const* expect;
+  step_t step;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
+
+  AArch64& arch;
+};
+  
+
 int
 main(int argc, char *argv[])
 {
   char const* disk_filename = "rootfs.ext4";
 
-  // Loading image
+  unisim::kernel::Simulator simulator(argc, argv, &simdefault);
+  unisim::kernel::logger::console::Printer printer;
+  // unisim::service::http_server::HttpServer http_server("http-server");
+  // unisim::service::web_terminal::WebTerminal web_terminal("web-terminal");
+  unisim::service::netstreamer::NetStreamer netstreamer("netstreamer");
 
   AArch64 arch;
 
+  StreamSpy stream_spy("stream-spy", 0, arch);
+
+  arch.uart.char_io_import >> stream_spy.char_io_export;
+  stream_spy.char_io_import >> netstreamer.char_io_export;
+  // arch.uart.char_io_import >> netstreamer.char_io_export;
+  // *http_server.http_server_import[0] >> web_terminal.http_server_export;
+
+  switch (simulator.Setup())
+    {
+    case simulator.ST_ERROR:         return 1;
+    case simulator.ST_OK_DONT_START: return 0;
+    default: break;
+    }
+
+  /* Start asynchronous reception loop */
+  // host_term.Start();
+  
   arch.map_gic(0x48000000);
   arch.map_uart(0x49000000);
   arch.map_rtc(0x49010000);
@@ -202,8 +350,15 @@ main(int argc, char *argv[])
         }
     }
 
-  // load_linux(arch, "Image", "device_tree.dtb");
-  arch.load_snapshot("toto.shot");
+  // Loading image
+  if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb"))
+    return 1;
+
+  signal(SIGUSR1, usr_handler);
+  signal(SIGUSR2, usr_handler);
+  core_instance(&arch);
+  arch.silence( &AArch64::handle_suspend );
+  arch.notify( 0, &AArch64::handle_suspend );
   
   // // ffffffc010eb5198 0x20000
   // AArch64::Page const& logbuf = arch.modify_page(0xeb5198);
@@ -214,7 +369,11 @@ main(int argc, char *argv[])
 
   try
     {
-      arch.run();
+      uint64_t suspend_at;
+      if (char const* arg = getenv("SUSPEND_AT")) suspend_at = strtoull(arg,0,0);
+      else                                        suspend_at = uint64_t(-1);
+      //else                                        suspend_at = arch.insn_counter + 0x1000000000ull;
+      arch.run( suspend_at );
       std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
     }
   catch (...)

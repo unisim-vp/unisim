@@ -154,23 +154,13 @@ void S12XDBG::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 //=====================================================================
 
 
-bool S12XDBG::BeginSetup() {
+bool S12XDBG::BeginSetup()
+{
 
 	Reset();
 
 	ComputeInternalTime();
 
-	return (true);
-}
-
-
-bool S12XDBG::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12XDBG::EndSetup() {
 	return (true);
 }
 

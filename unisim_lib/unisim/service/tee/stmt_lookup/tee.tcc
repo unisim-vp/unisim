@@ -48,11 +48,11 @@ using std::stringstream;
 using std::string;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
-	Object(name, parent, "This service/client implements a tee ('T'). It unifies the statement lookup capability of several services that individually provides their own statement lookup capability" ),
-	Client<StatementLookup<ADDRESS> >(name, parent),
-	Service<StatementLookup<ADDRESS> >(name, parent),
-	stmt_lookup_export("stmt-lookup-export", this)
+Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
+  	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the statement lookup capability of several services that individually provides their own statement lookup capability" )
+  	, Service<StatementLookup<ADDRESS> >(name, parent)
+  	, Client<StatementLookup<ADDRESS> >(name, parent)
+  	, stmt_lookup_export("stmt-lookup-export", this)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -61,8 +61,6 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "stmt-lookup-import[" << i << "]";
 		string import_name = sstr.str();
 		stmt_lookup_import[i] = new ServiceImport<StatementLookup<ADDRESS> >(import_name.c_str(), this);
-		
-		stmt_lookup_export.SetupDependsOn(*stmt_lookup_import[i]);
 	}
 }
 

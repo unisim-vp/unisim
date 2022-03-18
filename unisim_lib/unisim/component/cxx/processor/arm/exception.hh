@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 
 #include <inttypes.h>
+#include <stdexcept>
 
 namespace unisim {
 namespace component {

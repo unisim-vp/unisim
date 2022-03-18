@@ -39,27 +39,6 @@
 #include <fstream>
 #include <inttypes.h>
 
-struct VIOAccess
-{
-  virtual ~VIOAccess() {}
-  struct Slice { uint8_t* bytes; uint64_t size; };
-  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
-  virtual void flag(uint64_t addr) const = 0;
-  virtual void notify() const = 0;
-  
-  struct Iterator : Slice
-  {
-    Iterator(uint64_t addr, uint64_t size, bool _write) : slice{0,0}, ptr(addr), left(size), write(_write) {}
-    Slice slice;
-    uint64_t ptr, left;
-    bool write;
-    bool next(VIOAccess const& vioa);
-  };
-  
-  uint64_t read(uint64_t addr, unsigned size) const;
-  void write(uint64_t addr, unsigned size, uint64_t value) const;
-};
-
 struct VIOQueue
 {
   struct DescIterator
@@ -87,30 +66,31 @@ struct VIOQueue
   DescIterator head;
 };
 
-struct VIOConsole
+struct VIOAccess
 {
-  // Generic Config
-  static uint32_t Vendor() { return 0x70767375; }
-  static uint32_t QueueNumMax() { return 1024; }
-  uint32_t ClaimedFeatures();
-  bool UsedFeatures(uint32_t);
-  bool CheckFeatures();
-  bool CheckStatus();
-  bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
-  bool ReadQueue(VIOAccess const& vioa);
-  bool SetupQueue(VIOAccess const& vioa);
+  virtual ~VIOAccess() {}
   
-  // Generic Config
-  //uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
-  uint32_t DeviceFeaturesSel, DriverFeaturesSel, InterruptStatus;
+  //  virtual void flag(uint64_t addr) const = 0;
+  virtual void notify() const = 0;
+  
+  virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
+  virtual void write(uint64_t addr, unsigned size, uint64_t value) const = 0;
 };
 
 struct VIODisk
 {
   VIODisk();
-  void sync(SnapShot& snapshot);
+  virtual ~VIODisk() {}
+
+  enum { BLKSIZE = 512 };
+  
+  virtual void seek(uint64_t pos) = 0;
+  virtual uint64_t tell() = 0;
+  virtual void read(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
+  virtual void write(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
+  
+  virtual void sync(SnapShot& snapshot);
   void reset();
-  void open(char const* filename);
   
   // Generic Config
   static uint32_t Vendor() { return 0x70767375; }
@@ -136,9 +116,26 @@ struct VIODisk
 
   // Block Device Config
   VIOQueue rq;
-  std::fstream storage;
   uint64_t Capacity;
   uint8_t  WriteBack;
+};
+
+struct VIOConsole
+{
+  // Generic Config
+  static uint32_t Vendor() { return 0x70767375; }
+  static uint32_t QueueNumMax() { return 1024; }
+  uint32_t ClaimedFeatures();
+  bool UsedFeatures(uint32_t);
+  bool CheckFeatures();
+  bool CheckStatus();
+  bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
+  bool ReadQueue(VIOAccess const& vioa);
+  bool SetupQueue(VIOAccess const& vioa);
+  
+  // Generic Config
+  // uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+  uint32_t DeviceFeaturesSel, DriverFeaturesSel, InterruptStatus;
 };
 
 template <typename FEATTYPE, FEATTYPE FEAT> struct Feature {};

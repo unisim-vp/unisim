@@ -37,7 +37,8 @@
 
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
-#include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
@@ -46,20 +47,10 @@
 #include <memory>
 #include <inttypes.h>
 
-struct NeonRegister
-{
-  enum { BYTECOUNT = 16 };
-  struct value_type { char _[BYTECOUNT]; };
-  NeonRegister() = default;
-  NeonRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
-  unisim::util::symbolic::Expr expr;
-  static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
-};
-
-struct Scanner
+struct ScannerTypes
 {
   template <typename T> using SmartValue = unisim::util::symbolic::SmartValue<T>;
-    
+
   typedef SmartValue<uint8_t>     U8;
   typedef SmartValue<uint16_t>    U16;
   typedef SmartValue<uint32_t>    U32;
@@ -70,15 +61,34 @@ struct Scanner
   typedef SmartValue<int64_t>     S64;
   typedef SmartValue<bool>        BOOL;
 
-  // typedef u64_t addr_t;
-
   typedef SmartValue<float>       F32;
   typedef SmartValue<double>      F64;
 
+  struct NeonRegister
+  {
+    enum { BYTECOUNT = 16 };
+    struct value_type { char _[BYTECOUNT]; };
+    NeonRegister() = default;
+    NeonRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
+    unisim::util::symbolic::Expr expr;
+    static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
+  };
+
+  template <typename T>
+  using  VectorTypeInfo = unisim::util::symbolic::vector::VUConfig::TypeInfo<T>;
+  using  VectorByte = unisim::util::symbolic::vector::VUConfig::Byte;
+  struct VectorByteShadow { char _[sizeof(U8)]; };
+};
+
+struct Scanner
+  : ScannerTypes
+  , unisim::component::cxx::processor::arm::regs64::CPU<Scanner, ScannerTypes>
+{
+    
+  // typedef u64_t addr_t;
+
   struct DisasmState {};
 
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
-    
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Scanner> Operation;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Scanner> Decoder;
 
@@ -170,11 +180,9 @@ struct Scanner
   };
 
   struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
-  struct FReg { static ScalarType::id_t const scalar_type = ScalarType::F64;  static char const* name() { return "FReg"; } };
   struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
 
   typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
-  typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
   /**/                           typedef VRWrite<GReg> GRegWrite;
 
   struct SP {
@@ -256,14 +264,7 @@ struct Scanner
     ScalarType::id_t tp;
   };
 
-  static unsigned const VREGCOUNT = 32;
-  static unsigned const GREGCOUNT = 32;
-    
-  struct VUConfig : public unisim::util::symbolic::vector::VUConfig
-  { static unsigned const BYTECOUNT = NeonRegister::BYTECOUNT; };
-
   typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
-  struct VectorBrick { char _[sizeof(U8)]; };
 
   struct AddrEval : public EvalSpace {};
   
@@ -333,79 +334,10 @@ struct Scanner
   static SysReg const* GetSystemRegister(int, int, int, int, int) { dont("system"); return 0; }
   void CheckSystemAccess(int) { dont("system"); }
 
-  void gregtouch(unsigned id, bool write);
-  U64 gregread(unsigned id) { gregtouch(id, false); return gpr[id]; }
-  void gregwrite(unsigned id, U64 const& value) { gregtouch(id, true); gpr[id] = value; }
-
-  U64 GetSP() { dont("SP access"); return U64(); }
-  template <typename T> void SetSP(unisim::util::symbolic::SmartValue<T> const& val) { dont("SP access"); }
-  U64 GetGSR(unsigned id) { return (id != 31) ? gregread(id) : GetSP(); }
-  U64 GetGZR(unsigned id) { return (id != 31) ? gregread(id) : U64(0); }
-  template <typename T> void SetGSR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
-  { U64 v64(val); if (id != 31) gregwrite(id, v64); else SetSP(v64); }
-  template <typename T> void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val)
-  { U64 v64(val); if (id != 31) gregwrite(id, v64);  }
-
-  VectorView& vregtouch(unsigned reg, bool is_write)
-  {
-    unsigned idx = interface.vregs.touch(reg, is_write);
-    VectorView& vv = vector_views[reg];
-    if (vv.transfer == vv.initial)
-      {
-        NeonRegister v( new VRegRead( reg, idx ) );
-        *(vv.GetStorage( &vector_data[reg][0], v, VUConfig::BYTECOUNT )) = v;
-      }
-    return vv;
-  }
-  template <typename T>
-  T vector_read(unsigned reg, unsigned sub)
-  {
-    return (vregtouch(reg, false).GetConstStorage(&vector_data[reg][0], T(), VUConfig::BYTECOUNT))[sub];
-  }
-
-  U8  GetVU8 ( unsigned reg, unsigned sub ) { return vector_read<U8> (reg, sub); }
-  U16 GetVU16( unsigned reg, unsigned sub ) { return vector_read<U16>(reg, sub); }
-  U32 GetVU32( unsigned reg, unsigned sub ) { return vector_read<U32>(reg, sub); }
-  U64 GetVU64( unsigned reg, unsigned sub ) { return vector_read<U64>(reg, sub); }
-  S8  GetVS8 ( unsigned reg, unsigned sub ) { return vector_read<S8> (reg, sub); }
-  S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<S16>(reg, sub); }
-  S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<S32>(reg, sub); }
-  S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<S64>(reg, sub); }
-
-  template <typename T>
-  void vector_write(unsigned reg, unsigned sub, T value )
-  {
-    (vregtouch(reg, true).GetStorage(&vector_data[reg][0], value, VUConfig::BYTECOUNT))[sub] = value;
-  }
-
-  void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { vector_write( reg, sub, value ); }
-  void SetVU16( unsigned reg, unsigned sub, U16 value ) { vector_write( reg, sub, value ); }
-  void SetVU32( unsigned reg, unsigned sub, U32 value ) { vector_write( reg, sub, value ); }
-  void SetVU64( unsigned reg, unsigned sub, U64 value ) { vector_write( reg, sub, value ); }
-  void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { vector_write( reg, sub, value ); }
-  void SetVS16( unsigned reg, unsigned sub, S16 value ) { vector_write( reg, sub, value ); }
-  void SetVS32( unsigned reg, unsigned sub, S32 value ) { vector_write( reg, sub, value ); }
-  void SetVS64( unsigned reg, unsigned sub, S64 value ) { vector_write( reg, sub, value ); }
-
-  template <typename T>
-  void vector_write(unsigned reg, T value )
-  {
-    *(vregtouch(reg, true).GetStorage(&vector_data[reg][0], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
-  }
-
-  void SetVU8 ( unsigned reg, U8 value )  { vector_write(reg, value); }
-  void SetVU16( unsigned reg, U16 value ) { vector_write(reg, value); }
-  void SetVU32( unsigned reg, U32 value ) { vector_write(reg, value); }
-  void SetVU64( unsigned reg, U64 value ) { vector_write(reg, value); }
-  void SetVS8 ( unsigned reg, S8 value )  { vector_write(reg, value); }
-  void SetVS16( unsigned reg, S16 value ) { vector_write(reg, value); }
-  void SetVS32( unsigned reg, S32 value ) { vector_write(reg, value); }
-  void SetVS64( unsigned reg, S64 value ) { vector_write(reg, value); }
-
-  void ClearHighV( unsigned reg, unsigned bytes )
-  {
-    vregtouch(reg, true).Truncate(bytes);
-  }
+  enum AccessReport { report_simd_access = 1, report_gsr_access, report_gzr_access };
+  void report( AccessReport acc, unsigned reg, bool is_write );
+  
+  U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value);
 
   void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
   {
@@ -486,13 +418,41 @@ struct Scanner
 
   std::set<Expr> stores;
 
-  U64            gpr[GREGCOUNT];
   BOOL           flags[Flag::end];
   U64            current_insn_addr, next_insn_addr;
-
-  VectorView     vector_views[VREGCOUNT];
-  VectorBrick    vector_data[VREGCOUNT][VUConfig::BYTECOUNT];
 };
+
+template <unsigned posT> void FPProcessException( Scanner&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <typename FLOAT> FLOAT FPNaN( Scanner&, FLOAT value ) { return value; }
+
+template <class FTP> FTP FPMulAdd(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }
+template <class FTP> FTP FPMulSub(Scanner& cpu, FTP const&, FTP const&, FTP const&) { cpu.dont("floating-point"); return FTP(); }
+
+struct PM2
+{
+  PM2(int _S, uint32_t _poly) : S(_S), poly(_poly) {} int S; uint32_t poly;
+  friend std::ostream& operator << (std::ostream& sink, PM2 const& pm2) { sink << "PM2[" << pm2.S << "," << pm2.poly << "]"; return sink; }
+  friend int strcmp(PM2 const& a, PM2 const& b)
+  {
+    if (int delta = a.S - b.S) return delta;
+    return (int64_t(a.poly) - int64_t(b.poly)) >> 32;
+  }
+};
+
+namespace unisim {
+namespace util {
+namespace symbolic {
+  
+  // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
+  template <typename OUT, unsigned S, typename TIN>
+  OUT PolyMod2(SmartValue<TIN> const& value, uint32_t _poly) { return sav::make_weirdop<OUT>(PM2(S,_poly),value); }
+
+  template <typename OP>
+  OP NeonSHL(OP const& op, SmartValue<int8_t> const& sh) { return sav::make_weirdop<OP>("NeonSHL", op, sh); }
+  
+}
+}
+}
 
 #endif // ARM64SAV_SCANNER_HH
 

@@ -87,7 +87,6 @@ using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -174,8 +173,6 @@ public:
 	void run(); // Priority Decoder and Interrupt selection
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
 
 	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);

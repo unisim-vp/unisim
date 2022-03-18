@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -154,8 +155,6 @@ struct CPU
   using PCPU::next_insn_addr;
   using PCPU::SCTLR;
   using PCPU::GetEndianness;
-  using PCPU::USER_MODE;
-  using PCPU::HYPERVISOR_MODE;
 
   struct AddressDescriptor
   {
@@ -214,28 +213,28 @@ struct CPU
   virtual bool InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size );
 
   //=====================================================================
-  //=             memory access reporting control interface methods     =
+  //=        memory access reporting control interface methods          =
   //=====================================================================
 
   virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
 
   //=====================================================================
-  //=             non intrusive memory interface methods                =
+  //=          unisim::service::interfaces::Memory<uint32_t>            =
   //=====================================================================
 
+  virtual void Setup(unisim::service::interfaces::Memory<uint32_t>*) { memory_import.RequireSetup(); }
   virtual bool ReadMemory( uint32_t addr, void* buffer, uint32_t size );
   virtual bool WriteMemory( uint32_t addr, void const* buffer, uint32_t size );
-  virtual bool ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size ) = 0;
-  virtual bool ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size ) = 0;
 
   //=====================================================================
-  //=                   DebugDisasmInterface methods                    =
+  //=        unisim::service::interfaces::Disassembly<uint32_t>         =
   //=====================================================================
 
+  virtual void Setup(unisim::service::interfaces::Disassembly<uint32_t>*) { memory_import.RequireSetup(); }
   virtual std::string Disasm(uint32_t addr, uint32_t& next_addr);
 
   //=====================================================================
-  //=                   LinuxOSInterface methods                        =
+  //=                unisim::service::interfaces::LinuxOS               =
   //=====================================================================
 	
   virtual void PerformExit(int ret);
@@ -244,10 +243,6 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  virtual bool PhysicalWriteMemory( uint32_t addr, uint32_t paddr, uint8_t const* buffer, uint32_t size, uint32_t attrs ) = 0;
-  virtual bool PhysicalReadMemory( uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
-  virtual bool PhysicalFetchMemory( uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
-
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
   uint32_t MemURead16( uint32_t address ) { return PerformUReadAccess( address, 2 ); }
@@ -265,9 +260,15 @@ struct CPU
   void     PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
 
+  void CheckAlignment( uint32_t addr, uint32_t alignment ) { if (alignment and (addr & (alignment-1))) throw 0; /*DataAbort*/ }
+  
   void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
+
+  // Non-intrusive memory accesses
+  bool ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size );
+  bool ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size );
 
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
@@ -306,9 +307,9 @@ struct CPU
 
 protected:
   /** Decoder for the ARM32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU_IMPL> arm32_decoder;
+  opcache::OpCache< isa::arm32::Decoder<CPU_IMPL> > arm32_decoder;
   /** Decoder for the THUMB instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU_IMPL> thumb_decoder;
+  opcache::OpCache< isa::thumb::Decoder<CPU_IMPL> > thumb_decoder;
 
   /***************************
    * Cache Interface   START *

@@ -77,7 +77,6 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
@@ -119,6 +118,8 @@ public:
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
+	virtual void Setup(Memory<ADDRESS>*);
+	virtual void Setup(MemoryAccessReporting<ADDRESS>*);
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	virtual void Reset();

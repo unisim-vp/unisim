@@ -56,6 +56,15 @@ rdasr.disasm = {
   sink << "rd %asr" << DisasmI(rs1) << ", " << DisasmGPR(rd);
 };
 
+rdasr.execute = {
+  if (rs1 < 16)
+    cpu.Abort( Trap_t::illegal_instruction );
+  else if (not cpu.asr_perm( rs1 ))
+    cpu.Abort( Trap_t::privileged_instruction );
+  else
+    cpu.SetGPR(rd, cpu.rdasr( rs1 ));
+}
+
 op rdpsr( 0b10[2]:rd[5]:0b101001[6]:?[5]:?[1]:?[13] );
 
 rdpsr.disasm = {
@@ -125,10 +134,28 @@ wrasr.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmGPR(rs2) << ", %asr" << DisasmI(rd);
 };
 
+wrasr.execute = {
+  if (rd < 16)
+    cpu.Abort( Trap_t::illegal_instruction );
+  else if (not cpu.asr_perm( rd ))
+    cpu.Abort( Trap_t::privileged_instruction );
+  else
+    cpu.wrasr( rd, cpu.GetGPR(rs1) ^ cpu.GetGPR(rs2) );
+};
+
 op wrasri( 0b10[2]:rd[5]:0b110000[6]:rs1[5]:0b1[1]:sext<32> simm13[13] );
 
 wrasri.disasm = {
   sink << "wr " << DisasmGPR(rs1) << ", " << DisasmI(simm13) << ", %asr" << std::dec << int(rd);
+};
+
+wrasri.execute = {
+  if (rd < 16)
+    cpu.Abort( Trap_t::illegal_instruction );
+  else if (not cpu.asr_perm( rd ))
+    cpu.Abort( Trap_t::privileged_instruction );
+  else
+    cpu.wrasr( rd, cpu.GetGPR(rs1) ^ typename ARCH::U32(simm13) );
 };
 
 op wrpsr( 0b10[2]:?[5]:0b110001[6]:rs1[5]:0b0[1]:?[8]:rs2[5] );

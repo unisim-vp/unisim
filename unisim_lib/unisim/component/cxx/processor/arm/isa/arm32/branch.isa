@@ -49,8 +49,6 @@ b.disasm = {
 };
 
 b.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP );
 };
@@ -70,8 +68,6 @@ bl.disasm = {
 };
 
 bl.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() );
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_CALL );
@@ -93,8 +89,6 @@ bx.disasm = {
 };
 
 bx.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   cpu.BranchExchange( cpu.GetGPR(rm), ARCH::B_JMP );
 };
 
@@ -104,7 +98,7 @@ bx.execute = {
 
 /*******************************************************************
  * bxj (Branch and Exchange Jazelle) instruction
- * 
+ *
  * This instruction attempts to change to Jazelle state. If the
  * attempt fails, it branches to an address and instruction set
  * specified by a register as though it were a BX instruction.
@@ -150,8 +144,6 @@ blx_reg.disasm = {
 };
 
 blx_reg.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 rm_value = cpu.GetGPR(rm);
   cpu.SetGPR( 14, cpu.GetNIA() );

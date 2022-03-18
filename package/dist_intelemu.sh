@@ -2,6 +2,7 @@
 
 SIMPKG=intelemu
 SIMPKG_SRCDIR=cxx/intelemu
+
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel
@@ -31,8 +32,7 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
-"
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
@@ -51,16 +51,6 @@ AUTHORS \
 README \
 INSTALL \
 "
-
-UNISIM_LIB_SIMULATOR_FILES="\
-${UNISIM_LIB_SIMULATOR_SOURCE_FILES} \
-${UNISIM_LIB_SIMULATOR_HEADER_FILES} \
-${UNISIM_LIB_SIMULATOR_DATA_FILES} \
-"
-
-for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${file}"
-done
 
 UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \

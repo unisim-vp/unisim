@@ -178,8 +178,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, vector_unit(static_cast<typename CONFIG::CPU *>(this))
 	, powerpc_linux32(this)
 {
-	memory_export.SetupDependsOn(memory_import);
-	
 	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -1213,6 +1211,12 @@ CPU<TYPES, CONFIG>::AltivecVectorUnit::AltivecVectorUnit(typename CONFIG::CPU *c
 	}
 	
 	cpu->AddRegisterInterface(vscr.CreateRegisterInterface());
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS>*)
+{
+	memory_import.RequireSetup();
 }
 
 template <typename TYPES, typename CONFIG>

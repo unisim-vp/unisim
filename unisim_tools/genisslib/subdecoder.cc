@@ -25,22 +25,23 @@
 #include <action.hh>
 #include <isa.hh>
 #include <strtools.hh>
+#include <sstream>
 #include <cassert>
-#include <ostream>
 
 /** Delete a subdecoder object
 */
 SDClass::~SDClass() {}
 
-ConstStr
-SDClass::qd_namespace() const {
-  std::string buffer;
-  std::string sep;
+std::string
+SDClass::qd_namespace() const
+{
+  std::ostringstream buf;
+  char const* sep = "";
 
-  for( std::vector<ConstStr>::const_iterator node = m_namespace.begin(); node != m_namespace.end(); ++ node, sep = "::" )
-    buffer += sep + node->str();
+  for (auto const& node : m_namespace)
+    buf << sep << node.str(), sep = "::";
   
-  return ConstStr( buffer.c_str() );
+  return buf.str();
 }
 
 SDInstance::SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc const& _fileloc )

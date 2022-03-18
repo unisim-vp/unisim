@@ -40,10 +40,10 @@
 
 /*******************************************************************
  * rfe (Return From Exception) instruction
- * 
+ *
  * RFE loads the PC and the CPSR from the word at the specified
  * address and the following word respectively.
- */ 
+ */
 
 op rfedb( 0b11101000[8]: 0b00[2]: x[1]: 0b1[1]: r0[4]:> <: 0b1100000000000000[16] );
 
@@ -63,10 +63,10 @@ rfeia.disasm = {
 
 /*******************************************************************
  * srs (Store Return State) instruction
- * 
+ *
  * SRS stores the LR and SPSR of the current mode to the stack of a
  * specified mode.
- */ 
+ */
 
 op srsdb( 0b11101000[8]: 0b00[2]: x[1]: 0b0[1]: r0[4]:> <: 0b11000000000[11]: imm[5] );
 
@@ -94,10 +94,10 @@ hvc_i.disasm = { buffer << "hvc\t" << DisasmI(imm); };
 
 /*******************************************************************
  * cps (Change Processor State) instruction
- * 
+ *
  * CPS changes one or more of the CPSR.{A, I, F} interrupt mask bits
  * and the CPSR.M mode field, without changing the other CPSR bits.
- */ 
+ */
 
 op cps( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b101111[6]:> <: 0b10000[5]: chitm[1]: dis[1]: chmod[1]: a[1]: i[1]: f[1]: mode[5] );
 cps.var reject : {Reject} = {(not chmod and (mode != 0)) or
@@ -119,11 +119,14 @@ cps.disasm = {
 };
 
 cps.execute = {
+  if (cpu.itblock())
+    cpu.UnpredictableInsnBehaviour();
+
   typedef typename ARCH::U32 U32;
-  
-  if (cpu.Test(cpu.CPSR().Get(M) == U32(cpu.USER_MODE)))
+
+  if (cpu.Test(cpu.CPSR().Get(M) == U32(PSR::USER_MODE)))
     return;
-  
+
   // CPSRWriteByInstr() checks for illegal mode changes
   CPSRWriteByInstr( cpu, U32(psr_bits), psr_mask );
 };
@@ -134,10 +137,10 @@ cps.execute = {
 
 /*******************************************************************
  * SUBS PC, LR and related instructions
- * 
+ *
  * The SUBS PC, LR, #<const> instruction provides an exception return
  * without the use of the stack.
- */ 
+ */
 
 op subspc( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
 
@@ -146,13 +149,11 @@ subspc.disasm = {
 };
 
 subspc.execute = {
-  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( 14 ), op2 = U32(imm), res = op1 - op2;
-  
+
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
-  
+
   cpu.SetGPR( 15, res );
 };
 

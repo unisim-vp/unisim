@@ -37,7 +37,7 @@
 
 #include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/char_io.hh>
-#include <sstream>
+#include <string>
 
 namespace unisim {
 namespace service {
@@ -46,16 +46,19 @@ namespace char_io {
 
 template <unsigned int MAX_IMPORTS = 8>
 class Tee
-	: public unisim::kernel::Service<unisim::service::interfaces::CharIO>
-	, public unisim::kernel::Client<unisim::service::interfaces::CharIO>
+	: public unisim::kernel::Service<interfaces::CharIO>
+	, public unisim::kernel::Client<interfaces::CharIO>
 {
 public:
-	unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> *char_io_import[MAX_IMPORTS];
-	
+	unisim::kernel::ServiceExport<interfaces::CharIO> char_io_export;
+	unisim::kernel::ServiceImport<interfaces::CharIO> *char_io_import[MAX_IMPORTS];
+	unisim::kernel::ServiceImport<interfaces::CharIO>& char_io_import_n(unsigned idx) { return *char_io_import[idx]; }
+
 	Tee(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Tee();
-	
+
+	virtual void Setup(interfaces::CharIO*) override;
+
 	virtual void ResetCharIO();
 	virtual bool GetChar(char& c);
 	virtual void PutChar(char c);
@@ -66,18 +69,14 @@ private:
 template <unsigned int MAX_IMPORTS>
 Tee<MAX_IMPORTS>::Tee(const char *name, unisim::kernel::Object *parent)
 	: unisim::kernel::Object(name, parent)
-	, unisim::kernel::Service<unisim::service::interfaces::CharIO>(name, parent)
-	, unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
+	, unisim::kernel::Service<interfaces::CharIO>(name, parent)
+	, unisim::kernel::Client<interfaces::CharIO>(name, parent)
 	, char_io_export("char-io-export", this)
 	, char_io_import()
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
 	{
-		std::ostringstream char_io_import_sstr;
-		char_io_import_sstr << "char_io_import[" << i << "]";
-		char_io_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO>(char_io_import_sstr.str().c_str(), this);
-		
-		char_io_export.SetupDependsOn(*char_io_import[i]);
+		char_io_import[i] = new kernel::ServiceImport<interfaces::CharIO>((std::string("char-io-import[") + std::to_string(i) + "]").c_str(), this);
 	}
 }
 
@@ -85,9 +84,14 @@ template <unsigned int MAX_IMPORTS>
 Tee<MAX_IMPORTS>::~Tee()
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
-	{
 		delete char_io_import[i];
-	}
+}
+
+template <unsigned int MAX_IMPORTS>
+void Tee<MAX_IMPORTS>::Setup(interfaces::CharIO*)
+{
+	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
+		char_io_import_n(i).RequireSetup();
 }
 
 template <unsigned int MAX_IMPORTS>
@@ -95,8 +99,7 @@ void Tee<MAX_IMPORTS>::ResetCharIO()
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
 	{
-		unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO>& import = *char_io_import[i];
-		if(import)
+		if(unisim::kernel::ServiceImport<interfaces::CharIO>& import = char_io_import_n(i))
 		{
 			import->ResetCharIO();
 		}
@@ -108,8 +111,7 @@ bool Tee<MAX_IMPORTS>::GetChar(char& c)
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
 	{
-		unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO>& import = *char_io_import[i];
-		if(import)
+		if(unisim::kernel::ServiceImport<interfaces::CharIO>& import = char_io_import_n(i))
 		{
 			if(import->GetChar(c)) return true;
 		}
@@ -123,8 +125,7 @@ void Tee<MAX_IMPORTS>::PutChar(char c)
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
 	{
-		unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO>& import = *char_io_import[i];
-		if(import)
+		if(unisim::kernel::ServiceImport<interfaces::CharIO>& import = char_io_import_n(i))
 		{
 			import->PutChar(c);
 		}
@@ -136,8 +137,7 @@ void Tee<MAX_IMPORTS>::FlushChars()
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
 	{
-		unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO>& import = *char_io_import[i];
-		if(import)
+		if(unisim::kernel::ServiceImport<interfaces::CharIO>& import = char_io_import_n(i))
 		{
 			import->FlushChars();
 		}

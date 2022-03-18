@@ -2243,7 +2243,7 @@ ccmp_x.execute = {
 };
 
 /*
- * end of CCMN (register)
+ * end of CCMP (register)
  *******************************************************************/
 
 /*******************************************************************
@@ -3105,8 +3105,9 @@ ldarb_w.execute = {
   
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.MemRead8(addr) );
-  cpu.SetGZR(rt, data);
+  cpu.SetGZR(rt, typename ARCH::U32(data));
 };
+
 /*
  * end of LDARB
  *******************************************************************/
@@ -3130,7 +3131,7 @@ ldarh_w.execute = {
   
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.MemRead16(addr) );
-  cpu.SetGZR(rt, data);
+  cpu.SetGZR(rt, typename ARCH::U32(data));
 };
 
 /*
@@ -3640,7 +3641,7 @@ ldrb_wxi.execute = {
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
   addr = (am == 1 ? addr : oaddr);
   U8 data( cpu.MemRead8(addr) );
-  cpu.SetGZR(rt, data);
+  cpu.SetGZR(rt, typename ARCH::U32(data));
   if (am & 1)
     cpu.SetGSR(rn, oaddr);
 };
@@ -3658,7 +3659,7 @@ ldrb_wuo.execute = {
   
   U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U8 data( cpu.MemRead8(addr) );
-  cpu.SetGZR(rt, data);
+  cpu.SetGZR(rt, typename ARCH::U32(data));
 };
 
 /*
@@ -3762,7 +3763,7 @@ ldrh_wxi.execute = {
   U64 addr( cpu.GetGSR(rn) ), oaddr( addr + U64(imm) );
   addr = (am == 1 ? addr : oaddr);
   U16 data( cpu.MemRead16(addr) );
-  cpu.SetGZR(rt, data);
+  cpu.SetGZR(rt, typename ARCH::U32(data));
   if (am & 1)
     cpu.SetGSR(rn, oaddr );
 };
@@ -3780,7 +3781,7 @@ ldrh_wuo.execute = {
   
   U64 addr( cpu.GetGSR(rn) + U64(imm) );
   U16 data( cpu.MemRead16(addr) );
-  cpu.SetGZR(rt, data);
+  cpu.SetGZR(rt, typename ARCH::U32(data));
 };
 
 /*
@@ -8210,4 +8211,932 @@ crc32cx.execute = {
 /* end of CRC32C
  *
  *******************************************************************/
+
+op cas_w( 0b100010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+cas_w.disasm = {
+  sink << "cas" << (&"a"[!a]) << (&"l"[!l]) << "\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+cas_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U32 comparevalue( cpu.GetGZR(rs) );
+  
+  /*BEG ATOMIC*/
+  U32 data( cpu.MemRead32(addr) );
+  
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite32(addr, U32(cpu.GetGZR(rt)));
+  cpu.SetGZR(rs, data);
+  /*END ATOMIC*/
+};
+
+op cas_x( 0b110010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+cas_x.disasm = {
+  sink << "cas" << (&"a"[!a]) << (&"l"[!l]) << "\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+cas_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 comparevalue( cpu.GetGZR(rs) );
+
+  /*BEG ATOMIC*/
+  U64 data( cpu.MemRead64(addr) );
+
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite64(addr, cpu.GetGZR(rt));
+  cpu.SetGZR(rs, data);
+  /*END ATOMIC*/
+};
+
+op casb_w( 0b000010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+casb_w.disasm = {
+  sink << "cas" << (&"a"[!a]) << (&"l"[!l]) << "b\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+casb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U8 comparevalue( cpu.GetGZR(rs) );
+  
+  /*BEG ATOMIC*/
+  U8 data( cpu.MemRead8(addr) );
+
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite8(addr, U8(cpu.GetGZR(rt)));
+  cpu.SetGZR(rs, typename ARCH::U32(data));
+  /*END ATOMIC*/
+};
+
+op cash_w( 0b010010001[9]: a[1] : 1[1] : rs[5] : l[1] : 0b11111[5] : rn[5] : rt[5] );
+
+cash_w.disasm = {
+  sink << "cas" << (&"a"[!a]) << (&"l"[!l]) << "h\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+cash_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U16 comparevalue( cpu.GetGZR(rs) );
+  
+  /*BEG ATOMIC*/
+  U16 data( cpu.MemRead16(addr) );
+
+  if (cpu.Test(data == comparevalue))
+    cpu.MemWrite16(addr, U16(cpu.GetGZR(rt)));
+  cpu.SetGZR(rs, typename ARCH::U32(data));
+  /*END ATOMIC*/
+};
+
+op casp_w( 0b000010000[9]: a[1] : 1[1] : shl<1> rs[4] : 0[1] : l[1] : 0b11111[5] : rn[5] : shl<1> rt[4] : 0b0[1] );
+
+casp_w.disasm = {
+  sink << "casp" << (&"a"[!a]) << (&"l"[!l]) << "\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rs|1) << ", " << DisasmGZWR(rt) << ", " << DisasmGZWR(rt|1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+casp_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U32 comparevalue0( cpu.GetGZR(rs+0) ),
+      comparevalue1( cpu.GetGZR(rs+1) );
+  
+  /*BEG ATOMIC*/
+  U32 data0( cpu.MemRead32(addr+U64(0)) ),
+      data1( cpu.MemRead32(addr+U64(4)) );
+  
+  if (cpu.Test(data0 == comparevalue0 and data1 == comparevalue1))
+    {
+      cpu.MemWrite32(addr+U64(0), U32(cpu.GetGZR(rt+0)));
+      cpu.MemWrite32(addr+U64(4), U32(cpu.GetGZR(rt+1)));
+    }
+  cpu.SetGZR(rs+0, data0);
+  cpu.SetGZR(rs+1, data1);
+  /*END ATOMIC*/
+};
+
+op casp_x( 0b010010000[9]: a[1] : 1[1] : shl<1> rs[4] : 0[1] : l[1] : 0b11111[5] : rn[5] : shl<1> rt[4] : 0b0[1] );
+casp_x.var format : {char const*} = {"base,1919"};
+
+casp_x.disasm = {
+  sink << "casp" << (&"a"[!a]) << (&"l"[!l]) << "\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rs|1) << ", " << DisasmGZXR(rt) << ", " << DisasmGZXR(rt|1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+casp_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 comparevalue0( cpu.GetGZR(rs+0) ),
+      comparevalue1( cpu.GetGZR(rs+1) );
+
+  /*BEG ATOMIC*/
+  U64 data0( cpu.MemRead64(addr+U64(0)) ),
+      data1( cpu.MemRead64(addr+U64(8)) );
+
+  if (cpu.Test(data0 == comparevalue0 and data1 == comparevalue1))
+    {
+      cpu.MemWrite64(addr+U64(0), cpu.GetGZR(rt+0));
+      cpu.MemWrite64(addr+U64(8), cpu.GetGZR(rt+1));
+    }
+  cpu.SetGZR(rs+0, data0);
+  cpu.SetGZR(rs+1, data1);
+  /*END ATOMIC*/
+};
+
+op swp_w( 0b10111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swp_w.disasm = {
+  sink << "swp" << (&"a"[!a]) << (&"l"[!l]) << "\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+swp_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  
+  /*BEG ATOMIC*/
+  U32 data( cpu.MemRead32(addr) );
+  cpu.MemWrite32(addr, U32(cpu.GetGZR(rs)));
+  cpu.SetGZR(rt, data);
+  /*END ATOMIC*/
+};
+
+op swp_x( 0b11111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swp_x.disasm = {
+  sink << "swp" << (&"a"[!a]) << (&"l"[!l]) << "\t" << DisasmGZXR(rs) << ", " << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+swp_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  
+  /*BEG ATOMIC*/
+  U64 data( cpu.MemRead64(addr) );
+  cpu.MemWrite64(addr, cpu.GetGZR(rs));
+  cpu.SetGZR(rt, data);
+  /*END ATOMIC*/
+};
+
+op swpb_w( 0b00111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swpb_w.disasm = {
+  sink << "swp" << (&"a"[!a]) << (&"l"[!l]) << "b\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+op swph_w( 0b01111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
+
+swph_w.disasm = {
+  sink << "swp" << (&"a"[!a]) << (&"l"[!l]) << "h\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+op ldstadd_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5] : rt[5] );
+
+ldstadd_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "add" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstadd_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( oldval + U32(cpu.GetGZR(rs)) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstadd_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5] : rt[5] );
+
+ldstadd_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "add" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstadd_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( oldval + U64(cpu.GetGZR(rs)) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstaddb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5] : rt[5] );
+
+ldstaddb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "add" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstaddb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( oldval + U8(cpu.GetGZR(rs)) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstaddh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5] : rt[5] );
+
+ldstaddh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "add" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstaddh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( oldval + U16(cpu.GetGZR(rs)) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstclr_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000100[6] : rn[5] : rt[5] );
+
+ldstclr_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "clr" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstclr_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( oldval & ~U32(cpu.GetGZR(rs)) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstclr_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000100[6] : rn[5] : rt[5] );
+
+ldstclr_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "clr" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstclr_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( oldval & ~U64(cpu.GetGZR(rs)) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstclrb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000100[6] : rn[5] : rt[5] );
+
+ldstclrb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "clr" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstclrb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( oldval & ~U8(cpu.GetGZR(rs)) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstclrh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000100[6] : rn[5] : rt[5] );
+
+ldstclrh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "clr" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstclrh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( oldval & ~U16(cpu.GetGZR(rs)) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldsteor_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5] : rt[5] );
+
+ldsteor_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "eor" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldsteor_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( oldval ^ U32(cpu.GetGZR(rs)) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldsteor_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5] : rt[5] );
+
+ldsteor_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "eor" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldsteor_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( oldval ^ U64(cpu.GetGZR(rs)) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldsteorb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5] : rt[5] );
+
+ldsteorb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "eor" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldsteorb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( oldval ^ U8(cpu.GetGZR(rs)) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldsteorh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001000[6] : rn[5] : rt[5] );
+
+ldsteorh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "eor" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldsteorh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( oldval ^ U16(cpu.GetGZR(rs)) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstset_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001100[6] : rn[5] : rt[5] );
+
+ldstset_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "set" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstset_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( oldval | U32(cpu.GetGZR(rs)) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstset_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001100[6] : rn[5] : rt[5] );
+
+ldstset_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "set" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstset_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( oldval | U64(cpu.GetGZR(rs)) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstsetb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001100[6] : rn[5] : rt[5] );
+
+ldstsetb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "set" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsetb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( oldval | U8(cpu.GetGZR(rs)) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstseth_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b001100[6] : rn[5] : rt[5] );
+
+ldstseth_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "set" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstseth_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( oldval | U16(cpu.GetGZR(rs)) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstsmax_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010000[6] : rn[5] : rt[5] );
+
+ldstsmax_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smax" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsmax_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( U32(Maximum(S32(oldval), S32(cpu.GetGZR(rs)))) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstsmax_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010000[6] : rn[5] : rt[5] );
+
+ldstsmax_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smax" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsmax_x.execute = {
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( U64(Maximum(S64(oldval), S64(cpu.GetGZR(rs)))) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstsmaxb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010000[6] : rn[5] : rt[5] );
+
+ldstsmaxb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smax" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsmaxb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( U8(Maximum(S8(oldval), S8(cpu.GetGZR(rs)))) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstsmaxh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010000[6] : rn[5] : rt[5] );
+
+ldstsmaxh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smax" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsmaxh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( U16(Maximum(S16(oldval), S16(cpu.GetGZR(rs)))) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstsmin_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010100[6] : rn[5] : rt[5] );
+
+ldstsmin_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smin" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsmin_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( U32(Minimum(S32(oldval), S32(cpu.GetGZR(rs)))) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstsmin_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010100[6] : rn[5] : rt[5] );
+
+ldstsmin_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smin" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsmin_x.execute = {
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( U64(Minimum(S64(oldval), S64(cpu.GetGZR(rs)))) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstsminb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010100[6] : rn[5] : rt[5] );
+
+ldstsminb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smin" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsminb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::S8 S8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( U8(Minimum(S8(oldval), S8(cpu.GetGZR(rs)))) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstsminh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b010100[6] : rn[5] : rt[5] );
+
+ldstsminh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "smin" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstsminh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( U16(Minimum(S16(oldval), S16(cpu.GetGZR(rs)))) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstumax_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011000[6] : rn[5] : rt[5] );
+
+ldstumax_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umax" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstumax_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( Maximum(oldval, U32(cpu.GetGZR(rs))) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstumax_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011000[6] : rn[5] : rt[5] );
+
+ldstumax_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umax" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstumax_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( Maximum(oldval, U64(cpu.GetGZR(rs))) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstumaxb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011000[6] : rn[5] : rt[5] );
+
+ldstumaxb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umax" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstumaxb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( Maximum(oldval, U8(cpu.GetGZR(rs))) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstumaxh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011000[6] : rn[5] : rt[5] );
+
+ldstumaxh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umax" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstumaxh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( Maximum(oldval, U16(cpu.GetGZR(rs))) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstumin_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011100[6] : rn[5] : rt[5] );
+
+ldstumin_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umin" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstumin_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U32 oldval( cpu.MemRead32(addr) ), newval( Minimum(oldval, U32(cpu.GetGZR(rs))) );
+  cpu.MemWrite32(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstumin_x( 0b11111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011100[6] : rn[5] : rt[5] );
+
+ldstumin_x.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umin" << (&"a"[!a]) << (&"l"[!r]) << "\t" << DisasmGZXR(rs);
+  if (ld)
+    sink << ", " << DisasmGZXR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstumin_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U64 oldval( cpu.MemRead64(addr) ), newval( Minimum(oldval, U64(cpu.GetGZR(rs))) );
+  cpu.MemWrite64(addr, newval);
+  cpu.SetGZR(rt, oldval);
+  /*END ATOMIC*/;
+};
+
+op ldstuminb_w( 0b00111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011100[6] : rn[5] : rt[5] );
+
+ldstuminb_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umin" << (&"a"[!a]) << (&"l"[!r]) << "b\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstuminb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U8 oldval( cpu.MemRead8(addr) ), newval( Minimum(oldval, U8(cpu.GetGZR(rs))) );
+  cpu.MemWrite8(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
+
+op ldstuminh_w( 0b01111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b011100[6] : rn[5] : rt[5] );
+
+ldstuminh_w.disasm = {
+  bool ld = rt != 31 or a;
+  sink << (ld ? "ld" : "st") << "umin" << (&"a"[!a]) << (&"l"[!r]) << "h\t" << DisasmGZWR(rs);
+  if (ld)
+    sink << ", " << DisasmGZWR(rt);
+  sink << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldstuminh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  /*BEG ATOMIC*/
+  U16 oldval( cpu.MemRead16(addr) ), newval( Minimum(oldval, U16(cpu.GetGZR(rs))) );
+  cpu.MemWrite16(addr, newval);
+  cpu.SetGZR(rt, typename ARCH::U32(oldval));
+  /*END ATOMIC*/;
+};
 

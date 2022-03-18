@@ -1237,6 +1237,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
              << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
              << ")" << std::dec;
       }
+      void Execute( Linux& lin, int syscall_id ) const
+      {
+        lin.SetSystemCallStatus(0, false);
+      }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -1372,25 +1376,26 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     struct FCntlSysCall : public SysCall
     {
-      void Describe( Linux& lin, std::ostream& sink ) const
-      {
-        sink << "(int fd=" << std::dec << unsigned(SysCall::GetParam(lin, 0))
-             << ", unsigned cmd=" << std::dec << unsigned(SysCall::GetParam(lin, 1))
-             << ", unsigned long arg=" << std::dec << SysCall::GetParam(lin, 2)
-             << ")";
-      }
+      // asmlinkage long sys_fcntl(unsigned int fd, unsigned int cmd, unsigned long arg);
+      // #if BITS_PER_LONG == 32
+      // asmlinkage long sys_fcntl64(unsigned int fd, unsigned int cmd, unsigned long arg);
+      // #endif
+      struct Args {
+        Args(Linux& lin) : fd(SysCall::GetParam(lin, 0)), cmd(SysCall::GetParam(lin, 1)), arg(SysCall::GetParam(lin, 2)) {}
+        uint32_t fd, cmd; parameter_type arg;
+        void Describe(std::ostream& sink) const
+        { sink << "(unsigned fd=" <<std::dec<< fd << ", unsigned cmd=" <<std::dec<< cmd << ", unsigned long arg=0x" <<std::hex<< arg << ")"; }
+      };
+      void Describe( Linux& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
         return;
 #else
-        // long sys_fcntl64(unsigned int fd, unsigned int cmd, unsigned long arg);
-        int32_t target_fd = SysCall::GetParam(lin, 0);
-        int32_t cmd = SysCall::GetParam(lin, 1);
-        parameter_type arg = SysCall::GetParam(lin, 2);
+        Args sc(lin);
         
-        int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
+        int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
   
         if (unlikely(lin.verbose_))
           lin.debug_info_stream << this->TraceCall(lin) << std::endl;
@@ -1401,7 +1406,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             return;
           }
         
-        switch(cmd)
+        switch(sc.cmd)
           {
             // Safe fcntl commands
           case F_DUPFD:
@@ -1410,7 +1415,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           case F_SETFD:
           case F_GETFL:
           case F_SETFL: {
-            int64_t ret = fcntl(host_fd, cmd, arg);
+            int64_t ret = fcntl(host_fd, sc.cmd, sc.arg);
         
             if (ret == -1)
               lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);

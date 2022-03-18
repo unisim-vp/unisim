@@ -111,6 +111,7 @@ namespace vector {
       }
       static void FromBytes( T& dst, Byte const* byte )
       {
+        struct CorruptedSource {};
         if (byte->is_none())
           {
             /* leave uninitialized */
@@ -132,21 +133,21 @@ namespace vector {
               {
                 // Requested read is a concatenation of multiple source values
                 for (;idx < next; ++idx)
-                  if (byte[idx].get_node()) throw "corrupted source";
+                  if (byte[idx].get_node()) throw CorruptedSource();
                 if (ExprNode const* node = byte[idx].get_node())
                   res = new VMix( new VTrans<T>(byte[idx], int(idx)), res );
                 else
-                  throw "missing value";
+                  throw CorruptedSource(); // missing value
                 if (unsigned span = byte[idx].is_source())
                   next = idx + span;
                 else
-                  throw "corrupted source";
+                  throw CorruptedSource();
               }
             dst = T(res);
             return;
           }
 
-        throw "corrupted source";
+        throw CorruptedSource();
       }
       static void Destroy( T& obj ) { obj.~T(); }
       static void Allocate( T& obj ) { new (&obj) T(); }

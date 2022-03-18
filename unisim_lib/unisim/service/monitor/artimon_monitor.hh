@@ -26,7 +26,6 @@ extern "C" {
 
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
-using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Monitor_if;
 
@@ -43,11 +42,6 @@ class ArtimonMonitor
 public:
 	ArtimonMonitor(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~ArtimonMonitor();
-
-	virtual void OnDisconnect();
-	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *service_export);
-	virtual bool EndSetup();
 
 	virtual int generate_monitor_spec(const char* file_path);
 	virtual void getProperties(std::vector<std::string>&);

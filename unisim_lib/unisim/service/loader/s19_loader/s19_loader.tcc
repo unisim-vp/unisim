@@ -45,20 +45,17 @@ namespace loader {
 namespace s19_loader {
 
 template <class MEMORY_ADDR>	
-S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
-	Object(name,parent, "S19 loader"),
-	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Service<Loader>(name, parent),
-	memory_import("memory-import", this),
-	loader_export("loader-export", this),
-	filename(),
-	entry_point(0),
-	param_filename("filename", this, filename),
-	isFirstDataRec(true)
+S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent)
+	: Object(name,parent, "S19 loader")
+	, Service<Loader>(name, parent)
+	, Client<Memory<MEMORY_ADDR> >(name, parent)
+	, memory_import("memory-import", this)
+	, loader_export("loader-export", this)
+	, filename()
+	, entry_point(0)
+	, param_filename("filename", this, filename)
+	, isFirstDataRec(true)
 {
-
-	loader_export.SetupDependsOn(memory_import);
-
 }
 
 template <class MEMORY_ADDR>
@@ -67,8 +64,15 @@ S19_Loader<MEMORY_ADDR>::~S19_Loader()
 }
 
 template <class MEMORY_ADDR>
-void S19_Loader<MEMORY_ADDR>::OnDisconnect()
+void S19_Loader<MEMORY_ADDR>::Setup(Loader*)
 {
+	memory_import.RequireSetup();
+}
+
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::EndSetup()
+{
+	return Load();
 }
 
 template <class MEMORY_ADDR>
@@ -80,13 +84,13 @@ void S19_Loader<MEMORY_ADDR>::Reset()
 template <class MEMORY_ADDR>
 MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetEntryPoint() const
 { 
-	return ((MEMORY_ADDR) entry_point);
+	return (MEMORY_ADDR) entry_point;
 }
 
 template <class MEMORY_ADDR>
 MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetTopAddr() const
 {  
-	return (-1);
+	return -1;
 }
 
 template <class MEMORY_ADDR>
@@ -96,29 +100,16 @@ MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetStackBase() const
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::BeginSetup() {
-	return (true);
-}
-
-template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::Setup(ServiceExportBase *srv_export) {
-	return (true);
-}
-
-template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::EndSetup() {
-	return (Load());
-}
-
-template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename) {
+bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename)
+{
 	if(memory_import) memory_import->ResetMemory();
 	filename = _filename;
 	return (Load());
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::Load() {
+bool S19_Loader<MEMORY_ADDR>::Load()
+{
 	 
 	int             linenum;            /* tracks line number in bootstrap file */
 	char            srec[S_RECORD_SIZE];          /* holds S-record from bootstrap file */
@@ -324,7 +315,8 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32_t size) {
+bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32_t size)
+{
 
 	bool success = false;
 	

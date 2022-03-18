@@ -153,23 +153,13 @@ void S12TIM16B8C::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay
 //=====================================================================
 
 
-bool S12TIM16B8C::BeginSetup() {
+bool S12TIM16B8C::BeginSetup()
+{
 
 	Reset();
 
 	ComputeInternalTime();
 
-	return (true);
-}
-
-
-bool S12TIM16B8C::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-
-bool S12TIM16B8C::EndSetup() {
 	return (true);
 }
 

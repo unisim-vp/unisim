@@ -106,7 +106,7 @@ struct ProcessorBase
   {
     typedef unisim::util::symbolic::binsec::RegRead Super;
     RegRead( RID _id ) : Super(), id(_id) {}
-    virtual RegRead* Mutate() const { return new RegRead( *this ); }
+    virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual ScalarType::id_t GetType() const
     { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
     virtual void GetRegName( std::ostream& sink ) const { id.Repr(sink); }
@@ -125,7 +125,7 @@ struct ProcessorBase
     typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
@@ -151,7 +151,7 @@ struct ProcessorBase
 
   struct FTop : public unisim::util::symbolic::ExprNode
   {
-    virtual FTop* Mutate() const { return new FTop(*this); }
+    virtual FTop* Mutate() const override { return new FTop(*this); }
     virtual unsigned SubCount() const { return 0; }
     virtual int cmp(ExprNode const&) const override { return 0; }
     virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
@@ -167,7 +167,7 @@ struct ProcessorBase
     virtual int cmp(ExprNode const& rhs) const override { return Super::compare(dynamic_cast<Super const&>(rhs)); }
   };
 
-  u16_t                       ftopread() { throw Undefined(); /*FCW access*/; return u16_t(); }
+  u16_t                       ftopread() { throw Unimplemented(); /*FCW access*/; return u16_t(); }
   unsigned                    ftop;
 
   Expr&                       fpaccess(unsigned r, bool w);
@@ -195,7 +195,7 @@ struct ProcessorBase
   struct VRegRead : public unisim::util::symbolic::ExprNode
   {
     VRegRead( unsigned _reg ) : reg(_reg) {}
-    virtual VRegRead* Mutate() const { return new VRegRead( *this ); }
+    virtual VRegRead* Mutate() const override { return new VRegRead( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual unsigned SubCount() const override { return 0; }
     virtual void Repr( std::ostream& sink ) const override;
@@ -263,10 +263,8 @@ struct ProcessorBase
   void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
   /*** SEGMENTS ***/
-
-  struct SRegID : public unisim::util::identifier::Identifier<SRegID>
+  struct SegmentID : public unisim::util::identifier::Identifier<SegmentID>
   {
-    typedef uint16_t register_type;
     enum Code { es, cs, ss, ds, fs, gs, end } code;
 
     char const* c_str() const
@@ -284,9 +282,9 @@ struct ProcessorBase
       return "NA";
     }
 
-    SRegID() : code(end) {}
-    SRegID( Code _code ) : code(_code) {}
-    SRegID( char const* _code ) : code(end) { init( _code ); }
+    SegmentID() : code(end) {}
+    SegmentID( Code _code ) : code(_code) {}
+    SegmentID( char const* _code ) : code(end) { init( _code ); }
   };
 
   u16_t                       segregread( unsigned idx ) { throw Unimplemented(); return u16_t(); }
@@ -296,6 +294,7 @@ struct ProcessorBase
 
   ActionNode*      path;
   ipproc_t         next_insn_mode;
+  bool             abort;
 };
 
 template <class MODE>
@@ -325,19 +324,36 @@ struct Processor : public ProcessorBase
 
   struct OpHeader { OpHeader( nat_addr_t _address ) : address( _address ) {} nat_addr_t address; };
 
-  /*** MEMORY ***/
-  Expr PerformLoad( unsigned bytes, unsigned segment, addr_t const& addr )
+  /*** SEGMENTS ***/
+  struct SegBaseID : public SegmentID
   {
-    //interface.memaccess( addr.expr, false );
+    typedef nat_addr_t register_type;
+    void Repr(std::ostream& sink) const { sink << c_str() << "_base"; }
+    SegBaseID() = default;
+    SegBaseID( Code _code ) : SegmentID(_code) {}
+    SegBaseID( char const* _code ) : SegmentID(_code) {}
+  };
+  
+  Expr                        segment_bases[6];
+  Expr GetSegBase( unsigned idx )
+  {
+    Expr& segbase = segment_bases[idx];
+    if (ExprNode const* node = segbase.node)
+      return node;
+    return (segbase = newRegRead( SegBaseID( typename SegBaseID::Code(idx) ) ) );
+  }
+
+  /*** MEMORY ***/
+  Expr PerformLoad( unsigned bytes, unsigned segment, addr_t addr )
+  {
     if (segment >= 4) /*FS|GS relative addressing*/
-      throw Unimplemented();
+      addr = addr_t(GetSegBase(segment)) + addr;
     return new Load( addr.expr, bytes, 0, false );
   }
-  void PerformStore( unsigned bytes, unsigned segment, addr_t const& addr, Expr const& value )
+  void PerformStore( unsigned bytes, unsigned segment, addr_t addr, Expr const& value )
   {
-    //interface.memaccess( addr.expr, true );
     if (segment >= 4) /*FS|GS relative addressing*/
-      throw Unimplemented();
+      addr = addr_t(GetSegBase(segment)) + addr;
     stores.insert( Expr( new Store( addr.expr, value, bytes, 0, false ) ) );
   }
 
@@ -506,8 +522,8 @@ struct Processor : public ProcessorBase
     fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
-  u32_t mxcsread() { throw Undefined(); /*mxcsr access*/; return u32_t(); }
-  void mxcswrite( u32_t const& value ) { throw Undefined(); /*mxcsr access*/; }
+  u32_t mxcsread() { throw Unimplemented(); /*mxcsr access*/; return u32_t(); }
+  void mxcswrite( u32_t const& value ) { throw Unimplemented(); /*mxcsr access*/; }
 
   struct VUConfig : public unisim::util::symbolic::vector::VUConfig
   {
@@ -617,9 +633,15 @@ struct Processor : public ProcessorBase
 private:
   Processor( Processor const& );
 
+
 public:
 
   Processor();
+  ~Processor()
+  {
+    for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
+      umms[reg].Clear(&vmm_storage[reg][0]);
+  }
 
   bool close( Processor const& ref );
 
@@ -639,7 +661,7 @@ public:
 
   void stop() { throw Unimplemented(); /*hardware*/ }
 
-  void _DE()  { throw Unimplemented(); /*system*/ }
+  void _DE()  { abort = true; }
 
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
@@ -822,6 +844,12 @@ Processor<MODE>::close( Processor<MODE> const& ref )
     path->add_sink( new Call( next_insn_addr.expr, return_address ) );
   else
     path->add_sink( new Goto( next_insn_addr.expr ) );
+
+  if (abort)
+    {
+      path->add_sink( new unisim::util::symbolic::binsec::AssertFalse() );
+      return complete;
+    }
 
   for (int reg = GREGCOUNT; --reg >= 0;)
     {

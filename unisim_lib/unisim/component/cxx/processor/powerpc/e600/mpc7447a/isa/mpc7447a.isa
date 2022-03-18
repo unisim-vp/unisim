@@ -116,6 +116,7 @@ typedef int32_t  SINT;
 
 set addressclass {uint32_t}
 set codetype scalar
+set withcache_p true
 
 action {bool} execute({CPU *} {cpu}) {
 	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();

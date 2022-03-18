@@ -48,7 +48,7 @@ struct FIRoundOp
 template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
 {
   //return FPT( unisim::util::symbolic::Expr( new ut::FIRound<typename FPT::value_type>( src.expr, x87frnd_mode ) ) );
-  return review::make_weirdop<FPT>( FIRoundOp(x87frnd_mode), src );
+  return unisim::util::sav::make_weirdop<FPT>( FIRoundOp(x87frnd_mode), src );
 }
 
 } /* namespace unisim */ } /* namespace component */ } /* namespace cxx */ } /* namespace processor */ } /* namespace intel */
@@ -62,12 +62,12 @@ namespace review
   Arch::fxam()
   {
     f64_t value = this->fread( 0 );
-    u8_t fpclass = u8_t( review::make_weirdop<u8_t>( "fxam", value ) );
+    u8_t fpclass = u8_t( unisim::util::sav::make_weirdop<u8_t>( "fxam", value ) );
 
-    flagwrite( FLAG::C0, review::make_weirdop<bit_t>( "fxam.C0", fpclass ) );
-    flagwrite( FLAG::C1, review::make_weirdop<bit_t>( "fxam.sign", value ) );
-    flagwrite( FLAG::C2, review::make_weirdop<bit_t>( "fxam.C2", fpclass ) );
-    flagwrite( FLAG::C3, review::make_weirdop<bit_t>( "fxam.C3", fpclass ) );
+    flagwrite( FLAG::C0, unisim::util::sav::make_weirdop<bit_t>( "fxam.C0", fpclass ) );
+    flagwrite( FLAG::C1, unisim::util::sav::make_weirdop<bit_t>( "fxam.sign", value ) );
+    flagwrite( FLAG::C2, unisim::util::sav::make_weirdop<bit_t>( "fxam.C2", fpclass ) );
+    flagwrite( FLAG::C3, unisim::util::sav::make_weirdop<bit_t>( "fxam.C3", fpclass ) );
   }
   
   void
@@ -319,6 +319,13 @@ namespace review
     for (FLAG reg; reg.next();)
       flagvalues[reg.idx()] = newRegRead( reg );
   }
+
+  Arch::~Arch()
+  {
+    for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
+      umms[reg].Clear(&vmm_storage[reg][0]);
+  }
+
 
   bool
   Arch::close( Arch const& ref )

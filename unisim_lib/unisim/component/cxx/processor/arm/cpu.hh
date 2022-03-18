@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#include <unisim/component/cxx/processor/arm/extregbank.hh>
+#include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
@@ -84,21 +84,6 @@ struct CPU
    * ARM architecture constants
    */
     
-  // /* specific register indices */
-  // static unsigned int const PC_reg = 15;
-  // static unsigned int const LR_reg = 14;
-  // static unsigned int const SP_reg = 13;
-
-  /* masks for the different running modes */
-  static uint32_t const USER_MODE = 0b10000;
-  static uint32_t const FIQ_MODE = 0b10001;
-  static uint32_t const IRQ_MODE = 0b10010;
-  static uint32_t const SUPERVISOR_MODE = 0b10011;
-  static uint32_t const MONITOR_MODE = 0b10110;
-  static uint32_t const ABORT_MODE = 0b10111;
-  static uint32_t const HYPERVISOR_MODE = 0b11010;
-  static uint32_t const UNDEFINED_MODE = 0b11011;
-  static uint32_t const SYSTEM_MODE = 0b11111;
   /* values of the different condition codes */
   static uint32_t const COND_EQ = 0x00;
   static uint32_t const COND_NE = 0x01;
@@ -115,6 +100,7 @@ struct CPU
   static uint32_t const COND_GT = 0x0c;
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
+
   /* mask for valid bits in processor control and status registers */
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
   /* Number of logic registers */
@@ -456,32 +442,62 @@ public:
   U32 RoundToNearestFPSCR() const   { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundToNearest) ); return fpscr; }
   U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
   
-  struct ExtRegBank
+  static unsigned const VECTORCOUNT = 32;
+
+  struct VUConfig
   {
-    ExtRegCache<U32,64> eu32;
-    ExtRegCache<U64,32> eu64;
-    ExtRegCache<F32,32> ef32;
-    ExtRegCache<F64,32> ef64;
+    static unsigned const BYTECOUNT = 8;
+    template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
+    typedef U8 Byte;
+  };
+  unisim::component::cxx::vector::VUnion<VUConfig> vector_views[VECTORCOUNT];
 
-    template <typename CMD>
-    void DoAll( CMD& cmd )
-    {
-      eu32.Do( cmd );
-      eu64.Do( cmd );
-      ef32.Do( cmd );
-      ef64.Do( cmd );
-    }
-  } erb;
+  uint8_t vector_data[VECTORCOUNT][VUConfig::BYTECOUNT];
 
-  U32 const&  GetVSU( unsigned idx )                  { return erb.eu32.GetReg( erb, idx ); }
-  void        SetVSU( unsigned idx, U32 const& val )  { erb.eu32.SetReg( erb, idx, val ); }
-  U64 const&  GetVDU( unsigned idx )                  { return erb.eu64.GetReg( erb, idx ); }
-  void        SetVDU( unsigned idx, U64 const& val )  { erb.eu64.SetReg( erb, idx, val ); }
-  F32 const&  GetVSR(  unsigned idx )                 { return erb.ef32.GetReg( erb, idx ); }
-  void        SetVSR(  unsigned idx, F32 const& val ) { erb.ef32.SetReg( erb, idx, val ); }
-  F64 const&  GetVDR(  unsigned idx )                 { return erb.ef64.GetReg( erb, idx ); }
-  void        SetVDR(  unsigned idx, F64 const& val ) { erb.ef64.SetReg( erb, idx, val ); }
+  //====================================================================
+  //=                 Special  Registers access methods
+  //====================================================================
+
+  template <typename T>
+  T vector_read(unsigned reg, unsigned sub)
+  {
+    return (vector_views[reg].GetConstStorage(&vector_data[reg], T(), VUConfig::BYTECOUNT))[sub];
+  }
+
+  U32 GetVSU( unsigned reg )                 { return vector_read<U32> (reg/2, reg%2); }
+  U64 GetVDU( unsigned reg )                 { return vector_read<U64> (reg, 0); }
+  F32 GetVSR( unsigned reg )                 { return vector_read<F32> (reg/2, reg%2); }
+  F64 GetVDR( unsigned reg )                 { return vector_read<F64> (reg, 0); }
+
+  template <class ELEMT>
+  ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait )
+  {
+    return ELEMT( vector_read<ELEMT>(reg, idx) );
+  }
+
+  U8 GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob)
+  {
+    auto r = idx/elts;
+    return r < regs ? GetVDE((r0 + r) % 32, idx % elts, U8()) : oob;
+  }
   
+  template <typename T>
+  void vector_write(unsigned reg, unsigned sub, T value )
+  {
+    (vector_views[reg].GetStorage(&vector_data[reg], value, VUConfig::BYTECOUNT))[sub] = value;
+  }
+
+  void SetVSU( unsigned reg, U32 const& val ) { vector_write( reg/2, reg%2, val ); }
+  void SetVDU( unsigned reg, U64 const& val ) { vector_write( reg, 0, val ); }
+  void SetVSR( unsigned reg, F32 const& val ) { vector_write( reg/2, reg%2, val ); }
+  void SetVDR( unsigned reg, F64 const& val ) { vector_write( reg, 0, val ); }
+
+  template <class ELEMT>
+  void SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
+  {
+    vector_write(reg, idx, value);
+  }
+
   /*************************************/
   /* Debug Registers             START */
   /*************************************/

@@ -48,6 +48,7 @@ struct Opts
   virtual ConstStr        locate( char const* _name ) const = 0;
   virtual char const*     appname() const = 0;
   virtual char const*     appversion() const = 0;
+  std::ostream&           log( unsigned int level ) const;
 };
 
 struct Isa
@@ -75,7 +76,6 @@ struct Isa
   ConstStr                      m_addrtype;        /**< C type for instructions addresses */
   std::vector<ConstStr>         m_includes;        /**< files included by the isa main file */
   Vector<Specialization>        m_specializations; /**< Requested specializations */
-  Vector<Inheritance>           m_inheritances;    /**< Defined inheritances for operation class */
   
   typedef std::map<ConstStr,Group*> GroupAccumulators;
   GroupAccumulators             m_group_accs;      /**< Active group accumulators */
@@ -88,15 +88,15 @@ struct Isa
   };
   typedef std::vector<Ordering> Orderings;
   Orderings                     m_user_orderings;
-
+  
+  std::set<unsigned int>        m_insnsizes;
+  
   Isa();
   ~Isa();
-  
-  void                          remove( Operation* _op );
+
   void                          add( Operation* _op );
-  void                          remove( ActionProto const* _ap );
   Operation*                    operation( ConstStr _symbol );
-  bool                          group_extend( Group* _group, ConstStr _symbol );
+  void                          check_name_validity(char const* kind, ConstStr symbol, FileLoc const& fl);
   struct OOG
   {
     virtual ~OOG() {}
@@ -107,8 +107,12 @@ struct Isa
   ActionProto const*            actionproto( ConstStr _symbol ) const;
   SDClass const*                sdclass( std::vector<ConstStr>& _namespace ) const;
   SDInstance const*             sdinstance( ConstStr _symbol ) const;
-                                
-  Generator*                    generator( Isa& _source, Opts const& _options ) const;
+
+  unsigned                      maxsize() const;
+  unsigned                      gcd() const;
+  void                          reorder( Vector<BitField>& bitfields );
+  void                          finalize( Opts const& _options );
+  Generator*                    generator( Opts const& _options );
                                 
   void                          expand( std::ostream& _sink ) const;
   void                          deps( std::ostream& _sink, char const* _prefix ) const;
@@ -128,6 +132,25 @@ struct Isa
   struct ParseError {};
   
   void                          group_command( ConstStr _symbol, ConstStr _command, FileLoc const& fl );
+};
+
+struct FieldIterator
+{
+  // Inputs
+  typedef Vector<BitField> BitFields;
+  
+  BitFields const& bitfields;
+  bool             little_endian;
+
+  // State
+  BitFields::const_iterator nbf, bf;
+  int                       beg, end;
+  
+  FieldIterator( BitFields const& bitfields, bool _little_endian );
+  bool              next();
+  unsigned          pos(unsigned maxsize) { return beg + (beg < 0 ? maxsize : 0); }
+  
+  BitField const&   bitfield() { return **bf; }
 };
 
 #endif // __ISA_HH__

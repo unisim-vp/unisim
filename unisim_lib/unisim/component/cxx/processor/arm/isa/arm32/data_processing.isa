@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr), 
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr),
  */
- 
+
 /**********************************************
 
         DATA PROCESSING INSTRUCTIONS
@@ -51,8 +51,6 @@ and_32imm.disasm = {
 };
 
 and_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
@@ -75,8 +73,6 @@ and_imm_shift.disasm = {
 };
 
 and_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
       op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -94,8 +90,6 @@ and_reg_shift.disasm = {
 };
 
 and_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
       op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -121,8 +115,6 @@ eor_32imm.disasm = {
 };
 
 eor_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
@@ -144,8 +136,6 @@ eor_imm_shift.disasm = {
 };
 
 eor_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -163,8 +153,6 @@ eor_reg_shift.disasm = {
 };
 
 eor_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -190,8 +178,6 @@ sub_32imm.disasm = {
 };
 
 sub_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   cpu.SetGPR( rd, res );
@@ -206,8 +192,6 @@ sub_imm_shift.disasm = {
 };
 
 sub_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -225,8 +209,6 @@ sub_reg_shift.disasm = {
 };
 
 sub_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -252,8 +234,6 @@ rsb_32imm.disasm = {
 };
 
 rsb_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), res = op1 - op2;
   cpu.SetGPR( rd, res );
@@ -269,8 +249,6 @@ rsb_imm_shift.disasm = {
 };
 
 rsb_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
@@ -288,8 +266,6 @@ rsb_reg_shift.disasm = {
 };
 
 rsb_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ),
@@ -315,8 +291,6 @@ add_32imm.disasm = {
 };
 
 add_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
   cpu.SetGPR( rd, res );
@@ -332,8 +306,6 @@ add_imm_shift.disasm = {
 };
 
 add_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -351,8 +323,6 @@ add_reg_shift.disasm = {
 };
 
 add_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -378,8 +348,6 @@ adc_32imm.disasm = {
 };
 
 adc_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), carry = cpu.CPSR().Get( C ), res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
@@ -395,8 +363,6 @@ adc_imm_shift.disasm = {
 };
 
 adc_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
     op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), carry = cpu.CPSR().Get( C ),
@@ -414,8 +380,6 @@ adc_reg_shift.disasm = {
 };
 
 adc_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
     op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ), carry = cpu.CPSR().Get( C ),
@@ -441,8 +405,6 @@ sbc_32imm.disasm = {
 };
 
 sbc_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
@@ -458,8 +420,6 @@ sbc_imm_shift.disasm = {
 };
 
 sbc_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
     op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
@@ -477,8 +437,6 @@ sbc_reg_shift.disasm = {
 };
 
 sbc_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
     op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
@@ -504,8 +462,6 @@ rsc_32imm.disasm = {
 };
 
 rsc_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
@@ -520,8 +476,6 @@ rsc_imm_shift.disasm = {
 };
 
 rsc_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
     op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
@@ -539,8 +493,6 @@ rsc_reg_shift.disasm = {
 };
 
 rsc_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
     op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
@@ -566,8 +518,6 @@ orr_32imm.disasm = {
 };
 
 orr_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | op2;
@@ -589,8 +539,6 @@ orr_imm_shift.disasm = {
 };
 
 orr_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -608,8 +556,6 @@ orr_reg_shift.disasm = {
 };
 
 orr_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -635,8 +581,6 @@ bic_32imm.disasm = {
 };
 
 bic_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & ~op2;
@@ -658,8 +602,6 @@ bic_imm_shift.disasm = {
 };
 
 bic_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -677,8 +619,6 @@ bic_reg_shift.disasm = {
 };
 
 bic_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -707,8 +647,6 @@ tst_32imm.disasm = {
 };
 
 tst_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
@@ -726,8 +664,6 @@ tst_imm_shift.disasm = {
 };
 
 tst_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
       op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -744,8 +680,6 @@ tst_reg_shift.disasm = {
 };
 
 tst_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -774,13 +708,11 @@ teq_32imm.disasm = {
 };
 
 teq_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
-  
+
   cpu.CPSR().Set( N, S32(res) < S32(0) );
   cpu.CPSR().Set( Z,     res == U32(0) );
   if (imr)
@@ -795,8 +727,6 @@ teq_imm_shift.disasm = {
 };
 
 teq_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -813,8 +743,6 @@ teq_reg_shift.disasm = {
 };
 
 teq_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -839,8 +767,6 @@ cmp_32imm.disasm = {
 };
 
 cmp_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
@@ -854,8 +780,6 @@ cmp_imm_shift.disasm = {
 };
 
 cmp_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -872,8 +796,6 @@ cmp_reg_shift.disasm = {
 };
 
 cmp_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -897,8 +819,6 @@ cmn_32imm.disasm = {
 };
 
 cmn_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
@@ -912,8 +832,6 @@ cmn_imm_shift.disasm = {
 };
 
 cmn_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
@@ -930,8 +848,6 @@ cmn_reg_shift.disasm = {
 };
 
 cmn_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
@@ -956,14 +872,12 @@ mov_32imm.disasm = {
 };
 
 mov_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   U32 res = U32(imm);
   cpu.SetGPR( rd, res );
-  
+
   if (s)
     {
       cpu.CPSR().Set( N, S32(res) < S32(0) );
@@ -977,7 +891,7 @@ op mov_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1101[4]: s[1]: 0b0000[4]: rd[4]: i
 
 mov_imm_shift.disasm = {
   uint32_t shift_value = imm;
-  
+
   if (imm == 0) {
     if (shift == 0 or shift == 3) {
       buffer << (shift ? "rrx" : "mov") << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -990,8 +904,6 @@ mov_imm_shift.disasm = {
 };
 
 mov_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
   cpu.SetGPR( rd, res );
@@ -1007,8 +919,6 @@ mov_reg_shift.disasm = {
 };
 
 mov_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32
     rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
@@ -1033,14 +943,12 @@ mvn_32imm.disasm = {
 };
 
 mvn_32imm.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  
+
   U32 res = U32(~imm);
   cpu.SetGPR( rd, res );
-  
+
   if (s)
     {
       cpu.CPSR().Set( N, S32(res) < S32(0) );
@@ -1057,8 +965,6 @@ mvn_imm_shift.disasm = {
 };
 
 mvn_imm_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
   cpu.SetGPR( rd, res );
@@ -1073,8 +979,6 @@ mvn_reg_shift.disasm = {
 };
 
 mvn_reg_shift.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32
     rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
@@ -1100,15 +1004,13 @@ clz.disasm = {
 };
 
 clz.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 val = cpu.GetGPR( rm );
   if (unlikely( cpu.Test(val == U32(0)) ))
     val = U32(32);
   else
     val = U32(31) - BitScanReverse( cpu.GetGPR( rm ) );
-  
+
   cpu.SetGPR( rd, val );
 };
 
@@ -1129,8 +1031,6 @@ rbit.disasm = {
 };
 
 rbit.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 src = cpu.GetGPR( rm ), dst(0);
   for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & U32(1)); src >>= 1; }
@@ -1157,8 +1057,6 @@ rev.disasm = {
 };
 
 rev.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR(rm), rdval = ByteSwap( rmval );
 
@@ -1185,8 +1083,6 @@ rev16.disasm = {
 };
 
 rev16.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( RotateRight( rmval, 16 ) );
   cpu.SetGPR( rd, rdval );
@@ -1213,13 +1109,11 @@ revsh.disasm = {
 };
 
 revsh.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-  
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::U16 U16;
-  
+
   U16 src( cpu.GetGPR(rm) );
   cpu.SetGPR( rd, U32(S32(S16((src >> 8) | (src << 8)))) );
 };
@@ -1246,8 +1140,6 @@ movw.disasm = {
 };
 
 movw.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, U32(imm) );
 };
@@ -1274,8 +1166,6 @@ movt.disasm = {
 };
 
 movt.execute = {
-  if (unlikely( not CheckCondition(cpu, cond) )) return;
-
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, (cpu.GetGPR( rd ) & U32(0xffff)) | U32(imm << 16) );
 };

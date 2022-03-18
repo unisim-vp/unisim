@@ -73,12 +73,12 @@ public:
 			std::ostringstream out;
 			out << "memory-import-" << i;
 			memory_import[i] = new ServiceImport<Memory<service_address_t> >(out.str().c_str(), this);
-			
-			memory_export.SetupDependsOn(*memory_import[i]);
 		}
 
 	}
-
+	
+	virtual void Setup(Memory<service_address_t>*) override { for (unsigned int i=0; i<width; i++) memory_import[i]->RequireSetup(); }
+	
 	virtual ~MemoryImportExportTee() {
 		for (unsigned int i=0; i<width; i++) {
 			if (memory_import[i]) {

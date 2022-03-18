@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -88,6 +88,7 @@ struct Checker
   
   void discover( uintptr_t count, uintptr_t ttl_reset )
   {
+    std::cerr << "Scanning for " << count << " new instructions.\n";
     int seed = testdb.size();
     unisim::util::random::Random rnd(seed,seed,seed,seed);
     uintptr_t ttl = ttl_reset, trial = 0;
@@ -123,6 +124,8 @@ struct Checker
   void
   write_repos( std::string const& reposname )
   {
+    std::cerr << "Writing repository " << reposname << '\n';
+    
     std::ofstream sink( reposname );
 
     for (Interface const& test : testdb)
@@ -138,10 +141,38 @@ struct Checker
     void newline() { line += 1; }
     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << std::dec << fl.line << ": "; return sink; }
   };
+
+  void
+  filter_out( char const* insn_skip )
+  {
+    std::cerr << "Filtering tests, excluding " << insn_skip << "\n";
+    std::map<std::string,uintptr_t> ign_set;
+    while (*insn_skip)
+      {
+        if (*insn_skip == ':') ++insn_skip;
+        char const* end = strchrnul(insn_skip, ':');
+        ign_set.emplace(std::piecewise_construct, std::forward_as_tuple(insn_skip, end), std::forward_as_tuple(0));
+        insn_skip = end;
+      }
+    for (auto test = testdb.begin(), end = testdb.end(); test != end; )
+      {
+        auto op = ign_set.find(test->gilname);
+        if (op == ign_set.end())
+          { ++test; continue; }
+        op->second += 1;
+        test = testdb.erase( test );
+        std::cerr << "Ignoring: " << test->asmcode << '\n';
+      }
+    for (auto const& kv : ign_set)
+      {
+        std::cerr << kv.first << " matched " << kv.second << " time" << (kv.second > 1 ? "s" : "") << '\n';
+      }
+  }
   
   bool
   read_repos( std::string const& reposname )
   {
+    std::cerr << "Reading repository " << reposname << '\n';
     // Parsing incoming repository
     FileLoc fl( reposname );
     std::ifstream source( fl.name );
@@ -154,7 +185,10 @@ struct Checker
 
         uint32_t code;
         source >> std::hex >> code;
-        { char tab; if (not source.get(tab) or tab != '\t') { std::cerr << fl << ": parse error.\n"; break; } }
+        if (not source)
+          break;
+        { char tab; if (not source.get(tab) or tab != '\t')
+                      { std::cerr << fl << ": parse error.\n"; break; } }
         std::string disasm;
         std::getline( source, disasm, '\n' );
         
@@ -188,8 +222,9 @@ struct Checker
     return updated;
   }
 
-  void run_tests(char const* seed)
+  void run_tests(char const* seed, uintptr_t insn_pong)
   {
+    std::cerr << "Running tests with seed " << seed << '\n';
     /* First pass; computing memory requirements */
     uintptr_t textsize, workcells = 0;
     {
@@ -215,7 +250,7 @@ struct Checker
       TextZone(uintptr_t size)
         : p(mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)), sz(size)
       { if (p == MAP_FAILED) throw 0; }
-      void activate() { mprotect(p, sz, PROT_EXEC); }
+      void activate() { mprotect(p, sz, PROT_READ|PROT_EXEC); }
       ~TextZone() { munmap(p, sz); }
       uint8_t* chunk(uintptr_t idx) { return &((uint8_t*)p)[idx]; }
       void* p; uintptr_t sz;
@@ -283,6 +318,7 @@ struct Checker
       }
 
       std::string const& getasm() const { return tif.asmcode; }
+      std::string const& getgil() const { return tif.gilname; }
 
       void run( uint64_t* ws ) const
       {
@@ -359,8 +395,8 @@ struct Checker
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
-        if ((testbed.counter % 0x100000) == 0)
-          std::cout << testbed.counter << ": " << test.getasm() << std::endl;
+        if ((testbed.counter % insn_pong) == 0)
+          std::cout << testbed.counter << ":" << test.getgil() << ": " << test.getasm() << std::endl;
         
         /* Perform native test */
         test.load( &workspace[0], testbed );
@@ -399,21 +435,21 @@ main( int argc, char** argv )
       return 1;
     }
 
-  uintptr_t ttl_reset, insn_scan;
-  struct {
-    char const* name;
-    uintptr_t& value;
-    uintptr_t init;
-  } params [] =
+  char const *ttl_reset = 0, *insn_scan = 0, *insn_pong = 0, *insn_skip = 0;
+  
+  struct { char const *&value, *name, *init; }
+    params [] =
       {
-       {"INSN_SCAN", insn_scan, 0},
-       {"TTL_RESET", ttl_reset, 10000},
+       {insn_scan, "INSN_SCAN", "0"},
+       {ttl_reset, "TTL_RESET", "10000"},
+       {insn_pong, "INSN_PONG", "0x100000"},
+       {insn_skip, "INSN_SKIP", ""},
       };
 
   for (unsigned idx = 0, end = sizeof params / sizeof params[0]; idx < end; ++idx)
     {
       if (char const* env = getenv(params[idx].name))
-        params[idx].value = strtoull(env,0,0);
+        params[idx].value = env;
       else
         params[idx].value = params[idx].init; 
       std::cerr << "Using " << params[idx].name << " of: " << params[idx].value << std::endl;
@@ -424,16 +460,21 @@ main( int argc, char** argv )
   
   bool updated = checker.read_repos( reposname );
 
-  if (insn_scan != 0)
+  if (uintptr_t count = strtoull(insn_scan,0,0))
     {
-      checker.discover( insn_scan, ttl_reset );
+      checker.discover( count, strtoull(ttl_reset,0,0) );
       updated = true;
     }
   
   if (updated)
       checker.write_repos( reposname );
 
-  checker.run_tests("01234567890123456789012345678901000000000000000000000000");
+  if (*insn_skip)
+    {
+      checker.filter_out( insn_skip );
+    }
+
+  checker.run_tests("01234567890123456789012345678901000000000000000000000000", strtoull(insn_pong,0,0));
 
   return 0;
 }

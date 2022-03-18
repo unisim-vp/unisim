@@ -34,6 +34,7 @@
 
 #include <architecture.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/aarch64.hh>
@@ -42,22 +43,22 @@
 #include <iomanip>
 #include <termios.h>
 #include <unistd.h>
-
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 AArch64::AArch64()
   : regmap()
   , devices()
   , gic()
-  , uart()
+  , uart("uart", 0)
   , vt()
   , pages()
   , excmon()
   , mmu()
   , ipb()
   , decoder()
-  , gpr()
-  , vector_views()
-  , vectors()
   , fpcr()
   , fpsr()
   , sp_el()
@@ -71,10 +72,13 @@ AArch64::AArch64()
   , last_insns()
   , TPIDR()
   , CPACR()
+  , tvreg(-1)
   , bdaddr(0)
   , random(0)
   , terminate(false)
   , disasm(false)
+  , suspend(false)
+  , tfpcount(0)
 {
   for (int idx = 0; idx < 32; ++idx)
     {
@@ -102,6 +106,9 @@ AArch64::~AArch64()
 {
   for (auto reg : regmap)
     delete reg.second;
+
+  for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
+    vector_views[reg].Clear(&vectors[reg]);
 }
 
 bool
@@ -117,13 +124,14 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
       MMU::TLB::Entry entry(addr);
       try { translate_address(entry, 1, mem_acc_type::debug); }
       catch (DataAbort const& x) { return false; }
-      Page const& page = access_page(entry.pa);
+      Page const& page = get_page(entry.pa);
       uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
       uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
       if (std::any_of(&udat[0], &udat[done], [](uint8_t b) { return b != 0; } )) throw Bad();
       std::copy( &data[0], &data[done], ptr );
       count -= done;
       ptr += done;
+      addr += done;
     }
 
   return true;
@@ -142,13 +150,14 @@ AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
       MMU::TLB::Entry entry(addr);
       try { translate_address(entry, 1, mem_acc_type::debug); }
       catch (DataAbort const& x) { return false; }
-      Page const& page = modify_page(entry.pa);
+      Page const& page = get_page(entry.pa);
       uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
       uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
       std::fill(&udat[0], &udat[done], 0);
       std::copy(&ptr[0], &ptr[done], data);
       count -= done;
       ptr += done;
+      addr += done;
     }
 
   return true;
@@ -225,15 +234,17 @@ AArch64::mem_map(Page&& page)
 AArch64::Page const&
 AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 {
-  unsigned const PAGE_SIZE = 0x10000;
-  uint64_t base = addr & -PAGE_SIZE, last = base + PAGE_SIZE - 1;
+  uint64_t const page_size = 0x10000;
+  uint64_t base = addr & -page_size, last = base + page_size - 1;
   if (pi != pages.end() and pi->last >= base)
     base = pi->last + 1;
   if (pages.size() and pi != pages.begin() and (--pi)->base <= last)
     { last = pi->base - 1; }
 
   Page res(base, last);
-  std::fill(res.udat_beg(), res.udat_end(), -1);
+  // Initialize taint
+  // std::fill(res.udat_beg(), res.udat_end(), -1);
+  std::fill(res.udat_beg(), res.udat_end(), 0);
   return *pages.insert(pi, std::move(res));
 }
 
@@ -259,7 +270,7 @@ AArch64::IPB::access(AArch64& core, uint64_t paddr)
   if (base_address != req_base_address)
     {
       uint8_t ubuf[LINE_SIZE];
-      if (core.access_page(req_base_address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
+      if (core.get_page(req_base_address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
         { struct Bad {}; raise( Bad() ); }
       if (not std::all_of( &ubuf[0], &ubuf[LINE_SIZE], [](unsigned char const byte) { return byte == 0; } ))
         { struct Bad {}; raise( Bad() ); }
@@ -278,7 +289,8 @@ AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
 void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
 {
-  op->disasm(*this, std::cerr << "Undefined instruction : `");
+  DisasmState ds;
+  op->disasm(ds, std::cerr << "Undefined instruction : `");
   std::cerr << "` (" << op->GetName() << ", " << std::hex << op->GetEncoding()
             << "@" << std::hex << op->GetAddr() << ").\n";
   UndefinedInstruction();
@@ -305,23 +317,23 @@ AArch64::TODO()
 void
 AArch64::CallSupervisor( unsigned imm )
 {
-  // if (verbose) {
+  //  static std::ofstream strace("strace.log");
   // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
   // {
   //   typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
   //   typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
 
-  //   Arm64LinuxOS( AArch64* _cpu )
-  //     : ThisLinux( std::cerr, std::cerr, std::cerr, _cpu, _cpu, _cpu )
+  //   Arm64LinuxOS( AArch64* cpu )
+  //     : ThisLinux( AArch64::ptlog(), AArch64::ptlog(), AArch64::ptlog(), cpu, cpu, cpu )
   //   {
   //     SetTargetSystem(new Arm64Target(*this));
   //   }
   //   ~Arm64LinuxOS() { delete GetTargetSystem(); }
   // } arm64_linux_os( this );
 
-  // std::cerr << "SVC@" << std::hex << current_insn_addr << ": ";
+  // AArch64::ptlog() << last_insn(0) << "\n\t";
+  // //  strace << "SVC@" << std::hex << current_insn_addr;
   // arm64_linux_os.LogSystemCall( imm );
-  // }
 
   //  if UsingAArch32() then AArch32.ITAdvance();
   // SSAdvance();
@@ -335,7 +347,7 @@ AArch64::CallSupervisor( unsigned imm )
   get_el(target_el).ESR = U32(0)
     | U32(0x15) << 26 // exception class AArch64.SVC
     | U32(1) << 25 // IL Instruction Length == 32 bits
-    | U32(0,0b111111111) << 16 // Res0
+    | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
     | U32(imm);
 
   TakeException(1, 0x0, next_insn_addr);
@@ -353,12 +365,8 @@ AArch64::CallHypervisor( uint32_t imm )
 
   if (imm == 0)
     {
-      U64 const& arg0 = gpr[0];
-
-      if (arg0.ubits)
-        raise( Bad() );
-
-      switch (arg0.value)
+      struct HVCTV {};
+      switch (untaint(HVCTV(), gpr[0]))
         {
         default:
           raise( Bad() );
@@ -400,12 +408,12 @@ AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_
 }
 
 void
-AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AArch64::U64 const& arg)
+AArch64::MMU::TLB::Invalidate(AArch64& cpu, bool nis, bool ll, unsigned type, AArch64::U64 const& arg)
 {
   if (not nis)
     {
       cpu.TODO(); // Should send to all Inner Shareable PE...
-      return invalidate(true, ll, type, cpu, arg);
+      return Invalidate(cpu, true, ll, type, arg);
     }
 
   struct Bad {};
@@ -417,16 +425,19 @@ AArch64::MMU::TLB::invalidate(bool nis, bool ll, unsigned type, AArch64& cpu, AA
     case 2: ubit_issue = 0xffff000000000000ull; break;
     case 3: ubit_issue = 0x00000fffffffffffull; break;
     }
-  if (arg.ubits & ubit_issue) raise( Bad() );
+  struct TLBITV {};
+  uint64_t argval = cpu.untaint(TLBITV(), arg & AArch64::U64(ubit_issue));
 
-  uint64_t vakey = (((arg.value << 12) << 15 ) >> 16) | ((arg.value >> 48) << 48) | 1;
+  //  AArch64::ptlog() << cpu.last_insn(0) << " (X=" << std::hex << argval << std::dec << ")\n";
+
+  uint64_t vakey = (((argval << 12) << 15 ) >> 16) | ((argval >> 48) << 48) | 1;
 
   for (unsigned idx = 0; idx < kcount; ++idx)
     {
       uint64_t key = keys[idx];
       unsigned rsh = key & 63;
 
-      if (ll and rsh > 15) /* rsh = blocksize - 1; */
+      if (ll and rsh > 15) /* rsh = blocksize - 1; last level in {12,14,16} (see TTBR.TG) */
         continue;
 
       if (type == 2 and ((vakey ^ key) >> 48)) // by asid
@@ -527,8 +538,8 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
   U32 esr = U32(0)
     | U32((mat == mem_acc_type::exec ? 0x20 : 0x24) + (cpu.pstate.GetEL() == target_el)) << 26 // exception class
     | U32(1) << 25 // IL Instruction Length
-    | U32(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
-    | U32(0,0b1111) << 10
+    | cpu.PartlyDefined<uint32_t>(0,0b11111111111) << 14 // extended syndrome information for a second stage fault.
+    | cpu.PartlyDefined<uint32_t>(0,0b1111) << 10
     | U32(0) << 9 // IsExternalAbort(fault)
     | U32(mat == mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
@@ -570,7 +581,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
     uint64_t read(uint64_t paddr)
     {
       uint8_t dbuf[size], ubuf[size];
-      if (cpu.access_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
+      if (cpu.get_page(paddr).read(paddr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
       uint64_t value = 0;
       for (unsigned idx = size; idx-- > 0;)
       { if (ubuf[idx]) raise( Bad() ); value = (value << 8) | dbuf[idx ^ endianness]; }
@@ -730,9 +741,9 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
 {
   struct Bad {};
   nzcv = U8(spsr >> 28);
-  spsr = (spsr << 4) >> 4;
-  if (spsr.ubits) raise( Bad() );
-  uint32_t psr = spsr.value;
+
+  struct PSRTV {};
+  uint32_t psr = untaint(PSRTV(), (spsr << 4) >> 4);
 
   if (psr & 0x10) raise( Bad() ); /* No AArch32 */
   /* spsr checks causing an "Illegal return" */
@@ -790,115 +801,122 @@ AArch64::PState::AsSPSR() const
   return spsr;
 }
 
-bool
-AArch64::concretize(bool possible)
-{
-  struct ShouldNotHappen {};
+// bool
+// AArch64::untaint(CondTV const&, BOOL const& possible)
+// {
+//   // static std::set<uint64_t> seen;
+//   // if (seen.insert(current_insn_addr).second)
+//   //   uninitialized_error("condition");
+//   // return possible;
+ 
+//   struct ShouldNotHappen {};
+  
+//   if (   current_insn_addr == 0xffffffc0105c70f8
+//     //or current_insn_addr == 0xffffffc0109fb270
+//          )
+//     { // <__pi_strlen>:
+//       // ...
+//       // ffffffc0105c70f8:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
+//       // ffffffc0105c70fc:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
+//       gpr[5].ubits = 0;
+//       gpr[6].ubits = 0;
+//       return possible;
+//     }
 
-  if (current_insn_addr == 0xffffffc0109fb26c or
-      current_insn_addr == 0xffffffc0109fb270)
-    { // <__pi_strlen>:
-      // ...
-      // ffffffc0109fb26c:       fa4008a0        ccmp    x5, #0x0, #0x0, eq  // eq = none
-      // ffffffc0109fb270:       54ffff00        b.eq    ffffffc0109fb250 <__pi_strlen+0x10>  // b.none
-      gpr[5].ubits = 0;
-      gpr[6].ubits = 0;
-      return possible;
-    }
+//   if (current_insn_addr == 0xffffffc0102868fc or
+//       current_insn_addr == 0xffffffc010286914)
+//     { // <hashlen_string>:
+//       // ...
+//       // ffffffc0102868fc:       54fffe80        b.eq    ffffffc010285e1c <hashlen_string+0x34>  // b.none
+//       // ...
+//       // ffffffc010286914:       b40000e2        cbz     x2, ffffffc010285e80 <hashlen_string+0x98>
+//       gpr[2].ubits = 0;
+//       gpr[3].ubits = 0;
+//       return possible;
+//     }
 
-  if (current_insn_addr == 0xffffffc0102868fc or
-      current_insn_addr == 0xffffffc010286914)
-    { // <hashlen_string>:
-      // ...
-      // ffffffc0102868fc:       54fffe80        b.eq    ffffffc010285e1c <hashlen_string+0x34>  // b.none
-      // ...
-      // ffffffc010286914:       b40000e2        cbz     x2, ffffffc010285e80 <hashlen_string+0x98>
-      gpr[2].ubits = 0;
-      gpr[3].ubits = 0;
-      return possible;
-    }
+//   if (current_insn_addr == 0xffffffc010238bdc)
+//     {
+//       // link_path_walk.part.0:
+//       // ...
+//       // ffffffc010238bd8:	f201c042	ands    x2, x2, #0x8080808080808080
+//       // ffffffc010238bdc:	54fffde0	b.eq
+//       gpr[2].ubits = 0;
+//       gpr[3].ubits = 0;
+//       gpr[5].ubits = 0;
+//       nzcv.ubits = 0;
+//       if ((gpr[2].value == 0) != possible) raise( ShouldNotHappen() );
+//       return possible;
+//     }
 
-  if (current_insn_addr == 0xffffffc01028b198)
-    {
-      // link_path_walk.part.0: b.eq (ands    x2, x2, #0x8080808080808080)
-      gpr[2].ubits = 0;
-      gpr[3].ubits = 0;
-      gpr[5].ubits = 0;
-      nzcv.ubits = 0;
-      if ((gpr[2].value == 0) != possible) raise( ShouldNotHappen() );
-      return possible;
-    }
+//   if ((current_insn_addr | 0x380)  == 0xffffffc01008238c or
+//       (current_insn_addr | 0x180)  == 0xffffffc010082594)
+//     {
+//       // <vectors>:
+//       // ...
+//       // tbnz    w0, #14
+//       /* we're forced to definitely lose x0 undefined bits... */
+//       gpr[31].ubits = 0;
+//       gpr[0].ubits = 0;
+//       if (bool(gpr[0].value >> 14 & 1) != possible) raise( ShouldNotHappen() );
+//       return possible;
+//     }
 
-  if ((current_insn_addr | 0x380)  == 0xffffffc01008238c or
-      (current_insn_addr | 0x180)  == 0xffffffc010082594)
-    {
-      // <vectors>:
-      // ...
-      // tbnz    w0, #14
-      /* we're forced to definitely lose x0 undefined bits... */
-      gpr[31].ubits = 0;
-      gpr[0].ubits = 0;
-      if (bool(gpr[0].value >> 14 & 1) != possible) raise( ShouldNotHappen() );
-      return possible;
-    }
+//   // if (current_insn_addr == 0xffffffc0109fb120)
+//   //   {
+//   //     // <__pi_strcmp>:
+//   //     // ...
+//   //     // orr     x6, x5, x4
+//   //     // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
+//   //     gpr[2].ubits = 0;
+//   //     gpr[3].ubits = 0;
+//   //     gpr[6].ubits = 0;
+//   //     return possible;
+//   //   }
 
-  if (current_insn_addr == 0xffffffc0109fb120)
-    {
-      // <__pi_strcmp>:
-      // ...
-      // orr     x6, x5, x4
-      // cbz     x6, ffffffc0109f3f04 <__pi_strcmp+0x18>
-      gpr[2].ubits = 0;
-      gpr[3].ubits = 0;
-      gpr[6].ubits = 0;
-      return possible;
-    }
+//   // if (current_insn_addr == 0xffffffc01062b630)
+//   //   {
+//   //     // <amba_device_try_add>:
+//   //     // ...
+//   //     // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
+//   //     gpr[3].ubits = 0;
+//   //     if (possible) raise( ShouldNotHappen() );
+//   //     return possible;
+//   //   }
 
-  if (current_insn_addr == 0xffffffc01062b630)
-    {
-      // <amba_device_try_add>:
-      // ...
-      // cbnz    x3, ffffffc01062b630 <amba_device_try_add+0xf8>
-      gpr[3].ubits = 0;
-      if (possible) raise( ShouldNotHappen() );
-      return possible;
-    }
+//   if (current_insn_addr == 0xffffffc010008cbc)
+//     {
+//       return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
+//     }
 
-  if (current_insn_addr == 0xffffffc0100886d8)
-    {
-      return (gpr[0].ubits == gpr[8].ubits) and (gpr[0].value == gpr[8].value);
-    }
+//   if (current_insn_addr == 0xffffffc0105c70c4)
+//     {
+//       return possible;
+//     }
 
-  if (current_insn_addr == 0x7faa8aebec or
-      current_insn_addr == 0x7faa8aec18)
-    {
-      return possible;
-    }
+//   // if (current_insn_addr == 0xffffffc0105c70c4)
+//   //   {
+//   //     gpr[0].ubits = 0;
+//   //     return possible;
+//   //   }
 
-  if (current_insn_addr == 0xffffffc0103177e8 or current_insn_addr == 0xffffffc0103177ec or
-      current_insn_addr == 0xffffffc0103169f0 or current_insn_addr == 0xffffffc0103169f4)
-    {
-      gpr[0].ubits = 0;
-      return possible;
-    }
+//   // static struct { uint64_t address; bool result; }
+//   // exceptions [] =
+//   //   {
+//   //    {0xff3, false}, /* has_mismatched_cache_type */
+//   //   };
 
-  // static struct { uint64_t address; bool result; }
-  // exceptions [] =
-  //   {
-  //    {0xff3, false}, /* has_mismatched_cache_type */
-  //   };
+//   // static uintptr_t idx =0;
+//   // uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
 
-  // static uintptr_t idx =0;
-  // uintptr_t const end = sizeof (exceptions) / sizeof (exceptions[0]);
+//   // if (idx < end and exceptions[idx].address == current_insn_addr)
+//   //   return exceptions[idx++].result;
 
-  // if (idx < end and exceptions[idx].address == current_insn_addr)
-  //   return exceptions[idx++].result;
+//   uninitialized_error("condition");
 
-  uninitialized_error("condition");
-
-  struct Bad {}; raise( Bad() );
-  return possible;
-}
+//   struct Bad {}; raise( Bad() );
+//   return possible;
+// }
 
 void
 AArch64::uninitialized_error( char const* rsrc )
@@ -977,11 +995,13 @@ struct AArch64::Device::Request
     struct Undefined {};
     struct _
     {
-      typedef T value_type; _(value_type& _v) : value(_v) {}
-      T& value; struct U {
-        U& operator >> (int) { return *this; } U& operator << (int) { return *this; }
-        operator uint8_t() { return 0; } U& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
-      } ubits;
+      typedef T value_type;
+      struct Ubits
+      {
+        Ubits& operator >> (int) { return *this; } Ubits& operator << (int) { return *this; }
+        operator uint8_t() { return 0; } Ubits& operator = (uint8_t u) { if (u) throw Undefined(); return *this; }
+      };
+      _(value_type& _v) : value(_v) {} T& value; Ubits ubits;
     } _(reg);
     try { return tainted_access ( _ ); } catch(Undefined const&) {}
     return false;
@@ -1176,30 +1196,59 @@ AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 }
 
 namespace {
+  //  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
+  
   struct VIOA : public VIOAccess
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
 
-    VIOAccess::Slice access(uint64_t addr, uint64_t size, bool write) const override
+    uint64_t read(uint64_t addr, unsigned size) const override
     {
-      AArch64::Page const& page = write ? core.modify_page(addr) : core.access_page(addr);
-      VIOAccess::Slice res{page.data_abs(addr), page.size_from(addr)};
-      if      (res.size > size) res.size = size;
-      else if (size > res.size) size = res.size;
-
       struct Bad {};
-      uint8_t* chunk_udat = page.udat_abs(addr);
-      if (write) { std::fill(&chunk_udat[0], &chunk_udat[res.size], 0); }
-      else if (std::any_of(&chunk_udat[0], &chunk_udat[res.size], [](uint8_t b) { return b != 0; } )) throw Bad();
-
+      uint8_t dbuf[size], ubuf[size];
+      if (core.get_page(addr).read(addr,&dbuf[0],&ubuf[0],size) != size) raise( Bad() );
+      uint64_t res = 0;
+      for (unsigned idx = size; idx-- > 0;)
+        { if (ubuf[idx]) raise( Bad() ); res = (res << 8) | dbuf[idx]; }
       return res;
     }
-
-    void flag(uint64_t addr) const override
+    
+    void write(uint64_t addr, unsigned size, uint64_t value) const override
     {
-      AArch64::Page const& page = core.modify_page(addr);
-      *page.udat_abs(addr) = 0xff;
+      struct Bad {};
+      uint8_t dbuf[size], ubuf[size];
+      for (unsigned idx = 0; idx < size; ++idx)
+        { dbuf[idx] = value & 0xff; value >>= 8; }
+      std::fill(&ubuf[0], &ubuf[size], 0);
+      if (core.get_page(addr).write(addr,&dbuf[0],&ubuf[0],size) != size)
+        throw Bad {};
     }
+  
+    struct Iterator
+    {
+      Iterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
+      AArch64::Page const* page;
+      uint64_t ptr, left, pbytes;
+      bool next(AArch64& core)
+      {
+        if (uint64_t nleft = left - pbytes)
+          { left = nleft; ptr += pbytes; }
+        else
+          return false;
+        page = &core.get_page(ptr);
+        pbytes = std::min(page->size_from(ptr), left);
+        return true;
+      }
+      uint8_t*  slice_data() const { return page->data_abs(ptr); }
+      uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
+      uintptr_t slice_size() const { return pbytes; }
+    };
+
+    // void flag(uint64_t addr) const override
+    // {
+    //   AArch64::Page const& page = core.get_page(addr);
+    //   *page.udat_abs(addr) = 0xff;
+    // }
 
     void notify() const override
     {
@@ -1209,66 +1258,129 @@ namespace {
   };
 }
 
-// void
-// AArch64::map_virtio_console(uint64_t base_addr, unsigned irq)
-// {
-//   static struct : public Device::Effect
-//   {
-//     virtual void get_name(unsigned id, std::ostream& sink) const override { sink << "Virtio Block Device (console)"; }
+void
+ArchDisk::uread(uint8_t* udat, uint64_t size)
+{
+  uint64_t pos = tell();
+  auto itr = upages.lower_bound(Page::index(pos));
 
-//     virtual bool access(AArch64& arch, Device::Request& req) const override
-//     {
-//       //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
-//       //      std::cerr << '\n';
-//       VIOConsole& vioconsole = arch.vioconsole;
-//       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
-//         return false;
+  // struct { char const* sep = "[Tainted] Disk read "; auto next() { auto r = sep; sep = " "; return r; } } sep;
+  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+    {
+      psize = std::min(Page::size_from(pos), left);
+      
+      if (itr == upages.end() or itr->base > pos)
+        std::fill(&udat[0], &udat[psize], 0);
+      else
+        {
+          // std::cerr << sep.next() << '.' << std::hex << pos;
+          itr->read(pos, psize, udat);
+          ++itr;
+        }
+    }
+  // if (*sep.sep == ' ')
+  //   std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
+}
 
-//       if (req.size == 4)
-//         {
-//           //          uint32_t tmp;
-//           switch (req.addr)
-//             {
-//             case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
-//             case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
-//             case 0x08: return req.ro<uint32_t>(3);                       /* Virtio Subsystem Device ID: block device */
-//             case 0x0c: return req.ro(vioconsole.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
-//             // case 0x10: return req.ro(vioconsole.ClaimedFeatures());         /* features supported by the device */
-//             // case 0x14: return req.wo(vioconsole.DeviceFeaturesSel);         /* Device (host) features word selection. */
-//             // case 0x20: return req.wo(tmp) and vioconsole.UsedFeatures(tmp); /* features used by the driver  */
-//             // case 0x24: return req.wo(vioconsole.DriverFeaturesSel);         /* Activated (guest) features word selection */
-//             // case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
-//             // case 0x34: return req.ro(vioconsole.QueueNumMax());             /* Maximum virtual queue size */
-//             // case 0x38: return req.wo(vioconsole.rq.size);                   /* Virtual queue size */
-//             // case 0x44: return req.access(vioconsole.rq.ready)               /* Virtual queue ready bit */
-//             //     and (not req.write or vioconsole.SetupQueue(vioa));
-//             // case 0x50: return req.wo(tmp) and vioconsole.ReadQueue(vioa);   /* Queue notifier */
-//             // case 0x60: return req.ro(vioconsole.InterruptStatus);           /* Interrupt status */
-//             // case 0x64: return req.wo(tmp) and vioconsole.InterruptAck(tmp); /* Interrupt status */
-//             // case 0x70: return req.access(vioconsole.Status)                 /* Device status */
-//             //     and (not req.write or vioconsole.CheckStatus());
-//             // case 0x80:
-//             // case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.desc_area))[req.addr >> 2 & 1]);
-//             // case 0x90:
-//             // case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&vioconsole.rq.driver_area))[req.addr >> 2 & 1]);
-//             // case 0xa0:
-//             // case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
-//             // case 0xfc: return req.ro(viodisk.ConfigGeneration);
-//             }
-//         }
+void
+ArchDisk::read(VIOAccess const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
+  for (VIOA::Iterator itr(addr, size); itr.next(core);)
+    {
+      uread(itr.slice_udat(), itr.slice_size());
+      dread(itr.slice_data(), itr.slice_size());
+    }
+}
 
-//       return false;
-//     }
+void
+ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
+{
+  uint64_t pos = tell();
+  auto itr = upages.lower_bound(Page::index(pos));
+  
+  // struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
+  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+    {
+      psize = std::min(Page::size_from(pos), left);
+      bool has_udat = std::any_of(&udat[0], &udat[psize], [](uint8_t b) { return b != 0; } );
 
-//   } virtio_console_effect;
+      if (itr == upages.end() or itr->base > pos)
+        {
+          if (not has_udat) continue;
+          // std::cerr << sep.next() << '+' << std::hex << pos;
+          itr = upages.insert(itr, pos);
+        }
+      else if (not has_udat and Page::index(psize))
+        {
+          // std::cerr << sep.next() << '-' << std::hex << pos;
+          itr = upages.erase(itr);
+          continue;
+        }
+      else
+        {
+          // std::cerr << sep.next() << '!' << std::hex << pos;
+        }
+      itr->write(pos, psize, udat);
+      ++itr;
+    }
+  // if (*sep.sep == ' ')
+  //   std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
+}
 
-//   devices.insert( Device( base_addr, base_addr + 0x1ff, &virtio_console_effect, irq) );
-// }
+void
+ArchDisk::write(VIOAccess const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
+  for (VIOA::Iterator itr(addr, size); itr.next(core);)
+    {
+      uwrite(itr.slice_udat(), itr.slice_size());
+      dwrite(itr.slice_data(), itr.slice_size());
+    }
+}
+
+VolatileDisk::~VolatileDisk()
+{
+  munmap(storage, disksize);
+}
+
+void
+VolatileDisk::open(char const* filename)
+{
+  struct Error {};
+  int fd = ::open(filename,O_RDONLY);
+  struct stat info;
+  if (fstat(fd, &info) < 0)
+    throw Error();
+  Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
+  disksize = Capacity * BLKSIZE;
+  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  ::close(fd);
+  if (not storage)
+    throw Error();
+}
+
+void
+VolatileDisk::sync(SnapShot& snapshot)
+{
+  if (snapshot.is_save())
+    std::cerr << "VolatileDisk storage lost...\n";
+  VIODisk::sync(snapshot);
+}
+
+void
+StreamDisk::open(char const* filename)
+{
+  storage.open(filename);
+  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
+  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
+  Capacity = size / BLKSIZE;
+}
 
 void
 AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 {
-  viodisk.open(filename);
+  disk.open(filename);
 
   static struct : public Device::Effect
   {
@@ -1279,7 +1391,7 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
       //      req.location(std::cerr << "<=o=>  register " << (req.write ? "write" : "read") << " @", req.addr, req.size);
       //      std::cerr << '\n';
 
-      VIODisk& viodisk = arch.viodisk;
+      VIODisk& viodisk = arch.disk;
       if ((req.addr|req.size) & (req.size-1)) /* alignment issue */
         return false;
 
@@ -1333,9 +1445,10 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
             case 0xa0:
             case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
             case 0xfc: return req.ro(viodisk.ConfigGeneration);
+              //            case 0x100: return req.ro(viodisk.Capacity);
             case 0x100:
             case 0x104: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
-              //case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
+              // case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
             case 0x10c: return req.ro(viodisk.SegMax());
             case 0x114: return req.ro(viodisk.BlkSize());
             case 0x11c: return req.ro<uint32_t>(0); // optimal (suggested maximum) I/O size in blocks
@@ -1367,10 +1480,10 @@ AArch64::map_uart(uint64_t base_addr)
       if ((req.addr & -4) == 0x0)
         {
           if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
-          char ch;
-          if (not req.write and not uart.rx_pop( ch )) { U8 x(0,-1); return req.tainted_access(x);  }
-          if (not req.access( ch )) return false;
-          if (    req.write) uart.tx_push( ch );
+          U8 chr = U8('\0');
+          if (not req.write)                 { uart.rx_pop( arch, chr );  }
+          if (not req.tainted_access( chr )) { return false; }
+          if (    req.write)                 { uart.tx_push( arch, chr ); }
           return true;
         }
 
@@ -1393,7 +1506,7 @@ AArch64::map_uart(uint64_t base_addr)
       if (req.addr == 0x44)
         {
           if (not req.write) return error(req.dev, "Cannot read Interrupt Clear Register" );
-          uint16_t icr;
+          uint16_t icr = 0;
           if (not req.access(icr)) return false;
           uart.RIS &= ~icr;
           return true;
@@ -1423,11 +1536,6 @@ AArch64::map_uart(uint64_t base_addr)
 
   devices.insert( Device( base_addr, base_addr + 0xfff, &uart_effect, 0) );
 
-  /* Start asynchronous reception loop */
-  uart.dterm.tcp_port = 1234;
-  //  uart.dterm.verbose = true;
-  uart.dterm.filter_null_character = true;
-  uart.dterm.Initialize();
   handle_uart();
 }
 
@@ -1455,25 +1563,6 @@ AArch64::handle_uart()
 // }
 
 void
-AArch64::UART::tx_push(char ch)
-{
-  tx_count += 1;
-  dterm.PutChar(ch);
-}
-
-void
-AArch64::UART::tx_pop()
-{
-  if (tx_count == 0)
-    return;
-
-  dterm.FlushOutput();
-
-  tx_count = 0; // Infinite throughput
-  RIS |= TX_INT;
-}
-
-void
 AArch64::map_gic(uint64_t base_addr)
 {
   static struct : public Device::Effect
@@ -1499,9 +1588,9 @@ AArch64::map_gic(uint64_t base_addr)
             arch.gic.ack_interrupt(int_id);
 
           U32 reg = U32(0)
-            | U32(0,0x7ffff)     << 13  // Reserved
-            | U32(0,0x7)         << 10  // CPUID
-            | U32(int_id)        <<  0; // An product identifier (linux wants 0bx..x0000)
+            | arch.PartlyDefined<uint32_t>(0,0x7ffff) << 13  // Reserved
+            | arch.PartlyDefined<uint32_t>(0,0x7)     << 10  // CPUID
+            | U32(int_id)                             <<  0; // An product identifier (linux wants 0bx..x0000)
 
           return req.tainted_access(reg);
         }
@@ -1512,9 +1601,9 @@ AArch64::map_gic(uint64_t base_addr)
           U32 reg;
           if (not req.tainted_access(reg))
             return false;
-          unsigned int_id = 0xffff;
-          { U32 field = reg & U32(0x3ff); if (field.ubits) { struct Bad {}; raise( Bad() ); }; int_id = field.value; }
-          arch.gic.eoi_interrupt(int_id);
+
+          struct GICLine {};
+          arch.gic.eoi_interrupt( arch.untaint(GICLine(), reg & U32(0x3ff)) );
           return true;
         }
 
@@ -1529,10 +1618,10 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.write) return error(req.dev, "Cannot write GICC_IIDR" );
           U32 reg = U32(0)
-            | U32(0,0xff0)       << 20  // An product identifier (linux wants 0bx..x0000)
-            | U32(2)             << 16  // Architecture version (GICv2)
-            | U32(0,0xf)         << 12  // Revision
-            | U32(0x43b)         <<  0; // The JEP106 identity and continuation code of ARM.
+            | arch.PartlyDefined<uint32_t>(0,0xff0) << 20  // An product identifier (linux wants 0bx..x0000)
+            | U32(2)                                << 16  // Architecture version (GICv2)
+            | arch.PartlyDefined<uint32_t>(0,0xf)   << 12  // Revision
+            | U32(0x43b)                            <<  0; // The JEP106 identity and continuation code of ARM.
 
           return req.tainted_access(reg);
         }
@@ -1544,12 +1633,12 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.write) return error(req.dev, "Cannot write GICD_TYPER" );
           U32 reg = U32(0)
-            | U32(0,0xffff)      << 16  // Reserved
-            | U32(0,0x1f)        << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
-            | U32(0,1)           << 10  // Indicates whether the GIC implements the Security Extensions
-            | U32(0,3)           <<  8  // Reserved
-            | U32(0)             <<  5  // Indicates the number of implemented CPU interfaces
-            | U32(arch.gic.ITLinesNumber) <<  0; // Indicates the maximum number of interrupts that the GIC supports
+            | arch.PartlyDefined<uint32_t>(0,0xffff) << 16  // Reserved
+            | arch.PartlyDefined<uint32_t>(0,0x1f)   << 11  // Maximum number of implemented lockable SPIs (Sec. Ext.)
+            | arch.PartlyDefined<uint32_t>(0,1)      << 10  // Indicates whether the GIC implements the Security Extensions
+            | arch.PartlyDefined<uint32_t>(0,3)      <<  8  // Reserved
+            | U32(0)                                 <<  5  // Indicates the number of implemented CPU interfaces
+            | U32(arch.gic.ITLinesNumber)            <<  0; // Indicates the maximum number of interrupts that the GIC supports
           return req.tainted_access(reg);
         }
 
@@ -1681,16 +1770,21 @@ AArch64::reload_next_event()
     next_event = insn_timer + 0x1000000;
 }
 
+AArch64::U64
+AArch64::RNDR()
+{
+  uint64_t rval =       (random = random * 22695477 + 1);
+  rval = (rval << 32) | (random = random * 22695477 + 1);
+  nzcv = U8(0);
+  
+  return U64(rval);
+}
+
 void
-AArch64::run()
+AArch64::run( uint64_t suspend_at )
 {
   for (;;)
     {
-      // if (insn_counter == 9463597000)
-      //   {
-      //     save_snapshot("toto.shot");
-      //     return;
-      //   }
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
@@ -1709,6 +1803,9 @@ AArch64::run()
               (this->*method)();
             }
 
+          if (insn_counter == suspend_at)
+            throw Suspend();
+          
           Operation* op = fetch_and_decode(insn_addr);
 
           this->next_insn_addr += 4;
@@ -1719,6 +1816,12 @@ AArch64::run()
               // disasm = true;
             }
 
+          if (current_insn_addr == 0x7fba767d38)
+            {
+              std::cerr << "Buggy loop entered at instruction #" << std::dec << insn_counter << " and tick #"  << insn_timer << "\n";
+              force_throw();
+            }
+
           if (terminate) { force_throw(); }
 
           if (disasm)
@@ -1726,19 +1829,14 @@ AArch64::run()
               //static std::ofstream dbgtrace("dbgtrace");
               std::ostream& sink( std::cerr );
               sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
-              op->disasm( *this, sink );
+              DisasmState ds;
+              op->disasm( ds, sink );
               sink << std::endl;
             }
 
           /* Execute instruction */
           asm volatile( "arm64_operation_execute:" );
           op->execute( *this );
-
-          // uint64_t newspval = GetGSR(31);
-
-          // if (newspval != oldspval) {
-          //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
-          // }
 
           // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
           //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
@@ -1752,6 +1850,13 @@ AArch64::run()
           /* Instruction aborted, proceed to next */
           //   if (unlikely(trap_reporting_import))
           //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+        }
+      
+      catch (Suspend const&)
+        {
+          std::cerr << "Suspend...\n";
+          save_snapshot("uvp.shot");
+          return;
         }
     }
 }
@@ -1807,12 +1912,12 @@ AArch64::PMemDump64(uint64_t paddr)
   unsigned const size = 8;
   uint8_t dbuf[size], ubuf[size];
 
-  Page const& page = access_page(paddr);
+  Page const& page = get_page(paddr);
   unsigned vsize = page.read(paddr,&dbuf[0],&ubuf[0],size);
   uintptr_t host_addr = (uintptr_t)page.data_abs(paddr);
 
-  std::cerr << "phys: " << std::hex << paddr << ", host: " << host_addr << std::dec << std::endl;
-  std::cerr << "\t0x";
+  std::cerr << "phys: " << std::hex << paddr << ", host: " << host_addr << std::dec;
+  std::cerr << "\n\t0x";
   for (unsigned byte = vsize; byte-- > 0;)
     {
       Print(std::cerr, 2, 4, dbuf[byte], ubuf[byte] );
@@ -1821,7 +1926,7 @@ AArch64::PMemDump64(uint64_t paddr)
       //   std::cerr << ((ubyte >> 4*nibble & 15) ? 'x' : "0123456789abcdef"[dbyte >> 4*nibble & 15]);
     }
 
-  std::cerr << "\t0b";
+  std::cerr << "\n\t0b";
   for (unsigned byte = vsize; byte-- > 0;)
     {
       Print(std::cerr, 8, 1, dbuf[byte], ubuf[byte]);
@@ -1829,23 +1934,25 @@ AArch64::PMemDump64(uint64_t paddr)
       // for (unsigned bit = 8; bit-- > 0;)
       //   std::cerr << "01xx"[2*(ubyte >> bit & 1) | (dbyte >> bit & 1)];
     }
-  std::cerr << "\t\"";
+  std::cerr << "\n\t" << '"';
   for (unsigned byte = 0; byte < vsize; ++byte)
     {
       uint8_t dbyte = dbuf[byte], ubyte = ubuf[byte];
       std::cerr << (ubyte or dbyte < 32 or dbyte > 126 ? '.' : char(dbyte));
     }
-  std::cerr << "\"\n";
+  std::cerr << '"';
+  std::cerr << std::endl;
 }
 
 void
 AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
 {
   struct Bad {};
-  if (addr.ubits) raise( Bad() );
-  if ((size | addr.value) & (size - 1)) raise( Bad() );
+
+  uint64_t va = untaint(AddrTV(), addr);
+  if ((size | va) & (size - 1)) raise( Bad() );
   /* TODO: should be an Alignment-related DataAbort */
-  MMU::TLB::Entry entry(addr.value);
+  MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::read);
   // By design, access cannot cross mmu page boundaries
   excmon.set(entry.pa, size);
@@ -1855,9 +1962,10 @@ bool
 AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
 {
   struct Bad {};
-  if (addr.ubits) raise( Bad() );
-  if ((size | addr.value) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
-  MMU::TLB::Entry entry(addr.value);
+
+  uint64_t va = untaint(AddrTV(), addr);
+  if ((size | va) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
+  MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::write);
   // By design, access cannot cross mmu page boundaries
   bool passed = excmon.pass( entry.pa, size );
@@ -1930,7 +2038,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
   bool perm_w = (ap & 6) == 2;
   bool perm_x = not ((perm_w and wxn) or (el ? trans.pxn or (trans.ap & 6) == 2 : trans.xn));
 
-  bool fail;
+  bool fail = true;
   switch (mat)
     {
     case mem_acc_type::read:               fail = not perm_r; break;
@@ -1938,6 +2046,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     case mem_acc_type::write:              fail = not perm_w; break;
     case mem_acc_type::exec:               fail = not perm_x; break;
     case mem_acc_type::debug:              fail = false; break;
+    default: throw 0;
     }
 
   if (fail)
@@ -1945,8 +2054,11 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 
-AArch64::UART::UART()
-  : dterm(), rx_value('\0'), rx_valid(false), tx_count()
+AArch64::UART::UART(char const* name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::CharIO>(name,parent)
+  , char_io_import("char-io-import",this)
+  , rx_value('\0'), rx_valid(false), tx_count()
   , IBRD(0), FBRD(0), LCR(0), CR(0x0300), IFLS(0x12), IMSC(0), RIS(0)
 {
 }
@@ -1954,20 +2066,41 @@ AArch64::UART::UART()
 bool
 AArch64::UART::rx_push()
 {
-  rx_valid |= dterm.GetChar(rx_value);
+  if (not rx_valid) rx_valid = char_io_import->GetChar(rx_value);
   if (rx_valid) RIS |= RX_INT;
   return rx_valid;
 }
 
-bool
-AArch64::UART::rx_pop(char& ch)
+void
+AArch64::UART::rx_pop(AArch64& arch, AArch64::U8& chr)
 {
-  if (not rx_push())
-    return false;
-  ch = rx_value;
-  rx_valid = false;
-  RIS &= ~RX_INT;
-  return true;
+  if (rx_push())
+    {
+      chr = U8(rx_value);
+      rx_valid = false;
+      RIS &= ~RX_INT;
+    }
+  else
+    chr = arch.PartlyDefined<uint8_t>(0,-1);
+}
+
+void
+AArch64::UART::tx_push(AArch64& arch, U8 chr)
+{
+  tx_count += 1;
+  char_io_import->PutChar(arch.untaint(SerialTV(), chr));
+}
+
+void
+AArch64::UART::tx_pop()
+{
+  if (tx_count == 0)
+    return;
+
+  char_io_import->FlushChars();
+
+  tx_count = 0; // Infinite throughput
+  RIS |= TX_INT;
 }
 
 // AArch64::NELock::NELock(AArch64& a)
@@ -2004,6 +2137,15 @@ AArch64::notify( uint64_t delay, event_handler_t method )
   reload_next_event();
 }
 
+void
+AArch64::silence( event_handler_t method )
+{
+  for (auto itr = next_events.begin(), end = next_events.begin(); itr != end;)
+    {
+      itr = itr->second == method ? next_events.erase(itr) : std::next( itr );
+    }
+}
+
 uint16_t
 AArch64::UART::flags() const
 {
@@ -2014,11 +2156,22 @@ AArch64::UART::flags() const
 }
 
 void
+AArch64::handle_suspend()
+{
+  if (suspend)
+    throw Suspend();
+
+  notify( 0x800000, &AArch64::handle_suspend );
+}
+
+void
 AArch64::save_snapshot( char const* filename )
 {
   std::unique_ptr<SnapShot> snapshot = SnapShot::gzsave(filename);
 
   sync( *snapshot );
+
+  std::cerr << "tfpcount: " << tfpcount << std::endl;
 }
 
 void
@@ -2056,13 +2209,6 @@ AArch64::Page::sync(SnapShot& snapshot)
     }
   snapshot.sync(data, size());
   snapshot.sync(udat, size());
-}
-
-void
-AArch64::Page::save(SnapShot& snapshot) const
-{
-  if (snapshot.is_load()) throw 0;
-  const_cast<AArch64::Page*>(this)->sync(snapshot);
 }
 
 void
@@ -2110,10 +2256,10 @@ AArch64::GIC::sync(SnapShot& snapshot)
 AArch64::U8
 AArch64::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value)
 {
-  struct Bad {};
-  if (index.ubits) raise( Bad() );
-  unsigned e = index.value % elements, r = index.value / elements;
-  return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
+  unsigned idx = untaint(TVU8TV(), index), e = idx % elements, r = idx / elements;
+  U8 res = (r < regs ? GetVU8((reg0+r)%32, e) : oob_value);
+  if (index.ubits) res.ubits = -1;
+  return res;
 }
 
 void
@@ -2136,40 +2282,50 @@ void
 AArch64::sync(SnapShot& snapshot)
 {
   //  NELock nel(*this);
+  {
+    std::array<event_handler_t,6> methods =
+      {
+        &AArch64::wfi,
+        &AArch64::handle_irqs,
+        &AArch64::handle_vtimer,
+        &AArch64::handle_rtc,
+        &AArch64::handle_uart,
+        &AArch64::handle_suspend,
+      };
 
-  for (auto evt = next_events.begin();;++evt)
-    {
-      uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
-      snapshot.sync(date);
-      if (not date) break;
-      std::array<event_handler_t,5> methods = {&AArch64::wfi, &AArch64::handle_rtc, &AArch64::handle_uart,
-                                               &AArch64::handle_vtimer, &AArch64::handle_irqs};
-      if (snapshot.is_load())
-        {
-          int mid; snapshot.sync(mid);
-          evt = next_events.emplace_hint( evt, std::piecewise_construct,
-                                    std::forward_as_tuple( date ), std::forward_as_tuple( methods[mid] ));
-        }
-      else
-        {
-          auto itr = std::find(methods.begin(), methods.end(), evt->second);
-          if (itr == methods.end()) { struct Bad{}; raise( Bad() ); }
-          int mid = itr - methods.begin();
-          snapshot.sync(mid);
-        }
-    }
+    for (auto evt = next_events.begin();; ++evt)
+      {
+        uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
+        snapshot.sync(date);
+        if (not date) break;
+      
+        if (snapshot.is_load())
+          {
+            int mid; snapshot.sync(mid);
+            evt = next_events.emplace_hint( evt, std::piecewise_construct,
+                                            std::forward_as_tuple( date ), std::forward_as_tuple( methods[mid] ));
+          }
+        else
+          {
+            auto itr = std::find(methods.begin(), methods.end(), evt->second);
+            if (itr == methods.end()) { struct Bad{}; raise( Bad() ); }
+            int mid = itr - methods.begin();
+            snapshot.sync(mid);
+          }
+      }
+  }
 
   gic.sync(snapshot);
   uart.sync(snapshot);
   vt.sync(snapshot);
   rtc.sync(snapshot);
-  viodisk.sync(snapshot);
+  disk.sync(snapshot);
 
   if (snapshot.is_save())
     {
       snapshot.save(pages.size());
-      for (auto const& pg : pages)
-        pg.save(snapshot);
+      for (auto& pg : pages)
+        const_cast<Page&>(pg).sync(snapshot);
     }
   else
     {
@@ -2215,3 +2371,11 @@ AArch64::sync(SnapShot& snapshot)
   snapshot.sync(CPACR);
   snapshot.sync(random);
 }
+
+// std::ofstream&
+// AArch64::ptlog()
+// {
+//   static std::ofstream sink("ptlog");
+//   return sink;
+// }
+

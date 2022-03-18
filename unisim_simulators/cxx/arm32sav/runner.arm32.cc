@@ -46,7 +46,7 @@ Runner::Arm32::~Arm32()
 Runner::Arm32::Operation*
 Runner::Arm32::decode(uint32_t addr, uint32_t code)
 {
-  try { return Decode(addr,code); }
+  try { return NCDecode(addr,code); }
   catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("undefined"); }
   return 0;
 }

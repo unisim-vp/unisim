@@ -112,12 +112,13 @@ namespace sav {
   struct OperandMap
   {
     typedef Operand<T> Op;
+    struct Ouch {};
 
     OperandMap() : omap(), allocated() {}
 
     T touch(unsigned idx, bool w)
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       Operand<T>& op = omap[idx];
       if (op.access(w))
         return op.get_index();
@@ -126,19 +127,19 @@ namespace sav {
 
     bool modified(unsigned idx) const
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       return omap[idx].is_modified();
     }
 
     bool accessed(unsigned idx) const
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       return omap[idx].is_accessed();
     }
 
     T index(unsigned idx) const
     {
-      if (idx >= COUNT) throw "ouch";
+      if (idx >= COUNT) throw Ouch();
       return omap[idx].get_index();
     }
 
@@ -208,6 +209,71 @@ namespace sav {
       return value;
     }
   };
+
+  template <unsigned SUBCOUNT, class OP>
+  struct WeirdOpBase : public unisim::util::symbolic::ExprNode
+  {
+    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef WeirdOpBase<SUBCOUNT,OP> this_type;
+    WeirdOpBase( OP && _op ) : op(_op) {}
+    virtual void Repr(std::ostream& sink) const override
+    {
+      sink << "WeirdOp<" << ScalarType(GetType()).name << "," << SUBCOUNT << "," << op << ">( ";
+      char const* sep = "";
+      for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
+        sink << sep << subs[idx];
+      sink << " )";
+    }
+    virtual unsigned SubCount() const override { return SUBCOUNT; }
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx >= SUBCOUNT) return ExprNode::GetSub(idx); return subs[idx]; }
+    virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<WeirdOpBase const&>( brhs )); }
+    int compare( this_type const& rhs ) const { return strcmp( op, rhs.op ); }
+
+    OP op;
+    Expr subs[SUBCOUNT];
+  };
+
+  template <class T, unsigned SUBCOUNT, class OP>
+  struct WeirdOp : public WeirdOpBase<SUBCOUNT,OP>
+  {
+    typedef WeirdOpBase<SUBCOUNT,OP> base_type;
+    typedef WeirdOp<T,SUBCOUNT,OP>   this_type;
+
+    WeirdOp( OP && name ) : base_type(std::move(name)) {}
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual typename base_type::ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType(); }
+  };
+
+  template <class OUT, class OP, class T1>
+  unisim::util::symbolic::Expr
+  make_weirdop( OP && op, T1 const& op1 )
+  {
+    auto x = new WeirdOp<OUT,1,OP>(std::move(op));
+    x->subs[0] = op1.expr;
+    return x;
+  }
+
+  template <class OUT, class OP, class T1, class T2>
+  unisim::util::symbolic::Expr
+  make_weirdop( OP && op, T1 const& op1, T2 const& op2 )
+  {
+    auto x = new WeirdOp<OUT,2,OP>(std::move(op));
+    x->subs[0] = op1.expr;
+    x->subs[1] = op2.expr;
+    return x;
+  }
+
+  template <class OUT, class OP, class T1, class T2, class T3>
+  unisim::util::symbolic::Expr
+  make_weirdop( OP && op, T1 const& op1, T2 const& op2, T3 const& op3 )
+  {
+    auto x = new WeirdOp<OUT,3,OP>(std::move(op));
+    x->subs[0] = op1.expr;
+    x->subs[1] = op2.expr;
+    x->subs[2] = op3.expr;
+    return x;
+  }
 
   struct TestbedBase
   {

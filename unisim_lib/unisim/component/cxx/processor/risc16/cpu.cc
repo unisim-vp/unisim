@@ -36,6 +36,7 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/component/cxx/processor/risc16/cpu.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <sstream>
 
 namespace unisim {
@@ -46,7 +47,7 @@ namespace risc16 {
 
 CPU::CPU(const char *name, Object *_parent)
 	: Object(name, _parent, "16-bit RISC processor for teaching")
-	, Decoder()
+	, opcache::OpCache<Decoder>()
 	, unisim::kernel::Service<MemoryAccessReportingControl>(name, _parent)
 	, unisim::kernel::Service<Memory<uint64_t> > (name, _parent)
 	, unisim::kernel::Service<Disassembly<uint64_t> >(name, _parent)
@@ -70,9 +71,6 @@ CPU::CPU(const char *name, Object *_parent)
 	, requires_commit_instruction_reporting(false)
 	, logger(*this)
 {
-	disasm_export.SetupDependsOn(memory_import);
-	memory_export.SetupDependsOn(memory_import);
-	
 	Reset();
 	
 	for (unsigned int i= 0; i < 16; i++)
@@ -166,11 +164,6 @@ bool CPU::BeginSetup()
 	return true;
 }
 
-bool CPU::Setup(ServiceExportBase *srv_export)
-{
-	return true;
-}
-
 bool CPU::EndSetup()
 {
 	return true;
@@ -256,3 +249,6 @@ CPU::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+//template class unisim::component::cxx::processor::opcache::OpCache<unisim::component::cxx::processor::risc16::Decoder>;
+

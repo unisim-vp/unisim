@@ -704,7 +704,8 @@ void PWM<PWM_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& del
 	//=====================================================================
 
 template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::BeginSetup() {
+bool PWM<PWM_SIZE>::BeginSetup()
+{
 
 
 	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PWME", &pwme_register));
@@ -830,19 +831,6 @@ bool PWM<PWM_SIZE>::BeginSetup() {
 	return (true);
 
 }
-
-template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::Setup(ServiceExportBase *srv_export) {
-
-	return (true);
-}
-
-template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::EndSetup() {
-
-	return (true);
-}
-
 
 /**
  * Gets a register interface to the register specified by name.

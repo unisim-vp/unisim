@@ -218,10 +218,13 @@ struct Arch
     //     regmap[regname.str()] = new X87Register( regname.str(), *this, idx );
     //   }
   }
+  
   ~Arch()
   {
     for (auto reg : regmap)
       delete reg.second;
+    for (unsigned reg = 0; reg < 16; ++reg)
+      umms[reg].Clear(&vmm_storage[reg][0]);
   }
   
   void SetLinuxOS( unisim::service::interfaces::LinuxOS* _linux_os ) { linux_os = _linux_os; }

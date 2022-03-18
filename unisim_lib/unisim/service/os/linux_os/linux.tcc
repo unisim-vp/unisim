@@ -157,16 +157,16 @@ Linux(const char *name, unisim::kernel::Object *parent)
                             "The network node hostname that the uname system"
                             " call should return. Default value is localhost,"
                             " but you could write whatever name you want.")
-  , utsname_release_("2.6.27.35")
+  , utsname_release_("5.10.46")
   , param_utsname_release_("utsname-release", this, utsname_release_,
                            "The kernel realese information that the uname"
                            " system call should return. This should usually"
                            " match the linux-kernel parameter.")
-  , utsname_version_("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010")
+  , utsname_version_("#UNISIM SMP Thu Jun 24 14:33:54 UTC 2021")
   , param_utsname_version_("utsname-version", this, utsname_version_,
                            "The kernel version information that the uname"
                            " system call should return.")
-  , utsname_machine_("armv5")
+  , utsname_machine_("noarch")
   , param_utsname_machine_("utsname-machine", this, utsname_machine_,
                            "The machine information that the uname system"
                            " call should  return. This should be one of the"
@@ -183,33 +183,29 @@ Linux(const char *name, unisim::kernel::Object *parent)
 {
   param_argc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   param_envc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
-  
-  linux_os_export_.SetupDependsOn(memory_import_);
-  linux_os_export_.SetupDependsOn(registers_import_);
 
-  for (unsigned int i = 0; i < argc_; i++) {
-    std::stringstream argv_name, argv_desc, argv_val;
-    argv_name << "argv[" << i << "]";
-    argv_desc << "The '" << i << "' token in the command line.";
-    argv_val << "Undefined argv[" << i << "] value";
-    argv_[i] = argv_val.str();
-    param_argv_.push_back(
-        new unisim::kernel::variable::Parameter<std::string>(
-            argv_name.str().c_str(), this, argv_[i],
-            argv_desc.str().c_str()));
-  }
+  typedef unisim::kernel::variable::Parameter<std::string> parameter_type;
+  for (unsigned int i = 0; i < argc_; i++)
+    {
+      std::stringstream argv_name, argv_desc, argv_val;
+      argv_name << "argv[" << i << "]";
+      argv_desc << "The '" << i << "' token in the command line.";
+      argv_val << "Undefined argv[" << i << "] value";
+      argv_[i] = argv_val.str();
+      auto param = new parameter_type(argv_name.str().c_str(), this, argv_[i], argv_desc.str().c_str());
+      param_argv_.push_back(param);
+    }
   
-  for (unsigned int i = 0; i < envc_; i++) {
-    std::stringstream envp_name, envp_desc, envp_val;
-    envp_name << "envp[" << i << "]";
-    envp_desc << "The '" << i << "' token in the environment.";
-    envp_val << "Undefined envp[" << i << "] value";
-    envp_.push_back(envp_val.str());
-    param_envp_.push_back(
-        new unisim::kernel::variable::Parameter<std::string>(
-            envp_name.str().c_str(), this, envp_[i],
-            envp_desc.str().c_str()));
-  }
+  for (unsigned int i = 0; i < envc_; i++)
+    {
+      std::stringstream envp_name, envp_desc, envp_val;
+      envp_name << "envp[" << i << "]";
+      envp_desc << "The '" << i << "' token in the environment.";
+      envp_val << "Undefined envp[" << i << "] value";
+      envp_.push_back(envp_val.str());
+      auto param = new parameter_type(envp_name.str().c_str(), this, envp_[i], envp_desc.str().c_str());
+      param_envp_.push_back(param);
+    }
 }
 
 /** Destructor. */
@@ -218,23 +214,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
   delete linuxlib_;
 
-  typename std::vector<unisim::kernel::variable::Parameter<std::string> *>::iterator param_argv_it;
-  for(param_argv_it = param_argv_.begin(); param_argv_it != param_argv_.end(); param_argv_it++) {
-    delete *param_argv_it;
-  }
-  typename std::vector<unisim::kernel::variable::Parameter<std::string> *>::iterator param_envp_it;
-  for(param_envp_it = param_envp_.begin(); param_envp_it != param_envp_.end(); param_envp_it++) {
-    delete *param_envp_it;
-  }
+  for (auto param_argv_ptr : param_argv_)
+    delete param_argv_ptr;
+  
+  for (auto param_envp_ptr : param_envp_)
+    delete param_envp_ptr;
 }
 
-/** Method to execute when the Linux is disconnected from its client. */
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect()
-{
-  // NOTHING ?
-}
-
+/** Setup os emulator implementaion, apply external parameters */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 {
@@ -336,27 +323,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
   // setup target specific implementation
   
   this->SetupTargetSystem();
-  
-  // {
-  //   if      ((system_.compare("arm") == 0) or (system_.compare("arm-eabi") == 0))
-  //     {
-  //       target_system_ = new unisim::util::os::linux_os::ARMTS<linux_type>( system_, *linuxlib_ );
-  //     }
-  //   else if (system_.compare("ppc") == 0)
-  //     {
-  //       target_system_ = new unisim::util::os::linux_os::PPCTS<linux_type>( *linuxlib_ );
-  //     }
-  //   else if (system_.compare("i386") == 0)
-  //     {
-  //       target_system_ = new unisim::util::os::linux_os::I386TS<linux_type>( *linuxlib_ );
-  //     }
-  //   else {
-  //     logger_ << DebugError
-  //             << "System type not supported (\"" << system_ << "\")."
-  //             << EndDebugError;
-  //     return false;
-  //   }
-  // }
 
   // set the endianness of the target simulator
   linuxlib_->SetEndianness(endianness_);
@@ -389,44 +355,35 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
   return true;
 }
 
+
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(
-    unisim::kernel::ServiceExportBase *srv_export) {
-  if ( srv_export == &linux_os_export_ ) {
-    if (!linuxlib_->SetupTarget()) {
-      logger_ << DebugError << "Could not setup the linux system"
-          << EndDebugError;
-      return false;
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(unisim::service::interfaces::LinuxOS*)
+{
+  if (memory_import_)
+    memory_import_.RequireSetup();
+  if (registers_import_)
+    registers_import_.RequireSetup();
+
+  if (!linuxlib_->SetupTarget())
+    {
+      logger_ << DebugError << "Could not setup the linux system" << EndDebugError;
+      throw unisim::kernel::ServiceAgent::SetupError();
     }
-    return true;
-  }
-
-  if ( srv_export == &blob_export_ ) {
-    // already setup in BeginSetup
-    return true;
-  }
-
-  logger_ << DebugError << "Internal error" << EndDebugError;
-
-  return false;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::EndSetup() {
-  return true;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id)
+{
   bool terminated = false;
   int return_status = 0;
-  //linuxlib_->LogSystemCall(id);
+  //  linuxlib_->LogSystemCall(id);
   linuxlib_->ExecuteSystemCall(id, terminated, return_status);
   if(terminated) Object::Stop(return_status);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const unisim::util::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const {
+const unisim::util::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const
+{
   return linuxlib_->GetBlob();
 }
 

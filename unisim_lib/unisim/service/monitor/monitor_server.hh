@@ -9,7 +9,6 @@
 #include <unisim/service/interfaces/monitor_if.hh>
 
 using unisim::kernel::Object;
-using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::Monitor_if;
 
 namespace unisim {
@@ -27,11 +26,6 @@ private:
 public:
 
 	virtual ~MonitorServer();
-
-	virtual void OnDisconnect();
-	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *service_export);
-	virtual bool EndSetup();
 
 	static MonitorServer* getInstance(Object *parent);
 	static void releaseInstance();

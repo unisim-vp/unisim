@@ -1198,6 +1198,8 @@ void WebTerminal::PutChar(char c)
 	switch(state)
 	{
 		case 1:
+			// Default behavior is to exit Escaped mode after the input character
+			state = 0;
 			if(c == '[')
 			{
 				// got Control Sequence Introducer (CSI)
@@ -1227,14 +1229,14 @@ void WebTerminal::PutChar(char c)
 				break;
 			}
 			
-			if(c == '6')
+			if(c == '7')
 			{
 				str.clear();
 				curr_screen_buffer->SaveCursorPosition();
 				break;
 			}
 			
-			if(c == '7')
+			if(c == '8')
 			{
 				str.clear();
 				curr_screen_buffer->RestoreCursorPosition();
@@ -1242,9 +1244,9 @@ void WebTerminal::PutChar(char c)
 			}
 			
 			// ignore previous ESC, process character as usual
+			logger << DebugWarning << "Unknown ANSI escape code '" << c << "'" << EndDebugWarning;
 			curr_screen_buffer->PutString(str);
 			str.clear();
-			state = 0;
 			break;
 			
 		case 0:

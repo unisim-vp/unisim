@@ -167,7 +167,7 @@ fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && autoheader && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && autoheader && automake -ac && rm -rf autom4te.cache"
 fi
 
 echo "Distribution is up-to-date"

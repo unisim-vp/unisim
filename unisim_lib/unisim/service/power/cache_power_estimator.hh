@@ -59,7 +59,6 @@ using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::ParameterArray;
@@ -83,7 +82,6 @@ public:
  	virtual ~CachePowerEstimator();
 
  	virtual bool BeginSetup();
- 	virtual bool Setup(ServiceExportBase *srv_export);
 
 	// Cache power estimator interface
 	virtual void ReportReadAccess();
@@ -154,7 +152,9 @@ private:
 	/* total results */
 	Cacti4_2 *cacti;
 	
-	bool SetupCacti();
+	virtual void Setup(unisim::service::interfaces::CachePowerEstimator*) override { SetupCacti(); }
+	virtual void Setup(unisim::service::interfaces::PowerMode*) override { SetupCacti(); }
+	void SetupCacti();
 };
 
 } // end of namespace power

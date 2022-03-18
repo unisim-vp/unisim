@@ -54,7 +54,6 @@ using unisim::kernel::variable::Statistic;
 using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::Memory;
 
 template <class CONFIG>

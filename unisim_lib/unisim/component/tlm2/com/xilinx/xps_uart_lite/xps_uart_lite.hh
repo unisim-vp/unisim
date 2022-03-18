@@ -55,7 +55,6 @@ using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::tlm2::Schedule;
 using unisim::component::tlm2::interrupt::InterruptPayload;

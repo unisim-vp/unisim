@@ -37,6 +37,7 @@
 #include <iomanip>
 #include <ostream>
 #include <cmath>
+#include <ieee754.h>
 
 void
 Runner::step_instruction()
@@ -47,7 +48,7 @@ Runner::step_instruction()
   uint32_t code = MemRead32(insn_addr);
     
   asm volatile ("operation_decode:");
-  Operation* op = decode(insn_addr, code);
+  std::unique_ptr<Operation> op = decode(insn_addr, code);
     
   this->next_insn_addr += 4;
     
@@ -104,4 +105,27 @@ Runner::GetSystemRegister(int op0, int op1, int crn, int crm, int op2)
   else
     dont("system");
   return 0;
+}
+
+Runner::U8
+Runner::GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 index, U8 oob_value)
+{
+  unsigned e = index % elements, r = index / elements;
+  return r < regs ? GetVU8((reg0+r)%32, e) : oob_value;
+}
+
+float clearsignaling( float value )
+{
+  ieee754_float u;
+  u.f = value;
+  u.ieee_nan.quiet_nan = 1;
+  return u.f;
+}
+
+double clearsignaling( double value )
+{
+  ieee754_double u;
+  u.d = value;
+  u.ieee_nan.quiet_nan = 1;
+  return u.d;
 }

@@ -10,3 +10,4 @@ unisim/util/os/linux_os/linux.hh
 unisim/util/os/linux_os/mips.hh
 unisim/util/os/linux_os/powerpc64.hh
 unisim/util/os/linux_os/ppc.hh
+unisim/util/os/linux_os/riscv.hh

@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <ostream>
 #include <sstream>
@@ -92,7 +92,7 @@ namespace binsec {
       unsigned subc;
       bool diff;
     } simplified(ixpr.node,&subs[0],subcount);
-    
+
     if (ConstNodeBase const* node = simplified.e->AsConstNode())
       {
         switch (node->GetType())
@@ -129,7 +129,7 @@ namespace binsec {
                       case Op::Asr: rshift = sh; sxtend = true; break;
                       default:  { struct Bad {}; throw Bad(); }
                       }
-                    
+
                     BitFilter bf( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
                     bf.Retain(); // Prevent deletion of this stack-allocated object
                     Expr res( bf.Simplify() );
@@ -138,8 +138,8 @@ namespace binsec {
 
               }
             break;
-            
-            
+
+
           case Op::And:
             if (subcount == 2)
               {
@@ -186,7 +186,7 @@ namespace binsec {
       {
         return dynamic_cast<ASExprNode const*>( simplified.base() )->Simplify();
       }
-    
+
     return simplified.base();
   }
 
@@ -199,7 +199,7 @@ namespace binsec {
       {
         return static_cast<ASExprNode const*>( itr->second.node ) ->GenCode( label, vars, sink );
       }
-    
+
     /*** Sub expression process ***/
     if (ConstNodeBase const* node = expr.Eval(EvalSpace()))
       {
@@ -227,28 +227,31 @@ namespace binsec {
             switch (node->op.code)
               {
               default:                sink << " [" << node->op.c_str() << "] "; break;
-            
+
               case Op::Add:     sink << " + "; break;
               case Op::Sub:     sink << " - "; break;
               case Op::Mul:     sink << " * "; break;
-              case Op::Mod:     sink << " modu "; break;
-        
+              case Op::Mod:     sink << " mods "; break;
+              case Op::Modu:     sink << " modu "; break;
+              case Op::Div:     sink << " /s "; break;
+              case Op::Divu:     sink << " /u "; break;
+
               case Op::Xor:     sink << " xor "; break;
               case Op::Or:      sink << " or "; break;
               case Op::And:     sink << " and "; break;
-        
+
               case Op::Teq:     sink << " = "; retsz = 1; break;
               case Op::Tne:     sink << " <> "; retsz = 1; break;
-        
+
               case Op::Tle:     sink << " <=s "; retsz = 1; break;
               case Op::Tleu:    sink << " <=u "; retsz = 1; break;
-        
+
               case Op::Tge:     sink << " >=s "; retsz = 1; break;
               case Op::Tgeu:    sink << " >=u "; retsz = 1; break;
-        
+
               case Op::Tlt:     sink << " <s "; retsz = 1; break;
               case Op::Tltu:    sink << " <u "; retsz = 1; break;
-        
+
               case Op::Tgt:     sink << " >s "; retsz = 1; break;
               case Op::Tgtu:    sink << " >u "; retsz = 1; break;
 
@@ -259,71 +262,71 @@ namespace binsec {
                     if (s==16) return Simplify( U16(x).expr );
                     if (s==32) return Simplify( U32(x).expr );
                     if (s==64) return Simplify( U64(x).expr );
-                    
+
                     return x.expr;
                   }
                 } fixsh;
-                
+
               case Op::Lsl:     sink << " lshift ";  rhs = fixsh( rhs, retsz ); break;
               case Op::Asr:     sink << " rshifts "; rhs = fixsh( rhs, retsz ); break;
               case Op::Lsr:     sink << " rshiftu "; rhs = fixsh( rhs, retsz ); break;
               case Op::Ror:     sink << " rrotate "; rhs = fixsh( rhs, retsz ); break;
-                 
+
                 // case Op::Div: break;
               }
 
             sink << GetCode( rhs, vars, label ) << ')';
             return retsz;
           }
-            
+
           case 1: {
             char const* operation = 0;
-        
+
             switch (node->op.code)
               {
               default:              operation = node->op.c_str(); break;
-        
+
               case Op::Not:    operation = "not "; break;
               case Op::Neg:    operation = "- "; break;
-        
+
                 // case Op::BSwp:  break;
               case Op::BSF:
                 {
                   unsigned bitsize = ScalarType(node->GetType()).bitsize;
                   Label head(label);
                   int exit = label.allocate(), loop;
-                  
+
                   std::ostringstream buffer;
                   buffer << "bsf_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head) << " ; goto <next>";
                   head.write( buffer.str() );
-                  
+
                   buffer = std::ostringstream();
                   buffer << "bsf_out<" << bitsize << "> := 0<" << bitsize << "> ; goto <next>";
                   head.write( buffer.str() );
-                  
+
                   buffer = std::ostringstream();
                   buffer << "if (bsf_in<" << bitsize << "> = 0<" << bitsize << ">) goto " << exit << " else goto <next>";
                   head.write( buffer.str() );
-                  
+
                   buffer = std::ostringstream();
                   buffer << "if ((bsf_in<" << bitsize << "> rshiftu bsf_out<" << bitsize << ">){0,0}) goto " << exit << " else goto <next>";
                   loop = head.write( buffer.str() );
-                  
+
                   buffer = std::ostringstream();
                   buffer << "bsf_out<" << bitsize << "> := bsf_out<" << bitsize << "> + 1<" << bitsize << "> ; goto " << loop;
                   head.write( buffer.str()  );
 
                   sink << "bsf_out<" << bitsize << ">";
-            
+
                   return bitsize;
                 }
-                
+
               case Op::BSR:
                 {
                   unsigned bitsize = ScalarType(node->GetType()).bitsize;
                   Label head(label);
                   int exit = label.allocate(), loop;
-                  
+
                   std::ostringstream buffer;
                   buffer << "bsr_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head) << " ; goto <next>";
                   head.write( buffer.str() );
@@ -339,26 +342,26 @@ namespace binsec {
                   buffer = std::ostringstream();
                   buffer << "bsr_out<" << bitsize << "> := bsr_out<" << bitsize << "> - 1<" << bitsize << "> ; goto <next>";
                   loop = head.write( buffer.str()  );
-                  
+
                   buffer = std::ostringstream();
                   buffer << "if ((bsr_in<" << bitsize << "> rshiftu bsr_out<" << bitsize << ">){0,0}) goto " << exit << " else goto " << loop;
                   head.write( buffer.str() );
-      
+
                   sink << "bsr_out<" << bitsize << ">";
-      
+
                   return bitsize;
                 }
               case Op::Cast:
                 {
                   CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
                   ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
-                  
+
                   if (dst.is_integer and src.is_integer)
                     {
                       /* At this point, only boolean casts should remain */
                       if ((src.bitsize <= 1) or (dst.bitsize != 1))
                         throw std::logic_error("Unexpected cast");
-                      
+
                       sink << "(" << GetCode(cnb.src, vars, label) << " <> " << dbx(src.bitsize/8,0) << ")";
                     }
                   else
@@ -366,11 +369,11 @@ namespace binsec {
                       /* TODO: What to do with FP casts ? */
                       sink << dst.name << "( " << GetCode(cnb.src, vars, label) << " )";
                     }
-      
+
                   return dst.bitsize;
                 }
               }
-    
+
             sink << '(' << operation << ' ';
             int retsz = GenerateCode( node->GetSub(0), vars, label, sink );
             sink << ')';
@@ -384,7 +387,7 @@ namespace binsec {
       {
         return node->GenCode( label, vars, sink );
       }
-      
+
     throw std::logic_error("No GenCode method");
     return 0;
   }
@@ -406,32 +409,32 @@ namespace binsec {
         Expr res( bf.Simplify() );
         return (res.node == &bf) ? new BitFilter( bf ) : res.node;
       }
-    
+
     if (BitFilter const* bf = dynamic_cast<BitFilter const*>( input.node ))
       {
         struct Bad {};
-        
+
         if (source != bf->extend)
           throw Bad ();
 
         if (rshift >= bf->select) // TODO: maybe this can be optimized
           return this;
-        
+
         unsigned new_rshift = bf->rshift + rshift;
 
         if ((rshift + select) <= bf->select)
           return new BitFilter( bf->input, bf->source, new_rshift, select, extend, sxtend );
-        
+
         // (rshift + select) > bf->select
         if (not sxtend and bf->sxtend)
           return this;
-        
+
         return new BitFilter( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend );
       }
 
     return this;
   }
-  
+
   int
   BitFilter::compare( BitFilter const& rhs ) const
   {
@@ -441,7 +444,7 @@ namespace binsec {
     if (int delta = int(extend) - int(rhs.extend)) return delta;
     return int(sxtend) - int(rhs.sxtend);
   }
-  
+
   ConstNodeBase const*
   BitFilter::Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const
   {
@@ -455,12 +458,12 @@ namespace binsec {
     if (extend == 16) return new ConstNode<uint16_t>( value );
     if (extend ==  8) return new ConstNode<uint8_t>( value );
     if (extend ==  1) return new ConstNode<bool>( value );
-    
+
     struct Bad {};
     throw Bad ();
     return 0;
   }
-  
+
   int
   BitFilter::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
@@ -487,15 +490,15 @@ namespace binsec {
 
     int chksize = ASExprNode::GenerateCode( input, vars, label, sink );
     if (chksize != source) throw 0;
-    
+
     if (selection)
       sink << " {" << (rshift) << "," << (rshift+select-1) << "})";
     if (extension)
       sink << ' ' << extend << ')';
-    
+
     return extend;
   }
-  
+
   void
   BitFilter::Repr( std::ostream& sink ) const
   {
@@ -507,7 +510,7 @@ namespace binsec {
          << ", " << (sxtend ? "signed" : "unsigned")
          << ")";
   }
-  
+
   int
   RegRead::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
@@ -516,13 +519,13 @@ namespace binsec {
     sink << "<" << bitsize << ">";
     return bitsize;
   }
-  
+
   void
   RegRead::Repr( std::ostream& sink ) const
   {
     GetRegName( sink );
   }
-  
+
   int
   RegWrite::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
@@ -530,9 +533,9 @@ namespace binsec {
     sink << "<" << std::dec << ScalarType(value->GetType()).bitsize << "> := " << GetCode(value, vars, label);
     return 0;
   }
-  
+
   void RegWrite::Repr( std::ostream& sink ) const { GetRegName( sink ); sink << " := "; value->Repr(sink); }
-  
+
   int
   Load::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
@@ -592,7 +595,7 @@ namespace binsec {
         else
           break;
       }
-    
+
     {
       std::set<Expr> nsinks;
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
@@ -603,16 +606,16 @@ namespace binsec {
         }
       std::swap(nsinks, sinks);
     }
-    
+
     if (not cond.good())
       return;
-    
+
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         next->simplify();
-    
+
     factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger() );
-    
+
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
@@ -620,7 +623,7 @@ namespace binsec {
           if (next->cond.good() or next->sinks.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
-    
+
     if (leaf)
       cond = Expr();
     else if (OpNodeBase const* onb = cond->AsOpNode())
@@ -631,7 +634,7 @@ namespace binsec {
           cond = onb->GetSub(0);
           std::swap( nexts[false], nexts[true] );
         }
-      
+
   }
 
   void
@@ -667,7 +670,7 @@ namespace binsec {
       std::map<Expr,unsigned>& stats; Sec* up;
     } sec(this,0);
   }
-  
+
   void
   Program::Generate( ActionNode const* action_tree )
   {
@@ -679,23 +682,23 @@ namespace binsec {
         if (_up) next_tmp = _up->next_tmp;
         if (_up) vars = _up->vars;
       }
-      
+
       void add_pending( Expr e ) { pendings.push_back(e); }
       bool has_pending() const { return pendings.size() > 0; }
-      
+
       Expr const& addvar( std::string const& name, unsigned size, Expr const& expr )
       {
         Expr& place = vars[expr];
-      
+
         if (place.good())
           throw std::logic_error( "multiple temporary definitions" );
-      
+
         struct TmpVar : public ASExprNode
         {
           TmpVar( std::string const& _ref, unsigned rsz )
             : ref(_ref), dsz(rsz)
           {}
-          virtual TmpVar* Mutate() const { return new TmpVar(*this); }
+          virtual TmpVar* Mutate() const override { return new TmpVar(*this); }
           virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
           virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, dsz); }
           virtual int cmp( ExprNode const& rhs ) const override { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
@@ -704,17 +707,17 @@ namespace binsec {
           std::string ref;
           int dsz;
         };
-      
+
         place = new TmpVar( name, size );
         return place;
-      }      
+      }
       std::string nxtname( RegWrite const* rw, unsigned rsize ) { std::ostringstream buf; rw->GetRegName( buf << "nxt_" ); buf << "<" << rsize << ">"; return buf.str(); }
       std::string tmpname( unsigned size ) { std::ostringstream buffer; buffer << "tmp" << size << '_' << (next_tmp[size]++) << "<" << size << ">"; return buffer.str(); }
 
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
       {
         Branch const* nia = 0;
-    
+
         // Using a delayed writing mechanism so that the last code line
         // produced is linked to the next code line given by the upper
         // context instead of a fresh new one
@@ -757,7 +760,7 @@ namespace binsec {
               if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
                 rtmps[rw->value] = rw;
             }
-          
+
           // Ordering Sub Expressions by size of expressions (so that
           // smaller expressions are factorized in larger ones)
           struct CSE : public std::multimap<unsigned,Expr>
@@ -829,7 +832,7 @@ namespace binsec {
               {
                 std::ostringstream buffer;
                 if (ASExprNode::GenerateCode( *itr, this->vars, head.current(), buffer ))
-                  throw 0;
+                  throw std::logic_error( "corrupted sink" );
 
                 buffer << "; goto <next>";
                 head.write( buffer.str() );
@@ -881,11 +884,14 @@ namespace binsec {
             head.current() = endif;
           }
 
+        if (not nia and not after.valid())
+          return;
+
         for (Pendings::iterator itr = this->pendings.begin(), end = this->pendings.end(); itr != end; ++itr)
           {
             std::ostringstream buffer;
             if (ASExprNode::GenerateCode( *itr, this->vars, head.current(), buffer ))
-              throw 0;
+              throw std::logic_error( "corrupted sink" );
 
             buffer << "; goto <next>";
             head.write( buffer.str() );
@@ -902,7 +908,7 @@ namespace binsec {
               {
                 std::ostringstream buffer;
                 if (ASExprNode::GenerateCode( *itr, this->vars, current, buffer ))
-                  throw 0;
+                  throw std::logic_error( "corrupted sink" );
 
                 buffer << "; goto <next>";
                 current.write( buffer.str() );
@@ -922,13 +928,12 @@ namespace binsec {
       Variables vars;
       std::map<unsigned,unsigned> next_tmp;
     };
-  
+
     Label beglabel(*this), endlabel(*this);
     beglabel.allocate();
     Context ctx;
     ctx.GenCode( action_tree, beglabel, endlabel );
   }
-  
 
 } /* end of namespace binsec */
 } /* end of namespace symbolic */

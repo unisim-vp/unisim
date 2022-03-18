@@ -78,6 +78,7 @@
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
+#include <unisim/component/cxx/processor/opcache/opcache.hh>
 
 namespace unisim {
 namespace component {
@@ -89,7 +90,6 @@ using unisim::kernel::Object;
 using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
@@ -213,7 +213,7 @@ private:
 
 
 class CPU :
-		public Decoder,
+		public opcache::OpCache<Decoder>,
 		public Client<Loader>,
 		public Client<DebugYielding>,
 		public Client<MemoryAccessReporting<physical_address_t> >,
@@ -477,7 +477,6 @@ public:
 	//=====================================================================
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
@@ -497,6 +496,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void Setup(Memory<physical_address_t>*) override { memory_import.RequireSetup(); }
 	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
@@ -525,6 +525,7 @@ public:
 	//=                   DebugDisasmInterface methods                    =
 	//=====================================================================
 
+	virtual void Setup(Disassembly<physical_address_t>*) override { memory_import.RequireSetup(); }
 	/**
 	 * Returns a string with the disassembling of the instruction found
 	 *   at address addr.

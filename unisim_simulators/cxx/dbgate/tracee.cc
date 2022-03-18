@@ -305,7 +305,6 @@ Tracee::Tracee( char** argv )
             tracee.ptrace(PTRACE_POKEUSER, RIP, ra);
             tracee.ptrace(PTRACE_POKEUSER, RSP, sp+8);
           }
-
         };
         driver = new EM_X86_64_Driver();
         break;

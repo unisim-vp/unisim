@@ -36,10 +36,8 @@ struct Product
   
   Product( ConstStr _filename, bool _sourcelines );
   virtual ~Product() {};
-  
-  Product&          usercode( FileLoc const& _fileloc, char const* _format, ... );
-  Product&          usercode( SourceCode const& _source );
-  Product&          usercode( SourceCode const& _source, char const* _fmt );
+
+  Product&          usercode( SourceCode const& _source, char const* before = 0, char const* after = 0 );
   Product&          code( char const* _format, ... );
   Product&          template_signature( Vector<CodePair> const& _tparams );
   Product&          template_abbrev( Vector<CodePair> const& _tparams );
@@ -47,10 +45,9 @@ struct Product
   Product&          ns_leave( std::vector<ConstStr> const& _namespace );
   Product&          require_newline();
   Product&          write( char const* _chars );
-  void                flush();
   Product&          flatten_indentation();
   
-  virtual void        xwrite( char const* chrs ) = 0;
+  virtual void      xwrite( char const* chrs ) = 0;
 };
 
 struct FProduct : public Product

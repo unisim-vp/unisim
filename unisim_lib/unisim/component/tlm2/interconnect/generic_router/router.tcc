@@ -314,7 +314,6 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		std::stringstream str;
 		str << "memory-import[" << i << "]";
 		memory_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(str.str().c_str(), this);
-		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 	
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++) 

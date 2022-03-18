@@ -32,14 +32,17 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
+
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
+using unisim::util::arithmetic::RotateRight;
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
+#include <unisim/component/cxx/processor/opcache/opcache.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -59,6 +62,8 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+
+
 namespace vmsav7 {
 
 // using unisim::kernel::Object;
@@ -160,9 +165,6 @@ CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
                             "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
-  disasm_export.SetupDependsOn(memory_import);
-  memory_export.SetupDependsOn(memory_import);
-
   // Set the right format for various of the variables
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -190,7 +192,7 @@ CPU<CPU_IMPL>::CPU(const char* name, unisim::kernel::Object* parent)
                  << " address  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f" << std::endl
                  << HexDump<8>(addr).s();
 
-      if (not cpu.ExternalReadMemory( addr, &buffer[0], 16 )) {
+      if (not static_cast<CPU_IMPL&>(cpu).ExternalReadMemory( addr, &buffer[0], 16 )) {
         cpu.logger <<       " ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??" << std::endl;
       } else {
         for (int idx = 0; idx < 16; ++idx)
@@ -441,7 +443,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == PSR::HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -484,15 +486,15 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
 
   uint32_t mva = addr & ~lo_mask;
   AddressDescriptor loc( mva );
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_write, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_write, size );
 
   // Send the request to the memory interface
-  if (not PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
     DataAbort(addr, loc.address, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
   }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
+  this->ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
 
 /** Performs an unaligned read access.
@@ -542,24 +544,24 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == PSR::HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
   uint32_t mva = addr & ~lo_mask;
   AddressDescriptor loc( mva );
 
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_read, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_read, size );
 
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PhysicalReadMemory(mva, loc.address, &data[0], size, loc.attributes)) {
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(mva, loc.address, &data[0], size, loc.attributes)) {
     DataAbort(addr, loc.address, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
   }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+  this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 
   /* Compute return value */
   uint32_t value;
@@ -617,7 +619,8 @@ CPU<CPU_IMPL>::StepInstruction()
 
       /* Execute instruction */
       asm volatile( "thumb_operation_execute:" );
-      op->execute( static_cast<CPU_IMPL&>(*this) );
+      if (likely(CheckCondition(*this, this->itcond())))
+        op->execute( static_cast<CPU_IMPL&>(*this) );
 
       this->ITAdvance();
       //op->profile(profile);
@@ -640,7 +643,9 @@ CPU<CPU_IMPL>::StepInstruction()
 
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
-      op->execute( static_cast<CPU_IMPL&>(*this) );
+      if (likely(CheckCondition(*this, (insn >> 28) & 0xf)))
+        op->execute( static_cast<CPU_IMPL&>(*this) );
+      
       //op->profile(profile);
     }
 
@@ -652,8 +657,10 @@ CPU<CPU_IMPL>::StepInstruction()
 
   catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
-     * requested from regular instructions. ITState will be updated as
-     * needed by TakeSVCException (as done in the ARM spec). */
+     * requested from regular instructions.  ITState will be updated
+     * as needed by TakeSVCException (as required by the ARM reference
+     * specification).
+     */
     if (unlikely( requires_commit_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportCommitInstruction(current_insn_addr, insn_length);
 
@@ -716,7 +723,7 @@ CPU<CPU_IMPL>::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalReadMemory(ef_addr, ef_addr, &rbuffer[index], 1, 0))
+      if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(ef_addr, ef_addr, &rbuffer[index], 1, 0))
         return false;
     }
 
@@ -741,7 +748,7 @@ CPU<CPU_IMPL>::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t si
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalWriteMemory( ef_addr, ef_addr, &wbuffer[index], 1, 0 ))
+      if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( ef_addr, ef_addr, &wbuffer[index], 1, 0 ))
         return false;
     }
 
@@ -770,6 +777,14 @@ CPU<CPU_IMPL>::RequiresMemoryAccessReporting( unisim::service::interfaces::Memor
     }
 }
 
+/** Perform a non intrusive read access. Local implementation using memory_import (see CPU::ReadMemory) */
+template <class CPU_IMPL>
+bool
+CPU<CPU_IMPL>::ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size )
+{
+  return memory_import->ReadMemory( addr, buffer, size );
+}
+
 /** Perform a non intrusive read access.
  *
  *   This method performs non-intrusive read. This method does not
@@ -795,7 +810,7 @@ CPU<CPU_IMPL>::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
       try {
 	AddressDescriptor loc(addr + index);
         TranslateAddress<QuietAccess>( loc, true, mat_read, 1 );
-        if (not ExternalReadMemory( loc.address, &rbuffer[index], 1 ))
+        if (not static_cast<CPU_IMPL*>(this)->ExternalReadMemory( loc.address, &rbuffer[index], 1 ))
           return false;
       }
       catch (DataAbortException const& x)
@@ -803,6 +818,14 @@ CPU<CPU_IMPL>::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
     }
 
   return true;
+}
+
+/** Perform a non intrusive write access. Local implementation using memory_import (see CPU::WriteMemory) */
+template <class CPU_IMPL>
+bool
+CPU<CPU_IMPL>::ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
+{
+  return memory_import->WriteMemory( addr, buffer, size );
 }
 
 /** Perform a non intrusive write access.
@@ -829,7 +852,7 @@ CPU<CPU_IMPL>::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
       try {
 	AddressDescriptor loc(addr + index);
         TranslateAddress<QuietAccess>( loc, true, mat_write, 1 );
-        if (not ExternalWriteMemory( loc.address, &wbuffer[index], 1 ))
+        if (not static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( loc.address, &wbuffer[index], 1 ))
           return false;
       } catch (DataAbortException const& x)
         { return false; }
@@ -956,13 +979,11 @@ CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& l
 
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalFetchMemory(mva & -(IPB_LINE_SIZE), line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
+  if (not static_cast<CPU_IMPL*>(this)->PhysicalFetchMemory(mva & -(IPB_LINE_SIZE), line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
     DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
 
-  if (unlikely(requires_memory_access_reporting))
-    memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
+  this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
 }
 
 /** Reads ARM32 instructions from the memory system
@@ -978,7 +999,7 @@ void
 CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_exec, IPB_LINE_SIZE );
   uint32_t buffer_index = address % (IPB_LINE_SIZE);
 
   if (unlikely(ipb_base_address != loc.address))
@@ -1005,7 +1026,7 @@ void
 CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
-  bool ispriv = cpsr.Get(M) != USER_MODE;
+  bool ispriv = cpsr.Get(M) != PSR::USER_MODE;
   TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
   intptr_t buffer_index = address % (IPB_LINE_SIZE);
 
@@ -1090,11 +1111,11 @@ template <class CPU_IMPL>
 void
 CPU<CPU_IMPL>::UndefinedInstruction( isa::arm32::Operation<CPU_IMPL>* insn )
 {
-  std::ostringstream oss;
-  insn->disasm( oss );
+  std::ostringstream disasm;
+  insn->disasm( disasm );
 
   logger << DebugWarning << "Undefined instruction @" << std::hex << current_insn_addr << std::dec
-         << ": " << oss.str() << EndDebugWarning;
+         << ": " << disasm.str() << " ; (" << insn->GetName() << ")" << EndDebugWarning;
 
   if (linux_os_import)
     this->Stop( -1 );
@@ -1106,11 +1127,11 @@ template <class CPU_IMPL>
 void
 CPU<CPU_IMPL>::UndefinedInstruction( isa::thumb::Operation<CPU_IMPL>* insn )
 {
-  std::ostringstream oss;
-  insn->disasm( oss );
+  std::ostringstream disasm;
+  insn->disasm( disasm );
 
   logger << DebugWarning << "Undefined instruction @" << std::hex << current_insn_addr << std::dec
-         << ": " << oss.str() << EndDebugWarning;
+         << ": " << disasm.str() << " ; (" << insn->GetName() << ")" << EndDebugWarning;
 
   if (linux_os_import)
     this->Stop( -1 );
@@ -1391,8 +1412,8 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
     uint32_t attrs=0;
     MemAttrs::type().Set(attrs,MemAttrs::Normal);
 
-    if (POLICY::DEBUG) success = ExternalReadMemory( l1descaddr, erd.data(), 4 );
-    else               success = PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
+    if (POLICY::DEBUG) success = static_cast<CPU_IMPL*>(this)->ExternalReadMemory( l1descaddr, erd.data(), 4 );
+    else               success = static_cast<CPU_IMPL*>(this)->PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
     if (not success)
       DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalOnWalk, false, false, false, false, false);
   }
@@ -1414,8 +1435,8 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
     {
       bool success;
-      if (POLICY::DEBUG) success = ExternalReadMemory( l2descaddr, erd.data(), 4 );
-      else               success = PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
+      if (POLICY::DEBUG) success = static_cast<CPU_IMPL*>(this)->ExternalReadMemory( l2descaddr, erd.data(), 4 );
+      else               success = static_cast<CPU_IMPL*>(this)->PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
       if (not success)
         DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalOnWalk, false,false,false,false,false);
     }
@@ -1515,7 +1536,7 @@ CPU<CPU_IMPL>::TranslateAddress( AddressDescriptor& loc, bool ispriv, mem_acc_ty
   // FirstStageTranslation
 
   if (arm::sctlr::M.Get( this->SCTLR )) {
-    bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
+    bool ishyp = cpsr.Get(M) == PSR::HYPERVISOR_MODE;
     TLB::Entry tlbe;
 
     // Stage 1 MMU enabled

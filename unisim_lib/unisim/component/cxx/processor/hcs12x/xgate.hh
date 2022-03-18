@@ -84,7 +84,6 @@ using unisim::kernel::variable::Statistic;
 using unisim::kernel::Client;
 using unisim::kernel::Service;
 using unisim::kernel::variable::CallBackObject;
-using unisim::kernel::ServiceExportBase;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::logger::Logger;
@@ -368,7 +367,6 @@ public:
 	//=====================================================================
 
 	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();

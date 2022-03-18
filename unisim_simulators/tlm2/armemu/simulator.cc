@@ -336,8 +336,8 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("linux-os.envc",            0);
   sim->SetVariable("linux-os.utsname-sysname", "Linux");
   sim->SetVariable("linux-os.utsname-nodename","localhost");
-  sim->SetVariable("linux-os.utsname-release", "2.6.27.35");
-  sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
+  sim->SetVariable("linux-os.utsname-release", "5.10.46");
+  sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Thu Jun 24 14:33:54 UTC 2021");
   sim->SetVariable("linux-os.utsname-machine", "armv7");
   sim->SetVariable("linux-os.utsname-domainname","localhost");
   sim->SetVariable("linux-os.apply-host-environment", false);

@@ -1,0 +1,3 @@
+This package contains:
+- arm32sav: a self auto verifying simulator for the ARMv7 ISA decoder
+See INSTALL for installation instructions.
