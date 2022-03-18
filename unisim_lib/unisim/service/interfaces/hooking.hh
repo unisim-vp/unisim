@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,54 +31,33 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_INTERFACES_HOOKING_HH__
+#define __UNISIM_SERVICE_INTERFACES_HOOKING_HH__
 
-#ifndef __UNISIM_UTIL_DEBUG_DATA_OBJECT_INITIALIZER_HH__
-#define __UNISIM_UTIL_DEBUG_DATA_OBJECT_INITIALIZER_HH__
-
-#include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/data_object.hh>
-#include <string>
-#include <sstream>
-#include <iosfwd>
+#include <unisim/service/interfaces/interface.hh>
+#include <unisim/util/debug/hook.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <class ADDRESS> class DataObjectLookup;
+template <typename ADDRESS>
+struct HookScanner : public ServiceInterface
+{
+	virtual void Append(unisim::util::debug::Hook<ADDRESS> *hook) = 0;
+};
+
+template <typename ADDRESS>
+struct Hooking : ServiceInterface
+{
+	virtual void ScanHooks(HookScanner<ADDRESS>& scanner) const = 0;
+	virtual bool SetHook(unisim::util::debug::Hook<ADDRESS> *hook) = 0;
+	virtual bool RemoveHook(unisim::util::debug::Hook<ADDRESS> *hook) = 0;
+};
 
 } // end of namespace interfaces
 } // end of namespace service
 } // end of namespace unisim
 
-namespace unisim {
-namespace util {
-namespace debug {
-
-template <class ADDRESS> class DataObjectInitializer;
-
-template <class ADDRESS>
-std::ostream& operator << (std::ostream& os, const DataObjectInitializer<ADDRESS>& data_object_initializer);
-
-template <class ADDRESS>
-class DataObjectInitializer : public TypeVisitor
-{
-public:
-	DataObjectInitializer(const DataObject<ADDRESS> *data_object, ADDRESS pc, const unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if);
-	virtual ~DataObjectInitializer();
-	
-	virtual void Visit(const char *data_object_name, const Type *type, TypeInitializerToken tok) const;
-	virtual void Visit(const Member *member) const;
-private:
-	const DataObject<ADDRESS> *data_object;
-	ADDRESS pc;
-	const unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if;
-	std::stringstream *os;
-	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const DataObjectInitializer<ADDRESS>& data_object_initializer);
-};
-
-} // end of namespace debug
-} // end of namespace util
-} // end of namespace unisim
-
-#endif // __UNISIM_UTIL_DEBUG_DATA_OBJECT_INITIALIZER_HH__
+#endif // __UNISIM_SERVICE_INTERFACES_HOOKING_HH__

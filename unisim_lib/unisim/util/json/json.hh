@@ -80,21 +80,6 @@ std::string ToString(const T& v)
 
 std::string Escape(const std::string& s);
 
-// JSON AST Visitor
-struct JSON_AST_Visitor
-{
-	virtual ~JSON_AST_Visitor() {}
-	virtual bool Visit(const JSON_String& value) = 0;
-	virtual bool Visit(const JSON_Integer& value) = 0;
-	virtual bool Visit(const JSON_UnsignedInteger& value) = 0;
-	virtual bool Visit(const JSON_Float& value) = 0;
-	virtual bool Visit(const JSON_Boolean& value) = 0;
-	virtual bool Visit(const JSON_Null& value) = 0;
-	virtual bool Visit(const JSON_Object& object) = 0;
-	virtual bool Visit(const JSON_Member& member) = 0;
-	virtual bool Visit(const JSON_Array& array) = 0;
-};
-
 // Value type enumeration
 enum JSON_ValueType
 {
@@ -114,13 +99,10 @@ std::ostream& operator << (std::ostream& os, const JSON_ValueType& type);
 // JSON Value
 struct JSON_Value
 {
-	JSON_Value() : type(JSON_VALUE), parent_value(0), parent_member(0) {}
+	JSON_Value() : type(JSON_VALUE) {}
 	virtual ~JSON_Value() {}
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return true; }
 	
 	JSON_ValueType GetType() const { return type; }
-	const JSON_Value *GetParentValue() const { return parent_value; }
-	const JSON_Member *GetParentMember() const { return parent_member; }
 	
 	const JSON_String& AsString() const { assert(type == JSON_STRING); return *(const JSON_String *) this; }
 	const JSON_Integer& AsInteger() const { assert(type == JSON_INT); return *(const JSON_Integer *) this; }
@@ -131,16 +113,16 @@ struct JSON_Value
 	const JSON_Boolean& AsBoolean() const { assert(type == JSON_BOOLEAN); return *(const JSON_Boolean *) this; }
 	const JSON_Null& AsNull() const { assert(type == JSON_NULL); return *(const JSON_Null *) this; }
 	
+	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR> bool Visit(VISITOR& visitor) const;
 protected:
 	friend struct JSON_Member;
 	friend struct JSON_Object;
 	friend struct JSON_Array;
 
-	JSON_Value(JSON_ValueType _type) : type(_type), parent_value(0), parent_member(0) {}
+	JSON_Value(JSON_ValueType _type) : type(_type) {}
 	
 	JSON_ValueType type;
-	JSON_Value *parent_value; // either an object or an array
-	JSON_Member *parent_member; // a member
 };
 
 std::ostream& operator << (std::ostream& os, const JSON_Value& value);
@@ -152,8 +134,6 @@ struct JSON_String : JSON_Value
 	
 	operator const std::string& () const { return value; }
 	operator const char * () const { return value.c_str(); }
-	
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
 protected:
 	std::string value;
 };
@@ -172,7 +152,6 @@ struct JSON_Integer : JSON_Number
 {
 	JSON_Integer(int64_t _value) : JSON_Number(JSON_INT), value(_value) {}
 	operator int64_t () const { return value; }
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
 protected:
 	int64_t value;
 };
@@ -184,7 +163,6 @@ struct JSON_UnsignedInteger : JSON_Number
 {
 	JSON_UnsignedInteger(uint64_t _value) : JSON_Number(JSON_UINT), value(_value) {}
 	operator uint64_t () const { return value; }
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this);  }
 protected:
 	uint64_t value;
 };
@@ -196,7 +174,6 @@ struct JSON_Float : JSON_Number
 {
 	JSON_Float(double _value) : JSON_Number(JSON_FLOAT), value(_value) {}
 	operator double () const { return value; }
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
 protected:
 	double value;
 };
@@ -208,7 +185,6 @@ struct JSON_Boolean : JSON_Value
 {
 	JSON_Boolean(bool _value) : JSON_Value(JSON_BOOLEAN), value(_value) {}
 	operator bool () const { return value; }
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
 protected:
 	bool value;
 };
@@ -220,7 +196,6 @@ struct JSON_Null : JSON_Value
 {
 	JSON_Null() : JSON_Value(JSON_NULL) {}
 protected:
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
 };
 
 inline std::ostream& operator << (std::ostream& os, const JSON_Null&) { return os << "null"; }
@@ -228,17 +203,18 @@ inline std::ostream& operator << (std::ostream& os, const JSON_Null&) { return o
 // JSON member
 struct JSON_Member
 {
-	JSON_Member(const std::string& _name, JSON_Value *_value) : name(_name), value(_value) { value->parent_member = this; }
+	JSON_Member(const std::string& _name, JSON_Value *_value) : name(_name), value(_value) {}
 	virtual ~JSON_Member() { delete value; }
 	
 	const std::string& GetName() const { return name; }
 	const JSON_Value& GetValue() const { return *value; }
-	const JSON_Object *GetParent() const { return parent; }
 	
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
+	template <typename VISITOR> void Scan(VISITOR& visitor) const
+	{
+		value->Visit(visitor);
+	}
+	
 protected:
-	friend struct JSON_Object;
-	JSON_Object *parent;
 	std::string name;
 	JSON_Value *value;
 };
@@ -251,13 +227,21 @@ struct JSON_Object : JSON_Value
 	typedef std::vector<JSON_Member *> Members;
 
 	JSON_Object() : JSON_Value(JSON_OBJECT), members() {}
-	JSON_Object(const std::vector<JSON_Member *>& _members) : JSON_Value(JSON_OBJECT), members(_members) { for(Members::iterator it = members.begin(); it != members.end(); ++it) { (*it)->parent = this; (*it)->value->parent_value = this; } }
+	JSON_Object(const std::vector<JSON_Member *>& _members) : JSON_Value(JSON_OBJECT), members(_members) {}
 	virtual ~JSON_Object() { for(Members::iterator it = members.begin(); it != members.end(); ++it) delete *it; }
 
-	JSON_Object& Add(JSON_Member *member) { members.push_back(member); member->parent = this; member->value->parent_value = this; return *this; }
+	JSON_Object& Add(JSON_Member *member) { members.push_back(member); return *this; }
 	const Members& GetMembers() const { return members; }
 	
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
+	template <typename VISITOR> void Scan(VISITOR& visitor) const
+	{
+		for(typename Members::const_iterator it = members.begin(); it != members.end(); ++it)
+		{
+			JSON_Member *member = *it;
+			if(!visitor.Visit(*member)) break;
+		}
+	}
+	
 protected:
 	std::vector<JSON_Member *> members;
 };
@@ -270,13 +254,20 @@ struct JSON_Array : JSON_Value
 	typedef std::vector<JSON_Value *> Elements;
 	
 	JSON_Array() : JSON_Value(JSON_ARRAY), elements() {}
-	JSON_Array(std::vector<JSON_Value *>& _elements) : JSON_Value(JSON_ARRAY), elements(_elements) { for(Elements::iterator it = elements.begin(); it != elements.end(); ++it) (*it)->parent_value = this; }
+	JSON_Array(std::vector<JSON_Value *>& _elements) : JSON_Value(JSON_ARRAY), elements(_elements) {}
 	virtual ~JSON_Array() { for(Elements::iterator it = elements.begin(); it != elements.end(); ++it) delete *it; }
 	
-	JSON_Array& Add(JSON_Value *value) { elements.push_back(value); value->parent_value = this; return *this; }
+	JSON_Array& Add(JSON_Value *value) { elements.push_back(value); return *this; }
 	const Elements& GetElements() const { return elements; }
 	
-	virtual bool Scan(JSON_AST_Visitor& visitor) const { return visitor.Visit(*this); }
+	template <typename VISITOR> void Scan(VISITOR& visitor) const
+	{
+		for(typename Elements::const_iterator it = elements.begin(); it != elements.end(); ++it)
+		{
+			JSON_Value *element = *it;
+			if(!element->Visit(visitor)) break;
+		}
+	}
 protected:
 	Elements elements;
 };
@@ -284,19 +275,32 @@ protected:
 std::ostream& operator << (std::ostream& os, const JSON_Array& array);
 
 // JSON AST printer
-struct JSON_AST_Printer : JSON_AST_Visitor
+struct JSON_AST_Printer
 {
-	virtual bool Visit(const JSON_String& value);
-	virtual bool Visit(const JSON_Integer& value);
-	virtual bool Visit(const JSON_UnsignedInteger& value);
-	virtual bool Visit(const JSON_Float& value);
-	virtual bool Visit(const JSON_Boolean& value);
-	virtual bool Visit(const JSON_Null& value);
-	virtual bool Visit(const JSON_Object& object);
-	virtual bool Visit(const JSON_Member& member);
-	virtual bool Visit(const JSON_Array& array);
-	
-	void Print(std::ostream& os, const JSON_Value& root);
+	static void Print(std::ostream& stream, const JSON_Value& root);
+private:
+	struct Visitor
+	{
+		Visitor(std::ostream& stream, const JSON_Value& value);
+		bool Visit(const JSON_String& value);
+		bool Visit(const JSON_Integer& value);
+		bool Visit(const JSON_UnsignedInteger& value);
+		bool Visit(const JSON_Float& value);
+		bool Visit(const JSON_Boolean& value);
+		bool Visit(const JSON_Null& value);
+		bool Visit(const JSON_Object& object);
+		bool Visit(const JSON_Member& member);
+		bool Visit(const JSON_Array& array);
+		void Push();
+		void Pop();
+		unsigned int GetIndex() const;
+		void NextIndex();
+		
+		std::ostream& stream;
+		const JSON_Value& root;
+		typedef std::vector<unsigned int> Stack;
+		Stack stack;
+	};
 };
 
 // JSON Parser visitor for building an AST

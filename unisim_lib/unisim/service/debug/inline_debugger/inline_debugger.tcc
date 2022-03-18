@@ -43,13 +43,15 @@
 #include <set>
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/util/debug/data_object_initializer.hh>
-#include <unisim/util/debug/data_object_initializer.tcc>
+#include <unisim/util/debug/data_object_serializer.hh>
+#include <unisim/util/debug/data_object_serializer.tcc>
+#include <unisim/util/debug/data_object_deserializer.hh>
+#include <unisim/util/debug/data_object_deserializer.tcc>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/debug/source_code_breakpoint.hh>
+#include <unisim/util/debug/subprogram_breakpoint.hh>
 
 #if defined(HAVE_CONFIG_H)
-//#include "unisim/service/debug/inline_debugger/config.h"
 #include "config.h"
 #endif
 
@@ -72,6 +74,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, InlineDebuggerBase(_name, _parent)
 	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
 	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
@@ -84,9 +87,13 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackUnwinding>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_yielding_request_import("debug-yielding-request-import", this)
+	, debug_selecting_import("debug-selecting-import", this)
 	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, disasm_import("disasm-import", this)
 	, memory_import("memory-import", this)
@@ -98,6 +105,9 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
+	, stack_unwinding_import("stack-unwinding-import", this)
+	, stubbing_import("stubbing-import", this)
+	, hooking_import("hooking-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
 	, init_macro()
@@ -142,13 +152,6 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	if(output_stream)
 	{
 		delete output_stream;
-	}
-	
-	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
-	
-	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
-	{
-		delete (*it);
 	}
 	
 	fetch_insn_event->Release();
@@ -295,38 +298,44 @@ void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDR
 {
 	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
 	
-	if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN))
+	if(likely(event_type == unisim::util::debug::FetchInsnEvent<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<const unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
 		
 		cia = fetch_insn_event->GetAddress();
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
+	else if(likely(event_type == unisim::util::debug::CommitInsnEvent<ADDRESS>::TYPE))
 	{
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
+	else if(likely(event_type == unisim::util::debug::Breakpoint<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = static_cast<const unisim::util::debug::Breakpoint<ADDRESS> *>(event);
 		(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
+	else if(likely(event_type == unisim::util::debug::Watchpoint<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = static_cast<const unisim::util::debug::Watchpoint<ADDRESS> *>(event);
 		(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_TRAP))
+	else if(likely(event_type == unisim::util::debug::TrapEvent<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
 		(*std_output_stream) << "-> Received " << (*trap_event) << std::endl;
 		trap = true;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT))
+	else if(likely(event_type == unisim::util::debug::SourceCodeBreakpoint<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = static_cast<const unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
 		(*std_output_stream) << "-> Reached " << (*source_code_breakpoint) << std::endl;
+		trap = true;
+	}
+	else if(likely(event_type == unisim::util::debug::SubProgramBreakpoint<ADDRESS>::TYPE))
+	{
+		const unisim::util::debug::SubProgramBreakpoint<ADDRESS> *subprogram_breakpoint = static_cast<const unisim::util::debug::SubProgramBreakpoint<ADDRESS> *>(event);
+		(*std_output_stream) << "-> Reached " << (*subprogram_breakpoint) << std::endl;
 		trap = true;
 	}
 }
@@ -394,7 +403,6 @@ void InlineDebugger<ADDRESS>::DebugYield()
 	{
 		trap = false;
 		bool interactive = false;
-		//(*std_output_stream) << "> ";
 		if(Killed()) return;
 		if(!GetLine(prompt.c_str(), line, interactive))
 		{
@@ -405,7 +413,6 @@ void InlineDebugger<ADDRESS>::DebugYield()
 		if(interactive && IsBlankLine(line))
 		{
 	 		line = last_line;
-//			(*std_output_stream) << "\033[1A\033[2C" << line << std::endl;
 		}
 		
 		parm.clear();
@@ -648,6 +655,28 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					ListDataObjects();
 					break;
 				}
+				
+				if(IsProcessorCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					InfoSelectedProcessor();
+					break;
+				}
+				
+				if(IsFrameCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					InfoSelectedFrame();
+					break;
+				}
+				
+				if(IsReturnCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					Return();
+					break;
+				}
+				
 				break;
 			case 2:
 				if(IsDumpDataObjectCommand(parm[0].c_str()))
@@ -887,7 +916,30 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				{
 					recognized = true;
 					InfoSubProgram(parm[1].c_str());
+					break;
 				}
+				
+				if(IsProcessorCommand(parm[0].c_str()) && ParseIntegerValue(parm[1].c_str(), int_value))
+				{
+					recognized = true;
+					SelectProcessor(int_value);
+					break;
+				}
+				
+				if(IsFrameCommand(parm[0].c_str()) && ParseIntegerValue(parm[1].c_str(), int_value))
+				{
+					recognized = true;
+					SelectFrame(int_value);
+					break;
+				}
+				
+				if(IsReturnCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					Return(parm[1].c_str());
+					break;
+				}
+				
 				break;
 			case 3:
 				if(IsWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
@@ -897,7 +949,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 						recognized = true;
 						SetReadWatchpoint(addr, size);
 					}
-					if(strcmp(parm[2].c_str(), "write") == 0)
+					else if(strcmp(parm[2].c_str(), "write") == 0)
 					{
 						recognized = true;
 						SetWriteWatchpoint(addr, size);
@@ -1467,17 +1519,17 @@ void InlineDebugger<ADDRESS>::DeleteBreakpointWatchpoint(unsigned int id)
 		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
 		{
 			int event_id = -1;
-			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT)
+			if(event->GetType() == unisim::util::debug::Breakpoint<ADDRESS>::TYPE)
 			{
 				unisim::util::debug::Breakpoint<ADDRESS> *brkp = static_cast<unisim::util::debug::Breakpoint<ADDRESS> *>(event);
 				event_id = brkp->GetId();
 			}
-			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT)
+			else if(event->GetType() == unisim::util::debug::SourceCodeBreakpoint<ADDRESS>::TYPE)
 			{
 				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = static_cast<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *>(event);
 				event_id = src_code_brkp->GetId();
 			}
-			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT)
+			else if(event->GetType() == unisim::util::debug::Watchpoint<ADDRESS>::TYPE)
 			{
 				unisim::util::debug::Watchpoint<ADDRESS> *wp = static_cast<unisim::util::debug::Watchpoint<ADDRESS> *>(event);
 				event_id = wp->GetId();
@@ -1517,7 +1569,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		
 		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
 		{
-			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT)
+			if(event->GetType() == unisim::util::debug::Breakpoint<ADDRESS>::TYPE)
 			{
 				unisim::util::debug::Breakpoint<ADDRESS> *brkp = (unisim::util::debug::Breakpoint<ADDRESS> *) event;
 				
@@ -1568,7 +1620,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 					(*inline_debugger.std_output_stream) << std::endl;
 				}
 			}
-			else if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_SOURCE_CODE_BREAKPOINT)
+			else if(event->GetType() == unisim::util::debug::SourceCodeBreakpoint<ADDRESS>::TYPE)
 			{
 				unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *src_code_brkp = (unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *) event;
 				
@@ -1629,7 +1681,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		
 		virtual void Append(unisim::util::debug::Event<ADDRESS> *event)
 		{
-			if(event->GetType() == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT)
+			if(event->GetType() == unisim::util::debug::Watchpoint<ADDRESS>::TYPE)
 			{
 				unisim::util::debug::Watchpoint<ADDRESS> *wp = (unisim::util::debug::Watchpoint<ADDRESS> *) event;
 				ADDRESS addr = wp->GetAddress();
@@ -2357,6 +2409,16 @@ void InlineDebugger<ADDRESS>::DumpBackTrace()
 		unsigned int n = backtrace->size();
 		for(i = 0; i < n; i++)
 		{
+			if(debug_selecting_import)
+			{
+				unsigned int frame_num = debug_selecting_import->DebugFrameGetSelected();
+				(*std_output_stream) << ((i == frame_num) ? "=>" : "  ");
+			}
+			else
+			{
+				(*std_output_stream) << "  ";
+			}
+			
 			(*std_output_stream) << "#" << i << " ";
 			
 			ADDRESS addr = (*backtrace)[i];
@@ -2601,32 +2663,35 @@ const unisim::util::debug::Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStat
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ListSourceFiles()
 {
-	std::set<std::string> source_filenames;
-	std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *> stmts;
-	stmt_lookup_import->GetStatements(stmts);
-	typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator stmt_iter;
-	for(stmt_iter = stmts.begin(); stmt_iter != stmts.end(); stmt_iter++)
+	struct StatementScanner : unisim::service::interfaces::StatementScanner<ADDRESS>
 	{
-		const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_iter).second;
+		InlineDebugger<ADDRESS> *inline_debugger;
+		std::set<std::string> source_filenames;
 		
-		const char *source_filename = stmt->GetSourceFilename();
-		if(source_filename)
+		virtual void Append(const unisim::util::debug::Statement<ADDRESS> *stmt)
 		{
-			std::string source_path;
-			const char *source_dirname = stmt->GetSourceDirname();
-			if(source_dirname)
+			const char *source_filename = stmt->GetSourceFilename();
+			if(source_filename)
 			{
-				source_path += source_dirname;
-				source_path += '/';
+				std::string source_path;
+				const char *source_dirname = stmt->GetSourceDirname();
+				if(source_dirname)
+				{
+					source_path += source_dirname;
+					source_path += '/';
+				}
+				source_path += source_filename;
+				
+				source_filenames.insert(source_path);
 			}
-			source_path += source_filename;
-			
-			source_filenames.insert(source_path);
 		}
-	}
+	} stmt_scanner;
+	
+	stmt_scanner.inline_debugger = this;
+	stmt_lookup_import->ScanStatements(stmt_scanner);
 	
 	std::set<std::string>::const_iterator source_filename_iter;
-	for(source_filename_iter = source_filenames.begin(); source_filename_iter != source_filenames.end(); source_filename_iter++)
+	for(source_filename_iter = stmt_scanner.source_filenames.begin(); source_filename_iter != stmt_scanner.source_filenames.end(); source_filename_iter++)
 	{
 		const std::string& source_path = (*source_filename_iter);
 		std::string match_source_path;
@@ -2830,63 +2895,54 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+		unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
-		if(data_object)
+		if(data_object != unisim::util::debug::DataObjectRef<ADDRESS>::Undefined)
 		{
-			if(!data_object->IsOptimizedOut())
+			if(!data_object.IsOptimizedOut())
 			{
-				if(data_object->Fetch())
+				ADDRESS data_object_bit_size = data_object.GetBitSize();
+				ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
+				unisim::util::endian::endian_type data_object_endian = data_object.GetEndian();
+				uint8_t data_object_raw_value[data_object_byte_size];
+				memset(data_object_raw_value, 0, data_object_byte_size);
+				
+				ADDRESS buf_bit_offset = 0;
+				if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
 				{
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-					ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
-					unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
-					uint8_t data_object_raw_value[data_object_byte_size];
-					memset(data_object_raw_value, 0, data_object_byte_size);
+					ADDRESS l_bit_size = data_object_bit_size % 8;
+					buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
+				}
+				if(data_object.Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
+				{
+					std::ios::fmtflags std_output_stream_saved_flags(std_output_stream->flags());
 					
-					ADDRESS buf_bit_offset = 0;
-					if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
-					{
-						ADDRESS l_bit_size = data_object_bit_size % 8;
-						buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-					}
-					if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
-					{
-						std::ios::fmtflags std_output_stream_saved_flags(std_output_stream->flags());
-						
-						(*std_output_stream) << data_object_name << " = [ ";
-						ADDRESS byte_offset;
-						(*std_output_stream).fill('0');
+					(*std_output_stream) << data_object_name << " = [ ";
+					ADDRESS byte_offset;
+					(*std_output_stream).fill('0');
 
-						for(byte_offset = 0; byte_offset < data_object_byte_size; byte_offset++)
-						{
-							if(byte_offset) (*std_output_stream) << " ";
-							(*std_output_stream) << "0x" << std::hex;
-							(*std_output_stream).width(2);
-							(*std_output_stream) << (unsigned int) data_object_raw_value[byte_offset] << std::dec;
-						}
-						(*std_output_stream) << " ]";
-						
-						std_output_stream->flags(std_output_stream_saved_flags);
-						
-						(*std_output_stream) << std::endl;
-					}
-					else
+					for(byte_offset = 0; byte_offset < data_object_byte_size; byte_offset++)
 					{
-						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << std::endl;
+						if(byte_offset) (*std_output_stream) << " ";
+						(*std_output_stream) << "0x" << std::hex;
+						(*std_output_stream).width(2);
+						(*std_output_stream) << (unsigned int) data_object_raw_value[byte_offset] << std::dec;
 					}
+					(*std_output_stream) << " ]";
+					
+					std_output_stream->flags(std_output_stream_saved_flags);
+					
+					(*std_output_stream) << std::endl;
 				}
 				else
 				{
-					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << std::endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << std::endl;
 				}
 			}
 			else
 			{
 				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << std::endl;
 			}
-				
-			delete data_object;
 		}
 		else
 		{
@@ -2900,16 +2956,16 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object)
+void InlineDebugger<ADDRESS>::PrintDataObject(const unisim::util::debug::DataObjectRef<ADDRESS>& data_object)
 {
-	const char *data_object_name = data_object->GetName();
+	const char *data_object_name = data_object.GetName();
 	
-	if(data_object->Exists())
+	if(data_object.Exists())
 	{
-		if(!data_object->IsOptimizedOut())
+		if(!data_object.IsOptimizedOut())
 		{
-			unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
-			(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
+			unisim::util::debug::DataObjectSerializer<ADDRESS> data_object_serializer = unisim::util::debug::DataObjectSerializer<ADDRESS>(data_object, data_object_lookup_import, unisim::util::debug::DataObjectSerializer<ADDRESS>::C_LANG, unisim::util::debug::DataObjectSerializer<ADDRESS>::LAZY);
+			(*std_output_stream) << data_object_name << " = " << data_object_serializer << std::endl;
 		}
 		else
 		{
@@ -2931,12 +2987,12 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 		{
 			// requesting address of data object
 			data_object_name++; // skip '&'
-			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+			unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 			
-			if(data_object)
+			if(data_object != unisim::util::debug::DataObjectRef<ADDRESS>::Undefined)
 			{
 				ADDRESS data_object_addr = 0;
-				if(data_object->GetAddress(data_object_addr))
+				if(data_object.GetAddress(data_object_addr))
 				{
 					(*std_output_stream) << "&" << data_object_name << " = @0x" << std::hex << data_object_addr << std::dec << std::endl;
 				}
@@ -2944,7 +3000,6 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 				{
 					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" has no address" << std::endl;
 				}
-				delete data_object;
 			}
 			else
 			{
@@ -2953,12 +3008,11 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name)
 		}
 		else
 		{
-			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+			unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 			// requesting value of data object
-			if(data_object)
+			if(data_object != unisim::util::debug::DataObjectRef<ADDRESS>::Undefined)
 			{
 				PrintDataObject(data_object);
-				delete data_object;
 			}
 			else
 			{
@@ -2979,75 +3033,59 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name)
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+		unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
-		if(data_object)
+		if(data_object != unisim::util::debug::DataObjectRef<ADDRESS>::Undefined)
 		{
-			if(!data_object->IsOptimizedOut())
+			if(!data_object.IsOptimizedOut())
 			{
-				if(data_object->Fetch())
+				std::vector<uint8_t> buffer;
+				if(!EditBuffer(0, buffer)) return false;
+				
+				ADDRESS data_object_bit_size = data_object.GetBitSize();
+				ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
+				unisim::util::endian::endian_type data_object_endian = data_object.GetEndian();
+				uint8_t data_object_raw_value[data_object_byte_size];
+				memset(data_object_raw_value, 0, data_object_byte_size);
+				
+				ADDRESS buf_bit_offset = 0;
+				if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
 				{
-					std::vector<uint8_t> buffer;
-					if(!EditBuffer(0, buffer)) return false;
-					
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-					ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
-					unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
-					uint8_t data_object_raw_value[data_object_byte_size];
-					memset(data_object_raw_value, 0, data_object_byte_size);
-					
-					ADDRESS buf_bit_offset = 0;
+					ADDRESS l_bit_size = data_object_bit_size % 8;
+					buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
+				}
+
+				if(data_object.Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
+				{
+					unsigned int buffer_size = buffer.size();
+					unsigned int i;
+					unsigned int n = (data_object_byte_size < buffer_size) ? data_object_byte_size : buffer_size;
 					if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
 					{
-						ADDRESS l_bit_size = data_object_bit_size % 8;
-						buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-					}
-
-					if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
-					{
-						unsigned int buffer_size = buffer.size();
-						unsigned int i;
-						unsigned int n = (data_object_byte_size < buffer_size) ? data_object_byte_size : buffer_size;
-						if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
+						unsigned int j;
+						for(i = data_object_byte_size - n, j = 0; j < n; i++, j++)
 						{
-							unsigned int j;
-							for(i = data_object_byte_size - n, j = 0; j < n; i++, j++)
-							{
-								data_object_raw_value[i] = buffer[j];
-							}
-						}
-						else
-						{
-							for(i = 0; i < n; i++)
-							{
-								data_object_raw_value[i] = buffer[i];
-							}
-						}
-						
-						if(data_object->Write(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
-						{
-							if(!data_object->Commit())
-							{
-								status = false;
-								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << std::endl;
-							}
-						}
-						else
-						{
-							status = false;
-							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << std::endl;
+							data_object_raw_value[i] = buffer[j];
 						}
 					}
 					else
 					{
+						for(i = 0; i < n; i++)
+						{
+							data_object_raw_value[i] = buffer[i];
+						}
+					}
+					
+					if(!data_object.Write(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
+					{
 						status = false;
-						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << std::endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << std::endl;
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << std::endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << std::endl;
 				}
 			}
 			else
@@ -3055,8 +3093,6 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name)
 				status = false;
 				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << std::endl;
 			}
-			
-			delete data_object;
 		}
 		else
 		{
@@ -3079,106 +3115,90 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, const 
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+		unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
-		if(data_object)
+		if(data_object != unisim::util::debug::DataObjectRef<ADDRESS>::Undefined)
 		{
-			if(!data_object->IsOptimizedOut())
+			if(!data_object.IsOptimizedOut())
 			{
-				if(data_object->Fetch())
+				uint64_t data_object_raw_value = 0;
+				
+				ADDRESS data_object_bit_size = data_object.GetBitSize();
+					
+				const unisim::util::debug::Type *data_object_type = data_object.GetType();
+				
+				// follow typedefs
+				while(data_object_type->GetClass() == unisim::util::debug::T_TYPEDEF)
 				{
-					uint64_t data_object_raw_value = 0;
-					
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-						
-					const unisim::util::debug::Type *data_object_type = data_object->GetType();
-					
-					// follow typedefs
-					while(data_object_type->GetClass() == unisim::util::debug::T_TYPEDEF)
-					{
-						data_object_type = ((unisim::util::debug::Typedef *) data_object_type)->GetType();
-					}
-					
-					switch(data_object_type->GetClass())
-					{
-						case unisim::util::debug::T_UNKNOWN:
-							break;
-						case unisim::util::debug::T_CHAR:
-						case unisim::util::debug::T_INTEGER:
-						case unisim::util::debug::T_BOOL:
-						case unisim::util::debug::T_POINTER:
-						case unisim::util::debug::T_ENUM:
-							if(!ParseIntegerValue(literal, data_object_raw_value))
-							{
-								status = false;
-								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts an integral value" << std::endl;
-							}
-							break;
-						case unisim::util::debug::T_FLOAT:
-							{
-								unisim::util::ieee754::SoftDouble float_value;
-								
-								if(!ParseFloatValue(literal, float_value))
-								{
-									status = false;
-									(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts a floating-point value" << std::endl;
-									break;
-								}
-								switch(data_object_bit_size)
-								{
-									case 32:
-										{
-											unisim::util::ieee754::Flags flags;
-											
-											unisim::util::ieee754::SoftFloat sf = unisim::util::ieee754::SoftFloat(float_value, flags);
-											data_object_raw_value = sf.queryValue();
-										}
-										break;
-									case 64:
-										data_object_raw_value = float_value.queryValue();
-										break;
-									default:
-										(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << std::endl;
-										break;
-								}
-							}
-							break;
-						case unisim::util::debug::T_STRUCT:
-						case unisim::util::debug::T_UNION:
-						case unisim::util::debug::T_CLASS:
-						case unisim::util::debug::T_INTERFACE:
-						case unisim::util::debug::T_ARRAY:
-						case unisim::util::debug::T_TYPEDEF:
-						case unisim::util::debug::T_FUNCTION:
-						case unisim::util::debug::T_CONST:
-						case unisim::util::debug::T_VOID:
-						case unisim::util::debug::T_VOLATILE:
-							status = false;
-							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is not a base type" << std::endl;
-							break;
-					}
-					
-					if(status)
-					{
-						if(data_object->Write(0, data_object_raw_value, data_object_bit_size))
-						{
-							if(!data_object->Commit())
-							{
-								status = false;
-								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << std::endl;
-							}
-						}
-						else
-						{
-							status = false;
-							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << std::endl;
-						}
-					}
+					data_object_type = ((unisim::util::debug::Typedef *) data_object_type)->GetType();
 				}
-				else
+				
+				switch(data_object_type->GetClass())
 				{
-					status = false;
-					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << std::endl;
+					case unisim::util::debug::T_UNKNOWN:
+						break;
+					case unisim::util::debug::T_CHAR:
+					case unisim::util::debug::T_INTEGER:
+					case unisim::util::debug::T_BOOL:
+					case unisim::util::debug::T_POINTER:
+					case unisim::util::debug::T_ENUM:
+						if(!ParseIntegerValue(literal, data_object_raw_value))
+						{
+							status = false;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts an integral value" << std::endl;
+						}
+						break;
+					case unisim::util::debug::T_FLOAT:
+						{
+							unisim::util::ieee754::SoftDouble float_value;
+							
+							if(!ParseFloatValue(literal, float_value))
+							{
+								status = false;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts a floating-point value" << std::endl;
+								break;
+							}
+							switch(data_object_bit_size)
+							{
+								case 32:
+									{
+										unisim::util::ieee754::Flags flags;
+										
+										unisim::util::ieee754::SoftFloat sf = unisim::util::ieee754::SoftFloat(float_value, flags);
+										data_object_raw_value = sf.queryValue();
+									}
+									break;
+								case 64:
+									data_object_raw_value = float_value.queryValue();
+									break;
+								default:
+									(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << std::endl;
+									break;
+							}
+						}
+						break;
+					case unisim::util::debug::T_STRUCT:
+					case unisim::util::debug::T_UNION:
+					case unisim::util::debug::T_CLASS:
+					case unisim::util::debug::T_INTERFACE:
+					case unisim::util::debug::T_ARRAY:
+					case unisim::util::debug::T_TYPEDEF:
+					case unisim::util::debug::T_FUNCTION:
+					case unisim::util::debug::T_CONST:
+					case unisim::util::debug::T_VOID:
+					case unisim::util::debug::T_VOLATILE:
+						status = false;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is not a base type" << std::endl;
+						break;
+				}
+				
+				if(status)
+				{
+					if(!data_object.Write(0, data_object_raw_value, data_object_bit_size))
+					{
+						status = false;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << std::endl;
+					}
 				}
 			}
 			else
@@ -3186,8 +3206,6 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, const 
 				status = false;
 				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << std::endl;
 			}
-			
-			delete data_object;
 		}
 		else
 		{
@@ -3228,9 +3246,9 @@ void InlineDebugger<ADDRESS>::TrackDataObject(const char *data_object_name)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+		unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 		
-		if(data_object)
+		if(data_object != unisim::util::debug::DataObjectRef<ADDRESS>::Undefined)
 		{
 			tracked_data_objects.push_back(data_object);
 		}
@@ -3248,11 +3266,11 @@ void InlineDebugger<ADDRESS>::TrackDataObject(const char *data_object_name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::UntrackDataObject(const char *data_object_name)
 {
-	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	typename std::list<unisim::util::debug::DataObjectRef<ADDRESS> >::iterator it;
 	
 	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
 	{
-		if(strcmp((*it)->GetName(), data_object_name) == 0)
+		if(strcmp((*it).GetName(), data_object_name) == 0)
 		{
 			it = tracked_data_objects.erase(it);
 		}
@@ -3262,26 +3280,24 @@ void InlineDebugger<ADDRESS>::UntrackDataObject(const char *data_object_name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::PrintTrackedDataObjects()
 {
-	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	typename std::list<unisim::util::debug::DataObjectRef<ADDRESS> >::iterator it;
 	
 	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = *it;
-		
-// 		data_object->Seek(cia);
+		const unisim::util::debug::DataObjectRef<ADDRESS>& data_object = *it;
 		
 		PrintDataObject(data_object);
 	}
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object)
+void InlineDebugger<ADDRESS>::PrintDataObjectType(const unisim::util::debug::DataObjectRef<ADDRESS>& data_object)
 {
-	const char *data_object_name = data_object->GetName();
+	const char *data_object_name = data_object.GetName();
 	
-	if(data_object->Exists())
+	if(data_object.Exists())
 	{
-		const unisim::util::debug::Type *data_object_type = data_object->GetType();
+		const unisim::util::debug::Type *data_object_type = data_object.GetType();
 		(*std_output_stream) << "Type of Data Object \"" << data_object_name << "\" is \"";
 		(*std_output_stream) << data_object_type->BuildCDecl(0, true) << "\"" << std::endl;
 	}
@@ -3294,7 +3310,7 @@ void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObjec
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::PrintDataObjectType(const char *data_object_name)
 {
-	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name);
+	unisim::util::debug::DataObjectRef<ADDRESS> data_object = data_object_lookup_import->FindDataObject(data_object_name);
 	
 	if(data_object)
 	{
@@ -3313,11 +3329,78 @@ void InlineDebugger<ADDRESS>::InfoSubProgram(const char *subprogram_name)
 	
 	if(subprogram)
 	{
-		(*std_output_stream) << subprogram->BuildCDecl() << ";" << std::endl;
+		(*std_output_stream) << "At @0x" << std::hex << subprogram->GetAddress() << std::dec << ": " << subprogram->BuildCDecl() << ";" << std::endl;
 	}
 	else
 	{
 		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" not found" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::SelectProcessor(unsigned int prc_num)
+{
+	if(debug_selecting_import && debug_selecting_import->DebugSelect(prc_num))
+	{
+		(*std_output_stream) << "Processor #" << prc_num << " selected" << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Processor #" << prc_num << " can't be selected" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::SelectFrame(unsigned int frame_num)
+{
+	if(debug_selecting_import && debug_selecting_import->DebugFrameSelect(frame_num))
+	{
+		(*std_output_stream) << "Frame #" << frame_num << " selected" << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Frame #" << frame_num << " can't be selected" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::Return(const char *literal)
+{
+	if(stack_unwinding_import && (!literal || SetDataObject("$return_value", literal)) && stack_unwinding_import->UnwindStack())
+	{
+		(*std_output_stream) << "Returned" << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Can't return" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::InfoSelectedProcessor()
+{
+	if(debug_selecting_import)
+	{
+		unsigned int prc_num = debug_selecting_import->DebugGetSelected();
+		(*std_output_stream) << "Processor #" << prc_num << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Missing Processor info support" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::InfoSelectedFrame()
+{
+	if(debug_selecting_import)
+	{
+		unsigned int frame_num = debug_selecting_import->DebugFrameGetSelected();
+		(*std_output_stream) << "Frame #" << frame_num << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Missing Frame info support" << std::endl;
 	}
 }
 
@@ -3513,7 +3596,7 @@ bool InlineDebugger<ADDRESS>::IsRegisterCommand(const char *cmd, const char *for
 		&& strncmp(format, "/", 1) == 0;
 	}
 	return strcmp(cmd, "reg") == 0 || strcmp(cmd, "register") == 0 
-	|| strncmp(cmd, "reg/", 2) == 0 || strncmp(cmd, "register/", 8) == 0;
+	|| strncmp(cmd, "reg/", 4) == 0 || strncmp(cmd, "register/", 9) == 0;
 }
 
 template <class ADDRESS>
@@ -3525,7 +3608,7 @@ bool InlineDebugger<ADDRESS>::IsStatisticCommand(const char *cmd, const char *fo
 		&& strncmp(format, "/", 1) == 0;
 	}
 	return strcmp(cmd, "stat") == 0 || strcmp(cmd, "statistic") == 0 
-	|| strncmp(cmd, "stat/", 2) == 0 || strncmp(cmd, "statistic/", 8) == 0;
+	|| strncmp(cmd, "stat/", 5) == 0 || strncmp(cmd, "statistic/", 10) == 0;
 }
 
 template <class ADDRESS>
@@ -3537,7 +3620,7 @@ bool InlineDebugger<ADDRESS>::IsParameterCommand(const char *cmd, const char *fo
 		&& strncmp(format, "/", 1) == 0;
 	}
 	return strcmp(cmd, "param") == 0 || strcmp(cmd, "parameter") == 0 
-	|| strncmp(cmd, "param/", 2) == 0 || strncmp(cmd, "parameter/", 8) == 0;
+	|| strncmp(cmd, "param/", 6) == 0 || strncmp(cmd, "parameter/", 10) == 0;
 }
 
 template <class ADDRESS>
@@ -3667,6 +3750,24 @@ bool InlineDebugger<ADDRESS>::IsInfoSubProgramCommand(const char *cmd) const
 }
 
 template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsProcessorCommand(const char *cmd) const
+{
+	return (strcmp(cmd, "processor") == 0) || (strcmp(cmd, "cpu") == 0);
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsFrameCommand(const char *cmd) const
+{
+	return (strcmp(cmd, "f") == 0) || (strcmp(cmd, "frame") == 0);
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsReturnCommand(const char *cmd) const
+{
+	return (strcmp(cmd, "ret") == 0) || (strcmp(cmd, "return") == 0);
+}
+
+template <class ADDRESS>
 InlineDebugger<ADDRESS>::VisitedInstructionPage::VisitedInstructionPage()
 {
 	std::fill_n(flags,WORD_COUNT,0);
@@ -3703,7 +3804,6 @@ bool InlineDebugger<ADDRESS>::IsStarted() const
 {
 	return is_started;
 }
-
 
 } // end of namespace inline_debugger
 } // end of namespace debug

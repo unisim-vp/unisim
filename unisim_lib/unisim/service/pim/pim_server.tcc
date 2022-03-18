@@ -336,16 +336,9 @@ void PIMServer<ADDRESS>::OnDisconnect()
 template <class ADDRESS>
 void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
 {
-	switch(event->GetType())
+	if(event->GetType() == Watchpoint<ADDRESS>::TYPE)
 	{
-		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (event);
-			break;
-		default:
-			// ignore event
-			return;
+		watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (event);
 	}
 
 	trap = true;

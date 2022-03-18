@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
 #define __UNISIM_UTIL_DEBUG_DWARF_SUBPROGRAM_HH__
 
+#include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <cstdint>
 #include <string>
@@ -50,10 +51,8 @@ template <class ADDRESS>
 class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
 {
 public:
-	DWARF_SubProgram(char const *name, bool external_flag, bool declaration_flag, uint8_t inline_code, const unisim::util::debug::Type *return_type, const unisim::util::debug::DeclLocation *decl_location);
+	DWARF_SubProgram(const DWARF_DIE<ADDRESS> *dw_subprogram_die);
 	virtual ~DWARF_SubProgram();
-	
-	void AddFormalParameter(const FormalParameter *formal_param);
 	
 	virtual const char *GetName() const;
 	virtual bool IsExternal() const;
@@ -64,15 +63,26 @@ public:
 	virtual unsigned int GetArity() const;
 	virtual const unisim::util::debug::FormalParameter *GetFormalParameter(unsigned int idx) const;
 	virtual const unisim::util::debug::DeclLocation *GetDeclLocation() const;
+	virtual ADDRESS GetAddress() const;
 	
+	const DWARF_DIE<ADDRESS> *GetReturnTypeDIE() const;
+	bool GetReturnValueLocation(const DWARF_MachineState<ADDRESS> *dw_mach_state, unsigned int prc_num, DWARF_Location<ADDRESS>& loc) const;
 private:
+	const DWARF_Handler<ADDRESS> *dw_handler;
+	const DWARF_DIE<ADDRESS> *dw_subprogram_die;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
+	const bool& debug;
 	std::string name;
 	bool external_flag;
 	bool declaration_flag;
 	uint8_t inline_code;
+	const DWARF_DIE<ADDRESS> *dw_return_type_die;
 	const Type *return_type;
 	std::vector<const unisim::util::debug::FormalParameter *> formal_params;
 	const unisim::util::debug::DeclLocation *decl_location;
+	ADDRESS addr;
 };
 
 } // end of namespace dwarf

@@ -232,125 +232,174 @@ bool JSONConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::
 	return LoadVariables(file, type);
 }
 
-struct JSON_AST_Visitor : unisim::util::json::JSON_AST_Visitor
+struct JSON_AST_Visitor
 {
 	JSON_AST_Visitor(unisim::kernel::Simulator *_simulator)
 		: simulator(_simulator)
+		, ctx_stack()
 	{
 	}
 	
-	template <typename JSON_VALUE_TYPE, typename VARIABLE_DATA_TYPE>
-	void SetVariable(const JSON_VALUE_TYPE& json_value)
+	template <typename T> void SetVariable(const T& value)
 	{
-		const unisim::util::json::JSON_Member *parent_member = json_value.GetParentMember();
-		if(parent_member)
+		std::string variable_name = VariableName();
+		simulator->SetVariable(variable_name.c_str(), value);
+	}
+	
+	bool Visit(const unisim::util::json::JSON_String& value)
+	{
+		SetVariable((const char *) value);
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Integer& value)
+	{
+		SetVariable((int64_t) value);
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_UnsignedInteger& value)
+	{
+		SetVariable((uint64_t) value);
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Float& value)
+	{
+		SetVariable((double) value);
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Boolean& value)
+	{
+		SetVariable((bool) value);
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Null& value)
+	{
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Object& object)
+	{
+		object.Scan(*this);
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Member& member)
+	{
+		PushMemberContext(member.GetName());
+		member.Scan(*this);
+		PopContext();
+		return true;
+	}
+	
+	bool Visit(const unisim::util::json::JSON_Array& array)
+	{
+		PushArrayContext();
+		array.Scan(*this);
+		PopContext();
+		if(InArray()) NextIndex();
+		return true;
+	}
+	
+	void PushMemberContext(const std::string& name)
+	{
+		ctx_stack.push_back(Context(Context::CTX_MEMBER, name, 0));
+	}
+	
+	void PushArrayContext()
+	{
+		ctx_stack.push_back(Context(Context::CTX_ARRAY, std::string(), 0));
+	}
+	
+	void PopContext()
+	{
+		ctx_stack.pop_back();
+	}
+	
+	bool InArray() const
+	{
+		return (ctx_stack.size() != 0) && (ctx_stack.back().type == Context::CTX_ARRAY);
+	}
+	
+	void NextIndex()
+	{
+		if(ctx_stack.size() != 0)
 		{
-			const std::string& variable_name = parent_member->GetName();
+			++ctx_stack.back().index;
+		}
+	}
+	
+	std::string VariableName() const
+	{
+		std::string variable_name;
+		unsigned int n = ctx_stack.size();
+		for(unsigned int i = 0; i < n; ++i)
+		{
+			const Context& ctx = ctx_stack[i];
 			
-			if(stack.empty())
+			switch(ctx.type)
 			{
-				simulator->SetVariable(variable_name.c_str(), (VARIABLE_DATA_TYPE) json_value);
-			}
-			else
-			{
-				std::string name(stack.back());
-				name += '.';
-				name += variable_name;
+				case Context::CTX_MEMBER:
+				{
+					const std::string& name = ctx.name;
+					if(name.length() != 0)
+					{
+						if(variable_name.length() != 0)
+						{
+							variable_name += '.';
+						}
+						variable_name += name;
+					}
+					break;
+				}
 				
-				simulator->SetVariable(name.c_str(), (VARIABLE_DATA_TYPE) json_value);
+				case Context::CTX_ARRAY:
+				{
+					std::ostringstream sstr;
+					sstr << '[' << ctx.index << ']';
+					variable_name += sstr.str();
+					break;
+				}
 			}
 		}
+		return variable_name;
 	}
 	
-	virtual bool Visit(const unisim::util::json::JSON_String& json_value)
+	unsigned int GetIndex() const
 	{
-		SetVariable<unisim::util::json::JSON_String, const char *>(json_value);
-		return true;
+		return ctx_stack.back().index;
 	}
 	
-	virtual bool Visit(const unisim::util::json::JSON_Integer& json_value)
+	struct Context
 	{
-		SetVariable<unisim::util::json::JSON_Integer, int64_t>(json_value);
-		return true;
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_UnsignedInteger& json_value)
-	{
-		SetVariable<unisim::util::json::JSON_UnsignedInteger, uint64_t>(json_value);
-		return true;
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_Float& json_value)
-	{
-		SetVariable<unisim::util::json::JSON_Float, double>(json_value);
-		return true;
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_Boolean& json_value)
-	{
-		SetVariable<unisim::util::json::JSON_Boolean, bool>(json_value);
-		return true;
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_Null& value)
-	{
-		return false;
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_Object& json_object)
-	{
-		const unisim::util::json::JSON_Member *parent_member = json_object.GetParentMember();
-		if(parent_member)
+		enum Type
 		{
-			const std::string& object_name = parent_member->GetName();
-			
-			if(stack.empty())
-			{
-				stack.push_back(object_name);
-			}
-			else
-			{
-				std::string name = stack.back();
-				name += '.';
-				name += object_name;
-				stack.push_back(name);
-			}
-		}
-		else if(json_object.GetParentValue())
-		{
-			return false;
-		}
+			CTX_MEMBER,
+			CTX_ARRAY
+		};
 		
-		const unisim::util::json::JSON_Object::Members& json_members = json_object.GetMembers();
-		for(unisim::util::json::JSON_Object::Members::const_iterator it = json_members.begin(); it != json_members.end(); ++it)
-		{
-			const unisim::util::json::JSON_Member& json_member = **it;
-			
-			if(!json_member.Scan(*this)) return false;
-		}
+		Context() : type(), name(), index(0) {}
+		Context(Type _type, const std::string& _name, unsigned int _index) : type(_type), name(_name), index(_index) {}
 		
-		if(parent_member)
-		{
-			stack.pop_back();
-		}
-		
-		return true;
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_Member& json_member)
-	{
-		const unisim::util::json::JSON_Value& json_member_value = json_member.GetValue();
-		
-		return json_member_value.Scan(*this);
-	}
-	
-	virtual bool Visit(const unisim::util::json::JSON_Array& array)
-	{
-		return false;
-	}
+		Type type;
+		std::string name;
+		unsigned int index;
+	};
 	
 	unisim::kernel::Simulator *simulator;
-	std::vector<std::string> stack;
+	typedef std::vector<Context> ContextStack;
+	ContextStack ctx_stack;
+	
 };
 
 bool JSONConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type)
@@ -363,7 +412,7 @@ bool JSONConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::Varia
 	if(root)
 	{
 		JSON_AST_Visitor json_ast_visitor(simulator);
-		root->Scan(json_ast_visitor);
+		root->Visit(json_ast_visitor);
 		delete root;
 
 		return true;

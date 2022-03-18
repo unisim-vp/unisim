@@ -72,6 +72,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, backtrace_export("backtrace-export", this)
 	, elf_loader(0)
 	, filename()
+	, architecture()
 	, base_addr(0)
 	, force_base_addr(false)
 	, force_use_virtual_address(false)
@@ -84,6 +85,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, debug_dwarf(false)
 	, param_filename("filename", this, filename,
 			"the ELF filename to load into memory")
+	, param_architecture("architecture", this, architecture, "Overload the architecture of the ELF file")
 	, param_base_addr("base-addr", this, base_addr, 
 			"if force-base-addr is true"
 			" force base address for a unique program segment,"
@@ -176,6 +178,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	elf_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
 	elf_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
+	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_ARCHITECTURE, architecture.c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_BASE_ADDR, force_base_addr);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_USE_VIRTUAL_ADDRESS, force_use_virtual_address);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_BASE_ADDR, base_addr);
@@ -259,15 +262,9 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_AD
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStatements(std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const
 {
-	if(!elf_loader) return;
-	const typename std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& elf_loader_stmts = elf_loader->GetStatements();
-	typename std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>::const_iterator iter;
-	for(iter = elf_loader_stmts.begin(); iter != elf_loader_stmts.end(); iter++)
-	{
-		stmts.insert(std::pair<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>((*iter).first, (*iter).second));
-	}
+	if(elf_loader) elf_loader->ScanStatements(scanner);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

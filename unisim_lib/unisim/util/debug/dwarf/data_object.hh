@@ -78,50 +78,38 @@ private:
 };
 
 template <class MEMORY_ADDR>
-class DWARF_DataObjectInfo
+class DWARF_DataObject
 {
 public:
-	DWARF_DataObjectInfo();
-	DWARF_DataObjectInfo(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type);
-	~DWARF_DataObjectInfo();
-	
-	const DWARF_Location<MEMORY_ADDR> *GetLocation() const;
-	const unisim::util::debug::Type *GetType() const;
-private:
-	const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
-	const unisim::util::debug::Type *dw_data_object_type;
-};
-
-template <class MEMORY_ADDR>
-class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
-{
-public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type);
 	virtual ~DWARF_DataObject();
-	virtual const char *GetName() const;
-	virtual MEMORY_ADDR GetBitSize() const;
-	virtual unisim::util::endian::endian_type GetEndian() const;
-	virtual const unisim::util::debug::Type *GetType() const;
-	virtual MEMORY_ADDR GetPC() const;
-	virtual bool Exists() const;
-	virtual bool IsOptimizedOut() const;
-	virtual bool GetAddress(MEMORY_ADDR& addr) const;
-	virtual bool Fetch();
-	virtual bool Commit();
-	virtual bool Read(MEMORY_ADDR obj_bit_offset, uint64_t& value, MEMORY_ADDR bit_size) const;
-	virtual bool Write(MEMORY_ADDR obj_bit_offset, uint64_t value, MEMORY_ADDR bit_size);
-	virtual bool Read(MEMORY_ADDR obj_bit_offset, void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size) const;
-	virtual bool Write(MEMORY_ADDR obj_bit_offset, const void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size);
+	const char *GetName() const;
+	MEMORY_ADDR GetBitSize() const;
+	unisim::util::endian::endian_type GetEndian() const;
+	const unisim::util::debug::Type *GetType() const;
+	bool IsOptimizedOut() const;
+	bool GetAddress(MEMORY_ADDR& addr) const;
+	bool Read(MEMORY_ADDR obj_bit_offset, uint64_t& value, MEMORY_ADDR bit_size) const;
+	bool Write(MEMORY_ADDR obj_bit_offset, uint64_t value, MEMORY_ADDR bit_size);
+	bool Read(MEMORY_ADDR obj_bit_offset, void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size) const;
+	bool Write(MEMORY_ADDR obj_bit_offset, const void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size);
+	bool Seek() const;
+	bool Fetch() const;
+	bool Commit();
+
+	template <typename T> T ToBaseType() const;
+	std::string ToString() const;
+	template <typename T> DWARF_DataObject<MEMORY_ADDR>& AssignBaseType(T value);
+	DWARF_DataObject<MEMORY_ADDR>& AssignString(const std::string& value);
+	DWARF_DataObject<MEMORY_ADDR> *Dereference();
+	DWARF_DataObject<MEMORY_ADDR> *GetProperty(const char *property_name);
+	DWARF_DataObject<MEMORY_ADDR> *GetItem(int64_t subscript);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
 	unsigned int prc_num;
 	std::string data_object_name;
 	const CLocOperationStream c_loc_operation_stream;
-	mutable std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
-	mutable std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> cache;
-	mutable bool exists;
-	mutable bool fetched;
-	mutable MEMORY_ADDR pc;
 	mutable const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
 	mutable const unisim::util::debug::Type *dw_data_object_type;
 	unisim::util::endian::endian_type arch_endianness;
@@ -132,11 +120,77 @@ private:
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
+};
+
+template <class ADDRESS>
+class DWARF_DataObjectProxy : public unisim::util::debug::DataObject<ADDRESS>
+{
+public:
+	DWARF_DataObjectProxy(DWARF_DataObject<ADDRESS> *dw_data_object);
+	virtual ~DWARF_DataObjectProxy();
+	virtual const char *GetName() const;
+	virtual ADDRESS GetBitSize() const;
+	virtual const Type *GetType() const;
+	virtual unisim::util::endian::endian_type GetEndian() const;
+	virtual bool Exists() const;
+	virtual bool IsOptimizedOut() const;
+	virtual bool GetAddress(ADDRESS& addr) const;
+	virtual bool Read(ADDRESS obj_bit_offset, uint64_t& value, ADDRESS bit_size) const;
+	virtual bool Write(ADDRESS obj_bit_offset, uint64_t value, ADDRESS bit_size);
+	virtual bool Read(ADDRESS obj_bit_offset, void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) const;
+	virtual bool Write(ADDRESS obj_bit_offset, const void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size);
 	
-	void Seek() const;
-	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type) const;
-	void InvalidateCache();
-	const DWARF_DataObjectInfo<MEMORY_ADDR> *LookupCache(MEMORY_ADDR pc) const;
+	template <typename T> T ToBaseType() const;
+	std::string ToString() const;
+	template <typename T> DWARF_DataObjectProxy<ADDRESS>& AssignBaseType(T value);
+	DWARF_DataObjectProxy<ADDRESS>& AssignString(const std::string& value);
+	
+	// conversion operators
+	virtual operator bool() const;
+	virtual operator signed char() const;
+	virtual operator short() const;
+	virtual operator int() const;
+	virtual operator long() const;
+	virtual operator long long() const;
+	virtual operator unsigned char() const;
+	virtual operator unsigned short() const;
+	virtual operator unsigned int() const;
+	virtual operator unsigned long() const;
+	virtual operator unsigned long long() const;
+	virtual operator float() const;
+	virtual operator double() const;
+	virtual operator std::string() const;
+	
+	// assignment operators
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (bool value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (signed char value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (short value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (int value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (long value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (long long value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (unsigned char value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (unsigned short value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (unsigned int value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (unsigned long value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (unsigned long long value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (float value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (double value);
+	virtual unisim::util::debug::DataObject<ADDRESS>& operator = (const std::string& value);
+
+	// dereferencing operator
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> operator * ();
+	virtual const unisim::util::debug::DataObjectRef<ADDRESS> operator * () const;
+	
+	// object property accessors
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const char *property_name);
+	virtual const unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const char *property_name) const;
+
+	// array item accessors
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> operator [] (int64_t subscript);
+	virtual const unisim::util::debug::DataObjectRef<ADDRESS> operator [] (int64_t subscript) const;
+	
+private:
+	DWARF_DataObject<ADDRESS> *dw_data_object;
 };
 
 } // end of namespace dwarf

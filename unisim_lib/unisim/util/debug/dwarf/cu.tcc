@@ -38,6 +38,7 @@
 #include <unisim/util/debug/dwarf/cu.hh>
 #include <unisim/util/debug/dwarf/ml.hh>
 #include <unisim/util/debug/dwarf/version.hh>
+#include <cstring>
 
 namespace unisim {
 namespace util {
@@ -363,13 +364,10 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(unsigned int prc_num, MEMORY_ADDR& frame_base) const
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, MEMORY_ADDR& frame_base) const
 {
 	MEMORY_ADDR pc = 0;
-	DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-	unisim::service::interfaces::Register *pc_reg = dw_curr_frame->GetProgramCounterRegister();
-	if(!pc_reg) return false;
-	pc_reg->GetValue(pc);
+	if(!dw_curr_frame || !dw_curr_frame->ReadProgramCounterRegister(pc)) return false;
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
 	if(!dw_die_code_portion)
@@ -380,7 +378,7 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(unsigned int prc_num, MEMO
 		}
 		return 0;
 	}
-	return dw_die_code_portion->GetFrameBase(prc_num, frame_base);
+	return dw_die_code_portion->GetFrameBase(dw_curr_frame, frame_base);
 }
 
 template <class MEMORY_ADDR>
@@ -669,15 +667,15 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeStaticDynamicValue(int prc_num, uint16_t dw_at, uint64_t& value) const
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeStaticDynamicValue(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint16_t dw_at, uint64_t& value) const
 {
-	return dw_die && dw_die->GetAttributeStaticDynamicValue(prc_num, dw_at, value); 
+	return dw_die && dw_die->GetAttributeStaticDynamicValue(dw_curr_frame, dw_at, value); 
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeStaticDynamicValue(int prc_num, uint16_t dw_at, int64_t& value) const
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetAttributeStaticDynamicValue(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint16_t dw_at, int64_t& value) const
 {
-	return dw_die && dw_die->GetAttributeStaticDynamicValue(prc_num, dw_at, value); 
+	return dw_die && dw_die->GetAttributeStaticDynamicValue(dw_curr_frame, dw_at, value); 
 }
 
 template <class MEMORY_ADDR>

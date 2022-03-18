@@ -2,6 +2,7 @@ libc/inttypes
 libc/string
 std/cassert
 std/cctype
+std/cstring
 std/iosfwd
 std/iostream
 std/list
@@ -10,6 +11,7 @@ std/ostream
 std/queue
 std/set
 std/sstream
+std/stdexcept
 std/string
 std/vector
 unisim/service/interfaces/debug_event
@@ -17,5 +19,5 @@ unisim/service/interfaces/register
 unisim/service/interfaces/registers
 unisim/util/endian
 unisim/util/hash_table
-unisim/util/ieee754
+unisim/util/json
 unisim/util/nat_sort

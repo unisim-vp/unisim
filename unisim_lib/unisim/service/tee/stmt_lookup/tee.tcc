@@ -77,7 +77,7 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::GetStatements(std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const
+void Tee<ADDRESS, MAX_IMPORTS>::ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -86,7 +86,7 @@ void Tee<ADDRESS, MAX_IMPORTS>::GetStatements(std::multimap<ADDRESS, const unisi
 		{
 			if(*stmt_lookup_import[i])
 			{
-				(*stmt_lookup_import[i])->GetStatements(stmts);
+				(*stmt_lookup_import[i])->ScanStatements(scanner);
 			}
 		}
 	}

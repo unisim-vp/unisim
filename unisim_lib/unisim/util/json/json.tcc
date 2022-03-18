@@ -45,6 +45,42 @@ namespace util {
 namespace json {
 
 template <typename VISITOR>
+void JSON_Value::Scan(VISITOR& visitor) const
+{
+	switch(type)
+	{
+		case JSON_VALUE  : break;
+		case JSON_STRING : break;
+		case JSON_INT    : break;
+		case JSON_UINT   : break;
+		case JSON_FLOAT  : break;
+		case JSON_OBJECT : dynamic_cast<JSON_Object const *>(this)->Scan(visitor); break;
+		case JSON_ARRAY  : dynamic_cast<JSON_Array const *>(this)->Scan(visitor); break;
+		case JSON_BOOLEAN: break;
+		case JSON_NULL   : break;
+	}
+}
+
+template <typename VISITOR>
+bool JSON_Value::Visit(VISITOR& visitor) const
+{
+	switch(type)
+	{
+		case JSON_VALUE  : return false;
+		case JSON_STRING : return visitor.Visit(*static_cast<JSON_String const *>(this));
+		case JSON_INT    : return visitor.Visit(*static_cast<JSON_Integer const *>(this));
+		case JSON_UINT   : return visitor.Visit(*static_cast<JSON_UnsignedInteger const *>(this));
+		case JSON_FLOAT  : return visitor.Visit(*static_cast<JSON_Float const *>(this));
+		case JSON_OBJECT : return visitor.Visit(*static_cast<JSON_Object const *>(this));
+		case JSON_ARRAY  : return visitor.Visit(*static_cast<JSON_Array const *>(this));
+		case JSON_BOOLEAN: return visitor.Visit(*static_cast<JSON_Boolean const *>(this));
+		case JSON_NULL   : return visitor.Visit(*static_cast<JSON_Null const *>(this));
+	}
+	
+	return false;
+}
+
+template <typename VISITOR>
 JSON_Lexer<VISITOR>::JSON_Lexer()
 	: enable_c_comments(false)
 	, enable_cpp_comments(false)
@@ -463,7 +499,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 							else if(code_point <= 0xffff)
 							{
 								// 3-byte UTF-8 character: xxxxyyyyyyzzzzzz => 1110xxxx 10yyyyyy 10zzzzzz
-								uint32_t v = 0xe08080 | ((code_point << 4) & 0x1f0000) | ((code_point << 2) & 0x3f00) | (code_point & 0x3f);
+								uint32_t v = 0xe08080 | ((code_point << 4) & 0x0f0000) | ((code_point << 2) & 0x3f00) | (code_point & 0x3f);
 								char c0 = (char)((v >> 16) & 0xff);
 								char c1 = (char)((v >> 8) & 0xff);
 								char c2 = (char)(v & 0xff);

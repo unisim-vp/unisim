@@ -53,4 +53,21 @@ sc_signal_in_if<bool>& sc_signal_in_if<bool>::operator= ( const sc_signal_in_if<
 	return *this;
 }
 
+/////////////////////////////// sc_signal_in_if<sc_dt::sc_logic> ////////////////////////////////////////
+	
+sc_signal_in_if<sc_dt::sc_logic>::sc_signal_in_if()
+{
+}
+
+// Disabled
+sc_signal_in_if<sc_dt::sc_logic>::sc_signal_in_if( const sc_signal_in_if<sc_dt::sc_logic>& )
+{
+}
+
+// Disabled
+sc_signal_in_if<sc_dt::sc_logic>& sc_signal_in_if<sc_dt::sc_logic>::operator= ( const sc_signal_in_if<sc_dt::sc_logic>& )
+{
+	return *this;
+}
+
 } // end of namespace sc_core

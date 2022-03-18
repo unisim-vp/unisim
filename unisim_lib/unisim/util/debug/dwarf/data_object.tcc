@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_DATA_OBJECT_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <cstring>
 
 namespace unisim {
 namespace util {
@@ -43,74 +44,37 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_DataObjectInfo<MEMORY_ADDR>::DWARF_DataObjectInfo()
-	: dw_data_object_loc(0)
-	, dw_data_object_type(0)
-{
-}
-
-template <class MEMORY_ADDR>
-DWARF_DataObjectInfo<MEMORY_ADDR>::DWARF_DataObjectInfo(const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type)
-	: dw_data_object_loc(_dw_data_object_loc)
-	, dw_data_object_type(_dw_data_object_type)
-{
-	if(dw_data_object_type)
-	{
-		dw_data_object_type->Catch();
-	}
-}
-
-template <class MEMORY_ADDR>
-DWARF_DataObjectInfo<MEMORY_ADDR>::~DWARF_DataObjectInfo()
-{
-	if(dw_data_object_loc) delete dw_data_object_loc;
-	if(dw_data_object_type)
-	{
-		dw_data_object_type->Release();
-	}
-}
-
-template <class MEMORY_ADDR>
-const DWARF_Location<MEMORY_ADDR> *DWARF_DataObjectInfo<MEMORY_ADDR>::GetLocation() const
-{
-	return dw_data_object_loc;
-}
-
-template <class MEMORY_ADDR>
-const unisim::util::debug::Type *DWARF_DataObjectInfo<MEMORY_ADDR>::GetType() const
-{
-	return dw_data_object_type;
-}
-
-template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, unsigned int _prc_num, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR _pc, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const DWARF_MachineState<MEMORY_ADDR> *_dw_mach_state, unsigned int _prc_num, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type)
 	: dw_handler(_dw_handler)
+	, dw_mach_state(_dw_mach_state)
 	, prc_num(_prc_num)
 	, data_object_name(_data_object_name)
 	, c_loc_operation_stream(_c_loc_operation_stream)
-	, infos()
-	, cache()
-	, exists(true)
-	, fetched(false)
-	, pc(_pc)
 	, dw_data_object_loc(_dw_data_object_loc)
 	, dw_data_object_type(_dw_data_object_type)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
-	, mem_if(dw_handler->GetMemoryInterface(prc_num))
+	, mem_if(dw_mach_state->GetMemoryInterface(prc_num))
 	, bv(arch_endianness)
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
 	, debug_info_stream(dw_handler->GetDebugInfoStream())
 	, debug_warning_stream(dw_handler->GetDebugWarningStream())
 	, debug_error_stream(dw_handler->GetDebugErrorStream())
 {
-	UpdateCache(dw_data_object_loc, dw_data_object_type);
+	if(dw_data_object_type)
+	{
+		dw_data_object_type->Catch();
+	}
 }
 	
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
-	InvalidateCache();
+	if(dw_data_object_loc) delete dw_data_object_loc;
+	if(dw_data_object_type)
+	{
+		dw_data_object_type->Release();
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -122,14 +86,12 @@ const char *DWARF_DataObject<MEMORY_ADDR>::GetName() const
 template <class MEMORY_ADDR>
 MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetBitSize() const
 {
-	Seek();
 	return dw_data_object_loc ? dw_data_object_loc->GetBitSize() : 0;
 }
 
 template <class MEMORY_ADDR>
 const unisim::util::debug::Type *DWARF_DataObject<MEMORY_ADDR>::GetType() const
 {
-	Seek();
 	return dw_data_object_type;
 }
 
@@ -140,31 +102,15 @@ unisim::util::endian::endian_type DWARF_DataObject<MEMORY_ADDR>::GetEndian() con
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetPC() const
-{
-	return pc;
-}
-
-template <class MEMORY_ADDR>
-bool DWARF_DataObject<MEMORY_ADDR>::Exists() const
-{
-	Seek();
-	return exists;
-}
-
-template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::IsOptimizedOut() const
 {
-	Seek();
-	return dw_data_object_loc ? dw_data_object_loc->GetType() == DW_LOC_NULL : true;
+	return !dw_data_object_loc || (dw_data_object_loc->GetType() == DW_LOC_NULL);
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::GetAddress(MEMORY_ADDR& addr) const
 {
-	Seek();
-	if(!dw_data_object_loc) return false;
-	if(dw_data_object_loc->GetType() != DW_LOC_SIMPLE_MEMORY) return false;
+	if(!dw_data_object_loc || (dw_data_object_loc->GetType() != DW_LOC_SIMPLE_MEMORY)) return false;
 	
 	addr = dw_data_object_loc->GetAddress();
 	addr += dw_data_object_loc->GetBitOffset() / 8;
@@ -173,98 +119,34 @@ bool DWARF_DataObject<MEMORY_ADDR>::GetAddress(MEMORY_ADDR& addr) const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_DataObject<MEMORY_ADDR>::UpdateCache(const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type) const
+bool DWARF_DataObject<MEMORY_ADDR>::Seek() const
 {
-	const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = new DWARF_DataObjectInfo<MEMORY_ADDR>(_dw_data_object_loc, _dw_data_object_type);
-	
-	infos.push_back(dw_data_object_info);
-	
-	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = _dw_data_object_loc->GetRanges();
-	
-	typename std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >::const_iterator it;
-	
-	for(it = ranges.begin(); it != ranges.end(); it++)
+	if(dw_data_object_loc)
 	{
-		MEMORY_ADDR _pc;
-		
-		for(_pc = it->first; _pc < it->second; _pc++)
+		delete dw_data_object_loc;
+		dw_data_object_loc = 0;
+	}
+	if(dw_data_object_type)
+	{
+		dw_data_object_type->Release();
+		dw_data_object_type = 0;
+	}
+	std::string matched_data_object_name;
+	if(dw_handler->FindDataObject(c_loc_operation_stream, dw_mach_state, prc_num, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
+	{
+		if(dw_data_object_type)
 		{
-			cache.insert(std::pair<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>(_pc, dw_data_object_info));
+			dw_data_object_type->Catch();
 		}
+		return true;
 	}
+	
+	return false;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_DataObject<MEMORY_ADDR>::InvalidateCache()
+bool DWARF_DataObject<MEMORY_ADDR>::Fetch() const
 {
-	typename std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *>::iterator it;
-	
-	for(it = infos.begin(); it != infos.end(); it++)
-	{
-		delete (*it);
-	}
-	
-	cache.clear();
-}
-
-template <class MEMORY_ADDR>
-const DWARF_DataObjectInfo<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::LookupCache(MEMORY_ADDR _pc) const
-{
-	typename std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>::const_iterator iter = cache.find(_pc);
-	
-	if(iter != cache.end())
-	{
-		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = (*iter).second;
-		
-		return dw_data_object_info;
-	}
-	
-	return 0;
-}
-
-template <class MEMORY_ADDR>
-void DWARF_DataObject<MEMORY_ADDR>::Seek() const
-{
-	DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-	unisim::service::interfaces::Register *pc_reg = dw_curr_frame->GetProgramCounterRegister();
-	MEMORY_ADDR new_pc = 0;
-	pc_reg->GetValue(new_pc);
-	if(new_pc != pc)
-	{
-		bv.Clear();
-		fetched = false;
-		pc = new_pc;
-	
-		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = LookupCache(pc);
-		
-		if(dw_data_object_info)
-		{
-			dw_data_object_loc = dw_data_object_info->GetLocation();
-			dw_data_object_type = dw_data_object_info->GetType();
-			exists = true;
-		}
-		else
-		{
-			std::string matched_data_object_name;
-			if(dw_handler->FindDataObject(c_loc_operation_stream, prc_num, pc, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
-			{
-				UpdateCache(dw_data_object_loc, dw_data_object_type);
-				exists = true;
-			}
-			else
-			{
-				exists = false;
-			}
-		}
-	}
-}
-
-template <class MEMORY_ADDR>
-bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
-{
-	Seek();
-	if(!dw_data_object_loc) return false;
-	
 	if(debug)
 	{
 		const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = dw_data_object_loc->GetRanges();
@@ -314,50 +196,50 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 					bv.Append(buffer, 8 + (dw_data_object_bit_offset % 8), dw_data_object_bit_size);
 				}
 			}
-			return fetched = true;
+			return true;
 		case DW_LOC_SIMPLE_REGISTER:
 			{
 				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
 				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
 
 				unsigned int dw_reg_num = dw_data_object_loc->GetRegisterNumber();
-				DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-				const unisim::service::interfaces::Register *arch_reg = dw_curr_frame->GetRegister(dw_reg_num);
+				DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
+				const DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 				if(debug)
 				{
-					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (arch_reg ? arch_reg->GetName() : "?") << ")" << std::endl;
+					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << ")" << std::endl;
 				}
-				if(!arch_reg) return false;
+				if(!dw_reg) return false;
 				
-				unsigned int reg_size = arch_reg->GetSize(); // FIXME: Get true bit size
+				unsigned int reg_size = dw_reg->GetSize(); // FIXME: Get true bit size
 				
 				switch(reg_size)
 				{
 					case 1:
 						{
 							uint8_t value = 0;
-							arch_reg->GetValue(&value);
+							dw_reg->GetValue(&value);
 							bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					case 2:
 						{
 							uint16_t value = 0;
-							arch_reg->GetValue(&value);
+							dw_reg->GetValue(&value);
 							bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 16 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					case 4:
 						{
 							uint32_t value = 0;
-							arch_reg->GetValue(&value);
+							dw_reg->GetValue(&value);
 							bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 32 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					case 8:
 						{
 							uint64_t value = 0;
-							arch_reg->GetValue(&value);
+							dw_reg->GetValue(&value);
 							bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 64 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
@@ -365,7 +247,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 						return false;
 				}
 			}
-			return fetched = true;
+			return true;
 		case DW_LOC_COMPOSITE:
 			{
 				const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& dw_loc_pieces = dw_data_object_loc->GetLocationPieces();
@@ -384,45 +266,45 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 								unsigned int dw_reg_num = dw_reg_loc_piece->GetRegisterNumber();
 								unsigned int dw_bit_offset = dw_reg_loc_piece->GetBitOffset();
 								unsigned int dw_bit_size = dw_reg_loc_piece->GetBitSize();
-								DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-								const unisim::service::interfaces::Register *arch_reg = dw_curr_frame->GetRegister(dw_reg_num);
+								DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
+								const DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 								
 								if(debug)
 								{
-									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (arch_reg ? arch_reg->GetName() : "?") << "), dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << " (" << (dw_reg ? dw_reg->GetName() : "?") << "), dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
-								if(!arch_reg) return false;
+								if(!dw_reg) return false;
 								
-								unsigned int reg_size = arch_reg->GetSize(); // FIXME: Get true bit size
+								unsigned int reg_size = dw_reg->GetSize(); // FIXME: Get true bit size
 								
 								switch(reg_size)
 								{
 									case 1:
 										{
 											uint8_t value = 0;
-											arch_reg->GetValue(&value);
+											dw_reg->GetValue(&value);
 											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									case 2:
 										{
 											uint16_t value = 0;
-											arch_reg->GetValue(&value);
+											dw_reg->GetValue(&value);
 											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 16 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									case 4:
 										{
 											uint32_t value = 0;
-											arch_reg->GetValue(&value);
+											dw_reg->GetValue(&value);
 											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 32 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									case 8:
 										{
 											uint64_t value = 0;
-											arch_reg->GetValue(&value);
+											dw_reg->GetValue(&value);
 											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 64 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
@@ -454,7 +336,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 					}
 					
 				}
-				return fetched = true;
+				return true;
 			}
 			break;
 			
@@ -471,7 +353,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				
 				bv.Append(dw_implicit_simple_value, dw_data_object_bit_offset, dw_data_object_bit_size);
 				
-				return fetched = true;
+				return true;
 			}
 			break;
 		case DW_LOC_IMPLICIT_BLOCK_VALUE:
@@ -492,7 +374,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				
 				bv.Append(dw_implicit_block_value->GetValue(), dw_data_object_bit_offset, dw_data_object_bit_size);
 				
-				return fetched = true;
+				return true;
 			}
 			break;
 		default:
@@ -504,9 +386,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 {
-	Seek();
 	if(!dw_data_object_loc) return false;
-	if(!fetched) return false;
 	
 	unsigned int source_bit_offset = 0;
 	
@@ -546,15 +426,15 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
 
 				unsigned int dw_reg_num = dw_data_object_loc->GetRegisterNumber();
-				DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-				unisim::service::interfaces::Register *arch_reg = dw_curr_frame->GetRegister(dw_reg_num);
+				DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
+				DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
 				if(debug)
 				{
 					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
 				}
-				if(!arch_reg) return false;
+				if(!dw_reg) return false;
 				
-				unsigned int reg_size = arch_reg->GetSize(); // FIXME: Get true bit size
+				unsigned int reg_size = dw_reg->GetSize(); // FIXME: Get true bit size
 				
 				switch(reg_size)
 				{
@@ -564,7 +444,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 							if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							uint8_t value8 = value;
-							arch_reg->SetValue(&value8);
+							dw_reg->SetValue(&value8);
 						}
 						break;
 					case 2:
@@ -573,7 +453,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 							if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 16 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							uint16_t value16 = value;
-							arch_reg->SetValue(&value16);
+							dw_reg->SetValue(&value16);
 						}
 						break;
 					case 4:
@@ -582,7 +462,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 							if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 32 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							uint32_t value32 = value;
-							arch_reg->SetValue(&value32);
+							dw_reg->SetValue(&value32);
 						}
 						break;
 					case 8:
@@ -590,7 +470,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 							uint64_t value = 0;
 							if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 64 - dw_data_object_bit_size - dw_data_object_bit_offset : dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
-							arch_reg->SetValue(&value);
+							dw_reg->SetValue(&value);
 						}
 						break;
 					default:
@@ -621,60 +501,60 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
-								DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-								unisim::service::interfaces::Register *arch_reg = dw_curr_frame->GetRegister(dw_reg_num);
-								if(!arch_reg) return false;
+								DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_mach_state->GetCurrentFrame(prc_num);
+								DWARF_Register<MEMORY_ADDR> *dw_reg = dw_curr_frame->GetRegister(dw_reg_num);
+								if(!dw_reg) return false;
 								
-								unsigned int reg_size = arch_reg->GetSize(); // FIXME: Get true bit size
+								unsigned int reg_size = dw_reg->GetSize(); // FIXME: Get true bit size
 								
 								switch(reg_size)
 								{
 									case 1:
 										{
 											uint8_t value8 = 0;
-											arch_reg->GetValue(&value8);
+											dw_reg->GetValue(&value8);
 											uint64_t value = 0;
 											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint8_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
 											value8 = (value & ~mask) | (value & mask);
-											arch_reg->SetValue(&value8);
+											dw_reg->SetValue(&value8);
 										}
 										break;
 									case 2:
 										{
 											uint16_t value16 = 0;
-											arch_reg->GetValue(&value16);
+											dw_reg->GetValue(&value16);
 											uint64_t value = 0;
 											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 16 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint16_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
 											value16 = (value & ~mask) | (value & mask);
-											arch_reg->SetValue(&value16);
+											dw_reg->SetValue(&value16);
 										}
 										break;
 									case 4:
 										{
 											uint8_t value32 = 0;
-											arch_reg->GetValue(&value32);
+											dw_reg->GetValue(&value32);
 											uint64_t value = 0;
 											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 32 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint16_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
 											value32 = (value & ~mask) | (value & mask);
-											arch_reg->SetValue(&value32);
+											dw_reg->SetValue(&value32);
 										}
 										break;
 									case 8:
 										{
 											uint8_t value64 = 0;
-											arch_reg->GetValue(&value64);
+											dw_reg->GetValue(&value64);
 											uint64_t value = 0;
 											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 64 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint16_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
 											value64 = (value & ~mask) | (value & mask);
-											arch_reg->SetValue(&value64);
+											dw_reg->SetValue(&value64);
 										}
 										break;
 									default:
@@ -737,29 +617,593 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Read(MEMORY_ADDR obj_bit_offset, uint64_t& value, MEMORY_ADDR bit_size) const
 {
-	Seek();
-	return fetched ? (bv.Read((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, value, 0, bit_size)) : false;
+	return bv.Read((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, value, 0, bit_size);
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Write(MEMORY_ADDR obj_bit_offset, uint64_t value, MEMORY_ADDR bit_size)
 {
-	Seek();
-	return fetched ? (bv.Write((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, value, 0, bit_size)) : false;
+	return bv.Write((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, value, 0, bit_size);
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Read(MEMORY_ADDR obj_bit_offset, void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size) const
 {
-	Seek();
-	return fetched ? (bv.Read((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, (uint8_t *) buffer, buf_bit_offset, bit_size)) : false;
+	return bv.Read((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, (uint8_t *) buffer, buf_bit_offset, bit_size);
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Write(MEMORY_ADDR obj_bit_offset, const void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size)
 {
-	Seek();
-	return fetched ? (bv.Write((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, (uint8_t *) buffer, buf_bit_offset, bit_size)) : false;
+	return bv.Write((dw_data_object_loc->GetType() == DW_LOC_COMPOSITE) ? (obj_bit_offset + dw_data_object_loc->GetBitOffset()) : obj_bit_offset, (uint8_t *) buffer, buf_bit_offset, bit_size);
+}
+
+template <class MEMORY_ADDR>
+template <typename T>
+T DWARF_DataObject<MEMORY_ADDR>::ToBaseType() const
+{
+	const unisim::util::debug::Type *resolved_type = unisim::util::debug::TypeResolver::Resolve(dw_data_object_type);
+	
+	if(!resolved_type || !resolved_type->IsBase()) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	
+	T ret_value = T();
+	
+	if(resolved_type->IsFloat())
+	{
+		uint64_t data_object_bit_size = GetBitSize();
+		uint64_t data_object_byte_size = (data_object_bit_size + 7 ) / 8;
+		
+		uint8_t data_object_raw_value[data_object_byte_size];
+		if(!Read(0, data_object_raw_value, 0, data_object_bit_size)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
+		
+		switch(data_object_bit_size)
+		{
+			case 32:
+				{
+					float float_value = 0.0;
+					uint32_t raw_float_value = 0;
+					::memcpy(&raw_float_value, data_object_raw_value, 4);
+					raw_float_value = unisim::util::endian::Target2Host(arch_endianness, raw_float_value);
+					::memcpy(&float_value, &raw_float_value, 4);
+					ret_value = (T) float_value;
+				}
+				break;
+			case 64:
+				{
+					double double_value = 0.0;
+					uint64_t raw_double_value = 0;
+					::memcpy(&raw_double_value, data_object_raw_value, 8);
+					raw_double_value = unisim::util::endian::Target2Host(arch_endianness, raw_double_value);
+					::memcpy(&double_value, &raw_double_value, 8);
+					ret_value = (T) double_value;
+				}
+				break;
+			default:
+				throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+				break;
+		}
+	}
+	else
+	{
+		uint64_t uint_value;
+		if(!Read(0, uint_value, GetBitSize())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
+		if(std::numeric_limits<T>::is_signed)
+		{
+			int64_t int_value = uint_value;
+			ret_value = (T) int_value;
+		}
+		else
+		{
+			ret_value = (T) uint_value;
+		}
+	}
+	
+	return ret_value;
+}
+
+template <class MEMORY_ADDR>
+std::string DWARF_DataObject<MEMORY_ADDR>::ToString() const
+{
+	std::string ret_value;
+	
+	if(!unisim::util::debug::TypeIsCharPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	
+	MEMORY_ADDR pointer_bit_size = GetBitSize();
+	
+	uint64_t pointer_value = 0;
+	if(pointer_bit_size > (8 * sizeof(pointer_value))) pointer_bit_size = 8 * sizeof(pointer_value);
+	if(!Read(0, pointer_value, pointer_bit_size))
+	{
+		throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
+	}
+	
+	char char_value = 0;
+	do
+	{
+		if(!mem_if->ReadMemory(pointer_value, &char_value, 1))
+		{
+			throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
+		}
+		if(char_value)
+		{
+			ret_value += char_value;
+		}
+	}
+	while(++pointer_value, char_value);
+	
+	return ret_value;
+}
+
+template <class MEMORY_ADDR>
+template <typename T>
+DWARF_DataObject<MEMORY_ADDR>& DWARF_DataObject<MEMORY_ADDR>::AssignBaseType(T value)
+{
+	const unisim::util::debug::Type *resolved_type = unisim::util::debug::TypeResolver::Resolve(dw_data_object_type);
+	
+	if(!resolved_type || !resolved_type->IsBase()) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+
+	if(resolved_type->IsFloat())
+	{
+		double value = 0.0;
+		uint64_t data_object_bit_size = GetBitSize();
+		uint64_t data_object_byte_size = (data_object_bit_size + 7 ) / 8;
+		uint8_t data_object_raw_value[data_object_byte_size];
+		if(Read(0, data_object_raw_value, 0, data_object_bit_size))
+		{
+			if((data_object_bit_size == 32) || (data_object_bit_size == 64))
+			{
+				if(data_object_bit_size == 32)
+				{
+					float float_value = (float) value;
+					uint32_t raw_float_value;
+					::memcpy(&raw_float_value, &float_value, 4);
+					raw_float_value = unisim::util::endian::Host2Target(arch_endianness, raw_float_value);
+					::memcpy(data_object_raw_value, &raw_float_value, 4);
+				}
+				else if(data_object_bit_size == 64)
+				{
+					double double_value = value;
+					uint64_t raw_double_value;
+					::memcpy(&raw_double_value, &double_value, 8);
+					raw_double_value = unisim::util::endian::Host2Target(arch_endianness, raw_double_value);
+					::memcpy(data_object_raw_value, &raw_double_value, 8);
+				}
+				
+				if(!Write(0, data_object_raw_value, 0, data_object_bit_size))
+				{
+					throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::WriteError(data_object_name.c_str());
+				}
+			}
+			else
+			{
+				throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+			}
+		}
+		else
+		{
+			throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
+		}
+	}
+	else
+	{
+		uint64_t data_object_bit_size = GetBitSize();
+		uint64_t data_object_value = value;
+		if(!Write(0, data_object_value, data_object_bit_size))
+		{
+			throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::WriteError(data_object_name.c_str());
+		}
+	}
+	
+	return *this;
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObject<MEMORY_ADDR>& DWARF_DataObject<MEMORY_ADDR>::AssignString(const std::string& value)
+{
+	std::string ret_value;
+	
+	if(!unisim::util::debug::TypeIsCharPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	
+	MEMORY_ADDR pointer_bit_size = GetBitSize();
+	
+	uint64_t pointer_value = 0;
+	if(pointer_bit_size > (8 * sizeof(pointer_value))) pointer_bit_size = 8 * sizeof(pointer_value);
+	if(!Read(0, pointer_value, pointer_bit_size))
+	{
+		throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
+	}
+	
+	std::size_t n = value.length();
+	for(std::size_t i = 0; i <= n; ++i, ++pointer_value)
+	{
+		char char_value = (i < n) ? value[i] : 0;
+		if(!mem_if->WriteMemory(pointer_value, &char_value, 1))
+		{
+			throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::WriteError(data_object_name.c_str());
+		}
+	}
+	
+	return *this;
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::Dereference()
+{
+	if(!unisim::util::debug::TypeIsPointer::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	
+	CLocOperationStream deref_c_loc_operation_stream(c_loc_operation_stream);
+	deref_c_loc_operation_stream.Push(new CLocOperation(OP_DEREF));
+	
+	std::string deref_matched_data_object_name;
+	const DWARF_Location<MEMORY_ADDR> *dw_deref_data_object_loc;
+	const unisim::util::debug::Type *dw_deref_data_object_type;
+	if(dw_handler->FindDataObject(deref_c_loc_operation_stream, dw_mach_state, prc_num, deref_matched_data_object_name, dw_deref_data_object_loc, dw_deref_data_object_type))
+	{
+		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, deref_matched_data_object_name.c_str(), deref_c_loc_operation_stream, dw_deref_data_object_loc, dw_deref_data_object_type);
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::GetProperty(const char *property_name)
+{
+	if(!unisim::util::debug::TypeIsComposite::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	
+	CLocOperationStream property_c_loc_operation_stream(c_loc_operation_stream);
+	property_c_loc_operation_stream.Push(new CLocOperation(OP_STRUCT_REF));
+	property_c_loc_operation_stream.Push(new CLocOpLiteralIdentifier(property_name));
+	
+	std::string property_matched_data_object_name;
+	const DWARF_Location<MEMORY_ADDR> *dw_property_data_object_loc;
+	const unisim::util::debug::Type *dw_property_data_object_type;
+	if(dw_handler->FindDataObject(property_c_loc_operation_stream, dw_mach_state, prc_num, property_matched_data_object_name, dw_property_data_object_loc, dw_property_data_object_type))
+	{
+		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, property_matched_data_object_name.c_str(), property_c_loc_operation_stream, dw_property_data_object_loc, dw_property_data_object_type);
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObject<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::GetItem(int64_t subscript)
+{
+	if(!unisim::util::debug::TypeIsArray::Test(dw_data_object_type)) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::TypeError(data_object_name.c_str());
+	
+	CLocOperationStream item_c_loc_operation_stream(c_loc_operation_stream);
+	item_c_loc_operation_stream.Push(new CLocOperation(OP_ARRAY_SUBSCRIPT));
+	item_c_loc_operation_stream.Push(new CLocOpLiteralInteger(subscript));
+	
+	std::string item_matched_data_object_name;
+	const DWARF_Location<MEMORY_ADDR> *dw_item_data_object_loc;
+	const unisim::util::debug::Type *dw_item_data_object_type;
+	if(dw_handler->FindDataObject(item_c_loc_operation_stream, dw_mach_state, prc_num, item_matched_data_object_name, dw_item_data_object_loc, dw_item_data_object_type))
+	{
+		return new DWARF_DataObject(dw_handler, dw_mach_state, prc_num, item_matched_data_object_name.c_str(), item_c_loc_operation_stream, dw_item_data_object_loc, dw_item_data_object_type);
+	}
+	
+	return 0;
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::DWARF_DataObjectProxy(DWARF_DataObject<ADDRESS> *_dw_data_object)
+	: dw_data_object(_dw_data_object)
+{
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::~DWARF_DataObjectProxy()
+{
+	delete dw_data_object;
+}
+
+template <class ADDRESS>
+const char *DWARF_DataObjectProxy<ADDRESS>::GetName() const
+{
+	return dw_data_object->GetName();
+}
+
+template <class ADDRESS>
+ADDRESS DWARF_DataObjectProxy<ADDRESS>::GetBitSize() const
+{
+	return dw_data_object->Seek() ? dw_data_object->GetBitSize() : 0;
+}
+
+template <class ADDRESS>
+const Type *DWARF_DataObjectProxy<ADDRESS>::GetType() const
+{
+	return dw_data_object->Seek() ? dw_data_object->GetType() : 0;
+}
+
+template <class ADDRESS>
+unisim::util::endian::endian_type DWARF_DataObjectProxy<ADDRESS>::GetEndian() const
+{
+	return dw_data_object->GetEndian();
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::Exists() const
+{
+	return dw_data_object->Seek();
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::IsOptimizedOut() const
+{
+	return !dw_data_object->Seek() || dw_data_object->IsOptimizedOut();
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::GetAddress(ADDRESS& addr) const
+{
+	return !dw_data_object->Seek() || dw_data_object->GetAddress(addr);
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::Read(ADDRESS obj_bit_offset, uint64_t& value, ADDRESS bit_size) const
+{
+	return dw_data_object->Fetch() && dw_data_object->Read(obj_bit_offset, value, bit_size);
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::Write(ADDRESS obj_bit_offset, uint64_t value, ADDRESS bit_size)
+{
+	return dw_data_object->Fetch() && dw_data_object->Write(obj_bit_offset, value, bit_size) && dw_data_object->Commit();
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::Read(ADDRESS obj_bit_offset, void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) const
+{
+	return dw_data_object->Fetch() && dw_data_object->Read(obj_bit_offset, buffer, buf_bit_offset, bit_size);
+}
+
+template <class ADDRESS>
+bool DWARF_DataObjectProxy<ADDRESS>::Write(ADDRESS obj_bit_offset, const void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size)
+{
+	return dw_data_object->Fetch() && dw_data_object->Write(obj_bit_offset, buffer, buf_bit_offset, bit_size) && dw_data_object->Commit();
+}
+
+template <class ADDRESS>
+template <typename T>
+T DWARF_DataObjectProxy<ADDRESS>::ToBaseType() const
+{
+	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
+	return dw_data_object->template ToBaseType<T>();
+}
+
+template <class ADDRESS>
+std::string DWARF_DataObjectProxy<ADDRESS>::ToString() const
+{
+	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
+	return dw_data_object->ToString();
+}
+
+template <class ADDRESS>
+template <typename T>
+DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignBaseType(T value)
+{
+	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
+	dw_data_object->template AssignBaseType<T>(value);
+	if(!dw_data_object->Commit()) throw typename unisim::util::debug::DataObject<ADDRESS>::WriteError(dw_data_object->GetName());
+	return *this;
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignString(const std::string& value)
+{
+	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
+	dw_data_object->AssignString(value);
+	return *this;
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator bool() const
+{
+	return this->template ToBaseType<bool>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator signed char() const
+{
+	return this->template ToBaseType<char>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator short() const
+{
+	return this->template ToBaseType<short>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator int() const
+{
+	return this->template ToBaseType<int>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator long() const
+{
+	return this->template ToBaseType<long>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator long long() const
+{
+	return this->template ToBaseType<long long>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator unsigned char() const
+{
+	return this->template ToBaseType<unsigned char>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator unsigned short() const
+{
+	return this->template ToBaseType<unsigned short>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator unsigned int() const
+{
+	return this->template ToBaseType<unsigned int>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator unsigned long() const
+{
+	return this->template ToBaseType<unsigned long>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator unsigned long long() const
+{
+	return this->template ToBaseType<unsigned long long>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator float() const
+{
+	return this->template ToBaseType<float>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator double() const
+{
+	return this->template ToBaseType<double>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator std::string() const
+{
+	return ToString();
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (bool value)
+{
+	return this->template AssignBaseType<bool>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (signed char value)
+{
+	return this->template AssignBaseType<signed char>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (short value)
+{
+	return this->template AssignBaseType<short>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (int value)
+{
+	return this->template AssignBaseType<int>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (long value)
+{
+	return this->template AssignBaseType<long>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (long long value)
+{
+	return this->template AssignBaseType<long long>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (unsigned char value)
+{
+	return this->template AssignBaseType<unsigned char>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (unsigned short value)
+{
+	return this->template AssignBaseType<unsigned short>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (unsigned int value)
+{
+	return this->template AssignBaseType<unsigned int>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (unsigned long value)
+{
+	return this->template AssignBaseType<unsigned long>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (unsigned long long value)
+{
+	return this->template AssignBaseType<unsigned long long>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (float value)
+{
+	return this->template AssignBaseType<float>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (double value)
+{
+	return this->template AssignBaseType<double>(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::operator = (const std::string& value)
+{
+	return AssignString(value);
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator * ()
+{
+	DWARF_DataObject<ADDRESS> *derefenced_object = dw_data_object->Dereference();
+	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(derefenced_object));
+}
+
+template <class ADDRESS>
+const unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator * () const
+{
+	DWARF_DataObject<ADDRESS> *derefenced_object = dw_data_object->Dereference();
+	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(derefenced_object));
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (const char *property_name)
+{
+	DWARF_DataObject<ADDRESS> *property_object = dw_data_object->GetProperty(property_name);
+	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(property_object));
+}
+
+template <class ADDRESS>
+const unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (const char *property_name) const
+{
+	DWARF_DataObject<ADDRESS> *property_object = dw_data_object->GetProperty(property_name);
+	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(property_object));
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (int64_t subscript)
+{
+	DWARF_DataObject<ADDRESS> *array_element_object = dw_data_object->GetItem(subscript);
+	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(array_element_object));
+}
+
+template <class ADDRESS>
+const unisim::util::debug::DataObjectRef<ADDRESS> DWARF_DataObjectProxy<ADDRESS>::operator [] (int64_t subscript) const
+{
+	DWARF_DataObject<ADDRESS> *array_element_object = dw_data_object->GetItem(subscript);
+	return unisim::util::debug::DataObjectRef<ADDRESS>(new DWARF_DataObjectProxy<ADDRESS>(array_element_object));
 }
 
 } // end of namespace dwarf

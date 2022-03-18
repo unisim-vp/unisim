@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,45 +31,33 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_INTERFACES_STUBBING_HH__
+#define __UNISIM_SERVICE_INTERFACES_STUBBING_HH__
 
-#ifndef __UNISIM_UTIL_DEBUG_SUBPROGRAM_HH__
-#define __UNISIM_UTIL_DEBUG_SUBPROGRAM_HH__
-
-#include <unisim/util/debug/type.hh>
-#include <unisim/util/debug/decl_location.hh>
-#include <string>
+#include <unisim/service/interfaces/interface.hh>
+#include <unisim/util/debug/stub.hh>
 
 namespace unisim {
-namespace util {
-namespace debug {
+namespace service {
+namespace interfaces {
 
-template <class ADDRESS>
-class SubProgram
+template <typename ADDRESS>
+struct StubScanner : public ServiceInterface
 {
-public:
-	SubProgram();
-	virtual ~SubProgram();
-	virtual const char *GetName() const = 0;
-	virtual bool IsExternal() const = 0;
-	virtual bool IsDeclaration() const = 0;
-	virtual bool IsInline() const = 0;
-	virtual bool IsInlined() const = 0;
-	virtual const Type *GetReturnType() const = 0;
-	virtual unsigned int GetArity() const = 0;
-	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const = 0;
-	virtual const DeclLocation *GetDeclLocation() const = 0;
-	virtual ADDRESS GetAddress() const = 0;
-	const std::string& BuildCDecl() const;
-	void Catch() const;
-	void Release() const;
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
-private:
-	mutable unsigned int ref_count;
-	mutable std::string *cdecl;
+	virtual void Append(unisim::util::debug::Stub<ADDRESS> *stub) = 0;
 };
 
-} // end of namespace debug
-} // end of namespace util
+template <typename ADDRESS>
+struct Stubbing : ServiceInterface
+{
+	virtual void ScanStubs(StubScanner<ADDRESS>& scanner) const = 0;
+	virtual bool SetStub(unisim::util::debug::Stub<ADDRESS> *stub) = 0;
+	virtual bool RemoveStub(unisim::util::debug::Stub<ADDRESS> *stub) = 0;
+};
+
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_DEBUG_SUBPROGRAM_HH__
+#endif

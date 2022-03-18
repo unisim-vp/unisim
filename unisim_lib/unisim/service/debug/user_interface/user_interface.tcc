@@ -602,7 +602,7 @@ void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRE
 	
 	unsigned int prc_num = event->GetProcessorNumber();
 	
-	if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN))
+	if(likely(event_type == unisim::util::debug::FetchInsnEvent<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<const unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
 		if(unlikely(verbose))
@@ -614,7 +614,7 @@ void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRE
 		intr = true;
 		return;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
+	else if(likely(event_type == unisim::util::debug::CommitInsnEvent<ADDRESS>::TYPE))
 	{
 		if(unlikely(verbose))
 		{
@@ -622,7 +622,7 @@ void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRE
 			logger << DebugInfo << "/\\/\\/\\ " << *commit_insn_event << EndDebugInfo;
 		}
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
+	else if(likely(event_type == unisim::util::debug::Breakpoint<ADDRESS>::TYPE))
 	{
 		if(unlikely(verbose))
 		{
@@ -634,7 +634,7 @@ void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRE
 		prc_trap[prc_num] = true;
 		intr = true;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
+	else if(likely(event_type == unisim::util::debug::Watchpoint<ADDRESS>::TYPE))
 	{
 		if(unlikely(verbose))
 		{
@@ -646,7 +646,7 @@ void UserInterface<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRE
 		prc_trap[prc_num] = true;
 		intr = true;
 	}
-	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_TRAP))
+	else if(likely(event_type == unisim::util::debug::TrapEvent<ADDRESS>::TYPE))
 	{
 		if(unlikely(verbose))
 		{

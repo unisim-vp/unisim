@@ -46,6 +46,12 @@ namespace service {
 namespace interfaces {
 
 template <class MEMORY_ADDR>
+struct StatementScanner : public ServiceInterface
+{
+  virtual void Append(const unisim::util::debug::Statement<MEMORY_ADDR> *) = 0;
+};
+
+template <class MEMORY_ADDR>
 class StatementLookup : public ServiceInterface
 {
 public:
@@ -57,7 +63,7 @@ public:
 	}
 	FindStatementOption;
 	
-	virtual void GetStatements(std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const = 0;
+	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const = 0;

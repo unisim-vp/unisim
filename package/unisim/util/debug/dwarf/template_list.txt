@@ -11,6 +11,7 @@ unisim/util/debug/dwarf/expr_vm.tcc
 unisim/util/debug/dwarf/fde.tcc
 unisim/util/debug/dwarf/frame.tcc
 unisim/util/debug/dwarf/loc.tcc
+unisim/util/debug/dwarf/machine_state.tcc
 unisim/util/debug/dwarf/macinfo.tcc
 unisim/util/debug/dwarf/pub.tcc
 unisim/util/debug/dwarf/range.tcc

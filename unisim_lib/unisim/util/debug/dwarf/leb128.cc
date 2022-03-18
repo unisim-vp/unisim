@@ -36,6 +36,7 @@
 #include <string.h>
 #include <limits>
 #include <sstream>
+#include <cstring>
 
 namespace unisim {
 namespace util {

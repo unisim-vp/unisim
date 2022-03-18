@@ -158,12 +158,8 @@ void Monitor<ADDRESS>::getProperties(std::vector<std::string>& vect) {
 template <class ADDRESS>
 void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
 {
-
-	switch(event->GetType())
+	if(event->GetType() == Watchpoint<ADDRESS>::TYPE)
 	{
-		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT: {
 			const Watchpoint<ADDRESS> *watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (event);
 
 			string name;
@@ -207,11 +203,6 @@ void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* e
 			}
 
 		}
-			break;
-		default:
-			// ignore event
-			return;
-	}
 
 }
 

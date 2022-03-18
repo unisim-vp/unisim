@@ -1227,6 +1227,20 @@ void WebTerminal::PutChar(char c)
 				break;
 			}
 			
+			if(c == '6')
+			{
+				str.clear();
+				curr_screen_buffer->SaveCursorPosition();
+				break;
+			}
+			
+			if(c == '7')
+			{
+				str.clear();
+				curr_screen_buffer->RestoreCursorPosition();
+				break;
+			}
+			
 			// ignore previous ESC, process character as usual
 			curr_screen_buffer->PutString(str);
 			str.clear();

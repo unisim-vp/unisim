@@ -91,6 +91,7 @@ template class DWARF_Pubs<uint64_t>;
 template class DWARF_LocListEntry<uint64_t>;
 template class DWARF_Handler<uint64_t>;
 template class DWARF_DataObject<uint64_t>;
+template class DWARF_MachineState<uint64_t>;
 
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_AddressRangeDescriptor<uint64_t>&);
 template std::ostream& operator << <uint64_t>(std::ostream&, const DWARF_AddressRanges<uint64_t>&);

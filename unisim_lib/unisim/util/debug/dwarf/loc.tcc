@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_LOC_TCC__
 
 #include <unisim/util/debug/dwarf/util.hh>
+#include <cstring>
 
 namespace unisim {
 namespace util {

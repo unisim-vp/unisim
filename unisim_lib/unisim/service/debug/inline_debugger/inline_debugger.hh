@@ -49,11 +49,16 @@
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/subprogram_lookup.hh>
+#include <unisim/service/interfaces/stack_unwinding.hh>
+#include <unisim/service/interfaces/stubbing.hh>
+#include <unisim/service/interfaces/hooking.hh>
+#include <unisim/service/interfaces/debug_selecting.hh>
 
 #include <unisim/util/debug/profile.hh>
 #include <unisim/util/debug/breakpoint.hh>
 #include <unisim/util/debug/watchpoint.hh>
 #include <unisim/util/debug/fetch_insn_event.hh>
+#include <unisim/util/debug/commit_insn_event.hh>
 #include <unisim/util/debug/trap_event.hh>
 #include <unisim/util/debug/source_code_breakpoint.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
@@ -110,6 +115,7 @@ class InlineDebugger
 	: public InlineDebuggerBase
 	, public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
@@ -122,12 +128,16 @@ class InlineDebugger
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::StackUnwinding>
+	, public unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >
 {
 public:
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
 	
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
@@ -139,6 +149,9 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >   subprogram_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackUnwinding>               stack_unwinding_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Stubbing<ADDRESS> >           stubbing_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking<ADDRESS> >            hooking_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -187,7 +200,7 @@ private:
 	std::ostream *std_output_stream;
 	std::ostream *std_error_stream;
 	
-	std::list<unisim::util::debug::DataObject<ADDRESS> *> tracked_data_objects;
+	std::list<unisim::util::debug::DataObjectRef<ADDRESS> > tracked_data_objects;
 	
 	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
 	unisim::util::debug::TrapEvent<ADDRESS> *trap_event;
@@ -259,6 +272,9 @@ private:
 	bool IsUntrackDataObjectCommand(const char *cmd) const;
 	bool IsWhatIsCommand(const char *cmd) const;
 	bool IsInfoSubProgramCommand(const char *cmd) const;
+	bool IsProcessorCommand(const char *cmd) const;
+	bool IsFrameCommand(const char *cmd) const;
+	bool IsReturnCommand(const char *cmd) const;
 
 	void Help();
 	bool ListenFetch();
@@ -321,11 +337,16 @@ private:
 	void ListDataObjects(typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
 	void TrackDataObject(const char *data_object_name);
 	void UntrackDataObject(const char *data_object_name);
-	void PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object);
+	void PrintDataObject(const unisim::util::debug::DataObjectRef<ADDRESS>& data_object);
 	void PrintTrackedDataObjects();
-	void PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object);
+	void PrintDataObjectType(const unisim::util::debug::DataObjectRef<ADDRESS>& data_object);
 	void PrintDataObjectType(const char *data_object_name);
 	void InfoSubProgram(const char *subprogram_name);
+	void SelectProcessor(unsigned int prc_num);
+	void SelectFrame(unsigned int frame_num);
+	void Return(const char *literal = 0);
+	void InfoSelectedProcessor();
+	void InfoSelectedFrame();
 	bool IsVisited(ADDRESS _cia);
 };
 

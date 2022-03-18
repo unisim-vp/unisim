@@ -35,9 +35,9 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_CIE_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_CIE_TCC__
 
-#include <string.h>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
+#include <cstring>
 
 namespace unisim {
 namespace util {

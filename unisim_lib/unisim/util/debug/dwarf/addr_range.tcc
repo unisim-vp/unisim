@@ -38,6 +38,7 @@
 #include <unisim/util/debug/dwarf/encoding.hh>
 #include <unisim/util/debug/dwarf/util.hh>
 #include <iostream>
+#include <cstring>
 
 namespace unisim {
 namespace util {

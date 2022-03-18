@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/util/json/json.hh>
+#include <unisim/util/json/json.tcc>
 
 namespace unisim {
 namespace util {
@@ -175,82 +175,114 @@ std::ostream& operator << (std::ostream& os, const JSON_Array& array)
 	return os << ']';
 }
 
-bool JSON_AST_Printer::Visit(const JSON_String& value)
+JSON_AST_Printer::Visitor::Visitor(std::ostream& _stream, const JSON_Value& _root)
+	: stream(_stream)
+	, root(_root)
+	, stack()
 {
-	std::cout << '"' << Escape(value) << '"';
+}
+
+bool JSON_AST_Printer::Visitor::Visit(const JSON_String& value)
+{
+	stream << '"' << Escape(value) << '"';
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Integer& value)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Integer& value)
 {
-	std::cout << value;
+	stream << value;
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_UnsignedInteger& value)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_UnsignedInteger& value)
 {
-	std::cout << value;
+	stream << value;
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Float& value)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Float& value)
 {
-	std::cout << value;
+	stream << value;
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Boolean& value)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Boolean& value)
 {
-	std::cout << (value ? "true" : "false");
+	stream << (value ? "true" : "false");
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Null& value)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Null& value)
 {
-	std::cout << "null";
+	stream << "null";
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Object& object)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Object& object)
 {
-	std::cout << '{';
-	const JSON_Object::Members& members = object.GetMembers();
-	JSON_Object::Members::const_iterator it = members.begin();
-	while(it != members.end())
-	{
-		const JSON_Member& member = **it;
-		if(!member.Scan(*this)) return false;
-		if(++it != members.end()) std::cout << ',';
-	}
-	std::cout << '}';
+	stream << '{';
+	Push();
+	object.Scan(*this);
+	Pop();
+	stream << '}';
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Member& member)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Member& member)
 {
-	std::cout << '"' << Escape(member.GetName()) << "\":";
-	member.GetValue().Scan(*this);
+	if(GetIndex() != 0) stream << ",";
+	stream << '"' << Escape(member.GetName()) << "\":";
+	Push();
+	member.Scan(*this);
+	Pop();
+	NextIndex();
 	return true;
 }
 
-bool JSON_AST_Printer::Visit(const JSON_Array& array)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Array& array)
 {
-	std::cout << '[';
-	const JSON_Array::Elements& elements = array.GetElements();
-	JSON_Array::Elements::const_iterator it = elements.begin();
-	while(it != elements.end())
-	{
-		const JSON_Value& value = **it;
-		if(!value.Scan(*this)) return false;
-		if(++it != elements.end()) std::cout << ',';
-	}
+	if(GetIndex() != 0) stream << ",";
+	stream << '[';
+	Push();
+	array.Scan(*this);
+	Pop();
 	std::cout << ']';
+	NextIndex();
 	return true;
 }
 
-void JSON_AST_Printer::Print(std::ostream& os, const JSON_Value& root)
+void JSON_AST_Printer::Visitor::Push()
 {
-	root.Scan(*this);
+	stack.push_back(0);
+}
+
+void JSON_AST_Printer::Visitor::Pop()
+{
+	stack.pop_back();
+}
+
+unsigned int JSON_AST_Printer::Visitor::GetIndex() const
+{
+	return stack.back();
+}
+
+void JSON_AST_Printer::Visitor::NextIndex()
+{
+	++stack.back();
+}
+
+void JSON_AST_Printer::Print(std::ostream& stream, const JSON_Value& root)
+{
+	Visitor visitor(stream, root);
+	visitor.Push();
+	root.Visit(visitor);
 }
 
 } // end of namespace json

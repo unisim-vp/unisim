@@ -54,6 +54,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, debug_warning_stream(&std::cerr)
 	, debug_error_stream(&std::cerr)
 	, filename()
+	, architecture()
 	, base_addr(0)
 	, force_base_addr(false)
 	, force_use_virtual_address(true)
@@ -72,7 +73,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	if(const_blob)
 	{
 		const_blob->Catch();
-		ParseSymbols();
+// 		ParseSymbols();
 	}
 }
 
@@ -174,6 +175,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
 			dwarf_register_number_mapping_filename = s;
 			break;
+		case OPT_ARCHITECTURE:
+			architecture = s;
+			break;
 		default:
 			break;
 	}
@@ -239,6 +243,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
 			s = dwarf_register_number_mapping_filename;
+			break;
+		case OPT_ARCHITECTURE:
+			s = architecture;
 			break;
 		default:
 			s.clear();
@@ -340,6 +347,12 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(unlikely(verbose))
 	{
 		GetDebugInfoStream() << "File \"" << filename << "\" is for \"" << architecture_name << "\"" << std::endl;
+	}
+	
+	if(architecture.length())
+	{
+		GetDebugInfoStream() << "Overloading architecture for File \"" << filename << "\": using \"" << architecture << "\"" << std::endl;
+		architecture_name = architecture.c_str();
 	}
 
 	phdr_table = ReadProgramHeaders(hdr, is);
@@ -1437,9 +1450,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStatements() const
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const
 {
-	return dw_handler ? dw_handler->GetStatements() : no_stmts;
+	if(dw_handler) dw_handler->ScanStatements(scanner);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1494,6 +1507,12 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
 {
 	return dw_handler ? dw_handler->FindSubProgram(subprogram_name, filename, compilation_unit_name) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSubProgram(MEMORY_ADDR pc, const char *filename) const
+{
+	return dw_handler ? dw_handler->FindSubProgram(pc, filename) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
