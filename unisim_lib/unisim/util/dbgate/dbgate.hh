@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DBGATE_DBGATE_HH__
 #define __UNISIM_UTIL_DBGATE_DBGATE_HH__
 
+#include <unisim/util/hypapp/hypapp.hh>
 #include <fstream>
 #include <map>
 #include <set>
@@ -45,9 +46,10 @@ namespace unisim {
 namespace util {
 namespace dbgate {
 
-  struct DBGated /* : public hypapp::HttpServer */
+  struct DBGated : public hypapp::HttpServer
   {
     DBGated(int port, char const* string);
+    ~DBGated();
 
     /* Communication with guest program. */
     void write(int cd, char const* buffer, uintptr_t size);
@@ -56,9 +58,13 @@ namespace dbgate {
 
     /* Communication with debugging webclients */
 
-    // /*** hypapp::HttpServer deployment ***/
-    // virtual void Serve(hypapp::ClientConnection const& conn) override;
-
+    /*** hypapp::HttpServer deployment ***/
+    virtual void Serve(hypapp::ClientConnection const& conn) override;
+    bool ServeError(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, hypapp::HttpResponse::StatusCode response);
+    bool ServeView(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, char const* filename);
+    bool ServeFile(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, char const* filename);
+    bool Serve405(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, char const* methods);
+    
     /* Compound holding current debugging stream */
     struct Sink
     {
@@ -66,8 +72,9 @@ namespace dbgate {
       std::ofstream stream;
       Sink(std::string&& _chanpath, std::string&& _filepath);
     };
+
+    unsigned GetPort() const { return port; }
     
-    int port;                                      /*< port of the webserver */
     std::string root;                              /*< location of debugging files */ 
     std::map<int,Sink> ostreams;                   /*< active debugging streams */
     std::multimap<std::string,std::string> files;  /*< debugging file store */
