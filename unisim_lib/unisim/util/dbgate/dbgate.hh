@@ -78,6 +78,7 @@ namespace dbgate {
     std::string root;                              /*< location of debugging files */ 
     std::map<int,Sink> ostreams;                   /*< active debugging streams */
     std::multimap<std::string,std::string> files;  /*< debugging file store */
+    bool verbose;
   };
 
 } /* end of namespace dbgate */

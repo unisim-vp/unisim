@@ -43,6 +43,7 @@ namespace dbgate {
   DBGated::DBGated(int port, char const* _root)
     : hypapp::HttpServer(port ? port : 12345, 16)
     , root()
+    , verbose(false)
   {
     if (_root)
       root.assign(_root);
@@ -144,7 +145,8 @@ namespace dbgate {
     {
       if (str.compare(0,ref.size(),ref) != 0)
         {
-          std::cerr << "Can't pop " << ref << " from " << str << "\n";
+          // if (verbose)
+          //   std::cerr << "Can't pop " << ref << " from " << str << "\n";
           return str.c_str();
         }
       return &str[ref.size()];
@@ -168,12 +170,13 @@ namespace dbgate {
 			
         if(http_request.IsValid()) // http request is valid?
           {
-            std::cerr << "URI \"" << req.GetRequestURI() << "\" is valid\n";
-            
+            if (http_server.verbose)
+              std::cerr << "URI \"" << req.GetRequestURI() << "\" is valid\n";
 
             if (char const* filename = pop(http_request.GetAbsolutePath(), "/get/"))
               {
-                std::cerr << "URI \"" << req.GetRequestURI() << "\" refers to file\n";
+                if (http_server.verbose)
+                  std::cerr << "URI \"" << req.GetRequestURI() << "\" refers to file\n";
                 return http_server.ServeFile(http_request, conn, filename);
               }
             
@@ -184,16 +187,19 @@ namespace dbgate {
             
             if (char const* filename = pop(http_request.GetAbsolutePath(), "/"))
               {
-                std::cerr << "URI \"" << req.GetRequestURI() << "\" refers to root\n";
+                if (http_server.verbose)
+                  std::cerr << "URI \"" << req.GetRequestURI() << "\" refers to root\n";
                 return http_server.ServeView(http_request, conn, filename);
               }
           }
         else
           {
-            std::cerr << "URI \"" << req.GetRequestURI() << "\" is invalid\n";
+            if (http_server.verbose)
+              std::cerr << "URI \"" << req.GetRequestURI() << "\" is invalid\n";
           }
 			
-        std::cerr << "sending HTTP response 404 Not Found\n";
+        if (http_server.verbose)
+          std::cerr << "sending HTTP response 404 Not Found\n";
 			
         if (not http_server.ServeError(http_request, conn, hypapp::HttpResponse::NOT_FOUND))
           {
@@ -224,8 +230,8 @@ namespace dbgate {
              << "<style>.selected {background-color: #FFFF00;}</style>"
              << "</head>\n";
     response << "<body>";
-    response << "<table><tbody>\n"
-             << "<tr><td rowspan=\"2\"><ul>\n";
+    response << "<table style=\"width:100%;\"><tbody>\n"
+             << "<tr><td rowspan=\"2\" style=\"width:160px; vertical-align: top;\"><ul>\n";
 
     std::string filepath = root + "/" + filename;
 
@@ -236,7 +242,7 @@ namespace dbgate {
         bool this_one = kv.second == filepath;
         if (this_one)
           { prev = last; selected = &kv; }
-        else if (selected == last)
+        else if (selected and selected == last)
           { next = &kv; }
         response << "<li><a " << (this_one ? " class=\"selected\"" : "") << " href=\"" << pop(kv.second, root) << "\">" << kv.first << "</a></li>\n";
         last = &kv;
@@ -244,10 +250,16 @@ namespace dbgate {
     
     response << "</ul></td>\n";
     response << "<td>";
-    if (prev) response << "<a href=\"" << pop(prev->second, root) << "\">&larr;</a>";
-    if (next) response << "<a href=\"" << pop(next->second, root) << "\">&rarr;</a>";
+    char const* fup = "";
+    if (prev)
+      response << "<a href=\"" << pop(prev->second, root) << "\">", fup = "</a>";
+    response << "&#x25C0;" << fup << "&nbsp;";
+    fup = "";
+    if (next)
+      response << "<a href=\"" << pop(next->second, root) << "\">", fup = "</a>";
+    response << "&#x25B6;" << fup;
     response << "</td></tr>\n";
-    response << "<tr><td><iframe src=\"/get/" << filename << "\" title=\"Debug Object View\"></iframe></td></tr>\n";
+    response << "<tr><td><iframe style=\"width:100%; height:900px;\" src=\"/get/" << filename << "\" title=\"Debug Object View\"></iframe></td></tr>\n";
     response << "</tbody></table>\n";
     response << "</body>\n";
     response << "</html>\n";
@@ -259,6 +271,12 @@ namespace dbgate {
   DBGated::ServeFile(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, char const* filename)
   {
     hypapp::HttpResponse response;
+
+    if (not *filename)
+      {
+        response << "<!DOCTYPE html>\n<html lang=\"en\"><head><title>Empty</title></head><body></body></html>";
+        conn.Send(response.ToString());
+      }
 
     std::string filepath = root + "/" + filename;
     
@@ -321,13 +339,15 @@ namespace dbgate {
                   }
                 else
                   {
-                    std::cerr << "Can't seek at beginning of File \"" << filepath << "\"\n";
+                    if (verbose)
+                      std::cerr << "Can't seek at beginning of File \"" << filepath << "\"\n";
                     return ServeError(req, conn, hypapp::HttpResponse::INTERNAL_SERVER_ERROR);
                   }
               }
             else
               {
-                std::cerr << "Can't seek at end of File \"" << filepath << "\"\n";
+                if (verbose)
+                  std::cerr << "Can't seek at end of File \"" << filepath << "\"\n";
                 return ServeError(req, conn, hypapp::HttpResponse::INTERNAL_SERVER_ERROR);
               }
           }
@@ -337,13 +357,15 @@ namespace dbgate {
           }
         else
           {
-            std::cerr << "Method not allowed\n";
+            if (verbose)
+              std::cerr << "Method not allowed\n";
             return Serve405(req, conn, "OPTIONS, GET, HEAD");
           }
       }
     else
       {
-        std::cerr << "Can' open File \"" << filepath << "\" for reading\n";
+        if (verbose)
+          std::cerr << "Can' open File \"" << filepath << "\" for reading\n";
         return ServeError(req, conn, hypapp::HttpResponse::NOT_FOUND);
       }
 	
