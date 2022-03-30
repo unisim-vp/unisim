@@ -215,8 +215,8 @@ namespace symbolic {
            << (8*sizeof(VALUE_TYPE)) << "( 0x"
            << std::hex << uint64_t(v) << " )"<< std::dec;
     };
-    enum { BYTECOUNT = sizeof(VALUE_TYPE) };
-    static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
+    enum { BYTECOUNT = sizeof(VALUE_TYPE), BITSIZE = 8*BYTECOUNT };
+    static unsigned bitsize() { return BITSIZE; }
     static ScalarType::id_t GetType()
     {
       if (std::numeric_limits<VALUE_TYPE>::is_integer)
@@ -233,27 +233,28 @@ namespace symbolic {
   template <> struct TypeInfo<bool>
   {
     static void Repr( std::ostream& sink, bool v ) { sink << "BOOL( " << int(v) << " )"; }
+    enum { BYTECOUNT = 1, BITSIZE = 1 };
     static unsigned bitsize() { return 1; }
     static ScalarType::id_t GetType() { return ScalarType::BOOL; }
   };
   template <> struct TypeInfo<float>
   {
     static void Repr( std::ostream& sink, float v ) { sink << "F32( " << v << " )"; }
-    enum { BYTECOUNT = 4 };
+    enum { BYTECOUNT = 4, BITSIZE = 32 };
     static unsigned bitsize() { return 32; }
     static ScalarType::id_t GetType() { return ScalarType::F32; }
   };
   template <> struct TypeInfo<double>
   {
     static void Repr( std::ostream& sink, double v ) { sink << "F64( " << v << " )"; }
-    enum { BYTECOUNT = 8 };
+    enum { BYTECOUNT = 8, BITSIZE = 64 };
     static unsigned bitsize() { return 64; }
     static ScalarType::id_t GetType() { return ScalarType::F64; }
   };
   template <> struct TypeInfo<long double>
   {
     static void Repr( std::ostream& sink, double v ) { sink << "F80( " << v << " )"; }
-    enum { BYTECOUNT = 10 };
+    enum { BYTECOUNT = 10, BITSIZE = 80 };
     static unsigned bitsize() { return 80; }
     static ScalarType::id_t GetType() { return ScalarType::F80; }
   };

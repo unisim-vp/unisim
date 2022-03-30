@@ -110,7 +110,8 @@ main( int argc, char** argv )
       for (;;)
         {
           if (not (source >> abuf).good() or not getline(source, cbuf).good()) break;
-          std::ofstream sink("/dev/null");
+          //std::ofstream sink("/dev/null");
+          std::ostream& sink(std::cout);
           if (not process(decoder, sink, abuf.c_str(), cbuf.c_str()))
             { usage(std::cerr, argv[0]); return 1; }
         }

@@ -44,11 +44,11 @@ ProcessorBase::ProcessorBase()
     flagvalues[reg.idx()] = newRegRead( reg );
 }
 
-void
-ProcessorBase::FTop::Repr( std::ostream& sink ) const
-{
-  sink << "FpuStackTop";
-}
+// void
+// ProcessorBase::FTop::Repr( std::ostream& sink ) const
+// {
+//   sink << "FpuStackTop";
+// }
 
 unisim::util::symbolic::Expr&
 ProcessorBase::fpaccess( unsigned reg, bool write )
@@ -75,32 +75,6 @@ ProcessorBase::FLAG::Repr( std::ostream& sink ) const
 }
 
 void
-ProcessorBase::FTopWrite::GetRegName(std::ostream& sink) const
-{
-  sink << "ftop";
-}
-
-void
-ProcessorBase::Goto::GetRegName( std::ostream& sink ) const
-{
-  sink << "pc";
-}
-
-template <>
-void
-Processor<Compat32>::Call::annotate(std::ostream& sink) const
-{
-  sink << " // call (" << unisim::util::symbolic::binsec::dbx(4,return_address) << ",0)";
-}
-
-template <>
-void
-Processor<Intel64>::Call::annotate(std::ostream& sink) const
-{
-  sink << " // call (" << unisim::util::symbolic::binsec::dbx(8,return_address) << ",0)";
-}
-
-void
 ProcessorBase::VRegRead::Repr( std::ostream& sink ) const
 {
   sink << "VRegRead(" << std::dec << reg << ")";
@@ -121,11 +95,9 @@ namespace
   void
   noexec_error( OP const& op )
   {
-    std::cerr
-      << "error: no execute method in `" << typeid(op).name() << "'\n"
-      << std::hex << op.address << ":\t";
-    op.disasm( std::cerr );
-    std::cerr << '\n';
+    // std::cerr << "error: no execute method in `" << typeid(op).name() << "'\n" << std::hex << op.address << ":\t";
+    // op.disasm( std::cerr );
+    // std::cerr << '\n';
     throw ProcessorBase::Unimplemented();
   }
 }
@@ -133,3 +105,10 @@ namespace
 template <> void Processor<Compat32>::noexec( Processor<Compat32>::Operation const& op ) { noexec_error(op); }
 template <> void Processor <Intel64>::noexec( Processor<Intel64>::Operation const& op ) { noexec_error(op); }
 
+void show(unsigned idx, unisim::util::symbolic::ExprNode const* node)
+{
+  std::cerr << "[" << idx << "]: ";
+  if (node)
+    node->Repr(std::cerr);
+  std::cerr << "\n";
+}

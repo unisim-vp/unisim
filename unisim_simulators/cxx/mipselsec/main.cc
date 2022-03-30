@@ -75,65 +75,16 @@ struct Processor
   typedef unisim::util::symbolic::ScalarType           ScalarType;
   
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
-  typedef unisim::util::symbolic::binsec::Load         Load;
-  typedef unisim::util::symbolic::binsec::Store        Store;
-  typedef unisim::util::symbolic::binsec::Branch       Br;
 
   template <typename RID>
-  struct RegRead : public unisim::util::symbolic::binsec::RegRead
-  {
-    typedef RegRead<RID> this_type;
-    typedef unisim::util::symbolic::binsec::RegRead Super;
-    RegRead( RID _id, ScalarType::id_t _tp ) : Super(), tp(_tp), id(_id) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return tp; }
-    virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
-    int compare( RegRead const& rhs ) const { if (int delta = int(tp) - int(rhs.tp)) return delta; if (int delta = id.cmp( rhs.id )) return delta; return Super::compare(rhs); }
-
-    ScalarType::id_t tp;
-    RID id;
-  };
+  static Expr newRegRead( RID id ) { return new unisim::util::symbolic::binsec::RegRead<RID>( id ); }
 
   template <typename RID>
-  static Expr newRegRead( RID id, ScalarType::id_t tp ) { return new RegRead<RID>( id, tp ); }
-
-  template <typename RID>
-  struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
-  {
-    typedef RegWrite<RID> this_type;
-    typedef unisim::util::symbolic::binsec::RegWrite Super;
-    RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
-    int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
-    
-    RID id;
-  };
-
-  template <typename RID>
-  static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
+  static Expr newRegWrite( RID id, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, value ); }
   
-  struct Goto : public Br
-  {
-    Goto( Expr const& value ) : Br( value ) {}
-    virtual Goto* Mutate() const override { return new Goto( *this ); }
-    virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
-    virtual void annotate(std::ostream& sink) const override { return; }
-  };
-
-  struct Call : public Goto
-  {
-    Call( Expr const& value, uint32_t ra ) : Goto( value ), return_address( ra ) {}
-    virtual Call* Mutate() const override { return new Call( *this ); }
-    virtual void annotate(std::ostream& sink) const override { sink << " // call (" << unisim::util::symbolic::binsec::dbx(4,return_address) << ",0)"; }
-
-    uint32_t return_address;
-  };
-
   struct RegID : public unisim::util::identifier::Identifier<RegID>
   {
+    typedef uint32_t register_type;
     enum Code
       {
        NA = 0, at, v0, v1, a0, a1, a2, a3,
@@ -187,7 +138,9 @@ struct Processor
         }
       return "NA";
     }
-      
+
+    void Repr(std::ostream& sink) const { sink << c_str(); }
+
     RegID() : code(end) {}
     RegID( Code _code ) : code(_code) {}
     RegID( char const* _code ) : code(end) { init( _code ); }
@@ -213,9 +166,9 @@ public:
     // GPR regs
     gprs[0] = U32(0);
     for (unsigned reg = 1; reg < 32; ++reg)
-      gprs[reg] = U32( newRegRead( RegID("at") + (reg-1), ScalarType::U32 ) );
-    hi = newRegRead( RegID("hi"), ScalarType::U32 );
-    lo = newRegRead( RegID("lo"), ScalarType::U32 );
+      gprs[reg] = U32( newRegRead( RegID("at") + (reg-1) ) );
+    hi = newRegRead( RegID("hi") );
+    lo = newRegRead( RegID("lo") );
 
   }
 
@@ -223,7 +176,7 @@ public:
   {
     uint32_t insn_addr = insn->GetAddr();
     insn_addrs[0] = U32(insn_addr);
-    insn_addrs[1] = U32(newRegRead( RegID("npc"), ScalarType::U32 ));
+    insn_addrs[1] = U32(newRegRead( RegID("npc") ));
     insn_addrs[2] = insn_addrs[1] + U32(4);
     return_address = insn_addr + 8;
     insn->execute( *this );
@@ -233,9 +186,9 @@ public:
   {
     bool complete = path->close();
     if (branch_type == B_CALL)
-      path->add_sink( new Call( insn_addrs[2].expr, return_address ) );
+      path->add_sink( new unisim::util::symbolic::binsec::Call<uint32_t>( insn_addrs[2].expr, return_address ) );
     else
-      path->add_sink( new Goto( insn_addrs[2].expr ) );
+      path->add_sink( new unisim::util::symbolic::binsec::Branch( insn_addrs[2].expr ) );
     for (unsigned reg = 1; reg < 32; ++reg)
       {
         if (gprs[reg].expr != ref.gprs[reg].expr)
@@ -296,17 +249,17 @@ public:
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
-  U32 MemLoad( U32 const&, Expr const& addr ) { return U32(Expr( new Load(addr, 4, 2, false) ) ); }
-  U16 MemLoad( U16 const&, Expr const& addr ) { return U16(Expr( new Load(addr, 2, 1, false) ) ); }
-  U8  MemLoad( U8  const&, Expr const& addr ) { return  U8(Expr( new Load(addr, 1, 0, false) ) ); }
-  S32 MemLoad( S32 const&, Expr const& addr ) { return S32( U32(Expr( new Load(addr, 4, 2, false) ) ) ); }
-  S16 MemLoad( S16 const&, Expr const& addr ) { return S16( U16(Expr( new Load(addr, 2, 1, false) ) ) ); }
-  S8  MemLoad( S8  const&, Expr const& addr ) { return  S8(  U8(Expr( new Load(addr, 1, 0, false) ) ) ); }
+  U32 MemLoad( U32 const&, Expr const& addr ) { return U32(Expr( new unisim::util::symbolic::binsec::Load(addr, 4, 2, false) ) ); }
+  U16 MemLoad( U16 const&, Expr const& addr ) { return U16(Expr( new unisim::util::symbolic::binsec::Load(addr, 2, 1, false) ) ); }
+  U8  MemLoad( U8  const&, Expr const& addr ) { return  U8(Expr( new unisim::util::symbolic::binsec::Load(addr, 1, 0, false) ) ); }
+  S32 MemLoad( S32 const&, Expr const& addr ) { return S32( U32(Expr( new unisim::util::symbolic::binsec::Load(addr, 4, 2, false) ) ) ); }
+  S16 MemLoad( S16 const&, Expr const& addr ) { return S16( U16(Expr( new unisim::util::symbolic::binsec::Load(addr, 2, 1, false) ) ) ); }
+  S8  MemLoad( S8  const&, Expr const& addr ) { return  S8(  U8(Expr( new unisim::util::symbolic::binsec::Load(addr, 1, 0, false) ) ) ); }
   template <class T> T MemRead( U32 const& addr ) { return MemLoad( T(), addr.expr ); }
   
-  void MemStore( Expr const& addr, U32 const& value ) { stores.insert( new Store( addr, value.expr, 4, 2, false ) ); }
-  void MemStore( Expr const& addr, U16 const& value ) { stores.insert( new Store( addr, value.expr, 2, 1, false ) ); }
-  void MemStore( Expr const& addr, U8  const& value ) { stores.insert( new Store( addr, value.expr, 1, 0, false ) ); }
+  void MemStore( Expr const& addr, U32 const& value ) { stores.insert( new unisim::util::symbolic::binsec::Store( addr, value.expr, 4, 2, false ) ); }
+  void MemStore( Expr const& addr, U16 const& value ) { stores.insert( new unisim::util::symbolic::binsec::Store( addr, value.expr, 2, 1, false ) ); }
+  void MemStore( Expr const& addr, U8  const& value ) { stores.insert( new unisim::util::symbolic::binsec::Store( addr, value.expr, 1, 0, false ) ); }
   template <typename U> void MemWrite( U32 const& addr, U value ) { return MemStore( addr.expr, value ); }
     
   void AtomicBegin(U32 const&) { }

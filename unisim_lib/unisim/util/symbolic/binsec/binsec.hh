@@ -130,7 +130,7 @@ namespace binsec {
     int id;
   };
   
-  typedef std::map<Expr,Expr> Variables;
+  typedef std::map<Expr,std::pair<std::string,int>> Variables;
   
   struct ASExprNode : public ExprNode
   {
@@ -138,73 +138,6 @@ namespace binsec {
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
     virtual Expr Simplify() const { return this; }
     static  Expr Simplify( Expr const& );
-  };
-
-  struct GetCode
-  {
-    GetCode(Expr const& _expr, Variables& _vars, Label& _label)
-      : expr(_expr), vars(_vars), label(_label), expected(-1)
-    {}
-    GetCode(Expr const& _expr, Variables& _vars, Label& _label, int _expected)
-      : expr(_expr), vars(_vars), label(_label), expected(_expected)
-    {}
-    
-    friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
-    {
-      int size = ASExprNode::GenerateCode( gc.expr, gc.vars, gc.label, sink );
-      if (gc.expected >= 0 and gc.expected != size) { struct TypeSizeMisMatch {}; throw TypeSizeMisMatch(); }
-      return sink;
-    }
-    Expr const& expr; Variables& vars; Label& label;
-    int expected;
-  };
-
-  struct RegRead : public ASExprNode
-  {
-    virtual void GetRegName( std::ostream& ) const = 0;
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual void Repr( std::ostream& sink ) const;
-    virtual unsigned SubCount() const { return 0; }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
-    int compare( RegRead const& rhs ) const { return 0; }
-  };
-
-  struct RegWrite : public ASExprNode
-  {
-    RegWrite( Expr const& _value ) : value(_value) {}
-      
-    virtual void GetRegName( std::ostream& ) const = 0;
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual void Repr( std::ostream& sink ) const;
-    virtual unsigned SubCount() const { return 1; }
-    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
-    int compare( RegWrite const& rhs ) const { return 0; /* Expr only */ }
-    
-    Expr value;
-  };
-
-  struct Branch : public RegWrite
-  {
-    Branch( Expr const& value ) : RegWrite( value ) {}
-    virtual void annotate(std::ostream& sink) const = 0;
-  };
-  
-  struct AssertFalse : public ASExprNode
-  {
-    AssertFalse() {}
-    virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
-    {
-      sink << "assert (false)";
-      return 0;
-    }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-
-    virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-    virtual unsigned SubCount() const { return 0; }
-    virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
   };
 
   struct BitFilter : public ASExprNode
@@ -235,6 +168,148 @@ namespace binsec {
     uint64_t sxtend   :  1;
   };
 
+  struct GetCode
+  {
+    GetCode(Expr const& _expr, Variables& _vars, Label& _label)
+      : expr(_expr), vars(_vars), label(_label), expected(-1)
+    {}
+    GetCode(Expr const& _expr, Variables& _vars, Label& _label, int _expected)
+      : expr(_expr), vars(_vars), label(_label), expected(_expected)
+    {}
+    
+    friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
+    {
+      int size = ASExprNode::GenerateCode( gc.expr, gc.vars, gc.label, sink );
+      if (gc.expected >= 0 and gc.expected != size) { struct TypeSizeMisMatch {}; throw TypeSizeMisMatch(); }
+      return sink;
+    }
+    Expr const& expr; Variables& vars; Label& label;
+    int expected;
+  };
+
+  struct RegReadBase : public ASExprNode
+  {
+    virtual void GetRegName( std::ostream& ) const = 0;
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const;
+    virtual unsigned SubCount() const { return 0; }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegReadBase const&>( rhs ) ); }
+    int compare( RegReadBase const& rhs ) const { return 0; }
+  };
+
+  template <typename RID>
+  struct RegRead : public RegReadBase
+  {
+    typedef RegRead<RID> this_type;
+    typedef RegReadBase Super;
+    RegRead( RID _id ) : Super(), id(_id) {}
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual ScalarType::id_t GetType() const override { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
+    virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
+    int compare( RegRead const& rhs ) const { if (int delta = Super::compare(rhs)) return delta; return id.cmp( rhs.id ); }
+
+    RID id;
+  };
+
+  struct Assignment : public ExprNode
+  {
+    Assignment( Expr const& _value ) : value(_value) {}
+    
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual unsigned SubCount() const { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+    
+    Expr value;
+  };
+  
+  struct RegWriteBase : public Assignment
+  {
+    RegWriteBase( Expr const& _value, int _size ) : Assignment(_value), size(_size), rbase(0), rsize(_size) {}
+    RegWriteBase( Expr const& _value, int _size, int _rbase, int _rsize ) : Assignment(_value), size(_size), rbase(_rbase), rsize(_rsize) {}
+    
+    virtual void GetRegName( std::ostream& ) const = 0;
+    
+    int GenerateCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const;
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
+    int compare( RegWriteBase const& rhs ) const
+    {
+      if (int delta = size - rhs.size) return delta;
+      if (int delta = rbase - rhs.rbase) return delta;
+      return rsize - rhs.rsize;
+    }
+    
+    int size, rbase, rsize;
+  };
+
+  template <typename RID>
+  struct RegWrite : public RegWriteBase
+  {
+    typedef RegWrite<RID> this_type;
+    typedef RegWriteBase Super;
+    enum { bitsize = unisim::util::symbolic::TypeInfo<typename RID::register_type>::BITSIZE };
+    RegWrite( RID _id, Expr const& _value ) : Super(_value, bitsize), id(_id) {}
+    RegWrite( RID _id, int rbase, int rsize, Expr const& _value ) : Super(_value, bitsize, rbase, rsize), id(_id) {}
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
+
+    RID id;
+  };
+
+  struct Branch : public Assignment
+  {
+    Branch( Expr const& value ) : Assignment( value ) {}
+    virtual Branch* Mutate() const override { return new Branch( *this ); }
+    virtual void annotate(std::ostream& sink) const {};
+    virtual int cmp( ExprNode const& rhs ) const override { return 0; }
+    virtual void Repr( std::ostream& sink ) const;
+  };
+
+  template <typename T>
+  struct Call : public Branch
+  {
+    typedef Call<T> this_type;
+    Call( Expr const& target, T ra ) : Branch(target), return_address(ra) {}
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual void annotate(std::ostream& sink) const override
+    {
+      sink << " // call (" << unisim::util::symbolic::binsec::dbx(sizeof(T), return_address) << ",0)";
+    }
+    virtual void Repr( std::ostream& sink ) const
+    {
+      sink << "Call(";
+      Branch::Repr(sink);
+      sink << ", " << unisim::util::symbolic::binsec::dbx(sizeof(T), return_address) << ")";
+    }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const
+    {
+      if (return_address < rhs.return_address) return -1;
+      return int(return_address > rhs.return_address);
+    }
+
+    T return_address;
+  };
+  
+  struct AssertFalse : public ASExprNode
+  {
+    AssertFalse() {}
+    virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override
+    {
+      sink << "assert (false)";
+      return 0;
+    }
+    virtual ScalarType::id_t GetType() const override{ return ScalarType::VOID; }
+
+    virtual int cmp( ExprNode const& brhs ) const override { return 0; }
+    virtual unsigned SubCount() const override { return 0; }
+    virtual void Repr( std::ostream& sink ) const override { sink << "assert (false)"; }
+  };
+
   struct MemAccess : public ASExprNode
   {
     MemAccess(Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian)
@@ -263,11 +338,11 @@ namespace binsec {
       : MemAccess(_addr, _size, _alignment, _bigendian)
     {}
     virtual Load* Mutate() const override { return new Load(*this); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, 8*bytecount()); }
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual void Repr( std::ostream& sink ) const { MemAccess::Repr(sink); }
-    virtual unsigned SubCount() const { return 1; }
-    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+    virtual ScalarType::id_t GetType() const override { return ScalarType::IntegerType(false, 8*bytecount()); }
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override;
+    virtual void Repr( std::ostream& sink ) const override { MemAccess::Repr(sink); }
+    virtual unsigned SubCount() const override { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
   };
 
   struct Store : public MemAccess
@@ -275,12 +350,12 @@ namespace binsec {
     Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
       : MemAccess(_addr, _size, _alignment, _bigendian), value(_value)
     {}
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     virtual Store* Mutate() const override { return new Store(*this); }
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual void Repr( std::ostream& sink ) const;
-    virtual unsigned SubCount() const { return 2; }
-    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override;
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual unsigned SubCount() const override { return 2; }
+    virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
       
     Expr value;
   };

@@ -197,7 +197,8 @@ namespace binsec {
     Variables::iterator itr = vars.find( expr );
     if (itr != vars.end())
       {
-        return static_cast<ASExprNode const*>( itr->second.node ) ->GenCode( label, vars, sink );
+        sink << itr->second.first;
+        return itr->second.second;
       }
 
     /*** Sub expression process ***/
@@ -512,7 +513,7 @@ namespace binsec {
   }
 
   int
-  RegRead::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  RegReadBase::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
     unsigned bitsize = ScalarType(GetType()).bitsize;
     GetRegName( sink );
@@ -521,20 +522,57 @@ namespace binsec {
   }
 
   void
-  RegRead::Repr( std::ostream& sink ) const
+  RegReadBase::Repr( std::ostream& sink ) const
   {
+    sink << "RegRead( ";
     GetRegName( sink );
+    sink << " )";
   }
 
   int
-  RegWrite::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  RegWriteBase::GenerateCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
+    /* Name of the assigned register */
+    int lhsize = size, rhsize;
     GetRegName( sink );
-    sink << "<" << std::dec << ScalarType(value->GetType()).bitsize << "> := " << GetCode(value, vars, label);
-    return 0;
+    sink << '<' << size << '>';
+    if (rsize != size)
+      {
+        sink << '{' << rbase << ',' << (rbase + rsize - 1) << '}';
+        lhsize = rsize;
+      }
+    sink << " := ";
+    if (value->AsConstNode())
+      rhsize = ASExprNode::GenerateCode( value, vars, label, sink );
+    else
+      {
+        auto const& var = vars[value];
+        if (var.first.empty())
+          throw std::logic_error( "corrupted sink" );
+        sink << var.first;
+        rhsize = var.second;
+      }
+    if (lhsize != rhsize)
+      throw std::logic_error( "none matching size in register assignment" );
+    return rsize;
   }
 
-  void RegWrite::Repr( std::ostream& sink ) const { GetRegName( sink ); sink << " := "; value->Repr(sink); }
+  void RegWriteBase::Repr( std::ostream& sink ) const
+  {
+    sink << "RegWrite( ";
+    GetRegName( sink );
+    sink << ", " << size << ", " << rbase << ", " << rsize << ", ";
+    value->Repr( sink );
+    sink << " )";
+  }
+
+  void
+  Branch::Repr( std::ostream& sink ) const
+  {
+    sink << "Branch(";
+    value->Repr( sink );
+    sink << ")";
+  }
 
   int
   Load::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
@@ -683,37 +721,32 @@ namespace binsec {
         if (_up) vars = _up->vars;
       }
 
-      void add_pending( Expr e ) { pendings.push_back(e); }
+      void add_pending( RegWriteBase const* e ) { pendings.push_back(e); }
       bool has_pending() const { return pendings.size() > 0; }
 
-      Expr const& addvar( std::string const& name, unsigned size, Expr const& expr )
+      std::string const& mktemp(Expr const& expr, unsigned size, Assignment const* assignment)
       {
-        Expr& place = vars[expr];
-
-        if (place.good())
+        auto itr = vars.lower_bound(expr);
+        if (itr != vars.end() and itr->first == expr)
           throw std::logic_error( "multiple temporary definitions" );
-
-        struct TmpVar : public ASExprNode
+        
+        std::string name;
         {
-          TmpVar( std::string const& _ref, unsigned rsz )
-            : ref(_ref), dsz(rsz)
-          {}
-          virtual TmpVar* Mutate() const override { return new TmpVar(*this); }
-          virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
-          virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, dsz); }
-          virtual int cmp( ExprNode const& rhs ) const override { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
-          virtual unsigned SubCount() const { return 0; }
-          virtual void Repr( std::ostream& sink ) const { sink << ref; }
-          std::string ref;
-          int dsz;
-        };
-
-        place = new TmpVar( name, size );
-        return place;
+          std::ostringstream buf;
+          if (RegWriteBase const* rw = dynamic_cast<RegWriteBase const*>( assignment ))
+            rw->GetRegName( buf << "nxt_" );
+          else if (dynamic_cast<Branch const*>( assignment ))
+            buf << "nxt_pc";
+          else
+            buf << "tmp" << size << '_' << (next_tmp[size]++);
+          buf << "<" << size << ">";
+          name = buf.str();
+        }
+        
+        itr = vars.emplace_hint(itr, std::piecewise_construct, std::forward_as_tuple(expr), std::forward_as_tuple(std::move(name), size) );
+        return itr->second.first;
       }
-      std::string nxtname( RegWrite const* rw, unsigned rsize ) { std::ostringstream buf; rw->GetRegName( buf << "nxt_" ); buf << "<" << rsize << ">"; return buf.str(); }
-      std::string tmpname( unsigned size ) { std::ostringstream buffer; buffer << "tmp" << size << '_' << (next_tmp[size]++) << "<" << size << ">"; return buffer.str(); }
-
+      
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
       {
         Branch const* nia = 0;
@@ -745,22 +778,27 @@ namespace binsec {
             cur.write( pending );
             pending.clear();
           }
+          int GenCode(Expr const& expr, Context& context, Assignment const* rw)
+          {
+            std::string tmp_src, tmp_dst;
+            int retsize;
+            {
+              std::ostringstream buffer;
+              retsize = ASExprNode::GenerateCode( expr, context.vars, this->current(), buffer );
+              tmp_src = buffer.str();
+            }
+            std::ostringstream buffer;
+            buffer << context.mktemp( expr, retsize, rw ) << " := " << tmp_src << "; goto <next>";
+            this->write( buffer.str() );
+            return retsize;
+          }
+      
           Label cur;
           int after;
           std::string pending;
         } head( start, after.GetID() );
 
         {
-          // Keeping track of expressions involved in register
-          // assignment. Their temporary name will differ from regular
-          // temporary.
-          std::map<Expr,RegWrite const*> rtmps;
-          for (std::set<Expr>::const_iterator itr = action_tree->sinks.begin(), end = action_tree->sinks.end(); itr != end; ++itr)
-            {
-              if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
-                rtmps[rw->value] = rw;
-            }
-
           // Ordering Sub Expressions by size of expressions (so that
           // smaller expressions are factorized in larger ones)
           struct CSE : public std::multimap<unsigned,Expr>
@@ -780,53 +818,43 @@ namespace binsec {
 
           for (std::map<Expr,unsigned>::const_iterator itr = action_tree->sestats.begin(), end = action_tree->sestats.end(); itr != end; ++itr)
             {
-              if (itr->second < 2)
-                continue; // No reuse
-              if (this->vars.count(itr->first))
-                continue; // Already defined
-              cse.Process(itr->first);
+              if (itr->second >= 2 and not this->vars.count(itr->first))
+                cse.Process(itr->first);
             }
 
+          // Keeping track of expressions involved in register
+          // assignment (Clobbers). They require temporaries (which names
+          // may differ from conventional pure CSE temporaries)
+          std::map<Expr,Assignment const*> rtmps;
+          for (std::set<Expr>::const_iterator itr = action_tree->sinks.begin(), end = action_tree->sinks.end(); itr != end; ++itr)
+            {
+              if (Assignment const* rw = dynamic_cast<Assignment const*>( itr->node ))
+                if (not rw->value->AsConstNode() and not this->vars.count(rw->value))
+                  rtmps[rw->value] = rw;
+            }
+          
           for (std::multimap<unsigned,Expr>::const_iterator itr = cse.begin(), end = cse.end(); itr != end; ++itr)
             {
-              std::string tmp_src, tmp_dst;
-              int retsize;
-              {
-                std::ostringstream buffer;
-                retsize = ASExprNode::GenerateCode( itr->second, this->vars, head.current(), buffer );
-                tmp_src = buffer.str();
-                std::map<Expr,RegWrite const*>::const_iterator rtmp = rtmps.find(itr->second);
-                tmp_dst = rtmp != rtmps.end() ? this->nxtname( rtmp->second, retsize ) : this->tmpname( retsize );
-                this->addvar( tmp_dst, retsize, itr->second );
-              }
-              {
-                std::ostringstream buffer;
-                buffer << tmp_dst << " := " << tmp_src << "; goto <next>";
-                head.write( buffer.str() );
-              }
+              std::map<Expr,Assignment const*>::const_iterator rtmp = rtmps.find(itr->second);
+              head.GenCode(itr->second, *this, rtmp != rtmps.end() ? rtmp->second : 0);
             }
         }
 
         for (std::set<Expr>::const_iterator itr = action_tree->sinks.begin(), end = action_tree->sinks.end(); itr != end; ++itr)
           {
-            if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
+            if (Assignment const* assignment = dynamic_cast<Assignment const*>( itr->node ))
               {
-                Expr const  value = rw->value;
-                unsigned    rsize = ScalarType(value->GetType()).bitsize;
+                Expr const  value = assignment->value;
 
                 if (not value->AsConstNode() and not this->vars.count(value))
-                  {
-                    std::string vname = this->nxtname( rw, rsize );
-                    std::ostringstream buffer;
-                    buffer << vname << " := " << GetCode(value, this->vars, head.current()) << "; goto <next>";
-                    head.write( buffer.str() );
-                    this->addvar( vname, rsize, value );
-                  }
+                  head.GenCode(value, *this, assignment);
 
-                if (Branch const* branch = dynamic_cast<Branch const*>( rw ))
+                if (Branch const* branch = dynamic_cast<Branch const*>( assignment ))
                   { nia = branch; }
+                else if (RegWriteBase const* rw = dynamic_cast<RegWriteBase const*>( assignment ))
+                  { this->add_pending( rw ); }
                 else
-                  { this->add_pending( *itr ); }
+                  throw std::logic_error( "unknown assignment" );
               }
             else
               {
@@ -887,12 +915,10 @@ namespace binsec {
         if (not nia and not after.valid())
           return;
 
-        for (Pendings::iterator itr = this->pendings.begin(), end = this->pendings.end(); itr != end; ++itr)
+        for (RegWriteBase const* rw : this->pendings)
           {
             std::ostringstream buffer;
-            if (ASExprNode::GenerateCode( *itr, this->vars, head.current(), buffer ))
-              throw std::logic_error( "corrupted sink" );
-
+            rw->GenerateCode(head.current(), this->vars, buffer);
             buffer << "; goto <next>";
             head.write( buffer.str() );
           }
@@ -904,12 +930,10 @@ namespace binsec {
 
         for (Context* uc = this->upper; uc; uc = uc->upper)
           {
-            for (Pendings::iterator itr = uc->pendings.begin(), end = uc->pendings.end(); itr != end; ++itr)
+            for (RegWriteBase const* rw : uc->pendings)
               {
                 std::ostringstream buffer;
-                if (ASExprNode::GenerateCode( *itr, this->vars, current, buffer ))
-                  throw std::logic_error( "corrupted sink" );
-
+                rw->GenerateCode(current, this->vars, buffer);
                 buffer << "; goto <next>";
                 current.write( buffer.str() );
               }
@@ -923,7 +947,7 @@ namespace binsec {
       }
 
       Context* upper;
-      typedef std::vector<Expr> Pendings;
+      typedef std::vector<RegWriteBase const*> Pendings;
       Pendings pendings;
       Variables vars;
       std::map<unsigned,unsigned> next_tmp;
