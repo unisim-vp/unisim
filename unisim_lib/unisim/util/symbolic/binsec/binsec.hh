@@ -145,8 +145,10 @@ namespace binsec {
     BitFilter( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend )
       : input(_input), source(_source), pad0(), rshift(_rshift), pad1(), select(_select), pad2(), extend(_extend), sxtend(_sxtend)
     {}
+
+    Expr mksimple();
     virtual BitFilter* Mutate() const override { return new BitFilter( *this ); }
-    Expr Simplify() const;
+    virtual Expr Simplify() const override;
     virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, extend ); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;

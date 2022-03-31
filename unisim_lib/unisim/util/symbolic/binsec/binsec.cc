@@ -130,10 +130,7 @@ namespace binsec {
                       default:  { struct Bad {}; throw Bad(); }
                       }
 
-                    BitFilter bf( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
-                    bf.Retain(); // Prevent deletion of this stack-allocated object
-                    Expr res( bf.Simplify() );
-                    return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                    return BitFilter( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend ).mksimple();
                   }
 
               }
@@ -155,10 +152,7 @@ namespace binsec {
                       unsigned bitsize = ScalarType(node->GetType()).bitsize, select = arithmetic::BitScanReverse(v)+1;
                       if (select >= bitsize)
                         return subs[idx^1];
-                      BitFilter bf( subs[idx^1], bitsize, 0, select, bitsize, false );
-                      bf.Retain(); // Prevent deletion of this stack-allocated object
-                      Expr res( bf.Simplify() );
-                      return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                      return BitFilter( subs[idx^1], bitsize, 0, select, bitsize, false ).mksimple();
                     }
               }
             break;
@@ -174,10 +168,7 @@ namespace binsec {
                 if (src.bitsize == dst.bitsize)
                   return subs[0];
 
-                BitFilter bf( subs[0], src.bitsize, 0, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
-                bf.Retain(); // Not a heap-allocated object (never delete);
-                Expr res( bf.Simplify() );
-                return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                return BitFilter( subs[0], src.bitsize, 0, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false ).mksimple();
               }
             break;
           }
@@ -394,8 +385,20 @@ namespace binsec {
   }
 
   Expr
+  BitFilter::mksimple()
+  {
+    // Prevent deletion of this stack-allocated object
+    if (ExprNode::refs != 0) throw 0;
+    this->Retain();
+    Expr bf = this->Simplify();
+    return (bf.node == this) ? new BitFilter( *this ) : bf.node;
+  }
+
+  Expr
   BitFilter::Simplify() const
   {
+    if (rshift == 0 and source == select and select == extend) return input;
+    
     if (OpNodeBase const* onb = input->AsOpNode())
       {
         if (onb->op.code != onb->op.Lsl) return this;
@@ -404,11 +407,9 @@ namespace binsec {
         unsigned lshift = cnb->Get( unsigned() );
         if (lshift > rshift) return this;
         BitFilter bf( *this );
-        bf.Retain(); // Prevent deletion of this stack-allocated object
         bf.rshift -= lshift;
         bf.input = onb->GetSub(0);
-        Expr res( bf.Simplify() );
-        return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+        return bf.mksimple();
       }
 
     if (BitFilter const* bf = dynamic_cast<BitFilter const*>( input.node ))
@@ -424,13 +425,13 @@ namespace binsec {
         unsigned new_rshift = bf->rshift + rshift;
 
         if ((rshift + select) <= bf->select)
-          return new BitFilter( bf->input, bf->source, new_rshift, select, extend, sxtend );
+          return BitFilter( bf->input, bf->source, new_rshift, select, extend, sxtend ).mksimple();
 
         // (rshift + select) > bf->select
         if (not sxtend and bf->sxtend)
           return this;
 
-        return new BitFilter( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend );
+        return BitFilter( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend ).mksimple();
       }
 
     return this;
@@ -733,13 +734,7 @@ namespace binsec {
         std::string name;
         {
           std::ostringstream buf;
-          if (RegWriteBase const* rw = dynamic_cast<RegWriteBase const*>( assignment ))
-            rw->GetRegName( buf << "nxt_" );
-          else if (dynamic_cast<Branch const*>( assignment ))
-            buf << "nxt_pc";
-          else
-            buf << "tmp" << size << '_' << (next_tmp[size]++);
-          buf << "<" << size << ">";
+          buf << "tmp" << vars.size() << "<" << size << ">";
           name = buf.str();
         }
         
