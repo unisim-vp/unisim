@@ -250,10 +250,11 @@ template <class MEMORY_ADDR>
 class DWARF_CFI
 {
 public:
-	DWARF_CFI();
+	DWARF_CFI(const DWARF_FDE<MEMORY_ADDR> *dw_fde);
 	DWARF_CFI(const DWARF_CFI<MEMORY_ADDR>& cfi);
 	~DWARF_CFI();
 	
+	const DWARF_FDE<MEMORY_ADDR> *GetFDE() const;
 	DWARF_CFIRow<MEMORY_ADDR> *operator[](MEMORY_ADDR loc) const;
 	DWARF_CFIRow<MEMORY_ADDR> *GetRow(MEMORY_ADDR loc) const;
 	DWARF_CFIRow<MEMORY_ADDR> *GetLowestRow(MEMORY_ADDR loc) const;
@@ -263,8 +264,10 @@ public:
 	void CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CFI<MEMORY_ADDR>& cfi);
 private:
+	const DWARF_FDE<MEMORY_ADDR> *dw_fde;
 	DWARF_CFIRow<MEMORY_ADDR> *initial_row;
-	std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *> cfi_rows;
+	typedef typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *> CFIRows;
+	CFIRows cfi_rows;
 };
 
 template <class MEMORY_ADDR>

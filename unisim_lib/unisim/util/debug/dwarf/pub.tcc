@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_PUB_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_PUB_TCC__
 
+#include <cstring>
+
 namespace unisim {
 namespace util {
 namespace debug {

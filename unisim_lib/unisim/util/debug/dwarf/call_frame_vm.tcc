@@ -35,8 +35,9 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_TCC__
 
-#include <stdexcept>
 #include <unisim/util/debug/dwarf/option.hh>
+#include <stdexcept>
+#include <cstring>
 
 namespace unisim {
 namespace util {
@@ -578,16 +579,20 @@ std::ostream& operator << (std::ostream& os, const DWARF_CFIRow<MEMORY_ADDR>& cf
 }
 
 template <class MEMORY_ADDR>
-DWARF_CFI<MEMORY_ADDR>::DWARF_CFI()
-	: initial_row(new DWARF_CFIRow<MEMORY_ADDR>())
+DWARF_CFI<MEMORY_ADDR>::DWARF_CFI(const DWARF_FDE<MEMORY_ADDR> *_dw_fde)
+	: dw_fde(_dw_fde)
+	, initial_row(new DWARF_CFIRow<MEMORY_ADDR>())
+	, cfi_rows()
 {
 }
 
 template <class MEMORY_ADDR>
 DWARF_CFI<MEMORY_ADDR>::DWARF_CFI(const DWARF_CFI<MEMORY_ADDR>& cfi)
-	: initial_row(0)
+	: dw_fde(cfi.dw_fde)
+	, initial_row(0)
+	, cfi_rows()
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
+	typename CFIRows::const_iterator iter;
 	
 	for(iter = cfi.cfi_rows.begin(); iter != cfi.cfi_rows.end(); iter++)
 	{
@@ -602,7 +607,7 @@ DWARF_CFI<MEMORY_ADDR>::DWARF_CFI(const DWARF_CFI<MEMORY_ADDR>& cfi)
 template <class MEMORY_ADDR>
 DWARF_CFI<MEMORY_ADDR>::~DWARF_CFI()
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::iterator iter;
+	typename CFIRows::iterator iter;
 	
 	for(iter = cfi_rows.begin(); iter != cfi_rows.end(); iter++)
 	{
@@ -613,9 +618,15 @@ DWARF_CFI<MEMORY_ADDR>::~DWARF_CFI()
 }
 
 template <class MEMORY_ADDR>
+const DWARF_FDE<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetFDE() const
+{
+	return dw_fde;
+}
+
+template <class MEMORY_ADDR>
 DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::operator[](MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter = cfi_rows.find(loc);
+	typename CFIRows::const_iterator iter = cfi_rows.find(loc);
 	
 	return (iter != cfi_rows.end()) ? (*iter).second : 0;
 }
@@ -623,7 +634,7 @@ DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::operator[](MEMORY_ADDR loc) c
 template <class MEMORY_ADDR>
 DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetRow(MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter = cfi_rows.find(loc);
+	typename CFIRows::const_iterator iter = cfi_rows.find(loc);
 	
 	return (iter != cfi_rows.end()) ? (*iter).second : 0;
 }
@@ -631,18 +642,10 @@ DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetRow(MEMORY_ADDR loc) const
 template <class MEMORY_ADDR>
 DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetLowestRow(MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
-	
-	DWARF_CFIRow<MEMORY_ADDR> *prev_row = 0;
-	for(iter = cfi_rows.begin(); iter != cfi_rows.end(); iter++)
-	{
-		MEMORY_ADDR cur_loc = (*iter).first;
-		DWARF_CFIRow<MEMORY_ADDR> *cur_row = (*iter).second;
-		
-		if(loc < cur_loc) break;
-		prev_row = cur_row;
-	}
-	return prev_row;
+	typename CFIRows::const_iterator iter = cfi_rows.upper_bound(loc);
+	if(iter == cfi_rows.begin()) return 0;
+	--iter;
+	return (*iter).second;
 }
 
 template <class MEMORY_ADDR>
@@ -654,14 +657,14 @@ DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetInitialRow() const
 template <class MEMORY_ADDR>
 bool DWARF_CFI<MEMORY_ADDR>::HasRow(MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter = cfi_rows.find(loc);
+	typename CFIRows::const_iterator iter = cfi_rows.find(loc);
 	return (iter != cfi_rows.end());
 }
 
 template <class MEMORY_ADDR>
 void DWARF_CFI<MEMORY_ADDR>::InsertRow(DWARF_CFIRow<MEMORY_ADDR> *cfi_row)
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::iterator iter = cfi_rows.find(cfi_row->GetLocation());
+	typename CFIRows::iterator iter = cfi_rows.find(cfi_row->GetLocation());
 	
 	if(iter != cfi_rows.end())
 	{
@@ -679,7 +682,7 @@ void DWARF_CFI<MEMORY_ADDR>::InsertRow(DWARF_CFIRow<MEMORY_ADDR> *cfi_row)
 template <class MEMORY_ADDR>
 void DWARF_CFI<MEMORY_ADDR>::CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc)
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::iterator iter = cfi_rows.find(cur_loc);
+	typename CFIRows::iterator iter = cfi_rows.find(cur_loc);
 	
 	if(iter != cfi_rows.end())
 	{
@@ -696,7 +699,7 @@ void DWARF_CFI<MEMORY_ADDR>::CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc)
 template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_CFI<MEMORY_ADDR>& cfi)
 {
-	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
+	typename DWARF_CFI<MEMORY_ADDR>::CFIRows::const_iterator iter;
 	
 	for(iter = cfi.cfi_rows.begin(); iter != cfi.cfi_rows.end(); iter++)
 	{
@@ -2089,7 +2092,7 @@ const DWARF_CFI<MEMORY_ADDR> *DWARF_CallFrameVM<MEMORY_ADDR>::ComputeCFI(const D
 	MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
 		
-	DWARF_CFI<MEMORY_ADDR> *cfi = new DWARF_CFI<MEMORY_ADDR>();
+	DWARF_CFI<MEMORY_ADDR> *cfi = new DWARF_CFI<MEMORY_ADDR>(dw_fde);
 			
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *initial_instructions = dw_cie->GetInitialInstructions();
 			

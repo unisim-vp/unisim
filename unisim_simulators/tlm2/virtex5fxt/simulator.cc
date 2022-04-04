@@ -454,6 +454,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
 		*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
 		inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+		inline_debugger->debug_selecting_import        >> *debugger->debug_selecting_export[0];
 		inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
 		inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
 		inline_debugger->memory_import                 >> *debugger->memory_export[0];
@@ -464,6 +465,9 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
 		inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
 		inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+		inline_debugger->stack_unwinding_import        >> *debugger->stack_unwinding_export[0];
+		inline_debugger->stubbing_import               >> *debugger->stubbing_export[0];
+		inline_debugger->hooking_import                >> *debugger->hooking_export[0];
 	}
 	
 	if (gdb_server)
@@ -814,6 +818,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml");
+	simulator->SetVariable("debugger.architecture[0]", "powerpc");
 	
 	//  - Linux OS run-time configuration
 	simulator->SetVariable("linux-os.endianness", "big-endian");

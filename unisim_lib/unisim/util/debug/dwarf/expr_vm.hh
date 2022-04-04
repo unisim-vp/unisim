@@ -154,8 +154,7 @@ template <class MEMORY_ADDR>
 class DWARF_ExpressionVM
 {
 public:
-	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, int prc_num);
-	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Frame<MEMORY_ADDR> *dw_frame);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_ExpressionVM();
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
@@ -165,9 +164,7 @@ public:
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	unsigned int prc_num;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	DWARF_Frame<MEMORY_ADDR> *dw_frame;
+	const DWARF_Frame<MEMORY_ADDR> *dw_frame;
 	unisim::util::endian::endian_type file_endianness;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int file_address_size;

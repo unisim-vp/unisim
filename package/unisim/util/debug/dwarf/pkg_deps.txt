@@ -23,5 +23,6 @@ unisim/util/arithmetic
 unisim/util/blob
 unisim/util/debug
 unisim/util/endian
+unisim/util/nat_sort
 unisim/util/parser
 unisim/util/xml

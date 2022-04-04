@@ -119,7 +119,7 @@ public:
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup
-	virtual void GetStatements(std::multimap<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
+	virtual void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
@@ -131,6 +131,7 @@ public:
 private:
 	unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> *elf_loader;
 	std::string filename;
+	std::string architecture;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
@@ -146,6 +147,7 @@ private:
 	bool debug_dwarf;
 	
 	Parameter<std::string> param_filename;
+	Parameter<std::string> param_architecture;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;

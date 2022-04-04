@@ -166,6 +166,7 @@ CLocExprParser::CLocExprParser(std::istream *stream, std::ostream& _debug_info_s
 	EnableToken(")");
 	EnableToken("[");
 	EnableToken("]");
+	EnableToken("$return_value", TOK_RETURN_VALUE);
 	EnableDecimalIntegerToken(TOK_INT_CONST, true /* parse sign */);
 	EnableIdentifierToken(TOK_IDENT);
 	EnableEatingSpace();
@@ -195,6 +196,7 @@ unisim::util::parser::Token<CLocType> *CLocExprParser::CreateToken(const char *t
 		case TOK_INT_CONST: return new unisim::util::parser::Literal<CLocType>(text, id, loc);
 		case TOK_IDENT: return new unisim::util::parser::Literal<CLocType>(text, id, loc);
 		case TOK_ARROW: return new unisim::util::parser::InfixOperator<CLocType>(text, id, loc, 1600, 1600, unisim::util::parser::LEFT_TO_RIGHT);
+		case TOK_RETURN_VALUE: return new unisim::util::parser::Literal<CLocType>(text, id, loc);
 	}
 	return 0;
 }
@@ -363,6 +365,14 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token)
 			}
 			token->SetValue(C_LOC_EXPR);
 			return true;
+		case TOK_RETURN_VALUE:
+			// loc_expr <- lit_ident
+			if(debug)
+			{
+				debug_info_stream << "loc_expr <- $return_value" << std::endl;
+			}
+			token->SetValue(C_LOC_EXPR);
+			return true;
 	}
 	debug_warning_stream << token->GetLocation() << ", unknown ID" << std::endl;
 	return false;
@@ -393,6 +403,9 @@ void CLocExprParser::Visit(unisim::util::parser::AST<CLocType> *ast)
 				break;
 			case TOK_ARROW:
 				c_loc_operation_stream->Push(new CLocOperation(OP_STRUCT_DEREF));
+				break;
+			case TOK_RETURN_VALUE:
+				c_loc_operation_stream->Push(new CLocOperation(OP_RETURN_VALUE));
 				break;
 		}
 	}
@@ -438,6 +451,9 @@ std::ostream& operator << (std::ostream& os, const CLocOperation& op)
 			break;
 		case OP_ARRAY_SUBSCRIPT:
 			os << "OP_ARRAY_SUBSCRIPT";
+			break;
+		case OP_RETURN_VALUE:
+			os << "OP_RETURN_VALUE";
 			break;
 	}
 	return os;

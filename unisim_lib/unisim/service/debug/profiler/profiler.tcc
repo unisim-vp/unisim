@@ -44,8 +44,6 @@
 #include <set>
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/util/debug/data_object_initializer.hh>
-#include <unisim/util/debug/data_object_initializer.tcc>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/debug/profile.tcc>
 #include <unisim/util/endian/endian.hh>
@@ -2273,7 +2271,7 @@ void Profiler<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *
 {
 	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
 	
-	if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
+	if(likely(event_type == unisim::util::debug::CommitInsnEvent<ADDRESS>::TYPE))
 	{
 		const unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = static_cast<const unisim::util::debug::CommitInsnEvent<ADDRESS> *>(event);
 		

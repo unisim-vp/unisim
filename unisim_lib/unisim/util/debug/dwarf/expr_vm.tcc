@@ -40,6 +40,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <stack>
+#include <cstring>
 
 namespace unisim {
 namespace util {
@@ -447,31 +448,8 @@ std::ostream& operator << (std::ostream& os, const DWARF_Location<MEMORY_ADDR>& 
 }
 
 template <class MEMORY_ADDR>
-DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, int _prc_num)
+DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const DWARF_Frame<MEMORY_ADDR> *_dw_frame)
 	: dw_handler(_dw_handler)
-	, prc_num(_prc_num)
-	, mem_if(_dw_handler->GetMemoryInterface((prc_num >= 0) ? prc_num : 0))
-	, dw_frame(0)
-	, file_endianness(_dw_handler->GetFileEndianness())
-	, arch_endianness(_dw_handler->GetArchEndianness())
-	, file_address_size(_dw_handler->GetFileAddressSize())
-	, arch_address_size(_dw_handler->GetArchAddressSize())
-	, frame_base(0)
-	, has_frame_base(false)
-	, object_addr(0)
-	, has_object_addr(false)
-	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
-	, debug_info_stream(_dw_handler->GetDebugInfoStream())
-	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
-	, debug_error_stream(_dw_handler->GetDebugErrorStream())
-{
-}
-
-template <class MEMORY_ADDR>
-DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, DWARF_Frame<MEMORY_ADDR> *_dw_frame)
-	: dw_handler(_dw_handler)
-	, prc_num(_dw_frame->GetProcessorNumber())
-	, mem_if(_dw_handler->GetMemoryInterface((prc_num >= 0) ? prc_num : 0))
 	, dw_frame(_dw_frame)
 	, file_endianness(_dw_handler->GetFileEndianness())
 	, arch_endianness(_dw_handler->GetArchEndianness())
@@ -1191,7 +1169,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							}
 							
 							MEMORY_ADDR cfa = 0;
-							if(!dw_handler->ComputeCFA(prc_num, cfa))
+							if(!dw_handler->ComputeCFA(dw_frame, cfa))
 							{
 								debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: computing of CFA failed" << std::endl;
 								return false;
@@ -2184,130 +2162,19 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 template <class MEMORY_ADDR>
 bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_num, MEMORY_ADDR& reg_value) const
 {
-	if(dw_frame) return dw_frame->ReadRegister(dw_reg_num, reg_value);
-	
-	DWARF_Frame<MEMORY_ADDR> *dw_curr_frame = dw_handler->GetCurrentFrame(prc_num);
-	return dw_curr_frame->ReadRegister(dw_reg_num, reg_value);
+	return dw_frame && dw_frame->template ReadRegister<MEMORY_ADDR>(dw_reg_num, reg_value);
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size, MEMORY_ADDR addr_space) const
 {
-	// FIXME: addr_space is currently ignored in our implementation
 	if(read_size > arch_address_size)
 	{
 		debug_error_stream << "memory read of " << read_size << " bytes is unsupported" << std::endl;
 		return false;
 	}
 	if(!read_size) read_size = arch_address_size;
-	
-	switch(read_size)
-	{
-		case sizeof(uint8_t):
-			{
-				uint8_t value = 0;
-				if(!mem_if->ReadMemory(addr, &value, read_size)) return false;
-				read_addr = value;
-			}
-			break;
-		case sizeof(uint16_t):
-			{
-				uint16_t value = 0;
-				if(!mem_if->ReadMemory(addr, &value, read_size)) return false;
-				read_addr = unisim::util::endian::Target2Host(arch_endianness, value);
-			}
-			break;
-		case 3:
-			{
-				uint8_t buf[3] = { 0, 0, 0 };
-				if(!mem_if->ReadMemory(addr, buf, read_size)) return false;
-				switch(arch_endianness)
-				{
-					case E_BIG_ENDIAN:
-						read_addr = ((uint32_t) buf[0] << 16) | ((uint32_t) buf[1] << 8) | (uint32_t) buf[2];
-						break;
-					case E_LITTLE_ENDIAN:
-						read_addr = (uint32_t) buf[0] | ((uint32_t) buf[1] << 8) | ((uint32_t) buf[2] << 16);
-						break;
-					default:
-						read_addr = 0;
-						break;
-				}
-			}
-			break;
-		case sizeof(uint32_t):
-			{
-				uint32_t value = 0;
-				if(!mem_if->ReadMemory(addr, &value, read_size)) return false;
-				read_addr = unisim::util::endian::Target2Host(arch_endianness, value);
-			}
-			break;
-		case 5:
-			{
-				uint8_t buf[5] = { 0, 0, 0, 0, 0 };
-				if(!mem_if->ReadMemory(addr, buf, read_size)) return false;
-				switch(arch_endianness)
-				{
-					case E_BIG_ENDIAN:
-						read_addr = ((uint64_t) buf[0] << 32) | ((uint64_t) buf[1] << 24) | ((uint64_t) buf[2] << 16) | ((uint64_t) buf[3] << 8) | (uint64_t) buf[4];
-						break;
-					case E_LITTLE_ENDIAN:
-						read_addr = (uint64_t) buf[0] | ((uint64_t) buf[1] << 8) | ((uint64_t) buf[2] << 16) | ((uint64_t) buf[3] << 24) | ((uint64_t) buf[4] << 32);
-						break;
-					default:
-						read_addr = 0;
-						break;
-				}
-			}
-			break;
-		case 6:
-			{
-				uint8_t buf[6] = { 0, 0, 0, 0, 0, 0 };
-				if(!mem_if->ReadMemory(addr, buf, read_size)) return false;
-				switch(arch_endianness)
-				{
-					case E_BIG_ENDIAN:
-						read_addr = ((uint64_t) buf[0] << 40) | ((uint64_t) buf[1] << 32) | ((uint64_t) buf[2] << 24) | ((uint64_t) buf[3] << 16) | ((uint64_t) buf[4] << 8) | (uint64_t) buf[5];
-						break;
-					case E_LITTLE_ENDIAN:
-						read_addr = (uint64_t) buf[0] | ((uint64_t) buf[1] << 8) | ((uint64_t) buf[2] << 16) | ((uint64_t) buf[3] << 24) | ((uint64_t) buf[4] << 32) | ((uint64_t) buf[4] << 40);
-						break;
-					default:
-						read_addr = 0;
-						break;
-				}
-			}
-			break;
-		case 7:
-			{
-				uint8_t buf[7] = { 0, 0, 0, 0, 0, 0, 0 };
-				if(!mem_if->ReadMemory(addr, buf, read_size)) return false;
-				switch(arch_endianness)
-				{
-					case E_BIG_ENDIAN:
-						read_addr = ((uint64_t) buf[0] << 48) | ((uint64_t) buf[1] << 40) | ((uint64_t) buf[2] << 32) | ((uint64_t) buf[3] << 24) | ((uint64_t) buf[4] << 16) | ((uint64_t) buf[5] << 8) | (uint64_t) buf[6];
-						break;
-					case E_LITTLE_ENDIAN:
-						read_addr = (uint64_t) buf[0] | ((uint64_t) buf[1] << 8) | ((uint64_t) buf[2] << 16) | ((uint64_t) buf[3] << 24) | ((uint64_t) buf[4] << 32) | ((uint64_t) buf[4] << 40) | ((uint64_t) buf[5] << 48);
-						break;
-					default:
-						read_addr = 0;
-						break;
-				}
-			}
-			break;
-		case sizeof(uint64_t):
-			{
-				uint32_t value = 0;
-				if(!mem_if->ReadMemory(addr, &value, read_size)) return false;
-				read_addr = unisim::util::endian::Target2Host(arch_endianness, value);
-			}
-			break;
-		default:
-			debug_error_stream << "memory read of " << read_size << " bytes is unsupported" << std::endl;
-			return false;
-	}
-	return true;
+	return dw_frame && dw_frame->template Load<MEMORY_ADDR>(addr, read_addr, read_size, arch_endianness, addr_space);
 }
 
 template <class MEMORY_ADDR>

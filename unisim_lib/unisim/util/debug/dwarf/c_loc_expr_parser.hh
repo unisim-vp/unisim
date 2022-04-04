@@ -57,6 +57,7 @@ typedef enum
 	OP_STRUCT_REF,      // s.x
 	OP_STRUCT_DEREF,    // s->x
 	OP_ARRAY_SUBSCRIPT, // a[]
+	OP_RETURN_VALUE     // return value of function
 } CLocOpcode;
 
 std::ostream& operator << (std::ostream& os, const CLocOperation& op);
@@ -150,6 +151,7 @@ private:
 		TOK_INT_CONST = TOK_EOF + 1,
 		TOK_IDENT,
 		TOK_ARROW,
+		TOK_RETURN_VALUE
 	};
 	
 	std::ostream& debug_info_stream;

@@ -50,6 +50,7 @@ class SubProgramLookup : public ServiceInterface
 public:
 	//virtual void EnumerateSubProgramNames(std::set<std::string>& name_set) const = 0;
 	virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const = 0;
+	virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(ADDRESS pc, const char *filename = 0) const = 0;
 };
 
 } // end of namespace interfaces

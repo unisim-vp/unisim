@@ -1,6 +1,6 @@
 <!-- DWARF register number mapping for PowerPC e500 and e200 for GCC -->
 <dw_reg_num_mapping>
-	<architecture name="powerpc">
+	<architecture name="powerpc-e500">
 		<stack_pointer dw_reg_num="1"/>
 		<program_counter name="pc"/>
 		<register dw_reg_num="0" arch_reg="r0"/>
@@ -38,7 +38,6 @@
 		<register dw_reg_num="64" arch_reg="CR"/>
 		<register dw_reg_num="65" arch_reg="LR"/>   <!-- for gcc r65 is LR: see https://gcc.gnu.org/ml/gcc-patches/2012-11/msg02136.html -->
 		<register dw_reg_num="101" arch_reg="XER"/>
-		<register dw_reg_num="108" arch_reg="LR"/>
 		<register dw_reg_num="109" arch_reg="CTR"/>
 		<register dw_reg_num="612" arch_reg="SPEFSCR"/>
 	</architecture>

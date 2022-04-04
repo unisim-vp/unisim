@@ -4744,6 +4744,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 			*debugger->debug_event_listener_import[front_end_num]   >> inline_debugger[prc_num]->debug_event_listener_export;
 			*debugger->debug_yielding_import[front_end_num]         >> inline_debugger[prc_num]->debug_yielding_export;
 			inline_debugger[prc_num]->debug_yielding_request_import >> *debugger->debug_yielding_request_export[front_end_num];
+			inline_debugger[prc_num]->debug_selecting_import        >> *debugger->debug_selecting_export[front_end_num];
 			inline_debugger[prc_num]->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[front_end_num];
 			inline_debugger[prc_num]->disasm_import                 >> *debugger->disasm_export[front_end_num];
 			inline_debugger[prc_num]->memory_import                 >> *debugger->memory_export[front_end_num];
@@ -4754,6 +4755,9 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 			inline_debugger[prc_num]->debug_info_loading_import     >> *debugger->debug_info_loading_export[front_end_num];
 			inline_debugger[prc_num]->data_object_lookup_import     >> *debugger->data_object_lookup_export[front_end_num];
 			inline_debugger[prc_num]->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[front_end_num];
+			inline_debugger[prc_num]->stack_unwinding_import        >> *debugger->stack_unwinding_export[front_end_num];
+			inline_debugger[prc_num]->stubbing_import               >> *debugger->stubbing_export[front_end_num];
+			inline_debugger[prc_num]->hooking_import                >> *debugger->hooking_export[front_end_num];
 		}
 	}
 
@@ -6386,6 +6390,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[6]", 0); // profiler
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
+	simulator->SetVariable("debugger.architecture[0]", "powerpc-e500");
+	simulator->SetVariable("debugger.architecture[1]", "powerpc-e500");
+	simulator->SetVariable("debugger.architecture[2]", "powerpc-e500");
 	
 	//  - Netstreamer
 	simulator->SetVariable("netstreamer0.tcp-port", 12348);

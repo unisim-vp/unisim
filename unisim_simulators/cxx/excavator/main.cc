@@ -75,7 +75,7 @@ template <typename MEMORY_ADDR, typename CONFIG_READER>
 class DWARF_Excavator
 {
 public:
-	DWARF_Excavator(const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler, const CONFIG_READER& config_reader);
+	DWARF_Excavator(const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler, const unisim::util::debug::SymbolTable<MEMORY_ADDR> *_symbol_table, const CONFIG_READER& config_reader);
 	virtual ~DWARF_Excavator();
 	bool Dig();
 protected:
@@ -85,6 +85,7 @@ private:
 	typedef typename CONFIG_READER::SuppressFunctions SuppressFunctions;
 	
 	const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 	const std::string& binary;
 	Verbose verbose;
 	
@@ -222,8 +223,9 @@ namespace {
 ///////////////////////////// DWARF_Excavator<> ///////////////////////////////
 
 template <typename MEMORY_ADDR, typename CONFIG_READER>
-DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::DWARF_Excavator(const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *_dw_handler, const CONFIG_READER& config_reader)
+DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::DWARF_Excavator(const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *_dw_handler, const unisim::util::debug::SymbolTable<MEMORY_ADDR> *_symbol_table, const CONFIG_READER& config_reader)
 	: dw_handler(_dw_handler)
+	, symbol_table(_symbol_table)
 	, binary(config_reader.GetBinary())
 	, verbose(config_reader.GetVerbose())
 	, sources(config_reader.GetSources())
@@ -855,7 +857,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 		SubProgramDefinitionsByAddr subprogram_definitions_by_addr;
 		VariableDefinitionsByAddr variable_definitions_by_addr;
 		
-		DebugInfoVisitor(const DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>& _dw_excavator, const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+		DebugInfoVisitor(const DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>& _dw_excavator, const unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *_dw_handler, unisim::util::debug::SymbolTable<MEMORY_ADDR> const *_symbol_table)
 			: dw_excavator(_dw_excavator)
 			, dw_handler(_dw_handler)
 			, binary(dw_excavator.binary)
@@ -867,7 +869,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			, compilation_units()
 			, testbench(0) 
 			, curr_comp_unit(0)
-			, symbol_table(dw_handler->GetSymbolTable())
+			, symbol_table(_symbol_table)
 			, subprogram_definitions_by_addr()
 			, variable_definitions_by_addr()
 		{
@@ -1663,7 +1665,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 		}
 	};
 
-	DebugInfoVisitor debug_info_visitor(*this, dw_handler);
+	DebugInfoVisitor debug_info_visitor(*this, dw_handler, symbol_table);
 	if(!debug_info_visitor.Run()) return false;
 	if(!debug_info_visitor.Generate()) return false;
 	
@@ -2151,7 +2153,7 @@ int main(int argc, char *argv[])
 					{
 						std::cerr << "WARNING! ELF32 Binary file \"" << binary_filename << "\" does not contain any debugging information" << std::endl;
 					}
-					DWARF_Excavator<uint32_t, JSON_ConfigReader> dw_excavator32(dw_handler32, json_config_reader);
+					DWARF_Excavator<uint32_t, JSON_ConfigReader> dw_excavator32(dw_handler32, elf32_loader.GetSymbolTable(), json_config_reader);
 					status = !dw_excavator32.Dig();
 				}
 				else
@@ -2188,7 +2190,7 @@ int main(int argc, char *argv[])
 					{
 						std::cerr << "WARNING! ELF64 Binary file \"" << binary_filename << "\" does not contain any debugging information" << std::endl;
 					}
-					DWARF_Excavator<uint64_t, JSON_ConfigReader> dw_excavator64(dw_handler64, json_config_reader);
+					DWARF_Excavator<uint64_t, JSON_ConfigReader> dw_excavator64(dw_handler64, elf64_loader.GetSymbolTable(), json_config_reader);
 					status = !dw_excavator64.Dig();
 				}
 				else

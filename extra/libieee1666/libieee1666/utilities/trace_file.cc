@@ -344,6 +344,10 @@ sc_trace_file_base::sc_trace_file_base(const char *name, const char *ext)
 {
 }
 
+sc_trace_file_base::~sc_trace_file_base()
+{
+}
+
 void sc_trace_file_base::set_time_unit(double d, sc_time_unit tu)
 {
 	double log10_d = log10(d);

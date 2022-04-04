@@ -44,6 +44,9 @@
 #include <unisim/util/debug/commit_insn_event.hh>
 #include <unisim/util/debug/trap_event.hh>
 #include <unisim/util/debug/source_code_breakpoint.hh>
+#include <unisim/util/debug/subprogram_breakpoint.hh>
+#include <unisim/util/debug/stub.hh>
+#include <unisim/util/debug/dwarf/machine_state.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
 #include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <unisim/util/loader/coff_loader/coff_loader.hh>
@@ -65,8 +68,13 @@
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/subprogram_lookup.hh>
+#include <unisim/service/interfaces/stack_unwinding.hh>
+#include <unisim/service/interfaces/stubbing.hh>
+#include <unisim/service/interfaces/hooking.hh>
 
 #include <string>
+#include <set>
+#include <map>
 
 #include <pthread.h>
 
@@ -119,6 +127,9 @@ public:
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugInfoLoading>            *debug_info_loading_export[MAX_FRONT_ENDS];
 	unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >  *data_object_lookup_export[MAX_FRONT_ENDS];  // depends on selected CPU number
 	unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >  *subprogram_lookup_export[MAX_FRONT_ENDS];   // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::StackUnwinding>              *stack_unwinding_export[MAX_FRONT_ENDS];     // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Stubbing<ADDRESS> >          *stubbing_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> >           *hooking_export[MAX_FRONT_ENDS];
 
 	// Import from Loader
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Blob<ADDRESS> > blob_import;
@@ -147,7 +158,7 @@ public:
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr, type); }
 
 	// Statements
-	void GetStatements(std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const { GetStatements(MAX_FRONT_ENDS, stmts); }
+	void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const { ScanStatements(MAX_FRONT_ENDS, scanner); }
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, opt); }
 	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, opt); }
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const { return FindStatement(MAX_FRONT_ENDS, source_code_location); }
@@ -178,6 +189,8 @@ private:
 	// unisim::service::interfaces::DebugSelecting (tagged)
 	bool DebugSelect(unsigned int front_end_num, unsigned int prc_num);
 	unsigned int DebugGetSelected(unsigned int front_end_num) const;
+	bool DebugFrameSelect(unsigned int front_end_num, unsigned int frame_num);
+	unsigned int DebugFrameGetSelected(unsigned int front_end_num) const;
 
 	// unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
 	bool Listen(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event);
@@ -213,7 +226,7 @@ private:
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
-	void GetStatements(unsigned int front_end_num, std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const;
+	void ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
@@ -230,11 +243,28 @@ private:
 	bool IsBinaryEnabled(unsigned int front_end_num, const char *filename) const;
 	
 	// unisim::service::interfaces::DataObjectLookup<ADDRESS> (tagged)
-	unisim::util::debug::DataObject<ADDRESS> *FindDataObject(unsigned int front_end_num, const char *data_object_name) const;
+	unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(unsigned int front_end_num, const char *data_object_name) const;
 	void EnumerateDataObjectNames(unsigned int front_end_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const;
 	
 	// unisim::service::interfaces::SubProgramLookup<ADDRESS> (tagged)
-	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename, const char *compilation_unit_name) const;
+	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(unsigned int front_end_num, ADDRESS pc, const char *filename = 0) const;
+	
+	// unisim::service::interfaces::StackUnwinding (tagged)
+	bool UnwindStack(unsigned int front_end_num, unsigned int frame_num = 1);
+	
+	// unisim::service::interfaces::Stubbing<ADDRESS> (tagged)
+	void ScanStubs(unsigned int front_end_num, unisim::service::interfaces::StubScanner<ADDRESS>& scanner) const;
+	bool SetStub(unsigned int front_end_num, unisim::util::debug::Stub<ADDRESS> *stub);
+	bool RemoveStub(unsigned int front_end_num, unisim::util::debug::Stub<ADDRESS> *stub);
+	
+	// unisim::service::interfaces::Hooking<ADDRESS> (tagged)
+	void ScanHooks(unsigned int front_end_num, unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const;
+	bool SetHook(unsigned int front_end_num, unisim::util::debug::Hook<ADDRESS> *hook);
+	bool RemoveHook(unsigned int front_end_num, unisim::util::debug::Hook<ADDRESS> *hook);
+
+	// unisim::service::interfaces::DebugEventListener<ADDRESS> (tagged)
+	void OnDebugEvent(unsigned int front_end_num, const unisim::util::debug::Event<ADDRESS> *event);
 	
 	struct ProcessorGate
 		: unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
@@ -346,6 +376,9 @@ private:
 		, unisim::kernel::Service<unisim::service::interfaces::DebugInfoLoading>
 		, unisim::kernel::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 		, unisim::kernel::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::StackUnwinding>
+		, unisim::kernel::Service<unisim::service::interfaces::Stubbing<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::Hooking<ADDRESS> >
 		, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
 		, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >
 	{
@@ -362,6 +395,9 @@ private:
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugInfoLoading> debug_info_loading_export;
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_export; // depends on selected CPU number
 		unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_export; // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::StackUnwinding> stack_unwinding_export;               // depends on selected CPU number 
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Stubbing<ADDRESS> > stubbing_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> > hooking_export;
 		
 		// Imports from Front-end
 		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_import;
@@ -381,6 +417,9 @@ private:
 			, unisim::kernel::Service<unisim::service::interfaces::DebugInfoLoading>(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::StackUnwinding>(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::Stubbing<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::Hooking<ADDRESS> >(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
 			, debug_yielding_request_export("debug-yielding-request-export", this)
@@ -395,6 +434,9 @@ private:
 			, debug_info_loading_export("debug-info-loading-export", this)
 			, data_object_lookup_export("data-object-lookup-export", this)
 			, subprogram_lookup_export("subprogram-lookup-export", this)
+			, stack_unwinding_export("stack-unwinding-export", this)
+			, stubbing_export("stubbing-export", this)
+			, hooking_export("hooking-export", this)
 			, debug_event_listener_import("debug-event-listener-import", this)
 			, debug_yielding_import("debug-yielding-import", this)
 			, dbg(*parent)
@@ -412,32 +454,35 @@ private:
 			*dbg.debug_info_loading_export    [id] >> debug_info_loading_export;
 			*dbg.data_object_lookup_export    [id] >> data_object_lookup_export;
 			*dbg.subprogram_lookup_export     [id] >> subprogram_lookup_export;
+			*dbg.stack_unwinding_export       [id] >> stack_unwinding_export;
+			*dbg.stubbing_export              [id] >> stubbing_export;
+			*dbg.hooking_export               [id] >> hooking_export;
 			
 			debug_event_listener_import >> *dbg.debug_event_listener_import[id];
 			debug_yielding_import       >> *dbg.debug_yielding_import[id];
 		}
 
 		virtual void Setup(interfaces::DebugEventTrigger<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_access_reporting_control_import); }
-                virtual void Setup(interfaces::Memory<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_import); }
+		virtual void Setup(interfaces::Memory<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::memory_import); }
 		virtual void Setup(interfaces::Registers*) { dbg.RequireSetup(&ProcessorGate::registers_import); }
 		virtual void Setup(interfaces::Disassembly<ADDRESS>*) { dbg.RequireSetup(&ProcessorGate::disasm_import); }
 		
-          	virtual void Setup(interfaces::SymbolTableLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
-          	virtual void Setup(interfaces::StatementLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
-          	virtual void Setup(interfaces::BackTrace<ADDRESS>*)
+		virtual void Setup(interfaces::SymbolTableLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
+		virtual void Setup(interfaces::StatementLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
+		virtual void Setup(interfaces::BackTrace<ADDRESS>*)
 		{
 			dbg.RequireSetup(&ProcessorGate::registers_import);
 			dbg.RequireSetup(&ProcessorGate::memory_import);
 			dbg.SetupDebugInfo();
 		}
-          	virtual void Setup(interfaces::DebugInfoLoading*) { dbg.SetupDebugInfo(); }
-          	virtual void Setup(interfaces::DataObjectLookup<ADDRESS>*)
+		virtual void Setup(interfaces::DebugInfoLoading*) { dbg.SetupDebugInfo(); }
+		virtual void Setup(interfaces::DataObjectLookup<ADDRESS>*)
 		{
 			dbg.RequireSetup(&ProcessorGate::registers_import);
 			dbg.RequireSetup(&ProcessorGate::memory_import);
 			dbg.SetupDebugInfo();
 		}
-          	virtual void Setup(interfaces::SubProgramLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
+		virtual void Setup(interfaces::SubProgramLookup<ADDRESS>*) { dbg.SetupDebugInfo(); }
 		
 		// From Front-end
 		
@@ -447,6 +492,8 @@ private:
 		// unisim::service::interfaces::DebugSelecting
 		virtual bool DebugSelect(unsigned int prc_num) { /*dbg.Lock();*/ bool ret = dbg.DebugSelect(id, prc_num); /*dbg.Unlock();*/ return ret; }
 		virtual unsigned int DebugGetSelected() const { /*dbg.Lock();*/ unsigned int ret = dbg.DebugGetSelected(id); /*dbg.Unlock();*/ return ret; }
+		virtual bool DebugFrameSelect(unsigned int frame_num) { /*dbg.Lock();*/ bool ret = dbg.DebugFrameSelect(id, frame_num); /*dbg.Unlock();*/ return ret; }
+		virtual unsigned int DebugFrameGetSelected() const { /*dbg.Lock();*/ unsigned int ret = dbg.DebugFrameGetSelected(id); /*dbg.Unlock();*/ return ret; }
 		
 		// unisim::service::interfaces::DebugEventTrigger<ADDRESS>
 		virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) { bool l = dbg.Lock(id); bool ret = dbg.Listen(id, event); if(l) { dbg.Unlock(id); } return ret; }
@@ -482,7 +529,7 @@ private:
 		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByAddr(id, addr, type); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::StatementLookup<ADDRESS>
-		virtual void GetStatements(std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const { bool l = dbg.Lock(id); dbg.GetStatements(id, stmts); if(l) { dbg.Unlock(id); } }
+		virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanStatements(id, scanner); if(l) { dbg.Unlock(id); } }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, addr, opt); if(l) { dbg.Unlock(id); } return ret; }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, addr, opt); if(l) { dbg.Unlock(id); } return ret; }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, source_code_location); if(l) { dbg.Unlock(id); } return ret; }
@@ -499,11 +546,25 @@ private:
 		virtual bool IsBinaryEnabled(const char *filename) const { bool l = dbg.Lock(id); bool ret = dbg.IsBinaryEnabled(id, filename); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::DataObjectLookup<ADDRESS>
-		virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name) const { bool l = dbg.Lock(id); unisim::util::debug::DataObject<ADDRESS> *ret = dbg.FindDataObject(id, data_object_name); if(l) { dbg.Unlock(id); } return ret; }
+		virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const { bool l = dbg.Lock(id); unisim::util::debug::DataObjectRef<ADDRESS> ret = dbg.FindDataObject(id, data_object_name); if(l) { dbg.Unlock(id); } return ret; }
 		virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const { bool l = dbg.Lock(id); dbg.EnumerateDataObjectNames(id, name_set, scope); if(l) { dbg.Unlock(id); } }
 		
 		// unisim::service::interfaces::SubProgramLookup<ADDRESS>
 		virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const { bool l = dbg.Lock(id); const unisim::util::debug::SubProgram<ADDRESS> *ret = dbg.FindSubProgram(id, subprogram_name, filename, compilation_unit_name); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(ADDRESS pc, const char *filename) const { bool l = dbg.Lock(id); const unisim::util::debug::SubProgram<ADDRESS> *ret = dbg.FindSubProgram(id, pc, filename); if(l) { dbg.Unlock(id); } return ret; }
+		
+		// unisim::service::interfaces::StackUnwinding
+		virtual bool UnwindStack(unsigned int frame_num) { bool l = dbg.Lock(id); bool ret = dbg.UnwindStack(id, frame_num); if(l) { dbg.Unlock(id); } return ret; }
+		
+		// unisim::service::interfaces::Stubbing<ADDRESS>
+		virtual void ScanStubs(unisim::service::interfaces::StubScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanStubs(id, scanner); if(l) { dbg.Unlock(id); } }
+		virtual bool SetStub(unisim::util::debug::Stub<ADDRESS> *stub) { bool l = dbg.Lock(id); bool ret = dbg.SetStub(id, stub); if(l) { dbg.Unlock(id); } return ret; }
+		virtual bool RemoveStub(unisim::util::debug::Stub<ADDRESS> *stub) { bool l = dbg.Lock(id); bool ret = dbg.RemoveStub(id, stub); if(l) { dbg.Unlock(id); } return ret; }
+		
+		// unisim::service::interfaces::Hooking<ADDRESS>
+		virtual void ScanHooks(unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanHooks(id, scanner); if(l) { dbg.Unlock(id); } } 
+		virtual bool SetHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(id); bool ret = dbg.SetHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
+		virtual bool RemoveHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(id); bool ret = dbg.RemoveHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// To Front-end
 		
@@ -531,7 +592,7 @@ private:
 		void Visit(unisim::util::debug::Breakpoint<ADDRESS> *brkp)
 		{
 			unisim::util::debug::Event<ADDRESS> *ref = brkp->GetReference();
-			dbg.front_end_gate[front_end_num]->OnDebugEvent(ref ? ref : static_cast<unisim::util::debug::Event<ADDRESS> *>(brkp));
+			dbg.OnDebugEvent(front_end_num, ref ? ref : static_cast<unisim::util::debug::Event<ADDRESS> *>(brkp));
 		}
 		Debugger<CONFIG>& dbg;
 		unsigned int front_end_num;
@@ -541,7 +602,15 @@ private:
 	struct Dispatcher<unisim::util::debug::Watchpoint<ADDRESS>, dummy>
 	{
 		Dispatcher(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, bool& _overlook) : dbg(_dbg), front_end_num(_front_end_num), overlook(_overlook) {}
-		void Visit(unisim::util::debug::Watchpoint<ADDRESS> *wp) { if(!wp->Overlooks()) { overlook = false; } dbg.front_end_gate[front_end_num]->OnDebugEvent(wp); }
+		void Visit(unisim::util::debug::Watchpoint<ADDRESS> *wp)
+		{
+			if(!wp->Overlooks())
+			{
+				overlook = false;
+			}
+// 			dbg.front_end_gate[front_end_num]->OnDebugEvent(wp);
+			dbg.OnDebugEvent(front_end_num, wp);
+		}
 		Debugger<CONFIG>& dbg;
 		unsigned int front_end_num;
 		bool& overlook;
@@ -554,12 +623,81 @@ private:
 		Debugger<CONFIG>& dbg;
 		bool status;
 	};
-				
+	
+	template <typename ADDRESS>
+	class StubEvent : public unisim::util::debug::CustomEvent<ADDRESS, StubEvent<ADDRESS> >
+	{
+	public:
+		StubEvent(unisim::util::debug::Stub<ADDRESS> *_stub) : unisim::util::debug::CustomEvent<ADDRESS, StubEvent<ADDRESS> >(), stub(_stub) {}
+		virtual ~StubEvent() { delete stub; if(breakpoint) breakpoint->Release(); }
+		
+		unisim::util::debug::Stub<ADDRESS> *GetStub() const { return stub; }
+		unsigned int GetProcessorNumber() const { return breakpoint->GetProcessorNumber(); }
+		
+		void Attach(unisim::util::debug::Breakpoint<ADDRESS> *brkp) { breakpoint = brkp; brkp->Catch(); }
+		
+		/* struct Visitor { void Visit(Breakpoint<ADDRESS> *) {} }; */
+		template <class VISITOR> void Scan(VISITOR& visitor) { visitor.Visit(breakpoint); }
+	private:
+		unisim::util::debug::Stub<ADDRESS> *stub;
+		unisim::util::debug::Breakpoint<ADDRESS> *breakpoint;
+	};
+	
+	template <typename ADDRESS>
+	class HookEvent : public unisim::util::debug::CustomEvent<ADDRESS, HookEvent<ADDRESS> >
+	{
+	public:
+		HookEvent(unisim::util::debug::Hook<ADDRESS> *_hook)
+			: unisim::util::debug::CustomEvent<ADDRESS, HookEvent<ADDRESS> >()
+			, hook(_hook)
+		{
+		}
+		
+		virtual ~HookEvent()
+		{
+			delete hook;
+			for(typename Breakpoints::iterator it = breakpoints.begin(); it != breakpoints.end(); ++it)
+			{
+				unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = *it;
+				breakpoint->Release();
+			}
+		}
+		
+		unisim::util::debug::Hook<ADDRESS> *GetHook() const { return hook; }
+		
+		void Attach(unisim::util::debug::Breakpoint<ADDRESS> *brkp)
+		{
+			std::pair<typename Breakpoints::iterator , bool> r = breakpoints.insert(brkp);
+			if(r.second)
+			{
+				brkp->Catch();
+			}
+		}
+		
+		/* struct Visitor { void Visit(unisim::util::debug::Breakpoint<ADDRESS> *) {} }; */
+		template <class VISITOR> void Scan(VISITOR& visitor)
+		{
+			for(typename Breakpoints::iterator it = breakpoints.begin(); it != breakpoints.end(); ++it)
+			{
+				unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = *it;
+				visitor.Visit(breakpoint);
+			}
+		}
+	private:
+		unisim::util::debug::Hook<ADDRESS> *hook;
+		unisim::util::debug::SourceCodeLocation source_code_location;
+		typedef std::set<unisim::util::debug::Breakpoint<ADDRESS> *> Breakpoints;
+		Breakpoints breakpoints;
+	};
+	
 	ProcessorGate *prc_gate[NUM_PROCESSORS];
 	FrontEndGate *front_end_gate[MAX_FRONT_ENDS];
 	
 	// Currently selected processor gate
 	ProcessorGate *sel_prc_gate[MAX_FRONT_ENDS];
+	
+	// Machine state
+	unisim::util::debug::dwarf::DWARF_MachineState<ADDRESS> dw_mach_state[MAX_FRONT_ENDS];
 
 	bool requires_fetch_instruction_reporting[NUM_PROCESSORS];
 	bool requires_commit_instruction_reporting[NUM_PROCESSORS];
@@ -571,6 +709,7 @@ private:
 	bool parse_dwarf;
 	bool debug_dwarf;
 	unsigned int sel_cpu[MAX_FRONT_ENDS];
+	std::string architecture[NUM_PROCESSORS];
 
 	unisim::kernel::variable::Parameter<bool> param_verbose;
 	unisim::kernel::variable::Parameter<std::string> param_dwarf_to_html_output_directory;
@@ -578,6 +717,7 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_parse_dwarf;
 	unisim::kernel::variable::Parameter<bool> param_debug_dwarf;
 	unisim::kernel::variable::ParameterArray<unsigned int> param_sel_cpu;
+	unisim::kernel::variable::ParameterArray<std::string> param_architecture;
 
 	unisim::kernel::logger::Logger logger;
 	bool setup_debug_info_done;
@@ -593,6 +733,13 @@ private:
 	std::set<unisim::util::debug::TrapEvent<ADDRESS> *> trap_event_set[NUM_PROCESSORS];
 	typedef std::set<unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *> SourceCodeBreakpointRegistry;
 	SourceCodeBreakpointRegistry source_code_breakpoint_registry[MAX_FRONT_ENDS];
+	typedef std::set<unisim::util::debug::SubProgramBreakpoint<ADDRESS> *> SubProgramBreakpointRegistry;
+	SubProgramBreakpointRegistry subprogram_breakpoint_registry[MAX_FRONT_ENDS];
+	typedef std::map<unisim::util::debug::Stub<ADDRESS> *, StubEvent<ADDRESS> *> StubEventRegistry;
+	StubEventRegistry stub_event_registry[MAX_FRONT_ENDS];
+	typedef std::map<unisim::util::debug::Hook<ADDRESS> *, HookEvent<ADDRESS> *> HookEventRegistry;
+	HookEventRegistry hook_event_registry[MAX_FRONT_ENDS];
+	
 	int next_id[MAX_FRONT_ENDS];
 	
 	pthread_mutex_t schedule_mutex;
@@ -622,6 +769,9 @@ private:
 	int AllocateId(unsigned int front_end_num);
 	
 	virtual void VariableBaseNotify(const unisim::kernel::VariableBase *var);
+	
+	void CallStub(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Stub<ADDRESS> *stub);
+	void CallHook(unsigned int front_end_num, unsigned int prc_num, unisim::util::debug::Hook<ADDRESS> *hook);
 };
 
 } // end of namespace debugger

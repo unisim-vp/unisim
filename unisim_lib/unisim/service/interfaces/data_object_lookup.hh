@@ -39,6 +39,7 @@
 #include <unisim/util/debug/data_object.hh>
 #include <set>
 #include <string>
+#include <stdexcept>
 
 namespace unisim {
 namespace service {
@@ -56,8 +57,23 @@ public:
 	} Scope;
 	
 	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
-	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name) const = 0;
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const = 0;
+	
+	inline unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const char *data_object_name) const;
+	inline unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const std::string& data_object_name) const;
 };
+
+template <class ADDRESS>
+inline unisim::util::debug::DataObjectRef<ADDRESS> DataObjectLookup<ADDRESS>::operator [] (const char *data_object_name) const
+{
+	return FindDataObject(data_object_name);
+}
+
+template <class ADDRESS>
+inline unisim::util::debug::DataObjectRef<ADDRESS> DataObjectLookup<ADDRESS>::operator [] (const std::string& data_object_name) const
+{
+	return FindDataObject(data_object_name.c_str());
+}
 
 } // end of namespace interfaces
 } // end of namespace service

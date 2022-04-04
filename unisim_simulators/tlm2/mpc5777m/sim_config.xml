@@ -13818,6 +13818,12 @@
 				<value>soft/app/Z4_2/boot.elf</value>
 				<description>the ELF filename to load into memory</description>
 			</variable>
+			<variable name="architecture">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>powerpc-e500</value>
+				<description>Overload the architecture of the ELF file</description>
+			</variable>
 			<variable name="force-base-addr">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -13920,6 +13926,12 @@
 				<value>soft/app/Z7_0/boot.elf</value>
 				<description>the ELF filename to load into memory</description>
 			</variable>
+			<variable name="architecture">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>powerpc-e500</value>
+				<description>Overload the architecture of the ELF file</description>
+			</variable>
 			<variable name="force-base-addr">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -14021,6 +14033,12 @@
 				<data_type>string</data_type>
 				<value>soft/app/Z7_1/boot.elf</value>
 				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="architecture">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>powerpc-e500</value>
+				<description>Overload the architecture of the ELF file</description>
 			</variable>
 			<variable name="force-base-addr">
 				<type>parameter</type>

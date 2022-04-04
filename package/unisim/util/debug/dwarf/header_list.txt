@@ -20,6 +20,7 @@ unisim/util/debug/dwarf/frame.hh
 unisim/util/debug/dwarf/fwd.hh
 unisim/util/debug/dwarf/leb128.hh
 unisim/util/debug/dwarf/loc.hh
+unisim/util/debug/dwarf/machine_state.hh
 unisim/util/debug/dwarf/macinfo.hh
 unisim/util/debug/dwarf/ml.hh
 unisim/util/debug/dwarf/option.hh

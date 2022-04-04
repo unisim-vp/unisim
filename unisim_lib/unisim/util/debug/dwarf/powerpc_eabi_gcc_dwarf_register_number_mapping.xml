@@ -69,7 +69,6 @@
 		<register dw_reg_num="64" arch_reg="CR"/>
 		<register dw_reg_num="65" arch_reg="LR"/>   <!-- for gcc r65 is LR, not FPSCR as in SysV standard ABI: see https://gcc.gnu.org/ml/gcc-patches/2012-11/msg02136.html -->
 		<register dw_reg_num="101" arch_reg="XER"/>
-		<register dw_reg_num="108" arch_reg="LR"/>
 		<register dw_reg_num="109" arch_reg="CTR"/>
 	</architecture>
 </dw_reg_num_mapping>

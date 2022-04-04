@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
 
+#include <cstring>
+
 namespace unisim {
 namespace util {
 namespace debug {
@@ -70,6 +72,12 @@ DWARF_FDE<MEMORY_ADDR>::~DWARF_FDE()
 	{
 		delete dw_call_frame_prog;
 	}
+}
+
+template <class MEMORY_ADDR>
+DWARF_Handler<MEMORY_ADDR> *DWARF_FDE<MEMORY_ADDR>::GetHandler() const
+{
+	return dw_handler;
 }
 
 template <class MEMORY_ADDR>

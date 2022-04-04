@@ -70,7 +70,8 @@ typedef enum
 	OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY,
 	OPT_DWARF_TO_XML_OUTPUT_FILENAME,
 	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME,
-	OPT_DEBUG_DWARF
+	OPT_DEBUG_DWARF,
+	OPT_ARCHITECTURE
 } Option;
 
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -117,7 +118,7 @@ public:
 	
 	unisim::util::debug::SymbolTable<MEMORY_ADDR> const *GetSymbolTable() const;
 	
-	const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
+	void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
@@ -130,12 +131,14 @@ public:
 	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc, const char *filename = 0) const;
 	
 private:
 	std::ostream *debug_info_stream;
 	std::ostream *debug_warning_stream;
 	std::ostream *debug_error_stream;
 	std::string filename;
+	std::string architecture;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
@@ -153,7 +156,6 @@ private:
 	endian_type endianness;
 	bool parse_dwarf;
 	bool debug_dwarf;
-	std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
 private:
 	void DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os);
 	void DumpProgramHeader(const Elf_Phdr *phdr, std::ostream& os);

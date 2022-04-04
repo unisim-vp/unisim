@@ -46,6 +46,8 @@ class DebugSelecting : public ServiceInterface
 public:
 	virtual bool DebugSelect(unsigned int prc_num) = 0;
 	virtual unsigned int DebugGetSelected() const = 0;
+	virtual bool DebugFrameSelect(unsigned int frame_num) = 0;
+	virtual unsigned int DebugFrameGetSelected() const = 0;
 };
 
 } // end of namespace interfaces

@@ -78,6 +78,7 @@
 #include <unisim/util/debug/dwarf/data_object.hh>
 #include <unisim/util/debug/dwarf/subprogram.hh>
 #include <unisim/util/debug/dwarf/variable.hh>
+#include <unisim/util/debug/dwarf/machine_state.hh>
 
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -95,15 +96,22 @@ template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
+	// Constructor
 	DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *blob, const unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table);
+	
+	// Destructor
 	~DWARF_Handler();
-
+	
+	// Logging interface
 	void SetDebugInfoStream(std::ostream& debug_info_stream);
 	void SetDebugWarningStream(std::ostream& debug_warning_stream);
 	void SetDebugErrorStream(std::ostream& debug_error_stream);
+	
+	// Architecture state interfaces
 	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	
+	// Option management
 	bool SetOption(Option opt, const char *s);
 	bool SetOption(Option opt, bool flag);
 
@@ -113,91 +121,73 @@ public:
 	const bool& GetOptionFlag(Option opt) const;
 	const std::string& GetOptionString(Option opt) const;
 
-	bool HasDebugInfo() const;
+	// Parsing/Deserialization of DWARF debug infos
 	void Parse();
+	
+	// Dump
 	void to_XML(const char *output_filename);
 	void to_HTML(const char *output_dir);
-	
-	void Register(DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog);
-	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
-	void Register(DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry);
-	void Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry);
-	void Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry);
-	void Register(DWARF_CIE<MEMORY_ADDR> *dw_cie);
-	
-	void UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die);
 
-	const DWARF_StatementProgram<MEMORY_ADDR> *FindStatementProgram(uint64_t debug_line_offset);
-	const DWARF_DIE<MEMORY_ADDR> *FindDIE(uint64_t debug_info_offset) const;
-	const DWARF_RangeListEntry<MEMORY_ADDR> *FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);
-	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
-	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnit(uint64_t debug_info_offset) const;
-	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
-	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst);
+	// Visitor pattern (CU and DIE)
+	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 	
-	const DWARF_Pub<MEMORY_ADDR> *FindPubName(const char *name) const;
-	const DWARF_Pub<MEMORY_ADDR> *FindPubType(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubName(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubType(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
-	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
-	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByName(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(MEMORY_ADDR pc) const;
+	// Usefull Low level methods for visitors
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *sub_program_name, const char *compilation_unit_name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, unsigned int prc_num, MEMORY_ADDR pc, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;
-	unisim::util::debug::SubProgram<MEMORY_ADDR> *GetSubProgram(const char *sub_program_name) const;
-	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name) const;
-	
 	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *variable_name, const char *compilation_unit_name) const;
 	
-	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
-	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
-	
-	endian_type GetFileEndianness() const;
-	endian_type GetArchEndianness() const;
-	uint8_t GetFileAddressSize() const;
-	uint8_t GetArchAddressSize() const;
-	const char *GetFilename() const;
-	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
-	const char *GetString(uint64_t debug_str_offset) const;
-
-	const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
+	// High level interface
+	bool HasDebugInfo() const;
+	void ScanStatements(unisim::service::interfaces::StatementScanner<MEMORY_ADDR>& scanner) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
-	
-	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
-	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
-	bool ComputeCFA(unsigned int prc_num, MEMORY_ADDR& cfa) const;
 	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num) const;
-	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR& ret_addr) const;
-	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR& frame_base) const;
-	DW_CFA_Specification GetCFA_Specification() const;
-	DW_CFA_RegRuleOffsetSpecification GetCFA_RegRuleOffsetSpecification() const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const char *data_object_name) const;
+	void EnumerateDataObjectNames(unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	void EnumerateDataObjectNames(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	const DWARF_SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const DWARF_SubProgram<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc, const char *filename = 0) const;
 	
-	DWARF_RegisterNumberMapping *GetRegisterNumberMapping(int prc_num) const;
-	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num) const;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num) const;
-	DWARF_Frame<MEMORY_ADDR> *GetInnerFrame(int prc_num) const;
-	DWARF_Frame<MEMORY_ADDR> *GetCurrentFrame(int prc_num) const;
-
-	std::ostream& GetDebugInfoStream() const;
-	std::ostream& GetDebugWarningStream() const;
-	std::ostream& GetDebugErrorStream() const;
-	
-	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *GetSymbolTable() const;
-	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:
+	friend class DWARF_StatementProgram<MEMORY_ADDR>;
+	friend class DWARF_StatementVM<MEMORY_ADDR>;
+	friend class DWARF_AttributeValue<MEMORY_ADDR>;
+	friend class DWARF_LinePtr<MEMORY_ADDR>;
+	friend class DWARF_LocListPtr<MEMORY_ADDR>;
+	friend class DWARF_MacPtr<MEMORY_ADDR>;
+	friend class DWARF_RangeListPtr<MEMORY_ADDR>;
+	friend class DWARF_Reference<MEMORY_ADDR>;
+	friend class DWARF_Attribute<MEMORY_ADDR>;
+	friend class DWARF_DIE<MEMORY_ADDR>;
+	friend class DWARF_CompilationUnit<MEMORY_ADDR>;
+	friend class DWARF_Location<MEMORY_ADDR>;
+	friend class DWARF_ExpressionVM<MEMORY_ADDR>;
+	friend class DWARF_CallFrameProgram<MEMORY_ADDR>;
+	friend class DWARF_CIE<MEMORY_ADDR>;
+	friend class DWARF_FDE<MEMORY_ADDR>;
+	friend class DWARF_CallFrameVM<MEMORY_ADDR>;
+	friend class DWARF_RegSet<MEMORY_ADDR>;
+	friend class DWARF_Frame<MEMORY_ADDR>;
+	friend class DWARF_RangeListEntry<MEMORY_ADDR>;
+	friend class DWARF_MacInfoListEntry<MEMORY_ADDR>;
+	friend class DWARF_MacInfoListEntryDefine<MEMORY_ADDR>;
+	friend class DWARF_MacInfoListEntryUndef<MEMORY_ADDR>;
+	friend class DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>;
+	friend class DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>;
+	friend class DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>;
+	friend class DWARF_AddressRanges<MEMORY_ADDR>;
+	friend class DWARF_Pub<MEMORY_ADDR>;
+	friend class DWARF_Pubs<MEMORY_ADDR>;
+	friend class DWARF_LocListEntry<MEMORY_ADDR>;
+	friend class DWARF_DataObject<MEMORY_ADDR>;
+	friend class DWARF_SubProgram<MEMORY_ADDR>;
+	friend class DWARF_MachineState<MEMORY_ADDR>;
+	
 	endian_type file_endianness;
 	endian_type arch_endianness;
-	uint8_t file_address_size;
 	uint8_t arch_address_size;
 	bool inclusive_fde_addr_range;
 	
@@ -218,6 +208,7 @@ private:
 	// Sumbol Table
 	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 	
+	// Deserialized DWARF debug infos
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
 	std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> stmt_matrix;    // Result of running dw_stmt_progs on dw_stmt_vms
 	std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *> dw_cus;           // compilation units contributions to section .debug_info indexed by .debug_info section offset
@@ -231,30 +222,107 @@ private:
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubnames;                        // from section .debug_pubnames
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubtypes;                        // from section .debug_pubtypes
 	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
-
+	
+	// Blob with raw debug infos
 	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	
-	typedef std::map<std::string, const DWARF_DIE<MEMORY_ADDR> *> Cache;
-	mutable Cache subprogram_die_cache;
-	mutable Cache variable_die_cache;
+	// DIECache (name -> DIE)
+	typedef std::map<std::string, const DWARF_DIE<MEMORY_ADDR> *> DIECache;
+	mutable DIECache subprogram_die_cache;
+	mutable DIECache variable_die_cache;
 	
+	// FDECache (pc -> FDE)
+	typedef std::map<MEMORY_ADDR, const DWARF_FDE<MEMORY_ADDR> *> FDECache;
+	mutable FDECache fde_cache;
+	// CFI
+	typedef std::vector<const DWARF_CFI<MEMORY_ADDR> *> CFIs;
+	mutable CFIs dw_cfis;
+	// CFICache (pc -> CFI)
+	typedef std::map<MEMORY_ADDR, const DWARF_CFI<MEMORY_ADDR> *> CFICache;
+	mutable CFICache cfi_cache;
+	
+	// Debug stuf
 	std::ostream *debug_info_stream;
 	std::ostream *debug_warning_stream;
 	std::ostream *debug_error_stream;
 	std::string reg_num_mapping_filename;
 	bool verbose;
 	bool debug;
-
-	std::vector<DWARF_RegisterNumberMapping *> dw_reg_num_mapping;
-	std::vector<unisim::service::interfaces::Registers *> regs_if;
-	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;
-	std::vector<DWARF_Frame<MEMORY_ADDR> *> dw_inner_frame;
 	
-	void DumpStatementMatrix();
-	bool IsAbsolutePath(const char *filename) const;
-	void BuildStatementMatrix();
+	// Machine state
+	mutable DWARF_MachineState<MEMORY_ADDR> auto_dw_mach_state;
+	
+	// Registration methods of deserialized DWARF debug infos classes
+	void Register(DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog);
+	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
+	void Register(DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry);
+	void Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry);
+	void Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry);
+	void Register(DWARF_CIE<MEMORY_ADDR> *dw_cie);
+	void UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die);
+
+	// Searching methods for deserialized DWARF debug infos class instance by DWARF debug infos raw data offset
+	const DWARF_StatementProgram<MEMORY_ADDR> *FindStatementProgram(uint64_t debug_line_offset);
+	const DWARF_DIE<MEMORY_ADDR> *FindDIE(uint64_t debug_info_offset) const;
+	const DWARF_RangeListEntry<MEMORY_ADDR> *FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);
+	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
+	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnit(uint64_t debug_info_offset) const;
+	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
+	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst);
+	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
+	const char *GetString(uint64_t debug_str_offset) const;
+	
+	// Various searching methods by address, name, C location expression
+	const DWARF_Pub<MEMORY_ADDR> *FindPubName(const char *name) const;
+	const DWARF_Pub<MEMORY_ADDR> *FindPubType(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubName(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubType(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
+	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByName(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(MEMORY_ADDR pc) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
+	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	
+	// Architecture meta info (from blob)
+	endian_type GetFileEndianness() const;
+	endian_type GetArchEndianness() const;
+	uint8_t GetFileAddressSize() const;
+	uint8_t GetArchAddressSize() const;
+	const char *GetFilename() const;
+	const char *GetArchitecture() const;
+	
+	// Various helper methods
+	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
+	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
+	bool ComputeCFA(const DWARF_Frame<MEMORY_ADDR> *dw_frame, MEMORY_ADDR& cfa) const;
+	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
+	const DWARF_CFI<MEMORY_ADDR> *FindCFIByAddr(MEMORY_ADDR pc) const;
+	DW_CFA_Specification GetCFA_Specification() const;
+	DW_CFA_RegRuleOffsetSpecification GetCFA_RegRuleOffsetSpecification() const;
+	
+	// Symbol table
+	const unisim::util::debug::SymbolTable<MEMORY_ADDR> *GetSymbolTable() const;
+
+	// Statement matrix methods
+	void DumpStatementMatrix();
+	void BuildStatementMatrix();
+	
+	// Various helper methods
+	bool IsAbsolutePath(const char *filename) const;
+	
+	// Architectural state methods per processor
+// 	DWARF_Frame<MEMORY_ADDR> *GetInnerFrame(unsigned int prc_num) const;
+// 	DWARF_Frame<MEMORY_ADDR> *GetCurrentFrame(unsigned int prc_num) const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num) const;
+
+	// Debug stuf
+	std::ostream& GetDebugInfoStream() const;
+	std::ostream& GetDebugWarningStream() const;
+	std::ostream& GetDebugErrorStream() const;
 };
 
 } // end of namespace dwarf

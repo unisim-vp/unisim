@@ -37,6 +37,7 @@
 
 #include <unisim/util/debug/dwarf/stmt_prog.hh>
 #include <unisim/util/debug/dwarf/filename.hh>
+#include <cstring>
 
 namespace unisim {
 namespace util {
