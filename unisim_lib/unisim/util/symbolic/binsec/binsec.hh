@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_SYMBOLIC_BINSEC_BINSEC_HH__
 #define __UNISIM_UTIL_SYMBOLIC_BINSEC_BINSEC_HH__
 
+#include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
 #include <set>

@@ -164,19 +164,37 @@ struct ProcessorBase
   };
 
   /*** VECTOR REGISTERS ***/
+  struct VRegID
+  {
+    VRegID(unsigned _reg) : reg(_reg) {} unsigned reg;
+    typedef VmmRegister::value_type register_type;
+    void Repr( std::ostream& ) const;
+    int cmp(VRegID const& rhs) const { return int(reg) - int(rhs.reg); }
+  };
+
+  struct VClear : public unisim::util::symbolic::binsec::ASExprNode
+  {
+    VClear(unsigned _size) : size(_size) {} unsigned size;
+    virtual VClear* Mutate() const override { return new VClear( *this ); };
+    virtual unsigned SubCount() const override { return 0; };
+    virtual void Repr( std::ostream& sink ) const override;
+    ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    virtual int cmp( ExprNode const& rhs ) const override { return 0; }
+    virtual int GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const;
+  };
   
   // VRegRead should never be a binsec::node (no dba available for it)
-  struct VRegRead : public unisim::util::symbolic::ExprNode
-  {
-    VRegRead( unsigned _reg ) : reg(_reg) {}
-    virtual VRegRead* Mutate() const override { return new VRegRead( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    virtual unsigned SubCount() const override { return 0; }
-    virtual void Repr( std::ostream& sink ) const override;
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegRead const&>( rhs ) ); }
-    int compare( VRegRead const& rhs ) const { return int(reg) - int(rhs.reg); }
-    unsigned reg;
-  };
+  // struct VRegRead : public unisim::util::symbolic::ExprNode
+  // {
+  //   VRegRead( unsigned _reg ) : reg(_reg) {}
+  //   virtual VRegRead* Mutate() const override { return new VRegRead( *this ); }
+  //   virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+  //   virtual unsigned SubCount() const override { return 0; }
+  //   virtual void Repr( std::ostream& sink ) const override;
+  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegRead const&>( rhs ) ); }
+  //   int compare( VRegRead const& rhs ) const { return int(reg) - int(rhs.reg); }
+  //   unsigned reg;
+  // };
 
   struct VmmIndirectReadBase : public ExprNode
   {// Parent of VmmIndirectRead
@@ -358,7 +376,7 @@ struct Processor : public ProcessorBase
   Expr                        regvalues[GREGCOUNT][GREGSIZE];
 
   void                        eregsinks( Processor<MODE> const& ref, unsigned reg ) const;
-
+  
   template <class GOP>
   typename TypeFor<Processor,GOP::SIZE>::u regread( GOP const&, unsigned idx )
   {
@@ -504,6 +522,8 @@ struct Processor : public ProcessorBase
     Expr sources[elemcount];
   };
 
+  void vregsinks( Processor<MODE> const& ref, unsigned reg ) const;
+
   template <class VR, class ELEM>
   ELEM vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
   {
@@ -637,7 +657,7 @@ Processor<MODE>::Processor()
 
   for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
     {
-      VmmRegister v( new VRegRead( reg ) );
+      VmmRegister v( newRegRead( VRegID(reg) ) );
       *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
     }
 }
@@ -709,6 +729,44 @@ Processor<MODE>::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr cons
 
 template <class MODE>
 void
+Processor<MODE>::vregsinks( Processor<MODE> const& ref, unsigned reg ) const
+{
+  struct VCorruption {};
+
+  unsigned const vector_size = umms[reg].size;
+  
+  if (unsigned psize = 8*(VUConfig::BYTECOUNT - vector_size))
+    path->add_sink( newPartialRegWrite( VRegID(reg), 8*vector_size, psize, new VClear(psize) ) );
+  
+  if (vector_size == 0)
+    return;
+  
+  typename VUConfig::Byte bytes[VUConfig::BYTECOUNT];
+  umms[reg].transfer( &bytes[0], const_cast<VmmBrick*>(&vmm_storage[reg][0]), vector_size, false );
+
+  unsigned const elem_size = bytes[0].is_source();
+  if (elem_size == 0 or vector_size % elem_size)
+    { throw VCorruption(); }
+
+  for (unsigned beg = 0; beg < vector_size; beg += elem_size)
+    {
+      if (bytes[beg].is_source() != elem_size)
+        throw VCorruption();
+      for (unsigned idx = 0; idx < elem_size; ++idx)
+        {
+          if (auto x = unisim::util::symbolic::vector::corresponding_origin(bytes[beg].get_node(), idx, beg+idx ))
+            if (auto vr = dynamic_cast<unisim::util::symbolic::binsec::RegRead<VRegID> const*>( x ))
+              if (vr->id.reg == reg)
+                continue;
+          // Found one difference !
+          path->add_sink( newPartialRegWrite( VRegID(reg), 8*beg, 8*elem_size, bytes[beg].get_node() ) );
+          break;
+        }
+    }
+}
+
+template <class MODE>
+void
 Processor<MODE>::eregsinks( Processor<MODE> const& ref, unsigned reg ) const
 {
   // Requested read is a concatenation of multiple source values
@@ -763,13 +821,16 @@ Processor<MODE>::close( Processor<MODE> const& ref )
       return complete;
     }
 
-  for (int reg = GREGCOUNT; --reg >= 0;)
+  for (unsigned reg = GREGCOUNT; reg-- > 0;)
     eregsinks(ref, reg);
 
   // Flags
   for (FLAG reg; reg.next();)
     if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])
       path->add_sink( newRegWrite( reg, flagvalues[reg.idx()] ) );
+
+  for (unsigned reg = VREGCOUNT; reg-- > 0; )
+    vregsinks(ref, reg);
 
   for (Expr const& store : stores)
     path->add_sink( store );

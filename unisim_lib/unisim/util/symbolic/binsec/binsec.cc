@@ -375,6 +375,28 @@ namespace binsec {
             break;
           }
       }
+    else if (auto vt = dynamic_cast<vector::VTransBase const*>( expr.node ))
+      {
+        unsigned srcsize = 8*vt->srcsize, dstsize = ScalarType(vt->GetType()).bitsize, srcpos = 8*vt->srcpos;
+        
+        if (dstsize < srcsize)
+          sink << "(" << GetCode(vt->src, vars, label) << " {" << std::dec << srcpos << ", " << (srcpos+dstsize-1) << "})";
+        else
+          sink << GetCode(vt->src, vars, label);
+      }
+    else if (auto mix = dynamic_cast<vector::VMix const*>( expr.node ))
+      {
+        decltype(mix) prev;
+        sink << "(";
+        do
+          {
+            prev = mix;
+            sink << GetCode(mix->l, vars, label) << " :: ";
+            mix = dynamic_cast<vector::VMix const*>( mix->r.node );
+          }
+        while (mix);
+        sink << GetCode(prev->r, vars, label) << ")";
+      }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
         return node->GenCode( label, vars, sink );

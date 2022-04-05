@@ -75,9 +75,23 @@ ProcessorBase::FLAG::Repr( std::ostream& sink ) const
 }
 
 void
-ProcessorBase::VRegRead::Repr( std::ostream& sink ) const
+ProcessorBase::VClear::Repr( std::ostream& sink ) const
 {
-  sink << "VRegRead(" << std::dec << reg << ")";
+  sink << "VClear(" << std::dec << size << ")";
+}
+
+int
+ProcessorBase::VClear::GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const
+{
+  if (size % 8) throw 0;
+  sink << unisim::util::symbolic::binsec::dbx(size / 8, 0);
+  return size;
+}
+
+void
+ProcessorBase::VRegID::Repr(std::ostream& sink) const
+{
+  sink << "VRegID( vmm" << std::dec << reg << " )";
 }
 
 void

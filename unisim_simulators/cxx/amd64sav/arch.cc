@@ -98,55 +98,18 @@ namespace review
     if (umm.size != VUConfig::BYTECOUNT)
       return true; /* some parts have been zeroed */
 
-    struct
-    {
-      bool seek( Expr const& from, int at )
-      {
-        if (auto vt = dynamic_cast<VUConfig::VTransBase const*>( from.node ))
-          {
-            at -= vt->rshift;
-            if (at < 0 or at >= int(vt->size()))
-              return false;
-            return seek( vt->expr(), at );
-          }
-        if (auto vm = dynamic_cast<VUConfig::VMix const*>( from.node ))
-          {
-            return (seek( vm->l, at ) or seek( vm->r, at ));
-          }
-        if (auto vr = dynamic_cast<VRegRead const*>( from.node ))
-          {
-            rpos = at;
-            ridx = vr->idx;
-            return true;
-          }
-        return false;
-      }
-      bool check( Expr const& from, unsigned idx, unsigned pos )
-      {
-        return seek( from, 0 ) and ridx == idx and rpos == pos;
-      }
-      unsigned ridx, rpos;
-    } source;
-
     unsigned vidx = interface.vregs.index(reg);
-    if (umm.transfer != &VUnion::Transfer<u8_t>)
+    VUConfig::Byte buf[VUConfig::BYTECOUNT];
+    umm.transfer( &buf[0], &vmm_storage[reg][0], VUConfig::BYTECOUNT, false );
+    for (unsigned idx = 0; idx < VUConfig::BYTECOUNT; ++idx)
       {
-        VUConfig::Byte buf[VUConfig::BYTECOUNT];
-        umm.transfer( &buf[0], &vmm_storage[reg][0], VUConfig::BYTECOUNT, false );
-        for (unsigned idx = 0; idx < VUConfig::BYTECOUNT; ++idx)
-          {
-            u8_t regbyte;
-            VUConfig::TypeInfo<u8_t>::FromBytes( regbyte, &buf[idx] );
-            if (not source.check(regbyte.expr, vidx, idx ))
-              return true;
-          }
-      }
-    else
-      {
-        u8_t const* regbytes = reinterpret_cast<u8_t const*>( &vmm_storage[reg][0] );
-        for (unsigned idx = 0; idx < VUConfig::BYTECOUNT; ++idx)
-          if (not source.check(regbytes[idx].expr, vidx, idx ))
-            return true;
+        u8_t regbyte;
+        VUConfig::TypeInfo<u8_t>::FromBytes( regbyte, &buf[idx] );
+        if (auto x = unisim::util::symbolic::vector::corresponding_origin(regbyte.expr, 0, idx))
+          if (auto vr = dynamic_cast<VRegRead const*>( x ))
+            if (vr->idx == vidx)
+              continue;
+        return true;
       }
     
     return false;
