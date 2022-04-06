@@ -126,7 +126,7 @@ template <typename ADDRESS>
 class DataObject
 {
 public:
-	DataObject(const char *data_location, size_t size, typename unisim::service::interfaces::Register *reg_pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, int handle);
+	DataObject(const char *data_location, size_t size, typename unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, int handle);
 	virtual ~DataObject();
 	bool Exists() const;
 	bool IsOptimizedOut() const;
@@ -134,8 +134,7 @@ public:
 private:
 	int handle;
 	size_t size;
-	unisim::service::interfaces::Register *reg_pc;
-	unisim::util::debug::DataObject<ADDRESS> *data_object;
+	unisim::util::debug::DataObjectRef<ADDRESS> data_object;
 };
 
 template <typename ADDRESS>
@@ -179,7 +178,6 @@ public:
 	
 private:
 	unisim::kernel::logger::Logger logger;
-	unisim::service::interfaces::Register *reg_pc;
 	std::vector<SourceCodeBreakpoint<ADDRESS> *> source_code_breakpoints;
 	std::vector<DataObjectWatchpoint<ADDRESS> *> data_object_watchpoints;
 	std::vector<DataObject<ADDRESS> *> tracked_data_objects;

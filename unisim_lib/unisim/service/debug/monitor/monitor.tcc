@@ -155,77 +155,56 @@ void DataObjectWatchpoint<ADDRESS>::Invalidate()
 }
 
 template <typename ADDRESS>
-DataObject<ADDRESS>::DataObject(const char *data_location, size_t _size, unisim::service::interfaces::Register *_reg_pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, int _handle)
+DataObject<ADDRESS>::DataObject(const char *data_location, size_t _size, typename unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, int _handle)
 	: handle(_handle)
 	, size(_size)
-	, reg_pc(_reg_pc)
-	, data_object(0)
+	, data_object(data_object_lookup_if->FindDataObject(data_location))
 {
-	// ADDRESS cia = 0;
-	// reg_pc->GetValue(&cia);
-
-	data_object = data_object_lookup_if->FindDataObject(data_location);
 }
 
 template <typename ADDRESS>
 DataObject<ADDRESS>::~DataObject()
 {
-	if(data_object)
-	{
-		delete data_object;
-	}
 }
 
 template <typename ADDRESS>
 bool DataObject<ADDRESS>::Exists() const
 {
-	return data_object && data_object->Exists();
+	return data_object.IsDefined() && data_object.Exists();
 }
 
 template <typename ADDRESS>
 bool DataObject<ADDRESS>::IsOptimizedOut() const
 {
-	return data_object && data_object->IsOptimizedOut();
+	return data_object.IsDefined() && data_object.IsOptimizedOut();
 }
 
 template <typename ADDRESS>
 bool DataObject<ADDRESS>::GetValue(void *value) const
 {
-	if(data_object)
+	if(data_object.IsDefined())
 	{
-// 		ADDRESS cia = 0;
-// 		reg_pc->GetValue(&cia);
-// 
-// 		data_object->Seek(cia);
-		
-		if(data_object->Exists())
+		if(data_object.Exists())
 		{
-			if(!data_object->IsOptimizedOut())
+			if(!IsOptimizedOut())
 			{
-				if(data_object->Fetch())
+				if(data_object.Read(0, value, 0, size * 8))
 				{
-					if(data_object->Read(0, value, 0, size * 8))
-					{
-						return true;
-					}
-					else
-					{
-						std::cerr << "data object \"" << data_object->GetName() << "\" can't be read" << std::endl;
-					}
+					return true;
 				}
 				else
 				{
-					std::cerr << "data object \"" << data_object->GetName() << "\" can't be fetched" << std::endl;
+					std::cerr << "data object \"" << data_object.GetName() << "\" can't be read" << std::endl;
 				}
 			}
 			else
 			{
-				std::cerr << "data object \"" << data_object->GetName() << "\" is optimized out" << std::endl;
+				std::cerr << "data object \"" << data_object.GetName() << "\" is optimized out" << std::endl;
 			}
 		}
 		else
 		{
-			std::cerr << "after seeking (PC change) data object \"" << data_object->GetName() << "\" no longer exists in current context" << std::endl;
+			std::cerr << "data object \"" << data_object.GetName() << "\" does not exist" << std::endl;
 		}
 	}
 	
@@ -257,7 +236,6 @@ Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
 	, data_object_lookup_import("data-object-lookup-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
-	, reg_pc(0)
 	, source_code_breakpoints()
 	, data_object_watchpoints()
 	, tracked_data_objects()
@@ -308,10 +286,6 @@ Monitor<ADDRESS>::~Monitor()
 template <typename ADDRESS>
 bool Monitor<ADDRESS>::EndSetup()
 {
-	reg_pc = registers_import->GetRegister("pc");
-	
-	if(!reg_pc) return false;
-	
 	return Start();
 }
 
@@ -410,20 +384,17 @@ int Monitor<ADDRESS>::LookupDataObject(const char *info, size_t size)
 {
 	int handle = tracked_data_objects.size() + 1;
 
-	DataObject<ADDRESS> *data_object = new DataObject<ADDRESS>(info, size, reg_pc, data_object_lookup_import, handle);
+	DataObject<ADDRESS> *data_object = new DataObject<ADDRESS>(info, size, data_object_lookup_import, handle);
 	
-	if(data_object)
+	if(data_object->Exists())
 	{
-		if(data_object->Exists())
-		{
-			tracked_data_objects.push_back(data_object);
-			
-			return handle;
-		}
-		else
-		{
-			delete data_object;
-		}
+		tracked_data_objects.push_back(data_object);
+		
+		return handle;
+	}
+	else
+	{
+		delete data_object;
 	}
 	
 	return -1;
