@@ -1051,12 +1051,13 @@ struct BtsImm : public Operation<ARCH>
   BtsImm( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _imm ) : Operation<ARCH>( opbase ), rm( _rm ), imm( _imm ) {} RMOp<ARCH> rm; uint8_t imm;
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OP::SIZE>( "bts", rm.isreg() ) << DisasmI( imm ) << ',' << DisasmE( OP(), rm ); }
   typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
-  // void execute( ARCH& arch ) const {
-  //   unsigned bitoffset = imm % OPSIZE;
-  //   u_type opr = arch.rmread( OP(), rm )
-  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
-  //   arch.rmwrite( OP(), rm, opr | (u_type( 1 ) << bitoffset) );
-  // }
+  void execute( ARCH& arch ) const {
+    unsigned bitoffset = imm % OP::SIZE;
+    u_type opr = arch.rmread( OP(), rm );
+    arch.flagwrite( ARCH::FLAG::CF,
+            typename ARCH::bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
+    arch.rmwrite( OP(), rm, opr | (u_type( 1 ) << bitoffset) );
+  }
 };
 
 template <class ARCH, class OP>
