@@ -95,13 +95,17 @@ namespace binsec {
 
     if (ConstNodeBase const* node = simplified.e->AsConstNode())
       {
-        switch (node->GetType())
+        auto tp = node->GetType();
+        if (tp->encoding == tp->SIGNED)
           {
-          case ScalarType::S8:  return make_const( node->Get(  uint8_t() ) );
-          case ScalarType::S16: return make_const( node->Get( uint16_t() ) );
-          case ScalarType::S32: return make_const( node->Get( uint32_t() ) );
-          case ScalarType::S64: return make_const( node->Get( uint64_t() ) );
-          default: break;
+            switch (tp->GetBitSize())
+              {
+              case  8: return make_const( node->Get(  uint8_t() ) );
+              case 16: return make_const( node->Get( uint16_t() ) );
+              case 32: return make_const( node->Get( uint32_t() ) );
+              case 64: return make_const( node->Get( uint64_t() ) );
+              default: break;
+              }
           }
         return simplified.base();
       }
@@ -119,7 +123,7 @@ namespace binsec {
                 if (ConstNodeBase const* cnb = subs[1].Eval(EvalSpace()))
                   {
                     uint64_t sh = cnb->Get( uint64_t() );
-                    unsigned bitsize = ScalarType(subs[0]->GetType()).bitsize;
+                    unsigned bitsize = subs[0]->GetType()->GetBitSize();
                     if (sh >= bitsize) { struct Bad {}; throw Bad(); }
 
                     unsigned rshift, sxtend;
@@ -149,7 +153,7 @@ namespace binsec {
                         continue;
                       if (v == 0)
                         return subs[idx];
-                      unsigned bitsize = ScalarType(node->GetType()).bitsize, select = arithmetic::BitScanReverse(v)+1;
+                      unsigned bitsize = node->GetType()->GetBitSize(), select = arithmetic::BitScanReverse(v)+1;
                       if (select >= bitsize)
                         return subs[idx^1];
                       return BitFilter( subs[idx^1], bitsize, 0, select, bitsize, false ).mksimple();
@@ -161,14 +165,17 @@ namespace binsec {
             if (subcount == 1)
               {
                 CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *ixpr.node );
-                ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
-                if (not dst.is_integer or not src.is_integer or (dst.bitsize == 1 and src.bitsize != 1))
+                auto src = cnb.GetSrcType(), dst = cnb.GetType();
+                if ((dst->encoding != dst->UNSIGNED and dst->encoding != dst->SIGNED) or
+                    (src->encoding != src->UNSIGNED and src->encoding != src->SIGNED and src->encoding != src->BOOL))
                   return simplified.base(); // Complex casts
 
-                if (src.bitsize == dst.bitsize)
+                unsigned src_bit_size = src->GetBitSize(), dst_bit_size = dst->GetBitSize();
+
+                if (src_bit_size == dst_bit_size)
                   return subs[0];
 
-                return BitFilter( subs[0], src.bitsize, 0, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false ).mksimple();
+                return BitFilter( subs[0], src_bit_size, 0, std::min(src_bit_size, dst_bit_size), dst_bit_size, dst_bit_size > src_bit_size and src->encoding == src->SIGNED ).mksimple();
               }
             break;
           }
@@ -196,14 +203,17 @@ namespace binsec {
     if (ConstNodeBase const* node = expr.Eval(EvalSpace()))
       {
         Expr dispose( node );
-        switch (node->GetType())
+        auto tp = node->GetType();
+        switch (tp->encoding)
           {
-          case ScalarType::BOOL: sink << node->Get( int32_t() ) << "<1>";  return 1;
-          case ScalarType::U8:  case ScalarType::S8:  sink << dbx(1,node-> Get( uint8_t() ));  return 8;
-          case ScalarType::U16: case ScalarType::S16: sink << dbx(2,node->Get( uint16_t() )); return 16;
-          case ScalarType::U32: case ScalarType::S32: sink << dbx(4,node->Get( uint32_t() )); return 32;
-          case ScalarType::U64: case ScalarType::S64: sink << dbx(8,node->Get( uint64_t() )); return 64;
           default: break;
+          case ValueType::BOOL: sink << node->Get( int32_t() ) << "<1>";  return 1;
+          case ValueType::SIGNED: case ValueType::UNSIGNED:
+            {
+              unsigned bitsize = tp->GetBitSize();
+              sink << dbx(bitsize / 8, node->Get(uint64_t()));
+              return bitsize;
+            }
           }
         throw std::logic_error("can't encode type");
       }
@@ -284,7 +294,7 @@ namespace binsec {
                 // case Op::BSwp:  break;
               case Op::BSF:
                 {
-                  unsigned bitsize = ScalarType(node->GetType()).bitsize;
+                  unsigned bitsize = node->GetType()->GetBitSize();
                   Label head(label);
                   int exit = label.allocate(), loop;
 
@@ -315,7 +325,7 @@ namespace binsec {
 
               case Op::BSR:
                 {
-                  unsigned bitsize = ScalarType(node->GetType()).bitsize;
+                  unsigned bitsize = node->GetType()->GetBitSize();
                   Label head(label);
                   int exit = label.allocate(), loop;
 
@@ -346,23 +356,22 @@ namespace binsec {
               case Op::Cast:
                 {
                   CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
-                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
+                  auto src = cnb.GetSrcType(), dst = cnb.GetType();
 
-                  if (dst.is_integer and src.is_integer)
+                  /* At this point, only boolean casts should remain */
+                  if (dst->encoding == dst->BOOL)
                     {
-                      /* At this point, only boolean casts should remain */
-                      if ((src.bitsize <= 1) or (dst.bitsize != 1))
-                        throw std::logic_error("Unexpected cast");
-
-                      sink << "(" << GetCode(cnb.src, vars, label) << " <> " << dbx(src.bitsize/8,0) << ")";
+                      sink << "(" << GetCode(cnb.src, vars, label) << " <> " << dbx(src->GetBitSize()/8,0) << ")";
                     }
                   else
                     {
+                      throw std::logic_error("Unexpected cast");
                       /* TODO: What to do with FP casts ? */
-                      sink << dst.name << "( " << GetCode(cnb.src, vars, label) << " )";
+                      dst->GetName(sink);
+                      sink << "( " << GetCode(cnb.src, vars, label) << " )";
                     }
 
-                  return dst.bitsize;
+                  return dst->GetBitSize();
                 }
               }
 
@@ -377,25 +386,30 @@ namespace binsec {
       }
     else if (auto vt = dynamic_cast<vector::VTransBase const*>( expr.node ))
       {
-        unsigned srcsize = 8*vt->srcsize, dstsize = ScalarType(vt->GetType()).bitsize, srcpos = 8*vt->srcpos;
+        unsigned srcsize = 8*vt->srcsize, dstsize = vt->GetType()->GetBitSize(), srcpos = 8*vt->srcpos;
         
         if (dstsize < srcsize)
           sink << "(" << GetCode(vt->src, vars, label) << " {" << std::dec << srcpos << ", " << (srcpos+dstsize-1) << "})";
         else
           sink << GetCode(vt->src, vars, label);
+        return dstsize;
       }
     else if (auto mix = dynamic_cast<vector::VMix const*>( expr.node ))
       {
         decltype(mix) prev;
         sink << "(";
+        int retsize = 0;
         do
           {
             prev = mix;
-            sink << GetCode(mix->l, vars, label) << " :: ";
+            retsize += GenerateCode( mix->l, vars, label, sink );
+            sink << " :: ";
             mix = dynamic_cast<vector::VMix const*>( mix->r.node );
           }
         while (mix);
-        sink << GetCode(prev->r, vars, label) << ")";
+        retsize += GenerateCode(prev->r, vars, label, sink);
+        sink << ")";
+        
       }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
@@ -420,7 +434,7 @@ namespace binsec {
   BitFilter::Simplify() const
   {
     if (rshift == 0 and source == select and select == extend) return input;
-    
+
     if (OpNodeBase const* onb = input->AsOpNode())
       {
         if (onb->op.code != onb->op.Lsl) return this;
@@ -538,7 +552,7 @@ namespace binsec {
   int
   RegReadBase::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
-    unsigned bitsize = ScalarType(GetType()).bitsize;
+    unsigned bitsize = GetType()->GetBitSize();
     GetRegName( sink );
     sink << "<" << bitsize << ">";
     return bitsize;

@@ -254,7 +254,7 @@ namespace ccode {
     using unisim::util::symbolic::OpNodeBase;
     using unisim::util::symbolic::Op;
     using unisim::util::symbolic::Expr;
-    using unisim::util::symbolic::ScalarType;
+    using unisim::util::symbolic::ValueType;
 
     /*** Pre expression process ***/
     {
@@ -270,22 +270,38 @@ namespace ccode {
     if (ConstNodeBase const* node = ep.expr.Eval(unisim::util::symbolic::EvalSpace()))
       {
         Expr cexp( node );
-        switch (node->GetType())
+        auto tp = node->GetType();
+        switch (tp->encoding)
           {
-          case ScalarType::BOOL: srcmgr << (node->Get( uint8_t() ) ? "true" : "false"); break;
-          case ScalarType::U8:   srcmgr << hex( node->Get( uint8_t() ) );         break;
-          case ScalarType::U16:  srcmgr << hex( node->Get( uint16_t() ) );        break;
-          case ScalarType::U32:  srcmgr << hex( node->Get( uint32_t() ) );        break;
-          case ScalarType::U64:  srcmgr << hex( node->Get( uint64_t() ) );        break;
-          case ScalarType::S8:   srcmgr << dec( node->Get( int8_t() ) );         break;
-          case ScalarType::S16:  srcmgr << dec( node->Get( int16_t() ) );        break;
-          case ScalarType::S32:  srcmgr << dec( node->Get( int32_t() ) );        break;
-          case ScalarType::S64:  srcmgr << dec( node->Get( int64_t() ) );        break;
-          case ScalarType::F32:
-          case ScalarType::F64:  srcmgr << fpt( node->Get( double() ) );      break;
-          default: throw std::logic_error("can't encode type");
+          default: break;
+          case ValueType::BOOL: srcmgr << (node->Get( int() ) ? "true" : "false"); return srcmgr;
+          case ValueType::UNSIGNED:
+            switch (tp->GetBitSize())
+              {
+              default: break;
+              case 8:  srcmgr << hex( node->Get( uint8_t() ) );  return srcmgr;
+              case 16: srcmgr << hex( node->Get( uint16_t() ) ); return srcmgr;
+              case 32: srcmgr << hex( node->Get( uint32_t() ) ); return srcmgr;
+              case 64: srcmgr << hex( node->Get( uint64_t() ) ); return srcmgr;
+              } break;
+          case ValueType::SIGNED:
+            switch (tp->GetBitSize())
+              {
+              default: break;
+              case 8:   srcmgr << dec( node->Get( int8_t() ) );  return srcmgr;
+              case 16:  srcmgr << dec( node->Get( int16_t() ) ); return srcmgr;
+              case 32:  srcmgr << dec( node->Get( int32_t() ) ); return srcmgr;
+              case 64:  srcmgr << dec( node->Get( int64_t() ) ); return srcmgr;
+              } break;
+          case ValueType::FLOAT:
+            switch (tp->GetBitSize())
+              {
+              default: break;
+              case 32:
+              case 64: srcmgr << fpt( node->Get( double() ) ); return srcmgr;
+              } break;
           }
-        return srcmgr;
+        throw std::logic_error("can't encode type");
       }
     else if (OpNodeBase const* node = ep.expr->AsOpNode())
       {
@@ -310,10 +326,12 @@ namespace ccode {
               case Op::Mul:     cbinop( srcmgr, ep.ccode, lhs, rhs, " * " ); break;
               case Op::Div:     cbinop( srcmgr, ep.ccode, lhs, rhs, " / " ); break;
               case Op::Mod:     cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
+              case Op::Divu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " / " ); break;
+              case Op::Modu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
         
               case Op::Xor:     cbinop( srcmgr, ep.ccode, lhs, rhs, " xor " ); break;
-              case Op::Or:      cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType() == ScalarType::BOOL) ? " or " : " | " ); break;
-              case Op::And:     cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType() == ScalarType::BOOL) ? " and " : " & " ); break;
+              case Op::Or:      cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType()->GetBitSize() == 1) ? " or " : " | " ); break;
+              case Op::And:     cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType()->GetBitSize() == 1) ? " and " : " & " ); break;
         
               case Op::Teq:     cbinop( srcmgr, ep.ccode, lhs, rhs, " == " ); break;
               case Op::Tne:     cbinop( srcmgr, ep.ccode, lhs, rhs, " != " ); break;
@@ -344,7 +362,7 @@ namespace ccode {
               {
               default:         srcmgr << "([" << node->op.c_str() << "] " << ep.ccode(operand) << ")"; break;
         
-              case Op::Not:    srcmgr << (operand->GetType() == ScalarType::BOOL ? "(not " : "(~") << ep.ccode(operand) << ")"; break;
+              case Op::Not:    srcmgr << (operand->GetType()->GetBitSize() == 1 ? "(not " : "(~") << ep.ccode(operand) << ")"; break;
               case Op::Neg:    srcmgr << "(-" << ep.ccode(operand) << ")"; break;
         
                 // case Op::BSwp:  break;
@@ -356,24 +374,16 @@ namespace ccode {
                 
               case Op::Cast:
                 {
-                  CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *ep.expr.node );
-                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
-
-                  char const* tpname = 0;
-                  switch (cnb.GetType())
+                  auto tp = node->GetType();
+                  switch (tp->encoding)
                     {
-                    case ScalarType::BOOL: tpname = "bool"; break;
-                    case ScalarType::U8:   tpname = "uint8_t"; break;
-                    case ScalarType::U16:  tpname = "uint16_t"; break;
-                    case ScalarType::U32:  tpname = "uint32_t"; break;
-                    case ScalarType::U64:  tpname = "uint64_t"; break;
-                    case ScalarType::S8:   tpname = "int8_t"; break;
-                    case ScalarType::S16:  tpname = "int16_t"; break;
-                    case ScalarType::S32:  tpname = "int32_t"; break;
-                    case ScalarType::S64:  tpname = "int64_t"; break;
+                    case ValueType::BOOL:     srcmgr << "bool"; break;
+                    case ValueType::UNSIGNED: srcmgr << "uint" << dec(tp->GetBitSize()) << "_t"; break;
+                    case ValueType::SIGNED:   srcmgr <<  "int" << dec(tp->GetBitSize()) << "_t"; break;
+                    case ValueType::FLOAT:    srcmgr << (tp->GetBitSize() == 32 ? "float" : "double"); break;
                     default: throw std::logic_error("cast error");
                     }
-                  srcmgr << tpname << "(" << ep.ccode(operand) << ")";
+                  srcmgr << "(" << ep.ccode(operand) << ")";
                 } break;
               }
           } break;
@@ -394,31 +404,64 @@ namespace ccode {
   void
   CCode::make_temp( SrcMgr& sink, Expr const& e )
   {
-    using unisim::util::symbolic::ScalarType;
-    char const* prefix;
-    switch (e->GetType())
+    using unisim::util::symbolic::ValueType;
+    auto tp = e->GetType();
+    std::ostringstream buf;
+    switch (tp->encoding)
       {
-      case ScalarType::BOOL: prefix = "ltmp"; break;
-      case ScalarType::U8:   prefix = "btmp"; break;
-      case ScalarType::U16:  prefix = "wtmp"; break;
-      case ScalarType::U32:  prefix = "dtmp"; break;
-      case ScalarType::U64:  prefix = "qtmp"; break;
-      case ScalarType::S8:   prefix = "sbtmp"; break;
-      case ScalarType::S16:  prefix = "swtmp"; break;
-      case ScalarType::S32:  prefix = "sdtmp"; break;
-      case ScalarType::S64:  prefix = "sqtmp"; break;
-      case ScalarType::F32:  prefix = "ftmp"; break;
-      case ScalarType::F64:  prefix = "gtmp"; break;
-      case ScalarType::VOID: prefix = "void"; break;
+      case ValueType::BOOL: buf << "ltmp"; break;
+      case ValueType::SIGNED:
+        buf << 's';
+      case ValueType::UNSIGNED:
+        if (unsigned sz = tp->GetBitSize())
+          { buf << (sz <= 8 ? 'b' : sz <= 16 ? 'w' : sz <= 32 ? 'd' : 'q') << "tmp"; }
+        else
+          { buf << '?'; }
+        break;
+      case ValueType::FLOAT:
+        if (unsigned sz = tp->GetBitSize())
+          { buf << (sz == 32 ? "ftmp" : "gtmp"); }
+        break;
       default: throw std::logic_error("can't encode type");
       }
-    std::ostringstream buf;
-    buf << prefix << '_' << tmps.size();
+    buf <<  '_' << tmps.size();
 
     Variable tmp( buf.str() );
     sink << tmp.GetType() << ' ' << tmp.GetName() << " = " << ExprPrinter(*this, e) << ";\n";
     tmps.emplace( std::piecewise_construct, std::forward_as_tuple(e), std::forward_as_tuple(tmp) );
   }
+
+  void
+  RegReadBase::translate( SrcMgr& srcmgr, CCode& ccode ) const
+  {
+    std::ostringstream buf;
+    GetRegName( buf );
+    srcmgr << buf.str();
+  }
+
+  void
+  RegReadBase::Repr( std::ostream& sink ) const
+  {
+    GetRegName(sink);
+  }
+  
+  void
+  RegWriteBase::translate( SrcMgr& srcmgr, CCode& ccode ) const
+  {
+    std::ostringstream buf;
+    GetRegName( buf );
+    srcmgr << buf.str() << " = " << ccode(value) << ";\n";
+  }
+
+  void
+  RegWriteBase::Repr( std::ostream& sink ) const
+  {
+    GetRegName(sink);
+    sink << " := ";
+    value->Repr(sink);
+  }
+  
+  
 
 } /* end of namespace ccode */
 } /* end of namespace symbolic */

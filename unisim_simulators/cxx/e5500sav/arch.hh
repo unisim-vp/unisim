@@ -161,7 +161,7 @@ namespace ut
     virtual unsigned SubCount() const { return 0; };
     virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<SourceReg const&>( rhs ) ); }
     int compare( SourceReg const& rhs ) const { return int(reg) - int(rhs.reg); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
+    virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     unsigned reg;
   };
   
@@ -169,7 +169,7 @@ namespace ut
   {
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ValueType ValueType;
     
     Unknown( Arch& _arch ) : ArchExprNode( _arch ) {}
     virtual Unknown* Mutate() const override { return new Unknown(*this); }
@@ -177,7 +177,7 @@ namespace ut
     virtual unsigned SubCount() const { return 0; };
     virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual ValueType const* GetType() const { return unisim::util::symbolic::NoValueType(); }
   };
   
   template <class T>
@@ -202,13 +202,13 @@ namespace ut
     
     struct XERNode : public ArchExprNode
     {
-      typedef unisim::util::symbolic::ScalarType ScalarType;
+      typedef unisim::util::symbolic::ValueType ValueType;
       XERNode( Arch& _arch ) : ArchExprNode( _arch ) {}
       virtual XERNode* Mutate() const override { return new XERNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-      virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
     
     XER( Arch& _arch ) : xer_value( new XERNode( _arch ) ) {}
@@ -245,7 +245,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-      virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint32_t()); }
     };
 
     CR( Arch& _arch ) : cr_value( new CRNode( _arch ) ) {}
@@ -343,7 +343,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-      virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
 
     FPSCR( Arch& _arch ) : fpscr_value( new FPSCRNode( _arch ) ) {}
@@ -508,7 +508,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
-      virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
     
     U64 GetCIA() { return cia; };
@@ -531,7 +531,7 @@ namespace ut
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
       virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
       Expr addr;
-      virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false,BITS); }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, BITS); }
     };
     
     template <unsigned BITS> Expr MemRead( ADDRESS const& _addr )

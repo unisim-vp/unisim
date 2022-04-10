@@ -79,7 +79,7 @@ namespace ut
   {
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ValueType ValueType;
     typedef FunctionNode<SUBS> this_type;
     
     FunctionNode( char const* _ident ) : FunctionNodeBase(_ident) {}
@@ -87,7 +87,7 @@ namespace ut
     this_type* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
     virtual unsigned SubCount() const { return SUBS; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx < SUBS) return srcs[idx]; return ExprNode::GetSub(idx); };
-    virtual ScalarType::id_t GetType() const { return GetSub(0)->GetType(); }
+    virtual ValueType const* GetType() const { return GetSub(0)->GetType(); }
     Expr srcs[SUBS];
   };
 
@@ -113,7 +113,7 @@ namespace ut
 
   struct ArchExprNode : public unisim::util::symbolic::ExprNode
   {
-    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ValueType ValueType;
     ArchExprNode( Arch& _arch ) : arch(_arch) {} Arch& arch;
 
     static Arch* SeekArch( unisim::util::symbolic::Expr const& expr )

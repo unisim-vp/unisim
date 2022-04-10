@@ -54,14 +54,16 @@
 
 void show(unsigned, unisim::util::symbolic::ExprNode const*);
 
-struct VmmRegister
+
+struct VmmValue
 {
-  enum { BYTECOUNT = 32 };
+  enum { BYTECOUNT = 32, VPREFIX='y' };
   struct value_type { char _[BYTECOUNT]; };
-  VmmRegister() = default;
-  VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
+  VmmValue() = default;
+  VmmValue(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
   unisim::util::symbolic::Expr expr;
-  static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
+  static unisim::util::symbolic::ValueType const* GetType();
+  //{ return unisim::util::symbolic::NoValueType(); }
 };
 
 struct ProcessorBase
@@ -89,7 +91,7 @@ struct ProcessorBase
 
   typedef unisim::util::symbolic::Expr Expr;
   typedef unisim::util::symbolic::ExprNode ExprNode;
-  typedef unisim::util::symbolic::ScalarType ScalarType;
+  typedef unisim::util::symbolic::ValueType ValueType;
 
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
@@ -127,7 +129,7 @@ struct ProcessorBase
   //   virtual FTop* Mutate() const override { return new FTop(*this); }
   //   virtual unsigned SubCount() const { return 0; }
   //   virtual int cmp(ExprNode const&) const override { return 0; }
-  //   virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
+  //   virtual ValueType const* GetType() const { return ValueType::U8; }
   //   virtual void Repr( std::ostream& sink ) const;
   // };
 
@@ -155,7 +157,7 @@ struct ProcessorBase
 
   struct FRegID : public unisim::util::identifier::Identifier<FRegID>
   {
-    typedef double register_type;
+    static unisim::util::symbolic::ValueType const* GetType() { return unisim::util::symbolic::CValueType(double()); }
     enum Code { st0=0, st1, st2, st3, st4, st5, st6, st7, end } code;
     char const* c_str() const { return &"st0\0st1\0st2\0st3\0st4\0st5\0st6\0st7"[(unsigned(code) % 8)*4]; }
     FRegID() : code(end) {}
@@ -167,7 +169,7 @@ struct ProcessorBase
   struct VRegID
   {
     VRegID(unsigned _reg) : reg(_reg) {} unsigned reg;
-    typedef VmmRegister::value_type register_type;
+    static unisim::util::symbolic::ValueType const* GetType() { return VmmValue::GetType(); }
     void Repr( std::ostream& ) const;
     int cmp(VRegID const& rhs) const { return int(reg) - int(rhs.reg); }
   };
@@ -178,7 +180,7 @@ struct ProcessorBase
     virtual VClear* Mutate() const override { return new VClear( *this ); };
     virtual unsigned SubCount() const override { return 0; };
     virtual void Repr( std::ostream& sink ) const override;
-    ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    ValueType const* GetType() const override;
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
     virtual int GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const;
   };
@@ -188,7 +190,7 @@ struct ProcessorBase
   // {
   //   VRegRead( unsigned _reg ) : reg(_reg) {}
   //   virtual VRegRead* Mutate() const override { return new VRegRead( *this ); }
-  //   virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+  //   virtual ValueType const* GetType() const { return ValueType::VOID; }
   //   virtual unsigned SubCount() const override { return 0; }
   //   virtual void Repr( std::ostream& sink ) const override;
   //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegRead const&>( rhs ) ); }
@@ -201,15 +203,18 @@ struct ProcessorBase
     VmmIndirectReadBase(Expr const& _index) : index(_index) {}
     virtual void Repr( std::ostream& sink ) const override;
     virtual unsigned GetVSize() const = 0;
-    virtual char const* GetVName() const = 0;
+    virtual void GetVName( std::ostream& sink ) const = 0;
     Expr index;
   };
 
   /*** FLAGS ***/
 
-  struct FLAG : public unisim::util::identifier::Identifier<FLAG>
+  struct FLAG
+    : public unisim::util::identifier::Identifier<FLAG>
+    , unisim::util::symbolic::WithValueType<FLAG>
   {
-    typedef bool register_type;
+    typedef bool value_type;
+
     enum Code { CF = 0, PF, AF, ZF, SF, DF, OF, C0, C1, C2, C3, end } code;
 
     char const* c_str() const
@@ -296,12 +301,12 @@ struct Processor : public ProcessorBase
 
   typedef unisim::component::cxx::processor::intel::RMOp<Processor> RMOp;
 
-  typedef                typename MODE::IRegID  IRegID;
-  typedef typename MODE::IRegID::register_type  nat_gr_type;
-  typedef                    typename MODE::GR  GR;
-  typedef                          nat_gr_type  nat_addr_t;
-  typedef              SmartValue<nat_gr_type>  gr_type;
-  typedef                              gr_type  addr_t;
+  typedef             typename MODE::IRegID  IRegID;
+  typedef typename MODE::IRegID::value_type  nat_gr_type;
+  typedef                 typename MODE::GR  GR;
+  typedef                       nat_gr_type  nat_addr_t;
+  typedef           SmartValue<nat_gr_type>  gr_type;
+  typedef                           gr_type  addr_t;
 
 
   struct OpHeader { OpHeader( nat_addr_t _address ) : address( _address ) {} nat_addr_t address; };
@@ -309,7 +314,7 @@ struct Processor : public ProcessorBase
   /*** SEGMENTS ***/
   struct SegBaseID : public SegmentID
   {
-    typedef nat_addr_t register_type;
+    static unisim::util::symbolic::ValueType const* GetType() { return unisim::util::symbolic::CValueType(nat_addr_t()); }
     void Repr(std::ostream& sink) const { sink << c_str() << "_base"; }
     SegBaseID() = default;
     SegBaseID( Code _code ) : SegmentID(_code) {}
@@ -480,7 +485,7 @@ struct Processor : public ProcessorBase
 
   struct VUConfig : public unisim::util::symbolic::vector::VUConfig
   {
-    static unsigned const BYTECOUNT = VmmRegister::BYTECOUNT;
+    static unsigned const BYTECOUNT = VmmValue::BYTECOUNT;
     static unsigned const REGCOUNT = VREGCOUNT;
   };
 
@@ -496,7 +501,7 @@ struct Processor : public ProcessorBase
   struct VmmIndirectRead : public VmmIndirectReadBase
   {
     typedef unisim::util::symbolic::TypeInfo<typename ELEM::value_type> traits;
-    enum { elemcount = VR::SIZE / 8 / traits::BYTECOUNT };
+    enum { elemcount = VR::SIZE / traits::BITSIZE };
     
     VmmIndirectRead( ELEM const* elems, u8_t const& _index)
       : VmmIndirectReadBase(_index.expr)
@@ -507,7 +512,7 @@ struct Processor : public ProcessorBase
     typedef VmmIndirectRead<VR,ELEM> this_type;
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual unsigned GetVSize() const override { return VR::SIZE; }
-    virtual char const* GetVName() const override { return ScalarType(GetType()).name; }
+    virtual void GetVName(std::ostream& sink) const override { return GetType()->GetName(sink); }
     virtual unsigned SubCount() const { return elemcount+1; }
     virtual Expr const& GetSub(unsigned idx) const
     {
@@ -515,7 +520,7 @@ struct Processor : public ProcessorBase
       if (idx == elemcount) return index;
       return ExprNode::GetSub(idx);
     }
-    virtual ScalarType::id_t GetType() const override { return traits::GetType(); }
+    virtual ValueType const* GetType() const override { return ELEM::GetType(); }
     virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
     int compare( this_type const& rhs ) const { return 0; }
     
@@ -657,7 +662,7 @@ Processor<MODE>::Processor()
 
   for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
     {
-      VmmRegister v( newRegRead( VRegID(reg) ) );
+      VmmValue v( newRegRead( VRegID(reg) ) );
       *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
     }
 }
@@ -851,12 +856,15 @@ Processor<MODE>::step( Operation const& op )
 struct Intel64
 {
   enum {GREGSIZE = 8, GREGCOUNT = 16, VREGCOUNT = 16};
-  
+
   typedef unisim::component::cxx::processor::intel::GOq GR;
   
-  struct IRegID : public unisim::util::identifier::Identifier<IRegID>
+  struct IRegID
+    : public unisim::util::identifier::Identifier<IRegID>
+    , public unisim::util::symbolic::WithValueType<IRegID>
   {
-    typedef uint64_t register_type;
+    typedef uint64_t value_type;
+
     enum Code { rax = 0, rcx = 1, rdx = 2, rbx = 3, rsp = 4, rbp = 5, rsi = 6, rdi = 7,
                 r8, r9, r10, r11, r12, r13, r14, r15,
                 end } code;
@@ -903,9 +911,12 @@ struct Compat32
 
   typedef unisim::component::cxx::processor::intel::GOd GR;
   
-  struct IRegID : public unisim::util::identifier::Identifier<IRegID>
+  struct IRegID
+    : public unisim::util::identifier::Identifier<IRegID>
+    , unisim::util::symbolic::WithValueType<IRegID>
   {
-    typedef uint32_t register_type;
+    typedef uint32_t value_type;
+    
     enum Code { eax = 0, ecx = 1, edx = 2, ebx = 3, esp = 4, ebp = 5, esi = 6, edi = 7, end } code;
 
     char const* c_str() const

@@ -48,7 +48,9 @@ namespace vector {
   
   void VTransBase::Repr( std::ostream& sink ) const
   {
-    sink << "VTrans<"  << ScalarType(GetType()).name << ">(" << src << ", " << srcsize << ", " << srcpos << ")";
+    sink << "VTrans<";
+    GetType()->GetName(sink);
+    sink << ">(" << src << ", " << srcsize << ", " << srcpos << ")";
   }
 
   ExprNode const* corresponding_origin( Expr const& dst, unsigned dpos, unsigned spos )

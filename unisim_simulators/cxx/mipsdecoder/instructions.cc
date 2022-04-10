@@ -365,8 +365,8 @@ namespace Mips
       else if (not branch.cond.good()) // branch.dest.good()
         {
           typedef Interpreter::FDIteration Iteration;
-          typedef Interpreter::FDScalarElement ScalarElement;
-          typedef Interpreter::FDMemoryFlags Flags;
+          //typedef Interpreter::FDScalarElement ScalarElement;
+          //typedef Interpreter::FDMemoryFlags Flags;
           Iteration::TargetCursor nextCursor;
           Iteration::CalleeCursor callCursor;
           Iteration::Target target;

@@ -150,7 +150,7 @@ namespace binsec {
     Expr mksimple();
     virtual BitFilter* Mutate() const override { return new BitFilter( *this ); }
     virtual Expr Simplify() const override;
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, extend ); }
+    virtual ValueType const* GetType() const { return CValueType(ValueType::UNSIGNED, extend); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
@@ -207,7 +207,7 @@ namespace binsec {
     typedef RegReadBase Super;
     RegRead( RID _id ) : Super(), id(_id) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const override { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
+    virtual ValueType const* GetType() const override { return RID::GetType(); }
     virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
     int compare( RegRead const& rhs ) const { if (int delta = Super::compare(rhs)) return delta; return id.cmp( rhs.id ); }
@@ -219,7 +219,7 @@ namespace binsec {
   {
     Assignment( Expr const& _value ) : value(_value) {}
     
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual ValueType const* GetType() const { return NoValueType(); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
     
@@ -251,9 +251,8 @@ namespace binsec {
   {
     typedef RegWrite<RID> this_type;
     typedef RegWriteBase Super;
-    enum { bitsize = unisim::util::symbolic::TypeInfo<typename RID::register_type>::BITSIZE };
-    RegWrite( RID _id, Expr const& _value ) : Super(_value, bitsize), id(_id) {}
-    RegWrite( RID _id, int rbase, int rsize, Expr const& _value ) : Super(_value, bitsize, rbase, rsize), id(_id) {}
+    RegWrite( RID _id, Expr const& _value ) : Super(_value, TypeInfo<typename RID::value_type>::BITSIZE), id(_id) {}
+    RegWrite( RID _id, int rbase, int rsize, Expr const& _value ) : Super(_value, RID::GetType()->GetBitSize(), rbase, rsize), id(_id) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
@@ -279,13 +278,13 @@ namespace binsec {
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void annotate(std::ostream& sink) const override
     {
-      sink << " // call (" << unisim::util::symbolic::binsec::dbx(sizeof(T), return_address) << ",0)";
+      sink << " // call (" << binsec::dbx(sizeof(T), return_address) << ",0)";
     }
     virtual void Repr( std::ostream& sink ) const
     {
       sink << "Call(";
       Branch::Repr(sink);
-      sink << ", " << unisim::util::symbolic::binsec::dbx(sizeof(T), return_address) << ")";
+      sink << ", " << binsec::dbx(sizeof(T), return_address) << ")";
     }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const
@@ -306,7 +305,7 @@ namespace binsec {
       sink << "assert (false)";
       return 0;
     }
-    virtual ScalarType::id_t GetType() const override{ return ScalarType::VOID; }
+    virtual ValueType const* GetType() const override{ return NoValueType(); }
 
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual unsigned SubCount() const override { return 0; }
@@ -341,7 +340,7 @@ namespace binsec {
       : MemAccess(_addr, _size, _alignment, _bigendian)
     {}
     virtual Load* Mutate() const override { return new Load(*this); }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::IntegerType(false, 8*bytecount()); }
+    virtual ValueType const* GetType() const override { return CValueType(ValueType::UNSIGNED, 8*bytecount()); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override;
     virtual void Repr( std::ostream& sink ) const override { MemAccess::Repr(sink); }
     virtual unsigned SubCount() const override { return 1; }
@@ -353,7 +352,7 @@ namespace binsec {
     Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
       : MemAccess(_addr, _size, _alignment, _bigendian), value(_value)
     {}
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    virtual ValueType const* GetType() const override { return NoValueType(); }
     virtual Store* Mutate() const override { return new Store(*this); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override;
     virtual void Repr( std::ostream& sink ) const override;

@@ -72,7 +72,7 @@ struct Processor
   
 //   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
-  typedef unisim::util::symbolic::ScalarType           ScalarType;
+  typedef unisim::util::symbolic::ValueType           ValueType;
   
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
@@ -82,9 +82,12 @@ struct Processor
   template <typename RID>
   static Expr newRegWrite( RID id, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, value ); }
   
-  struct RegID : public unisim::util::identifier::Identifier<RegID>
+  struct RegID
+    : public unisim::util::identifier::Identifier<RegID>
+    , public unisim::util::symbolic::WithValueType<RegID>
+
   {
-    typedef uint32_t register_type;
+    typedef uint32_t value_type;
     enum Code
       {
        NA = 0, at, v0, v1, a0, a1, a2, a3,

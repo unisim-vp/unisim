@@ -84,8 +84,8 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
         virtual unsigned SubCount() const override { return 0; }
         virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
         typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-        typedef unisim::util::symbolic::ScalarType ScalarType;
-        virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
+        typedef unisim::util::symbolic::ValueType ValueType;
+        virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
         virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
         {
           if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))

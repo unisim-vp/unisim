@@ -168,9 +168,54 @@ namespace ccode {
 
   struct Update : public CNode
   {
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    virtual ValueType const* GetType() const override { return NoValueType(); }
   };
     
+  struct RegReadBase : public CNode
+  {
+    virtual void GetRegName(std::ostream&) const = 0;
+    virtual unsigned SubCount() const override { return 0; }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const override;
+  };
+
+  template <typename RID>
+  struct RegRead : public RegReadBase
+  {
+    RegRead( RID _id ) : id(_id) {}
+    virtual RegRead* Mutate() const override { return new RegRead( *this ); }
+    virtual void GetRegName( std::ostream& sink ) const override { return id.GetName(sink, true); }
+    virtual ValueType const* GetType() const { return RID::GetType(); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
+    int compare( RegRead const& rhs ) const { return id.cmp( rhs.id ); }
+
+    RID id;
+  };
+
+  struct RegWriteBase : public Update
+  {
+    virtual void GetRegName(std::ostream& sink) const = 0;
+    RegWriteBase( Expr const& _value ) : value(_value) {}
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+    virtual unsigned SubCount() const { return 1; }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const override;
+      
+    Expr value;
+  };
+
+  template <typename RID>
+  struct RegWrite : public RegWriteBase
+  {
+    RegWrite( RID _id, Expr const& _value ) : RegWriteBase(_value), id(_id) {}
+    virtual RegWrite* Mutate() const override { return new RegWrite( *this ); }
+    virtual void GetRegName( std::ostream& sink ) const { return id.GetName(sink, false); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    int compare( RegWrite const& rhs ) const { return id.cmp( rhs.id ); }
+
+    RID id;
+  };
+
 } /* end of namespace ccode */
 } /* end of namespace symbolic */
 } /* end of namespace util */

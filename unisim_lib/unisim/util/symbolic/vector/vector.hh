@@ -50,7 +50,7 @@ namespace vector {
     virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual VMix* Mutate() const override { return new VMix( *this ); }
-    virtual ScalarType::id_t GetType() const override { return l->GetType(); }
+    virtual ValueType const* GetType() const override { return l->GetType(); }
     Expr l, r;
   };
 
@@ -77,7 +77,7 @@ namespace vector {
     VTrans( Expr const& src, unsigned srcsize, int srcpos ) : VTransBase( src, srcsize, srcpos ) {}
     typedef VTrans<T> this_type;
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const override { return T::GetType(); }
+    virtual ValueType const* GetType() const override { return T::GetType(); }
   };
 
   struct VUConfig

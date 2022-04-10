@@ -99,13 +99,13 @@ struct Processor
 
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
-  typedef unisim::util::symbolic::ScalarType           ScalarType;
+  typedef unisim::util::symbolic::ValueType           ValueType;
 
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
-  struct ForeignRegisterID
+  struct ForeignRegisterID : unisim::util::symbolic::WithValueType<ForeignRegisterID>
   {
-    typedef uint32_t register_type;
+    typedef uint32_t value_type;
     ForeignRegisterID( uint8_t _mode, unsigned _idx )
       : idx(_idx), mode(_mode == SYSTEM_MODE ? USER_MODE : _mode)
     {}
@@ -544,9 +544,9 @@ public:
     void _(char c) { *--begin = c; } operator char const* () const { return begin; } char buf[4]; char* begin;
   };
 
-  struct NeonReg
+  struct NeonReg : public unisim::util::symbolic::WithValueType<NeonReg>
   {
-    typedef uint64_t register_type;
+    typedef uint64_t value_type;
     NeonReg( unsigned _reg ) : reg(_reg) {}
     void Repr( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     int cmp( NeonReg const& rhs ) const { return int(reg) - int(rhs.reg); }
@@ -817,9 +817,11 @@ public:
   /* mask for valid bits in processor control and status registers */
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
 
-  struct SRegID : public unisim::util::identifier::Identifier<SRegID>
+  struct SRegID
+    : public unisim::util::identifier::Identifier<SRegID>
+    , public unisim::util::symbolic::WithValueType<SRegID>
   {
-    typedef uint32_t register_type;
+    typedef uint32_t value_type;
     enum Code {
       SCTLR, ACTLR,
       CTR, MPIDR,
@@ -896,9 +898,12 @@ public:
     return sregs[reg.idx()];
   }
 
-  struct RegID : public unisim::util::identifier::Identifier<RegID>
+  struct RegID
+    : public unisim::util::identifier::Identifier<RegID>
+    , unisim::util::symbolic::WithValueType<RegID>
   {
-    typedef uint32_t register_type;
+    typedef uint32_t value_type;
+
     enum Code
       {
         NA = 0,
@@ -992,9 +997,12 @@ public:
     RegID( char const* _code ) : code(end) { init( _code ); }
   };
 
-  struct Flag : public unisim::util::identifier::Identifier<Flag>
+  struct Flag
+    : public unisim::util::identifier::Identifier<Flag>
+    , public unisim::util::symbolic::WithValueType<Flag>
   {
-    typedef bool register_type;
+    typedef bool value_type;
+
     enum Code { N, Z, C, V, Q, T, end } code;
 
     char const* c_str() const
@@ -1011,8 +1019,9 @@ public:
   };
 
   struct ITStateID
+    : public unisim::util::symbolic::WithValueType<ITStateID>
   {
-    typedef uint8_t register_type;
+    typedef uint8_t value_type;
     void Repr(std::ostream& sink) const { sink << "itstate"; }
     int cmp(ITStateID const&) const { return 0; }
   };

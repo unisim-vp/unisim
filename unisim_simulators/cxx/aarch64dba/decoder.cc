@@ -64,7 +64,7 @@ struct Processor
     
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
-  typedef unisim::util::symbolic::ScalarType           ScalarType;
+  typedef unisim::util::symbolic::ValueType           ValueType;
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
   template <typename RID>
@@ -289,9 +289,11 @@ struct Processor
   //   =                         Processor Storage                         =
   //   =====================================================================
 
-  struct GPR : public unisim::util::identifier::Identifier<GPR>
+  struct GPR
+    : public unisim::util::identifier::Identifier<GPR>
+    , public unisim::util::symbolic::WithValueType<GPR>
   {
-    typedef uint64_t register_type;
+    typedef uint64_t value_type;
     enum Code
       {
         x0,  x1,  x2,  x3,  x4,  x5,  x6,  x7,  x8,  x9,  x10, x11, x12, x13, x14, x15,
@@ -315,9 +317,11 @@ struct Processor
     GPR( char const* _code ) : code(end) { init( _code ); }
   };
 
-  struct Flag : public unisim::util::identifier::Identifier<Flag>
+  struct Flag
+    : public unisim::util::identifier::Identifier<Flag>
+    , unisim::util::symbolic::WithValueType<Flag>
   {
-    typedef bool register_type;
+    typedef bool value_type;
     enum Code { N, Z, C, V, end } code;
 
     char const* c_str() const

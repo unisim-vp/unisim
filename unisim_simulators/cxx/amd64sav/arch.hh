@@ -164,9 +164,8 @@ namespace review
     VmmRegister() = default;
     VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
     unisim::util::symbolic::Expr expr;
-    static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
+    static unisim::util::symbolic::ValueType const* GetType();
   };
-
 
   struct Arch
   {
@@ -200,7 +199,7 @@ namespace review
 
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ValueType ValueType;
 
     typedef GOq   GR;
     typedef u64_t gr_type;
@@ -217,7 +216,7 @@ namespace review
 
     struct Update : public ExprNode
     {
-      virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+      virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
     };
 
     Arch( Interface& iif );
@@ -242,8 +241,7 @@ namespace review
       RegRead( RID _id ) : id(_id) {}
       virtual RegRead* Mutate() const override { return new RegRead( *this ); }
       virtual char const* GetRegName() const override { return id.c_str(); };
-      virtual ScalarType::id_t GetType() const
-      { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
+      virtual ValueType const* GetType() const { return RID::GetType(); }
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
       int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
@@ -268,7 +266,7 @@ namespace review
       VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
       virtual ExprNode* Mutate() const override { return new this_type(*this); }
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-      virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
+      virtual ValueType const* GetType() const override { return T::scalar_type(); }
     };
 
     struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
@@ -289,9 +287,9 @@ namespace review
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
     };
 
-    struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
-    struct FReg { static ScalarType::id_t const scalar_type = ScalarType::F64;  static char const* name() { return "FReg"; } };
-    struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
+    struct VReg { static ValueType const* scalar_type() { return unisim::util::symbolic::CValueType(uint64_t()); };  static char const* name() { return "VReg"; } };
+    struct FReg { static ValueType const* scalar_type() { return unisim::util::symbolic::CValueType(double()); };  static char const* name() { return "FReg"; } };
+    struct GReg { static ValueType const* scalar_type() { return unisim::util::symbolic::NoValueType(); }; static char const* name() { return "GReg"; } };
 
     typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
@@ -351,9 +349,11 @@ namespace review
 
     u64_t                       tscread() { throw unisim::util::sav::Untestable("hardware"); return u64_t( 0 ); }
 
-    struct FLAG : public unisim::util::identifier::Identifier<FLAG>
+    struct FLAG
+      : public unisim::util::identifier::Identifier<FLAG>
+      , public unisim::util::symbolic::WithValueType<FLAG>
     {
-      typedef bool register_type;
+      typedef bool value_type;
       enum Code { CF = 0, PF, AF, ZF, SF, DF, OF, C0, C1, C2, C3, end } code;
 
       char const* c_str() const
@@ -432,10 +432,10 @@ namespace review
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return 0; }
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read()"; }
-      virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
+      virtual ValueType const* GetType() const override { return T::scalar_type(); }
     };
 
-    struct RIP { static ScalarType::id_t const scalar_type = ScalarType::U64; static char const* name() { return "RIP"; } };
+    struct RIP { static ValueType const* scalar_type() { return unisim::util::symbolic::CValueType(uint64_t()); }; static char const* name() { return "RIP"; } };
 
     struct RIPRead : public SPRRead<RIP>
     {
@@ -494,7 +494,7 @@ namespace review
       typedef Load<dstT> this_type;
       Load( unsigned bytes, unsigned segment, Expr const& addr ) : LoadBase(bytes, segment, addr) {}
       virtual this_type* Mutate() const override { return new this_type( *this ); }
-      virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<dstT>::GetType(); }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(dstT()); }
     };
 
     // struct FRegWrite : public Update
@@ -569,7 +569,7 @@ namespace review
       virtual FTop* Mutate() const override { return new FTop(*this); }
       virtual unsigned SubCount() const { return 0; }
       virtual int cmp(ExprNode const&) const override { return 0; }
-      virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
+      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint8_t()); }
       virtual void Repr( std::ostream& sink ) const;
     };
 
@@ -701,7 +701,7 @@ namespace review
     // {
     //   virtual MXCSRRead* Mutate() const override { return new MXCSRRead( *this ); }
     //   virtual char const* GetRegName() const override { return "mxcsr"; };
-    //   virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
+    //   virtual ValueType const* GetType() const override { return ValueType::U16; }
     //   virtual unsigned SubCount() const override { return 0; }
     // };
 
@@ -746,20 +746,22 @@ namespace review
     struct VmmIndirectRead : public ExprNode
     {
       typedef unisim::util::symbolic::TypeInfo<typename ELEM::value_type> traits;
-      enum { elemcount = VR::SIZE / 8 / traits::BYTECOUNT };
+      enum { elemcount = VR::SIZE / traits::BITSIZE };
       VmmIndirectRead( ELEM const* elems, u8_t const& _sub) : sub(_sub.expr) { for (unsigned idx = 0, end = elemcount; idx < end; ++idx) sources[idx] = elems[idx].expr; }
       typedef VmmIndirectRead<VR,ELEM> this_type;
       virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual void Repr( std::ostream& sink ) const override
       {
-        sink << "VmmIndirectRead<" << VR::SIZE << ","  << ScalarType(GetType()).name << ">(";
+        sink << "VmmIndirectRead<" << VR::SIZE << ",";
+        GetType()->GetName(sink);
+        sink << ">(";
         for (unsigned idx = 0, end = elemcount; idx < end; ++idx)
           sink << sources[idx] << ", ";
         sink << sub << ")";
       }
       virtual unsigned SubCount() const { return elemcount+1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx < elemcount) return sources[idx]; if (idx == elemcount) return sub; return ExprNode::GetSub(idx); }
-      virtual ScalarType::id_t GetType() const override { return traits::GetType(); }
+      virtual ValueType const* GetType() const override { return ELEM::GetType(); }
       virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
       int compare( this_type const& rhs ) const { return 0; }
       Expr sources[elemcount];

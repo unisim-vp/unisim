@@ -122,11 +122,11 @@ extern "C"
                      struct _InterpretParameters* parameters,
                      struct _InterpretParametersFunctions* parametersFunctions)
   {
-    if (Mips::Instruction* instruction = reinterpret_cast<Mips::Instruction*>(ainstruction))
+    if (reinterpret_cast<Mips::Instruction*>(ainstruction))
       {
-        uint32_t insn_addr = unisim::util::endian::Host2LittleEndian(*address);
+        //uint32_t insn_addr = unisim::util::endian::Host2LittleEndian(*address);
         typedef unisim::util::forbint::debug::MemoryState MemoryState;
-        typedef unisim::util::forbint::debug::Target Target;
+        //typedef unisim::util::forbint::debug::Target Target;
         typedef unisim::util::forbint::debug::MemoryFlags MemoryFlags;
         MemoryState afterMemory(after_memory, memoryFunctions);
         MemoryState beforeMemory(before_memory_to_constraint, memoryFunctions);

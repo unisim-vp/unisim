@@ -213,13 +213,15 @@ namespace sav {
   template <unsigned SUBCOUNT, class OP>
   struct WeirdOpBase : public unisim::util::symbolic::ExprNode
   {
-    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ValueType ValueType;
     typedef unisim::util::symbolic::Expr Expr;
     typedef WeirdOpBase<SUBCOUNT,OP> this_type;
     WeirdOpBase( OP && _op ) : op(_op) {}
     virtual void Repr(std::ostream& sink) const override
     {
-      sink << "WeirdOp<" << ScalarType(GetType()).name << "," << SUBCOUNT << "," << op << ">( ";
+      sink << "WeirdOp<";
+      GetType()->GetName(sink);
+      sink << "," << SUBCOUNT << "," << op << ">( ";
       char const* sep = "";
       for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
         sink << sep << subs[idx];
@@ -242,7 +244,7 @@ namespace sav {
 
     WeirdOp( OP && name ) : base_type(std::move(name)) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual typename base_type::ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType(); }
+    virtual typename base_type::ValueType const* GetType() const { return unisim::util::symbolic::CValueType(typename T::value_type()); }
   };
 
   template <class OUT, class OP, class T1>
