@@ -770,7 +770,7 @@ namespace binsec {
         std::string name;
         {
           std::ostringstream buf;
-          buf << "tmp" << vars.size() << "<" << size << ">";
+          buf << "%%" << vars.size() << "<" << size << ">";
           name = buf.str();
         }
         
