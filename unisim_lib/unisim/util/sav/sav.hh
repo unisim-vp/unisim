@@ -161,6 +161,71 @@ namespace sav {
     }
   };
   
+  struct Comparator
+  {
+    int process( unisim::util::sav::ActionNode const& a, unisim::util::sav::ActionNode const& b ) const
+    {
+      if (int delta = a.updates.size() - b.updates.size()) return delta;
+      auto rci = b.updates.begin();
+      for (Expr const& update : a.updates)
+        { if (int delta = process( update,  *rci )) return delta; ++rci; }
+          
+      if (int delta = process( a.cond, b.cond )) return delta;
+      for (int idx = 0; idx < 2; ++idx)
+        {
+          if     (not a.nexts[idx])
+            { if (b.nexts[idx]) return -1; }
+          else if(b.nexts[idx])
+            { if (int delta = process( *a.nexts[idx], *b.nexts[idx] )) return delta; }
+        }
+      return 0;
+    }
+
+    typedef unisim::util::symbolic::Expr Expr;
+
+    int process( Expr const& a, Expr const& b ) const
+    {
+      // Do not compare null expressions
+      if (not b.node) return a.node ?  1 : 0;
+      if (not a.node) return b.node ? -1 : 0;
+      
+      /* First compare actual types */
+      const std::type_info* til = &typeid(*a.node);
+      const std::type_info* tir = &typeid(*b.node);
+      if (til < tir) return -1;
+      if (til > tir) return +1;
+        
+      /* Same types, call derived comparator except for Constants (compare popcount)*/
+      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+      if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
+        {
+          // return 0; /* XXX: temporarily considering all constants equivalent */
+          uint64_t av = an->Get(uint64_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint64_t() );
+          if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
+            return delta;
+        }
+      else if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
+        {
+          unsigned ai = vr->idx, bi = dynamic_cast<unisim::util::sav::VirtualRegister const&>(*b.node).idx;
+          if (int delta = int(ai) - int(bi))
+            return delta;
+        }
+      else if (int delta = a.node->cmp( *b.node ))
+        return delta;
+
+      /* Compare sub operands recursively */
+      unsigned subcount = a.node->SubCount();
+      if (int delta = int(subcount) - int(b.node->SubCount()))
+        return delta;
+      for (unsigned idx = 0; idx < subcount; ++idx)
+        if (int delta = process( a.node->GetSub(idx), b.node->GetSub(idx)))
+          return delta;
+
+      /* equal to us */
+      return 0;
+    }
+  };
+  
   struct Addressings
   {
     typedef unisim::util::symbolic::Expr Expr;
