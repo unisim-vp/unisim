@@ -222,63 +222,79 @@ namespace binsec {
         switch (node->SubCount())
           {
           case 2: {
-            int retsz = GenerateCode( node->GetSub(0), vars, label, sink << '(' );
+            auto infix = [&] (char const* op) -> int {
+              int lhs_size = GenerateCode( node->GetSub(0), vars, label, sink << '(' );
+              sink << ' ' << op << ' ' << GetCode( node->GetSub(1), vars, label ) << ')';
+              return lhs_size;
+            };
 
-            Expr rhs = node->GetSub(1);
+            auto prefix = [&] (char const* op) -> int {
+              int lhs_size = GenerateCode( node->GetSub(0), vars, label, sink << op << '(' );
+              sink << ", " << GetCode( node->GetSub(1), vars, label ) << ')';
+              return lhs_size;
+            };
 
+            auto test = [&] (char const* op) -> int {
+              sink << '(' << GetCode( node->GetSub(0), vars, label ) << ' ' << op << ' ' << GetCode( node->GetSub(1), vars, label ) << ')';
+              return 1;
+            };
+
+            auto shift = [&] (char const* op) -> int {
+              int lhs_size = GenerateCode( node->GetSub(0), vars, label, sink << '(' );
+              Expr rhs = node->GetSub(1);
+              switch (lhs_size)
+                {
+                case 16: rhs = Simplify( U16(U8(rhs)).expr ); break;
+                case 32: rhs = Simplify( U32(U8(rhs)).expr ); break;
+                case 64: rhs = Simplify( U64(U8(rhs)).expr ); break;
+                }
+              sink << ' ' << op << ' ' << GetCode( rhs, vars, label ) << ')';
+              return lhs_size;
+            };
+        
             switch (node->op.code)
               {
-              default:                sink << " [" << node->op.c_str() << "] "; break;
+              default:          break;
+              case Op::Add:     return infix("+");
+              case Op::Sub:     return infix("-");
+              case Op::Mul:     return infix("*");
+              case Op::Mod:     return infix("mods");
+              case Op::Modu:    return infix("modu");
+              case Op::Div:     return infix("/s");
+              case Op::Divu:    return infix("/u");
 
-              case Op::Add:     sink << " + "; break;
-              case Op::Sub:     sink << " - "; break;
-              case Op::Mul:     sink << " * "; break;
-              case Op::Mod:     sink << " mods "; break;
-              case Op::Modu:     sink << " modu "; break;
-              case Op::Div:     sink << " /s "; break;
-              case Op::Divu:     sink << " /u "; break;
+              case Op::Xor:     return infix("xor");
+              case Op::Or:      return infix("or");
+              case Op::And:     return infix("and");
 
-              case Op::Xor:     sink << " xor "; break;
-              case Op::Or:      sink << " or "; break;
-              case Op::And:     sink << " and "; break;
+              case Op::Teq:     return test("=");
+              case Op::Tne:     return test("<>");
 
-              case Op::Teq:     sink << " = "; retsz = 1; break;
-              case Op::Tne:     sink << " <> "; retsz = 1; break;
+              case Op::Tle:     return test("<=s");
+              case Op::Tleu:    return test("<=u");
 
-              case Op::Tle:     sink << " <=s "; retsz = 1; break;
-              case Op::Tleu:    sink << " <=u "; retsz = 1; break;
+              case Op::Tge:     return test(">=s");
+              case Op::Tgeu:    return test(">=u");
 
-              case Op::Tge:     sink << " >=s "; retsz = 1; break;
-              case Op::Tgeu:    sink << " >=u "; retsz = 1; break;
+              case Op::Tlt:     return test("<s");
+              case Op::Tltu:    return test("<u");
 
-              case Op::Tlt:     sink << " <s "; retsz = 1; break;
-              case Op::Tltu:    sink << " <u "; retsz = 1; break;
+              case Op::Tgt:     return test(">s");
+              case Op::Tgtu:    return test(">u");
 
-              case Op::Tgt:     sink << " >s "; retsz = 1; break;
-              case Op::Tgtu:    sink << " >u "; retsz = 1; break;
 
-                struct
-                {
-                  Expr operator() (U8 x, int s)
-                  {
-                    if (s==16) return Simplify( U16(x).expr );
-                    if (s==32) return Simplify( U32(x).expr );
-                    if (s==64) return Simplify( U64(x).expr );
+              case Op::Lsl:     return shift("lshift");
+              case Op::Asr:     return shift("rshifts");
+              case Op::Lsr:     return shift("rshiftu");
+              case Op::Ror:     return shift("rrotate");
 
-                    return x.expr;
-                  }
-                } fixsh;
-
-              case Op::Lsl:     sink << " lshift ";  rhs = fixsh( rhs, retsz ); break;
-              case Op::Asr:     sink << " rshifts "; rhs = fixsh( rhs, retsz ); break;
-              case Op::Lsr:     sink << " rshiftu "; rhs = fixsh( rhs, retsz ); break;
-              case Op::Ror:     sink << " rrotate "; rhs = fixsh( rhs, retsz ); break;
-
-                // case Op::Div: break;
+              case Op::Min:     return prefix("min");
+              case Op::Max:     return prefix("max");
               }
 
-            sink << GetCode( rhs, vars, label ) << ')';
-            return retsz;
+            std::ostringstream buf;
+            buf << "[" << node->op.c_str() << "]";
+            return infix(buf.str().c_str());
           }
 
           case 1: {
