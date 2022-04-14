@@ -35,6 +35,7 @@
 #ifndef ARMD64DBA_ARCH_HH
 #define ARMD64DBA_ARCH_HH
 
+#include <unisim/util/arithmetic/i128.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/disasm.hh>
@@ -79,10 +80,12 @@ struct ProcessorBase
   typedef SmartValue<uint16_t>    u16_t;
   typedef SmartValue<uint32_t>    u32_t;
   typedef SmartValue<uint64_t>    u64_t;
+  typedef SmartValue<uint128_t>   u128_t;
   typedef SmartValue<int8_t>      s8_t;
   typedef SmartValue<int16_t>     s16_t;
   typedef SmartValue<int32_t>     s32_t;
   typedef SmartValue<int64_t>     s64_t;
+  typedef SmartValue<int128_t>    s128_t;
   typedef SmartValue<bool>        bit_t;
 
   typedef SmartValue<float>       f32_t;
