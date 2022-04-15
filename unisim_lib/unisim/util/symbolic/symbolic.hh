@@ -49,6 +49,8 @@ namespace unisim {
 namespace util {
 namespace symbolic {
 
+  struct Unimplemented {};
+
   template <typename Bool> struct AssertBool {};
   template <>              struct AssertBool<bool> { static void check() {} };
 
@@ -662,6 +664,165 @@ namespace symbolic {
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
     { AssertBool<value_type>::check(); return SmartValue<bool>( Expr(  make_operation( "Or", expr, other.expr ) ) ); }
   };
+
+  template <>
+  struct SmartValue<float>
+  {
+
+    typedef float value_type;
+    typedef SmartValue<value_type> this_type;
+    static ValueType const* GetType() { return CValueType(value_type()); }
+
+    Expr expr;
+
+    SmartValue() : expr(0) {}
+
+    SmartValue( Expr const& _expr )
+      : expr( _expr )
+    {
+      expr.ConstSimplify();
+    }
+
+    explicit SmartValue( value_type value ) : expr( make_const( value ) ) {}
+
+    template <typename SRC_VALUE_TYPE>
+    explicit SmartValue( SmartValue<SRC_VALUE_TYPE> const& other )
+    {
+      if (CmpTypes<SRC_VALUE_TYPE,float>::same) {
+        expr = other.expr;
+      } else {
+        expr = new CastNode<float,SRC_VALUE_TYPE>( other.expr );
+        expr.ConstSimplify();
+      }
+    }
+
+    static bool const is_signed = std::numeric_limits<value_type>::is_signed;
+
+    this_type& operator = ( this_type const& other ) { expr = other.expr; return *this; }
+
+    template <typename SHT>
+    this_type operator << ( SHT sh ) const { throw Unimplemented(); return SmartValue(); }
+    template <typename SHT>
+    this_type operator >> ( SHT sh ) const { throw Unimplemented(); return SmartValue(); }
+    template <typename SHT>
+    this_type& operator <<= ( SHT sh ) { throw Unimplemented(); return *this; }
+    template <typename SHT>
+    this_type& operator >>= ( SHT sh ) { throw Unimplemented(); return *this; }
+
+    template <typename SHT>
+    this_type operator << ( SmartValue<SHT> const& sh ) const { throw Unimplemented(); return SmartValue(); }
+    template <typename SHT>
+    this_type operator >> ( SmartValue<SHT> const& sh ) const { throw Unimplemented(); return SmartValue(); }
+
+    this_type operator - () const { throw Unimplemented(); return SmartValue(); }
+    this_type operator ~ () const { throw Unimplemented(); return SmartValue(); }
+
+    this_type& operator += ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator -= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator *= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator /= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator %= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator ^= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator &= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator |= ( this_type const& other ) { throw Unimplemented(); return *this; }
+
+    this_type operator + ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator - ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator * ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator / ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator % ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator ^ ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator & ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator | ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+
+    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Teq", expr, other.expr ) ); }
+    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Tne", expr, other.expr ) ); }
+    SmartValue<bool> operator <= ( this_type const& other ) const { throw Unimplemented(); return SmartValue<bool>(); }
+    SmartValue<bool> operator >= ( this_type const& other ) const { throw Unimplemented(); return SmartValue<bool>(); }
+    SmartValue<bool> operator < ( this_type const& other ) const  { throw Unimplemented(); return SmartValue<bool>(); }
+    SmartValue<bool> operator > ( this_type const& other ) const  { throw Unimplemented(); return SmartValue<bool>(); }
+
+  };
+
+  template <>
+  struct SmartValue<double>
+  {
+
+    typedef double value_type;
+    typedef SmartValue<value_type> this_type;
+    static ValueType const* GetType() { return CValueType(value_type()); }
+
+    Expr expr;
+
+    SmartValue() : expr(0) {}
+
+    SmartValue( Expr const& _expr )
+      : expr( _expr )
+    {
+      expr.ConstSimplify();
+    }
+
+    explicit SmartValue( value_type value ) : expr( make_const( value ) ) {}
+
+    template <typename SRC_VALUE_TYPE>
+    explicit SmartValue( SmartValue<SRC_VALUE_TYPE> const& other )
+    {
+      if (CmpTypes<SRC_VALUE_TYPE,double>::same) {
+        expr = other.expr;
+      } else {
+        expr = new CastNode<double,SRC_VALUE_TYPE>( other.expr );
+        expr.ConstSimplify();
+      }
+    }
+
+    static bool const is_signed = std::numeric_limits<value_type>::is_signed;
+
+    this_type& operator = ( this_type const& other ) { expr = other.expr; return *this; }
+
+    template <typename SHT>
+    this_type operator << ( SHT sh ) const { throw Unimplemented(); return SmartValue(); }
+    template <typename SHT>
+    this_type operator >> ( SHT sh ) const { throw Unimplemented(); return SmartValue(); }
+    template <typename SHT>
+    this_type& operator <<= ( SHT sh ) { throw Unimplemented(); return *this; }
+    template <typename SHT>
+    this_type& operator >>= ( SHT sh ) { throw Unimplemented(); return *this; }
+
+    template <typename SHT>
+    this_type operator << ( SmartValue<SHT> const& sh ) const { throw Unimplemented(); return SmartValue(); }
+    template <typename SHT>
+    this_type operator >> ( SmartValue<SHT> const& sh ) const { throw Unimplemented(); return SmartValue(); }
+
+    this_type operator - () const { throw Unimplemented(); return SmartValue(); }
+    this_type operator ~ () const { throw Unimplemented(); return SmartValue(); }
+
+    this_type& operator += ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator -= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator *= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator /= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator %= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator ^= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator &= ( this_type const& other ) { throw Unimplemented(); return *this; }
+    this_type& operator |= ( this_type const& other ) { throw Unimplemented(); return *this; }
+
+    this_type operator + ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator - ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator * ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator / ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator % ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator ^ ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator & ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+    this_type operator | ( this_type const& other ) const { throw Unimplemented(); return SmartValue(); }
+
+    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Teq", expr, other.expr ) ); }
+    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Tne", expr, other.expr ) ); }
+    SmartValue<bool> operator <= ( this_type const& other ) const { throw Unimplemented(); return SmartValue<bool>(); }
+    SmartValue<bool> operator >= ( this_type const& other ) const { throw Unimplemented(); return SmartValue<bool>(); }
+    SmartValue<bool> operator < ( this_type const& other ) const  { throw Unimplemented(); return SmartValue<bool>(); }
+    SmartValue<bool> operator > ( this_type const& other ) const  { throw Unimplemented(); return SmartValue<bool>(); }
+
+  };
+
 
   template <typename T> SmartValue<T> Minimum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( "Min", l.expr, r.expr ) ); }
   template <typename T> SmartValue<T> Maximum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( "Max", l.expr, r.expr ) ); }

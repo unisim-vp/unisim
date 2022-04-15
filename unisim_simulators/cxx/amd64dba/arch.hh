@@ -359,12 +359,14 @@ struct Processor : public ProcessorBase
     PerformStore( OPSIZE/8, seg, addr, val.expr );
   }
 
-  void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { throw Unimplemented(); }
-  void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { throw Unimplemented(); }
+  void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { PerformStore( 4, seg, addr, val.expr ); }
+  void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { PerformStore( 8, seg, addr, val.expr ); }
   void                        fmemwrite80( unsigned seg, addr_t const& addr, f80_t val ) { throw Unimplemented(); }
 
-  f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { throw Unimplemented(); return f32_t(); }
-  f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { throw Unimplemented(); return f64_t(); }
+  f32_t                       fmemread32( unsigned seg, addr_t const& addr )
+  { return f32_t(PerformLoad( 4, seg, addr.expr )); }
+  f64_t                       fmemread64( unsigned seg, addr_t const& addr )
+  { return f64_t(PerformLoad( 8, seg, addr.expr )); }
   f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { throw Unimplemented(); return f80_t(); }
 
   /*** CONTROL FLOW ***/
