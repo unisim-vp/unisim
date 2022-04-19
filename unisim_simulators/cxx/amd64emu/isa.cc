@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,39 +32,27 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __AMD64EMU_LINUXSYSTEM_HH__
-#define __AMD64EMU_LINUXSYSTEM_HH__
+#include <arch.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
 
-#include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/util/os/linux_os/linux.hh>
-#include <unisim/util/os/linux_os/amd64.hh>
-#include <inttypes.h>
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
+using unisim::util::arithmetic::BitScanForward;
+using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::endian::ByteSwap;
+}}}}}
 
-struct LinuxOS
-  : public unisim::service::interfaces::LinuxOS
+#include <unisim/component/cxx/processor/intel/isa/intel.tcc>
+#include <unisim/component/cxx/processor/intel/execute.hh>
+#include <unisim/component/cxx/processor/intel/math.hh>
+
+Arch::Operation*
+Arch::Decode( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes )
 {
-  typedef uint64_t addr_t;
-  LinuxOS( std::ostream& log,
-           unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<addr_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<addr_t> *mem_inject_if );
+  if (Operation* op = getoperation( unisim::component::cxx::processor::intel::InputCode<Arch>( mode, bytes, OpHeader( address ) ) ))
+    return op;
   
-  void Setup( bool verbose );
-  void ApplyHostEnvironment();
-  void SetEnvironment( std::vector<std::string> const& envs );
-  void Process( std::vector<std::string> const& simargs );
-  void Core( std::string const& coredump );
+  std::cerr << "No decoding for " << std::hex << address << ": " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << std::dec << std::endl;
+  return 0;
+}
 
-  void ExecuteSystemCall( int id );
-  void LogSystemCall(int id);
-  void SetBrk(addr_t brk_addr);
-
-  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
-  bool exited;
-  int app_ret_status;
-};
-
-#endif // __AMD64EMU_LINUXSYSTEM_HH__

@@ -38,11 +38,14 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="\
 "
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
-main.cc \
+arch.cc \
+isa.cc \
 linuxsystem.cc \
+main.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+arch.hh \
 linuxsystem.hh \
 "
 
