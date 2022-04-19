@@ -55,6 +55,7 @@ struct Config
 	static const unsigned int MAX_FRONT_ENDS = NUM_PROCESSORS // for gdb-server
 	                                         + NUM_PROCESSORS // for inline-debugger
 	                                         + NUM_PROCESSORS // for profiler
+	                                         + 1              // HLA federate
 	                                         ;
 	static const unsigned int NUM_DMA_CHANNELS  = 128;
 	static const unsigned int NUM_DMA_TRIGGERS  = 8;

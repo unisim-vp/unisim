@@ -107,7 +107,6 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 				switch(json_value_type)
 				{
 					case unisim::util::json::JSON_INT: value = json_value.AsInteger(); break;
-					case unisim::util::json::JSON_UINT: value = json_value.AsUnsignedInteger(); break;
 					case unisim::util::json::JSON_FLOAT: value = json_value.AsFloat(); break;
 					case unisim::util::json::JSON_BOOLEAN: value = json_value.AsBoolean(); break;
 					case unisim::util::json::JSON_BOOLEAN: value = json_value.AsBoolean(); break;
@@ -160,7 +159,6 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 				switch(json_value_type)
 				{
 					case unisim::util::json::JSON_INT: data_object_value = json_value.AsInteger(); break;
-					case unisim::util::json::JSON_UINT: data_object_value = json_value.AsUnsignedInteger(); break;
 					case unisim::util::json::JSON_FLOAT: data_object_value = (int64_t) (double) json_value.AsFloat(); break;
 					case unisim::util::json::JSON_BOOLEAN: data_object_value = json_value.AsBoolean(); break;
 					default: break;

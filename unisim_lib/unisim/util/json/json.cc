@@ -38,6 +38,10 @@ namespace unisim {
 namespace util {
 namespace json {
 
+JSON_Value undefined = JSON_Value(Location(0, 0));
+
+JSON_Value null = JSON_Null(Location(0, 0));
+
 std::string Escape(const std::string& s)
 {
 	std::string r;
@@ -67,7 +71,6 @@ std::ostream& operator << (std::ostream& os, const Token& token)
 		case TOK_VOID         : os << "nothing"; break;
 		case TOK_STRING       : os << "a string"; break;
 		case TOK_INT          : os << "a signed integer number"; break;
-		case TOK_UINT         : os << "a unsigned integer number"; break;
 		case TOK_FLOAT        : os << "a floating point number"; break;
 		case TOK_TRUE         : os << "'true'"; break;
 		case TOK_FALSE        : os << "'false'"; break;
@@ -94,7 +97,6 @@ std::string PrettyString(const Token& token, const std::string& text)
 		case TOK_VOID         : break;
 		case TOK_STRING       : return std::string("string \"") + Escape(text) + "\""; break;
 		case TOK_INT          : return std::string("number ") + text; break;
-		case TOK_UINT         : return std::string("number ") + text; break;
 		case TOK_FLOAT        : return std::string("number ") + text; break;
 		case TOK_TRUE         :
 		case TOK_FALSE        :
@@ -115,16 +117,15 @@ std::ostream& operator << (std::ostream& os, const JSON_ValueType& type)
 {
 	switch(type)
 	{
-		case JSON_VALUE  : os << "value"; break;
-		case JSON_STRING : os << "string"; break;
-		case JSON_INT    : os << "integer"; break;
-		case JSON_UINT   : os << "unsigned integer"; break;
-		case JSON_FLOAT  : os << "float"; break;
-		case JSON_OBJECT : os << "object"; break;
-		case JSON_ARRAY  : os << "array"; break;
-		case JSON_BOOLEAN: os << "boolean"; break;
-		case JSON_NULL   : os << "null"; break;
-		default          : os << "value of unknown type"; break;
+		case JSON_UNDEFINED: os << "undefined"; break;
+		case JSON_STRING   : os << "string"; break;
+		case JSON_INT      : os << "integer"; break;
+		case JSON_FLOAT    : os << "float"; break;
+		case JSON_OBJECT   : os << "object"; break;
+		case JSON_ARRAY    : os << "array"; break;
+		case JSON_BOOLEAN  : os << "boolean"; break;
+		case JSON_NULL     : os << "null"; break;
+		default            : os << "value of unknown type"; break;
 	}
 	return os;
 }
@@ -133,18 +134,89 @@ std::ostream& operator << (std::ostream& os, const JSON_Value& value)
 {
 	switch(value.GetType())
 	{
-		case JSON_VALUE  : break;
-		case JSON_STRING : os << value.AsString(); break;
-		case JSON_INT    : os << value.AsInteger(); break;
-		case JSON_UINT   : os << value.AsUnsignedInteger(); break;
-		case JSON_FLOAT  : os << value.AsFloat(); break;
-		case JSON_OBJECT : os << value.AsObject(); break;
-		case JSON_ARRAY  : os << value.AsArray(); break;
-		case JSON_BOOLEAN: os << value.AsBoolean(); break;
-		case JSON_NULL   : os << value.AsNull(); break;
-		default          : break;
+		case JSON_UNDEFINED: os << "undefined"; break;
+		case JSON_STRING   : os << value.AsString(); break;
+		case JSON_INT      : os << value.AsInteger(); break;
+		case JSON_FLOAT    : os << value.AsFloat(); break;
+		case JSON_OBJECT   : os << value.AsObject(); break;
+		case JSON_ARRAY    : os << value.AsArray(); break;
+		case JSON_BOOLEAN  : os << value.AsBoolean(); break;
+		case JSON_NULL     : os << value.AsNull(); break;
+		default            : break;
 	}
 	return os;
+}
+
+std::ostream& operator << (std::ostream& stream, const Location& loc)
+{
+	if(loc.lineno)
+	{
+		stream << "line #" <<loc.lineno;
+		if(loc.colno) stream << ", column #" << loc.colno;
+	}
+	else
+	{
+		stream << "undefined location";
+	}
+	return stream;
+}
+
+JSON_Value *JSON_Object::Clone() const
+{
+	JSON_Object *obj = new JSON_Object(GetLocation());
+	for(Members::const_iterator it = members.begin(); it != members.end(); ++it)
+	{
+		obj->Add(new JSON_Member((*it).second.GetName(), (*it).second.Clone(), (*it).second.GetLocation()));
+	}
+	return obj;
+}
+
+JSON_Object::KeysType JSON_Object::Keys() const
+{
+	KeysType keys(members.size());
+	for(typename Members::const_iterator it = members.begin(); it != members.end(); ++it) keys.push_back((*it).second.GetName());
+	return keys;
+}
+
+JSON_MemberRef JSON_Object::operator [] (const char *member_name)
+{
+	JSON_Member *member = FindMember(member_name);
+	if(member) return JSON_MemberRef(member);
+	member = new JSON_Member(member_name);
+	Add(member);
+	return JSON_MemberRef(member);
+}
+
+JSON_MemberConstRef JSON_Object::operator [] (const char *member_name) const
+{
+	const JSON_Member *member = FindMember(member_name);
+	return member ? JSON_MemberConstRef(member) : JSON_MemberConstRef(new JSON_Member(member_name, &undefined));
+}
+
+JSON_Member *JSON_Object::FindMember(const char *member_name)
+{
+	JSON_Object::Members::iterator it = members.find(member_name);
+	return (it != members.end()) ? &(JSON_Member&)(*it).second : 0;
+}
+
+const JSON_Member *JSON_Object::FindMember(const char *member_name) const
+{
+	JSON_Object::Members::const_iterator it = members.find(member_name);
+	return (it != members.end()) ? &(const JSON_Member&)(*it).second : 0;
+}
+
+JSON_Object& JSON_Object::Add(JSON_Member *member)
+{
+	JSON_Object::Members::iterator it = members.find(member->GetName());
+	if(it != members.end())
+	{
+		(*it).second = member;
+	}
+	else
+	{
+		members.insert(JSON_Object::Members::value_type(member->GetName(), member));
+	}
+	return *this;
 }
 
 std::ostream& operator << (std::ostream& os, const JSON_Object& object)
@@ -154,11 +226,18 @@ std::ostream& operator << (std::ostream& os, const JSON_Object& object)
 	JSON_Object::Members::const_iterator it = members.begin();
 	while(it != members.end())
 	{
-		const JSON_Member& member = **it;
+		const JSON_Member& member = (*it).second;
 		os << member;
 		if(++it != members.end()) os << ',';
 	}
 	return os << '}';
+}
+
+JSON_Value *JSON_Array::Clone() const
+{
+	JSON_Array *array = new JSON_Array(GetLocation());
+	for(Elements::const_iterator it = elements.begin(); it != elements.end(); ++it) array->Push((*it).Clone());
+	return array;
 }
 
 std::ostream& operator << (std::ostream& os, const JSON_Array& array)
@@ -168,7 +247,7 @@ std::ostream& operator << (std::ostream& os, const JSON_Array& array)
 	JSON_Array::Elements::const_iterator it = elements.begin();
 	while(it != elements.end())
 	{
-		const JSON_Value& value = **it;
+		const JSON_Value& value = *it;
 		os << value;
 		if(++it != elements.end()) os << ',';
 	}
@@ -182,50 +261,17 @@ JSON_AST_Printer::Visitor::Visitor(std::ostream& _stream, const JSON_Value& _roo
 {
 }
 
-bool JSON_AST_Printer::Visitor::Visit(const JSON_String& value)
+bool JSON_AST_Printer::Visitor::Visit(const JSON_Value& value)
 {
-	stream << '"' << Escape(value) << '"';
-	NextIndex();
-	return true;
-}
-
-bool JSON_AST_Printer::Visitor::Visit(const JSON_Integer& value)
-{
+	if(GetIndex() != 0) stream << ",";
 	stream << value;
-	NextIndex();
-	return true;
-}
-
-bool JSON_AST_Printer::Visitor::Visit(const JSON_UnsignedInteger& value)
-{
-	stream << value;
-	NextIndex();
-	return true;
-}
-
-bool JSON_AST_Printer::Visitor::Visit(const JSON_Float& value)
-{
-	stream << value;
-	NextIndex();
-	return true;
-}
-
-bool JSON_AST_Printer::Visitor::Visit(const JSON_Boolean& value)
-{
-	stream << (value ? "true" : "false");
-	NextIndex();
-	return true;
-}
-
-bool JSON_AST_Printer::Visitor::Visit(const JSON_Null& value)
-{
-	stream << "null";
 	NextIndex();
 	return true;
 }
 
 bool JSON_AST_Printer::Visitor::Visit(const JSON_Object& object)
 {
+	if(GetIndex() != 0) stream << ",";
 	stream << '{';
 	Push();
 	object.Scan(*this);

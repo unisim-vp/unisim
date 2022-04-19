@@ -51,17 +51,20 @@ public:
 	typedef unsigned int Type;
 	typedef unisim::util::debug::DataObjectRef<ADDRESS> ReturnValue;
 	
-	Hook(Type _type) : type(_type), id(next_id++) {}
+	Hook(Type _type) : type(_type), id(next_id++), prc_num(-1) {}
 	virtual ~Hook() {}
 
 	Type GetType() const { return type; }
 	unsigned int GetId() const { return id; }
+	int GetProcessorNumber() const { return prc_num; }
+	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
 	
 	virtual bool Run(ReturnValue& return_value) = 0;
 
 private:
 	Type type;
 	unsigned int id;
+	int prc_num;
 	static unsigned int next_id;
 protected:
 	static Type AllocateCustomHookType() { static Type next_hook_type = 0; return next_hook_type++; }

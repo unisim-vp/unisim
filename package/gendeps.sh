@@ -72,6 +72,9 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<tvs/.*\.h>' "${FILEPATH}"; then
 				echo "m4/tvs" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<RTI/.*\.h>' "${FILEPATH}"; then
+				echo "m4/hla_rti1516e" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<editline/.*\.h>' "${FILEPATH}"; then
 				echo "m4/libedit" >> "${PKG_DEPS_TXT}"
 			fi

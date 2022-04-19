@@ -14,6 +14,7 @@ std/sstream
 std/stdexcept
 std/string
 std/vector
+unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/register
 unisim/service/interfaces/registers

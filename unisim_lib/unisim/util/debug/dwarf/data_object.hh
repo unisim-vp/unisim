@@ -147,6 +147,7 @@ public:
 	
 	// conversion operators
 	virtual operator bool() const;
+	virtual operator char() const;
 	virtual operator signed char() const;
 	virtual operator short() const;
 	virtual operator int() const;

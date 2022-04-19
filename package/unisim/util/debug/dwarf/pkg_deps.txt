@@ -2,6 +2,8 @@ libc/inttypes
 libc/stdlib
 libc/string
 std/cassert
+std/cstdlib
+std/cstring
 std/deque
 std/fstream
 std/iosfwd

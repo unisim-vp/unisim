@@ -58,6 +58,9 @@ import std/stdexcept || exit
 
 import m4/ax_cflags_warn_all || exit
 
+import m4/hla_rti1516e || exit
+import unisim/service/debug/hla || exit
+
 copy source isa isa_vle header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 

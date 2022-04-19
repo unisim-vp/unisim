@@ -37,8 +37,19 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/type.hh>
+#include <unisim/util/json/json.hh>
 #include <string>
 #include <stdexcept>
+
+namespace unisim {
+namespace service {
+namespace interfaces {
+
+template <class ADDRESS> class DataObjectLookup;
+
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
 
 namespace unisim {
 namespace util {
@@ -193,6 +204,13 @@ public:
 		UndefinedReferenceError(const std::string& data_object_name);
 	};
 	
+	class OptimizedOutError : Error
+	{
+	public:
+		OptimizedOutError(const char *data_object_name);
+		OptimizedOutError(const std::string& data_object_name);
+	};
+	
 	virtual ~DataObject() {}
 	virtual const char *GetName() const = 0;
 	virtual ADDRESS GetBitSize() const = 0;
@@ -208,6 +226,7 @@ public:
 	
 	// conversion operators
 	virtual operator bool() const = 0;
+	virtual operator char() const = 0;
 	virtual operator signed char() const = 0;
 	virtual operator short() const = 0;
 	virtual operator int() const = 0;
@@ -408,6 +427,7 @@ public:
 
 	// conversion operators
 	operator bool() const { Check(); return data_object->operator bool(); }
+	operator char() const { Check(); return data_object->operator char(); }
 	operator signed char() const { Check(); return data_object->operator signed char(); }
 	operator short() const { Check(); return data_object->operator short(); }
 	operator int() const { Check(); return data_object->operator int(); }
@@ -572,6 +592,148 @@ private:
 	void Check() const { if(!data_object) throw typename DataObject<ADDRESS>::UndefinedReferenceError(); }
 };
 
+template <typename ADDRESS>
+class DataObject2JSON
+{
+public:
+	enum Mode
+	{
+		STRICT,
+		LAZY
+	};
+	
+	enum StatusEnum
+	{
+		OK                       = 0,
+		OPTIMIZED_OUT            = 1,
+		READ_ERROR               = 2,
+		NOT_FOUND                = 4,
+		UNSUPPORTED_FLOAT_FORMAT = 8
+	};
+	
+	typedef unsigned int Status;
+	
+	DataObject2JSON(const unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, Mode mode = STRICT);
+	
+	Status Do(const DataObjectRef<ADDRESS>& data_object, unisim::util::json::JSON_Value *& json_value) const;
+	
+private:
+	const unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if;
+	Mode mode;
+	
+	struct ContextStack
+	{
+		ContextStack(const DataObject2JSON<ADDRESS>& data_object_2_json, const DataObjectRef<ADDRESS>& data_object);
+		
+		bool Visit(Type const *type);
+		bool Visit(CharType const *type);
+		bool Visit(IntegerType const *type);
+		bool Visit(FloatingPointType const *type);
+		bool Visit(BooleanType const *type);
+		bool Visit(CompositeType const *type);
+		bool Visit(ArrayType const *type);
+		bool Visit(PointerType const *type);
+		bool Visit(FunctionType const *type);
+		bool Visit(EnumType const *type);
+		bool Visit(UnspecifiedType const *type);
+		bool Visit(Member const *member);
+		bool Visit(FormalParameter const *formal_param);
+		
+		void PushContext(const std::string& s);
+		void PopContext();
+		std::string DataObjectName() const;
+		unisim::util::json::JSON_Value *GetValue() const;
+		void SetValue(unisim::util::json::JSON_Value *json_value);
+		
+		struct Context
+		{
+			Context();
+			Context(const std::string& name);
+			
+			std::string name;
+			unisim::util::json::JSON_Value *json_value;
+		};
+		
+		const DataObject2JSON<ADDRESS>& data_object_to_json;
+		const DataObjectRef<ADDRESS> data_object;
+		typedef std::vector<Context> Stack;
+		Stack stack;
+		
+		Status status;
+		unisim::util::json::JSON_Value *json_value;
+	};
+};
+
+template <typename ADDRESS>
+class JSON2DataObject
+{
+public:
+	enum Mode
+	{
+		STRICT,
+		LAZY
+	};
+	
+	enum StatusEnum
+	{
+		OK                       = 0,
+		OPTIMIZED_OUT            = 1,
+		TYPE_ERROR               = 2,
+		READ_ERROR               = 4,
+		WRITE_ERROR              = 8,
+		NOT_FOUND                = 16,
+		UNSUPPORTED_FLOAT_FORMAT = 32
+	};
+	
+	typedef unsigned int Status;
+	
+	JSON2DataObject(const unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, Mode mode = STRICT);
+	
+	Status Do(const unisim::util::json::JSON_Value *json_value, DataObjectRef<ADDRESS>& data_object) const;
+private:
+	const unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if;
+	Mode mode;
+	
+	struct ContextStack
+	{
+		ContextStack(const JSON2DataObject<ADDRESS>& json_to_data_object, DataObjectRef<ADDRESS>& data_object);
+		
+		bool Visit(const unisim::util::json::JSON_Value& value);
+		bool Visit(const unisim::util::json::JSON_String& value);
+		bool Visit(const unisim::util::json::JSON_Object& object);
+		bool Visit(const unisim::util::json::JSON_Member& member);
+		bool Visit(const unisim::util::json::JSON_Array& array);
+		
+		void PushMemberContext(const std::string& name);
+		void PushArrayContext();
+		void PopContext();
+		bool InArray() const;
+		void NextIndex();
+		std::string DataObjectName() const;
+		
+		struct Context
+		{
+			enum Type
+			{
+				CTX_MEMBER,
+				CTX_ARRAY
+			};
+			
+			Context();
+			Context(Type type, const std::string& name, unsigned int index);
+			
+			Type type;
+			std::string name;
+			unsigned int index;
+		};
+		
+		const JSON2DataObject<ADDRESS>& json_to_data_object;
+		typedef std::vector<Context> Stack;
+		Stack stack;
+		Status status;
+	};
+};
+
 template <class ADDRESS>
 DataObjectRef<ADDRESS> DataObjectRef<ADDRESS>::Undefined;
 
@@ -638,6 +800,18 @@ inline DataObject<ADDRESS>::UndefinedReferenceError::UndefinedReferenceError(con
 template <class ADDRESS>
 inline DataObject<ADDRESS>::UndefinedReferenceError::UndefinedReferenceError(const std::string& data_object_name)
 	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" undefined reference error")
+{
+}
+
+template <class ADDRESS>
+inline DataObject<ADDRESS>::OptimizedOutError::OptimizedOutError(const char *data_object_name)
+	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" optimized out error")
+{
+}
+
+template <class ADDRESS>
+inline DataObject<ADDRESS>::OptimizedOutError::OptimizedOutError(const std::string& data_object_name)
+	: DataObject<ADDRESS>::Error(std::string("\"") + data_object_name + "\" optimized out error")
 {
 }
 

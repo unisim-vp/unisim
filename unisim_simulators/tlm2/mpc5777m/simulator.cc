@@ -194,6 +194,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, gdb_server()
 	, inline_debugger()
 	, profiler()
+	, hla_federate(0)
 	, sim_time(0)
 	, host_time(0)
 	, netstreamer0(0)
@@ -232,6 +233,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, enable_profiler0(false)
 	, enable_profiler1(false)
 	, enable_profiler2(false)
+	, enable_hla_federate(false)
 	, enable_serial_terminal0(false)
 	, enable_serial_terminal1(false)
 	, enable_serial_terminal2(false)
@@ -279,6 +281,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_enable_profiler0("enable-profiler0", 0, enable_profiler0, "Enable/Disable profiling of Core #0")
 	, param_enable_profiler1("enable-profiler1", 0, enable_profiler1, "Enable/Disable profiling of Core #1")
 	, param_enable_profiler2("enable-profiler2", 0, enable_profiler2, "Enable/Disable profiling of Core #2")
+	, param_enable_hla_federate("enable-hla-federate", 0, enable_hla_federate, "Enable/Disable HLA federate instantiation")
 	, param_enable_serial_terminal0("enable-serial-terminal0", 0, enable_serial_terminal0, "Enable/Disable serial terminal over LINFlexD_0 UART serial interface")
 	, param_enable_serial_terminal1("enable-serial-terminal1", 0, enable_serial_terminal1, "Enable/Disable serial terminal over LINFlexD_1 UART serial interface")
 	, param_enable_serial_terminal2("enable-serial-terminal2", 0, enable_serial_terminal2, "Enable/Disable serial terminal over LINFlexD_2 UART serial interface")
@@ -570,7 +573,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	//  - Multiformat loader
 	loader = new LOADER("loader");
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || (enable_profiler0 || enable_profiler1 || enable_profiler2)) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || (enable_profiler0 || enable_profiler1 || enable_profiler2 || enable_hla_federate)) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server[0] = enable_gdb_server ? new GDB_SERVER("gdb-server0") : 0;
 	gdb_server[1] = enable_gdb_server ? new GDB_SERVER("gdb-server1") : 0;
@@ -583,6 +586,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	profiler[0] = enable_profiler0 ? new PROFILER("profiler0") : 0;
 	profiler[1] = enable_profiler1 ? new PROFILER("profiler1") : 0;
 	profiler[2] = enable_profiler2 ? new PROFILER("profiler2") : 0;
+	//  - HLA federate
+	hla_federate = enable_hla_federate ? new HLA_FEDERATE("hla-federate") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -4782,6 +4787,28 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		}
 	}
 
+	if(hla_federate)
+	{
+		*debugger->debug_event_listener_import[front_end_num]   >> hla_federate->debug_event_listener_export;
+		*debugger->debug_yielding_import[front_end_num]         >> hla_federate->debug_yielding_export;
+		hla_federate->debug_yielding_request_import             >> *debugger->debug_yielding_request_export[front_end_num];
+		hla_federate->debug_selecting_import                    >> *debugger->debug_selecting_export[front_end_num];
+		hla_federate->debug_event_trigger_import                >> *debugger->debug_event_trigger_export[front_end_num];
+		hla_federate->disasm_import                             >> *debugger->disasm_export[front_end_num];
+		hla_federate->memory_import                             >> *debugger->memory_export[front_end_num];
+		hla_federate->registers_import                          >> *debugger->registers_export[front_end_num];
+		hla_federate->stmt_lookup_import                        >> *debugger->stmt_lookup_export[front_end_num];
+		hla_federate->symbol_table_lookup_import                >> *debugger->symbol_table_lookup_export[front_end_num];
+		hla_federate->backtrace_import                          >> *debugger->backtrace_export[front_end_num];
+		hla_federate->debug_info_loading_import                 >> *debugger->debug_info_loading_export[front_end_num];
+		hla_federate->data_object_lookup_import                 >> *debugger->data_object_lookup_export[front_end_num];
+		hla_federate->subprogram_lookup_import                  >> *debugger->subprogram_lookup_export[front_end_num];
+		hla_federate->stack_unwinding_import                    >> *debugger->stack_unwinding_export[front_end_num];
+		hla_federate->stubbing_import                           >> *debugger->stubbing_export[front_end_num];
+		hla_federate->hooking_import                            >> *debugger->hooking_export[front_end_num];
+		front_end_num++;
+	}
+	
 	(*loader->memory_import[0]) >> flash->memory_export;
 	(*loader->memory_import[1]) >> system_sram->memory_export;
 	(*loader->memory_import[2]) >> main_core_0->memory_export;
@@ -5347,6 +5374,7 @@ Simulator::~Simulator()
 	if(profiler[0]) delete profiler[0];
 	if(profiler[1]) delete profiler[1];
 	if(profiler[2]) delete profiler[2];
+	if(hla_federate) delete hla_federate;
 	if(debugger) delete debugger;
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
@@ -6390,6 +6418,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[6]", 0); // profiler
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
+	simulator->SetVariable("debugger.sel-cpu[9]", 0); // HLA federate
 	simulator->SetVariable("debugger.architecture[0]", "powerpc-e500");
 	simulator->SetVariable("debugger.architecture[1]", "powerpc-e500");
 	simulator->SetVariable("debugger.architecture[2]", "powerpc-e500");
@@ -6559,7 +6588,7 @@ bool Simulator::EndSetup()
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
-	if(inline_debugger[0] || inline_debugger[1] || inline_debugger[2] || profiler[0] || profiler[1] || profiler[2])
+	if(inline_debugger[0] || inline_debugger[1] || inline_debugger[2] || profiler[0] || profiler[1] || profiler[2] || hla_federate)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

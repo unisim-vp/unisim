@@ -689,7 +689,7 @@ T DWARF_DataObject<MEMORY_ADDR>::ToBaseType() const
 		if(!Read(0, uint_value, GetBitSize())) throw typename unisim::util::debug::DataObject<MEMORY_ADDR>::ReadError(data_object_name.c_str());
 		if(std::numeric_limits<T>::is_signed)
 		{
-			int64_t int_value = uint_value;
+			int64_t int_value = unisim::util::arithmetic::SignExtend(uint_value, GetBitSize());
 			ret_value = (T) int_value;
 		}
 		else
@@ -967,6 +967,7 @@ template <class ADDRESS>
 template <typename T>
 T DWARF_DataObjectProxy<ADDRESS>::ToBaseType() const
 {
+	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	return dw_data_object->template ToBaseType<T>();
 }
@@ -974,6 +975,7 @@ T DWARF_DataObjectProxy<ADDRESS>::ToBaseType() const
 template <class ADDRESS>
 std::string DWARF_DataObjectProxy<ADDRESS>::ToString() const
 {
+	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	return dw_data_object->ToString();
 }
@@ -982,6 +984,7 @@ template <class ADDRESS>
 template <typename T>
 DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignBaseType(T value)
 {
+	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	dw_data_object->template AssignBaseType<T>(value);
 	if(!dw_data_object->Commit()) throw typename unisim::util::debug::DataObject<ADDRESS>::WriteError(dw_data_object->GetName());
@@ -991,6 +994,7 @@ DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignBaseType(T
 template <class ADDRESS>
 DWARF_DataObjectProxy<ADDRESS>& DWARF_DataObjectProxy<ADDRESS>::AssignString(const std::string& value)
 {
+	if(dw_data_object->IsOptimizedOut()) throw typename unisim::util::debug::DataObject<ADDRESS>::OptimizedOutError(dw_data_object->GetName());
 	if(!dw_data_object->Fetch()) throw typename unisim::util::debug::DataObject<ADDRESS>::ReadError(dw_data_object->GetName());
 	dw_data_object->AssignString(value);
 	return *this;
@@ -1000,6 +1004,12 @@ template <class ADDRESS>
 DWARF_DataObjectProxy<ADDRESS>::operator bool() const
 {
 	return this->template ToBaseType<bool>();
+}
+
+template <class ADDRESS>
+DWARF_DataObjectProxy<ADDRESS>::operator char() const
+{
+	return this->template ToBaseType<char>();
 }
 
 template <class ADDRESS>

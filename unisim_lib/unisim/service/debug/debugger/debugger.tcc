@@ -2397,6 +2397,8 @@ bool Debugger<CONFIG>::SetStub(unsigned int front_end_num, unisim::util::debug::
 	
 	stub_event->Catch();
 	
+	stub->SetProcessorNumber(prc_num);
+	
 	UpdateReportingRequirements(prc_num);
 	
 	return true;
@@ -2545,6 +2547,8 @@ bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unisim::util::debug::
 	}
 	
 	hook_event->Catch();
+	
+	hook->SetProcessorNumber(prc_num);
 	
 	UpdateReportingRequirements(prc_num);
 	

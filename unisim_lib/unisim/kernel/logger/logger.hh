@@ -38,6 +38,7 @@
 #define __UNISIM_KERNEL_LOGGER_LOGGER_HH__
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/util/unicode/unicode.hh>
 #include <string>
 #include <ios>
 #include <ostream>
@@ -102,6 +103,15 @@ struct Logger
 		return *this;
 	}
 
+	Logger& operator << (const std::wstring& ws)
+	{
+		std::string s;
+		if(unisim::util::unicode::unicode_wstring_to_utf8_string(ws, s))
+		{
+			buffer << s;
+		}
+		return *this;
+	}
 #if 0
 	template <typename T>
 	Logger& operator << (const std::vector<T>& bv)

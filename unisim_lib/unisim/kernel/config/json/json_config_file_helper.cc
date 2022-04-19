@@ -37,6 +37,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 
 namespace unisim {
 namespace kernel {
@@ -246,6 +247,12 @@ struct JSON_AST_Visitor
 		simulator->SetVariable(variable_name.c_str(), value);
 	}
 	
+	bool Visit(const unisim::util::json::JSON_Value& value)
+	{
+		throw std::runtime_error("Internal error!");
+		return false;
+	}
+	
 	bool Visit(const unisim::util::json::JSON_String& value)
 	{
 		SetVariable((const char *) value);
@@ -256,13 +263,6 @@ struct JSON_AST_Visitor
 	bool Visit(const unisim::util::json::JSON_Integer& value)
 	{
 		SetVariable((int64_t) value);
-		if(InArray()) NextIndex();
-		return true;
-	}
-	
-	bool Visit(const unisim::util::json::JSON_UnsignedInteger& value)
-	{
-		SetVariable((uint64_t) value);
 		if(InArray()) NextIndex();
 		return true;
 	}

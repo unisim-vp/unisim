@@ -591,8 +591,16 @@ private:
 		Dispatcher(Debugger<CONFIG>& _dbg, unsigned int _front_end_num) : dbg(_dbg), front_end_num(_front_end_num) {}
 		void Visit(unisim::util::debug::Breakpoint<ADDRESS> *brkp)
 		{
-			unisim::util::debug::Event<ADDRESS> *ref = brkp->GetReference();
-			dbg.OnDebugEvent(front_end_num, ref ? ref : static_cast<unisim::util::debug::Event<ADDRESS> *>(brkp));
+			unisim::util::debug::Event<ADDRESS> *event = brkp;
+			unisim::util::debug::Event<ADDRESS> *ref;
+			do
+			{
+				ref = event->GetReference();
+				if(ref) event = ref;
+			}
+			while(ref);
+			
+			dbg.OnDebugEvent(front_end_num, event);
 		}
 		Debugger<CONFIG>& dbg;
 		unsigned int front_end_num;
@@ -609,7 +617,17 @@ private:
 				overlook = false;
 			}
 // 			dbg.front_end_gate[front_end_num]->OnDebugEvent(wp);
-			dbg.OnDebugEvent(front_end_num, wp);
+// 			dbg.OnDebugEvent(front_end_num, wp);
+			unisim::util::debug::Event<ADDRESS> *event = wp;
+			unisim::util::debug::Event<ADDRESS> *ref;
+			do
+			{
+				ref = event->GetReference();
+				if(ref) event = ref;
+			}
+			while(ref);
+			
+			dbg.OnDebugEvent(front_end_num, event);
 		}
 		Debugger<CONFIG>& dbg;
 		unsigned int front_end_num;

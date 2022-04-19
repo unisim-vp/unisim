@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,43 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_STUB_HH__
-#define __UNISIM_UTIL_DEBUG_STUB_HH__
-
-#include <unisim/util/debug/subprogram.hh>
-#include <unisim/util/debug/data_object.hh>
-#include <map>
+#include <unisim/service/debug/hla/federate.tcc>
 
 namespace unisim {
-namespace util {
+namespace service {
 namespace debug {
+namespace hla {
 
-////////////////////////////// declarations ///////////////////////////////////
+template class Federate<uint32_t>;
 
-template <typename ADDRESS>
-class Stub
-{
-public:
-	typedef unisim::util::debug::DataObjectRef<ADDRESS> Parameter;
-	typedef std::map<std::string, Parameter> Parameters;
-	typedef unisim::util::debug::DataObjectRef<ADDRESS> ReturnValue;
-	
-	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram), prc_num(-1) {}
-	virtual ~Stub() {}
-	
-	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
-	int GetProcessorNumber() const { return prc_num; }
-	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
-	
-	virtual bool Run(Parameters& parameters, ReturnValue& return_value) = 0;
-
-private:
-	const SubProgram<ADDRESS> *subprogram;
-	int prc_num;
-};
-
+} // end of namespace hla
 } // end of namespace debug
-} // end of namespace util
+} // end of namespace service
 } // end of namespace unisim
-
-#endif // __UNISIM_UTIL_DEBUG_STUB_HH__
