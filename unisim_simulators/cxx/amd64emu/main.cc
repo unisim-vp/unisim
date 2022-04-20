@@ -33,22 +33,10 @@
  */
 
 #include <arch.hh>
-// #include <unisim/component/cxx/processor/intel/modrm.hh>
-// #include <unisim/component/cxx/processor/intel/disasm.hh>
-// #include <unisim/component/cxx/processor/intel/vectorbank.hh>
-// #include <unisim/component/cxx/processor/intel/types.hh>
-// #include <unisim/util/arithmetic/arithmetic.hh>
 #include <linuxsystem.hh>
-// #include <algorithm>
 #include <iostream>
-// #include <fstream>
 #include <string>
 #include <vector>
-// #include <set>
-// #include <iomanip>
-// #include <cmath>
-// #include <cctype>
-// #include <cassert>
 #include <inttypes.h>
 
 int

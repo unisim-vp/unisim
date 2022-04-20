@@ -214,70 +214,7 @@ struct Arch
     word.as_u = memread<64>( _seg, _addr );
     return word.as_f;
   }
-  f80_t
-  fmemread80( unsigned int _seg, addr_t _addr )
-  {
-    _addr += addr_t( segbase(_seg) );
-    uintptr_t const buf_size = 10;
-    uint8_t buf[buf_size];
-    {
-      addr_t last_addr = _addr, addr = _addr;
-      typename Memory::Page* page = m_mem.getpage( addr );
-      
-      for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
-        {
-          if ((last_addr ^ addr) >> Memory::Page::s_bits)
-            page = m_mem.getpage( addr );
-          addr_t offset = addr % (1 << Memory::Page::s_bits);
-          buf[idx] = page->m_storage[offset];
-        }
-    }
-    uint8_t sign = (buf[9] >> 7) & 1;
-    int32_t exponent = ((uint16_t(buf[9]) << 8) & 0x7f00) | (uint16_t(buf[8]) & 0x00ff);
-    uint64_t mantissa = 0;
-    for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
-    union IEEE754_t { double as_f; uint64_t as_u; } word;
-    
-    if (exponent != 0x7fff) {
-      if (exponent == 0) {
-        if (mantissa == 0) return sign ? -0.0 : 0.0;
-        exponent += 1;
-      }
-      exponent -= 16383;
-      /* normalizing */
-      int32_t eo = __builtin_clzll( mantissa );
-      mantissa <<= eo;
-      exponent -= eo;
-      if (exponent < 1024) {
-        if (exponent < -1022) {
-          /* denormalizing */
-          eo = (-1022 - exponent);
-          mantissa >>= eo;
-          exponent = -1023;
-        }
-        word.as_u = ((mantissa << 1) >> 12);
-        word.as_u |= uint64_t(exponent + 1023) << 52;
-        word.as_u |= uint64_t(sign) << 63;
-      } else /* exponent >= 1024 */ {
-        /* huge number, convert to infinity */
-        word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
-      }
-    }
-    
-    else /* (exponent == 0x7fff) */ {
-      if (mantissa >> 63) {
-        /* IEEE 754 compatible */
-        word.as_u = ((mantissa << 1) >> 12);
-        word.as_u |= uint64_t(0x7ff) << 52;
-        word.as_u |= uint64_t(sign) << 63;
-      } else {
-        /* invalid operand ==> convert to quiet NaN (keep sign) */
-        word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
-      }
-    }
-    
-    return word.as_f;
-  }
+  f80_t                       fmemread80( unsigned int _seg, addr_t _addr );
 
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::f
@@ -423,38 +360,9 @@ struct Arch
     auto reg = regmap.find( name );
     return (reg == regmap.end()) ? 0 : reg->second;
   }
-  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
-  {
-    // Program counter
-    scanner.Append( GetRegister( "%rip" ) );
-    // General purpose registers
-    // scanner.Append( GetRegister( "%eax" ) );
-    // scanner.Append( GetRegister( "%ecx" ) );
-    // scanner.Append( GetRegister( "%edx" ) );
-    // scanner.Append( GetRegister( "%ebx" ) );
-    // scanner.Append( GetRegister( "%esp" ) );
-    // scanner.Append( GetRegister( "%ebp" ) );
-    // scanner.Append( GetRegister( "%esi" ) );
-    // scanner.Append( GetRegister( "%edi" ) );
-    // Segments
-    // scanner.Append( GetRegister( "%es" ) );
-    // scanner.Append( GetRegister( "%cs" ) );
-    // scanner.Append( GetRegister( "%ss" ) );
-    // scanner.Append( GetRegister( "%ds" ) );
-    // scanner.Append( GetRegister( "%fs" ) );
-    // scanner.Append( GetRegister( "%gs" ) );
-    // FP registers
-    // scanner.Append( GetRegister( "%st" ) );
-    // scanner.Append( GetRegister( "%st(1)" ) );
-    // scanner.Append( GetRegister( "%st(2)" ) );
-    // scanner.Append( GetRegister( "%st(3)" ) );
-    // scanner.Append( GetRegister( "%st(4)" ) );
-    // scanner.Append( GetRegister( "%st(5)" ) );
-    // scanner.Append( GetRegister( "%st(6)" ) );
-    // scanner.Append( GetRegister( "%st(7)" ) );
-  }
-  // unisim::service::interfaces::MemoryInjection<ADDRESS>
+  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
+  // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // Implementation of ExecuteSystemCall
@@ -587,35 +495,7 @@ public:
     //               (0 << 12/*X*/) );
   }
     
-  void
-  fcwwrite( u16_t _value )
-  {
-    m_fcw = _value;
-    struct field { uint16_t offset, mask, expected, err; char const* name; };
-    static field fields[] =
-      {
-        { 0, 1, 1, 0, "IM"},
-        { 1, 1, 1, 0, "DM"},
-        { 2, 1, 1, 0, "ZM"},
-        { 3, 1, 1, 0, "OM"},
-        { 4, 1, 1, 0, "UM"},
-        { 5, 1, 1, 0, "PM"},
-        { 8, 3, 2, 0, "PC"},
-        {10, 3, 0, 0, "RC"},
-        {12, 1, 0, 0, "X"},
-      };
-    for (uintptr_t idx = 0; idx < (sizeof (fields) / sizeof (field)); ++idx)
-      {
-        uint16_t field_val = ((_value >> fields[idx].offset) & fields[idx].mask);
-        if (field_val == fields[idx].expected)
-          continue; /* value is expected one*/
-        if ((fields[idx].err >> field_val) & 1)
-          continue; /* error already reported */
-        fields[idx].err |= (1 << field_val);
-        std::cerr << "Warning: unimplemented FPUControlWord." << fields[idx].name
-                  << " value: " << field_val << ".\n";
-      }
-  }
+  void  fcwwrite( u16_t _value );
     
   u64_t tscread() { return instruction_count; }
     
@@ -700,34 +580,44 @@ public:
   
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
-  struct Page
+  struct IPage
   {
     static unsigned const NUM_OPERATIONS_PER_PAGE = 0x1000;
-    Page* next;
+    IPage* next;
     uint64_t key;
     Operation* operations[NUM_OPERATIONS_PER_PAGE];
     uint8_t bytes[NUM_OPERATIONS_PER_PAGE+15];
     
-    Page( Page* _next, uint64_t _key ) : next( _next ), key( _key ) { memset( operations, 0, sizeof (operations) ); }
-    ~Page() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
+    IPage( IPage* _next, uint64_t _key ) : next( _next ), key( _key ), operations() {}
+    ~IPage() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
+    Operation*& GetCached(uint64_t offset, uint8_t const* opbytes, unisim::component::cxx::processor::intel::Mode mode)
+    {
+      Operation*& cache_op = operations[offset];
+      if (cache_op and (cache_op->mode != mode or memcmp( opbytes, &bytes[offset], cache_op->length ) != 0))
+        {
+          delete cache_op;
+          cache_op = 0;
+        }
+      return cache_op;
+    }
   };
     
   static unsigned const NUM_HASH_TABLE_ENTRIES = 0x1000;
-  Page* hash_table[NUM_HASH_TABLE_ENTRIES];
-  Page* mru_page;
+  IPage* hash_table[NUM_HASH_TABLE_ENTRIES];
+  IPage* mru_page;
   
-  Page*
-  GetPage( uint64_t address, uint64_t& offset )
+  IPage*
+  GetIPage( uint64_t address, uint64_t& offset )
   {
-    uint64_t page_key = address / Page::NUM_OPERATIONS_PER_PAGE;
-    offset = address & (Page::NUM_OPERATIONS_PER_PAGE-1);
+    uint64_t page_key = address / IPage::NUM_OPERATIONS_PER_PAGE;
+    offset = address & (IPage::NUM_OPERATIONS_PER_PAGE-1);
       
     if (mru_page and (mru_page->key == page_key)) return mru_page;
       
     unsigned index = page_key % NUM_HASH_TABLE_ENTRIES; // hash the key
       
-    Page* cur = hash_table[index];
-    Page** ref = &hash_table[index];
+    IPage* cur = hash_table[index];
+    IPage** ref = &hash_table[index];
       
     while (cur) {
       if (cur->key == page_key) {
@@ -740,96 +630,23 @@ public:
       cur = cur->next;
     }
       
-    return (mru_page = hash_table[index] = new Page( hash_table[index], page_key ));
+    return (mru_page = hash_table[index] = new IPage( hash_table[index], page_key ));
   }
   
   Operation* fetch();
   Operation* Decode( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes );
-  Operation* GetInsn( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes )
-  {
-    uint64_t offset;
-    Page* page = GetPage( address, offset );
-    Operation* operation = page->operations[offset];
-      
-    if (operation)
-      {
-        if ((operation->mode == mode) and (memcmp( &bytes[0], &page->bytes[offset], operation->length ) == 0))
-          return operation;
-        delete operation;
-      }
-      
-    page->operations[offset] = operation = this->Decode( mode, address, bytes );
-    if (not operation) return 0;
-    memcpy( &page->bytes[offset], bytes, operation->length );
-    
-    return operation;
-  }
+  Operation* GetInsn( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes );
+  
 
   void stop() { std::cerr << "Processor halt.\n"; throw 0; }
 
   struct Unimplemented {};
-  void noexec( Operation const& op )
-  {
-    std::cerr
-      << "error: no execute method in `" << typeid(op).name() << "'\n"
-      << std::hex << op.address << ":\t";
-    op.disasm( std::cerr );
-    std::cerr << '\n';
-    throw Unimplemented();
-  }
+  void noexec( Operation const& op );
   
   bool do_disasm;
   uint64_t instruction_count;
 
   bool Test( bool b ) const { return b; }
-
-  // struct GDBChecker
-  // {
-  //   GDBChecker() : sink("check.gdb"), visited(), nassertid(0), gdirtmask( 0 ), xdirtmask( 0 ) {}
-  //   std::ofstream sink;
-  //   std::map<uint64_t,uint64_t> visited;
-  //   uint64_t nassertid;
-  //   uint32_t gdirtmask;
-  //   uint32_t xdirtmask;
-  //   void gmark( unsigned reg ) { gdirtmask |= (1 << reg); }
-  //   void xmark( unsigned reg ) { xdirtmask |= (1 << reg); }
-  //   uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
-  //   void start( Arch const& cpu)
-  //   {
-  //     sink << "set pagination off\n\n"
-  //          << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
-  //          << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
-  //   }
-  //   void step( Arch const& cpu )
-  //   {
-  //     cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
-  //     uint64_t cia = cpu.rip;
-  //     uint64_t revisit = visited[cia]++;
-  //     sink << "stepi\n";
-  //     if (revisit == 0)
-  //       sink << "# advance *0x" << std::hex << cia << "\n";
-  //     else
-  //       sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
-  //     sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
-  //     for (unsigned reg = 0; reg < 16; ++reg)
-  //       {
-  //         if (not ((gdirtmask>>reg) & 1)) continue;
-  //         uint64_t value = cpu.u64regs[reg];
-  //         std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmG(GR(),reg);
-  //         sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
-  //       }
-  //     gdirtmask = 0;
-  //     for (unsigned reg = 0; reg < 16; ++reg)
-  //       {
-  //         if (not ((xdirtmask>>reg) & 1)) continue;
-  //         uint64_t quads[2] = {0};
-  //         cpu.umms[reg].transfer( (uint8_t*)&quads[0], &cpu.vmm_storage[reg][0], 16, false );
-  //         sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[0] 0x" << std::hex << quads[0] << '\n';
-  //         sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[1] 0x" << std::hex << quads[1] << '\n';
-  //       }
-  //     xdirtmask = 0;
-  //   }
-  // } gdbchecker;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );

@@ -158,8 +158,21 @@ Arch::fetch()
   unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
 
   asm volatile ("operation_decode:");
-  latest_instruction = GetInsn( mode, insn_addr, &decbuf[0] );
-  if (not latest_instruction) return 0;
+  {
+    uint64_t offset;
+    IPage* page = GetIPage( insn_addr, offset );
+
+    Operation*& cache_op = page->GetCached(offset, &decbuf[0], mode);
+      
+    if (not cache_op)
+      {
+        if (not (cache_op = this->Decode( mode, insn_addr, &decbuf[0] )))
+          return 0;
+        memcpy( &page->bytes[offset], &decbuf[0], cache_op->length );
+      }
+    
+    latest_instruction = cache_op;
+  }
   
   this->rip = insn_addr + latest_instruction->length;
     
@@ -625,4 +638,142 @@ Arch::u32_t
 Arch::EFlagsRegister::eflagsread() const
 {
   return unisim::component::cxx::processor::intel::eflagsread( cpu );
+}
+
+Arch::f80_t
+Arch::fmemread80( unsigned int _seg, addr_t _addr )
+{
+  _addr += addr_t( segbase(_seg) );
+  uintptr_t const buf_size = 10;
+  uint8_t buf[buf_size];
+  {
+    addr_t last_addr = _addr, addr = _addr;
+    typename Memory::Page* page = m_mem.getpage( addr );
+      
+    for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
+      {
+        if ((last_addr ^ addr) >> Memory::Page::s_bits)
+          page = m_mem.getpage( addr );
+        addr_t offset = addr % (1 << Memory::Page::s_bits);
+        buf[idx] = page->m_storage[offset];
+      }
+  }
+  uint8_t sign = (buf[9] >> 7) & 1;
+  int32_t exponent = ((uint16_t(buf[9]) << 8) & 0x7f00) | (uint16_t(buf[8]) & 0x00ff);
+  uint64_t mantissa = 0;
+  for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
+  union IEEE754_t { double as_f; uint64_t as_u; } word;
+    
+  if (exponent != 0x7fff) {
+    if (exponent == 0) {
+      if (mantissa == 0) return sign ? -0.0 : 0.0;
+      exponent += 1;
+    }
+    exponent -= 16383;
+    /* normalizing */
+    int32_t eo = __builtin_clzll( mantissa );
+    mantissa <<= eo;
+    exponent -= eo;
+    if (exponent < 1024) {
+      if (exponent < -1022) {
+        /* denormalizing */
+        eo = (-1022 - exponent);
+        mantissa >>= eo;
+        exponent = -1023;
+      }
+      word.as_u = ((mantissa << 1) >> 12);
+      word.as_u |= uint64_t(exponent + 1023) << 52;
+      word.as_u |= uint64_t(sign) << 63;
+    } else /* exponent >= 1024 */ {
+      /* huge number, convert to infinity */
+      word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
+    }
+  }
+    
+  else /* (exponent == 0x7fff) */ {
+    if (mantissa >> 63) {
+      /* IEEE 754 compatible */
+      word.as_u = ((mantissa << 1) >> 12);
+      word.as_u |= uint64_t(0x7ff) << 52;
+      word.as_u |= uint64_t(sign) << 63;
+    } else {
+      /* invalid operand ==> convert to quiet NaN (keep sign) */
+      word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
+    }
+  }
+    
+  return word.as_f;
+}
+
+void
+Arch::fcwwrite( u16_t _value )
+{
+  m_fcw = _value;
+  struct field { uint16_t offset, mask, expected, err; char const* name; };
+  static field fields[] =
+    {
+      { 0, 1, 1, 0, "IM"},
+      { 1, 1, 1, 0, "DM"},
+      { 2, 1, 1, 0, "ZM"},
+      { 3, 1, 1, 0, "OM"},
+      { 4, 1, 1, 0, "UM"},
+      { 5, 1, 1, 0, "PM"},
+      { 8, 3, 2, 0, "PC"},
+      {10, 3, 0, 0, "RC"},
+      {12, 1, 0, 0, "X"},
+    };
+  for (uintptr_t idx = 0; idx < (sizeof (fields) / sizeof (field)); ++idx)
+    {
+      uint16_t field_val = ((_value >> fields[idx].offset) & fields[idx].mask);
+      if (field_val == fields[idx].expected)
+        continue; /* value is expected one*/
+      if ((fields[idx].err >> field_val) & 1)
+        continue; /* error already reported */
+      fields[idx].err |= (1 << field_val);
+      std::cerr << "Warning: unimplemented FPUControlWord." << fields[idx].name
+                << " value: " << field_val << ".\n";
+    }
+}
+
+void
+Arch::noexec( Operation const& op )
+{
+  std::cerr
+    << "error: no execute method in `" << typeid(op).name() << "'\n"
+    << std::hex << op.address << ":\t";
+  op.disasm( std::cerr );
+  std::cerr << '\n';
+  throw Unimplemented();
+}
+
+void
+Arch::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+  // Program counter
+  scanner.Append( GetRegister( "%rip" ) );
+  // General purpose registers
+  // scanner.Append( GetRegister( "%eax" ) );
+  // scanner.Append( GetRegister( "%ecx" ) );
+  // scanner.Append( GetRegister( "%edx" ) );
+  // scanner.Append( GetRegister( "%ebx" ) );
+  // scanner.Append( GetRegister( "%esp" ) );
+  // scanner.Append( GetRegister( "%ebp" ) );
+  // scanner.Append( GetRegister( "%esi" ) );
+  // scanner.Append( GetRegister( "%edi" ) );
+  // Segments
+  // scanner.Append( GetRegister( "%es" ) );
+  // scanner.Append( GetRegister( "%cs" ) );
+  // scanner.Append( GetRegister( "%ss" ) );
+  // scanner.Append( GetRegister( "%ds" ) );
+  // scanner.Append( GetRegister( "%fs" ) );
+  // scanner.Append( GetRegister( "%gs" ) );
+  // FP registers
+  // scanner.Append( GetRegister( "%st" ) );
+  // scanner.Append( GetRegister( "%st(1)" ) );
+  // scanner.Append( GetRegister( "%st(2)" ) );
+  // scanner.Append( GetRegister( "%st(3)" ) );
+  // scanner.Append( GetRegister( "%st(4)" ) );
+  // scanner.Append( GetRegister( "%st(5)" ) );
+  // scanner.Append( GetRegister( "%st(6)" ) );
+  // scanner.Append( GetRegister( "%st(7)" ) );
 }
