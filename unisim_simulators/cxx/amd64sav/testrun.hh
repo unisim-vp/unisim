@@ -333,7 +333,6 @@ namespace test
     enum ipproc_t { ipjmp = 0, ipcall, ipret };
     addr_t                      getnip() { return rip; }
     void                        setnip( addr_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
-    //void                        addeip( u64_t offset ) { rip += offset; }
 
     void                        syscall();
     void                        interrupt( int op, int code );
