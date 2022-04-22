@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 #define __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 
+#include <unisim/util/arithmetic/i128.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <ostream>
@@ -243,6 +244,7 @@ namespace symbolic {
     virtual int16_t Get( int16_t ) const = 0;
     virtual int32_t Get( int32_t ) const = 0;
     virtual int64_t Get( int64_t ) const = 0;
+    virtual int128_t Get( int128_t ) const = 0;
     static std::ostream& warn();
   };
 
@@ -282,11 +284,13 @@ namespace symbolic {
   long double EvalSHL( long double, uint8_t );
   double     EvalSHL( double, uint8_t );
   float      EvalSHL( float, uint8_t );
+  int128_t   EvalSHL( int128_t, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalSHR( VALUE_TYPE l, uint8_t shift ) { return l >> shift; }
   long double EvalSHR( long double, uint8_t );
   double     EvalSHR( double, uint8_t );
   float      EvalSHR( float, uint8_t );
+  int128_t   EvalSHR( int128_t, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalByteSwap( VALUE_TYPE v ) { throw std::logic_error( "No ByteSwap for this type" ); }
   uint32_t   EvalByteSwap( uint32_t v );
@@ -505,6 +509,8 @@ namespace symbolic {
     int16_t Get( int16_t ) const override { return value; }
     int32_t Get( int32_t ) const override { return value; }
     int64_t Get( int64_t ) const override { return value; }
+    int128_t Get( int128_t ) const override
+    { return unisim::util::arithmetic::I128(value); }
     ValueType const* GetType() const override { return CValueType(VALUE_TYPE()); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0; }
