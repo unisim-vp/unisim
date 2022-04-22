@@ -546,7 +546,8 @@ protected:
 	uint64_t num_accesses;
 	uint64_t num_misses;
 private:
-	CacheSet<TYPES, CONFIG> sets[CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY];
+	static unsigned int const NUM_SETS = CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
+	CacheSet<TYPES, CONFIG> sets[NUM_SETS];
 
 	template <typename, typename MSS> friend struct MemorySubSystem;
 	
@@ -1892,7 +1893,7 @@ Cache<TYPES, CONFIG, CACHE>::Cache()
 	, sets()
 {
 	unsigned int index;
-	for(index = 0; index < (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY); index++)
+	for(index = 0; index < NUM_SETS; index++)
 	{
 		sets[index].SetIndex(index);
 	}
@@ -1942,13 +1943,13 @@ inline unsigned int Cache<TYPES, CONFIG, CACHE>::SectorByPhysicalAddress(typenam
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline unsigned int Cache<TYPES, CONFIG, CACHE>::IndexByAddress(typename TYPES::ADDRESS addr)
 {
-	return (addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
+	return (addr / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE) % NUM_SETS;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline unsigned int Cache<TYPES, CONFIG, CACHE>::IndexByPhysicalAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
-	return (phys_addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
+	return (phys_addr / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE) % NUM_SETS;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -1963,7 +1964,6 @@ inline void Cache<TYPES, CONFIG, CACHE>::DecodeAddress(CacheAccess<TYPES, CACHE>
 	access.line_base_phys_addr = LineBasePhysicalAddress(access.phys_addr);
 	access.sector = SectorByAddress(access.addr);
 // 	access.sector = (access.phys_addr / CONFIG::BLOCK_SIZE) % CONFIG::BLOCKS_PER_LINE;
-// 	access.index = (access.phys_addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
 	switch(CONFIG::INDEX_SCHEME)
 	{
 		case CACHE_VIRTUALLY_INDEXED : access.index = IndexByAddress(access.addr);              break;
@@ -1979,13 +1979,12 @@ inline void Cache<TYPES, CONFIG, CACHE>::DecodeAddress(CacheAccess<TYPES, CACHE>
 // 	size_to_block_boundary = CONFIG::BLOCK_SIZE - offset;
 // 	line_base_phys_addr = phys_addr & ~((CONFIG::BLOCK_SIZE * CONFIG::BLOCKS_PER_LINE) - 1);
 // 	sector = (phys_addr / CONFIG::BLOCK_SIZE) % CONFIG::BLOCKS_PER_LINE;
-// 	index = (phys_addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
 // }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline CacheSet<TYPES, CONFIG>& Cache<TYPES, CONFIG, CACHE>::GetSetByIndex(unsigned int index)
 {
-	return sets[index % (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY)];
+	return sets[index % NUM_SETS];
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -2005,7 +2004,7 @@ inline void Cache<TYPES, CONFIG, CACHE>::InvalidateSet(unsigned int index)
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline void Cache<TYPES, CONFIG, CACHE>::InvalidateLineBySetAndWay(unsigned int index, unsigned int way)
 {
-	CacheSet<TYPES, CONFIG>& set = sets[index % (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY)];
+	CacheSet<TYPES, CONFIG>& set = sets[index % NUM_SETS];
 	
 	set.InvalidateLineByWay(way);
 }
@@ -2015,7 +2014,7 @@ inline void Cache<TYPES, CONFIG, CACHE>::Invalidate()
 {
 	unsigned int index;
 	
-	for(index = 0; index < (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY); index++)
+	for(index = 0; index < NUM_SETS; index++)
 	{
 		CacheSet<TYPES, CONFIG>& set = sets[index];
 		set.Invalidate();
@@ -2268,7 +2267,7 @@ inline bool Cache<TYPES, CONFIG, CACHE>::IsStaticNotWriteAllocate()
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline unsigned int Cache<TYPES, CONFIG, CACHE>::NumSets()
 {
-	return CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
+	return NUM_SETS;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
