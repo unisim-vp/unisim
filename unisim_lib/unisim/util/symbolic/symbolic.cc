@@ -181,12 +181,10 @@ namespace symbolic {
   long double   EvalSHL( long double, uint8_t ) { throw std::logic_error( "No << for long double." ); }
   double   EvalSHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
   float    EvalSHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
-  int128_t    EvalSHL( int128_t, uint8_t ) { throw std::logic_error( "No << for int128_t." ); }
   
   long double   EvalSHR( long double, uint8_t ) { throw std::logic_error( "No >> for long double." ); }
   double   EvalSHR( double, uint8_t ) { throw std::logic_error( "No >> for double." ); }
   float    EvalSHR( float, uint8_t ) { throw std::logic_error( "No >> for float." ); }
-  int128_t    EvalSHR( int128_t, uint8_t ) { throw std::logic_error( "No >> for int128_t." ); }
   
   uint32_t EvalByteSwap( uint32_t v ) { return unisim::util::endian::ByteSwap( v ); }
   uint16_t EvalByteSwap( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }

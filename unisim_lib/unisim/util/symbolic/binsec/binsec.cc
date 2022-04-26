@@ -507,14 +507,17 @@ namespace binsec {
     value <<= ext;
     value = sxtend ? (int64_t(value) >> ext) : value >> ext;
 
-    if (extend == 64) return new ConstNode<uint64_t>( value );
-    if (extend == 32) return new ConstNode<uint32_t>( value );
-    if (extend == 16) return new ConstNode<uint16_t>( value );
-    if (extend ==  8) return new ConstNode<uint8_t>( value );
-    if (extend ==  1) return new ConstNode<bool>( value );
+    switch (extend)
+      {
+      case 64: return new ConstNode<uint64_t>( value );
+      case 32: return new ConstNode<uint32_t>( value );
+      case 16: return new ConstNode<uint16_t>( value );
+      case  8: return new ConstNode<uint8_t>( value );
+      case  1: return new ConstNode<bool>( value );
+      }
 
-    struct Bad {};
-    throw Bad ();
+    // struct Bad {};
+    // throw Bad ();
     return 0;
   }
 
