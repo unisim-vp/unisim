@@ -70,8 +70,8 @@ Operation<ARCH>*
 newPushSeg( unsigned opsize, OpBase<ARCH> const& opbase, uint8_t _seg )
 {
   if (opsize==16) return new PushSeg<ARCH,16>( opbase, _seg );
+  if (ic.mode64()) return new PushSeg<ARCH,64>( opbase, _seg );
   if (opsize==32) return new PushSeg<ARCH,32>( opbase, _seg );
-  if (opsize==64) return new PushSeg<ARCH,64>( opbase, _seg );
   return 0;
 }
 
@@ -81,16 +81,18 @@ template <class ARCH> struct DC<ARCH,PUSH> { Operation<ARCH>* get( InputCode<ARC
 
     {
       if (ic.opsize()==16) return new Push<ARCH,GOw>( _.opbase(), _.rmop() );
-      if (ic.opsize()==32) return new Push<ARCH,GOd>( _.opbase(), _.rmop() );
-      if (ic.opsize()==64) return new Push<ARCH,GOq>( _.opbase(), _.rmop() );
+      if (ic.mode64())
+	return new Push<ARCH,GOq>( _.opbase(), _.rmop() );
+      if (ic.opsize()==32)
+	return new Push<ARCH,GOd>( _.opbase(), _.rmop() );
       return 0;
     }
 
   if (auto _ = match( ic, opcode("\x50") + Reg() ))
 
     {
-      if (ic.mode64())     return new PushReg<ARCH,GOq>( _.opbase(), _.ereg() );
       if (ic.opsize()==16) return new PushReg<ARCH,GOw>( _.opbase(), _.ereg() );
+      if (ic.mode64())     return new PushReg<ARCH,GOq>( _.opbase(), _.ereg() );
       if (ic.opsize()==32) return new PushReg<ARCH,GOd>( _.opbase(), _.ereg() );
       return 0;
     }
@@ -98,9 +100,12 @@ template <class ARCH> struct DC<ARCH,PUSH> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\x6a" ) & Imm<8>() ))
 
     {
-      if (ic.opsize()==16) return new PushImm<ARCH,16>( _.opbase(), _.i( int16_t() )  );
-      if (ic.opsize()==32) return new PushImm<ARCH,32>( _.opbase(), _.i( int32_t() )  );
-      if (ic.opsize()==64) return new PushImm<ARCH,64>( _.opbase(), _.i( int64_t() )  );
+      if (ic.opsize()==16)
+	return new PushImm<ARCH,16>( _.opbase(), _.i( int16_t() )  );
+      if (ic.mode64())
+	return new PushImm<ARCH,64>( _.opbase(), _.i( int64_t() )  );
+      if (ic.opsize()==32)
+	return new PushImm<ARCH,32>( _.opbase(), _.i( int32_t() )  );
       return 0;
     }
 
@@ -108,23 +113,30 @@ template <class ARCH> struct DC<ARCH,PUSH> { Operation<ARCH>* get( InputCode<ARC
 
     return new PushImm<ARCH,16>( _.opbase(), _.i( int16_t() )  );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x68" ) & Imm<32>() ))
-
-    return new PushImm<ARCH,32>( _.opbase(), _.i( int32_t() )  );
-
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x68" ) & Imm<64>() ))
-
-    return new PushImm<ARCH,64>( _.opbase(), _.i( int64_t() )  );
+  if (auto _ = match( ic, opcode( "\x68" ) & Imm<32>() ))
+    {
+      if (ic.mode64())
+	return new PushImm<ARCH,64>( _.opbase(), _.i( int64_t() )  );
+      if (ic.opsize()==32)
+	return new PushImm<ARCH,32>( _.opbase(), _.i( int32_t() )  );
+      return 0;
+    }
 
   if (not ic.mode64()) {
-    if (auto _ = match( ic, opcode( "\x06" ) )) return newPushSeg( ic.opsize(), _.opbase(), ES );
-    if (auto _ = match( ic, opcode( "\x0e" ) )) return newPushSeg( ic.opsize(), _.opbase(), CS );
-    if (auto _ = match( ic, opcode( "\x16" ) )) return newPushSeg( ic.opsize(), _.opbase(), SS );
-    if (auto _ = match( ic, opcode( "\x1e" ) )) return newPushSeg( ic.opsize(), _.opbase(), DS );
+    if (auto _ = match( ic, opcode( "\x06" ) ))
+      return newPushSeg( ic.opsize(), _.opbase(), ES );
+    if (auto _ = match( ic, opcode( "\x0e" ) ))
+      return newPushSeg( ic.opsize(), _.opbase(), CS );
+    if (auto _ = match( ic, opcode( "\x16" ) ))
+      return newPushSeg( ic.opsize(), _.opbase(), SS );
+    if (auto _ = match( ic, opcode( "\x1e" ) ))
+      return newPushSeg( ic.opsize(), _.opbase(), DS );
   }
 
-  if (auto _ = match( ic, opcode( "\x0f\xa0" ) )) return newPushSeg( ic.opsize(), _.opbase(), FS );
-  if (auto _ = match( ic, opcode( "\x0f\xa8" ) )) return newPushSeg( ic.opsize(), _.opbase(), GS );
+  if (auto _ = match( ic, opcode( "\x0f\xa0" ) ))
+    return newPushSeg( ic.opsize(), _.opbase(), FS );
+  if (auto _ = match( ic, opcode( "\x0f\xa8" ) ))
+    return newPushSeg( ic.opsize(), _.opbase(), GS );
 
   return 0;
 }};
