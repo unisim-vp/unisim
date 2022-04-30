@@ -202,6 +202,11 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.2 (2022-04-15)
+
+- handling of SSE instructions for AMD64
+- various bug fixes and code generator improvements
+
 ## 0.0.1 (2022-03-14)
 
 - update build system (dune 3.0) and improve dependency tracking
@@ -262,7 +267,10 @@ BINSEC. It exposes disassembly metadata and DBA (Dynamic Bitvector Automata)
 semantics of several instruction set architectures, including ARM and x86.")
  (depends
   (conf-gcc :build)
-  (conf-g++ :build)))
+  (conf-g++ :build)
+  conf-gmp)
+ (conflicts
+  (binsec (< 0.5.0))))
 EOF
 
 cat <<EOF > "${DEST_DIR}/unisim_archisec.opam.template"
@@ -280,6 +288,7 @@ cat <<EOF >> "${DEST_DIR}/dune"
  (library
   (package unisim_archisec)
   (name util)
+  (c_library_flags :standard -lgmp)
   (foreign_stubs
    (language cxx)
    (names :standard)
