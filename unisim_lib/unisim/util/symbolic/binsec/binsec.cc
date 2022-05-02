@@ -93,23 +93,7 @@ namespace binsec {
       bool diff;
     } simplified(ixpr.node,&subs[0],subcount);
 
-    if (ConstNodeBase const* node = simplified.e->AsConstNode())
-      {
-        auto tp = node->GetType();
-        if (tp->encoding == tp->SIGNED)
-          {
-            switch (tp->GetBitSize())
-              {
-              case  8: return make_const( node->Get(  uint8_t() ) );
-              case 16: return make_const( node->Get( uint16_t() ) );
-              case 32: return make_const( node->Get( uint32_t() ) );
-              case 64: return make_const( node->Get( uint64_t() ) );
-              default: break;
-              }
-          }
-        return simplified.base();
-      }
-    else if (OpNodeBase const* node = simplified.e->AsOpNode())
+    if (OpNodeBase const* node = simplified.e->AsOpNode())
       {
         switch (node->op.code)
           {
@@ -122,7 +106,7 @@ namespace binsec {
               {
                 if (ConstNodeBase const* cnb = subs[1].Eval(EvalSpace()))
                   {
-                    uint64_t sh = cnb->Get( uint64_t() );
+                    unsigned sh = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
                     unsigned bitsize = subs[0]->GetType()->GetBitSize();
                     if (sh >= bitsize) { struct Bad {}; throw Bad(); }
 
@@ -148,12 +132,15 @@ namespace binsec {
                   if (ConstNodeBase const* node = subs[idx].Eval(EvalSpace()))
                     {
                       Expr dispose(node);
-                      uint64_t v = node->Get( uint64_t() );
+                      unsigned bitsize = node->GetType()->GetBitSize();
+                      if (bitsize > 64)
+                        continue;
+                      uint64_t v = node->GetBits(0);
                       if (v & (v+1))
                         continue;
                       if (v == 0)
                         return subs[idx];
-                      unsigned bitsize = node->GetType()->GetBitSize(), select = arithmetic::BitScanReverse(v)+1;
+                      unsigned select = arithmetic::BitScanReverse(v)+1;
                       if (select >= bitsize)
                         return subs[idx^1];
                       return BitFilter( subs[idx^1], bitsize, 0, select, bitsize, false ).mksimple();
@@ -207,11 +194,13 @@ namespace binsec {
         switch (tp->encoding)
           {
           default: break;
-          case ValueType::BOOL: sink << node->Get( int32_t() ) << "<1>";  return 1;
+          case ValueType::BOOL: sink << node->GetBits(0) << "<1>";  return 1;
           case ValueType::SIGNED: case ValueType::UNSIGNED:
             {
               unsigned bitsize = tp->GetBitSize();
-              sink << dbx(bitsize / 8, node->Get(uint64_t()));
+              if (bitsize > 64)
+                throw 0;
+              sink << dbx(bitsize / 8, node->GetBits(0));
               return bitsize;
             }
           }
@@ -456,7 +445,7 @@ namespace binsec {
         if (onb->op.code != onb->op.Lsl) return this;
         ConstNodeBase const* cnb = onb->GetSub(1).Eval(EvalSpace());
         if (not cnb) return this;
-        unsigned lshift = cnb->Get( unsigned() );
+        unsigned lshift = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
         if (lshift > rshift) return this;
         BitFilter bf( *this );
         bf.rshift -= lshift;
@@ -502,7 +491,18 @@ namespace binsec {
   ConstNodeBase const*
   BitFilter::Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const
   {
-    uint64_t value = cnbs[0]->Get( uint64_t() ) >> rshift;
+    ConstNodeBase const* args[2] = {cnbs[0], 0};
+    Expr dispose;
+    if (rshift)
+      {
+        ConstNode<shift_type> rsh(rshift);
+        rsh.Retain(); // Prevent deletion of this stack-allocated object
+        args[1] = &rsh;
+        args[0] = args[0]->apply("Lsr", args);
+        dispose = args[0];
+      }
+    // TODO: avoid usage of actual value
+    uint64_t value = args[0]->GetBits(0);
     unsigned ext = 64 - select;
     value <<= ext;
     value = sxtend ? (int64_t(value) >> ext) : value >> ext;
@@ -672,7 +672,7 @@ namespace binsec {
         if (ConstNodeBase const* c = cond.ConstSimplify())
           {
             //            std::cerr << "warning: post simplification of if-then-else condition\n";
-            bool eval = c->Get(bool());
+            bool eval = dynamic_cast<ConstNode<bool> const&>(*c).value;
             ActionNode* always = nexts[eval];
             ActionNode* never = nexts[not eval];
             delete never;

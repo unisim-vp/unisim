@@ -335,7 +335,7 @@ public:
         Expr nt( cpsr.nthumb );
         if (unisim::util::symbolic::ConstNodeBase const* ntc = nt.ConstSimplify())
           {
-            if (ntc->Get( bool() ) ^ cpsr.GetT())
+            if (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*ntc).value ^ cpsr.GetT())
               path->add_sink( newRegWrite( RegID("t"), nt ) );
           }
         else
@@ -386,7 +386,7 @@ public:
   bool concretize( Expr cexp )
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
+      return dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value;
 
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );

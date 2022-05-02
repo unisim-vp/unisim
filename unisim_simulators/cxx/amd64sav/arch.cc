@@ -341,7 +341,7 @@ namespace review
   Arch::concretize(unisim::util::symbolic::Expr cond)
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
-      return cnode->Get( bool() );
+      return dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value;
 
     bool predicate = path->proceed( cond );
     path = path->next( predicate );
@@ -629,7 +629,7 @@ namespace review
   {
     uint64_t zaddr;
     if (auto z = addr.Eval( Arch::AddrEval() ))
-      { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
+      { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*z).value; }
     else
       throw "WTF";
     addrs.insert(zaddr);

@@ -115,7 +115,7 @@ bool
 Scanner::concretize(unisim::util::symbolic::Expr cond)
 {
   if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
-    return cnode->Get( bool() );
+    return dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value;
 
   bool predicate = path->proceed( cond );
   path = path->next( predicate );

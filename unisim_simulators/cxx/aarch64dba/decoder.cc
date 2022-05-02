@@ -137,7 +137,7 @@ struct Processor
   bool concretize( Expr cexp )
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
+      return dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value;
 
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );

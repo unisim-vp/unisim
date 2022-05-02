@@ -119,7 +119,7 @@ namespace ccode {
     }
   };
   template <typename T> Dec<T> dec( T value ) { return Dec<T>( value ); }
-  struct fpt { fpt(double _value) : value(_value) {} double value; };
+  struct fpt { fpt(long double _value) : value(_value) {} long double value; };
   
   SrcMgr& operator << (SrcMgr& s, fpt f);
   

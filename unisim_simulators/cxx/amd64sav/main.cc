@@ -309,7 +309,7 @@ struct Checker
         
         uint64_t value;
         if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
-          { Expr dispose(v); value = v->Get( uint64_t() ); }
+          { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value; }
         else
           throw "WTF";
 
