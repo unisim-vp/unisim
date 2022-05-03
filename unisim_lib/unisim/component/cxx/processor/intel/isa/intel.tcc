@@ -65,8 +65,9 @@ namespace intel {
                      CMPXCHG8B, XCHG, XADD, HINT, NOP, CMOVCC, BT, BTC, BTR, BTS, BSWAP, MOVNTI, LFP,
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT, HLT, FENCE,
                      PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VFP,
-                     PMOVMSKB, VMOVSD, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, VINTBIN, MOVQ,
+                     PMOVMSKB, VMOVSD, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, VINTBIN, VMULEXT, MOVQ,
                      PSHUFD, PSHUFB, PSHDQ, PTEST, PINSR, PCMPSTR,
+		     VZEROUPPER,
                      operation_count };
 
   template <class ARCH>

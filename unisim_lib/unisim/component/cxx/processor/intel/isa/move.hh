@@ -70,8 +70,8 @@ Operation<ARCH>*
 newPushSeg( unsigned opsize, OpBase<ARCH> const& opbase, uint8_t _seg )
 {
   if (opsize==16) return new PushSeg<ARCH,16>( opbase, _seg );
-  if (ic.mode64()) return new PushSeg<ARCH,64>( opbase, _seg );
   if (opsize==32) return new PushSeg<ARCH,32>( opbase, _seg );
+  if (opsize==64) return new PushSeg<ARCH,64>( opbase, _seg );
   return 0;
 }
 
@@ -134,9 +134,9 @@ template <class ARCH> struct DC<ARCH,PUSH> { Operation<ARCH>* get( InputCode<ARC
   }
 
   if (auto _ = match( ic, opcode( "\x0f\xa0" ) ))
-    return newPushSeg( ic.opsize(), _.opbase(), FS );
+    return newPushSeg( ic.mode64() ? 64 : ic.opsize(), _.opbase(), FS );
   if (auto _ = match( ic, opcode( "\x0f\xa8" ) ))
-    return newPushSeg( ic.opsize(), _.opbase(), GS );
+    return newPushSeg( ic.mode64() ? 64 : ic.opsize(), _.opbase(), GS );
 
   return 0;
 }};

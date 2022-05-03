@@ -1,3 +1,2 @@
-unisim/component/cxx/processor/intel/arch.cc
 unisim/component/cxx/processor/intel/disasm.cc
 unisim/component/cxx/processor/intel/math.cc

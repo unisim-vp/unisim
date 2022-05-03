@@ -2206,19 +2206,17 @@ struct Popcnt : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "popcnt " << DisasmE( OP(), rmop ) << DisasmG( OP(), gn ); }
   
-  // void execute( ARCH& arch ) const
-  // {
-  //   typedef typename TypeFor<ARCH,OP::SIZE>::u op_type;
-  //   op_type const zero = op_type( 0 ), lsb = op_type( 1 );
-  //   op_type tmp = rmop->read_e<OPSIZE>( arch ), cnt = op_type( 0 );
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u op_type;
+    op_type const zero = op_type( 0 ), lsb = op_type( 1 );
+    op_type src = arch.rmread( OP(), rmop ), cnt = op_type( 0 );
+
+    for (unsigned idx = 0; idx < OP::SIZE; ++idx)
+      cnt += ((src >> idx) & lsb);
     
-  //   while (tmp != zero) {
-  //     cnt += (tmp & lsb);
-  //     tmp >>= 1;
-  //   }
-    
-  //   arch.regwrite( OP(), gn, cnt );
-  // }
+    arch.regwrite( OP(), gn, cnt );
+  }
 };
 
 template <class ARCH> struct DC<ARCH,POPCNT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

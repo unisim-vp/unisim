@@ -425,7 +425,7 @@ namespace binsec {
         while (mix);
         retsize += GenerateCode(prev->r, vars, label, sink);
         sink << ")";
-        
+        return retsize;
       }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
@@ -528,7 +528,7 @@ namespace binsec {
     if (extend == source and selection)
       {
         bool done = true;
-        if      (not rshift and not sxtend)
+        if      (not rshift and not sxtend and select < 64)
           sink << "(" << GetCode(input, vars, label, source) << " and " << dbx(source/8, (1ull << select)-1) << ")";
         else if ((rshift + select) == extend)
           sink << "(" << GetCode(input, vars, label, source) << " rshift" << (sxtend?"s ":"u ") << dbx(source/8, rshift) << ")";
