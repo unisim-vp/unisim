@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/component/cxx/processor/intel/arch.hh>
+#include <unisim/component/cxx/processor/intel/arch32/arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <linuxsystem.hh>

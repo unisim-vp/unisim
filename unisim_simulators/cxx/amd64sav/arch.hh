@@ -718,8 +718,8 @@ namespace review
     struct VUConfig : public unisim::util::symbolic::vector::VUConfig
     {
       static unsigned const BYTECOUNT = VmmRegister::BYTECOUNT;
-      static unsigned const REGCOUNT = AMD64::VREGCOUNT;
     };
+    static unsigned const VREGCOUNT = AMD64::VREGCOUNT;
 
     // struct VRegWrite : public Arch::Update
     // {
@@ -736,8 +736,8 @@ namespace review
 
     struct VmmBrick { char _[sizeof(u8_t)]; };
     typedef unisim::component::cxx::vector::VUnion<VUConfig> VUnion;
-    VUnion umms[VUConfig::REGCOUNT];
-    VmmBrick vmm_storage[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
+    VUnion umms[VREGCOUNT];
+    VmmBrick vmm_storage[VREGCOUNT][VUConfig::BYTECOUNT];
 
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }

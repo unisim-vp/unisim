@@ -449,10 +449,11 @@ namespace test
       template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
       typedef u8_t Byte;
     };
+    static unsigned const VREGCOUNT = 16;
 
-    unisim::component::cxx::vector::VUnion<VUConfig> umms[16];
+    unisim::component::cxx::vector::VUnion<VUConfig> umms[VREGCOUNT];
+    uint8_t vmm_storage[VREGCOUNT][VUConfig::BYTECOUNT];
 
-    uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
     uint32_t mxcsr;
 
     void mxcswrite(uint32_t v) { mxcsr = v; }

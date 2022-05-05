@@ -298,7 +298,7 @@ namespace review
 
   Arch::~Arch()
   {
-    for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
+    for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
       umms[reg].Clear(&vmm_storage[reg][0]);
   }
 
@@ -317,7 +317,7 @@ namespace review
         path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
 
     // Vector Registers
-    for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
+    for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
       if (vmm_diff(reg))
         path->add_update( new VRegWrite( reg, interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
     
