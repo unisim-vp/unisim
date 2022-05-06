@@ -267,8 +267,7 @@ BINSEC. It exposes disassembly metadata and DBA (Dynamic Bitvector Automata)
 semantics of several instruction set architectures, including ARM and x86.")
  (depends
   (conf-gcc :build)
-  (conf-g++ :build)
-  conf-gmp)
+  (conf-g++ :build))
  (conflicts
   (binsec (< 0.5.0))))
 EOF
@@ -288,7 +287,6 @@ cat <<EOF >> "${DEST_DIR}/dune"
  (library
   (package unisim_archisec)
   (name util)
-  (c_library_flags :standard -lgmp)
   (foreign_stubs
    (language cxx)
    (names :standard)
