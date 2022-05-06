@@ -53,7 +53,7 @@ template <class ARCH, class OP>
 struct Push : public Operation<ARCH>
 {
   Push( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm ) : Operation<ARCH>( opbase ), rm( _rm ) {} RMOp<ARCH> rm;
-  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<16>( "push", rm.isreg() ) << DisasmEw( rm ); }
+  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OP::SIZE>( "push", rm.isreg() ) << DisasmEw( rm ); }
   void execute( ARCH& arch ) const { arch.template push<OP::SIZE>( arch.rmread( OP(), rm ) ); }
 };
 
