@@ -2209,7 +2209,8 @@ struct Popcnt : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::u op_type;
-    op_type const zero = op_type( 0 ), lsb = op_type( 1 );
+    //    op_type const zero = op_type( 0 );
+    op_type const lsb = op_type( 1 );
     op_type src = arch.rmread( OP(), rmop ), cnt = op_type( 0 );
 
     for (unsigned idx = 0; idx < OP::SIZE; ++idx)

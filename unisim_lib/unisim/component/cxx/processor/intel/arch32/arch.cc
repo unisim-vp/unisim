@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/component/cxx/processor/intel/arch.hh>
+#include <unisim/component/cxx/processor/intel/arch32/arch.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <stdexcept>
 
