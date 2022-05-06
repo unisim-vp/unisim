@@ -179,7 +179,7 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
 {
   uint32_t zaddr;
   if (auto z = addr.Eval( Scanner::AddrEval() ))
-    { Expr dispose(z); zaddr = z->Get( uint32_t() ); }
+    { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*z).value; }
   else
     throw "WTF";
   addrs.insert(zaddr);

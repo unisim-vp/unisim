@@ -123,16 +123,20 @@ namespace Mips
         auto valtype = node->GetType();
         if (valtype->encoding == valtype->UNSIGNED or valtype->encoding == valtype->SIGNED)
           {
-            if (valtype->GetBitSize() == 1) {
-              res.setBoolResultFromConstant(node->Get( bool() ));
-              return;
-            }
-            uint64_t val = node->Get( uint64_t() );
-            res.setMultiBitResultFromConstant(&val, valtype->GetBitSize(), valtype->encoding == valtype->SIGNED);
+            unsigned bitsize = valtype->GetBitSize();
+            if (bitsize > 64) { struct Ouch {}; throw Ouch(); }
+            uint64_t val = node->GetBits(0);
+            res.setMultiBitResultFromConstant(&val, bitsize, valtype->encoding == valtype->SIGNED);
             return;
           }
+        else if (valtype->encoding == valtype->BOOL)
+          {
+            res.setBoolResultFromConstant(dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*node).value);
+            return;
+          }
+
         typedef long double float_container;
-        res.setMultiFloatResultFromConstant(node->Get(float_container()), int(valtype->GetBitSize()));
+        res.setMultiFloatResultFromConstant(node->GetFloat(float_container()), int(valtype->GetBitSize()));
         return;
       }
     else if (auto node = expr->AsOpNode())

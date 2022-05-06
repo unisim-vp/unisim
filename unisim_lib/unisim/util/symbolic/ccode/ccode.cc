@@ -274,31 +274,34 @@ namespace ccode {
         switch (tp->encoding)
           {
           default: break;
-          case ValueType::BOOL: srcmgr << (node->Get( int() ) ? "true" : "false"); return srcmgr;
+          case ValueType::BOOL:
+            srcmgr << (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*node).value ? "true" : "false");
+            return srcmgr;
           case ValueType::UNSIGNED:
             switch (tp->GetBitSize())
               {
               default: break;
-              case 8:  srcmgr << hex( node->Get( uint8_t() ) );  return srcmgr;
-              case 16: srcmgr << hex( node->Get( uint16_t() ) ); return srcmgr;
-              case 32: srcmgr << hex( node->Get( uint32_t() ) ); return srcmgr;
-              case 64: srcmgr << hex( node->Get( uint64_t() ) ); return srcmgr;
+              case 8:  case 16: case 32: case 64:
+                srcmgr << hex( node->GetBits(0) );
+                return srcmgr;
               } break;
           case ValueType::SIGNED:
             switch (tp->GetBitSize())
               {
               default: break;
-              case 8:   srcmgr << dec( node->Get( int8_t() ) );  return srcmgr;
-              case 16:  srcmgr << dec( node->Get( int16_t() ) ); return srcmgr;
-              case 32:  srcmgr << dec( node->Get( int32_t() ) ); return srcmgr;
-              case 64:  srcmgr << dec( node->Get( int64_t() ) ); return srcmgr;
+              case 8:  case 16: case 32: case 64:
+                srcmgr << dec( int64_t(node->GetBits(0)) );
+                return srcmgr;
               } break;
           case ValueType::FLOAT:
             switch (tp->GetBitSize())
               {
               default: break;
-              case 32:
-              case 64: srcmgr << fpt( node->Get( double() ) ); return srcmgr;
+              case 32: case 64: case 80:
+                {
+                  typedef long double float_container;
+                  srcmgr << fpt( node->GetFloat( float_container() ) ); return srcmgr;
+                }
               } break;
           }
         throw std::logic_error("can't encode type");

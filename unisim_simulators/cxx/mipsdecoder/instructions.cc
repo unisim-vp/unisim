@@ -103,7 +103,7 @@ namespace Mips
                 unisim::util::symbolic::Expr mt(branch.dest);
                 if (auto addr = mt.ConstSimplify())
                   {
-                    uint32_t destination = addr->Get( uint32_t() ), origin = operation->GetAddr();
+                    uint32_t destination = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*addr).value, origin = operation->GetAddr();
                     if (destination > origin)
                       family.setForwardJump();
                     else
@@ -142,7 +142,7 @@ namespace Mips
         {
           if (auto cnb = branch.dest->AsConstNode())
             {
-              addresses.insert(cnb->Get(uint32_t()));
+              addresses.insert(dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*cnb).value);
             }
           else
             {
@@ -156,7 +156,7 @@ namespace Mips
           assert(branch.dest.good());
           auto cnb = branch.dest->AsConstNode();
           assert(cnb);
-          uint64_t elseAddress = cnb->Get(uint32_t());
+          uint64_t elseAddress = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*cnb).value;
           uint64_t thenAddress = operation->GetAddr() + 4;
 
           Interpreter::ContractComputationResult addr(mem, def);
@@ -214,9 +214,9 @@ namespace Mips
                 for (unsigned alt = 0; alt < 2; ++alt)
                   {
                     auto const& op = comp->GetSub(alt);
-                    if (auto z = op->AsConstNode())
+                    if (auto z = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const*>(op.node))
                       {
-                        if (z->Get(uint32_t()) != 0) throw Ouch(); /* in mips comparisons, constant is always zero */
+                        if (z->value != 0) throw Ouch(); /* in mips comparisons, constant is always zero */
                         regs[alt] = 0;
                       }
                     else if (Interpreter::RegRead const* reg = dynamic_cast<Interpreter::RegRead const*>( op.node ))
@@ -382,7 +382,7 @@ namespace Mips
                 }
               }
               else {
-                uint64_t address = cnb->Get(uint32_t());
+                uint64_t address = dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnb).value;
                 iteration.addTarget(&address, 1);
               }
             }
@@ -461,7 +461,7 @@ namespace Mips
           assert(branch.dest.good());
           auto cnb = branch.dest->AsConstNode();
           assert(cnb);
-          uint64_t elseAddress = cnb->Get(uint32_t());
+          uint64_t elseAddress = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*cnb).value;
           uint64_t thenAddress = operation->GetAddr() + 4;
           // iteration.getCurrentInstruction(&thenAddress, 1);
           // thenAddress += 4;

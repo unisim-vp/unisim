@@ -372,7 +372,7 @@ struct Checker
         
         uint32_t value;
         if (auto v = relval.Eval(Scanner::RelocEval(&ws[data_index(1)], tif, uintptr_t(ws))))
-          { Expr dispose(v); value = v->Get( uint32_t() ); }
+          { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*v).value; }
         else
           throw "WTF";
 

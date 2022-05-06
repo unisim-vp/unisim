@@ -199,10 +199,15 @@ namespace sav {
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
       if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
         {
-          // return 0; /* XXX: temporarily considering all constants equivalent */
-          uint64_t av = an->Get(uint64_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint64_t() );
-          if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
-            return delta;
+          int abits = 0, bbits = 0;
+          for (unsigned idx = 0, end = (an->GetType()->GetBitSize()+63)/64; idx < end; ++idx)
+            {
+              uint64_t av = an->GetBits( idx ), bv = dynamic_cast<ConstNodeBase const&>(*b.node).GetBits( idx );
+              abits += __builtin_popcountll(av);
+              bbits += __builtin_popcountll(bv);
+            }
+          if (int delta = abits - bbits)
+            return  delta;
         }
       else if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
         {
@@ -212,7 +217,7 @@ namespace sav {
         }
       else if (int delta = a.node->cmp( *b.node ))
         return delta;
-
+      
       /* Compare sub operands recursively */
       unsigned subcount = a.node->SubCount();
       if (int delta = int(subcount) - int(b.node->SubCount()))

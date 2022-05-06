@@ -153,7 +153,7 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, unsigned size, b
   aligned &= isaligned;
   uint32_t zaddr;
   if (auto z = addr.Eval( Scanner::AddrEval() ))
-    { Expr dispose(z); zaddr = z->Get( uint32_t() ); }
+    { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*z).value; }
   else
     throw "WTF";
 
