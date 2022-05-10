@@ -36,10 +36,11 @@
 #define __ARM64VP_DEBUGGER_HH__
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-//#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <iosfwd>
 #include <inttypes.h>
 
-struct Arch;
+struct AArch64;
 
 struct Debugger
 {
@@ -52,14 +53,14 @@ struct Debugger
   };
   
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
+  //typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
-  //  typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
   
   DebugHub debug_hub;
-  //  GDBServer gdb_server;
+  //GDBServer gdb_server;
   InlineDebugger inline_debugger;
 
-  Debugger(Arch&, char const*);
+  Debugger(AArch64&, std::istream&);
   ~Debugger();
 };
 

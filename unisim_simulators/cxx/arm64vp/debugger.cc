@@ -51,49 +51,54 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>
 
-Debugger::Debugger(Arch& arch, char const* elf)
+Debugger::Debugger(AArch64& arch, std::istream& sink)
   : debug_hub("debug_hub", 0)
+  //, gdb_server("gdb-server", 0)
   , inline_debugger("inline_debugger", 0)
-    //  , gdb_server("gdb-server",0)
 {
-  // Debugger <-> ARCH connections
-  // TODO: arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
-  // TODO: arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
-  // TODO: arch.memory_access_reporting_import                  >> *debug_hub.memory_access_reporting_export[0];
-  // *debug_hub.disasm_import[0]                          >> arch.disasm_export;
-  // *debug_hub.memory_import[0]                          >> arch.memory_export;
-  // *debug_hub.registers_import[0]                       >> arch.registers_export;
+  // DebHub <-> ARCH connections
+  // arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
+  // arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
+  // arch.memory_access_reporting_import                  >> *debug_hub.memory_access_reporting_export[0];
+  // *debug_hub.disasm_import                         [0] >> arch.disasm_export;
+  // *debug_hub.memory_import                         [0] >> arch.memory_export;
+  // *debug_hub.registers_import                      [0] >> arch.registers_export;
   // *debug_hub.memory_access_reporting_control_import[0] >> arch.memory_access_reporting_control_export;
   
-  // Debug_Hub <-> Loader connections
+  // DebugHub <-> Loader connections
   // TODO: debug_hub.blob_import                                >> linux_os.blob_export;
+
+  // unsigned front_end = 0;
   
-  // inline-debug_hub <-> debug_hub connections
-  *debug_hub.debug_event_listener_import[0]            >> inline_debugger.debug_event_listener_export;
-  *debug_hub.debug_yielding_import[0]                  >> inline_debugger.debug_yielding_export;
-  inline_debugger.debug_yielding_request_import        >> *debug_hub.debug_yielding_request_export[0];
-  inline_debugger.debug_event_trigger_import           >> *debug_hub.debug_event_trigger_export[0];
-  inline_debugger.disasm_import                        >> *debug_hub.disasm_export[0];
-  inline_debugger.memory_import                        >> *debug_hub.memory_export[0];
-  inline_debugger.registers_import                     >> *debug_hub.registers_export[0];
-  inline_debugger.stmt_lookup_import                   >> *debug_hub.stmt_lookup_export[0];
-  inline_debugger.symbol_table_lookup_import           >> *debug_hub.symbol_table_lookup_export[0];
-  inline_debugger.backtrace_import                     >> *debug_hub.backtrace_export[0];
-  inline_debugger.debug_info_loading_import            >> *debug_hub.debug_info_loading_export[0];
-  inline_debugger.data_object_lookup_import            >> *debug_hub.data_object_lookup_export[0];
-  inline_debugger.subprogram_lookup_import             >> *debug_hub.subprogram_lookup_export[0];
+  // inline-debugger <-> DebugHub connections
+  // *debug_hub.debug_event_listener_import[front_end]    >> inline_debugger.debug_event_listener_export;
+  // *debug_hub.debug_yielding_import      [front_end]    >> inline_debugger.debug_yielding_export;
+  // inline_debugger.debug_yielding_request_import        >> *debug_hub.debug_yielding_request_export[front_end];
+  // inline_debugger.debug_event_trigger_import           >> *debug_hub.debug_event_trigger_export   [front_end];
+  // inline_debugger.disasm_import                        >> *debug_hub.disasm_export                [front_end];
+  // inline_debugger.memory_import                        >> *debug_hub.memory_export                [front_end];
+  // inline_debugger.registers_import                     >> *debug_hub.registers_export             [front_end];
+  // inline_debugger.stmt_lookup_import                   >> *debug_hub.stmt_lookup_export           [front_end];
+  // inline_debugger.symbol_table_lookup_import           >> *debug_hub.symbol_table_lookup_export   [front_end];
+  // inline_debugger.backtrace_import                     >> *debug_hub.backtrace_export             [front_end];
+  // inline_debugger.debug_info_loading_import            >> *debug_hub.debug_info_loading_export    [front_end];
+  // inline_debugger.data_object_lookup_import            >> *debug_hub.data_object_lookup_export    [front_end];
+  // inline_debugger.subprogram_lookup_import             >> *debug_hub.subprogram_lookup_export     [front_end];
+  // inline_debugger.stack_unwinding_import               >> *debugger->stack_unwinding_export       [front_end];
+  // front_end += 1;
 
-  // // gdb-server <. debugger connections
-  // *debug_hub.debug_event_listener_import[0]            >> gdb_server.debug_event_listener_export;
-  // *debug_hub.debug_yielding_import[0]                  >> gdb_server.debug_yielding_export;
-  // gdb_server.debug_yielding_request_import             >> *debug_hub.debug_yielding_request_export[0];
-  // gdb_server.debug_selecting_import                    >> *debug_hub.debug_selecting_export[0];
-  // gdb_server.debug_event_trigger_import                >> *debug_hub.debug_event_trigger_export[0];
-  // gdb_server.memory_import                             >> *debug_hub.memory_export[0];
-  // gdb_server.registers_import                          >> *debug_hub.registers_export[0];
-
-  debug_hub["parse-dwarf"] = false;
+  // GdbServer <-> DebugHub connections
+  // *debug_hub.debug_event_listener_import[front_end] >> gdb_server.debug_event_listener_export;
+  // *debug_hub.debug_yielding_import      [front_end] >> gdb_server.debug_yielding_export;
+  // gdb_server.debug_yielding_request_import          >> *debug_hub.debug_yielding_request_export[front_end];
+  // gdb_server.debug_selecting_import                 >> *debug_hub.debug_selecting_export       [front_end];
+  // gdb_server.debug_event_trigger_import             >> *debug_hub.debug_event_trigger_export   [front_end];
+  // gdb_server.memory_import                          >> *debug_hub.memory_export                [front_end];
+  // gdb_server.registers_import                       >> *debug_hub.registers_export             [front_end];
   // gdb_server["verbose"] = true;
+  // front_end += 1;
+  
+  // debug_hub["parse-dwarf"] = false;
 }
 
 Debugger::~Debugger()

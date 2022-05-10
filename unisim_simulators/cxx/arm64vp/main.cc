@@ -33,6 +33,7 @@
  */
 
 #include "architecture.hh"
+#include "debugger.hh"
 #include <unisim/kernel/logger/console/console_printer.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
@@ -324,6 +325,14 @@ main(int argc, char *argv[])
   // arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
+  // std::unique_ptr<Debugger> dbg;
+  // {
+  //   // if a vmlinux file is given, start the debugger
+  //   std::ifstream linux_elf ("linux.elf");
+  //   if (linux_elf)
+  //     dbg = std::make_unique<Debugger>( arch, linux_elf );
+  // }
+  
   switch (simulator.Setup())
     {
     case simulator.ST_ERROR:         return 1;
