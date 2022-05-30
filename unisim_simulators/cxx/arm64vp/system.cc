@@ -197,6 +197,21 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       }
 
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b100 ):
+      {
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "sev\t; Send Event"; } 
+        } x; return &x;
+      }
+
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b101 ):
+      {
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "sevl\t; Send Event Local"; }
+          void Write(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, AArch64& cpu, U64 v) const override { BaseSysReg::Write(a,b,c,d,e,cpu,v); }
+        } x; return &x;
+      }
+
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
         static struct : public WOOpSysReg {

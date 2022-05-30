@@ -5872,20 +5872,6 @@ sdiv_xxx.execute = {
  * end of SDIV
  *******************************************************************/
 
-op sev( 0b11010101000000110010000010011111[32] );
-sev.var format : {char const*} = {"base,2949"};
-
-sev.disasm = {
-  sink << "sev";
-};
-
-op sevl( 0b11010101000000110010000010111111[32] );
-sevl.var format : {char const*} = {"base,2950"};
-
-sevl.disasm = {
-  sink << "sevl";
-};
-
 op smaddl_xw( 0b10011011001[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
 smaddl_xw.var format : {char const*} = {"base,235"};
 

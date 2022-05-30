@@ -308,7 +308,7 @@ struct StreamSpy
 int
 main(int argc, char *argv[])
 {
-  char const* disk_filename = "rootfs.ext4";
+  char const* disk_filename = "root.fs";
 
   unisim::kernel::Simulator simulator(argc, argv, &simdefault);
   unisim::kernel::logger::console::Printer printer;
