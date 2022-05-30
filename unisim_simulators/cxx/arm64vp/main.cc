@@ -316,7 +316,7 @@ main(int argc, char *argv[])
   // unisim::service::web_terminal::WebTerminal web_terminal("web-terminal");
   unisim::service::netstreamer::NetStreamer netstreamer("netstreamer");
 
-  AArch64 arch;
+  AArch64 arch("arm64vp");
 
   StreamSpy stream_spy("stream-spy", 0, arch);
 

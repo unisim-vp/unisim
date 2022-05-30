@@ -48,8 +48,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-AArch64::AArch64()
-  : regmap()
+AArch64::AArch64(char const* name)
+  : unisim::kernel::Object(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
+  , regmap()
   , devices()
   , gic()
   , uart("uart", 0)
@@ -808,9 +817,9 @@ AArch64::PState::AsSPSR() const
 //   // if (seen.insert(current_insn_addr).second)
 //   //   uninitialized_error("condition");
 //   // return possible;
- 
+
 //   struct ShouldNotHappen {};
-  
+
 //   if (   current_insn_addr == 0xffffffc0105c70f8
 //     //or current_insn_addr == 0xffffffc0109fb270
 //          )
@@ -1197,7 +1206,7 @@ AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 
 namespace {
   //  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
-  
+
   struct VIOA : public VIOAccess
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
@@ -1212,7 +1221,7 @@ namespace {
         { if (ubuf[idx]) raise( Bad() ); res = (res << 8) | dbuf[idx]; }
       return res;
     }
-    
+
     void write(uint64_t addr, unsigned size, uint64_t value) const override
     {
       struct Bad {};
@@ -1223,7 +1232,7 @@ namespace {
       if (core.get_page(addr).write(addr,&dbuf[0],&ubuf[0],size) != size)
         throw Bad {};
     }
-  
+
     struct Iterator
     {
       Iterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
@@ -1268,7 +1277,7 @@ ArchDisk::uread(uint8_t* udat, uint64_t size)
   for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
     {
       psize = std::min(Page::size_from(pos), left);
-      
+
       if (itr == upages.end() or itr->base > pos)
         std::fill(&udat[0], &udat[psize], 0);
       else
@@ -1298,7 +1307,7 @@ ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
 {
   uint64_t pos = tell();
   auto itr = upages.lower_bound(Page::index(pos));
-  
+
   // struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
   for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
     {
@@ -1776,7 +1785,7 @@ AArch64::RNDR()
   uint64_t rval =       (random = random * 22695477 + 1);
   rval = (rval << 32) | (random = random * 22695477 + 1);
   nzcv = U8(0);
-  
+
   return U64(rval);
 }
 
@@ -1788,11 +1797,6 @@ AArch64::run( uint64_t suspend_at )
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
-      /* Instruction boundary next_insn_addr becomes current_insn_addr */
-      uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
-
-      //if (insn_addr == halt_on_addr) { Stop(0); return; }
-
       try
         {
           /* Handle asynchronous events */
@@ -1803,10 +1807,34 @@ AArch64::run( uint64_t suspend_at )
               (this->*method)();
             }
 
+          /* Instruction boundary next_insn_addr becomes current_insn_addr */
+          uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+
+          //  if (insn_addr == halt_on_addr) { Stop(0); return; }
+
+          // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+          //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+
+          if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+            memory_access_reporting_import->ReportFetchInstruction(insn_addr);
+
+          if (debug_yielding_import)
+            debug_yielding_import->DebugYield();
+
           if (insn_counter == suspend_at)
             throw Suspend();
-          
-          Operation* op = fetch_and_decode(insn_addr);
+
+          // Instruction Fetch
+          MMU::TLB::Entry tlb_entry(insn_addr);
+          translate_address(tlb_entry, pstate.GetEL(), AArch64::mem_acc_type::exec);
+
+          uint32_t insn = 0;
+          for (uint8_t *beg = ipb.access(*this, tlb_entry.pa), *itr = &beg[4]; --itr >= beg;)
+            insn = insn << 8 | *itr;
+
+          // Instruction Decode
+          Operation* op = decode(tlb_entry.pa, insn);
+          last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
 
           this->next_insn_addr += 4;
 
@@ -1816,11 +1844,11 @@ AArch64::run( uint64_t suspend_at )
               // disasm = true;
             }
 
-          if (current_insn_addr == 0x7fba767d38)
-            {
-              std::cerr << "Buggy loop entered at instruction #" << std::dec << insn_counter << " and tick #"  << insn_timer << "\n";
-              force_throw();
-            }
+          // if (current_insn_addr == 0x7fba767d38)
+          //   {
+          //     std::cerr << "Buggy loop entered at instruction #" << std::dec << insn_counter << " and tick #"  << insn_timer << "\n";
+          //     force_throw();
+          //   }
 
           if (terminate) { force_throw(); }
 
@@ -1851,7 +1879,7 @@ AArch64::run( uint64_t suspend_at )
           //   if (unlikely(trap_reporting_import))
           //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
         }
-      
+
       catch (Suspend const&)
         {
           std::cerr << "Suspend...\n";
@@ -2298,7 +2326,7 @@ AArch64::sync(SnapShot& snapshot)
         uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
         snapshot.sync(date);
         if (not date) break;
-      
+
         if (snapshot.is_load())
           {
             int mid; snapshot.sync(mid);
@@ -2339,7 +2367,7 @@ AArch64::sync(SnapShot& snapshot)
   snapshot.sync(excmon.valid);
 
   mmu.sync(snapshot);
-    
+
   for (unsigned reg = 0; reg < 32; ++reg)
     tvsync(snapshot, gpr[reg]);
 
@@ -2359,9 +2387,9 @@ AArch64::sync(SnapShot& snapshot)
     tvsync(snapshot, *reg);
   snapshot.sync(el1.FAR);
   snapshot.sync(el1.SCTLR);
-  
+
   pstate.sync(snapshot);
-  
+
   tvsync(snapshot, nzcv);
   for (auto reg : {&current_insn_addr, &next_insn_addr, &insn_counter, &insn_timer})
     snapshot.sync(*reg);
@@ -2379,3 +2407,61 @@ AArch64::sync(SnapShot& snapshot)
 //   return sink;
 // }
 
+void
+AArch64::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
+{
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: throw 0;
+  }
+}
+
+/** Disasm an instruction address.
+ * Returns a string with the disassembling of the instruction found
+ *   at address addr.
+ *
+ * @param addr the address of the instruction to disassemble
+ * @param next_addr the address following the requested instruction
+ *
+ * @return the disassembling of the requested instruction address
+ */
+std::string
+AArch64::Disasm(uint64_t addr, uint64_t& next_addr)
+{
+  std::stringstream buffer;
+  MMU::TLB::Entry tlb_entry(addr);
+
+  try { translate_address(tlb_entry, 1, AArch64::mem_acc_type::debug); }
+  catch (DataAbort const& x)
+    {
+      buffer << "Could not read from memory";
+      return buffer.str();
+    }
+
+  unsigned const insn_size = 4;
+  uint8_t bytes[insn_size], ubuf[insn_size];
+  if (get_page(tlb_entry.pa).read(tlb_entry.pa, &bytes[0], &ubuf[0], insn_size) != insn_size)
+    {
+      buffer << "Could not read from memory";
+      return buffer.str();
+    }
+
+  uint32_t insn = 0;
+  for (uint8_t *beg = &bytes[0], *itr = &beg[insn_size]; --itr >= beg;)
+    insn = insn << 8 | *itr;
+
+  Operation* op = decode(tlb_entry.pa, insn);
+
+  buffer << std::hex << std::setfill('0') << std::setw(8) << op->GetEncoding() << std::dec << " ";
+  DisasmState ds;
+  op->disasm(ds, buffer);
+
+  next_addr = addr + insn_size;
+
+  if (not std::all_of( &ubuf[0], &ubuf[insn_size], [](unsigned char const byte) { return byte == 0; } ))
+    buffer << " /* undefined bits in instruction */";
+
+  return buffer.str();
+}

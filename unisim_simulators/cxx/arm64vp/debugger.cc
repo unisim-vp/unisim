@@ -57,13 +57,13 @@ Debugger::Debugger(AArch64& arch, std::istream& sink)
   , inline_debugger("inline_debugger", 0)
 {
   // DebHub <-> ARCH connections
-  // arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
-  // arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
-  // arch.memory_access_reporting_import                  >> *debug_hub.memory_access_reporting_export[0];
-  // *debug_hub.disasm_import                         [0] >> arch.disasm_export;
-  // *debug_hub.memory_import                         [0] >> arch.memory_export;
-  // *debug_hub.registers_import                      [0] >> arch.registers_export;
-  // *debug_hub.memory_access_reporting_control_import[0] >> arch.memory_access_reporting_control_export;
+  arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
+  arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
+  arch.memory_access_reporting_import                  >> *debug_hub.memory_access_reporting_export[0];
+  debug_hub.disasm_import                         [0]  -> Bind(arch);
+  debug_hub.memory_import                         [0]  -> Bind(arch);
+  debug_hub.registers_import                      [0]  -> Bind(arch);
+  debug_hub.memory_access_reporting_control_import[0]  -> Bind(arch);
   
   // DebugHub <-> Loader connections
   // TODO: debug_hub.blob_import                                >> linux_os.blob_export;

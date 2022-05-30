@@ -96,17 +96,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
     {
-      std::cerr << std::hex << cpu.current_insn_addr << ": System register undefined write in `" << std::dec;
+      std::cerr << "error : undefined system register write in:\n" << std::hex << cpu.current_insn_addr << std::dec << ":\t";
       DisasmWrite(op0, op1, crn, crm, op2, 0b11111, std::cerr);
-      std::cerr << "`.\n";
+      std::cerr << "\n";
       cpu.UndefinedInstruction();
     }
 
     U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
     {
-      std::cerr << std::hex << cpu.current_insn_addr << ": System register undefined read in `" << std::dec;
+      std::cerr << "error : undefined system register read in:\n" << std::hex << cpu.current_insn_addr << std::dec << ":\t";
       DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr);
-      std::cerr << "`.\n";
+      std::cerr << "\n";
       cpu.UndefinedInstruction();
       return U64();
     }
