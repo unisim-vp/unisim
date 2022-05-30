@@ -51,10 +51,12 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>
 
-Debugger::Debugger(AArch64& arch, std::istream& sink)
-  : debug_hub("debug_hub", 0)
-  //, gdb_server("gdb-server", 0)
-  , inline_debugger("inline_debugger", 0)
+Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
+  : unisim::kernel::Object(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>(name, 0)
+  , debug_hub("debug-hub", this)
+  //, gdb_server("gdb-server", this)
+  , inline_debugger("inline_debugger", this)
 {
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
@@ -65,28 +67,25 @@ Debugger::Debugger(AArch64& arch, std::istream& sink)
   debug_hub.registers_import                      [0]  -> Bind(arch);
   debug_hub.memory_access_reporting_control_import[0]  -> Bind(arch);
   
-  // DebugHub <-> Loader connections
-  // TODO: debug_hub.blob_import                                >> linux_os.blob_export;
-
-  //  unsigned front_end = 0;
+  unsigned front_end = 0;
   // inline-debugger <-> DebugHub connections
-  // {
-  //   unisgned i = front_end++;
-  //   *debug_hub.debug_event_listener_import[i]     >> inline_debugger.debug_event_listener_export;
-  //   *debug_hub.debug_yielding_import      [i]     >> inline_debugger.debug_yielding_export;
-  //   inline_debugger.debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
-  //   inline_debugger.debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
-  //   inline_debugger.disasm_import                 >> *debug_hub.disasm_export                [i];
-  //   inline_debugger.memory_import                 >> *debug_hub.memory_export                [i];
-  //   inline_debugger.registers_import              >> *debug_hub.registers_export             [i];
-  //   inline_debugger.stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
-  //   inline_debugger.symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
-  //   inline_debugger.backtrace_import              >> *debug_hub.backtrace_export             [i];
-  //   inline_debugger.debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
-  //   inline_debugger.data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
-  //   inline_debugger.subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
-  //   inline_debugger.stack_unwinding_import        >> *debugger->stack_unwinding_export       [i];
-  // }
+  {
+    unsigned i = front_end++;
+    *debug_hub.debug_event_listener_import[i]     >> inline_debugger.debug_event_listener_export;
+    *debug_hub.debug_yielding_import      [i]     >> inline_debugger.debug_yielding_export;
+    inline_debugger.debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
+    inline_debugger.debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
+    inline_debugger.disasm_import                 >> *debug_hub.disasm_export                [i];
+    inline_debugger.memory_import                 >> *debug_hub.memory_export                [i];
+    inline_debugger.registers_import              >> *debug_hub.registers_export             [i];
+    inline_debugger.stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
+    inline_debugger.symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
+    inline_debugger.backtrace_import              >> *debug_hub.backtrace_export             [i];
+    inline_debugger.debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
+    inline_debugger.data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
+    inline_debugger.subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
+    inline_debugger.stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
+  }
 
   // GdbServer <-> DebugHub connections
   // {
@@ -102,9 +101,37 @@ Debugger::Debugger(AArch64& arch, std::istream& sink)
   //   gdb_server["verbose"] = true;
   // }
   
-  // debug_hub["parse-dwarf"] = false;
+  // DebugHub <-> Loader connections
+  bool const verbose = false, debug_dwarf = false, parse_dwarf = false;
+  debug_hub["parse-dwarf"] = parse_dwarf;
+  unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader loader;
+
+  loader.SetDebugInfoStream(std::cerr);
+  loader.SetDebugWarningStream(std::cerr);
+  loader.SetDebugErrorStream(std::cerr);
+  // loader.SetRegistersInterface(0, 0);
+  // loader.SetMemoryInterface(0, 0);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
+  // loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
+  // loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
+  loader.SetFileName("-");
+
+  
+  if (not loader.Load(sink) or not (blob = loader.GetBlob()))
+    {
+      std::cerr << "Could not create blob from given file." << std::endl;
+      struct Bad {}; throw Bad ();
+    }
+
+  blob->Catch();
+  
+  debug_hub.blob_import . Bind( *this );
 }
 
 Debugger::~Debugger()
 {
+  if (blob)
+    blob->Release();
 }
