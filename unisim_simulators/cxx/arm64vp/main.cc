@@ -224,6 +224,10 @@ void simdefault(unisim::kernel::Simulator* sim)
   sim->SetVariable("netstreamer.filter-null-character", true);
   sim->SetVariable("netstreamer.verbose", false);
 
+  sim->SetVariable("debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
+  sim->SetVariable("debugger.debug-hub.parse-dwarf", false);
+  sim->SetVariable("debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml");
+
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
 

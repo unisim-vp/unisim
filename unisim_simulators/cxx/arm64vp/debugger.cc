@@ -103,7 +103,6 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
   
   // DebugHub <-> Loader connections
   bool const verbose = false, debug_dwarf = false, parse_dwarf = false;
-  debug_hub["parse-dwarf"] = parse_dwarf;
   unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader loader;
 
   loader.SetDebugInfoStream(std::cerr);
