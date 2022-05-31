@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020,
+ *  Copyright (c) 2020-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -227,6 +227,8 @@ void simdefault(unisim::kernel::Simulator* sim)
   sim->SetVariable("debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
   sim->SetVariable("debugger.debug-hub.parse-dwarf", false);
   sim->SetVariable("debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.debug-hub.architecture[0]", "aarch64");
+
 
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
@@ -329,13 +331,13 @@ main(int argc, char *argv[])
   // arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
-  std::unique_ptr<Debugger> dbg;
-  {
-    // if a vmlinux file is given, start the debugger
-    std::ifstream linux_elf ("linux.elf");
-    if (linux_elf)
-      dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
-  }
+  // std::unique_ptr<Debugger> dbg;
+  // {
+  //   // if a vmlinux file is given, start the debugger
+  //   std::ifstream linux_elf ("linux.elf");
+  //   if (linux_elf)
+  //     dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
+  // }
   
   switch (simulator.Setup())
     {
