@@ -331,6 +331,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public DCSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "cvac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Coherency"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b011,0b0111,0b1011,0b001):
@@ -339,10 +341,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "cvau"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            cpu.untaint(AddrTV(), addr);
-            // No caches, so normally nothing to do...
-          }
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b000,0b0111,0b0110,0b010):
@@ -358,10 +357,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "ivac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            cpu.untaint(AddrTV(), addr);
-            // No caches, so normally nothing to do...
-          }
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
 
@@ -371,10 +367,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "civac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean and Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            cpu.untaint(AddrTV(), addr);
-            /* No caches, so normally nothing to do... */
-          }
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
 

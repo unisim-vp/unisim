@@ -1816,14 +1816,14 @@ AArch64::run( uint64_t suspend_at )
             throw Suspend();
 
           /*** Handle debugging interface ***/
-          if (debug_yielding_import)
-            debug_yielding_import->DebugYield();
+          if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+            memory_access_reporting_import->ReportFetchInstruction(insn_addr);
 
           // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
           //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
 
-          if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
-            memory_access_reporting_import->ReportFetchInstruction(insn_addr);
+          if (debug_yielding_import)
+            debug_yielding_import->DebugYield();
 
           /*** Fetch instruction ***/
           MMU::TLB::Entry tlb_entry(insn_addr);

@@ -60,7 +60,7 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
 {
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
-  arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
+  //arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
   arch.memory_access_reporting_import                  >> *debug_hub.memory_access_reporting_export[0];
   debug_hub.disasm_import                         [0]  -> Bind(arch);
   debug_hub.memory_import                         [0]  -> Bind(arch);
