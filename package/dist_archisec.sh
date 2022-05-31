@@ -281,6 +281,9 @@ echo -n > "${DEST_DIR}/dune"
 UTIL_INCLUDES=$(includes ${DEST_DIR} unisim/util)
 
 cat <<EOF >> "${DEST_DIR}/dune"
+(env
+  (_ (c_flags :standard -g0) (cxx_flags :standard -g0)))
+
 (subdir
  unisim/util
  (include_subdirs unqualified)

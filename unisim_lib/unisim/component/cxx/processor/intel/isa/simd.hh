@@ -779,7 +779,7 @@ template <class ARCH> struct DC<ARCH,MOVFPC> { Operation<ARCH>* get( InputCode<A
 template <unsigned OPSIZE>
 Operation<ARCH>* newMovFPC( InputCode<ARCH> const& ic, bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn, unsigned lohi )
 {
-  unsigned vn = 0;
+  unsigned vn = gn;
   if (not ic.vex())     return newMovFPC<SSE,OPSIZE>( load, opbase, rm, vn, gn, lohi );
   if ((vn = ic.vreg()) and not load) return 0;
   if (ic.vlen() == 128) return newMovFPC<XMM,OPSIZE>( load, opbase, rm, vn, gn, lohi );
