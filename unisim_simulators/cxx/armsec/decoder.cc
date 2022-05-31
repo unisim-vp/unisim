@@ -336,10 +336,10 @@ public:
         if (unisim::util::symbolic::ConstNodeBase const* ntc = nt.ConstSimplify())
           {
             if (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*ntc).value ^ cpsr.GetT())
-              path->add_sink( newRegWrite( RegID("t"), nt ) );
+              path->add_sink( newRegWrite( Flag("t"), nt ) );
           }
         else
-          path->add_sink( newRegWrite( RegID("t"), nt ) );
+          path->add_sink( newRegWrite( Flag("t"), nt ) );
       }
 
     if (spsr.expr != ref.spsr.expr)
