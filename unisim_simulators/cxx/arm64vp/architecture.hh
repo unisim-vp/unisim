@@ -610,13 +610,14 @@ struct AArch64
   //=                            Exceptions                             =
   //=====================================================================
 
-  struct Abort
+  struct Exception
   {
-    virtual ~Abort() {}
+    virtual ~Exception() {}
     virtual void proceed( AArch64& cpu ) const {}
+    virtual char const* nature() const = 0;
   };
 
-  struct DataAbort : public Abort
+  struct DataAbort : public Exception
   {
     typedef unisim::component::cxx::processor::arm::DAbort DAbort;
     DataAbort(DAbort _type, uint64_t _va, uint64_t _ipa, mem_acc_type::Code _mat, unsigned _level,
@@ -625,8 +626,15 @@ struct AArch64
         ipavalid(_ipavalid), secondstage(_secondstage), s2fs1walk(_s2fs1walk)
     {}
     virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Data Abort"; }
     unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
     bool ipavalid, secondstage, s2fs1walk;
+  };
+
+  struct PhysicalIRQException : public Exception
+  {
+    virtual void proceed(AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Physical IRQ"; }
   };
 
   /* AArch32 obsolete arguments
@@ -636,7 +644,6 @@ struct AArch64
    * - domain    // Domain number, AArch32 only (UNKNOWN in AArch64)
    * - debugmoe  // Debug method of entry, from AArch32 only (UNKNOWN in AArch64)
    */
-  void TakePhysicalIRQException();
   void TakeException(unsigned target_el, unsigned vect_offset, uint64_t preferred_exception_return);
 
   void ExceptionReturn();

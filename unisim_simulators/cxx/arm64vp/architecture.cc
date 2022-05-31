@@ -786,12 +786,6 @@ AArch64::ExceptionReturn()
   BranchTo(elr, B_ERET);
 }
 
-void
-AArch64::TakePhysicalIRQException()
-{
-  TakeException(1, 0x80, current_insn_addr);
-}
-
 uint32_t
 AArch64::PState::AsSPSR() const
 {
@@ -1752,13 +1746,19 @@ AArch64::has_irqs() const
 }
 
 void
+AArch64::PhysicalIRQException::proceed(AArch64& cpu) const
+{
+  // TakePhysicalIRQException
+  cpu.TakeException(1, 0x80, cpu.current_insn_addr);
+}
+
+void
 AArch64::handle_irqs()
 {
   if (not has_irqs())
     return;
 
-  TakePhysicalIRQException();
-  throw Abort();
+  throw PhysicalIRQException();
 }
 
 void
@@ -1797,9 +1797,14 @@ AArch64::run( uint64_t suspend_at )
       random = random * 22695477 + 1;
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
+      /* Instruction boundary next_insn_addr becomes current_insn_addr */
+      uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+
+      //  if (insn_addr == halt_on_addr) { Stop(0); return; }
+
       try
         {
-          /* Handle asynchronous events */
+          /*** Handle asynchronous events ***/
           while (next_event <= insn_timer)
             {
               event_handler_t method = pop_next_event();
@@ -1807,10 +1812,12 @@ AArch64::run( uint64_t suspend_at )
               (this->*method)();
             }
 
-          /* Instruction boundary next_insn_addr becomes current_insn_addr */
-          uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+          if (insn_counter == suspend_at)
+            throw Suspend();
 
-          //  if (insn_addr == halt_on_addr) { Stop(0); return; }
+          /*** Handle debugging interface ***/
+          if (debug_yielding_import)
+            debug_yielding_import->DebugYield();
 
           // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
           //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
@@ -1818,13 +1825,7 @@ AArch64::run( uint64_t suspend_at )
           if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
             memory_access_reporting_import->ReportFetchInstruction(insn_addr);
 
-          if (debug_yielding_import)
-            debug_yielding_import->DebugYield();
-
-          if (insn_counter == suspend_at)
-            throw Suspend();
-
-          // Instruction Fetch
+          /*** Fetch instruction ***/
           MMU::TLB::Entry tlb_entry(insn_addr);
           translate_address(tlb_entry, pstate.GetEL(), AArch64::mem_acc_type::exec);
 
@@ -1832,7 +1833,7 @@ AArch64::run( uint64_t suspend_at )
           for (uint8_t *beg = ipb.access(*this, tlb_entry.pa), *itr = &beg[4]; --itr >= beg;)
             insn = insn << 8 | *itr;
 
-          // Instruction Decode
+          /*** Decode instruction ***/
           Operation* op = decode(tlb_entry.pa, insn);
           last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
 
@@ -1843,12 +1844,6 @@ AArch64::run( uint64_t suspend_at )
               breakdance();
               // disasm = true;
             }
-
-          // if (current_insn_addr == 0x7fba767d38)
-          //   {
-          //     std::cerr << "Buggy loop entered at instruction #" << std::dec << insn_counter << " and tick #"  << insn_timer << "\n";
-          //     force_throw();
-          //   }
 
           if (terminate) { force_throw(); }
 
@@ -1866,18 +1861,18 @@ AArch64::run( uint64_t suspend_at )
           asm volatile( "arm64_operation_execute:" );
           op->execute( *this );
 
-          // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-          //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
+          if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+            memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 
           insn_counter++; /* Instruction regularly finished */
         }
 
-      catch (Abort const& abort)
+      catch (Exception const& exception)
         {
-          abort.proceed(*this);
-          /* Instruction aborted, proceed to next */
-          //   if (unlikely(trap_reporting_import))
-          //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+          /* Instruction aborted, proceed to next step */
+          if (unlikely(trap_reporting_import))
+            trap_reporting_import->ReportTrap( *this, exception.nature() );
+          exception.proceed(*this);
         }
 
       catch (Suspend const&)
