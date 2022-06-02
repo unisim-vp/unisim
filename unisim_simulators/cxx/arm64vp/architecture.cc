@@ -993,7 +993,7 @@ struct AArch64::Device::Request
     return true;
   }
   template <typename T>
-  bool access( T& reg )
+  bool rw( T& reg )
   {
     struct Undefined {};
     struct _
@@ -1009,8 +1009,9 @@ struct AArch64::Device::Request
     try { return tainted_access ( _ ); } catch(Undefined const&) {}
     return false;
   }
-  template <typename T> bool ro(T  value) { return not write and access(value); }
-  template <typename T> bool wo(T& value) { return     write and access(value); }
+  template <typename T> bool ro(T  value) { return not write and rw(value); }
+  template <typename T> bool wo(T& value) { return     write and rw(value); }
+  bool rd() const { return not write; }
   static void location(std::ostream& sink, uint64_t addr, unsigned size)
   {
     sink << std::hex << addr << std::dec << "[" << size << "]";
@@ -1112,14 +1113,14 @@ AArch64::map_rtc(uint64_t base_addr)
         return req.ro(rtc.get_counter(arch));
       if (req.addr == 0x4) // Match Register, RTCMR
         {
-          if (not req.access(rtc.MR)) return false;
+          if (not req.rw(rtc.MR)) return false;
           if (not req.write) return true;
           rtc.program(arch);
           return true;
         }
       if (req.addr == 0x8) // Load Register, RTCLR
         {
-          if (not req.access(rtc.LR)) return false;
+          if (not req.rw(rtc.LR)) return false;
           if (not req.write) return true;
           rtc.flush_lr(arch);
           rtc.program(arch);
@@ -1129,7 +1130,7 @@ AArch64::map_rtc(uint64_t base_addr)
         {
           uint32_t started = rtc.started;
           if (not req.write) return req.ro(started);
-          if (not req.access(started)) return false;
+          if (not req.rw(started)) return false;
           if (started & rtc.started) { rtc.LR = 0; rtc.flush_lr(arch); }
           rtc.started = started;
           rtc.program(arch);
@@ -1139,7 +1140,7 @@ AArch64::map_rtc(uint64_t base_addr)
         {
           uint32_t masked = rtc.masked;
           if (not req.write) return req.ro(masked);
-          if (not req.access(masked)) return false;
+          if (not req.rw(masked)) return false;
           if (masked and not rtc.masked) arch.handle_rtc();
           rtc.masked = masked;
           return true;
@@ -1156,7 +1157,7 @@ AArch64::map_rtc(uint64_t base_addr)
           /* ARM PrimeCell (R) Real Time Clock (PL031) Revision: r1p3 */
           uint32_t value(0x00041031);
           uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       if ((req.addr & -16) == 0xff0)
@@ -1164,7 +1165,7 @@ AArch64::map_rtc(uint64_t base_addr)
           if (req.write) return error( req.dev, "Cannot write PCellID" );
 
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       return false;
@@ -1404,9 +1405,9 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
         {
           switch (req.addr)
             {
-            case 0x118: return req.ro<uint8_t>(0); // logical blocks per physical block (log)
-            case 0x119: return req.ro<uint8_t>(0); // offset of first aligned logical block
-            case 0x120: return req.access(viodisk.WriteBack);
+            case 0x118: return req.ro<uint8_t>(0); /* ________ logical blocks per physical block (log) */
+            case 0x119: return req.ro<uint8_t>(0); /* ________ offset of first aligned logical block */
+            case 0x120: return req.rw(viodisk.WriteBack); /* _ write back*/
             }
         }
 
@@ -1420,37 +1421,38 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 
       else if (req.size == 4)
         {
+          // convenience method to handle sub register accesses (TODO: host endianness)
+          struct { uint32_t& sub32(uint64_t& reg, unsigned addr) { return (reinterpret_cast<uint32_t*>(&reg))[addr >> 2 & 1]; } } r64;
           uint32_t tmp;
+          
+          
           switch (req.addr)
             {
-            case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
-            case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
-            case 0x08: return req.ro<uint32_t>(2);                       /* Virtio Subsystem Device ID: block device */
-            case 0x0c: return req.ro(viodisk.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
-            case 0x10: return req.ro(viodisk.ClaimedFeatures());         /* features supported by the device */
-            case 0x14: return req.wo(viodisk.DeviceFeaturesSel);         /* Device (host) features word selection. */
-            case 0x20: return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
-            case 0x24: return req.wo(viodisk.DriverFeaturesSel);         /* Activated (guest) features word selection */
-            case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
-            case 0x34: return req.ro(viodisk.QueueNumMax());             /* Maximum virtual queue size */
-            case 0x38: return req.wo(viodisk.rq.size);                   /* Virtual queue size */
-            case 0x44: return req.access(viodisk.rq.ready)               /* Virtual queue ready bit */
-                and (not req.write or viodisk.SetupQueue(vioa));
-            case 0x50: return req.wo(tmp) and viodisk.ReadQueue(vioa);   /* Queue notifier */
-            case 0x60: return req.ro(viodisk.InterruptStatus);           /* Interrupt status */
-            case 0x64: return req.wo(tmp) and viodisk.InterruptAck(tmp); /* Interrupt status */
-            case 0x70: return req.access(viodisk.Status)                 /* Device status */
-                and (not req.write or viodisk.CheckStatus());
-            case 0x80:
-            case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.desc_area))[req.addr >> 2 & 1]);
+            case 0x00:  return req.ro<uint32_t>(0x74726976); /* ________________________________________ Magic Value: 'virt' */
+            case 0x04:  return req.ro<uint32_t>(0x2); /* _______________________________________________ Device version number: Virtio 1 - 1.1 */
+            case 0x08:  return req.ro<uint32_t>(2); /* _________________________________________________ Virtio Subsystem Device ID: block device */
+            case 0x0c:  return req.ro(viodisk.Vendor()); /* ____________________________________________ Virtio Subsystem Vendor ID: 'usvp' */
+            case 0x10:  return req.ro(viodisk.ClaimedFeatures()); /* ___________________________________ features supported by the device */
+            case 0x14:  return req.wo(viodisk.DeviceFeaturesSel); /* ___________________________________ Device (host) features word selection */
+            case 0x20:  return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* ___________________________ features used by the driver  */
+            case 0x24:  return req.wo(viodisk.DriverFeaturesSel); /* ___________________________________ Activated (guest) features word selection */
+            case 0x30:  return req.wo(tmp) and (tmp == 0); /* __________________________________________ Virtual queue index (only 0: rq) */
+            case 0x34:  return req.ro(viodisk.QueueNumMax()); /* _______________________________________ Maximum virtual queue size */
+            case 0x38:  return req.wo(viodisk.rq.size); /* _____________________________________________ Virtual queue size */
+            case 0x44:  return req.rw(viodisk.rq.ready) and (req.rd() or viodisk.SetupQueue(vioa)); /* _ Virtual queue ready bit */
+            case 0x50:  return req.wo(tmp) and viodisk.ReadQueue(vioa); /* _____________________________ Queue notifier */
+            case 0x60:  return req.ro(viodisk.InterruptStatus); /* _____________________________________ Interrupt status */
+            case 0x64:  return req.wo(tmp) and viodisk.InterruptAck(tmp); /* ___________________________ Interrupt acknowledgment */
+            case 0x70:  return req.rw(viodisk.Status) and (req.rd() or viodisk.CheckStatus()); /* ______ Device status */
+            case 0x80: 
+            case 0x84:  return req.wo(r64.sub32(viodisk.rq.desc_area, req.addr)); /* ___________________ Descriptor Area */
             case 0x90:
-            case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.driver_area))[req.addr >> 2 & 1]);
+            case 0x94:  return req.wo(r64.sub32(viodisk.rq.driver_area, req.addr)); /* _________________ Driver Area */
             case 0xa0:
-            case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
-            case 0xfc: return req.ro(viodisk.ConfigGeneration);
-              //            case 0x100: return req.ro(viodisk.Capacity);
+            case 0xa4:  return req.wo(r64.sub32(viodisk.rq.device_area, req.addr)); /* _________________ Device Area */
+            case 0xfc:  return req.ro(viodisk.ConfigGeneration);
             case 0x100:
-            case 0x104: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
+            case 0x104: return req.rw(r64.sub32(viodisk.Capacity, req.addr)); /* _______________________ Disk Capacity */
               // case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
             case 0x10c: return req.ro(viodisk.SegMax());
             case 0x114: return req.ro(viodisk.BlkSize());
@@ -1482,7 +1484,7 @@ AArch64::map_uart(uint64_t base_addr)
 
       if ((req.addr & -4) == 0x0)
         {
-          if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
+          if (req.addr & 3) { uint8_t dummy=0; return req.rw(dummy); }
           U8 chr = U8('\0');
           if (not req.write)                 { uart.rx_pop( arch, chr );  }
           if (not req.tainted_access( chr )) { return false; }
@@ -1494,15 +1496,15 @@ AArch64::map_uart(uint64_t base_addr)
         {
           switch (req.addr)
             {
-            case 0x18: return req.ro(uart.flags());  /* Flag Register */
-            case 0x24: return req.access(uart.IBRD); /* Integer Baud Rate Register */
-            case 0x28: return req.access(uart.FBRD); /* Fractional Baud Rate Register */
-            case 0x2c: return req.access(uart.LCR);  /* Line Control Register */
-            case 0x30: return req.access(uart.CR);   /* Control Register */
-            case 0x34: return req.access(uart.IFLS); /* Interrupt FIFO Level Select Register */
-            case 0x38: return req.access(uart.IMSC); /* Interrupt Mask Set/Clear Register */
-            case 0x3c: return req.ro(uart.RIS);      /* Raw Interrupt Status Register */
-            case 0x40: return req.ro(uart.mis());    /* Masked Interrupt Status Register */
+            case 0x18: return req.ro(uart.flags()); /* _ Flag Register */
+            case 0x24: return req.rw(uart.IBRD); /* ____ Integer Baud Rate Register */
+            case 0x28: return req.rw(uart.FBRD); /* ____ Fractional Baud Rate Register */
+            case 0x2c: return req.rw(uart.LCR); /* _____ Line Control Register */
+            case 0x30: return req.rw(uart.CR); /* ______ Control Register */
+            case 0x34: return req.rw(uart.IFLS); /* ____ Interrupt FIFO Level Select Register */
+            case 0x38: return req.rw(uart.IMSC); /* ____ Interrupt Mask Set/Clear Register */
+            case 0x3c: return req.ro(uart.RIS); /* _____ Raw Interrupt Status Register */
+            case 0x40: return req.ro(uart.mis()); /* ___ Masked Interrupt Status Register */
             }
         }
 
@@ -1510,7 +1512,7 @@ AArch64::map_uart(uint64_t base_addr)
         {
           if (not req.write) return error(req.dev, "Cannot read Interrupt Clear Register" );
           uint16_t icr = 0;
-          if (not req.access(icr)) return false;
+          if (not req.rw(icr)) return false;
           uart.RIS &= ~icr;
           return true;
         }
@@ -1521,7 +1523,7 @@ AArch64::map_uart(uint64_t base_addr)
           /* ARM PrimeCell (R) UART (PL011) Revision: r1p5 */
           uint32_t value(0x00341011);
           uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       if ((req.addr & -16) == 0xff0)
@@ -1529,7 +1531,7 @@ AArch64::map_uart(uint64_t base_addr)
           if (req.write) return error(req.dev, "Cannot write PCellID" );
 
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       return false;
@@ -1577,10 +1579,10 @@ AArch64::map_gic(uint64_t base_addr)
       uint32_t raz_wi_32(0);
 
       if (req.addr == 0x100) /* CPU Interface Control Register */
-        return req.access(arch.gic.C_CTLR);
+        return req.rw(arch.gic.C_CTLR);
 
       if (req.addr == 0x104) /* Interrupt Priority Mask Register */
-        return req.access(arch.gic.C_PMR);
+        return req.rw(arch.gic.C_PMR);
 
       if (req.addr == 0x10c) /* Interrupt Acknowledge Register */
         {
@@ -1614,7 +1616,7 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.addr & 3) return false;
           /* Active Priorities Registers (secure and not secure) */
-          return req.access(raz_wi_32);
+          return req.rw(raz_wi_32);
         }
 
       if (req.addr == 0x1fc) /* Identification Register, GICC_IIDR */
@@ -1630,7 +1632,7 @@ AArch64::map_gic(uint64_t base_addr)
         }
 
       if (req.addr == 0x1000) /* Distributor Control Register */
-        return req.access( arch.gic.D_CTLR );
+        return req.rw( arch.gic.D_CTLR );
 
       if (req.addr == 0x1004) /* Interrupt Controller Type Register */
         {
@@ -1655,11 +1657,11 @@ AArch64::map_gic(uint64_t base_addr)
           unsigned idx = (req.addr - 0x1100)/4, cns = idx / 32, rtp = cns / 2;
           idx %= 32; cns %= 2;
           if (32*idx >= arch.gic.ITLinesCount)
-            return req.access(raz_wi_32);
+            return req.rw(raz_wi_32);
           auto iscreg = rtp == 0 ? &AArch64::GIC::D_IENABLE : rtp == 1 ? &AArch64::GIC::D_IPENDING : &AArch64::GIC::D_IACTIVE;
           uint32_t& reg = (arch.gic.*iscreg)[idx];
           uint32_t value = reg;
-          if (not req.access(value))
+          if (not req.rw(value))
             return false;
           if (req.write) { if (cns) reg &= ~value; else reg |= value; }
           return true;
@@ -1673,9 +1675,9 @@ AArch64::map_gic(uint64_t base_addr)
            */
           unsigned idx = req.addr - 0x1400;
           if (idx < arch.gic.ITLinesCount)
-            return req.access( arch.gic.D_IPRIORITYR[idx] );
+            return req.rw( arch.gic.D_IPRIORITYR[idx] );
           uint8_t raz_wi(0);
-          return req.access(raz_wi);
+          return req.rw(raz_wi);
         }
 
       if (0x1800 <= req.addr and req.addr < 0x1c00)
@@ -1685,7 +1687,7 @@ AArch64::map_gic(uint64_t base_addr)
            * the one processor, and the GICD_ITARGETSRs are RAZ/WI.
            */
           uint8_t raz_wi(0);
-          return req.access(raz_wi);
+          return req.rw(raz_wi);
         }
 
       if (0x1c00 <= req.addr and req.addr < 0x1d00)
@@ -1695,8 +1697,8 @@ AArch64::map_gic(uint64_t base_addr)
            */
           unsigned idx = (req.addr - 0x1c00)/4;
           if (16*idx < arch.gic.ITLinesCount)
-            return req.access( arch.gic.D_ICFGR[idx] );
-          return req.access(raz_wi_32);
+            return req.rw( arch.gic.D_ICFGR[idx] );
+          return req.rw(raz_wi_32);
         }
       return false;
     }

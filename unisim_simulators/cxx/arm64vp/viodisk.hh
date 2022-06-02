@@ -118,6 +118,7 @@ struct VIODisk
   VIOQueue rq;
   uint64_t Capacity;
   uint8_t  WriteBack;
+  bool     ring_packed;
 };
 
 struct VIOConsole

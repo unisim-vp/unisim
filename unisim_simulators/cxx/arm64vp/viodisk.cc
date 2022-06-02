@@ -32,13 +32,14 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <viodisk.hh>
 #include <debug.hh>
 #include <iostream>
 
 VIODisk::VIODisk()
   : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
-  , rq(), Capacity(0), WriteBack(1)
+  , rq(), Capacity(0), WriteBack(1), ring_packed(true)
 {}
 
 void
@@ -97,53 +98,87 @@ VIODisk::ClaimedFeatures()
   return claimed_features(DeviceFeaturesSel);
 }
 
-template <typename FEATTYPE, int FEAT>
-struct GetName
-{
-  typedef Feature<FEATTYPE,FEATTYPE(FEAT)> Feat;
-  static char const* feature(unsigned bit)
-  {
-    if (bit == Feat::BIT) return Feat::name();
-    return GetName<FEATTYPE, FEAT - 1>::feature(bit);
-  }
-};
-
-template <typename FEATTYPE> struct GetName<FEATTYPE, -1> { static char const* feature(unsigned bit) { return 0; } };
-
 namespace
 {
-  void feat_list_msg(std::ostream& sink, unsigned pos, uint32_t mask, char const* pre)
+  template <typename FEATTYPE, int FEAT>
+  struct NameGetter
   {
-    for (unsigned bit = 32; bit-->0;)
-      if (mask >> bit & 1)
-        {
-          unsigned fbit = pos+bit;
-          sink << pre; pre = ", ";
-          if (char const* name = GetName<CommonFeatures::Code,(int)CommonFeatures::end - 1>::feature(fbit)) sink << name;
-          else if (char const* name = GetName<BlockFeatures::Code,(int)BlockFeatures::end - 1>::feature(fbit)) sink << name;
-          else sink << "unknown(" << fbit << ")";
-        }
-  }
+    typedef Feature<FEATTYPE,FEATTYPE(FEAT)> Feat;
+    static char const* feature(unsigned bit)
+    {
+      if (bit == Feat::BIT) return Feat::name();
+      return NameGetter<FEATTYPE, FEAT - 1>::feature(bit);
+    }
+  };
+
+  template <typename FEATTYPE> struct NameGetter<FEATTYPE, -1> { static char const* feature(unsigned bit) { return 0; } };
+
+  struct GetFeatureName
+  {
+    GetFeatureName(unsigned _bit) : bit(_bit) {} unsigned bit;
+    friend std::ostream& operator << (std::ostream& sink, GetFeatureName const& arg)
+    {
+      if      (char const* name = NameGetter<CommonFeatures::Code,(int)CommonFeatures::end - 1>::feature(arg.bit)) sink << name;
+      else if (char const* name = NameGetter< BlockFeatures::Code, (int)BlockFeatures::end - 1>::feature(arg.bit)) sink << name;
+      else sink << "unknown_feature(" << std::dec << arg.bit << ")";
+      return sink;
+    }
+  };
 }
 
 bool
 VIODisk::UsedFeatures(uint32_t requested)
 {
   struct Bad {};
+
+  if (not ring_packed)
+    {
+      std::cerr << "should support split queues.\n";
+      raise(Bad());
+    }
   uint32_t claimed = claimed_features(DriverFeaturesSel);
-  
-  if (uint32_t err = requested & ~claimed)
+
+  using unisim::util::arithmetic::BitScanForward;
+
+  bool has_errors = false;
+  for (uint32_t err = requested & ~claimed; err; err &= err - 1)
     {
-      feat_list_msg(std::cerr, 32*DriverFeaturesSel, err, "Erroneous feature(s) activation: ");
-      std::cerr << std::endl;
-      raise( Bad() );
+      /* Iterating over all requested but not claimed features */
+      has_errors = true;
+      std::cerr << "VirtIO driver error: feature " << GetFeatureName(32*DriverFeaturesSel + BitScanForward(err)) << " requested by driver but not claimed by device\n";
     }
-  if (uint32_t err = claimed & ~requested)
+
+  for (uint32_t rem = claimed; rem; rem &= rem - 1)
     {
-      feat_list_msg(std::cerr, 32*DriverFeaturesSel, err, "Unsupported feature(s) deactivation: ");
-      std::cerr << std::endl;
-      raise( Bad() );
+      /* Iterating over all claimed bits */
+      unsigned wbit = BitScanForward(rem), bit = 32*DriverFeaturesSel + wbit;
+      bool feature_requested = requested >> wbit & 1;
+      switch (bit)
+        {
+        case Feature<CommonFeatures::Code,CommonFeatures::RING_PACKED>::BIT:
+          ring_packed = feature_requested;
+          break;
+
+        case Feature<BlockFeatures::Code,BlockFeatures::DISCARD>::BIT:
+          // We won't receive DISCARD commands
+          break;
+
+        case Feature<BlockFeatures::Code,BlockFeatures::WRITE_ZEROES>::BIT:
+          // We won't receive WRITE_ZEROES commands
+          break;
+
+        default:
+          if (not feature_requested)
+            {
+              has_errors = true;
+              std::cerr << "VirtIO device error: feature " << GetFeatureName(bit) << " not requested by driver but claimed and requested by device\n";
+            }
+          break;
+        }
     }
+
+  if (has_errors)
+    raise( Bad() );
   
   return true;
 }
