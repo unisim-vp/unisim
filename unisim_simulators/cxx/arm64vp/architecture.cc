@@ -1428,31 +1428,31 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
           
           switch (req.addr)
             {
-            case 0x00:  return req.ro<uint32_t>(0x74726976); /* ________________________________________ Magic Value: 'virt' */
-            case 0x04:  return req.ro<uint32_t>(0x2); /* _______________________________________________ Device version number: Virtio 1 - 1.1 */
-            case 0x08:  return req.ro<uint32_t>(2); /* _________________________________________________ Virtio Subsystem Device ID: block device */
-            case 0x0c:  return req.ro(viodisk.Vendor()); /* ____________________________________________ Virtio Subsystem Vendor ID: 'usvp' */
-            case 0x10:  return req.ro(viodisk.ClaimedFeatures()); /* ___________________________________ features supported by the device */
-            case 0x14:  return req.wo(viodisk.DeviceFeaturesSel); /* ___________________________________ Device (host) features word selection */
-            case 0x20:  return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* ___________________________ features used by the driver  */
-            case 0x24:  return req.wo(viodisk.DriverFeaturesSel); /* ___________________________________ Activated (guest) features word selection */
-            case 0x30:  return req.wo(tmp) and (tmp == 0); /* __________________________________________ Virtual queue index (only 0: rq) */
-            case 0x34:  return req.ro(viodisk.QueueNumMax()); /* _______________________________________ Maximum virtual queue size */
-            case 0x38:  return req.wo(viodisk.rq.size); /* _____________________________________________ Virtual queue size */
-            case 0x44:  return req.rw(viodisk.rq.ready) and (req.rd() or viodisk.SetupQueue(vioa)); /* _ Virtual queue ready bit */
-            case 0x50:  return req.wo(tmp) and viodisk.ReadQueue(vioa); /* _____________________________ Queue notifier */
-            case 0x60:  return req.ro(viodisk.InterruptStatus); /* _____________________________________ Interrupt status */
-            case 0x64:  return req.wo(tmp) and viodisk.InterruptAck(tmp); /* ___________________________ Interrupt acknowledgment */
-            case 0x70:  return req.rw(viodisk.Status) and (req.rd() or viodisk.CheckStatus()); /* ______ Device status */
+            case 0x00:  return req.ro<uint32_t>(0x74726976); /* ____________________________________________ Magic Value: 'virt' */
+            case 0x04:  return req.ro<uint32_t>(0x2); /* ___________________________________________________ Device version number: Virtio 1 - 1.1 */
+            case 0x08:  return req.ro<uint32_t>(2); /* _____________________________________________________ Virtio Subsystem Device ID: block device */
+            case 0x0c:  return req.ro(viodisk.Vendor()); /* ________________________________________________ Virtio Subsystem Vendor ID: 'usvp' */
+            case 0x10:  return req.ro(viodisk.ClaimedFeatures()); /* _______________________________________ features supported by the device */
+            case 0x14:  return req.wo(viodisk.DeviceFeaturesSel); /* _______________________________________ Device (host) features word selection */
+            case 0x20:  return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* _______________________________ features used by the driver  */
+            case 0x24:  return req.wo(viodisk.DriverFeaturesSel); /* _______________________________________ Activated (guest) features word selection */
+            case 0x30:  return req.wo(tmp) and viodisk.QueueSel(tmp); /* ___________________________________ Virtual queue index (only 1 queue := 0) */
+            case 0x34:  return req.ro(viodisk.QueueNumMax()); /* ___________________________________________ Maximum virtual queue size */
+            case 0x38:  return req.wo(viodisk.QueueNum()); /* ______________________________________________ Virtual queue size */
+            case 0x44:  return req.rw(viodisk.QueueReady()) and (req.rd() or viodisk.QueueReady(vioa)); /* _ Virtual queue ready bit */
+            case 0x50:  return req.wo(tmp) and viodisk.ReadQueue(vioa); /* _________________________________ Queue notifier */
+            case 0x60:  return req.ro(viodisk.InterruptStatus); /* _________________________________________ Interrupt status */
+            case 0x64:  return req.wo(tmp) and viodisk.InterruptAck(tmp); /* _______________________________ Interrupt acknowledgment */
+            case 0x70:  return req.rw(viodisk.Status) and (req.rd() or viodisk.CheckStatus()); /* __________ Device status */
             case 0x80: 
-            case 0x84:  return req.wo(r64.sub32(viodisk.rq.desc_area, req.addr)); /* ___________________ Descriptor Area */
+            case 0x84:  return req.wo(r64.sub32(viodisk.QueueDesc(), req.addr)); /* ________________________ Descriptor Area */
             case 0x90:
-            case 0x94:  return req.wo(r64.sub32(viodisk.rq.driver_area, req.addr)); /* _________________ Driver Area */
+            case 0x94:  return req.wo(r64.sub32(viodisk.QueueDriver(), req.addr)); /* ______________________ Driver Area */
             case 0xa0:
-            case 0xa4:  return req.wo(r64.sub32(viodisk.rq.device_area, req.addr)); /* _________________ Device Area */
-            case 0xfc:  return req.ro(viodisk.ConfigGeneration);
+            case 0xa4:  return req.wo(r64.sub32(viodisk.QueueDevice(), req.addr)); /* ______________________ Device Area */
+            case 0xfc:  return req.ro(viodisk.ConfigGeneration); /* ________________________________________ ConfigGeneration */
             case 0x100:
-            case 0x104: return req.rw(r64.sub32(viodisk.Capacity, req.addr)); /* _______________________ Disk Capacity */
+            case 0x104: return req.rw(r64.sub32(viodisk.Capacity, req.addr)); /* ___________________________ Disk Capacity */
               // case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
             case 0x10c: return req.ro(viodisk.SegMax());
             case 0x114: return req.ro(viodisk.BlkSize());

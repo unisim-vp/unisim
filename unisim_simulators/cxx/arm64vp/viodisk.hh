@@ -39,7 +39,33 @@
 #include <fstream>
 #include <inttypes.h>
 
+struct VIOAccess
+{
+  virtual ~VIOAccess() {}
+  
+  //  virtual void flag(uint64_t addr) const = 0;
+  virtual void notify() const = 0;
+  
+  virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
+  virtual void write(uint64_t addr, unsigned size, uint64_t value) const = 0;
+};
+
 struct VIOQueue
+{
+  VIOQueue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0) {}
+
+  uint32_t size, ready;
+  uint64_t desc_area, driver_area, device_area;
+};
+
+struct VIOQReq
+{
+  virtual ~VIOQReq() {}
+  virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) = 0;
+  virtual void notify() = 0;
+};
+
+struct VIOPackedQueue : public VIOQueue
 {
   struct DescIterator
   {
@@ -57,24 +83,50 @@ struct VIOQueue
 
   //enum { NEXT=1, WRITE=2, INDIRECT=4 };
 
-  VIOQueue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0), head() {}
+  VIOPackedQueue() : head() {}
   void sync(SnapShot& snapshot);
+  bool Read(VIOAccess const& vioa, VIOQReq& disk);
   uint64_t desc_addr(DescIterator const& desc) const { return desc_area + desc.offset(); }
+  static bool IsPacked() { return true; }
+  bool Start(VIOAccess const& vioa);
 
-  uint32_t size, ready;
-  uint64_t desc_area, driver_area, device_area;
   DescIterator head;
 };
 
-struct VIOAccess
+
+struct VIOQMgr
 {
-  virtual ~VIOAccess() {}
+  virtual ~VIOQMgr() {}
+  virtual VIOQueue* active() const = 0;
+  virtual bool Read(VIOAccess const& vioa, VIOQReq& req) const = 0;
+  virtual bool IsPacked() const = 0;
+  virtual bool Ready(VIOAccess const& vioa) const = 0;
+  virtual void sync(SnapShot& snapshot) = 0;
+};
+
+template <class QUEUE, unsigned QCOUNT>
+struct VIOQMgrImpl : public VIOQMgr
+{
+  typedef QUEUE queue_type;
+
+  VIOQMgrImpl() : queues(), selq(&queues[0]) {}
   
-  //  virtual void flag(uint64_t addr) const = 0;
-  virtual void notify() const = 0;
+  virtual VIOQueue* active() const override { return selq; };
   
-  virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
-  virtual void write(uint64_t addr, unsigned size, uint64_t value) const = 0;
+  virtual bool Read(VIOAccess const& vioa, VIOQReq& req) const override { return not selq->ready or selq->Read(vioa, req); }
+  virtual bool Ready(VIOAccess const& vioa) const { return not selq->ready or selq->Start(vioa); }
+  virtual bool IsPacked() const override { return QUEUE::IsPacked(); }
+  virtual void sync(SnapShot& snapshot) override
+  {
+    unsigned qidx = selq - &queues[0];
+    snapshot.sync(qidx);
+    selq = &queues[qidx];
+    
+    for (unsigned idx = 0; idx < QCOUNT; ++idx)
+      queues[idx].sync(snapshot);
+  }
+  queue_type queues[QCOUNT];
+  queue_type* selq;
 };
 
 struct VIODisk
@@ -94,14 +146,22 @@ struct VIODisk
   
   // Generic Config
   static uint32_t Vendor() { return 0x70767375; }
-  static uint32_t QueueNumMax() { return 1024; }
   uint32_t ClaimedFeatures();
   bool UsedFeatures(uint32_t);
   bool CheckFeatures();
   bool CheckStatus();
   bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
+  bool QueueSel(uint32_t sel) { return sel == 0; }
+  static uint32_t QueueNumMax() { return 1024; }
+  uint32_t& QueueNum() { return qmgr->active()->size; }
+  uint32_t& QueueReady() { return qmgr->active()->ready; }
+  uint64_t& QueueDesc() { return qmgr->active()->desc_area; }
+  uint64_t& QueueDriver() { return qmgr->active()->driver_area; }
+  uint64_t& QueueDevice() { return qmgr->active()->device_area; }
   bool ReadQueue(VIOAccess const& vioa);
-  bool SetupQueue(VIOAccess const& vioa);
+
+  bool QueueReady(VIOAccess const& vioa) { return qmgr->Ready(vioa); }
+  void SetupQueues(bool is_packed);
   
   // Block Device Config
   static uint32_t SegMax() { return 254; }
@@ -112,13 +172,12 @@ struct VIODisk
   static uint32_t MaxWriteZeroesSectors() { return 0x3fffff; }
   
   // Generic Config
-  uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+  uint32_t Status, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
 
   // Block Device Config
-  VIOQueue rq;
+  VIOQMgr* qmgr;
   uint64_t Capacity;
   uint8_t  WriteBack;
-  bool     ring_packed;
 };
 
 struct VIOConsole

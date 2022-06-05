@@ -38,21 +38,21 @@
 #include <iostream>
 
 VIODisk::VIODisk()
-  : Status(0), Features(), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
-  , rq(), Capacity(0), WriteBack(1), ring_packed(true)
+  : Status(0), DeviceFeaturesSel(), DriverFeaturesSel(), ConfigGeneration(0)
+  , qmgr(), Capacity(0), WriteBack(1)
 {}
 
-void
-VIODisk::reset()
-{
-  Status = 0;
-  Features = 0;
-  DeviceFeaturesSel = 0;
-  DriverFeaturesSel = 0;
-  ConfigGeneration = 0;
-  rq = VIOQueue();
-  WriteBack = 1;
-}
+// void
+// VIODisk::reset()
+// {
+//   Status = 0;
+//   Features = 0;
+//   DeviceFeaturesSel = 0;
+//   DriverFeaturesSel = 0;
+//   ConfigGeneration = 0;
+//   rq = VIOQueue();
+//   WriteBack = 1;
+// }
 
 template <unsigned POS, typename FEATTYPE, int FEAT>
 struct Claimed
@@ -131,11 +131,6 @@ VIODisk::UsedFeatures(uint32_t requested)
 {
   struct Bad {};
 
-  if (not ring_packed)
-    {
-      std::cerr << "should support split queues.\n";
-      raise(Bad());
-    }
   uint32_t claimed = claimed_features(DriverFeaturesSel);
 
   using unisim::util::arithmetic::BitScanForward;
@@ -156,7 +151,7 @@ VIODisk::UsedFeatures(uint32_t requested)
       switch (bit)
         {
         case Feature<CommonFeatures::Code,CommonFeatures::RING_PACKED>::BIT:
-          ring_packed = feature_requested;
+          SetupQueues(feature_requested);
           break;
 
         case Feature<BlockFeatures::Code,BlockFeatures::DISCARD>::BIT:
@@ -228,28 +223,36 @@ VIODisk::CheckStatus()
 }
 
 bool
-VIODisk::SetupQueue(VIOAccess const& vioa)
+VIOPackedQueue::Start(VIOAccess const& vioa)
 {
-  /* {desc = x, flags = enable} */
-  vioa.write(rq.device_area, 4, 0);
+  // First 4 bytes of device area always points to base device event suppresion mechanisms
+  // Packed VirtQ : (reserved[14] = 0: desc_event_flags[2] = 0 /*RING_EVENT_FLAGS_ENABLE*/: desc_event_wrap[1] = 0, desc_event_off[15] = 0)
+  // Split  VirtQ : (used_event[16] = 0: reserved[15] : flags[1] = 0/*not VIRTQ_USED_F_NO_NOTIFY*/)
+  vioa.write(device_area, 4, 0);
   return true;
+}
+
+void
+VIODisk::SetupQueues(bool is_packed)
+{
+  delete qmgr;
+  if (is_packed) qmgr = new VIOQMgrImpl<VIOPackedQueue,1>();
+  else throw 0 /*qmgr = new VIOQMgrImpl<VIOSplitQueue,1>() */;
 }
 
 bool
 VIODisk::ReadQueue(VIOAccess const& vioa)
 {
-  if (not rq.ready)
-    return true;
-  uint32_t pqes = vioa.read(rq.driver_area, 4);
-  
-  struct Request
+  struct Request : public VIOQReq
   {
     Request(VIOAccess const& _vioa, VIODisk& _disk) : state(Head), vioa(_vioa), disk(_disk), type(), status() {}
     enum { Head, Body, Status } state; VIOAccess const& vioa; VIODisk& disk;
     enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
     enum { OK, IOERR, UNSUPP } status;
+    
+    virtual void notify() override { disk.InterruptStatus |= 1; }
 
-    uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last)
+    virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) override
     {
       uint32_t wlen = 0;
       // bool is_write = VIOQFlags::WRITE.Get(flags);
@@ -317,35 +320,43 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       return wlen;
     }
   } req(vioa, *this);
+  
+  return qmgr->Read(vioa, req);
+}
+
+bool
+VIOPackedQueue::Read(VIOAccess const& vioa, VIOQReq& req)
+{
+  uint32_t pqes = vioa.read(driver_area, 4);
 
   bool notification = false;
   for (;;)
     {
-      uint64_t desc_addr = rq.desc_addr(rq.head);
-      uint16_t flags = vioa.read(desc_addr + 14, 2);
-      if (not rq.head.available(flags))
+      uint64_t cur_desc_addr = desc_addr(head);
+      uint16_t flags = vioa.read(cur_desc_addr + 14, 2);
+      if (not head.available(flags))
         break;
       bool last = not (flags & 1);
       
-      VIOQueue::DescIterator tail(rq.head);
+      DescIterator tail(head);
       uint32_t wlen = 0;
 
       for (;;)
         {
-          uint64_t buf_addr =   vioa.read(desc_addr + 0, 8);
-          uint32_t buf_len =    vioa.read(desc_addr + 8, 4);
+          uint64_t buf_addr =   vioa.read(cur_desc_addr + 0, 8);
+          uint32_t buf_len =    vioa.read(cur_desc_addr + 8, 4);
           //if (VIOQFlags::INDIRECT.Get(flags))
           if (flags & 4)
             {
-              uint64_t desc_addr = buf_addr, buf_end = buf_addr + buf_len;
+              uint64_t cur_desc_addr = buf_addr, buf_end = buf_addr + buf_len;
               for (bool cont = true; cont; )
                 {
-                  uint64_t buf_addr =  vioa.read(desc_addr +  0, 8);
-                  uint32_t buf_len =   vioa.read(desc_addr +  8, 4);
-                  uint16_t buf_flags = vioa.read(desc_addr + 14, 2);
+                  uint64_t buf_addr =  vioa.read(cur_desc_addr +  0, 8);
+                  uint32_t buf_len =   vioa.read(cur_desc_addr +  8, 4);
+                  uint16_t buf_flags = vioa.read(cur_desc_addr + 14, 2);
 
-                  desc_addr += 16;
-                  cont = desc_addr < buf_end;
+                  cur_desc_addr += 16;
+                  cont = cur_desc_addr < buf_end;
               
                   wlen += req.process(buf_addr, buf_len, buf_flags, last and not cont);
                 }
@@ -355,19 +366,19 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               wlen += req.process(buf_addr, buf_len, flags, last);
             }
       
-          rq.head.next(rq);
+          head.next(*this);
           // if (VIOQFlags::NEXT.Get(flags));
           if (last)
             break;
           
-          desc_addr = rq.desc_addr(rq.head);
-          flags =  vioa.read(desc_addr + 14, 2);
+          cur_desc_addr = desc_addr(head);
+          flags =  vioa.read(cur_desc_addr + 14, 2);
         }
 
-      uint16_t id = vioa.read(desc_addr + 12, 2);
+      uint16_t id = vioa.read(cur_desc_addr + 12, 2);
       // std::cerr << "ID:" << id << std::endl;
 
-      uint64_t tail_addr = rq.desc_addr(tail);
+      uint64_t tail_addr = desc_addr(tail);
       vioa.write(tail_addr +  8, 4, wlen);
       vioa.write(tail_addr + 12, 2, id);
       vioa.write(tail_addr + 14, 2, tail.used(wlen > 0));
@@ -386,14 +397,14 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
 
   if (notification)
     {
-      InterruptStatus |= 1;
+      req.notify();
       vioa.notify();
     }
   return true;
 }
 
 void
-VIOQueue::sync(SnapShot& snapshot)
+VIOPackedQueue::sync(SnapShot& snapshot)
 {
   snapshot.sync(size);
   snapshot.sync(ready);
@@ -405,9 +416,18 @@ VIOQueue::sync(SnapShot& snapshot)
 void
 VIODisk::sync(SnapShot& snapshot)
 {
-  for (auto reg : {&Status, &Features, &DeviceFeaturesSel, &DriverFeaturesSel, &ConfigGeneration, &InterruptStatus})
+  for (auto reg : {&Status, &DeviceFeaturesSel, &DriverFeaturesSel, &ConfigGeneration, &InterruptStatus})
     snapshot.sync(*reg);
-  rq.sync(snapshot);
+
+  uint32_t qtype = snapshot.is_load() or not qmgr ? 0 : qmgr->IsPacked() ? 2 : 1;
+  snapshot.sync(qtype);
+  if (qtype)
+    {
+      if (snapshot.is_load())
+        SetupQueues(qtype == 2);
+      qmgr->sync(snapshot);
+    }
+  
   snapshot.sync(WriteBack);
   uint64_t diskpos = tell();
   snapshot.sync(diskpos);
@@ -415,7 +435,7 @@ VIODisk::sync(SnapShot& snapshot)
 }
 
 void
-VIOQueue::DescIterator::sync(SnapShot& snapshot)
+VIOPackedQueue::DescIterator::sync(SnapShot& snapshot)
 {
   snapshot.sync(index);
   snapshot.sync(wrap);
