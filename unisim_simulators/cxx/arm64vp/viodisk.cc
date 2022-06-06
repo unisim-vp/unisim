@@ -87,7 +87,7 @@ namespace
       }
     struct Bad {};
     raise( Bad() );
-  
+
     return 0;
   }
 }
@@ -174,7 +174,7 @@ VIODisk::UsedFeatures(uint32_t requested)
 
   if (has_errors)
     raise( Bad() );
-  
+
   return true;
 }
 
@@ -204,15 +204,15 @@ VIODisk::CheckStatus()
       handled |= fields[idx].mask;
     }
   std::cerr << "}\n";
-  
+
   struct Bad {};
-  
+
   if (status & 128)
     {
       std::cerr << "unhandled <failed> status bit.\n";
       raise( Bad() );
     }
-  
+
   if (status & ~handled)
     {
       std::cerr << "| unhandled status bits: " << std::hex << status << ", Status=" << Status << "\n";
@@ -249,8 +249,6 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
     enum { Head, Body, Status } state; VIOAccess const& vioa; VIODisk& disk;
     enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
     enum { OK, IOERR, UNSUPP } status;
-    
-    virtual void notify() override { disk.InterruptStatus |= 1; }
 
     virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) override
     {
@@ -258,12 +256,12 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       // bool is_write = VIOQFlags::WRITE.Get(flags);
       bool is_write = flags & 2;
       //std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
-      
-      
+
+
       struct Bad {};
-      
+
       if (state == Body and last) state = Status;
-      
+
       switch (state)
         {
         case Head:
@@ -285,10 +283,10 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
               disk.seek(VIODisk::BLKSIZE*vioa.read(buf + 8, 8));
               break;
             }
-          
+
           state = Body;
           break;
-          
+
         case Body:
           switch (type)
             {
@@ -320,10 +318,22 @@ VIODisk::ReadQueue(VIOAccess const& vioa)
       return wlen;
     }
   } req(vioa, *this);
-  
-  return qmgr->Read(vioa, req);
+
+  if (qmgr->Read(vioa, req))
+    {
+      InterruptStatus |= 1;
+      vioa.notify();
+    }
+
+  return true;
 }
 
+  // if (notification)
+  //   {
+  //     req.notify();
+  //     vioa.notify();
+  //   }
+  // return true;
 bool
 VIOPackedQueue::Read(VIOAccess const& vioa, VIOQReq& req)
 {
@@ -337,7 +347,7 @@ VIOPackedQueue::Read(VIOAccess const& vioa, VIOQReq& req)
       if (not head.available(flags))
         break;
       bool last = not (flags & 1);
-      
+
       DescIterator tail(head);
       uint32_t wlen = 0;
 
@@ -357,7 +367,7 @@ VIOPackedQueue::Read(VIOAccess const& vioa, VIOQReq& req)
 
                   cur_desc_addr += 16;
                   cont = cur_desc_addr < buf_end;
-              
+
                   wlen += req.process(buf_addr, buf_len, buf_flags, last and not cont);
                 }
             }
@@ -365,12 +375,12 @@ VIOPackedQueue::Read(VIOAccess const& vioa, VIOQReq& req)
             {
               wlen += req.process(buf_addr, buf_len, flags, last);
             }
-      
+
           head.next(*this);
           // if (VIOQFlags::NEXT.Get(flags));
           if (last)
             break;
-          
+
           cur_desc_addr = desc_addr(head);
           flags =  vioa.read(cur_desc_addr + 14, 2);
         }
@@ -395,12 +405,7 @@ VIOPackedQueue::Read(VIOAccess const& vioa, VIOQReq& req)
         }
     }
 
-  if (notification)
-    {
-      req.notify();
-      vioa.notify();
-    }
-  return true;
+  return notification;
 }
 
 void
@@ -427,7 +432,7 @@ VIODisk::sync(SnapShot& snapshot)
         SetupQueues(qtype == 2);
       qmgr->sync(snapshot);
     }
-  
+
   snapshot.sync(WriteBack);
   uint64_t diskpos = tell();
   snapshot.sync(diskpos);

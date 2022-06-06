@@ -42,10 +42,10 @@
 struct VIOAccess
 {
   virtual ~VIOAccess() {}
-  
+
   //  virtual void flag(uint64_t addr) const = 0;
   virtual void notify() const = 0;
-  
+
   virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
   virtual void write(uint64_t addr, unsigned size, uint64_t value) const = 0;
 };
@@ -62,7 +62,6 @@ struct VIOQReq
 {
   virtual ~VIOQReq() {}
   virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) = 0;
-  virtual void notify() = 0;
 };
 
 struct VIOPackedQueue : public VIOQueue
@@ -93,7 +92,6 @@ struct VIOPackedQueue : public VIOQueue
   DescIterator head;
 };
 
-
 struct VIOQMgr
 {
   virtual ~VIOQMgr() {}
@@ -110,10 +108,10 @@ struct VIOQMgrImpl : public VIOQMgr
   typedef QUEUE queue_type;
 
   VIOQMgrImpl() : queues(), selq(&queues[0]) {}
-  
+
   virtual VIOQueue* active() const override { return selq; };
-  
-  virtual bool Read(VIOAccess const& vioa, VIOQReq& req) const override { return not selq->ready or selq->Read(vioa, req); }
+
+  virtual bool Read(VIOAccess const& vioa, VIOQReq& req) const override { return selq->ready and selq->Read(vioa, req); }
   virtual bool Ready(VIOAccess const& vioa) const { return not selq->ready or selq->Start(vioa); }
   virtual bool IsPacked() const override { return QUEUE::IsPacked(); }
   virtual void sync(SnapShot& snapshot) override
@@ -121,7 +119,7 @@ struct VIOQMgrImpl : public VIOQMgr
     unsigned qidx = selq - &queues[0];
     snapshot.sync(qidx);
     selq = &queues[qidx];
-    
+
     for (unsigned idx = 0; idx < QCOUNT; ++idx)
       queues[idx].sync(snapshot);
   }
@@ -135,15 +133,15 @@ struct VIODisk
   virtual ~VIODisk() {}
 
   enum { BLKSIZE = 512 };
-  
+
   virtual void seek(uint64_t pos) = 0;
   virtual uint64_t tell() = 0;
   virtual void read(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
   virtual void write(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
-  
+
   virtual void sync(SnapShot& snapshot);
   void reset();
-  
+
   // Generic Config
   static uint32_t Vendor() { return 0x70767375; }
   uint32_t ClaimedFeatures();
@@ -162,7 +160,7 @@ struct VIODisk
 
   bool QueueReady(VIOAccess const& vioa) { return qmgr->Ready(vioa); }
   void SetupQueues(bool is_packed);
-  
+
   // Block Device Config
   static uint32_t SegMax() { return 254; }
   static uint32_t BlkSize() { return 512; }
@@ -170,7 +168,7 @@ struct VIODisk
   static uint32_t MaxDiscardSectors() { return 0x3fffff; }
   static uint32_t MaxDiscardSeg() { return 1; }
   static uint32_t MaxWriteZeroesSectors() { return 0x3fffff; }
-  
+
   // Generic Config
   uint32_t Status, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
 
@@ -192,7 +190,7 @@ struct VIOConsole
   bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
   bool ReadQueue(VIOAccess const& vioa);
   bool SetupQueue(VIOAccess const& vioa);
-  
+
   // Generic Config
   // uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
   uint32_t DeviceFeaturesSel, DriverFeaturesSel, InterruptStatus;
