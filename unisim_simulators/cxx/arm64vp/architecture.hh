@@ -116,8 +116,8 @@ struct ArchDisk : public VIODisk
   virtual void dwrite(uint8_t const* bytes, uint64_t size) = 0;
   void         uwrite(uint8_t const* udat, uint64_t size);
 
-  void read(VIOAccess const& vioa, uint64_t addr, uint64_t size) override;
-  void write(VIOAccess const& vioa, uint64_t addr, uint64_t size) override;
+  void read(virtio::Access const& vioa, uint64_t addr, uint64_t size) override;
+  void write(virtio::Access const& vioa, uint64_t addr, uint64_t size) override;
 
   struct Page
   {

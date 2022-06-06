@@ -1202,7 +1202,7 @@ AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 namespace {
   //  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
 
-  struct VIOA : public VIOAccess
+  struct VIOA : public virtio::Access
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
 
@@ -1287,7 +1287,7 @@ ArchDisk::uread(uint8_t* udat, uint64_t size)
 }
 
 void
-ArchDisk::read(VIOAccess const& vioa, uint64_t addr, uint64_t size)
+ArchDisk::read(virtio::Access const& vioa, uint64_t addr, uint64_t size)
 {
   AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
   for (VIOA::Iterator itr(addr, size); itr.next(core);)
@@ -1333,7 +1333,7 @@ ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
 }
 
 void
-ArchDisk::write(VIOAccess const& vioa, uint64_t addr, uint64_t size)
+ArchDisk::write(virtio::Access const& vioa, uint64_t addr, uint64_t size)
 {
   AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
   for (VIOA::Iterator itr(addr, size); itr.next(core);)

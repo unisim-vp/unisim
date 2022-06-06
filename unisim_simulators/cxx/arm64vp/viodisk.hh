@@ -39,9 +39,11 @@
 #include <fstream>
 #include <inttypes.h>
 
-struct VIOAccess
+namespace virtio {
+/* System communication (mem + interrupt) */
+struct Access
 {
-  virtual ~VIOAccess() {}
+  virtual ~Access() {}
 
   //  virtual void flag(uint64_t addr) const = 0;
   virtual void notify() const = 0;
@@ -50,27 +52,28 @@ struct VIOAccess
   virtual void write(uint64_t addr, unsigned size, uint64_t value) const = 0;
 };
 
-struct VIOQueue
+/* Incoming chained buffer Processor */
+struct QProc
 {
-  VIOQueue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0) {}
+  virtual ~QProc() {}
+  virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) = 0;
+};
+
+struct Queue
+{
+  Queue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0) {}
 
   uint32_t size, ready;
   uint64_t desc_area, driver_area, device_area;
 };
 
-struct VIOQReq
-{
-  virtual ~VIOQReq() {}
-  virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) = 0;
-};
-
-struct VIOPackedQueue : public VIOQueue
+struct PackedQueue : public Queue
 {
   struct DescIterator
   {
     DescIterator() : index(0), wrap(1) {}
     void sync(SnapShot& snapshot);
-    void next(VIOQueue const& vq) { if (++index < vq.size) return; index = 0; wrap ^= 1;  }
+    void next(Queue const& vq) { if (++index < vq.size) return; index = 0; wrap ^= 1;  }
     bool available(uint16_t flags) const { return (flags >> 15 ^ wrap) & ~(flags >> 7 ^ wrap) & 1; }
     uint16_t used(bool write) const { return wrap << 15 | wrap << 7 | int(write) << 1; }
     uint16_t idx() const { return (index & 0x7fff) | (wrap << 15); }
@@ -82,37 +85,39 @@ struct VIOPackedQueue : public VIOQueue
 
   //enum { NEXT=1, WRITE=2, INDIRECT=4 };
 
-  VIOPackedQueue() : head() {}
+  PackedQueue() : head() {}
   void sync(SnapShot& snapshot);
-  bool Read(VIOAccess const& vioa, VIOQReq& disk);
+  bool Read(Access const& vioa, QProc& proc);
   uint64_t desc_addr(DescIterator const& desc) const { return desc_area + desc.offset(); }
   static bool IsPacked() { return true; }
-  bool Start(VIOAccess const& vioa);
+  bool Start(Access const& vioa);
 
   DescIterator head;
 };
 
-struct VIOQMgr
+struct QMgr
 {
-  virtual ~VIOQMgr() {}
-  virtual VIOQueue* active() const = 0;
-  virtual bool Read(VIOAccess const& vioa, VIOQReq& req) const = 0;
+  virtual ~QMgr() {}
+  virtual Queue* active() const = 0;
+  virtual bool select(unsigned sel) = 0;
+  virtual bool Read(Access const& vioa, QProc& proc) const = 0;
   virtual bool IsPacked() const = 0;
-  virtual bool Ready(VIOAccess const& vioa) const = 0;
+  virtual bool Ready(Access const& vioa) const = 0;
   virtual void sync(SnapShot& snapshot) = 0;
 };
 
 template <class QUEUE, unsigned QCOUNT>
-struct VIOQMgrImpl : public VIOQMgr
+struct QMgrImpl : public QMgr
 {
   typedef QUEUE queue_type;
 
-  VIOQMgrImpl() : queues(), selq(&queues[0]) {}
+  QMgrImpl() : queues(), selq(&queues[0]) {}
 
-  virtual VIOQueue* active() const override { return selq; };
+  virtual Queue* active() const override { return selq; }
+  virtual bool select(unsigned sel) override { if (sel >= QCOUNT) return false; selq = &queues[sel]; return true; }
 
-  virtual bool Read(VIOAccess const& vioa, VIOQReq& req) const override { return selq->ready and selq->Read(vioa, req); }
-  virtual bool Ready(VIOAccess const& vioa) const { return not selq->ready or selq->Start(vioa); }
+  virtual bool Read(Access const& vioa, QProc& proc) const override { return selq->ready and selq->Read(vioa, proc); }
+  virtual bool Ready(Access const& vioa) const { return not selq->ready or selq->Start(vioa); }
   virtual bool IsPacked() const override { return QUEUE::IsPacked(); }
   virtual void sync(SnapShot& snapshot) override
   {
@@ -127,39 +132,25 @@ struct VIOQMgrImpl : public VIOQMgr
   queue_type* selq;
 };
 
-struct VIODisk
+struct Device
 {
-  VIODisk();
-  virtual ~VIODisk() {}
+  Device();
+  virtual ~Device() {}
 
-  enum { BLKSIZE = 512 };
-
-  virtual void seek(uint64_t pos) = 0;
-  virtual uint64_t tell() = 0;
-  virtual void read(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
-  virtual void write(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
-
-  virtual void sync(SnapShot& snapshot);
-  void reset();
+  //  void reset();
 
   // Generic Config
-  static uint32_t Vendor() { return 0x70767375; }
-  uint32_t ClaimedFeatures();
-  bool UsedFeatures(uint32_t);
-  bool CheckFeatures();
   bool CheckStatus();
   bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
-  bool QueueSel(uint32_t sel) { return sel == 0; }
-  static uint32_t QueueNumMax() { return 1024; }
+  bool QueueSel(uint32_t sel) { return qmgr->select(sel); }
+  static uint32_t  QueueNumMax() { return 0x8000; }
   uint32_t& QueueNum() { return qmgr->active()->size; }
   uint32_t& QueueReady() { return qmgr->active()->ready; }
   uint64_t& QueueDesc() { return qmgr->active()->desc_area; }
   uint64_t& QueueDriver() { return qmgr->active()->driver_area; }
   uint64_t& QueueDevice() { return qmgr->active()->device_area; }
-  bool ReadQueue(VIOAccess const& vioa);
-
-  bool QueueReady(VIOAccess const& vioa) { return qmgr->Ready(vioa); }
-  void SetupQueues(bool is_packed);
+  bool      QueueReady(Access const& vioa) { return qmgr->Ready(vioa); }
+  void      QueueRead(Access const& vioa, QProc& proc) { if (qmgr->Read(vioa, proc)) { InterruptStatus |= 1; vioa.notify(); } }
 
   // Block Device Config
   static uint32_t SegMax() { return 254; }
@@ -171,9 +162,30 @@ struct VIODisk
 
   // Generic Config
   uint32_t Status, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+  QMgr* qmgr;
+};
+} /* end of namespace virtio */
+
+struct VIODisk : public virtio::Device
+{
+  VIODisk();
+
+  enum { BLKSIZE = 512 };
+
+  virtual void seek(uint64_t pos) = 0;
+  virtual uint64_t tell() = 0;
+  virtual void read(virtio::Access const&, uint64_t addr, uint64_t size) = 0;
+  virtual void write(virtio::Access const&, uint64_t addr, uint64_t size) = 0;
+
+  virtual void sync(SnapShot& snapshot);
+
+  static uint32_t Vendor() { return 0x70767375; /*usvp*/ }
+  uint32_t ClaimedFeatures();
+  bool     UsedFeatures(uint32_t);
+  bool     ReadQueue(virtio::Access const& vioa);
+  void     SetupQueues(bool is_packed);
 
   // Block Device Config
-  VIOQMgr* qmgr;
   uint64_t Capacity;
   uint8_t  WriteBack;
 };
@@ -185,11 +197,10 @@ struct VIOConsole
   static uint32_t QueueNumMax() { return 1024; }
   uint32_t ClaimedFeatures();
   bool UsedFeatures(uint32_t);
-  bool CheckFeatures();
   bool CheckStatus();
   bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
-  bool ReadQueue(VIOAccess const& vioa);
-  bool SetupQueue(VIOAccess const& vioa);
+  bool ReadQueue(virtio::Access const& vioa);
+  bool SetupQueue(virtio::Access const& vioa);
 
   // Generic Config
   // uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
