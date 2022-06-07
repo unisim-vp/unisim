@@ -16,6 +16,7 @@ import unisim/kernel/logger/text_file || exit
 import unisim/kernel/logger/http || exit
 import unisim/kernel/logger/xml_file || exit
 import unisim/kernel/logger/netstream || exit
+import unisim/util/virtio || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/likely || exit
 import unisim/util/random || exit
