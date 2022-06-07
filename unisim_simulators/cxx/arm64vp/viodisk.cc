@@ -288,7 +288,7 @@ VIODisk::sync(SnapShot& snapshot)
   for (auto reg : {&Status, &DeviceFeaturesSel, &DriverFeaturesSel, &ConfigGeneration, &InterruptStatus})
     snapshot.sync(*reg);
 
-  uint32_t qtype = snapshot.is_load() or not qmgr ? 0 : sqmgr->is_packed() ? 2 : 1;
+  uint8_t qtype = snapshot.is_load() or not qmgr ? 0 : sqmgr->is_packed() ? 2 : 1;
   snapshot.sync(qtype);
   if (qtype)
     {
