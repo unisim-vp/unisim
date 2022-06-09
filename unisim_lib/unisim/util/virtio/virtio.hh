@@ -56,7 +56,7 @@ namespace virtio {
   struct QProc
   {
     virtual ~QProc() {}
-    virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) = 0;
+    virtual uint32_t process(uint64_t buf, uint32_t len, bool is_write, bool last) = 0;
   };
 
   struct Queue
@@ -65,6 +65,19 @@ namespace virtio {
 
     uint32_t size, ready;
     uint64_t desc_area, driver_area, device_area;
+  };
+
+  struct QMgr
+  {
+    QMgr() : event_idx(true) {}
+    virtual ~QMgr() {}
+    virtual Queue* active() const = 0;
+    virtual unsigned selected() const = 0;
+    virtual Queue* select(unsigned sel) = 0;
+    virtual bool Read(Access const& vioa, QProc& proc) const = 0;
+    virtual bool Ready(Access const& vioa) const = 0;
+
+    bool     event_idx;
   };
 
   struct PackedQueue : public Queue
@@ -86,7 +99,7 @@ namespace virtio {
     //enum { NEXT=1, WRITE=2, INDIRECT=4 };
 
     PackedQueue() : head() {}
-    bool Read(Access const& vioa, QProc& proc);
+    bool Read(QMgr const& qmgr, Access const& vioa, QProc& proc);
     uint64_t desc_addr(DescIterator const& desc) const { return desc_area + desc.offset(); }
     bool Start(Access const& vioa);
 
@@ -95,19 +108,11 @@ namespace virtio {
 
   struct SplitQueue : public Queue
   {
-    //  SplitQueue() : head() {}
-    bool Read(Access const& vioa, QProc& proc);
+    SplitQueue() : avail_idx(0), used_idx(0) {}
+    bool Read(QMgr const& qmgr, Access const& vioa, QProc& proc);
     bool Start(Access const& vioa);
-  };
 
-  struct QMgr
-  {
-    virtual ~QMgr() {}
-    virtual Queue* active() const = 0;
-    virtual unsigned selected() const = 0;
-    virtual Queue* select(unsigned sel) = 0;
-    virtual bool Read(Access const& vioa, QProc& proc) const = 0;
-    virtual bool Ready(Access const& vioa) const = 0;
+    uint16_t avail_idx, used_idx;
   };
 
   template <class QUEUE, unsigned QCOUNT>
@@ -120,10 +125,10 @@ namespace virtio {
     virtual Queue* active() const override { return selq; }
     virtual unsigned selected() const override { return selq - &queues[0]; }
     virtual Queue* select(unsigned sel) override { if (sel >= QCOUNT) return 0; selq = &queues[sel]; return selq; }
-    virtual bool Read(Access const& vioa, QProc& proc) const override { return selq->ready and selq->Read(vioa, proc); }
+    virtual bool Read(Access const& vioa, QProc& proc) const override { return selq->ready and selq->Read(*this, vioa, proc); }
     virtual bool Ready(Access const& vioa) const { return not selq->ready or selq->Start(vioa); }
 
-    queue_type queues[QCOUNT];
+    queue_type  queues[QCOUNT];
     queue_type* selq;
   };
 

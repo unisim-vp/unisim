@@ -2071,7 +2071,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     case mem_acc_type::write:              fail = not perm_w; break;
     case mem_acc_type::exec:               fail = not perm_x; break;
     case mem_acc_type::debug:              fail = false; break;
-    default: throw 0;
+    default: { struct Bad {}; raise( Bad() ); }
     }
 
   if (fail)
@@ -2411,7 +2411,7 @@ AArch64::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAcces
   case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
   case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
   case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
-  default: throw 0;
+  default: { struct Bad {}; raise( Bad() ); }
   }
 }
 

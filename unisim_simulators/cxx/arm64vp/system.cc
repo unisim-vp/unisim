@@ -991,13 +991,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "ESR_EL" << GetExceptionLevel(e.op1); }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
-          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
-          {
-            U64 value(cpu.get_el(GetExceptionLevel(op1)).ESR);
-            //            Print(std::cerr << "ESR=", value);
-            //            std::cerr << '@' << std::hex << cpu.current_insn_addr << std::endl;
-            return value;
-          }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).ESR); }
           void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).ESR = U32(value); }
         } x; return &x;
       } break;
@@ -1010,6 +1004,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding e, std::ostream& sink) const override { sink << "FAR_EL" << GetExceptionLevel(e.op1); }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
           U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).FAR); }
+          void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
+          { struct Bad {}; cpu.get_el(GetExceptionLevel(op1)).FAR = cpu.untaint(Bad(), value); }
         } x; return &x;
       } break;
 

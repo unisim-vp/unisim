@@ -274,7 +274,7 @@ struct StreamSpy
   
   void advance(char const* _out, char const* _in, step_t _step)
   {
-    if (outgoing and *outgoing) throw 0;
+    if (outgoing and *outgoing) { struct Bad {}; raise( Bad() ); }
     outgoing = _out;
     incoming = _in;
     expect = _in;

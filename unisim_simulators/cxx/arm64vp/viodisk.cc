@@ -57,7 +57,7 @@ struct SyncSplitQueue : public unisim::util::virtio::SplitQueue
   SyncSplitQueue() : unisim::util::virtio::SplitQueue() {}
   void sync(SnapShot& snapshot)
   {
-    throw 0;
+    struct Bad {}; raise( Bad() );
   }
 };
 
@@ -86,7 +86,6 @@ VIODisk::SetupQueues(bool is_packed)
       } _;
       sqmgr = &_;
       qmgr = new unisim::util::virtio::QMgrImpl<SyncSplitQueue,1>();
-      throw 0;
     }
 }
 
@@ -208,11 +207,9 @@ VIODisk::ReadQueue(unisim::util::virtio::Access const& sys)
     enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
     enum { OK, IOERR, UNSUPP } status;
 
-    virtual uint32_t process(uint64_t buf, uint32_t len, uint16_t flags, bool last) override
+    virtual uint32_t process(uint64_t buf, uint32_t len, bool is_write, bool last) override
     {
       uint32_t wlen = 0;
-      // bool is_write = VIOQFlags::WRITE.Get(flags);
-      bool is_write = flags & 2;
       //std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
 
 
@@ -279,6 +276,9 @@ VIODisk::ReadQueue(unisim::util::virtio::Access const& sys)
 
   QueueRead(sys, req);
 
+  if (req.state != req.Head)
+    { struct Bad {}; raise( Bad() ); }
+    
   return true;
 }
 
