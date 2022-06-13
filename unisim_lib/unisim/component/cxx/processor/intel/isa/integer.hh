@@ -1223,6 +1223,21 @@ struct ShlRMCL : public Operation<ARCH>
   void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shl( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
+template <class ARCH, class OP>
+struct Shlx : public Operation<ARCH>
+{
+  Shlx( OpBase<ARCH> const& opbase, uint8_t _gn, MOp<ARCH> const* _rmop, uint8_t _vn ) : Operation<ARCH>( opbase ), gn( _gn ), rmop( _rmop ), vn( _vn ) {}
+  uint8_t gn, vn;
+  RMOp<ARCH> rmop;
+
+  void disasm( std::ostream& sink ) const { sink << "shlx " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+
+  void execute( ARCH& arch ) const {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    arch.regwrite( OP(), gn, arch.rmread( OP(), rmop ) << (arch.regread( OP(), vn ) & val_t(OP::SIZE - 1)) );
+  }
+};
+
 template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xc0" ) /4 & RM() & Imm<8>() ))
@@ -1272,6 +1287,16 @@ template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH
       else if (ic.opsize() == 64) return new ShlRMCL<ARCH,GOq>( _.opbase(), _.rmop() );
       return 0;
     }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\xf7" ) & RM() ))
+
+    {
+      if ((not ic.vex()) || (ic.vlen() != 128)) return 0;
+      if (ic.w())
+	return new Shlx<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+      else
+	return new Shlx<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+    }
   
   return 0;
 }};
@@ -1297,6 +1322,21 @@ struct ShrRMCL : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OP::SIZE>( "shr", rmop.isreg() ) << "%cl," << DisasmE( OP(), rmop ); }
   
   void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shr( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+};
+
+template <class ARCH, class OP>
+struct Shrx : public Operation<ARCH>
+{
+  Shrx( OpBase<ARCH> const& opbase, uint8_t _gn, MOp<ARCH> const* _rmop, uint8_t _vn ) : Operation<ARCH>( opbase ), gn( _gn ), rmop( _rmop ), vn( _vn ) {}
+  uint8_t gn, vn;
+  RMOp<ARCH> rmop;
+
+  void disasm( std::ostream& sink ) const { sink << "shrx " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+
+  void execute( ARCH& arch ) const {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    arch.regwrite( OP(), gn, arch.rmread( OP(), rmop ) >> (arch.regread( OP(), vn ) & val_t(OP::SIZE - 1)) );
+  }
 };
 
 template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1348,7 +1388,17 @@ template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH
       else if (ic.opsize() == 64) return new ShrRMCL<ARCH,GOq>( _.opbase(), _.rmop() );
       return 0;
     }
-  
+
+  if (auto _ = match( ic, vex( "\xf2\x0f\x38\xf7" ) & RM() ))
+
+    {
+      if ((not ic.vex()) || (ic.vlen() != 128)) return 0;
+      if (ic.w())
+	return new Shrx<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+      else
+	return new Shrx<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+    }
+
   return 0;
 }};
 
@@ -1373,6 +1423,22 @@ struct SarRMCL : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OP::SIZE>( "sar", rmop.isreg() ) << "%cl," << DisasmE( OP(), rmop ); }
   
   void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_sar( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+};
+
+template <class ARCH, class OP>
+struct Sarx : public Operation<ARCH>
+{
+  Sarx( OpBase<ARCH> const& opbase, uint8_t _gn, MOp<ARCH> const* _rmop, uint8_t _vn ) : Operation<ARCH>( opbase ), gn( _gn ), rmop( _rmop ), vn( _vn ) {}
+  uint8_t gn, vn;
+  RMOp<ARCH> rmop;
+
+  void disasm( std::ostream& sink ) const { sink << "sarx " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+
+  void execute( ARCH& arch ) const {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::s sval_t;
+    arch.regwrite( OP(), gn, val_t(sval_t(arch.rmread( OP(), rmop )) >> sval_t(arch.regread( OP(), vn ) & val_t(OP::SIZE - 1))) );
+  }
 };
 
 template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1423,6 +1489,16 @@ template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH
       else if (ic.opsize() == 32) return new SarRMCL<ARCH,GOd>( _.opbase(), _.rmop() );
       else if (ic.opsize() == 64) return new SarRMCL<ARCH,GOq>( _.opbase(), _.rmop() );
       return 0;
+    }
+
+  if (auto _ = match( ic, vex( "\xf3\x0f\x38\xf7" ) & RM() ))
+
+    {
+      if ((not ic.vex()) || (ic.vlen() != 128)) return 0;
+      if (ic.w())
+	return new Sarx<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+      else
+	return new Sarx<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
     }
   
   return 0;
