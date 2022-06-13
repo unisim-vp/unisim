@@ -38,12 +38,14 @@
 #include <iomanip>
 #include <sys/utsname.h>
 
-LinuxOS::LinuxOS( std::ostream& log,
-         unisim::service::interfaces::Registers *regs_if,
-         unisim::service::interfaces::Memory<uint64_t> *mem_if,
-         unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
-         )
-  : unisim::service::interfaces::LinuxOS()
+LinuxOS::LinuxOS(char const* name, std::ostream& log,
+                 unisim::service::interfaces::Registers *regs_if,
+                 unisim::service::interfaces::Memory<uint64_t> *mem_if,
+                 unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
+                 )
+  : unisim::kernel::Object(name, 0)
+  , unisim::service::interfaces::LinuxOS()
+  , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >(name)
   , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
   , exited( false )
   , app_ret_status( -1 )
@@ -154,10 +156,10 @@ LinuxOS::Core( std::string const& coredump )
 
                       struct { char const* name; unsigned size; } coredumpregs[] =
                         {
-                          {"%r15",64}, {"%r14",64}, {"%r13",64}, {"%r12",64}, {"%rbp",64}, {"%rbx",64}, {"%r11",64}, {"%r10",64},
-                          {"%r9", 64}, {"%r8", 64}, {"%rax",64}, {"%rcx",64}, {"%rdx",64}, {"%rsi",64}, {"%rdi",64}, {"!orig_rax",64},
-                          {"%rip",64}, {"!cs", 16}, {"%eflags",32}, {"%rsp",64},
-                          {"!ss", 16}, {"%fs_base",64}, {"%gs_base",64}, {"!ds",16}, {"!es",16}, {"!fs",16}, {"!gs",16}
+                          {"r15",64}, {"r14",64}, {"r13",64}, {"r12",64}, {"rbp",64}, {"rbx",64}, {"r11",64}, {"r10",64},
+                          {"r9", 64}, {"r8", 64}, {"rax",64}, {"rcx",64}, {"rdx",64}, {"rsi",64}, {"rdi",64}, {"!orig_rax",64},
+                          {"rip",64}, {"!cs", 16}, {"eflags",32}, {"rsp",64},
+                          {"!ss", 16}, {"fs_base",64}, {"gs_base",64}, {"!ds",16}, {"!es",16}, {"!fs",16}, {"!gs",16}
                         };
 
                       for (unsigned idx = 0, end = sizeof (coredumpregs) / sizeof coredumpregs[0]; idx < end; ++idx)
@@ -193,8 +195,8 @@ LinuxOS::Core( std::string const& coredump )
                       { /* FCW */
                         uint16_t& fcw = *(uint16_t*)(content);
                         if (need_endian_swap) unisim::util::endian::BSwap( fcw );
-                        std::cerr << std::setw(12) << "%fcw" << ": " << std::hex << fcw << std::endl;
-                        if (auto reg = linux_impl.GetDebugRegister("%fcw"))
+                        std::cerr << std::setw(12) << "fcw" << ": " << std::hex << fcw << std::endl;
+                        if (auto reg = linux_impl.GetDebugRegister("fcw"))
                           reg->SetValue(&fcw);
                         else
                           throw 0;
@@ -205,7 +207,7 @@ LinuxOS::Core( std::string const& coredump )
                         if (need_endian_swap) throw 0;
                         for (unsigned reg = 0; reg < 16; ++reg)
                           {
-                            std::ostringstream buf; buf << "%xmm" << std::dec << reg;
+                            std::ostringstream buf; buf << "xmm" << std::dec << reg;
                             char const* regname = buf.str().c_str();
                             std::cerr << std::setw(12) << regname << ':';
                             for (int idx = 16; --idx>= 0;)
@@ -255,11 +257,9 @@ LinuxOS::Core( std::string const& coredump )
 }
 
 void
-LinuxOS::Setup( bool verbose )
+LinuxOS::Setup()
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(verbose);
-  
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetMemoryPageSize( 0x1000UL );
   struct utsname unm;
@@ -298,24 +298,26 @@ LinuxOS::SetEnvironment( std::vector<std::string> const& envs )
   linux_impl.SetEnvironment(envs);
 }
 
-void
+bool
 LinuxOS::Process( std::vector<std::string> const& simargs )
 {
   if (not linux_impl.SetCommandLine(simargs))
-    throw 0;
+    return false;
     
   // Set the binary that will be simulated in the target simulator
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
-    throw 0;
+    return false;
   
   linux_impl.SetStackBase( 0x40000000UL );
 
   // now it is time to try to run the initialization of the linuxlib
   if (not linux_impl.Load())
-    throw 0;
+    return false;
   
   if (not linux_impl.SetupTarget())
-    throw 0;
+    return false;
+
+  return true;
 }
 
 void

@@ -35,28 +35,16 @@
 //unisim/util/debug/coff_symtab/coff_symtab.tcc
 
 #include <debugger.hh>
-#include <architecture.hh>
-#include <unisim/util/loader/coff_loader/coff_loader.hh>
-#include <unisim/util/loader/coff_loader/coff_loader.tcc>
-#include <unisim/util/debug/profile.hh>
-#include <unisim/util/debug/profile.tcc>
-#include <unisim/util/debug/coff_symtab/coff_symtab.hh>
-#include <unisim/util/debug/coff_symtab/coff_symtab.tcc>
-#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/debug/inline_debugger/inline_debugger.tcc>
-#include <unisim/service/debug/gdb_server/gdb_server.hh>
-#include <unisim/service/debug/gdb_server/gdb_server.tcc>
-#include <unisim/service/debug/debugger/debugger.hh>
+#include <arch.hh>
+#include <linuxsystem.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
-#include <unisim/util/simfloat/floating.hh>
-#include <unisim/util/simfloat/floating.tcc>
+#include <unisim/service/debug/inline_debugger/inline_debugger.tcc>
+#include <unisim/service/debug/gdb_server/gdb_server.tcc>
 
-Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
-  : unisim::kernel::Object(name, 0)
-  , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>(name, 0)
-  , debug_hub("debug-hub", this)
-  //, gdb_server("gdb-server", this)
-  , inline_debugger("inline-debugger", this)
+Debugger::Debugger(Arch& arch, LinuxOS& linux_os)
+  : debug_hub("debug-hub", 0)
+  //, gdb_server("gdb-server", 0)
+  , inline_debugger("inline-debugger", 0)
 {
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
@@ -66,7 +54,10 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
   debug_hub.memory_import                         [0]  -> Bind(arch);
   debug_hub.registers_import                      [0]  -> Bind(arch);
   debug_hub.memory_access_reporting_control_import[0]  -> Bind(arch);
-  
+
+  // Debug_Hub <-> Loader connections
+  debug_hub.blob_import                                . Bind(linux_os);
+
   unsigned front_end = 0;
   // inline-debugger <-> DebugHub connections
   {
@@ -100,37 +91,5 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
 
   //   gdb_server["verbose"] = true;
   // }
-  
-  // DebugHub <-> Loader connections
-  bool const verbose = false, debug_dwarf = false, parse_dwarf = false;
-  unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader loader;
-
-  loader.SetDebugInfoStream(std::cerr);
-  loader.SetDebugWarningStream(std::cerr);
-  loader.SetDebugErrorStream(std::cerr);
-  // loader.SetRegistersInterface(0, 0);
-  // loader.SetMemoryInterface(0, 0);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-  loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
-  // loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
-  // loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
-  loader.SetFileName("-");
-
-  
-  if (not loader.Load(sink) or not (blob = loader.GetBlob()))
-    {
-      std::cerr << "Could not create blob from given file." << std::endl;
-      struct Bad {}; throw Bad ();
-    }
-
-  blob->Catch();
-  
-  debug_hub.blob_import . Bind( *this );
 }
 
-Debugger::~Debugger()
-{
-  if (blob)
-    blob->Release();
-}

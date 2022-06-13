@@ -1,5 +1,6 @@
 unisim/util/debug/dwarf/68hc12_dwarf_register_number_mapping.xml
 unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml
+unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml
 unisim/util/debug/dwarf/avr32_dwarf_register_number_mapping.xml
 unisim/util/debug/dwarf/power64_dwarf_register_number_mapping.xml

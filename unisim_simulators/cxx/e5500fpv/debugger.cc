@@ -54,7 +54,7 @@
 
 Debugger::Debugger(Arch& cpu, LinuxOS& linux_os)
   : debug_hub("debug_hub", 0)
-    //  , inline_debugger("inline_debugger", 0)
+    //  , inline_debugger("inline-debugger", 0)
   , gdb_server("gdb-server",0)
 {
   // Debugger <-> CPU connections

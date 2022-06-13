@@ -187,6 +187,8 @@ struct AArch64
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>
+  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
 {
   typedef U64 UREG;
   typedef U64 SREG;

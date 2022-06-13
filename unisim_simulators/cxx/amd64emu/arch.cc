@@ -36,17 +36,28 @@
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/likely/likely.hh>
 #include <sstream>
 #include <cmath>
 #include <cassert>
 
-Arch::Arch()
-  : unisim::service::interfaces::MemoryInjection<uint64_t>()
-  , unisim::service::interfaces::Memory<uint64_t>()
-  , unisim::service::interfaces::Registers()
+Arch::Arch(char const* name)
+  : unisim::kernel::Object(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, 0)
   , linux_os(0)
   , m_mem()
   , segregs(), fs_base(), gs_base()
+  , requires_memory_access_reporting(false)
+  , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
   , rip(), u64regs(), m_flags()
   , m_fregs(), m_ftop(0), m_fcw(0x37f)
   , umms(), vmm_storage(), mxcsr(0x1fa0)
@@ -57,16 +68,63 @@ Arch::Arch()
   , instruction_count(0)
     //    , gdbchecker()
 {
-  regmap["%rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%rip", &this->rip);
-  regmap["%fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%fs_base", &this->fs_base);
-  regmap["%gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%gs_base", &this->fs_base);
-  regmap["%fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("%fcw", &this->m_fcw);
+  regmap["rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("rip", &this->rip);
+  regmap["fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("fs_base", &this->fs_base);
+  regmap["gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("gs_base", &this->fs_base);
+  regmap["fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("fcw", &this->m_fcw);
+
+  struct EFlagsRegister : public unisim::service::interfaces::Register
+  {
+    EFlagsRegister(Arch& _cpu, unsigned _size) : cpu(_cpu), size(_size) {}
+    Arch& cpu;
+    unsigned size;
+    char const* GetName() const override
+    {
+      struct Bad {};
+      switch (size) {
+      default: throw Bad();
+      case 4: return "eflags";
+      case 8: return "rflags";
+      }
+    }
+    void GetValue(void* buffer) const override
+    {
+      uint32_t bits = unisim::component::cxx::processor::intel::eflagsread(cpu);
+      struct Bad {};
+      switch (size) {
+      default: throw Bad();
+      case 4: *((uint32_t*)buffer) = bits; break;
+      case 8: *((uint64_t*)buffer) = bits; break;
+      }
+    }
+    void SetValue(void const* buffer) override
+    {
+      struct Bad {};
+      uint32_t bits;
+      switch (size) {
+      default: throw Bad();
+      case 4: bits = *((uint32_t*)buffer); break;
+      case 8: bits = *((uint64_t*)buffer); break;
+      }
+      struct { unsigned bit; FLAG::Code flag; }
+      ffs[] = {{0, FLAG::CF}, {2, FLAG::PF}, {4, FLAG::AF}, {6, FLAG::ZF}, {7, FLAG::SF}, {10, FLAG::DF}, {11, FLAG::OF}};
+      for (unsigned idx = 0, end = sizeof(ffs)/sizeof(ffs[0]); idx < end; ++idx)
+        cpu.flagwrite( ffs[idx].flag, bit_t((bits >> ffs[idx].bit) & 1u) );
+      uint32_t chk = unisim::component::cxx::processor::intel::eflagsread(cpu);
+      if (bits != chk)
+        std::cerr << "Warning: imported rflags " << std::hex << bits << " ended with " << chk << std::endl;
+    }
+    int GetSize() const override { return size; }
+  };
 
   {
-    EFlagsRegister* reg = new EFlagsRegister(*this);
-    regmap[reg->GetName()] = reg;
+    for (unsigned size = 4; size <= 8; size *= 2)
+      {
+        EFlagsRegister* reg = new EFlagsRegister(*this, size);
+        regmap[reg->GetName()] = reg;
+      }
   }
-    
+
   struct XmmRegister : public unisim::service::interfaces::Register
   {
     XmmRegister(std::string const& _name, Arch& _cpu, unsigned _reg) : name(_name), cpu(_cpu), reg(_reg) {}
@@ -88,23 +146,25 @@ Arch::Arch()
     }
     int GetSize() const override { return 16; }
   };
-    
+
   for (int idx = 0; idx < 16; ++idx)
     {
-      std::ostringstream regname;
+      std::ostringstream regasm;
       using unisim::component::cxx::processor::intel::DisasmV;
       typedef unisim::component::cxx::processor::intel::XMM XMM;
-      regname << DisasmV( XMM(), idx );
-      regmap[regname.str()] = new XmmRegister(regname.str(), *this, idx);
+      regasm << DisasmV( XMM(), idx );
+      std::string regname = regasm.str().substr(1);
+      regmap[regname] = new XmmRegister(regname, *this, idx);
     }
-    
+
   for (int idx = 0; idx < 16; ++idx)
     {
-      std::ostringstream regname;
-      regname << unisim::component::cxx::processor::intel::DisasmG(GOq(), idx);
-      regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &u64regs[idx]);
+      std::ostringstream regasm;
+      regasm << unisim::component::cxx::processor::intel::DisasmG(GOq(), idx);
+      std::string regname = regasm.str().substr(1);
+      regmap[regname] = new unisim::util::debug::SimpleRegister<uint64_t>(regname, &u64regs[idx]);
     }
-    
+
   //   struct SegmentRegister : public unisim::service::interfaces::Register
   //   {
   //     SegmentRegister( Arch& _arch, std::string _name, unsigned _idx ) : arch(_arch), name(_name), idx(_idx) {}
@@ -123,29 +183,62 @@ Arch::Arch()
   //     regname << unisim::component::cxx::processor::intel::DisasmS(idx);
   //     regmap[regname.str()] = new SegmentRegister(*this, regname.str(), idx);
   //   }
-    
+
   //   for (int idx = 0; idx < 4; ++idx) {
   //     std::ostringstream regname;
   //     regname << "@gdt[" << idx<< "].base";
   //     regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &m_gdt_bases[idx]);
   //   }
-    
-  //   struct X87Register : public unisim::service::interfaces::Register
-  //   {
-  //     X87Register( std::string _name, Arch& _arch, unsigned _idx ) : name(_name), arch(_arch), idx(_idx) {}
-  //     char const* GetName() const { return name.c_str(); }
-  //     void GetValue(void *buffer) const { *((f64_t*)buffer) = arch.fread( idx ); }
-  //     void SetValue(const void *buffer) { arch.fwrite( idx, *((f64_t*)buffer) ); }
-  //     int GetSize() const { return 8; }
-  //     std::string name;
-  //     Arch& arch;
-  //     unsigned idx;
-  //   };
-  //   for (int idx = 0; idx < 8; ++idx) {
-  //     std::ostringstream regname;
-  //     regname << unisim::component::cxx::processor::intel::DisasmFPR(idx);
-  //     regmap[regname.str()] = new X87Register( regname.str(), *this, idx );
-  //   }
+
+    struct X87Register : public unisim::service::interfaces::Register
+    {
+      X87Register( std::string _name, Arch& _arch, unsigned _idx ) : name(_name), arch(_arch), idx(_idx) {}
+      char const* GetName() const { return name.c_str(); }
+      void GetValue(void *buffer) const { *((f64_t*)buffer) = arch.fread( idx ); }
+      void SetValue(const void *buffer) { arch.fwrite( idx, *((f64_t*)buffer) ); }
+      int GetSize() const { return 8; }
+      std::string name;
+      Arch& arch;
+      unsigned idx;
+    };
+    for (int idx = 0; idx < 8; ++idx)
+      {
+        std::ostringstream regname;
+        regname << "st" << idx;
+        regmap[regname.str()] = new X87Register( regname.str(), *this, idx );
+    }
+}
+
+void
+Arch::StepInstruction()
+{
+  uint64_t insn_addr = this->rip;
+  
+  /*** Handle debugging interface ***/
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportFetchInstruction(insn_addr);
+
+  // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+  //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+
+  if (debug_yielding_import)
+    debug_yielding_import->DebugYield();
+
+  Arch::Operation* op = fetch();
+  if (not op) throw op;
+
+  this->rip = insn_addr + op->length;
+
+  // op->disasm( std::cerr );
+  // std::cerr << std::endl;
+  asm volatile ("operation_execute:");
+  op->execute( *this );
+
+  //cpu.gdbchecker.step(cpu);
+  // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+  
+  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportCommitInstruction(insn_addr, op->length);
 }
 
 Arch::Operation*
@@ -163,19 +256,17 @@ Arch::fetch()
     IPage* page = GetIPage( insn_addr, offset );
 
     Operation*& cache_op = page->GetCached(offset, &decbuf[0], mode);
-      
+
     if (not cache_op)
       {
         if (not (cache_op = this->Decode( mode, insn_addr, &decbuf[0] )))
           return 0;
         memcpy( &page->bytes[offset], &decbuf[0], cache_op->length );
       }
-    
+
     latest_instruction = cache_op;
   }
-  
-  this->rip = insn_addr + latest_instruction->length;
-    
+
   if (do_disasm)
     {
       std::ios fmt(NULL);
@@ -185,7 +276,7 @@ Arch::fetch()
       std::cout << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],latest_instruction->length) << ")\n";
       std::cout.copyfmt(fmt);
     }
-    
+
   ++instruction_count;
   return latest_instruction;
 }
@@ -203,9 +294,9 @@ Arch::xgetbv()
 // Arch::cpuid()
 // {
 //   uint32_t level = this->regread( GOd(), 0 ), count = this->regread( GOd(), 1 );
-  
+
 //   uint32_t r[4];
-  
+
 //   __asm__ ("cpuid\n\t" : "=a" (r[0]), "=c" (r[1]), "=d" (r[2]), "=b" (r[3]) : "0" (level), "1" (count));
 
 //   for (int idx = 0; idx < 4; ++idx)
@@ -218,7 +309,7 @@ Arch::cpuid()
   switch (this->regread( GOd(), 0 )) {
   case 0: {
     this->regwrite( GOd(), 0, u32_t( 4 ) );
-  
+
     char const* name = "GenuineIntel";
     { uint32_t word = 0;
       int idx = 12;
@@ -239,14 +330,14 @@ Arch::cpuid()
       (0  << 16 /* extended model */) |
       (0  << 20 /* extended family */);
     this->regwrite( GOd(), 0, u32_t( eax ) );
-    
+
     uint32_t const ebx =
       (0 <<  0 /* Brand index */) |
       (4 <<  8 /* Cache line size (/ 64bits) */) |
       (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
       (0 << 24 /* Initial APIC ID */);
     this->regwrite( GOd(), 3, u32_t( ebx ) );
-    
+
     uint32_t const ecx =
       (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
       (0 << 0x01 /* PCLMULQDQ Available */) |
@@ -281,7 +372,7 @@ Arch::cpuid()
       (1 << 0x1e /* RDRAND Available */) |
       (1 << 0x1f /* Is virtual machine */);
     this->regwrite( GOd(), 1, u32_t( ecx ) );
-    
+
     uint32_t const edx =
       (1 << 0x00 /* Floating Point Unit On-Chip */) |
       (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
@@ -316,7 +407,7 @@ Arch::cpuid()
       (0 << 0x1e /* Resrved */) |
       (0 << 0x1f /* Pending Break Enable */);
     this->regwrite( GOd(), 2, u32_t( edx ) );
-    
+
   } break;
   case 2: {
     this->regwrite( GOd(), 0, u32_t( 0 ) );
@@ -354,7 +445,7 @@ Arch::cpuid()
     } break;
     }
   } break;
-  
+
   case 0x80000000: {
     this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
     this->regwrite( GOd(), 3, u32_t( 0 ) );
@@ -458,9 +549,9 @@ void
 Arch::fxam()
 {
   double val = this->fread( 0 );
-      
+
   flagwrite( FLAG::C1, __signbit( val ) );
-      
+
   switch (__fpclassify( val )) {
   case FP_NAN:
     flagwrite( FLAG::C3, 0 );
@@ -498,7 +589,7 @@ struct UInt128
 
   template <typename T> UInt128 operator << (T lshift) const { UInt128 res(*this); res <<= lshift; return res; }
   template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
-  
+
   template <typename T>
   UInt128& operator <<= (T lshift)
   {
@@ -538,7 +629,7 @@ struct UInt128
     bits[1] = ~bits[1] + uint64_t(not bits[0]);
     return *this;
   }
-  
+
   explicit operator uint64_t () const { return bits[0]; }
   explicit operator bool () const { return bits[0] or bits[1]; }
 
@@ -551,7 +642,7 @@ struct SInt128 : public UInt128
   SInt128( uint64_t value ) : UInt128( value, 0 ) {}
   SInt128( UInt128 const& value ) : UInt128( value ) {}
   template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
-  
+
   template <typename T>
   UInt128& operator >>= (T rshift)
   {
@@ -562,7 +653,7 @@ struct SInt128 : public UInt128
     bits[1] = int64_t(bits[1]) >> rshift;
     return *this;
   }
-  
+
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
@@ -592,9 +683,9 @@ void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
           rem.bits[1] = rem.bits[1] % divisor;
         }
     }
-   
+
   if (quotient.bits[1]) arch._DE();
-  
+
   lo  = quotient.bits[0];
   hi = rem.bits[1];
 }
@@ -634,12 +725,6 @@ void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )
   arch.flagwrite( Arch::FLAG::CF, bool(ovf) );
 }
 
-Arch::u32_t
-Arch::EFlagsRegister::eflagsread() const
-{
-  return unisim::component::cxx::processor::intel::eflagsread( cpu );
-}
-
 Arch::f80_t
 Arch::fmemread80( unsigned int _seg, addr_t _addr )
 {
@@ -649,7 +734,7 @@ Arch::fmemread80( unsigned int _seg, addr_t _addr )
   {
     addr_t last_addr = _addr, addr = _addr;
     typename Memory::Page* page = m_mem.getpage( addr );
-      
+
     for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
       {
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
@@ -663,7 +748,7 @@ Arch::fmemread80( unsigned int _seg, addr_t _addr )
   uint64_t mantissa = 0;
   for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
   union IEEE754_t { double as_f; uint64_t as_u; } word;
-    
+
   if (exponent != 0x7fff) {
     if (exponent == 0) {
       if (mantissa == 0) return sign ? -0.0 : 0.0;
@@ -689,7 +774,7 @@ Arch::fmemread80( unsigned int _seg, addr_t _addr )
       word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
     }
   }
-    
+
   else /* (exponent == 0x7fff) */ {
     if (mantissa >> 63) {
       /* IEEE 754 compatible */
@@ -701,7 +786,7 @@ Arch::fmemread80( unsigned int _seg, addr_t _addr )
       word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
     }
   }
-    
+
   return word.as_f;
 }
 
@@ -750,30 +835,87 @@ void
 Arch::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 {
   // Program counter
-  scanner.Append( GetRegister( "%rip" ) );
+  scanner.Append( GetRegister( "rip" ) );
   // General purpose registers
-  // scanner.Append( GetRegister( "%eax" ) );
-  // scanner.Append( GetRegister( "%ecx" ) );
-  // scanner.Append( GetRegister( "%edx" ) );
-  // scanner.Append( GetRegister( "%ebx" ) );
-  // scanner.Append( GetRegister( "%esp" ) );
-  // scanner.Append( GetRegister( "%ebp" ) );
-  // scanner.Append( GetRegister( "%esi" ) );
-  // scanner.Append( GetRegister( "%edi" ) );
+  // scanner.Append( GetRegister( "eax" ) );
+  // scanner.Append( GetRegister( "ecx" ) );
+  // scanner.Append( GetRegister( "edx" ) );
+  // scanner.Append( GetRegister( "ebx" ) );
+  // scanner.Append( GetRegister( "esp" ) );
+  // scanner.Append( GetRegister( "ebp" ) );
+  // scanner.Append( GetRegister( "esi" ) );
+  // scanner.Append( GetRegister( "edi" ) );
   // Segments
-  // scanner.Append( GetRegister( "%es" ) );
-  // scanner.Append( GetRegister( "%cs" ) );
-  // scanner.Append( GetRegister( "%ss" ) );
-  // scanner.Append( GetRegister( "%ds" ) );
-  // scanner.Append( GetRegister( "%fs" ) );
-  // scanner.Append( GetRegister( "%gs" ) );
+  // scanner.Append( GetRegister( "es" ) );
+  // scanner.Append( GetRegister( "cs" ) );
+  // scanner.Append( GetRegister( "ss" ) );
+  // scanner.Append( GetRegister( "ds" ) );
+  // scanner.Append( GetRegister( "fs" ) );
+  // scanner.Append( GetRegister( "gs" ) );
   // FP registers
-  // scanner.Append( GetRegister( "%st" ) );
-  // scanner.Append( GetRegister( "%st(1)" ) );
-  // scanner.Append( GetRegister( "%st(2)" ) );
-  // scanner.Append( GetRegister( "%st(3)" ) );
-  // scanner.Append( GetRegister( "%st(4)" ) );
-  // scanner.Append( GetRegister( "%st(5)" ) );
-  // scanner.Append( GetRegister( "%st(6)" ) );
-  // scanner.Append( GetRegister( "%st(7)" ) );
+  // scanner.Append( GetRegister( "st0" ) );
+  // scanner.Append( GetRegister( "st1" ) );
+  // scanner.Append( GetRegister( "st2" ) );
+  // scanner.Append( GetRegister( "st3" ) );
+  // scanner.Append( GetRegister( "st4" ) );
+  // scanner.Append( GetRegister( "st5" ) );
+  // scanner.Append( GetRegister( "st6" ) );
+  // scanner.Append( GetRegister( "st7" ) );
+}
+
+void
+Arch::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
+{
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: { struct Bad {}; throw Bad(); }
+  }
+}
+
+/** Disasm an instruction address.
+ * Returns a string with the disassembling of the instruction found
+ *   at address addr.
+ *
+ * @param addr the address of the instruction to disassemble
+ * @param next_addr the address following the requested instruction
+ *
+ * @return the disassembling of the requested instruction address
+ */
+std::string
+Arch::Disasm(uint64_t addr, uint64_t& next_addr)
+{
+  uint8_t decbuf[15];
+  lla_memcpy( decbuf, addr, sizeof (decbuf) );
+  unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
+
+  struct
+  {
+    uint64_t extract(Operation* op, uint64_t addr)
+    {
+      op->disasm( buf );
+      return op->length;
+    }
+    std::ostringstream buf;
+  } _;
+
+  uint64_t offset;
+  IPage* page = GetIPage( addr, offset );
+
+  if (Operation* cache_op = page->GetCached(offset, &decbuf[0], mode))
+    {
+      next_addr = addr + _.extract(cache_op, addr);
+    }
+  else if (Operation* new_op = this->Decode( mode, addr, &decbuf[0] ))
+    {
+      next_addr = addr + _.extract(new_op, addr);
+      delete new_op;
+    }
+  else
+    {
+      next_addr = addr;
+      _.buf << "<bad>";
+    }
+  return _.buf.str();
 }

@@ -161,14 +161,6 @@ namespace linux_os {
       if (not lin.SetTargetRegister("sp", sp_section->GetAddr()))
         return false;
 
-      // parameter_type par1 = 0;
-      // parameter_type par2 = 0;
-      // if (not this->MemIF().ReadMemory(stack_pointer +  8, (uint8_t *)&par1, sizeof(par1)) or
-      //     not this->MemIF().ReadMemory(stack_pointer + 16, (uint8_t *)&par2, sizeof(par2)) or
-      //     not lin.SetTargetRegister("%rdi", Target2Host(lin.GetEndianness(), par1)) or
-      //     not lin.SetTargetRegister("%rsi", Target2Host(lin.GetEndianness(), par2)))
-      //   return false;
-
       // Early TLS setup
       if (auto etls_section = lin.GetBlob()->FindSection(".unisim.linux_os.etls.middle_pointer"))
         {

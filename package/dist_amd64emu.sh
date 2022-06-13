@@ -7,6 +7,11 @@ source "$(dirname $0)/dist_common.sh"
 import unisim/component/cxx/processor/intel || exit
 import unisim/component/cxx/processor/intel/isa || exit
 import unisim/util/debug || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/service/debug/inline_debugger || exit
+import unisim/service/debug/debugger || exit
+import unisim/service/debug/gdb_server || exit
 import unisim/service/interfaces/linux_os || exit
 import unisim/service/interfaces/memory_injection || exit
 import unisim/service/interfaces/memory || exit
@@ -34,19 +39,20 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
-"
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 arch.cc \
 isa.cc \
 linuxsystem.cc \
 main.cc \
+debugger.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 arch.hh \
 linuxsystem.hh \
+debugger.hh \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\

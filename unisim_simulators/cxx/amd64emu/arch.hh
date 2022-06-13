@@ -45,15 +45,23 @@
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
+#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/kernel/kernel.hh>
 #include <map>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
 struct Arch
-  : public unisim::service::interfaces::MemoryInjection<uint64_t>
-  , public unisim::service::interfaces::Memory<uint64_t>
-  , public unisim::service::interfaces::Registers
+  : public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
+  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
+  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t>>
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>
+  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
 {
   typedef uint8_t      u8_t;
   typedef uint16_t     u16_t;
@@ -87,28 +95,7 @@ struct Arch
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
 
-  struct EFlagsRegister  : public unisim::service::interfaces::Register
-  {
-    uint32_t eflagsread() const;
-    EFlagsRegister(Arch& _cpu) : cpu(_cpu) {}
-    Arch& cpu;
-    char const* GetName() const override { return "%eflags"; }
-    void GetValue(void* buffer) const override { *((uint32_t*)buffer) = eflagsread(); }
-    void SetValue(void const* buffer) override
-    {
-      uint32_t bits = *((uint32_t*)buffer);
-      struct { unsigned bit; FLAG::Code flag; }
-      ffs[] = {{0, FLAG::CF}, {2, FLAG::PF}, {4, FLAG::AF}, {6, FLAG::ZF}, {7, FLAG::SF}, {10, FLAG::DF}, {11, FLAG::OF}};
-      for (unsigned idx = 0, end = sizeof(ffs)/sizeof(ffs[0]); idx < end; ++idx)
-        cpu.flagwrite( ffs[idx].flag, bit_t((bits >> ffs[idx].bit) & 1u) );
-      uint32_t chk = eflagsread();
-      if (bits != chk)
-        std::cerr << "Warning: imported eflags " << std::hex << bits << " ended with " << chk << std::endl;
-    }
-    int GetSize() const override { return 32; }
-  };
-
-  Arch();
+  Arch(char const* na);
 
   ~Arch()
   {
@@ -365,6 +352,26 @@ struct Arch
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+
+  // unisim::service::interfaces::Disassembly<uint64_t>
+  virtual std::string Disasm(uint64_t addr, uint64_t& next_addr) override;
+  typedef unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export_t;
+  //  disasm_export_t disasm_export() { return disasm_export_t("disasm-export",this); };
+
+  // unisim::service::interfaces::MemoryAccessReportingControl
+  virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
+  // unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+  bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+  bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
+
+  // unisim::service::interfaces::MemoryAccessReporting<uint64_t>
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+
+  // unisim::service::interfaces::DebugYielding
+  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
+
+
   // Implementation of ExecuteSystemCall
   
   void ExecuteSystemCall( unsigned id )
@@ -636,7 +643,8 @@ public:
   Operation* fetch();
   Operation* Decode( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes );
   Operation* GetInsn( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes );
-  
+
+  void StepInstruction();
 
   void stop() { std::cerr << "Processor halt.\n"; throw 0; }
 

@@ -34,36 +34,68 @@
 
 #include <arch.hh>
 #include <linuxsystem.hh>
+#include <debugger.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
+#include <unisim/kernel/kernel.hh>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 #include <inttypes.h>
+
+void simdefault(unisim::kernel::Simulator* sim)
+{
+  sim->SetVariable("http-server.http-port", 12360);
+  sim->SetVariable("web-terminal.verbose", false);
+  sim->SetVariable("netstreamer.tcp-port", 1234);
+  sim->SetVariable("netstreamer.filter-null-character", true);
+  sim->SetVariable("netstreamer.verbose", false);
+
+  sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
+  sim->SetVariable("gdb-server.verbose", false);
+  sim->SetVariable("debug-hub.parse-dwarf", false);
+  sim->SetVariable("debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debug-hub.architecture[0]", "amd64");
+  sim->SetVariable("inline-debugger.program-counter-name", "rip");
+
+
+  new unisim::kernel::config::json::JSONConfigFileHelper(sim);
+}
 
 int
 main( int argc, char *argv[] )
 {
-  uintptr_t simargs_idx = 1;
-  std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
-  
-  {
-    std::cerr << "arguments:\n";
-    unsigned idx = 0;
-    for (std::string const& arg : simargs) {
-      std::cerr << "  args[" << idx << "]: " << arg << '\n';
-    }
-  }
-  
-  if (simargs.size() == 0) {
-    std::cerr << "Simulation command line empty." << std::endl;
-    return 1;
-  }
+  unisim::kernel::Simulator simulator(argc, argv, &simdefault);
 
-  Arch cpu;
-  LinuxOS linux64( std::cerr, &cpu, &cpu, &cpu );
-  cpu.SetLinuxOS( &linux64 );
+  std::vector<std::string> const& simargs = simulator.GetCmdArgs();
+  if (simargs.size() == 0)
+    {
+      std::cerr << "Simulation command line empty." << std::endl;
+      return 1;
+    }
+
+  unisim::kernel::logger::console::Printer printer;
+
+  Arch cpu("amd64");
+  LinuxOS linux64("amd64linux", std::cerr, &cpu, &cpu, &cpu);
+
   cpu.do_disasm = false;
-  linux64.Setup( false );
-  
+  cpu.SetLinuxOS( &linux64 );
+
+  Debugger debugger(cpu, linux64);
+
+  linux64.SetVerbose( false );
+  linux64.Setup();
+
+  switch (simulator.Setup())
+    {
+    case simulator.ST_ERROR:         return 1;
+    case simulator.ST_OK_DONT_START: return 0;
+    default: break;
+    }
+
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   if (char* var = getenv("CORE_SETUP"))
@@ -82,22 +114,23 @@ main( int argc, char *argv[] )
         std::vector<std::string> envs{"LANG=C"};
         linux64.SetEnvironment( envs );
       }
-      linux64.Process( simargs );
+      if (not linux64.Process( simargs ))
+        {
+          std::cerr << "Error: failed to execute command:\n";
+          {
+            unsigned idx = 0;
+            for (std::string const& arg : simargs)
+              std::cerr << "  argv[" << idx++ << "]: " << arg << '\n';
+          }
+          return 1;
+        }
     }
-  
+
   std::cerr << "\n*** Run ***" << std::endl;
   //cpu.gdbchecker.start(cpu);
   while (not linux64.exited)
     {
-      Arch::Operation* op = cpu.fetch();
-      if (not op)
-        return 1;
-      // op->disasm( std::cerr );
-      // std::cerr << std::endl;
-      asm volatile ("operation_execute:");
-      op->execute( cpu );
-      //cpu.gdbchecker.step(cpu);
-      // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      cpu.StepInstruction();
       if (cpu.instruction_count >= 0x100000)
         break;
       // if ((cpu.instruction_count % 0x1000000) == 0)
@@ -105,6 +138,6 @@ main( int argc, char *argv[] )
     }
 
   std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
-  
+
   return 0;
 }

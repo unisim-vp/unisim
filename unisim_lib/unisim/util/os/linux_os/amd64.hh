@@ -176,7 +176,7 @@ namespace linux_os {
       // }
       
       // Set PC to the program entry point
-      if (not lin.SetTargetRegister("%rip", lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister("rip", lin.GetEntryPoint()))
         return false;
       
       // Set SP to the base of the created stack
@@ -187,21 +187,21 @@ namespace linux_os {
         return false;
       }
       address_type stack_pointer = sp_section->GetAddr();
-      if (not lin.SetTargetRegister("%rsp", stack_pointer))
+      if (not lin.SetTargetRegister("rsp", stack_pointer))
         return false;
       parameter_type par1 = 0;
       parameter_type par2 = 0;
       if (not this->MemIF().ReadMemory(stack_pointer +  8, (uint8_t *)&par1, sizeof(par1)) or
           not this->MemIF().ReadMemory(stack_pointer + 16, (uint8_t *)&par2, sizeof(par2)) or
-          not lin.SetTargetRegister("%rdi", Target2Host(lin.GetEndianness(), par1)) or
-          not lin.SetTargetRegister("%rsi", Target2Host(lin.GetEndianness(), par2)))
+          not lin.SetTargetRegister("rdi", Target2Host(lin.GetEndianness(), par1)) or
+          not lin.SetTargetRegister("rsi", Target2Host(lin.GetEndianness(), par2)))
         return false;
           
       return true;
     }
     
     static void SetAMD64SystemCallStatus(LINUX& _lin, int64_t ret, bool error)
-    { _lin.SetTargetRegister("%rax", (parameter_type) ret); }
+    { _lin.SetTargetRegister("rax", (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetAMD64SystemCallStatus( lin, ret, error ); }
     
@@ -209,12 +209,12 @@ namespace linux_os {
     {
       parameter_type val = 0;
       switch (id) {
-      case 0: lin.GetTargetRegister("%rdi", val); break;
-      case 1: lin.GetTargetRegister("%rsi", val); break;
-      case 2: lin.GetTargetRegister("%rdx", val); break;
-      case 3: lin.GetTargetRegister("%r10", val); break;
-      case 4: lin.GetTargetRegister("%r8", val); break;
-      case 5: lin.GetTargetRegister("%r9", val); break;
+      case 0: lin.GetTargetRegister("rdi", val); break;
+      case 1: lin.GetTargetRegister("rsi", val); break;
+      case 2: lin.GetTargetRegister("rdx", val); break;
+      case 3: lin.GetTargetRegister("r10", val); break;
+      case 4: lin.GetTargetRegister("r8", val); break;
+      case 5: lin.GetTargetRegister("r9", val); break;
       default: throw std::logic_error("internal_error");
       }
           
@@ -765,16 +765,16 @@ namespace linux_os {
               switch (sc.code)
                 {
                 case 0x1001: // ARCH_SET_GS; Set the 64-bit base for the GS register to addr.
-                  lin.SetTargetRegister( "%gs_base", sc.addr ); // pseudo allocation of a tls descriptor
+                  lin.SetTargetRegister( "gs_base", sc.addr ); // pseudo allocation of a tls descriptor
                   break;
                 case 0x1002: // ARCH_SET_FS; Set the 64-bit base for the FS register to addr.
-                  lin.SetTargetRegister( "%fs_base", sc.addr ); // pseudo allocation of a tls descriptor
+                  lin.SetTargetRegister( "fs_base", sc.addr ); // pseudo allocation of a tls descriptor
                   break;
                 case 0x1003: // ARCH_GET_FS; Return the 64-bit base value for the FS register of the current thread in the unsigned long pointed to by addr.
-                  lin.WriteMemory( sc.addr, lin.GetTargetRegister( "%fs_base" ) );
+                  lin.WriteMemory( sc.addr, lin.GetTargetRegister( "fs_base" ) );
                   break;
                 case 0x1004: // ARCH_GET_GS; Return the 64-bit base value for the GS register of the current thread in the unsigned long pointed to by addr.
-                  lin.WriteMemory( sc.addr, lin.GetTargetRegister( "%gs_base" ) );
+                  lin.WriteMemory( sc.addr, lin.GetTargetRegister( "gs_base" ) );
                   break;
                 case 0x1011: // ARCH_GET_CPUID;
                 case 0x1012: // ARCH_SET_CPUID;

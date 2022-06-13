@@ -55,6 +55,8 @@ AArch64::AArch64(char const* name)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >(name, 0)
   , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, 0)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, 0)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
@@ -2462,3 +2464,4 @@ AArch64::Disasm(uint64_t addr, uint64_t& next_addr)
 
   return buffer.str();
 }
+

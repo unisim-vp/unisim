@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018,
+ *  Copyright (c) 2018-2021,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,46 +32,37 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __AMD64EMU_LINUXSYSTEM_HH__
-#define __AMD64EMU_LINUXSYSTEM_HH__
-
-#include <unisim/util/os/linux_os/linux.hh>
-#include <unisim/util/os/linux_os/amd64.hh>
-#include <unisim/kernel/kernel.hh>
-#include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/service/interfaces/blob.hh>
-#include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
+#ifndef __ARM64VP_DEBUGGER_HH__
+#define __ARM64VP_DEBUGGER_HH__
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <iosfwd>
 #include <inttypes.h>
 
-struct LinuxOS
-  : public unisim::service::interfaces::LinuxOS
-  , public unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >
+struct Arch;
+struct LinuxOS;
+
+struct Debugger
 {
-  typedef uint64_t addr_t;
-  LinuxOS( char const* name, std::ostream& log,
-           unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<addr_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<addr_t> *mem_inject_if );
-  
-  void Setup();
-  void SetVerbose(bool verbose) { linux_impl.SetVerbose(verbose); }
-  void ApplyHostEnvironment();
-  void SetEnvironment( std::vector<std::string> const& envs );
-  bool Process( std::vector<std::string> const& simargs );
-  void Core( std::string const& coredump );
+  struct DEBUGGER_CONFIG
+  {
+    typedef uint64_t ADDRESS;
+    static const unsigned int NUM_PROCESSORS = 1;
+    /* gdb_server, inline_debugger and/or monitor */
+    static const unsigned int MAX_FRONT_ENDS = 1;
+  };
 
-  void ExecuteSystemCall( int id );
-  void LogSystemCall(int id);
-  void SetBrk(addr_t brk_addr);
+  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
+  //typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
 
-  // unisim::service::interfaces::Blob<uint64_t>
-  virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const { return linux_impl.GetBlob(); }
 
-  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
-  bool exited;
-  int app_ret_status;
+  Debugger(Arch&, LinuxOS&);
+
+  DebugHub debug_hub;
+  //GDBServer gdb_server;
+  InlineDebugger inline_debugger;
 };
 
-#endif // __AMD64EMU_LINUXSYSTEM_HH__
+#endif // __ARM64VP_LINUX_DEBUGGER_HH__
