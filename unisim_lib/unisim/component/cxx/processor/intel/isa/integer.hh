@@ -506,6 +506,26 @@ struct AndRMI : public Operation<ARCH>
   void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_and( arch, arch.rmread( OP(), rmop ), u_type(imm) ) ); }
 };
 
+template <class ARCH, class OP>
+struct Andn : public Operation<ARCH>
+{
+  Andn( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), vn( _vn ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn, vn;
+
+  void disasm( std::ostream& sink ) const {
+    sink << "andn " << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ) << ',' << DisasmG( OP(), gn );
+  }
+
+  typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+
+  void execute( ARCH& arch ) const
+  {
+    u_type res = eval_and( arch, arch.rmread( OP(), rmop ),
+			   ~u_type(arch.regread( OP(), vn )) );
+    arch.regwrite( OP(), gn, res );
+  }
+};
+
+
 template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, lockable( opcode( "\040" ) & RM() ) ))
@@ -573,6 +593,14 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
       else if (ic.opsize() == 64) return new AndRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       return 0;
     }
+
+  if (auto _ = match( ic, vex( "\x0f\x38\xf2" ) & RM() )) {
+    if (ic.f0() || not ic.vex() || ic.vlen() != 128) return 0;
+    if (ic.w())
+      return new Andn<ARCH,GOq>( _.opbase(), _.rmop(), _.vreg(), _.greg() );
+    else
+      return new Andn<ARCH,GOd>( _.opbase(), _.rmop(), _.vreg(), _.greg() );
+  }
 
   return 0;
 }};

@@ -1055,6 +1055,7 @@ struct VADD { char const* n() { return "add"; } }; struct VSUB { char const* n()
 struct VMUL { char const* n() { return "mul"; } }; struct VDIV { char const* n() { return "div"; } };
 struct VMIN { char const* n() { return "min"; } }; struct VMAX { char const* n() { return "max"; } };
 struct VSLL { char const* n() { return "sll"; } };
+struct VMULL { char const* n() { return "mull"; } };
 struct VMULUDQ { char const* n() { return "muludq"; } };
 
 template <class ARCH, class OPERATION, class VR, unsigned OPSZ, bool PACKED>
@@ -1262,7 +1263,7 @@ struct VIntBin : public Operation<ARCH>
   // valtype eval ( VDIV const&, valtype const& src1, valtype const& src2 ) const { return src1 / src2; }
   // valtype eval ( VMAX const&, valtype const& src1, valtype const& src2 ) const { return std::max(src1, src2); }
   // valtype eval ( VMIN const&, valtype const& src1, valtype const& src2 ) const { return std::min(src1, src2); }
-  // valtype eval ( VMUL const&, valtype const& src1, valtype const& src2 ) const { return src1 * src2; }
+  valtype eval ( VMULL const&, valtype const& src1, valtype const& src2 ) const { return src1 * src2; }
   valtype eval ( VSUB const&, valtype const& src1, valtype const& src2 ) const { return src1 - src2; }
   valtype eval ( VSLL const&, valtype const& src1, valtype const& src2 ) const { return src1 << src2; }
 
@@ -1301,6 +1302,14 @@ template <class ARCH> struct DC<ARCH,VINTBIN> { Operation<ARCH>* get( InputCode<
   if (auto _ = match( ic, vex( "\x66\x0f\xd4" ) & RM() ))
 
     return newVIntBin<VADD,64>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xd5" ) & RM() ))
+
+    return newVIntBin<VMULL,16>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x40" ) & RM() ))
+
+    return newVIntBin<VMULL,32>( ic, _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, vex( "\x66\x0f\xf8" ) & RM() ))
 
@@ -1951,68 +1960,6 @@ Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
 // 
 // pmaddwd_vdq_wdq.disasm = { _sink << "pmaddwd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
-
-template <class ARCH, class VR, class GR>
-struct PInsr : public Operation<ARCH>
-{
-  PInsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, uint8_t _im ) : Operation<ARCH>( opbase ), rm(_rm), vn(_vn), gn(_gn), im(_im) {}
-  void disasm( std::ostream& sink ) const
-  {
-    sink << (VR::vex() ? "v" : "") << "pinsr" << SizeID<GR::SIZE>::iid()
-         <<                ' ' << DisasmI( im )
-         <<                ',' << DisasmE( GR(), rm ); // TODO: for register, stays disassembled as doubleword below doubleword
-    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
-    sink <<                ',' << DisasmV( VR(), gn );
-  }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,GR::SIZE>::u u_type;
-    for (unsigned idx = 0, end = VR::size() / GR::SIZE; idx < end; ++idx )
-      {
-        if (((idx ^ im) % end) == 0)
-          arch.vmm_write( VR(), gn, idx, arch.rmread( GR(), rm ) );
-        else if (gn != vn)
-          arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, u_type() ) );
-      }
-  }
-  RMOp<ARCH> rm; uint8_t vn, gn, im;
-};
-
-// /* PINSRB/PINSRW/PINSRD/PINSRQ -- Insert Byte/Word/Dword/Qword */
-// op pinsrw_pq_ed_ib( 0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// op pinsrb_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x20[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// op pinsrw_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// op pinsrd_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x22[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-
-template <class ARCH> struct DC<ARCH,PINSR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-
-  if (auto _ = match( ic, vex( "\x66\x0f\xc4" ) & RM() & Imm<8>() ))
-
-    return newPInsr<GOw>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
-
-  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x20" ) & RM() & Imm<8>() ))
-
-    return newPInsr<GOb>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
-
-  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x22" ) & RM() & Imm<8>() ))
-    {
-      if (ic.w()) return newPInsr<GOq>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
-      /* else */  return newPInsr<GOd>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
-    }
-
-  return 0;
-}
-template <class GR>
-Operation<ARCH>* newPInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im )
-{
-  if (not ic.vex())     return new PInsr<ARCH,SSE,GR>( opbase, rm, gn, gn, im );
-  unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PInsr<ARCH,XMM,GR>( opbase, rm, vn, gn, im );
-  return 0;
-}
-};
 
 struct PMax { static char const* name() { return "pmax"; } }; struct PMin { static char const* name() { return "pmin"; } };
 
@@ -3212,5 +3159,182 @@ template <class ARCH> struct DC<ARCH,VZEROUPPER> { Operation<ARCH>* get( InputCo
       return new VZeroUpper<ARCH,YMM>( _.opbase() );
 
   return 0;
+}
+};
+
+
+
+template <class ARCH, class VR, class GOP, class DOP>
+struct Extr : public Operation<ARCH>
+{
+  Extr( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), imm( _imm ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn, imm;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex() ? "vp" : "p") << "extr" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmI( imm ) << ',' << DisasmV( VR(), gn ) << ',' << DisasmE( DOP(), rm );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOP::SIZE>::u src_type;
+    typedef typename TypeFor<ARCH,DOP::SIZE>::u dst_type;
+    src_type value = arch.vmm_read( VR(), gn, imm & ((VR::SIZE / GOP::SIZE) - 1), src_type() );
+    if (rm.isreg())
+      arch.rmwrite( DOP(), rm, dst_type( value ) );
+    else
+      arch.rmwrite( GOP(), rm, value );
+  }
+};
+
+template <class ARCH>
+struct VExtractI128 : public Operation<ARCH>
+{
+  VExtractI128( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), imm( _imm ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn, imm;
+  void disasm( std::ostream& sink ) const { sink << "vextracti128 " << DisasmI( imm ) << ',' << DisasmV( YMM(), gn ) << ',' << DisasmW( XMM(), rm );}
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOq::SIZE>::u src_type;
+    arch.vmm_write( XMM(), rm, 0, arch.vmm_read( YMM(), gn, 2 * (imm & 1), src_type()) );
+    arch.vmm_write( XMM(), rm, 1, arch.vmm_read( YMM(), gn, 2 * (imm & 1) + 1, src_type()) );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,EXTRACT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x14" ) & RM() & Imm<8>() ))
+
+    return newExtr<GOb>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xc5" ) & RM() & Imm<8>() )) {
+    if (ic.vex() && ic.w()) return 0;
+    RMOp<ARCH> rm( _.rmop() );
+    if (not rm.isreg()) return 0;
+
+    return newExtr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+  }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x15" ) & RM() & Imm<8>() ))
+
+    return newExtr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xc5" ) & RM() & Imm<8>() )) {
+
+    return newExtr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+  }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x16" ) & RM() & Imm<8>() )) {
+
+    if (ic.w())
+      return newExtr<GOq>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+    else
+      return newExtr<GOd>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x39" ) & RM() & Imm<8>() )) {
+    if (ic.w() || ic.vlen() != 256) return 0;
+
+    return new VExtractI128<ARCH>( _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+  }
+
+  return 0;
+}
+template <class GOP>
+Operation<ARCH>* newExtr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex()) return newExtr2<SSE,GOP>( ic, opbase, imm, rm, gn );
+  if (ic.vreg()) return 0;
+  if (ic.vlen() == 128) return newExtr2<XMM,GOP>( ic, opbase, imm, rm, gn );
+  if (ic.vlen() == 256) return newExtr2<YMM,GOP>( ic, opbase, imm, rm, gn );
+  return 0;
+}
+template <class VR, class GOP>
+Operation<ARCH>* newExtr2( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (ic.mode64()) return new Extr<ARCH,VR,GOP,GOq>( opbase, imm, rm, gn );
+  else return new Extr<ARCH,VR,GOP,GOd>( opbase, imm, rm, gn );
+}
+};
+
+template <class ARCH, class VR, class GOP>
+struct Insr : public Operation<ARCH>
+{
+  Insr( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), imm( _imm ), rm( _rm ), vn( _vn ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn, vn, imm;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex() ? "vp" : "p") << "insr" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmI( imm ) << ',';
+    if (GOP::SIZE < 32)
+      sink << DisasmE( GOd(), rm );
+    else
+      sink << DisasmE( GOP(), rm );
+    if (VR::vex())
+      sink << ',' << DisasmV( VR(), vn );
+    sink << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOP::SIZE>::u src_type;
+    unsigned pos = imm & ((VR::SIZE / GOP::SIZE) - 1);
+    for (unsigned idx = 0, end = VR::size() / GOP::SIZE; idx < end; ++idx) {
+      src_type value;
+      if (idx == pos) value = arch.rmread( GOP(), rm );
+      else value = arch.vmm_read( VR(), vn, idx, src_type() );
+      arch.vmm_write( VR(), gn, idx, value );
+    }
+  }
+};
+
+template <class ARCH>
+struct VInsertI128 : public Operation<ARCH>
+{
+  VInsertI128( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), imm( _imm ), rm( _rm ), vn( _vn ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn, vn, imm;
+  void disasm( std::ostream& sink ) const { sink << "vinserti128 " << DisasmI( imm ) << ',' << DisasmW( XMM(), rm ) << ',' << DisasmV( YMM(), vn ) << ',' << DisasmV( YMM(), gn );}
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOq::SIZE>::u src_type;
+    uint8_t pos = imm & 1;
+    arch.vmm_write( YMM(), gn, 2 * pos, arch.vmm_read( XMM(), rm, 0, src_type() ) );
+    arch.vmm_write( YMM(), gn, 2 * pos + 1, arch.vmm_read( XMM(), rm, 1, src_type() ) );
+    arch.vmm_write( YMM(), gn, 2 * (1 - pos), arch.vmm_read( YMM(), vn, 2 * (1 - pos), src_type() ) );
+    arch.vmm_write( YMM(), gn, 2 * (1 - pos) + 1, arch.vmm_read( YMM(), vn, 2 * (1 - pos) + 1, src_type() ) );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,INSERT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x20" ) & RM() & Imm<8>() ))
+
+    return newInsr<GOb>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xc4" ) & RM() & Imm<8>() )) {
+    if (ic.vex() && ic.w()) return 0;
+
+    return newInsr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+  }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x22" ) & RM() & Imm<8>() )) {
+
+    if (ic.w())
+      return newInsr<GOq>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+    else
+      return newInsr<GOd>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x38" ) & RM() & Imm<8>() )) {
+    if (ic.w() || ic.vlen() != 256) return 0;
+
+    return new VInsertI128<ARCH>( _.opbase(), _.i( uint8_t() ), _.rmop(), _.vreg(), _.greg() );
+  }
+
+  return 0;
+}
+template <class GOP>
+Operation<ARCH>* newInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex())
+    return new Insr<ARCH,SSE,GOP>( opbase, imm, rm, gn, gn );
+
+  if (ic.vlen() != 128) return 0;
+
+  return  new Insr<ARCH,XMM,GOP>( opbase, imm, rm, ic.vreg(), gn );
 }
 };
