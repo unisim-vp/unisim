@@ -1230,7 +1230,7 @@ struct Shlx : public Operation<ARCH>
   uint8_t gn, vn;
   RMOp<ARCH> rmop;
 
-  void disasm( std::ostream& sink ) const { sink << "shlx " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+  void disasm( std::ostream& sink ) const { sink << "shlx " << DisasmG( OP(), vn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), gn ); }
 
   void execute( ARCH& arch ) const {
     typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
@@ -1331,7 +1331,7 @@ struct Shrx : public Operation<ARCH>
   uint8_t gn, vn;
   RMOp<ARCH> rmop;
 
-  void disasm( std::ostream& sink ) const { sink << "shrx " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+  void disasm( std::ostream& sink ) const { sink << "shrx " << DisasmG( OP(), vn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), gn ); }
 
   void execute( ARCH& arch ) const {
     typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
@@ -1432,7 +1432,7 @@ struct Sarx : public Operation<ARCH>
   uint8_t gn, vn;
   RMOp<ARCH> rmop;
 
-  void disasm( std::ostream& sink ) const { sink << "sarx " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ); }
+  void disasm( std::ostream& sink ) const { sink << "sarx " << DisasmG( OP(), vn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), gn ); }
 
   void execute( ARCH& arch ) const {
     typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
