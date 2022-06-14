@@ -37,6 +37,7 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/util/identifier/identifier.hh>
 #include <iosfwd>
 #include <inttypes.h>
 
@@ -44,6 +45,7 @@ struct Arch;
 struct LinuxOS;
 
 struct Debugger
+  : public unisim::kernel::Object
 {
   struct DEBUGGER_CONFIG
   {
@@ -54,15 +56,18 @@ struct Debugger
   };
 
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
-  //typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
+  typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
 
-
-  Debugger(Arch&, LinuxOS&);
+  Debugger(char const*, Arch&, LinuxOS&);
 
   DebugHub debug_hub;
-  //GDBServer gdb_server;
-  InlineDebugger inline_debugger;
+  GDBServer* gdb_server;
+  InlineDebugger* inline_debugger;
+  bool enable_debug;
+  bool enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool> param_enable_debug;
+  unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 };
 
 #endif // __ARM64VP_LINUX_DEBUGGER_HH__

@@ -47,19 +47,12 @@
 
 void simdefault(unisim::kernel::Simulator* sim)
 {
-  sim->SetVariable("http-server.http-port", 12360);
-  sim->SetVariable("web-terminal.verbose", false);
-  sim->SetVariable("netstreamer.tcp-port", 1234);
-  sim->SetVariable("netstreamer.filter-null-character", true);
-  sim->SetVariable("netstreamer.verbose", false);
-
-  sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
-  sim->SetVariable("gdb-server.verbose", false);
-  sim->SetVariable("debug-hub.parse-dwarf", false);
-  sim->SetVariable("debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml");
-  sim->SetVariable("debug-hub.architecture[0]", "amd64");
-  sim->SetVariable("inline-debugger.program-counter-name", "rip");
-
+  sim->SetVariable("debugger.debug-hub.parse-dwarf", false);
+  sim->SetVariable("debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.debug-hub.architecture[0]", "amd64");
+  sim->SetVariable("debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
+  sim->SetVariable("debugger.gdb-server.verbose", false);
+  sim->SetVariable("debugger.inline-debugger.program-counter-name", "rip");
 
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
@@ -84,17 +77,10 @@ main( int argc, char *argv[] )
   cpu.do_disasm = false;
   cpu.SetLinuxOS( &linux64 );
 
-  Debugger debugger(cpu, linux64);
+  Debugger debugger("debugger", cpu, linux64);
 
   linux64.SetVerbose( false );
   linux64.Setup();
-
-  switch (simulator.Setup())
-    {
-    case simulator.ST_ERROR:         return 1;
-    case simulator.ST_OK_DONT_START: return 0;
-    default: break;
-    }
 
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
@@ -124,6 +110,13 @@ main( int argc, char *argv[] )
           }
           return 1;
         }
+    }
+
+  switch (simulator.Setup())
+    {
+    case simulator.ST_ERROR:         return 1;
+    case simulator.ST_OK_DONT_START: return 0;
+    default: break;
     }
 
   std::cerr << "\n*** Run ***" << std::endl;
