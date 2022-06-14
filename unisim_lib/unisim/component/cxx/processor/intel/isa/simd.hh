@@ -602,6 +602,79 @@ Operation<ARCH>* newMov2( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const
 }
 };
 
+template <class ARCH, class VR, class GOP>
+struct Broadcast : public Operation<ARCH>
+{
+  Broadcast( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "vpbroadcast" << SizeID<GOP::SIZE>::iid() << ' ';
+    if (rm.isreg())
+      sink << DisasmW( XMM(), rm );
+    else
+      sink << DisasmE( GOP(), rm );
+    sink << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOP::SIZE>::u src_type;
+    src_type value = arch.vmm_read( XMM(), rm, 0, src_type());
+    for (unsigned idx = 0, end = VR::size() / GOP::SIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, value );
+  }
+};
+
+template <class ARCH>
+struct BroadcastI128 : public Operation<ARCH>
+{
+  BroadcastI128( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "vpbroadcasti128 " << DisasmW( XMM(), rm ) << ',' << DisasmV( YMM(), gn );}
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOq::SIZE>::u src_type;
+    src_type value = arch.vmm_read( YMM(), rm, 0, src_type());
+    for (unsigned idx = 0, end = YMM::size() / GOq::SIZE; idx < end; ++idx)
+      arch.vmm_write( YMM(), gn, idx, value );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,BROADCAST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x78" ) & RM() ))
+
+    return newBroadcast<GOb>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x79" ) & RM() ))
+
+    return newBroadcast<GOw>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x58" ) & RM() ))
+
+    return newBroadcast<GOd>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x59" ) & RM() ))
+
+    return newBroadcast<GOq>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x5a" ) & RM() )) {
+    if (ic.w() || ic.vlen() != 256) return 0;
+
+    return new BroadcastI128<ARCH>( _.opbase(), _.rmop(), _.greg() );
+  }
+
+  return 0;
+}
+template <class GOP>
+Operation<ARCH>* newBroadcast( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex() || ic.vreg() || ic.w()) return 0;
+  if (ic.vlen() == 128) return new Broadcast<ARCH,XMM,GOP>( opbase, rm, gn );
+  if (ic.vlen() == 256) return new Broadcast<ARCH,YMM,GOP>( opbase, rm, gn );
+  return 0;
+}
+};
+
+
 template <class ARCH, class VR, unsigned OPSIZE, class IMPL>
 struct MovfpVW : public Operation<ARCH>
 {
