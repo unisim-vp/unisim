@@ -1056,7 +1056,7 @@ struct VMUL { char const* n() { return "mul"; } }; struct VDIV { char const* n()
 struct VMIN { char const* n() { return "min"; } }; struct VMAX { char const* n() { return "max"; } };
 struct VSLL { char const* n() { return "sll"; } }; struct VSRL { char const* n() { return "srl"; } }; struct VSRA { char const* n() { return "sra"; } };
 struct VMULL { char const* n() { return "mull"; } };
-struct VMULUDQ { char const* n() { return "muludq"; } };
+struct VMULU { char const* n() { return "mulu"; } };
 
 template <class ARCH, class OPERATION, class VR, unsigned OPSZ, bool PACKED>
 struct VArithmeticVVW : public Operation<ARCH>
@@ -1397,19 +1397,20 @@ Operation<ARCH>* newVIntBinImm( InputCode<ARCH> const& ic, OpBase<ARCH> const& o
 };
 
 template <class ARCH, class VR, unsigned OPSZ, class OPERATION>
-struct VMulExt : public Operation<ARCH>
+struct VIntBinExt : public Operation<ARCH>
 {
 
 
   typedef typename TypeFor<ARCH,OPSZ>::u valtype;
   typedef typename TypeFor<ARCH,2*OPSZ>::u restype;
 
-  restype eval ( VMULUDQ const&, valtype const& src1, valtype const& src2 ) const { return restype(restype(src1) * restype(src2)); }
+  restype eval ( VMULU const&, valtype const& src1, valtype const& src2 ) const { return restype(restype(src1) * restype(src2)); }
 
-  VMulExt( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
+  VIntBinExt( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
   void disasm( std::ostream& sink ) const
   {
     sink << (VR::vex() ? "vp" : "p") << OPERATION().n()
+         << SizeID<OPSZ>::iid() << SizeID<2*OPSZ>::iid()
          <<                ' ' << DisasmW( VR(), rm );
     if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
     sink <<                ',' << DisasmV( VR(), gn );
@@ -1427,24 +1428,95 @@ struct VMulExt : public Operation<ARCH>
 };
 
 
-template <class ARCH> struct DC<ARCH,VMULEXT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+template <class ARCH> struct DC<ARCH,VINTBINEXT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
   if (auto _ = match( ic, vex( "\x66\x0f\xf4" ) & RM() ))
 
-    return newVMulExt<VMULUDQ, 32>( ic, _.opbase(), _.rmop(), _.greg() );
+    return newVIntBinExt<VMULU, 32>( ic, _.opbase(), _.rmop(), _.greg() );
 
   return 0;
 }
 
 template <class OPERATION, unsigned int OPSZ>
-Operation<ARCH>* newVMulExt( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+Operation<ARCH>* newVIntBinExt( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
 {
-  if (not ic.vex())     return new VMulExt<ARCH,SSE,OPSZ,OPERATION>( opbase, rm, gn, gn );
+  if (not ic.vex())     return new VIntBinExt<ARCH,SSE,OPSZ,OPERATION>( opbase, rm, gn, gn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new VMulExt<ARCH,XMM,OPSZ,OPERATION>( opbase, rm, vn, gn );
-  if (ic.vlen() == 256) return new VMulExt<ARCH,YMM,OPSZ,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 128) return new VIntBinExt<ARCH,XMM,OPSZ,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 256) return new VIntBinExt<ARCH,YMM,OPSZ,OPERATION>( opbase, rm, vn, gn );
+  return 0;
+}
+};
+
+template <class ARCH, class VR, class SOP, class DOP>
+struct Vmovzx : public Operation<ARCH>
+{
+
+
+  typedef typename TypeFor<ARCH,SOP::SIZE>::u src_type;
+  typedef typename TypeFor<ARCH,DOP::SIZE>::u dst_type;
+
+  Vmovzx( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "vp" : "p") << "movzx"
+         << SizeID<SOP::SIZE>::iid() << SizeID<DOP::SIZE>::iid()
+         <<                ' ' << DisasmW( VR(), rm )
+         <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    src_type src[VR::size()/DOP::SIZE];
+    for (unsigned idx = 0, end = VR::size()/DOP::SIZE; idx < end; ++idx)
+      src[idx] = arch.vmm_read( VR(), rm, idx, src_type() );
+    for (unsigned idx = 0, end = VR::size()/DOP::SIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, dst_type( src[idx] ) );
+  }
+  RMOp<ARCH> rm; uint8_t gn;
+};
+
+
+template <class ARCH> struct DC<ARCH,VMOVZX> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x30" ) & RM() ))
+
+    return newVmovzx<GOb, GOw>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x31" ) & RM() ))
+
+    return newVmovzx<GOb, GOd>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x32" ) & RM() ))
+
+    return newVmovzx<GOb, GOq>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x33" ) & RM() ))
+
+    return newVmovzx<GOw, GOd>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x34" ) & RM() ))
+
+    return newVmovzx<GOw, GOq>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x35" ) & RM() ))
+
+    return newVmovzx<GOd, GOq>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}
+
+  template <class SOP, class DOP>
+Operation<ARCH>* newVmovzx( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+{
+  if (not ic.vex())     return new Vmovzx<ARCH,SSE,SOP,DOP>( opbase, rm, gn );
+
+  if (ic.vreg()) return 0;
+  if (ic.vlen() == 128) return new Vmovzx<ARCH,XMM,SOP,DOP>( opbase, rm, gn );
+  if (ic.vlen() == 256) return new Vmovzx<ARCH,YMM,SOP,DOP>( opbase, rm, gn );
   return 0;
 }
 };
@@ -1502,7 +1574,95 @@ Operation<ARCH>* newVMulExt( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 // op packusdw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x2b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // packusdw_vdq_wdq.disasm = { _sink << "packusdw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
+//
+
+
+template <class ARCH, class VR, class OP, bool SIGN>
+struct Pack_S : public Operation<ARCH>
+{
+
+
+  typedef typename TypeFor<ARCH,OP::SIZE>::s src_type;
+  typedef typename TypeFor<ARCH,OP::SIZE/2>::s dst_type;
+
+  const src_type lbound = SIGN
+    ? src_type( - ( 1L << (OP::SIZE / 2 - 1) ) )
+    : src_type( 0 );
+  const src_type hbound = SIGN
+    ? src_type( 1L << (OP::SIZE / 2 - 1) )
+    : src_type( 1L << OP::SIZE / 2 );
+
+  dst_type mask ( typename ARCH::bit_t cond ) const
+  {
+    return dst_type( !cond ) - dst_type( 1 );
+  }
+
+  dst_type saturate ( src_type x ) const
+  {
+    return mask( lbound < x ) & dst_type( lbound ) | mask( x >= hbound ) & dst_type( hbound - src_type( 1 ) ) | mask( lbound >= x && x < hbound ) & dst_type( x );
+  }
+
+  Pack_S( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << "pack" << (SIGN ? 's' : 'u') << 's'
+         << SizeID<OP::SIZE>::iid() << SizeID<OP::SIZE/2>::iid()
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex())
+      sink <<              ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    src_type src[VR::size()/(OP::SIZE/2)];
+    for (unsigned idx = 0, end = VR::size()/OP::SIZE; idx < end; ++idx)
+      src[idx] = arch.vmm_read( VR(), vn, idx, src_type() );
+    for (unsigned idx = 0, end = VR::size()/OP::SIZE; idx < end; ++idx)
+      src[VR::size()/OP::SIZE+idx] = arch.vmm_read( VR(), rm, idx, src_type() );
+    for (unsigned idx = 0, end = VR::size()/(OP::SIZE/2); idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, saturate( src[idx] ) );
+  }
+  RMOp<ARCH> rm; uint8_t vn; uint8_t gn;
+};
+
+
+template <class ARCH> struct DC<ARCH,PACK_S> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x63" ) & RM() ))
+
+    return newPack_S<GOw, true>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x6b" ) & RM() ))
+
+    return newPack_S<GOd, true>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x67" ) & RM() ))
+
+    return newPack_S<GOw, false>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x2b" ) & RM() ))
+
+    return newPack_S<GOd, false>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}
+
+  template <class OP, bool SIGN>
+Operation<ARCH>* newPack_S( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+{
+  if (not ic.vex())     return new Pack_S<ARCH,SSE,OP,SIGN>( opbase, rm, gn, gn );
+
+  uint8_t vn = ic.vreg();
+  if (ic.vlen() == 128) return new Pack_S<ARCH,XMM,OP,SIGN>( opbase, rm, vn, gn );
+  if (ic.vlen() == 256) return new Pack_S<ARCH,YMM,OP,SIGN>( opbase, rm, vn, gn );
+  return 0;
+}
+};
+
+
+
 // /* PADDB/PADDW/PADDD/PADDQ -- Add Packed Integers */
 // op paddb_pq_qq( 0x0f[8]:> <:0xfc[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
