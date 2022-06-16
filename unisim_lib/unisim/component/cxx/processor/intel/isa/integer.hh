@@ -1023,6 +1023,31 @@ struct RorRMCL : public Operation<ARCH>
   void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_ror( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
+template <class ARCH, class OP>
+struct Rorx : public Operation<ARCH>
+{
+  typedef typename ARCH::u8_t u8_t;
+  Rorx( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( _imm ), gn(_gn) {} RMOp<ARCH> rmop; uint8_t imm, gn;
+
+  void disasm( std::ostream& sink ) const {
+    sink << "rorx" << SizeID<OP::SIZE>::iid() << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), gn );
+  }
+
+  typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+
+  void execute( ARCH& arch ) const
+  {
+    intptr_t const bitsize = atpinfo<ARCH,u_type>::bitsize;
+    u8_t const u8bitsize( bitsize );
+    u_type arg1 = arch.rmread( OP(), rmop );
+    u8_t arg2 = u8_t( imm );
+    u8_t sharg = arg2 & shift_counter<ARCH,u_type>::mask();
+    sharg = sharg % u8bitsize;
+    u_type res = (arg1 << (u8bitsize - sharg)) | (arg1 >> sharg);
+    arch.regwrite( OP(), gn, res );
+  }
+};
+
 template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xc0" ) /1 & RM() & Imm<8>() ))
@@ -1072,6 +1097,14 @@ template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH
       else if (ic.opsize() == 64) return new RorRMCL<ARCH,GOq>( _.opbase(), _.rmop() );
       return 0;
     }
+
+  if (auto _ = match( ic, vex( "\xf2\x0f\x3a\xf0" ) & RM() & Imm<8>() )) {
+    if (ic.f0() || not ic.vex() || ic.vreg() || ic.vlen() != 128) return 0;
+    if (ic.w())
+      return new Rorx<ARCH,GOq>( _.opbase(), _.i( int8_t() ), _.rmop(), _.greg() );
+    else
+      return new Rorx<ARCH,GOd>( _.opbase(), _.i( int8_t() ), _.rmop(), _.greg() );
+  }
   
   return 0;
 }};
