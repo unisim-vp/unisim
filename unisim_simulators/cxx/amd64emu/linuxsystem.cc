@@ -38,10 +38,10 @@
 #include <iomanip>
 #include <sys/utsname.h>
 
-LinuxOS::LinuxOS(char const* name, std::ostream& log,
-                 unisim::service::interfaces::Registers *regs_if,
-                 unisim::service::interfaces::Memory<uint64_t> *mem_if,
-                 unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
+LinuxOS::LinuxOS(char const* name, unisim::kernel::Object* parent, std::ostream& log,
+                 unisim::service::interfaces::Registers* regs_if,
+                 unisim::service::interfaces::Memory<uint64_t>* mem_if,
+                 unisim::service::interfaces::MemoryInjection<uint64_t>* mem_inject_if
                  )
   : unisim::kernel::Object(name, 0)
   , unisim::service::interfaces::LinuxOS()

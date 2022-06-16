@@ -49,6 +49,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/kernel.hh>
 #include <map>
 
@@ -95,7 +96,7 @@ struct Arch
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
 
-  Arch(char const* na);
+  Arch(char const* name, unisim::kernel::Object* parent, unisim::service::interfaces::LinuxOS*);
 
   ~Arch()
   {
@@ -107,7 +108,6 @@ struct Arch
       delete hash_table[idx];
   }
   
-  void SetLinuxOS( unisim::service::interfaces::LinuxOS* _linux_os ) { linux_os = _linux_os; }
   // unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
   
   unisim::service::interfaces::LinuxOS* linux_os;
@@ -651,7 +651,8 @@ public:
   struct Unimplemented {};
   void noexec( Operation const& op );
   
-  bool do_disasm;
+  bool enable_disasm;
+  unisim::kernel::variable::Parameter<bool> param_enable_disasm;
   uint64_t instruction_count;
 
   bool Test( bool b ) const { return b; }

@@ -34,11 +34,13 @@
 
 #ifndef __ARM64VP_DEBUGGER_HH__
 #define __ARM64VP_DEBUGGER_HH__
+
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <iosfwd>
+#include <memory>
 #include <inttypes.h>
 
 struct Arch;
@@ -52,21 +54,21 @@ struct Debugger
     typedef uint64_t ADDRESS;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 1;
+    static const unsigned int MAX_FRONT_ENDS = 2;
   };
 
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
   typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
 
-  Debugger(char const*, Arch&, LinuxOS&);
+  Debugger(char const*, unisim::kernel::Object*, Arch&, LinuxOS&);
 
   DebugHub debug_hub;
-  GDBServer* gdb_server;
-  InlineDebugger* inline_debugger;
-  bool enable_debug;
+  std::unique_ptr<GDBServer> gdb_server;
+  std::unique_ptr<InlineDebugger> inline_debugger;
+  bool enable_gdb_server;
   bool enable_inline_debugger;
-  unisim::kernel::variable::Parameter<bool> param_enable_debug;
+  unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 };
 

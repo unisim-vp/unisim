@@ -50,10 +50,10 @@ struct LinuxOS
   , public unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >
 {
   typedef uint64_t addr_t;
-  LinuxOS( char const* name, std::ostream& log,
-           unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<addr_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<addr_t> *mem_inject_if );
+  LinuxOS( char const* name, unisim::kernel::Object* parent, std::ostream& log,
+           unisim::service::interfaces::Registers* regs_if,
+           unisim::service::interfaces::Memory<addr_t>* mem_if,
+           unisim::service::interfaces::MemoryInjection<addr_t>* mem_inject_if );
   
   void Setup();
   void SetVerbose(bool verbose) { linux_impl.SetVerbose(verbose); }

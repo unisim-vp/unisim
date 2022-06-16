@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018,
+ *  Copyright (c) 2018-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,8 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-//unisim/util/debug/coff_symtab/coff_symtab.tcc
-
 #include <debugger.hh>
 #include <arch.hh>
 #include <linuxsystem.hh>
@@ -41,19 +39,16 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.tcc>
 
-Debugger::Debugger(char const* name, Arch& arch, LinuxOS& linux_os)
-  : unisim::kernel::Object(name, 0)
+Debugger::Debugger(char const* name, unisim::kernel::Object* parent, Arch& arch, LinuxOS& linux_os)
+  : unisim::kernel::Object(name, parent)
   , debug_hub("debug-hub", this)
   , gdb_server()
   , inline_debugger()
-  , enable_debug()
+  , enable_gdb_server()
   , enable_inline_debugger()
-  , param_enable_debug("enable-debug", this, enable_debug, "Enable debug session")
-  , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "Use inline-debugger for debug sessions")
+  , param_enable_gdb_server("enable-gdb-server", this, enable_gdb_server, "enable the gdb-server debug sessions")
+  , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "enable the inline-debugger debug sessions")
 {
-  if (not enable_debug)
-    return;
-
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
   //arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
@@ -62,7 +57,7 @@ Debugger::Debugger(char const* name, Arch& arch, LinuxOS& linux_os)
   debug_hub.memory_import                         [0]  -> Bind(arch);
   debug_hub.registers_import                      [0]  -> Bind(arch);
   debug_hub.memory_access_reporting_control_import[0]  -> Bind(arch);
-  
+
   // Debug_Hub <-> Loader connections
   debug_hub.blob_import                                . Bind(linux_os);
 
@@ -70,26 +65,26 @@ Debugger::Debugger(char const* name, Arch& arch, LinuxOS& linux_os)
 
   if (enable_inline_debugger)
     {
-      inline_debugger = new InlineDebugger("inline-debugger",this);
-     unsigned i = front_end++;
-     *debug_hub.debug_event_listener_import[i]     >> inline_debugger->debug_event_listener_export;
-     *debug_hub.debug_yielding_import      [i]     >> inline_debugger->debug_yielding_export;
-     inline_debugger->debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
-     inline_debugger->debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
-     inline_debugger->disasm_import                 >> *debug_hub.disasm_export                [i];
-     inline_debugger->memory_import                 >> *debug_hub.memory_export                [i];
-     inline_debugger->registers_import              >> *debug_hub.registers_export             [i];
-     inline_debugger->stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
-     inline_debugger->symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
-     inline_debugger->backtrace_import              >> *debug_hub.backtrace_export             [i];
-     inline_debugger->debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
-     inline_debugger->data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
-     inline_debugger->subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
-     inline_debugger->stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
+      inline_debugger = std::make_unique<InlineDebugger>("inline-debugger",this);
+      unsigned i = front_end++;
+      *debug_hub.debug_event_listener_import[i]     >> inline_debugger->debug_event_listener_export;
+      *debug_hub.debug_yielding_import      [i]     >> inline_debugger->debug_yielding_export;
+      inline_debugger->debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
+      inline_debugger->debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
+      inline_debugger->disasm_import                 >> *debug_hub.disasm_export                [i];
+      inline_debugger->memory_import                 >> *debug_hub.memory_export                [i];
+      inline_debugger->registers_import              >> *debug_hub.registers_export             [i];
+      inline_debugger->stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
+      inline_debugger->symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
+      inline_debugger->backtrace_import              >> *debug_hub.backtrace_export             [i];
+      inline_debugger->debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
+      inline_debugger->data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
+      inline_debugger->subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
+      inline_debugger->stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
     }
   else
     {
-      gdb_server = new GDBServer("gdb-server",this);
+      gdb_server = std::make_unique<GDBServer>("gdb-server",this);
       unsigned i = front_end++;
       *debug_hub.debug_event_listener_import[i] >> gdb_server->debug_event_listener_export;
       *debug_hub.debug_yielding_import      [i] >> gdb_server->debug_yielding_export;

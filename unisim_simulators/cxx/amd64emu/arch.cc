@@ -41,16 +41,16 @@
 #include <cmath>
 #include <cassert>
 
-Arch::Arch(char const* name)
-  : unisim::kernel::Object(name, 0)
-  , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>(name, 0)
-  , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>(name, 0)
-  , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, 0)
-  , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, 0)
-  , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
-  , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, 0)
-  , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, 0)
-  , linux_os(0)
+Arch::Arch(char const* name, unisim::kernel::Object* parent, unisim::service::interfaces::LinuxOS* linos)
+  : unisim::kernel::Object(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, parent)
+  , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, parent)
+  , linux_os(linos)
   , m_mem()
   , segregs(), fs_base(), gs_base()
   , requires_memory_access_reporting(false)
@@ -64,7 +64,8 @@ Arch::Arch(char const* name)
   , latest_instruction(0)
   , hash_table()
   , mru_page(0)
-  , do_disasm(false)
+  , enable_disasm(false)
+  , param_enable_disasm("enable-disasm", this, enable_disasm, "Enable instruction disassembly before instruction execution")
   , instruction_count(0)
     //    , gdbchecker()
 {
@@ -267,7 +268,7 @@ Arch::fetch()
     latest_instruction = cache_op;
   }
 
-  if (do_disasm)
+  if (enable_disasm)
     {
       std::ios fmt(NULL);
       fmt.copyfmt(std::cout);
