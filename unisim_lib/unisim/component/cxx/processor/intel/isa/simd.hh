@@ -1054,7 +1054,7 @@ Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> co
 struct VADD { char const* n() { return "add"; } }; struct VSUB { char const* n() { return "sub"; } };
 struct VMUL { char const* n() { return "mul"; } }; struct VDIV { char const* n() { return "div"; } };
 struct VMIN { char const* n() { return "min"; } }; struct VMAX { char const* n() { return "max"; } };
-struct VSLL { char const* n() { return "sll"; } };
+struct VSLL { char const* n() { return "sll"; } }; struct VSRL { char const* n() { return "srl"; } }; struct VSRA { char const* n() { return "sra"; } };
 struct VMULL { char const* n() { return "mull"; } };
 struct VMULUDQ { char const* n() { return "muludq"; } };
 
@@ -1234,22 +1234,27 @@ newVFPCvt( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> cons
 }
 };
 
-template <class ARCH, class VR, unsigned OPSZ>
-struct PsllRMI : public Operation<ARCH>
+template <class ARCH, class VR, unsigned OPSZ, class OPERATION>
+struct VIntBinImm : public Operation<ARCH>
 {
   typedef typename TypeFor<ARCH,OPSZ>::u valtype;
+  typedef typename TypeFor<ARCH,OPSZ>::s svaltype;
+  valtype eval ( VSLL const&, valtype const& src1, valtype const& src2 ) const { return src1 << src2; }
+  valtype eval ( VSRL const&, valtype const& src1, valtype const& src2 ) const { return src1 >> src2; }
+  valtype eval ( VSRA const&, valtype const& src1, valtype const& src2 ) const { return (valtype) ((svaltype) src1 >> src2); }
 
-  PsllRMI( OpBase<ARCH> const& opbase, unsigned _vn, unsigned _gn, unsigned _imm ) : Operation<ARCH>(opbase), vn(_vn), gn(_gn), imm(_imm) {}
+  VIntBinImm( OpBase<ARCH> const& opbase, unsigned _imm, unsigned _gn, unsigned _vn ) : Operation<ARCH>(opbase), vn(_vn), gn(_gn), imm(_imm) {}
   void disasm( std::ostream& sink ) const
   {
-    sink << (VR::vex() ? "vp" : "p") << "sll" << SizeID<OPSZ>::iid() << ' ';
-    if (VR::vex()) sink << DisasmV( VR(), vn ) << ',';
-    sink << DisasmV( VR(), gn ) << ',' << DisasmI( imm );
+    sink << (VR::vex() ? "vp" : "p") << OPERATION().n() << SizeID<OPSZ>::iid()
+         <<                ' ' << DisasmI( imm );
+    sink <<                ',' << DisasmV( VR(), gn );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
   }
   void execute( ARCH& arch ) const
   {
     for (unsigned idx = 0, end = VR::size()/OPSZ; idx < end; ++idx)
-      arch.vmm_write( VR(), vn, idx, arch.vmm_read( VR(), gn, idx, valtype() ) << valtype( imm ) );
+      arch.vmm_write( VR(), vn, idx, eval( OPERATION(), arch.vmm_read( VR(), gn, idx, valtype() ), valtype( imm ) ));
   }
   unsigned vn, gn; uint8_t imm;
 };
@@ -1331,9 +1336,37 @@ template <class ARCH> struct DC<ARCH,VINTBIN> { Operation<ARCH>* get( InputCode<
 
     return newVIntBin<VSLL,64>( ic, _.opbase(), _.rmop(), _.greg() );
 
+  if (auto _ = match( ic, vex( "\x66\x0f\x71" ) /6 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSLL,16>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x72" ) /6 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSLL,32>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
   if (auto _ = match( ic, vex( "\x66\x0f\x73" ) /6 & RM() & Imm<8>() ))
 
-    return newPsllRMI<64>( ic, _.opbase(), _.rmop(), _.i( uint8_t() ) );
+    return newVIntBinImm<VSLL,64>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x71" ) /2 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSRL,16>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x72" ) /2 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSRL,32>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x73" ) /2 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSRL,64>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x71" ) /4 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSRA,16>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x72" ) /4 & RM() & Imm<8>() ))
+
+    return newVIntBinImm<VSRA,32>( ic, _.opbase(), _.i( uint8_t() ), _.rmop() );
 
   return 0;
 }
@@ -1346,8 +1379,8 @@ Operation<ARCH>* newVIntBin( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
   if (ic.vlen() == 256) return new VIntBin<ARCH,YMM,OPSIZE,OPERATION>( opbase, rm, vn, gn );
   return 0;
 }
-template <unsigned int OPSZ>
-Operation<ARCH>* newPsllRMI( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned imm )
+template <class OPERATION, unsigned OPSIZE>
+Operation<ARCH>* newVIntBinImm( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned imm, MOp<ARCH> const* _rm )
 {
   RMOp<ARCH> rm(_rm);
 
@@ -1355,13 +1388,10 @@ Operation<ARCH>* newPsllRMI( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 
   unsigned gn = rm.ereg();
 
-  if (not ic.vex())     return new PsllRMI<ARCH,SSE,OPSZ>( opbase, gn, gn, imm );
-
+  if (not ic.vex())     return new VIntBinImm<ARCH,SSE,OPSIZE,OPERATION>( opbase, imm, gn, gn );
   unsigned vn = ic.vreg();
-
-  if (ic.vlen() == 128) return new PsllRMI<ARCH,XMM,OPSZ>( opbase, vn, gn, imm );
-  if (ic.vlen() == 256) return new PsllRMI<ARCH,YMM,OPSZ>( opbase, vn, gn, imm );
-
+  if (ic.vlen() == 128) return new VIntBinImm<ARCH,XMM,OPSIZE,OPERATION>( opbase, imm, gn, vn );
+  if (ic.vlen() == 256) return new VIntBinImm<ARCH,YMM,OPSIZE,OPERATION>( opbase, imm, gn, vn );
   return 0;
 }
 };
