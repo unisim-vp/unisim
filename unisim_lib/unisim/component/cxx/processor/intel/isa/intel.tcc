@@ -66,7 +66,7 @@ namespace intel {
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT, HLT, FENCE,
                      PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VFP,
                      PMOVMSKB, VMOVSD, VMOVZX, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, VINTBIN, VINTBINEXT, MOVQ, BROADCAST, EXTRACT, INSERT,
-                     PACK_S, PSHUFD, PSHUFB, PSHDQ, PTEST, PCMPSTR,
+                     PACK_S, PSHUFD, PSHUFB, PSHDQ, PTEST, PCMPSTR, SHUFP,
 		     VZEROUPPER,
                      operation_count };
 

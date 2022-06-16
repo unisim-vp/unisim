@@ -3278,7 +3278,78 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 // 
 // /* SHUFPD -- Shuffle Packed Double-Precision Floating-Point Values */
 // op shufpd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0xc6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
+//
+
+template <class ARCH, class VR, unsigned OPSIZE>
+struct Shufp : public Operation<ARCH>
+{
+  Shufp( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), imm( _imm ), rm( _rm ), vn( _vn ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn, vn, imm;
+  void disasm( std::ostream& sink ) const {
+    sink << (VR::vex() ? "v" : "") << "shufp" << SizeID<OPSIZE>::fid()
+	 <<   ' ' << DisasmI( imm )
+	 <<   ',' << DisasmW( VR(), rm );
+    if (VR::vex())
+      sink << ',' << DisasmV( VR(), vn );
+    sink << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSIZE>::f src_type;
+
+    enum {
+	  N = 128 / OPSIZE,
+	  BITSHIFT = SB<128 / OPSIZE>::begin,
+	  MASK = 128 / OPSIZE - 1
+    };
+
+    src_type value[VR::SIZE/OPSIZE];
+
+    for (unsigned idx = 0, end = VR::SIZE / 128; idx < end; ++idx) {
+      for (unsigned idy = 0; idy < N / 2; ++idy) {
+	unsigned idz = N * idx + idy;
+	value[idz] = arch.vmm_read( VR(), vn, N * idx + ((imm >> (BITSHIFT * idz)) & MASK), src_type() );
+      }
+      for (unsigned idy = 0; idy < N / 2; ++idy) {
+	unsigned idz = N * idx + N / 2 + idy;
+	value[idz] = arch.vmm_read( VR(), rm, N * idx + ((imm >> (BITSHIFT * idz)) & MASK), src_type() );
+      }
+    }
+
+    for (unsigned idx = 0, end = VR::size() / OPSIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, value[idx] );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,SHUFP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x0f\xc6" ) & RM() & Imm<8>() ))
+
+    return newShufp<32>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xc6" ) & RM() & Imm<8>() ))
+
+    return newShufp<64>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
+
+  return 0;
+}
+template <unsigned OPSIZE>
+Operation<ARCH>* newShufp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex())
+    return new Shufp<ARCH,SSE,OPSIZE>( opbase, imm, rm, gn, gn );
+
+  uint8_t vn = ic.vreg();
+  if (ic.vlen() == 128)
+    return new Shufp<ARCH,XMM,OPSIZE>( opbase, imm, rm, vn, gn );
+  if (ic.vlen() == 256)
+    return new Shufp<ARCH,YMM,OPSIZE>( opbase, imm, rm, vn, gn );
+
+  return 0;
+}
+};
+
 // shufpd_vdq_wdq_ib.disasm = { _sink << "shufpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SQRTPS -- Compute Square Roots of Packed Single-Precision Floating-Point Values */
