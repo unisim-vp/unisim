@@ -1849,7 +1849,11 @@ AArch64::run( uint64_t suspend_at )
               // disasm = true;
             }
 
-          if (terminate) { force_throw(); }
+          if (terminate)
+            {
+              std::cerr << "tfpcount: " << tfpcount << std::endl;
+              force_throw();
+            }
 
           if (disasm)
             {

@@ -276,10 +276,7 @@ struct AArch64
   template <typename T> void fprocess( T& value )
   {
     if (not value.ubits) return;
-    // uint64_t const tfpstep = 0x1000000;
-    // ++tfpcount;
-    // if ((tfpcount % tfpstep) == 0)
-    //   std::cerr << "[FPTaints] " << (tfpcount / tfpstep) << "\n";
+    ++tfpcount;
     typedef typename T::ubits_type bits_type;
     bits_type* vptr = (bits_type*)&value.value;
     *vptr &= bits_type(-2);
