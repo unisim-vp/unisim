@@ -1925,12 +1925,26 @@ br.execute = {
  * end of BR
  *******************************************************************/
 
+/*******************************************************************
+ * BRK
+ *
+ * Generate a Breakpoint Instruction exception.
+ */
+
 op brk( 0b11010100001[11] : imm[16] : 0b00000[5] );
 brk.var format : {char const*} = {"base,573"};
 
 brk.disasm = {
   sink << "brk\t" << DisasmI(imm,16);
 };
+
+brk.execute = {
+  cpu.SoftwareBreakpoint( imm );
+};
+
+/*
+ * end of BRK
+ *******************************************************************/
 
 /*******************************************************************
  * CBNZ
@@ -3038,7 +3052,6 @@ hvc.disasm = {
 hvc.execute = {
   cpu.CallHypervisor( imm );
 };
-                    
 
 /*
  * end of HVC

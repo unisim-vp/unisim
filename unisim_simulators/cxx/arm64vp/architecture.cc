@@ -326,7 +326,7 @@ AArch64::TODO()
  * @param imm     the "imm" field of the instruction code
  */
 void
-AArch64::CallSupervisor( unsigned imm )
+AArch64::CallSupervisor( uint32_t imm )
 {
   //  static std::ofstream strace("strace.log");
   // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
@@ -352,9 +352,9 @@ AArch64::CallSupervisor( unsigned imm )
 
   // route_to_el2 = AArch64.GeneralExceptionsToEL2();
 
-  // ReportException
   unsigned const target_el = 1;
-  // ESR[target_el] = ec<5:0>:il:syndrome;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
   get_el(target_el).ESR = U32(0)
     | U32(0x15) << 26 // exception class AArch64.SVC
     | U32(1) << 25 // IL Instruction Length == 32 bits
@@ -392,6 +392,26 @@ AArch64::CallHypervisor( uint32_t imm )
     }
 
   raise( Bad() );
+}
+
+/** SoftwareBreakpoint
+ *
+ *  This method is called by BRK instructions to handle software breakpoints.
+ * @param imm     the "imm" field of the instruction code
+ */
+void
+AArch64::SoftwareBreakpoint( uint32_t imm )
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32(0x38) << 26 // exception class AArch64.SoftwareBreakpoint !from_32
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
+    | U32(imm);
+
+  TakeException(1, 0x0, current_insn_addr);
 }
 
 AArch64::MMU::TLB::TLB()
@@ -1265,93 +1285,7 @@ namespace {
 }
 
 void
-ArchDisk::uread(uint8_t* udat, uint64_t size)
-{
-  uint64_t pos = tell();
-  auto itr = upages.lower_bound(Page::index(pos));
-
-  // struct { char const* sep = "[Tainted] Disk read "; auto next() { auto r = sep; sep = " "; return r; } } sep;
-  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
-    {
-      psize = std::min(Page::size_from(pos), left);
-
-      if (itr == upages.end() or itr->base > pos)
-        std::fill(&udat[0], &udat[psize], 0);
-      else
-        {
-          // std::cerr << sep.next() << '.' << std::hex << pos;
-          itr->read(pos, psize, udat);
-          ++itr;
-        }
-    }
-  // if (*sep.sep == ' ')
-  //   std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
-}
-
-void
-ArchDisk::read(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
-{
-  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
-  for (VIOA::Iterator itr(addr, size); itr.next(core);)
-    {
-      uread(itr.slice_udat(), itr.slice_size());
-      dread(itr.slice_data(), itr.slice_size());
-    }
-}
-
-void
-ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
-{
-  uint64_t pos = tell();
-  auto itr = upages.lower_bound(Page::index(pos));
-
-  // struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
-  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
-    {
-      psize = std::min(Page::size_from(pos), left);
-      bool has_udat = std::any_of(&udat[0], &udat[psize], [](uint8_t b) { return b != 0; } );
-
-      if (itr == upages.end() or itr->base > pos)
-        {
-          if (not has_udat) continue;
-          // std::cerr << sep.next() << '+' << std::hex << pos;
-          itr = upages.insert(itr, pos);
-        }
-      else if (not has_udat and Page::index(psize))
-        {
-          // std::cerr << sep.next() << '-' << std::hex << pos;
-          itr = upages.erase(itr);
-          continue;
-        }
-      else
-        {
-          // std::cerr << sep.next() << '!' << std::hex << pos;
-        }
-      itr->write(pos, psize, udat);
-      ++itr;
-    }
-  // if (*sep.sep == ' ')
-  //   std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
-}
-
-void
-ArchDisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
-{
-  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
-  for (VIOA::Iterator itr(addr, size); itr.next(core);)
-    {
-      uwrite(itr.slice_udat(), itr.slice_size());
-      dwrite(itr.slice_data(), itr.slice_size());
-    }
-}
-
-VolatileDisk::~VolatileDisk()
-{
-  munmap(storage, disksize);
-}
-
-void
-VolatileDisk::open(char const* filename)
+ArchDisk::open(char const* filename)
 {
   struct Error {};
   int fd = ::open(filename,O_RDONLY);
@@ -1364,23 +1298,129 @@ VolatileDisk::open(char const* filename)
   ::close(fd);
   if (not storage)
     throw Error();
+  diskfilename = filename;
 }
 
 void
-VolatileDisk::sync(SnapShot& snapshot)
+ArchDisk::sync(SnapShot& snapshot)
 {
   if (snapshot.is_save())
-    std::cerr << "VolatileDisk storage lost...\n";
+    {
+      std::cerr << "Saving VirtIO storage " << diskfilename << "\n";
+      int fd = ::open(diskfilename.c_str(), O_WRONLY);
+      bool uloss = false;
+      for (auto const& delta : deltas)
+        {
+          uint64_t base = delta.index, size = delta.fullsize();
+          lseek(fd, base, SEEK_SET);
+          if (::write(fd, (void const*)&storage[base], size) != int64_t(size))
+            { struct Bad {}; raise(Bad()); }
+          uloss |= bool(delta.udat);
+        }
+      if (uloss)
+        std::cerr << "Losing storage tainted data...\n";
+    }
   VIODisk::sync(snapshot);
 }
 
-void
-StreamDisk::open(char const* filename)
+ArchDisk::~ArchDisk()
 {
-  storage.open(filename);
-  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
-  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
-  Capacity = size / BLKSIZE;
+  munmap(storage, disksize);
+}
+
+void
+ArchDisk::Delta::uread(uint64_t pos, uint64_t size, uint8_t* dst) const
+{
+  if (not udat)
+    std::fill(&dst[0], &dst[size], 0);
+  uint8_t const* src = &udat[pos % fullsize()];
+  std::copy( &src[0], &src[size], dst );
+}
+
+void
+ArchDisk::read(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
+  for (VIOA::Iterator itr(addr, size); itr.next(core);)
+    {
+      uintptr_t size = itr.slice_size();
+      {
+        uint8_t* udat = itr.slice_udat();
+        auto itr = deltas.lower_bound(Delta(diskpos));
+
+        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+          {
+            psize = std::min(Delta::size_from(pos), left);
+
+            if (itr == deltas.end() or itr->index > pos)
+              std::fill(&udat[0], &udat[psize], 0);
+            else
+              {
+                itr->uread(pos, psize, udat);
+                ++itr;
+              }
+          }
+      }
+      {
+        uint8_t const* src = &storage[diskpos];
+        uint8_t* dst = itr.slice_data();
+        std::copy(&src[0], &src[size], dst);
+      }
+      diskpos += size;
+    }
+}
+
+void
+ArchDisk::Delta::uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const
+{
+  bool partial = pos == index and size == fullsize();
+  
+  if ((partial and udat) or std::any_of(&src[0], &src[size], [](uint8_t b) { return b != 0; } ))
+    {
+      if (not udat)
+        {
+          udat = new uint8_t[fullsize()];
+          if (partial)
+            std::fill(&udat[0], &udat[fullsize()], 0);
+        }
+      std::copy( &src[0], &src[size], &udat[pos % fullsize()] );
+      if (not partial or not std::any_of(&udat[0], &udat[fullsize()], [](uint8_t b) { return b != 0; } ))
+        return;
+    }
+  
+  delete [] udat;
+  udat = 0;
+}
+
+void
+ArchDisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
+  for (VIOA::Iterator itr(addr, size); itr.next(core);)
+    {
+      uintptr_t size = itr.slice_size();
+      {
+        uint8_t* udat = itr.slice_udat();
+        auto itr = deltas.lower_bound(Delta(diskpos));
+
+        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+          {
+            psize = std::min(Delta::size_from(pos), left);
+      
+            if (itr == deltas.end() or itr->index > pos)
+              itr = deltas.insert(itr, Delta(pos));
+
+            itr->uwrite(pos, psize, udat);
+            ++itr;
+          }
+      }
+      {
+        uint8_t const* src = itr.slice_data();
+        uint8_t* dst = &storage[diskpos];
+        std::copy(&src[0], &src[size], dst);
+      }
+      diskpos += size;
+    }
 }
 
 void

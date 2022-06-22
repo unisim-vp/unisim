@@ -37,6 +37,7 @@
 
 #include "taint.hh"
 #include "viodisk.hh"
+#include "transfer.hh"
 #include "debug.hh"
 #include "snapshot.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
@@ -109,74 +110,43 @@ struct Zone
 
 struct ArchDisk : public VIODisk
 {
-  ArchDisk() : VIODisk() {}
+  ArchDisk() : VIODisk(), storage(), diskpos(), disksize(), deltas() {}
+  ~ArchDisk();
 
-  virtual void dread(uint8_t* bytes, uint64_t size) = 0;
-  void         uread(uint8_t* udat, uint64_t size);
-  virtual void dwrite(uint8_t const* bytes, uint64_t size) = 0;
-  void         uwrite(uint8_t const* udat, uint64_t size);
-
+  void open(char const* filename);
+  void sync(SnapShot& snapshot);
   void read(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
   void write(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
-
-  struct Page
-  {
-    struct Below
-    {
-      using is_transparent = void;
-      bool operator() (Page const& a, Page const& b) const { return a.base < b.base; }
-      bool operator() (Page const& a, uint64_t b) const { return a.base < b; }
-    };
-
-    Page(uint64_t _base) : base(_base), udat(new uint8_t[1<<shift]) {}
-    Page(Page&& pg) : base(pg.base), udat(pg.udat) { pg.udat = 0; }
-    Page(const Page&) = delete;
-    ~Page() { delete [] udat; }
-
-    enum { shift = 12 };
-
-    static uint64_t index( uint64_t addr ) { return (addr >> shift) << shift; }
-    static uint64_t size_from( uint64_t addr ) { return (~addr % (1<<shift)) + 1; }
-
-    void write(uint64_t pos, uint64_t size, uint8_t const* src) const { std::copy( &src[0], &src[size], &udat[pos % (1 << shift)] ); }
-    void read(uint64_t pos, uint64_t size, uint8_t* dst) const { uint8_t const* src = &udat[pos % (1 << shift)]; std::copy( &src[0], &src[size], dst ); }
-
-    uint64_t    base;
-    uint8_t*    udat;
-  };
-
-  typedef std::set<Page, Page::Below> Pages;
-  Pages    upages;
-};
-
-struct StreamDisk : public ArchDisk
-{
-  StreamDisk() : ArchDisk(), storage() {}
-
-  void open(char const* filename);
-  void seek(uint64_t pos) override { storage.seekg(pos); }
-  uint64_t tell() override { return storage.tellg(); }
-  void dread(uint8_t* bytes, uint64_t size) override { storage.read((char*)bytes, size); }
-  void dwrite(uint8_t const* bytes, uint64_t size) override { storage.write((char const*)bytes, size); }
-
-  std::fstream storage;
-};
-
-struct VolatileDisk : public ArchDisk
-{
-  VolatileDisk() : ArchDisk(), storage(), diskpos(), disksize() {}
-  ~VolatileDisk();
-
-  void open(char const* filename);
   void seek(uint64_t pos) override { diskpos = pos; }
   uint64_t tell() override { return diskpos; }
-  void dread(uint8_t* bytes, uint64_t size) override{ std::copy(data(0), data(size), bytes); diskpos += size; }
-  void dwrite(uint8_t const* bytes, uint64_t size) override { std::copy(&bytes[0], &bytes[size], data(0)); diskpos += size; }
-  void sync(SnapShot& snapshot) override;
 
-  uint8_t* data(uintptr_t pos) { return &storage[diskpos+pos]; }
+  struct Delta
+  {
+    Delta(uint64_t _index) : index(_index >> shift << shift), udat() {}
+    Delta(Delta&& pg) : index(pg.index), udat(pg.udat) { pg.udat = 0; }
+    Delta(const Delta&) = delete;
+    ~Delta() { delete [] udat; }
+
+    bool operator < (Delta const& rhs) const { return index < rhs.index; }
+
+    enum { shift = 12 };
+    static constexpr uint64_t fullsize() { return 1<<shift; }
+
+    static uint64_t size_from( uint64_t addr ) { return (~addr % fullsize()) + 1; }
+
+    void uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const;
+    
+    void uread(uint64_t pos, uint64_t size, uint8_t* dst) const;
+
+    uint64_t    index;
+    mutable uint8_t* udat;
+  };
+
   uint8_t* storage;
   uintptr_t diskpos, disksize;
+  typedef std::set<Delta> Deltas;
+  Deltas    deltas;
+  std::string diskfilename;
 };
 
 struct AArch64
@@ -386,8 +356,9 @@ struct AArch64
   bool Test( bool cond ) { return cond; }
 
   bool Test( BOOL const& cond ) { return untaint(CondTV(), cond); }
-  void CallSupervisor( unsigned imm );
-  void CallHypervisor( unsigned imm );
+  void CallSupervisor( uint32_t imm );
+  void CallHypervisor( uint32_t imm );
+  void SoftwareBreakpoint( uint32_t imm );
 
   //=====================================================================
   //=                       Memory access methods                       =
@@ -992,9 +963,8 @@ public:
   Timer    vt;
   RTC      rtc;
 
-  typedef VolatileDisk Disk;
-  // typedef StreamDisk Disk;
-  Disk     disk;
+  ArchDisk disk;
+  Transfer transfer;
   //VIOConsole  vioconsole;
 
   Pages    pages;

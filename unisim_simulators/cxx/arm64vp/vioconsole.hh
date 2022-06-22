@@ -32,45 +32,21 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __ARM64VP_VIODISK_HH__
-#define __ARM64VP_VIODISK_HH__
+#ifndef __ARM64VP_VIOCONSOLE_HH__
+#define __ARM64VP_VIOCONSOLE_HH__
 
-#include "snapshot.hh"
 #include <unisim/util/virtio/virtio.hh>
+#include <iosfwd>
 #include <inttypes.h>
 
-struct VIODisk : public unisim::util::virtio::Device
+struct VIOConsole : public unisim::util::virtio::Device
 {
-  VIODisk();
-
-  enum { BLKSIZE = 512 };
-
-  struct SyncQMgr
-  {
-    virtual ~SyncQMgr() {}
-    virtual void sync(SnapShot&, unisim::util::virtio::Queue*) const = 0;
-    virtual bool is_packed() const = 0;
-  };
-
-  virtual void seek(uint64_t pos) = 0;
-  virtual uint64_t tell() = 0;
-  virtual void read(unisim::util::virtio::Access const&, uint64_t addr, uint64_t size) = 0;
-  virtual void write(unisim::util::virtio::Access const&, uint64_t addr, uint64_t size) = 0;
-
-  virtual void sync(SnapShot& snapshot);
-
-  static uint32_t Vendor() { return 0x70767375; /*usvp*/ }
-  uint32_t  ClaimedFeatures();
-  bool      UsedFeatures(uint32_t);
-  bool      ReadQueue(unisim::util::virtio::Access const& vioa);
-  void      SetupQueues(bool is_packed);
-
-  SyncQMgr *sqmgr;
-
-  // Block Device Config
-  uint64_t  Capacity;
-  uint8_t   WriteBack;
+  // Generic Config
+  static uint32_t Vendor() { return 0x70767375; }
+  uint32_t ClaimedFeatures();
+  bool UsedFeatures(uint32_t);
+  bool ReadQueue(unisim::util::virtio::Access const& vioa);
 };
 
-#endif /* __ARM64VP_VIODISK_HH__ */
+#endif /* __ARM64VP_VIOCONSOLE_HH__ */
 

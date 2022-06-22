@@ -60,6 +60,8 @@ architecture.cc \
 snapshot.cc \
 serial.cc \
 viodisk.cc \
+vioconsole.cc \
+transfer.cc \
 system.cc \
 instruction.cc \
 main.cc \
@@ -73,6 +75,8 @@ architecture.hh \
 snapshot.hh \
 serial.hh \
 viodisk.hh \
+vioconsole.hh \
+transfer.hh \
 debugger.hh \
 "
 

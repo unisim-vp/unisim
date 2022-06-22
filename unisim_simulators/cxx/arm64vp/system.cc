@@ -2571,6 +2571,25 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+      /*** IMPLEMENTATION DEFINED registers ***/
+    case SYSENCODE(0b11,0b011,0b1111,0b0001,0b000): // s3_3_c15_c1_0: File Transfer In
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "USVP_GET_EL0"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "File Transfer In"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.transfer.get(cpu)); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1111,0b0001,0b001): // s3_3_c15_c1_1: File Transfer Out
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "USVP_PUT_EL0"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "File Transfer Out"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.transfer.put(cpu)); }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b011,0b1111,0b0001,0b111): // s3_3_c15_c1_7: Taint Swap
       {
         static struct : public BaseSysReg {
