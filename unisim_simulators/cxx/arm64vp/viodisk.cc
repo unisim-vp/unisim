@@ -32,10 +32,16 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include "viodisk.hh"
+#include "architecture.hh"
+#include "debug.hh"
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <viodisk.hh>
-#include <debug.hh>
 #include <iostream>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 struct SyncPackedQueue : public unisim::util::virtio::PackedQueue
 {
@@ -60,8 +66,6 @@ struct SyncSplitQueue : public unisim::util::virtio::SplitQueue
     struct Bad {}; raise( Bad() );
   }
 };
-
-
 
 void
 VIODisk::SetupQueues(bool is_packed)
@@ -90,7 +94,7 @@ VIODisk::SetupQueues(bool is_packed)
 }
 
 VIODisk::VIODisk()
-  : unisim::util::virtio::Device(), sqmgr(), Capacity(0), WriteBack(1)
+  : unisim::util::virtio::BlockDevice(), sqmgr(), WriteBack(1), diskfilename(), Capacity(0), diskpos(), disksize(), storage(), deltas()
 {}
 
 template <unsigned POS>
@@ -119,21 +123,6 @@ namespace
 
     return 0;
   }
-
-  struct GetFeatureName
-  {
-    GetFeatureName(unsigned _bit) : bit(_bit) {} unsigned bit;
-    friend std::ostream& operator << (std::ostream& sink, GetFeatureName const& arg)
-    {
-      typedef unisim::util::virtio::CommonFeatures CommonFeatures;
-      typedef unisim::util::virtio::BlockFeatures BlockFeatures;
-
-      if      (char const* name = unisim::util::virtio::NameGetter<CommonFeatures::Code,(int)CommonFeatures::end - 1>::feature(arg.bit)) sink << name;
-      else if (char const* name = unisim::util::virtio::NameGetter< BlockFeatures::Code, (int)BlockFeatures::end - 1>::feature(arg.bit)) sink << name;
-      else sink << "unknown_feature(" << std::dec << arg.bit << ")";
-      return sink;
-    }
-  };
 }
 
 uint32_t
@@ -158,7 +147,9 @@ VIODisk::UsedFeatures(uint32_t requested)
     {
       /* Iterating over all requested but not claimed features */
       has_errors = true;
-      std::cerr << "VirtIO driver error: feature " << GetFeatureName(32*DriverFeaturesSel + BitScanForward(err)) << " requested by driver but not claimed by device\n";
+      std::cerr << "VirtIO driver error: feature "
+                << unisim::util::virtio::GetFeatureName<unisim::util::virtio::BlockFeatures>(32*DriverFeaturesSel + BitScanForward(err))
+                << " requested by driver but not claimed by device\n";
     }
 
   for (uint32_t rem = claimed; rem; rem &= rem - 1)
@@ -184,7 +175,9 @@ VIODisk::UsedFeatures(uint32_t requested)
           if (not feature_requested)
             {
               has_errors = true;
-              std::cerr << "VirtIO device error: feature " << GetFeatureName(bit) << " not requested by driver but claimed and requested by device\n";
+              std::cerr << "VirtIO device error: feature "
+                        << unisim::util::virtio::GetFeatureName<unisim::util::virtio::BlockFeatures>(bit)
+                        << " not requested by driver but claimed and requested by device\n";
             }
           break;
         }
@@ -196,95 +189,10 @@ VIODisk::UsedFeatures(uint32_t requested)
   return true;
 }
 
-bool
-VIODisk::ReadQueue(unisim::util::virtio::Access const& sys)
-{
-  struct Request : public unisim::util::virtio::QProc
-  {
-    Request(unisim::util::virtio::Access const& _sys, VIODisk& _disk) : sys(_sys), disk(_disk), state(Head), type(), status() {}
-    unisim::util::virtio::Access const& sys; VIODisk& disk;
-    enum { Head, Body, Status } state;
-    enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
-    enum { OK, IOERR, UNSUPP } status;
-
-    virtual uint32_t process(uint64_t buf, uint32_t len, bool is_write, bool last) override
-    {
-      uint32_t wlen = 0;
-      //std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
-
-
-      struct Bad {};
-
-      if (state == Body and last) state = Status;
-
-      switch (state)
-        {
-        case Head:
-          if (is_write or len != 16) { std::cerr << "error: expected 16 byte header\n"; raise( Bad() ); }
-          //std::cerr << "VirtIO Block Header: {type=" << sys.read(buf + 0, 4) << ", sector=" << sys.read(buf + 8, 8) << "}\n";
-          switch (type = Type(sys.read(buf + 0, 4)))
-            {
-            default:
-              raise( Bad() );
-              break;
-            case GetID:
-              /* TODO: support this command ? */
-              break;
-            case Flush:
-              /* No data, all work should be done here. */
-              /* Nothing to do for now */
-              break;
-            case In: case Out:
-              disk.seek(VIODisk::BLKSIZE*sys.read(buf + 8, 8));
-              break;
-            }
-
-          state = Body;
-          break;
-
-        case Body:
-          switch (type)
-            {
-            default:
-              status = UNSUPP;
-              break;
-            case In:
-              if (not is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              disk.read(sys, buf, len);
-              wlen += len;
-              break;
-            case Out:
-              if (is_write or len >= 0x100000) { std::cerr << "error: too large buffer\n"; raise( Bad() ); }
-              disk.write(sys, buf, len);
-              break;
-            case Flush: std::cerr << "TODO: Flush\n"; raise( Bad() );
-            case Discard: std::cerr << "TODO: Discard\n"; raise( Bad() );
-            case WriteZeroes: std::cerr << "TODO: WriteZeroes\n"; raise( Bad() );
-            }
-          break;
-
-        case Status:
-          if (not is_write or len != 1) { std::cerr << "error: expected a 1 byte footer\n"; raise( Bad() ); }
-          sys.write(buf, 1, status);
-          wlen += 1;
-          state = Head;
-          break;
-        }
-      return wlen;
-    }
-  } req(sys, *this);
-
-  QueueRead(sys, req);
-
-  if (req.state != req.Head)
-    { struct Bad {}; raise( Bad() ); }
-    
-  return true;
-}
-
 void
 VIODisk::sync(SnapShot& snapshot)
 {
+  // Snapshoting unisim::util::virtio::BlockDevice
   for (auto reg : {&Status, &DeviceFeaturesSel, &DriverFeaturesSel, &ConfigGeneration, &InterruptStatus})
     snapshot.sync(*reg);
 
@@ -297,9 +205,164 @@ VIODisk::sync(SnapShot& snapshot)
       sqmgr->sync(snapshot, qmgr->active());
     }
 
+  // Snapshoting VIODisk
   snapshot.sync(WriteBack);
-  uint64_t diskpos = tell();
   snapshot.sync(diskpos);
-  seek(diskpos);
+
+  if (snapshot.is_save())
+    {
+      std::cerr << "Saving VirtIO storage " << diskfilename << "\n";
+      int fd = ::open(diskfilename.c_str(), O_WRONLY);
+      bool uloss = false;
+      for (auto const& delta : deltas)
+        {
+          uint64_t base = delta.index, size = delta.fullsize();
+          lseek(fd, base, SEEK_SET);
+          if (::write(fd, (void const*)&storage[base], size) != int64_t(size))
+            { struct Bad {}; raise(Bad()); }
+          uloss |= bool(delta.udat);
+        }
+      if (uloss)
+        std::cerr << "Losing storage tainted data...\n";
+    }
 }
 
+void
+VIODisk::open(char const* filename)
+{
+  struct Error {};
+  int fd = ::open(filename,O_RDONLY);
+  struct stat info;
+  if (fstat(fd, &info) < 0)
+    throw Error();
+  Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
+  disksize = Capacity * BLKSIZE;
+  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  ::close(fd);
+  if (storage == (uint8_t*)-1)
+    throw Error();
+  diskfilename = filename;
+}
+
+VIODisk::~VIODisk()
+{
+  munmap(storage, disksize);
+}
+
+void
+VIODisk::Delta::uread(uint64_t pos, uint64_t size, uint8_t* dst) const
+{
+  if (not udat)
+    std::fill(&dst[0], &dst[size], 0);
+  uint8_t const* src = &udat[pos % fullsize()];
+  std::copy( &src[0], &src[size], dst );
+}
+
+namespace
+{
+  struct PageIterator
+  {
+    PageIterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
+    AArch64::Page const* page;
+    uint64_t ptr, left, pbytes;
+    bool next(AArch64& core)
+    {
+      if (uint64_t nleft = left - pbytes)
+        { left = nleft; ptr += pbytes; }
+      else
+        return false;
+      page = &core.get_page(ptr);
+      pbytes = std::min(page->size_from(ptr), left);
+      return true;
+    }
+    uint8_t*  slice_data() const { return page->data_abs(ptr); }
+    uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
+    uintptr_t slice_size() const { return pbytes; }
+  };
+}
+
+void
+VIODisk::read(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<Access const&>(vioa).GetCore();
+  for (PageIterator itr(addr, size); itr.next(core);)
+    {
+      uintptr_t size = itr.slice_size();
+      {
+        uint8_t* udat = itr.slice_udat();
+        auto itr = deltas.lower_bound(Delta(diskpos));
+
+        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+          {
+            psize = std::min(Delta::size_from(pos), left);
+
+            if (itr == deltas.end() or itr->index > pos)
+              std::fill(&udat[0], &udat[psize], 0);
+            else
+              {
+                itr->uread(pos, psize, udat);
+                ++itr;
+              }
+          }
+      }
+      {
+        uint8_t const* src = &storage[diskpos];
+        uint8_t* dst = itr.slice_data();
+        std::copy(&src[0], &src[size], dst);
+      }
+      diskpos += size;
+    }
+}
+
+void
+VIODisk::Delta::uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const
+{
+  bool partial = pos == index and size == fullsize();
+  
+  if ((partial and udat) or std::any_of(&src[0], &src[size], [](uint8_t b) { return b != 0; } ))
+    {
+      if (not udat)
+        {
+          udat = new uint8_t[fullsize()];
+          if (partial)
+            std::fill(&udat[0], &udat[fullsize()], 0);
+        }
+      std::copy( &src[0], &src[size], &udat[pos % fullsize()] );
+      if (not partial or not std::any_of(&udat[0], &udat[fullsize()], [](uint8_t b) { return b != 0; } ))
+        return;
+    }
+  
+  delete [] udat;
+  udat = 0;
+}
+
+void
+VIODisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
+{
+  AArch64& core = dynamic_cast<Access const&>(vioa).GetCore();
+  for (PageIterator itr(addr, size); itr.next(core);)
+    {
+      uintptr_t size = itr.slice_size();
+      {
+        uint8_t* udat = itr.slice_udat();
+        auto itr = deltas.lower_bound(Delta(diskpos));
+
+        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+          {
+            psize = std::min(Delta::size_from(pos), left);
+      
+            if (itr == deltas.end() or itr->index > pos)
+              itr = deltas.insert(itr, Delta(pos));
+
+            itr->uwrite(pos, psize, udat);
+            ++itr;
+          }
+      }
+      {
+        uint8_t const* src = itr.slice_data();
+        uint8_t* dst = &storage[diskpos];
+        std::copy(&src[0], &src[size], dst);
+      }
+      diskpos += size;
+    }
+}

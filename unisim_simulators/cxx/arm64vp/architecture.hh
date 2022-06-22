@@ -108,47 +108,6 @@ struct Zone
   uint64_t    last;
 };
 
-struct ArchDisk : public VIODisk
-{
-  ArchDisk() : VIODisk(), storage(), diskpos(), disksize(), deltas() {}
-  ~ArchDisk();
-
-  void open(char const* filename);
-  void sync(SnapShot& snapshot);
-  void read(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
-  void write(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
-  void seek(uint64_t pos) override { diskpos = pos; }
-  uint64_t tell() override { return diskpos; }
-
-  struct Delta
-  {
-    Delta(uint64_t _index) : index(_index >> shift << shift), udat() {}
-    Delta(Delta&& pg) : index(pg.index), udat(pg.udat) { pg.udat = 0; }
-    Delta(const Delta&) = delete;
-    ~Delta() { delete [] udat; }
-
-    bool operator < (Delta const& rhs) const { return index < rhs.index; }
-
-    enum { shift = 12 };
-    static constexpr uint64_t fullsize() { return 1<<shift; }
-
-    static uint64_t size_from( uint64_t addr ) { return (~addr % fullsize()) + 1; }
-
-    void uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const;
-    
-    void uread(uint64_t pos, uint64_t size, uint8_t* dst) const;
-
-    uint64_t    index;
-    mutable uint8_t* udat;
-  };
-
-  uint8_t* storage;
-  uintptr_t diskpos, disksize;
-  typedef std::set<Delta> Deltas;
-  Deltas    deltas;
-  std::string diskfilename;
-};
-
 struct AArch64
   : AArch64Types
   , public unisim::component::cxx::processor::arm::regs64::CPU<AArch64, AArch64Types>
@@ -963,7 +922,7 @@ public:
   Timer    vt;
   RTC      rtc;
 
-  ArchDisk disk;
+  VIODisk  disk;
   Transfer transfer;
   //VIOConsole  vioconsole;
 

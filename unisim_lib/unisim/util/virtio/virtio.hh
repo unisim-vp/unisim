@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_VIRTIO_VIRTIO_HH__
 #define __UNISIM_UTIL_VIRTIO_VIRTIO_HH__
 
+#include <iosfwd>
 #include <inttypes.h>
 
 namespace unisim {
@@ -135,7 +136,6 @@ namespace virtio {
   struct Device
   {
     Device();
-    virtual ~Device() {}
 
     //  void reset();
 
@@ -199,6 +199,23 @@ namespace virtio {
     enum Code { RING_INDIRECT_DESC, RING_EVENT_IDX, VERSION_1, ACCESS_PLATFORM, RING_PACKED, end };
   };
 
+  struct GetFeatureNameBase
+  {
+    GetFeatureNameBase(unsigned _bit) : bit(_bit) {} unsigned bit;
+    void Print(std::ostream& sink, char const* name) const;
+  };
+    
+  template <class DEVICEFEATURES>
+  struct GetFeatureName : GetFeatureNameBase
+  {
+    GetFeatureName(unsigned bit) : GetFeatureNameBase(bit) {}
+    friend std::ostream& operator << (std::ostream& sink, GetFeatureName const& arg)
+    {
+      arg.Print(sink, unisim::util::virtio::NameGetter<typename DEVICEFEATURES::Code, (int)DEVICEFEATURES::end - 1>::feature(arg.bit));
+      return sink;
+    }
+  };
+
 #define COMMON_FEATURE(FEAT,BPOS) template <> struct Feature<CommonFeatures::Code,CommonFeatures::FEAT> { enum {BIT=BPOS}; static char const* name() { return #FEAT; } }
 
   COMMON_FEATURE(   RING_INDIRECT_DESC, 28); // Device supports buffer indirection
@@ -235,6 +252,19 @@ namespace virtio {
 
 #undef BLOCK_FEATURE
 
+  struct BlockDevice : public Device
+  {
+    virtual ~BlockDevice() {}
+
+    enum { BLKSIZE = 512 };
+
+    virtual void seek(uint64_t pos) = 0;
+    virtual void read(Access const&, uint64_t addr, uint64_t size) = 0;
+    virtual void write(Access const&, uint64_t addr, uint64_t size) = 0;
+    
+    bool ReadQueue(Access const& sys);
+  };
+  
 } /* end of namespace virtio */
 } /* end of namespace util */
 } /* end of namespace unisim */

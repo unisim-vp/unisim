@@ -41,12 +41,6 @@
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 AArch64::AArch64(char const* name)
   : unisim::kernel::Object(name, 0)
@@ -1224,9 +1218,11 @@ AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 namespace {
   //  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
 
-  struct VIOA : public unisim::util::virtio::Access
+  struct VIOA : public VIODisk::Access
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
+
+    AArch64& GetCore() const override { return core; }
 
     uint64_t read(uint64_t addr, unsigned size) const override
     {
@@ -1250,26 +1246,6 @@ namespace {
         throw Bad {};
     }
 
-    struct Iterator
-    {
-      Iterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
-      AArch64::Page const* page;
-      uint64_t ptr, left, pbytes;
-      bool next(AArch64& core)
-      {
-        if (uint64_t nleft = left - pbytes)
-          { left = nleft; ptr += pbytes; }
-        else
-          return false;
-        page = &core.get_page(ptr);
-        pbytes = std::min(page->size_from(ptr), left);
-        return true;
-      }
-      uint8_t*  slice_data() const { return page->data_abs(ptr); }
-      uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
-      uintptr_t slice_size() const { return pbytes; }
-    };
-
     // void flag(uint64_t addr) const override
     // {
     //   AArch64::Page const& page = core.get_page(addr);
@@ -1282,145 +1258,6 @@ namespace {
       core.gic.program(core);
     }
   };
-}
-
-void
-ArchDisk::open(char const* filename)
-{
-  struct Error {};
-  int fd = ::open(filename,O_RDONLY);
-  struct stat info;
-  if (fstat(fd, &info) < 0)
-    throw Error();
-  Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
-  disksize = Capacity * BLKSIZE;
-  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-  ::close(fd);
-  if (not storage)
-    throw Error();
-  diskfilename = filename;
-}
-
-void
-ArchDisk::sync(SnapShot& snapshot)
-{
-  if (snapshot.is_save())
-    {
-      std::cerr << "Saving VirtIO storage " << diskfilename << "\n";
-      int fd = ::open(diskfilename.c_str(), O_WRONLY);
-      bool uloss = false;
-      for (auto const& delta : deltas)
-        {
-          uint64_t base = delta.index, size = delta.fullsize();
-          lseek(fd, base, SEEK_SET);
-          if (::write(fd, (void const*)&storage[base], size) != int64_t(size))
-            { struct Bad {}; raise(Bad()); }
-          uloss |= bool(delta.udat);
-        }
-      if (uloss)
-        std::cerr << "Losing storage tainted data...\n";
-    }
-  VIODisk::sync(snapshot);
-}
-
-ArchDisk::~ArchDisk()
-{
-  munmap(storage, disksize);
-}
-
-void
-ArchDisk::Delta::uread(uint64_t pos, uint64_t size, uint8_t* dst) const
-{
-  if (not udat)
-    std::fill(&dst[0], &dst[size], 0);
-  uint8_t const* src = &udat[pos % fullsize()];
-  std::copy( &src[0], &src[size], dst );
-}
-
-void
-ArchDisk::read(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
-{
-  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
-  for (VIOA::Iterator itr(addr, size); itr.next(core);)
-    {
-      uintptr_t size = itr.slice_size();
-      {
-        uint8_t* udat = itr.slice_udat();
-        auto itr = deltas.lower_bound(Delta(diskpos));
-
-        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
-          {
-            psize = std::min(Delta::size_from(pos), left);
-
-            if (itr == deltas.end() or itr->index > pos)
-              std::fill(&udat[0], &udat[psize], 0);
-            else
-              {
-                itr->uread(pos, psize, udat);
-                ++itr;
-              }
-          }
-      }
-      {
-        uint8_t const* src = &storage[diskpos];
-        uint8_t* dst = itr.slice_data();
-        std::copy(&src[0], &src[size], dst);
-      }
-      diskpos += size;
-    }
-}
-
-void
-ArchDisk::Delta::uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const
-{
-  bool partial = pos == index and size == fullsize();
-  
-  if ((partial and udat) or std::any_of(&src[0], &src[size], [](uint8_t b) { return b != 0; } ))
-    {
-      if (not udat)
-        {
-          udat = new uint8_t[fullsize()];
-          if (partial)
-            std::fill(&udat[0], &udat[fullsize()], 0);
-        }
-      std::copy( &src[0], &src[size], &udat[pos % fullsize()] );
-      if (not partial or not std::any_of(&udat[0], &udat[fullsize()], [](uint8_t b) { return b != 0; } ))
-        return;
-    }
-  
-  delete [] udat;
-  udat = 0;
-}
-
-void
-ArchDisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
-{
-  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
-  for (VIOA::Iterator itr(addr, size); itr.next(core);)
-    {
-      uintptr_t size = itr.slice_size();
-      {
-        uint8_t* udat = itr.slice_udat();
-        auto itr = deltas.lower_bound(Delta(diskpos));
-
-        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
-          {
-            psize = std::min(Delta::size_from(pos), left);
-      
-            if (itr == deltas.end() or itr->index > pos)
-              itr = deltas.insert(itr, Delta(pos));
-
-            itr->uwrite(pos, psize, udat);
-            ++itr;
-          }
-      }
-      {
-        uint8_t const* src = itr.slice_data();
-        uint8_t* dst = &storage[diskpos];
-        std::copy(&src[0], &src[size], dst);
-      }
-      diskpos += size;
-    }
 }
 
 void

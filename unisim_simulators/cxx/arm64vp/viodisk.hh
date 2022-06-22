@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2021,
+ *  Copyright (c) 2019-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -37,13 +37,21 @@
 
 #include "snapshot.hh"
 #include <unisim/util/virtio/virtio.hh>
+#include <set>
+#include <string>
 #include <inttypes.h>
 
-struct VIODisk : public unisim::util::virtio::Device
+struct AArch64;
+
+struct VIODisk : public unisim::util::virtio::BlockDevice
 {
   VIODisk();
+  ~VIODisk();
 
-  enum { BLKSIZE = 512 };
+  struct Access : public unisim::util::virtio::Access
+  {
+    virtual AArch64& GetCore() const = 0;
+  };
 
   struct SyncQMgr
   {
@@ -52,24 +60,51 @@ struct VIODisk : public unisim::util::virtio::Device
     virtual bool is_packed() const = 0;
   };
 
-  virtual void seek(uint64_t pos) = 0;
-  virtual uint64_t tell() = 0;
-  virtual void read(unisim::util::virtio::Access const&, uint64_t addr, uint64_t size) = 0;
-  virtual void write(unisim::util::virtio::Access const&, uint64_t addr, uint64_t size) = 0;
+  struct Delta
+  {
+    Delta(uint64_t _index) : index(_index >> shift << shift), udat() {}
+    Delta(Delta&& pg) : index(pg.index), udat(pg.udat) { pg.udat = 0; }
+    Delta(const Delta&) = delete;
+    ~Delta() { delete [] udat; }
 
-  virtual void sync(SnapShot& snapshot);
+    bool operator < (Delta const& rhs) const { return index < rhs.index; }
+
+    enum { shift = 12 };
+    static constexpr uint64_t fullsize() { return 1<<shift; }
+
+    static uint64_t size_from( uint64_t addr ) { return (~addr % fullsize()) + 1; }
+
+    void uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const;
+    
+    void uread(uint64_t pos, uint64_t size, uint8_t* dst) const;
+
+    uint64_t    index;
+    mutable uint8_t* udat;
+  };
+
+  typedef std::set<Delta> Deltas;
+
+  void open(char const* filename);
+  void sync(SnapShot& snapshot);
 
   static uint32_t Vendor() { return 0x70767375; /*usvp*/ }
   uint32_t  ClaimedFeatures();
   bool      UsedFeatures(uint32_t);
-  bool      ReadQueue(unisim::util::virtio::Access const& vioa);
   void      SetupQueues(bool is_packed);
 
-  SyncQMgr *sqmgr;
+  void read(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
+  void write(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
+  void seek(uint64_t pos) override { diskpos = pos; }
 
-  // Block Device Config
-  uint64_t  Capacity;
-  uint8_t   WriteBack;
+  // Configuration
+  SyncQMgr*   sqmgr;
+  uint8_t     WriteBack;
+
+  // Storage state
+  std::string diskfilename;
+  uint64_t    Capacity, diskpos, disksize;
+  uint8_t*    storage;
+  Deltas      deltas;
 };
 
 #endif /* __ARM64VP_VIODISK_HH__ */

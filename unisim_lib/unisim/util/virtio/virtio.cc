@@ -257,6 +257,102 @@ namespace virtio {
 
     return true;
   }
+  
+  void
+  GetFeatureNameBase::Print(std::ostream& sink, char const* name) const
+  {
+    typedef unisim::util::virtio::CommonFeatures CommonFeatures;
+    if (name) sink << name;
+    else if ((name = unisim::util::virtio::NameGetter<CommonFeatures::Code,(int)CommonFeatures::end - 1>::feature(bit))) sink << name;
+    else sink << "unknown_feature(" << std::dec << bit << ")";
+  }
+
+  bool
+  BlockDevice::ReadQueue(unisim::util::virtio::Access const& sys)
+  {
+    struct Request : public QProc
+    {
+      Request(unisim::util::virtio::Access const& _sys, BlockDevice& _disk) : sys(_sys), disk(_disk), state(Head), type(), status() {}
+      unisim::util::virtio::Access const& sys; BlockDevice& disk;
+      enum { Head, Body, Status } state;
+      enum Type { In = 0, Out, Flush = 4, GetID = 8, Discard = 11, WriteZeroes = 13 } type;
+      enum { OK, IOERR, UNSUPP } status;
+
+      virtual uint32_t process(uint64_t buf, uint32_t len, bool is_write, bool last) override
+      {
+        uint32_t wlen = 0;
+        //std::cerr << std::hex << buf << ',' << len << ',' << (is_write ? 'w' : 'r') << std::endl;
+
+
+        if (state == Body and last) state = Status;
+
+        switch (state)
+          {
+          case Head:
+            if (is_write or len != 16) { struct UnexpectedHeader {}; throw UnexpectedHeader (); }
+            //std::cerr << "VirtIO Block Header: {type=" << sys.read(buf + 0, 4) << ", sector=" << sys.read(buf + 8, 8) << "}\n";
+            switch (type = Type(sys.read(buf + 0, 4)))
+              {
+              default: { struct UnexpectedCommandType {}; throw UnexpectedCommandType(); }
+
+              case GetID:
+                /* TODO: support this command ? */
+                break;
+              case Flush:
+                /* No data, all work should be done here. */
+                /* Nothing to do for now */
+                break;
+              case In: case Out:
+                disk.seek(BlockDevice::BLKSIZE*sys.read(buf + 8, 8));
+                break;
+              }
+
+            state = Body;
+            break;
+
+          case Body:
+            switch (type)
+              {
+              default:
+                status = UNSUPP;
+                break;
+                
+                struct TooLarge {};
+              case In:
+                if (not is_write or len >= 0x100000) throw TooLarge();
+                disk.read(sys, buf, len);
+                wlen += len;
+                break;
+              case Out:
+                if (is_write or len >= 0x100000) throw TooLarge();
+                disk.write(sys, buf, len);
+                break;
+
+              case Flush: { struct FlushTODO {}; throw FlushTODO (); }
+              case Discard: { struct DiscardTODO {}; throw DiscardTODO (); }
+              case WriteZeroes: { struct WriteZeroesTODO {}; throw WriteZeroesTODO (); }
+              }
+            break;
+
+          case Status:
+            if (not is_write or len != 1) { struct UnexpectedFooter {}; throw UnexpectedFooter (); }
+            sys.write(buf, 1, status);
+            wlen += 1;
+            state = Head;
+            break;
+          }
+        return wlen;
+      }
+    } req(sys, *this);
+
+    QueueRead(sys, req);
+
+    if (req.state != req.Head)
+      { struct UnexpectedEndOfRequest {}; throw UnexpectedEndOfRequest(); }
+    
+    return true;
+  }
+
 } /* end of namespace virtio */
 } /* end of namespace util */
 } /* end of namespace unisim */
