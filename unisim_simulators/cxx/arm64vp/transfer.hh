@@ -36,6 +36,7 @@
 #define __ARM64VP_TRANSFER_HH__
 
 #include <iosfwd>
+#include <map>
 #include <inttypes.h>
 
 struct AArch64;
@@ -44,6 +45,19 @@ struct Transfer
 {
   uint64_t get(AArch64& core);
   uint64_t put(AArch64& core);
+
+  struct File
+  {
+    File(char const* path);
+    File(File&& file) : fd(file.fd), refcount(file.refcount), size(file.size) { file.fd = -1; }
+    File(File const&) = delete;
+    ~File();
+
+    int fd, refcount;
+    uint64_t size;
+  };
+  
+  std::map<std::string,File> files;
 };
 
 #endif /* __ARM64VP_TRANSFER_HH__ */
