@@ -121,23 +121,18 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
 {
   struct Bad {};
 
-  uint64_t count = size;
   uint8_t* ptr = static_cast<uint8_t*>(buffer);
 
-  while (count > 0)
+  try
     {
-      MMU::TLB::Entry entry(addr);
-      try { translate_address(entry, 1, mem_acc_type::debug); }
-      catch (DataAbort const& x) { return false; }
-      Page const& page = get_page(entry.pa);
-      uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
-      uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
-      if (std::any_of(&udat[0], &udat[done], [](uint8_t b) { return b != 0; } )) throw Bad();
-      std::copy( &data[0], &data[done], ptr );
-      count -= done;
-      ptr += done;
-      addr += done;
+      for (SliceIterator slice(addr, size, mem_acc_type::debug); slice.vnext(*this);)
+        {
+          if (std::any_of(slice.udat, slice.udat + slice.size, [](uint8_t b) { return b != 0; } )) raise( Bad() );
+          std::copy( slice.data, slice.data + slice.size, ptr );
+          ptr += slice.size;
+        }
     }
+  catch (DataAbort const& x) { return false; }
 
   return true;
 }
@@ -145,25 +140,18 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
 bool
 AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
 {
-  struct Bad {};
-
-  uint64_t count = size;
   uint8_t const* ptr = static_cast<uint8_t const*>(buffer);
 
-  while (count > 0)
+  try
     {
-      MMU::TLB::Entry entry(addr);
-      try { translate_address(entry, 1, mem_acc_type::debug); }
-      catch (DataAbort const& x) { return false; }
-      Page const& page = get_page(entry.pa);
-      uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
-      uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
-      std::fill(&udat[0], &udat[done], 0);
-      std::copy(&ptr[0], &ptr[done], data);
-      count -= done;
-      ptr += done;
-      addr += done;
+      for (SliceIterator slice(addr, size, mem_acc_type::debug); slice.vnext(*this);)
+        {
+          std::fill(slice.udat, slice.udat + slice.size, 0);
+          std::copy(ptr,  ptr + slice.size, slice.data);
+          ptr += slice.size;
+        }
     }
+  catch (DataAbort const& x) { return false; }
 
   return true;
 }

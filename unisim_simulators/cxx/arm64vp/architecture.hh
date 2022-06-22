@@ -648,6 +648,37 @@ struct AArch64
     void resize(uint64_t last);
   };
 
+  struct SliceIterator
+  {
+    SliceIterator(uint64_t addr, uint64_t count, mem_acc_type::Code _mat) : data(), udat(), size(0), ptr(addr), left(count), mat(_mat) {}
+    uint8_t* data;
+    uint8_t* udat;
+    uint64_t size;
+    bool advance() { if (uint64_t nleft = left - size) { left = nleft; ptr += size; return true; } return false; }
+    bool vnext(AArch64& core)
+    {
+      if (not advance()) return false;
+      MMU::TLB::Entry entry(ptr);
+      core.translate_address(entry, 1, mat);
+      return next(core, entry.pa, std::min(entry.size_after(), left)), true;
+    }
+    bool pnext(AArch64& core)
+    {
+      if (not advance()) return false;
+      return next(core, ptr, left), true;
+    }
+    void next(AArch64& core, uint64_t addr, uint64_t maxsize)
+    {
+      Page const* page = &core.get_page(addr);
+      udat = page->udat_abs(addr);
+      data = page->data_abs(addr);
+      size = std::min(page->size_from(ptr), maxsize);
+    }
+  private:
+    uint64_t ptr, left;
+    mem_acc_type::Code mat;
+  };
+  
   struct Device : public Zone
   {
     struct Effect;

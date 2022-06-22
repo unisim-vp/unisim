@@ -94,25 +94,15 @@ uint64_t Transfer::get(AArch64& core)
 
   if (not opening)
     {
-      uint64_t addr = ptr + offset, count = size - offset;
-
-      while (count > 0)
+      for (AArch64::SliceIterator slice(ptr + offset, size - offset, AArch64::mem_acc_type::write); slice.vnext(core);)
         {
-          AArch64::MMU::TLB::Entry entry(addr);
-          //  Let the translation throw if needed
-          core.translate_address(entry, 1, AArch64::mem_acc_type::debug);
-          AArch64::Page const& page = core.get_page(entry.pa);
-          uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
-          uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
           lseek(itr->second.fd, offset, SEEK_SET);
-          if (::read(itr->second.fd, static_cast<void*>(data), done) != intptr_t(done))
+          if (::read(itr->second.fd, static_cast<void*>(slice.data), slice.size) != intptr_t(slice.size))
             raise(Bad());
-          std::fill(&udat[0], &udat[done], 0);
-          offset += done;
-          addr += done;
-          count -= done;
+          std::fill(slice.udat, slice.udat + slice.size, 0);
+          offset += slice.size;
           core.SetGZR(1, AArch64::U64(offset));
-        }
+        }          
 
       
       if (--(itr->second.refcount) <= 0)

@@ -258,41 +258,17 @@ VIODisk::Delta::uread(uint64_t pos, uint64_t size, uint8_t* dst) const
   std::copy( &src[0], &src[size], dst );
 }
 
-namespace
-{
-  struct PageIterator
-  {
-    PageIterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
-    AArch64::Page const* page;
-    uint64_t ptr, left, pbytes;
-    bool next(AArch64& core)
-    {
-      if (uint64_t nleft = left - pbytes)
-        { left = nleft; ptr += pbytes; }
-      else
-        return false;
-      page = &core.get_page(ptr);
-      pbytes = std::min(page->size_from(ptr), left);
-      return true;
-    }
-    uint8_t*  slice_data() const { return page->data_abs(ptr); }
-    uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
-    uintptr_t slice_size() const { return pbytes; }
-  };
-}
-
 void
 VIODisk::read(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
 {
   AArch64& core = dynamic_cast<Access const&>(vioa).GetCore();
-  for (PageIterator itr(addr, size); itr.next(core);)
+  for (AArch64::SliceIterator slice(addr, size, AArch64::mem_acc_type::read); slice.pnext(core);)
     {
-      uintptr_t size = itr.slice_size();
       {
-        uint8_t* udat = itr.slice_udat();
+        uint8_t* udat = slice.udat;
         auto itr = deltas.lower_bound(Delta(diskpos));
 
-        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+        for (uint64_t pos = diskpos, left = slice.size, psize = 0; left; left -= psize, udat += psize, pos += psize)
           {
             psize = std::min(Delta::size_from(pos), left);
 
@@ -305,12 +281,9 @@ VIODisk::read(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t 
               }
           }
       }
-      {
-        uint8_t const* src = &storage[diskpos];
-        uint8_t* dst = itr.slice_data();
-        std::copy(&src[0], &src[size], dst);
-      }
-      diskpos += size;
+      uint8_t const* src = &storage[diskpos];
+      std::copy(src, src + slice.size, slice.data);
+      diskpos += slice.size;
     }
 }
 
@@ -340,14 +313,13 @@ void
 VIODisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t size)
 {
   AArch64& core = dynamic_cast<Access const&>(vioa).GetCore();
-  for (PageIterator itr(addr, size); itr.next(core);)
+  for (AArch64::SliceIterator slice(addr, size, AArch64::mem_acc_type::write); slice.pnext(core);)
     {
-      uintptr_t size = itr.slice_size();
       {
-        uint8_t* udat = itr.slice_udat();
+        uint8_t* udat = slice.udat;
         auto itr = deltas.lower_bound(Delta(diskpos));
 
-        for (uint64_t pos = diskpos, left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
+        for (uint64_t pos = diskpos, left = slice.size, psize = 0; left; left -= psize, udat += psize, pos += psize)
           {
             psize = std::min(Delta::size_from(pos), left);
       
@@ -358,11 +330,7 @@ VIODisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t
             ++itr;
           }
       }
-      {
-        uint8_t const* src = itr.slice_data();
-        uint8_t* dst = &storage[diskpos];
-        std::copy(&src[0], &src[size], dst);
-      }
-      diskpos += size;
+      std::copy(slice.data, slice.data + slice.size, &storage[diskpos]);
+      diskpos += slice.size;
     }
 }
