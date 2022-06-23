@@ -59,40 +59,6 @@
 // 
 // blendvpd_vdq_wdq.disasm = { _sink << "blendvpd %xmm0," << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
-// /* CMPP -- Compare Packed Single- or Double-Precision Floating-Point Values */
-// op cmpps_vdq_wdq_ib( 0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// cmpps_vdq_wdq_ib.disasm = {
-//   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmpps " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "ps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-// };
-// 
-// op cmppd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// cmppd_vdq_wdq_ib.disasm = {
-//   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmppd " << DisasmI( imm ) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "pd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-// };
-// 
-// /* CMPSD -- Compare Scalar Single- Double-Precision Floating-Point Values */
-// op cmpss_vdq_wdq_ib( 0xf3[8]:> <:0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// cmpss_vdq_wdq_ib.disasm = {
-//   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmpss " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "ss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-// };
-// 
-// op cmpsd_vdq_wdq_ib( 0xf2[8]:> <:0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// cmpsd_vdq_wdq_ib.disasm = {
-//   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmpsd " << DisasmI( imm ) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "sd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
-// };
-// 
 // /* COMISD -- Compare Scalar Ordered Single- or Double-Precision Floating-Point Values and Set EFLAGS */
 // op comisd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -101,6 +67,63 @@
 // op comiss_vdq_wdq( 0x0f[8]:> <:0x2f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // comiss_vdq_wdq.disasm = { _sink << "comiss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
+
+
+/* CMP -- Compare Scalar or Packed Single- or Double-Precision Floating-Point Values */
+
+template <class ARCH, class VR, unsigned OPSZ, bool PACKED>
+struct VFPCmp : public Operation<ARCH>
+{
+  typedef typename TypeFor<ARCH,OPSZ>::f valtype;
+
+  VFPCmp( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn, unsigned _op ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), op(_op) {}
+  void disasm( std::ostream& sink ) const
+  {
+    char const* opname[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
+    if (op >= 8) { struct TODO{}; throw TODO(); }
+    sink << (VR::vex() ? "v" : "") << "cmp" << opname[op] << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d")
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  // void execute( ARCH& arch ) const
+  // {
+  //   for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
+  //     arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+  //   if (gn != vn)
+  //     for (unsigned idx = PACKED ? VR::size()/OPSZ : 1, end = VR::size()/OPSZ; idx < end; ++idx)
+  //       arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, valtype() ) );
+  // }
+  RMOp<ARCH> rm; uint8_t vn, gn, op;
+};
+
+template <class ARCH> struct DC<ARCH,VFPCMP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "*\x0f\xc2" ) & RM() & Imm<8>() ))
+    {
+      uint8_t op = _.i( uint8_t() ), gn = _.greg();
+      if (not ic.vex())               return op >=  8 ? 0 : newVFPCmp<SSE>( ic, _.opbase(), gn, gn, _.rmop(), op );
+      unsigned vn = ic.vreg();
+      // Vex Scalar versions are always 128 bits (XMM)
+      if (ic.vlen() == 128 or ic.rep) return op >= 32 ? 0 : newVFPCmp<XMM>( ic, _.opbase(), gn, vn, _.rmop(), op );
+      if (ic.vlen() == 256)           return op >= 32 ? 0 : newVFPCmp<YMM>( ic, _.opbase(), gn, vn, _.rmop(), op );
+      return 0;
+    }
+  
+  return 0;
+}
+template <class VR> Operation<ARCH>*
+newVFPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm, uint8_t op )
+{
+  if (match( ic, simd__() )) return new VFPCmp<ARCH,VR,32, true>( opbase, rm, vn, gn, op );
+  if (match( ic, simd66() )) return new VFPCmp<ARCH,VR,64, true>( opbase, rm, vn, gn, op );
+  if (match( ic, simdF3() )) return new VFPCmp<ARCH,VR,32,false>( opbase, rm, vn, gn, op );
+  if (match( ic, simdF2() )) return new VFPCmp<ARCH,VR,64,false>( opbase, rm, vn, gn, op );
+  return 0;
+}
+};
 
 /*********************/
 /* SIMD CVT Functions*/
@@ -978,6 +1001,70 @@ Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> co
 // 
 // mpsadbw_vdq_wdq.disasm = { _sink << "mpsadbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 
+/* SQRT -- Compute Square Roots of Packed or Scalar Single- or Double-Precision Floating-Point Values */
+struct VSQRT { char const* n() { return "sqrt"; } };
+
+template <class ARCH, class OPERATION, class VR, unsigned OPSZ, bool PACKED>
+struct VFPUnaryVW : public Operation<ARCH>
+{
+  typedef typename TypeFor<ARCH,OPSZ>::f valtype;
+  valtype eval ( VSQRT const&, valtype const& src ) const { return sqrt(src); }
+
+  VFPUnaryVW(OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
+
+  void disasm(std::ostream& sink) const
+  {
+    sink << (VR::vex() ? "v" : "") << OPERATION().n() << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d")
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex() and not PACKED) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+    for (unsigned idx = PACKED ? VR::size()/OPSZ : 1, end = VR::size()/OPSZ; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, valtype() ) );
+  }
+  RMOp<ARCH> rm; uint8_t vn, gn;
+};
+
+template <class ARCH> struct DC<ARCH,VFPUNARY> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "*\x0f\x51" ) & RM() ))
+
+    return newVFPUnary<VSQRT>(ic, _.opbase(), _.greg(), _.rmop());
+  
+  return 0;
+}
+template <class OPERATION> Operation<ARCH>* newVFPUnary( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, MOp<ARCH> const* rm )
+{
+  if (not ic.vex())     return newVFPUnaryVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return newVFPUnaryVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
+  if (ic.vlen() == 256) return newVFPUnaryVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
+  return 0;
+}
+template <class OPERATION, class VR> Operation<ARCH>*
+newVFPUnaryVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
+{
+  if (match( ic, simdF3() )) return newScalarVFPUnaryVW<OPERATION,VR,32>( opbase, gn, vn, rm );
+  if (match( ic, simdF2() )) return newScalarVFPUnaryVW<OPERATION,VR,64>( opbase, gn, vn, rm );
+  if (vn and ic.vex()) return 0; // No vreg for packed operation
+  if (match( ic, simd__() )) return new VFPUnaryVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vn, gn );
+  if (match( ic, simd66() )) return new VFPUnaryVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vn, gn );
+  return 0;
+}
+template <class OPERATION, class VR, unsigned OPSZ> Operation<ARCH>*
+newScalarVFPUnaryVW( OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
+{
+  if (VR::vex()) return new VFPUnaryVW<ARCH,OPERATION,XMM,OPSZ,false>( opbase, rm, vn, gn );
+  return                new VFPUnaryVW<ARCH,OPERATION,SSE,OPSZ,false>( opbase, rm, vn, gn );
+}
+};
+
 struct VADD { char const* n() { return "add"; } }; struct VSUB { char const* n() { return "sub"; } };
 struct VMUL { char const* n() { return "mul"; } }; struct VDIV { char const* n() { return "div"; } };
 struct VMIN { char const* n() { return "min"; } }; struct VMAX { char const* n() { return "max"; } };
@@ -985,7 +1072,7 @@ struct VSLL { char const* n() { return "sll"; } };
 struct VMULUDQ { char const* n() { return "muludq"; } };
 
 template <class ARCH, class OPERATION, class VR, unsigned OPSZ, bool PACKED>
-struct VArithmeticVVW : public Operation<ARCH>
+struct VFPBinaryVVW : public Operation<ARCH>
 {
   typedef typename TypeFor<ARCH,OPSZ>::f valtype;
   valtype eval ( VADD const&, valtype const& src1, valtype const& src2 ) const { return src1 + src2; }
@@ -996,7 +1083,7 @@ struct VArithmeticVVW : public Operation<ARCH>
   valtype eval ( VSUB const&, valtype const& src1, valtype const& src2 ) const { return src1 - src2; }
   
 
-  VArithmeticVVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
+  VFPBinaryVVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
   void disasm( std::ostream& sink ) const
   {
     sink << (VR::vex() ? "v" : "") << OPERATION().n() << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d")
@@ -1021,58 +1108,59 @@ struct VArithmeticVVW : public Operation<ARCH>
 /* DIV -- Divide Scalar or Packed Single- or Double-Precision Floating-Point Values */
 /* MAX -- Return Maximum Scalar or Packed Single- or Double-Precision Floating-Point Values */
 
-template <class ARCH> struct DC<ARCH,VFP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+template <class ARCH> struct DC<ARCH,VFPBINARY> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
   if (auto _ = match( ic, vex( "*\x0f\x58" ) & RM() ))
 
-    return newVFP<VADD>(ic, _.opbase(), _.greg(), _.rmop());
+    return newVFPBinary<VADD>(ic, _.opbase(), _.greg(), _.rmop());
   
   if (auto _ = match( ic, vex( "*\x0f\x59" ) & RM() ))
 
-    return newVFP<VMUL>(ic, _.opbase(), _.greg(), _.rmop());
+    return newVFPBinary<VMUL>(ic, _.opbase(), _.greg(), _.rmop());
   
   if (auto _ = match( ic, vex( "*\x0f\x5c" ) & RM() ))
 
-    return newVFP<VSUB>(ic, _.opbase(), _.greg(), _.rmop());
+    return newVFPBinary<VSUB>(ic, _.opbase(), _.greg(), _.rmop());
     
   if (auto _ = match( ic, vex( "*\x0f\x5d" ) & RM() ))
 
-    return newVFP<VMIN>(ic, _.opbase(), _.greg(), _.rmop());
+    return newVFPBinary<VMIN>(ic, _.opbase(), _.greg(), _.rmop());
       
   if (auto _ = match( ic, vex( "*\x0f\x5e" ) & RM() ))
 
-    return newVFP<VDIV>(ic, _.opbase(), _.greg(), _.rmop());
+    return newVFPBinary<VDIV>(ic, _.opbase(), _.greg(), _.rmop());
 
   if (auto _ = match( ic, vex( "*\x0f\x5f" ) & RM() ))
 
-    return newVFP<VMAX>(ic, _.opbase(), _.greg(), _.rmop());
+    return newVFPBinary<VMAX>(ic, _.opbase(), _.greg(), _.rmop());
   
   return 0;
 }
-template <class OPERATION> Operation<ARCH>* newVFP( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, MOp<ARCH> const* rm )
+template <class OPERATION> Operation<ARCH>* newVFPBinary( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, MOp<ARCH> const* rm )
 {
-  if (not ic.vex())     return newVArithmeticVVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
+  if (not ic.vex())     return newVFPBinaryVVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return newVArithmeticVVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
-  if (ic.vlen() == 256) return newVArithmeticVVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
+  if (ic.vlen() == 128) return newVFPBinaryVVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
+  if (ic.vlen() == 256) return newVFPBinaryVVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
   return 0;
 }
 template <class OPERATION, class VR> Operation<ARCH>*
-newVArithmeticVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
+newVFPBinaryVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
 {
-  if (match( ic, simd__() )) return new VArithmeticVVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vn, gn );
-  if (match( ic, simd66() )) return new VArithmeticVVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vn, gn );
-  if (match( ic, simdF3() )) return newScalarVArithmeticVVW<OPERATION,VR,32>( opbase, gn, vn, rm );
-  if (match( ic, simdF2() )) return newScalarVArithmeticVVW<OPERATION,VR,64>( opbase, gn, vn, rm );
+  if (match( ic, simd__() )) return new VFPBinaryVVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vn, gn );
+  if (match( ic, simd66() )) return new VFPBinaryVVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vn, gn );
+  if (match( ic, simdF3() )) return newScalarVFPBinaryVVW<OPERATION,VR,32>( opbase, gn, vn, rm );
+  if (match( ic, simdF2() )) return newScalarVFPBinaryVVW<OPERATION,VR,64>( opbase, gn, vn, rm );
   return 0;
 }
 template <class OPERATION, class VR, unsigned OPSZ> Operation<ARCH>*
-newScalarVArithmeticVVW( OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
+newScalarVFPBinaryVVW( OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
 {
-  if (VR::vex()) return new VArithmeticVVW<ARCH,OPERATION,XMM,OPSZ,false>( opbase, rm, vn, gn );
-  return                new VArithmeticVVW<ARCH,OPERATION,SSE,OPSZ,false>( opbase, rm, vn, gn );
+  // Vex Scalar versions are always 128 bits (XMM)
+  if (VR::vex()) return new VFPBinaryVVW<ARCH,OPERATION,XMM,OPSZ,false>( opbase, rm, vn, gn );
+  return                new VFPBinaryVVW<ARCH,OPERATION,SSE,OPSZ,false>( opbase, rm, vn, gn );
 }
 };
 
@@ -1141,7 +1229,6 @@ template <class ARCH> struct DC<ARCH,VFPCVT> { Operation<ARCH>* get( InputCode<A
       unsigned vn = ic.vreg();
       if (ic.vlen() == 128) return newVFPCvt<XMM>( ic, _.opbase(), _.rmop(), vn, gn );
       if (ic.vlen() == 256) return newVFPCvt<YMM>( ic, _.opbase(), _.rmop(), vn, gn );
-      return 0;
       return 0;
     }
   
@@ -3070,47 +3157,6 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 // op shufpd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0xc6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // shufpd_vdq_wdq_ib.disasm = { _sink << "shufpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SQRTPS -- Compute Square Roots of Packed Single-Precision Floating-Point Values */
-// op sqrtps_vdq_wdq( 0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// sqrtps_vdq_wdq.disasm = { _sink << "sqrtps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SQRTPD -- Compute Square Roots of Packed Double-Precision Floating-Point Values */
-// op sqrtpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// sqrtpd_vdq_wdq.disasm = { _sink << "sqrtpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SQRTSS -- Compute Square Roots of Packed Single-Precision Floating-Point Values */
-// op sqrtss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// sqrtss_vdq_wdq.disasm = { _sink << "sqrtss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SQRTSD -- Compute Square Roots of Packed Double-Precision Floating-Point Values */
-// op sqrtsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// sqrtsd_vdq_wdq.disasm = { _sink << "sqrtsd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SUBPS -- Subtract Packed Single-Precision Floating-Point Values */
-// op subps_vdq_wdq( 0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// subps_vdq_wdq.disasm = { _sink << "subps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SUBPD -- Subtract Packed Double-Precision Floating-Point Values */
-// op subpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// subpd_vdq_wdq.disasm = { _sink << "subpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SUBSS -- Subtract Scalar Single-Precision Floating-Point Values */
-// op subss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// subss_vdq_wdq.disasm = { _sink << "subss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* SUBSD -- Subtract Scalar Double-Precision Floating-Point Values */
-// op subsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// subsd_vdq_wdq.disasm = { _sink << "subsd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
 // 
 // /* MOVDDUP -- Move One Double-FP and Duplicate */
 // op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );

@@ -64,9 +64,9 @@ namespace intel {
                      PUSH, PUSHA, PUSHF, POP, POPA, POPF, MOV, MOVZX, MOVSX, STD, ARPL, CMPXCHG,
                      CMPXCHG8B, XCHG, XADD, HINT, NOP, CMOVCC, BT, BTC, BTR, BTS, BSWAP, MOVNTI, LFP,
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT, HLT, FENCE,
-                     PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VFP,
+                     PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VFPBINARY, VFPUNARY,
                      PMOVMSKB, VMOVSD, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, VINTBIN, VMULEXT, MOVQ,
-                     PSHUFD, PSHUFB, PSHDQ, PTEST, PINSR, PCMPSTR,
+                     PSHUFD, PSHUFB, PSHDQ, PTEST, PINSR, PCMPSTR, VFPCMP,
 		     VZEROUPPER,
                      operation_count };
 

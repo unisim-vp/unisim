@@ -243,9 +243,9 @@ template <class ARCH> struct DC<ARCH,CMPS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xa6" ) ))
   
     {
-      if (ic.rep==0) return new Cmps<ARCH,GOb,3>( _.opbase(), ic.segment, mkse( ic ) );
+      if (ic.rep==0) return new Cmps<ARCH,GOb,0>( _.opbase(), ic.segment, mkse( ic ) );
       if (ic.rep==2) return new Cmps<ARCH,GOb,2>( _.opbase(), ic.segment, mkse( ic ) );
-      else           return new Cmps<ARCH,GOb,0>( _.opbase(), ic.segment, mkse( ic ) );
+      else           return new Cmps<ARCH,GOb,3>( _.opbase(), ic.segment, mkse( ic ) );
     }
 
   

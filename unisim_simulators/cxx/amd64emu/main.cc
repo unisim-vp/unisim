@@ -114,8 +114,8 @@ struct Simulator
     while (not linux64.exited)
       {
         cpu.StepInstruction();
-        if (cpu.instruction_count >= 0x100000)
-          break;
+        // if (cpu.instruction_count >= 0x100000)
+        //   break;
         // if ((cpu.instruction_count % 0x1000000) == 0)
         //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
       }

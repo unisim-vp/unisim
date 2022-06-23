@@ -35,6 +35,7 @@
 #include <arch.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
+#include <cmath>
 
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
 using unisim::util::arithmetic::BitScanForward;
