@@ -62,7 +62,6 @@ struct Simulator
     , verbose_linux(false)
     , param_enable_debug("enable-debug", this, enable_debug, "Enable debug session")
     , param_verbose_linux("verbose-linux", this, verbose_linux, "Verbose linux session")
-
   {
     if (enable_debug)
       debugger = std::make_unique<Debugger>("debugger", this, cpu, linux64);
@@ -137,12 +136,12 @@ struct Simulator
 
 void Simulator::default_config(unisim::kernel::Simulator* sim)
 {
-  sim->SetVariable("debugger.debug-hub.parse-dwarf", false);
-  sim->SetVariable("debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml");
-  sim->SetVariable("debugger.debug-hub.architecture[0]", "amd64");
-  sim->SetVariable("debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
-  sim->SetVariable("debugger.gdb-server.verbose", false);
-  sim->SetVariable("debugger.inline-debugger.program-counter-name", "rip");
+  sim->SetVariable("top.debugger.debug-hub.parse-dwarf", false);
+  sim->SetVariable("top.debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml");
+  sim->SetVariable("top.debugger.debug-hub.architecture[0]", "amd64");
+  sim->SetVariable("top.debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
+  sim->SetVariable("top.debugger.gdb-server.verbose", false);
+  sim->SetVariable("top.debugger.inline-debugger.program-counter-name", "rip");
 
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
