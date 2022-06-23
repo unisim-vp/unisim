@@ -49,6 +49,7 @@ struct Transfer
   struct File
   {
     File(char const* path);
+    File(char const* path, uint64_t _size);
     File(File&& file) : fd(file.fd), refcount(file.refcount), size(file.size) { file.fd = -1; }
     File(File const&) = delete;
     ~File();
