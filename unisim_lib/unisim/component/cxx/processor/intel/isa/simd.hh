@@ -76,24 +76,108 @@ struct VFPCmp : public Operation<ARCH>
 {
   typedef typename TypeFor<ARCH,OPSZ>::f valtype;
 
-  VFPCmp( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn, unsigned _op ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), op(_op) {}
+  // The original Intel/AMD Coding was refactored to ease operation decode
+  // 0b00000 -> 0b01011 FALSE_OQ (FALSE)	False (ordered, non-signaling)
+  // 0b00001 -> 0b00000 EQ_OQ (EQ)		Equal (ordered, non-signaling)
+  // 0b00010 -> 0b10001 LT_OQ			Less-than (ordered, non-signaling)
+  // 0b00011 -> 0b10010 LE_OQ			Less-than-or-equal (ordered,non-signaling)
+  // 0b00100 -> 0b11110 GT_OQ			Greater-than (ordered, non-signaling)
+  // 0b00101 -> 0b11101 GE_OQ			Greater-than-or-equal (ordered, non-signaling)
+  // 0b00110 -> 0b01100 NEQ_OQ			Not-equal (ordered, non-signaling)
+  // 0b00111 -> 0b00111 ORD_Q (ORD)		Ordered (non-signaling)
+  // 0b01000 -> 0b01111 TRUE_UQ(TRUE)		True (unordered, non-signaling)
+  // 0b01001 -> 0b00100 NEQ_UQ (NEQ)		Not-equal (unordered, non-signaling)
+  // 0b01010 -> 0b10101 NLT_UQ			Not-less-than (unordered, non-signaling)
+  // 0b01011 -> 0b10110 NLE_UQ			Not-less-than-or-equal (unordered,non-signaling)
+  // 0b01100 -> 0b11010 NGT_UQ			Not-greater-than (unordered, non-signaling)
+  // 0b01101 -> 0b11001 NGE_UQ			Not-greater-than-or-equal (unordered, non-signaling)
+  // 0b01110 -> 0b01000 EQ_UQ			Equal (unordered, non-signaling)
+  // 0b01111 -> 0b00011 UNORD_Q (UNORD)		Unordered (non-signaling)
+  // 0b10000 -> 0b11011 FALSE_OS	False (ordered, signaling)
+  // 0b10001 -> 0b10000 EQ_OS		Equal (ordered, signaling)
+  // 0b10010 -> 0b00001 LT_OS (LT)	Less-than (ordered, signaling)
+  // 0b10011 -> 0b00010 LE_OS (LE)	Less-than-or-equal (ordered,signaling)
+  // 0b10100 -> 0b01110 GT_OS (GT)	Greater-than (ordered, signaling)
+  // 0b10101 -> 0b01101 GE_OS (GE)	Greater-than-or-equal (ordered, signaling)
+  // 0b10110 -> 0b11100 NEQ_OS		Not-equal (ordered, signaling)
+  // 0b10111 -> 0b10111 ORD_S		Ordered (signaling)
+  // 0b11000 -> 0b11111 TRUE_US		True (unordered, signaling)
+  // 0b11001 -> 0b10100 NEQ_US		Not-equal (unordered, signaling)
+  // 0b11010 -> 0b00101 NLT_US (NLT)	Not-less-than (unordered, signaling)
+  // 0b11011 -> 0b00110 NLE_US (NLE)	Not-less-than-or-equal (unordered,signaling)
+  // 0b11100 -> 0b01010 NGT_US (NGT)	Not-greater-than (unordered, signaling)
+  // 0b11101 -> 0b01001 NGE_US (NGE)	Not-greater-than-or-equal (unordered, signaling)
+  // 0b11110 -> 0b11000 EQ_US		Equal (unordered, signaling)
+  // 0b11111 -> 0b10011 UNORD_S		Unordered (signaling)
+
+  VFPCmp( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn, unsigned _op )
+    : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), op()
+  {
+    bool seq = ((_op >> 3) ^ ((_op >> 1) | (~_op >> 0))) & 1;
+    bool slt = ((_op >> 3) ^ ((_op >> 1) | (_op >> 0))) & 1;
+    bool sgt = ((_op >> 3) ^ ((_op >> 1) & (_op >> 0))) & 1;
+    bool neg = sgt ^ ((_op >> 2) & 1);
+    bool sig = (slt ^ sgt) ^ ((_op >> 4) & 1); // Is Signaling
+
+    op = (seq << 0) | (slt << 1) | (sgt << 2) | (neg << 3) | (sig << 4);
+  }
   void disasm( std::ostream& sink ) const
   {
-    char const* opname[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-    if (op >= 8) { struct TODO{}; throw TODO(); }
-    sink << (VR::vex() ? "v" : "") << "cmp" << opname[op] << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d")
+    sink << (VR::vex() ? "v" : "") << "cmp";
+
+    switch (op & 7)
+      {
+      case 0: sink << (op & 8 ? "true" : "false"); break;
+      case 1: sink << (op & 8 ? "neq" : "eq"); break;
+      case 2: sink << (op & 8 ? "nlt" : "lt"); break;
+      case 3: sink << (op & 8 ? "nle" : "le"); break;
+      case 4: sink << (op & 8 ? "ngt" : "gt"); break;
+      case 5: sink << (op & 8 ? "nge" : "ge"); break;
+      case 6: sink << (op & 8 ? "eq" : "neq"); break;
+      case 7: sink << (op & 8 ? "unord" : "ord"); break;
+      }
+    if ((((op >> 4) ^ (op >> 2) ^ (op >> 1)) & 1) or (op & 0b10111) == 0b00110)
+      {
+        // Not a natural comparison
+        sink << '_';
+        if ((op & 7) != 7)
+          sink << (op & 8 ? 'u' : 'o');
+        sink << (op & 16 ? 's' : 'q');
+      }
+
+    sink << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d")
          <<                ' ' << DisasmW( VR(), rm );
     if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
     sink <<                ',' << DisasmV( VR(), gn );
   }
-  // void execute( ARCH& arch ) const
-  // {
-  //   for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
-  //     arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
-  //   if (gn != vn)
-  //     for (unsigned idx = PACKED ? VR::size()/OPSZ : 1, end = VR::size()/OPSZ; idx < end; ++idx)
-  //       arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, valtype() ) );
-  // }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::bit_t bit_t;
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
+    typedef typename TypeFor<ARCH,OPSZ>::u u_type;
+
+    bit_t seq = bit_t(op &  1); // Select Equal
+    bit_t slt = bit_t(op &  2); // Select Less Than
+    bit_t sgt = bit_t(op &  4); // Select Greater Than
+    bit_t neg = bit_t(op &  8); // Negate result
+    //bit_t sig = bit_t(op & 16); // Is Signaling
+
+    for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
+      {
+        f_type a = arch.vmm_read( VR(), vn, idx, f_type() );
+        f_type b = arch.vmm_read( VR(), rm, idx, f_type() );
+        bit_t lt = a < b;
+        bit_t gt = a > b;
+        bit_t eq = a == b;
+        bit_t cmp = neg xor ((seq and eq) or (slt and lt) or (sgt and gt));
+        
+        arch.vmm_write( VR(), gn, idx, -u_type(cmp) );
+      }
+
+    if (gn != vn)
+      for (unsigned idx = PACKED ? VR::size()/OPSZ : 1, end = VR::size()/OPSZ; idx < end; ++idx)
+        arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, valtype() ) );
+  }
   RMOp<ARCH> rm; uint8_t vn, gn, op;
 };
 
@@ -1041,27 +1125,22 @@ template <class ARCH> struct DC<ARCH,VFPUNARY> { Operation<ARCH>* get( InputCode
 }
 template <class OPERATION> Operation<ARCH>* newVFPUnary( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, MOp<ARCH> const* rm )
 {
-  if (not ic.vex())     return newVFPUnaryVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
+  if (not ic.vex())               return newVFPUnaryVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return newVFPUnaryVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
-  if (ic.vlen() == 256) return newVFPUnaryVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
+  // Vex Scalar versions are always 128 bits (XMM)
+  if (ic.vlen() == 128 or ic.rep) return newVFPUnaryVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
+  if (ic.vlen() == 256)           return newVFPUnaryVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
   return 0;
 }
 template <class OPERATION, class VR> Operation<ARCH>*
 newVFPUnaryVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
 {
-  if (match( ic, simdF3() )) return newScalarVFPUnaryVW<OPERATION,VR,32>( opbase, gn, vn, rm );
-  if (match( ic, simdF2() )) return newScalarVFPUnaryVW<OPERATION,VR,64>( opbase, gn, vn, rm );
+  if (match( ic, simdF3() )) return new VFPUnaryVW<ARCH,OPERATION,VR,32,false>( opbase, rm, vn, gn );
+  if (match( ic, simdF2() )) return new VFPUnaryVW<ARCH,OPERATION,VR,64,false>( opbase, rm, vn, gn );
   if (vn and ic.vex()) return 0; // No vreg for packed operation
   if (match( ic, simd__() )) return new VFPUnaryVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vn, gn );
   if (match( ic, simd66() )) return new VFPUnaryVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vn, gn );
   return 0;
-}
-template <class OPERATION, class VR, unsigned OPSZ> Operation<ARCH>*
-newScalarVFPUnaryVW( OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
-{
-  if (VR::vex()) return new VFPUnaryVW<ARCH,OPERATION,XMM,OPSZ,false>( opbase, rm, vn, gn );
-  return                new VFPUnaryVW<ARCH,OPERATION,SSE,OPSZ,false>( opbase, rm, vn, gn );
 }
 };
 
@@ -1140,10 +1219,11 @@ template <class ARCH> struct DC<ARCH,VFPBINARY> { Operation<ARCH>* get( InputCod
 }
 template <class OPERATION> Operation<ARCH>* newVFPBinary( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned gn, MOp<ARCH> const* rm )
 {
-  if (not ic.vex())     return newVFPBinaryVVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
+  if (not ic.vex())               return newVFPBinaryVVW<OPERATION,SSE>( ic, opbase, gn, gn, rm );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return newVFPBinaryVVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
-  if (ic.vlen() == 256) return newVFPBinaryVVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
+  // Vex Scalar versions are always 128 bits (XMM)
+  if (ic.vlen() == 128 or ic.rep) return newVFPBinaryVVW<OPERATION,XMM>( ic, opbase, gn, vn, rm );
+  if (ic.vlen() == 256)           return newVFPBinaryVVW<OPERATION,YMM>( ic, opbase, gn, vn, rm );
   return 0;
 }
 template <class OPERATION, class VR> Operation<ARCH>*
@@ -1151,16 +1231,9 @@ newVFPBinaryVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned
 {
   if (match( ic, simd__() )) return new VFPBinaryVVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vn, gn );
   if (match( ic, simd66() )) return new VFPBinaryVVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vn, gn );
-  if (match( ic, simdF3() )) return newScalarVFPBinaryVVW<OPERATION,VR,32>( opbase, gn, vn, rm );
-  if (match( ic, simdF2() )) return newScalarVFPBinaryVVW<OPERATION,VR,64>( opbase, gn, vn, rm );
+  if (match( ic, simdF3() )) return new VFPBinaryVVW<ARCH,OPERATION,VR,32,false>( opbase, rm, vn, gn );
+  if (match( ic, simdF2() )) return new VFPBinaryVVW<ARCH,OPERATION,VR,64,false>( opbase, rm, vn, gn );
   return 0;
-}
-template <class OPERATION, class VR, unsigned OPSZ> Operation<ARCH>*
-newScalarVFPBinaryVVW( OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
-{
-  // Vex Scalar versions are always 128 bits (XMM)
-  if (VR::vex()) return new VFPBinaryVVW<ARCH,OPERATION,XMM,OPSZ,false>( opbase, rm, vn, gn );
-  return                new VFPBinaryVVW<ARCH,OPERATION,SSE,OPSZ,false>( opbase, rm, vn, gn );
 }
 };
 
