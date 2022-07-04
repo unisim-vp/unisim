@@ -3143,11 +3143,14 @@ Operation<ARCH>* newPBitManipVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const&
 template <class ARCH, unsigned OPSZ>
 struct Ucomis : public Operation<ARCH>
 {
-  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, bool _v ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), v(_v) {} RMOp<ARCH> rm; uint8_t gn; bool v;
-  void disasm( std::ostream& sink ) const { sink << (v?"v":"") << "ucomis" << SizeID<OPSZ>::fid() << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
+  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, bool _v, bool _o )
+    : Operation<ARCH>(opbase), rm(_rm), gn(_gn), v(_v), o(_o) {}
+  RMOp<ARCH> rm; uint8_t gn; bool v; bool o;
+  void disasm( std::ostream& sink ) const { sink << (v?"v":"") << (o?"":"u") << "comis" << SizeID<OPSZ>::fid() << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
   
   void execute( ARCH& arch ) const
   {
+    // TODO: handle ordered case
     typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     typedef typename ARCH::bit_t bit_t;
     
@@ -3171,11 +3174,11 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, vex( "*\x0f\x2e" ) & RM() ))
+  if (auto _ = match( ic, (vex( "*\x0f\x2e" ) + Var<1>()) & RM() ))
     {
       if (ic.vex() and ic.vreg()) return 0;
-      if (match( ic, simd__() )) return new Ucomis<ARCH,32>( _.opbase(), _.rmop(), _.greg(), ic.vex() );
-      if (match( ic, simd66() )) return new Ucomis<ARCH,64>( _.opbase(), _.rmop(), _.greg(), ic.vex() );
+      if (match( ic, simd__() )) return new Ucomis<ARCH,32>( _.opbase(), _.rmop(), _.greg(), ic.vex(), _.var() );
+      if (match( ic, simd66() )) return new Ucomis<ARCH,64>( _.opbase(), _.rmop(), _.greg(), ic.vex(), _.var() );
     }
 
   return 0;

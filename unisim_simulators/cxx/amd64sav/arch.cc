@@ -185,43 +185,33 @@ namespace review
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
     
-    struct
-    {
-      Expr ui( unsigned sz, Expr const& src ) const
-      {
-        switch (sz) {
-        default: throw 0;
-        case 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
-        case 2: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
-        case 4: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
-        case 8: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
-        }
-        return 0;
-      }
-    } cast;
-    
     if (not regvalues[reg][pos].node)
       {
         // requested read is in the middle of a larger value
         unsigned src = pos;
         do { src = src & (src-1); } while (not regvalues[reg][src].node);
         unsigned shift = 8*(pos - src);
-        return cast.ui( size, make_operation( "Lsr", regvalues[reg][src], make_const( shift ) ) );
+        return
+          make_operation( "And",
+                          make_operation( "Lsr", regvalues[reg][src], make_const( shift ) ),
+                          make_const( uint64_t(-1) >> (64-8*size) )
+                          );
       }
     else if (not regvalues[reg][(pos|size)&(REGSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
-        return cast.ui( size, regvalues[reg][pos] );
+        return
+          make_operation( "And", regvalues[reg][pos], make_const( uint64_t(-1) >> (64-8*size) ) );
       }
     else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
       {
         // requested read is a concatenation of multiple source values
-        Expr concat = cast.ui( size, regvalues[reg][pos] );
+        Expr concat = regvalues[reg][pos];
         for (unsigned idx = 0; ++idx < size;)
           {
             if (not regvalues[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", cast.ui( size, regvalues[reg][idx] ), make_const( 8*idx ) ), concat );
+            concat = make_operation( "Or", make_operation( "Lsl", regvalues[reg][idx], make_const( 8*idx ) ), concat );
           }
         return concat;
       }

@@ -404,10 +404,10 @@ namespace review
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
     {
-      return typename TypeFor<Arch,GOP::SIZE>::u( eregread( idx, GOP::SIZE / 8, 0 ) );
+      return typename TypeFor<Arch,GOP::SIZE>::u( gr_type(eregread( idx, GOP::SIZE / 8, 0 )) );
     }
 
-    u8_t regread( GObLH const&, unsigned idx ) { return u8_t( eregread( idx%4, 1, (idx >> 2) & 1 ) ); }
+    u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type(eregread( idx%4, 1, (idx >> 2) & 1 )) ); }
 
     template <class GOP> void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u const& val )
     { eregwrite( idx, 8, 0, u64_t(val).expr ); }
@@ -599,27 +599,6 @@ namespace review
     f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { return f32_t( PerformLoad( (float)0,        4, seg, addr ) ); }
     f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { return f64_t( PerformLoad( (double)0,       8, seg, addr ) ); }
     f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { return f80_t( PerformLoad( (long double)0, 10, seg, addr ) ); }
-
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    regread( unsigned idx )
-    {
-      typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-
-      if (OPSIZE==8)                    return u_type( eregread( idx%4, 1, (idx>>2) & 1 ) );
-      if ((OPSIZE==16) or (OPSIZE==32)) return u_type( eregread( idx, OPSIZE/8, 0 ) );
-      throw 0;
-      return u_type(0);
-    }
-
-    template <unsigned OPSIZE>
-    void
-    regwrite( unsigned idx, typename TypeFor<Arch,OPSIZE>::u const& value )
-    {
-      if  (OPSIZE==8)                   return eregwrite( idx%4, 1, (idx>>2) & 1, value.expr );
-      if ((OPSIZE==16) or (OPSIZE==32)) return eregwrite( idx, OPSIZE/8, 0, value.expr );
-      throw 0;
-    }
 
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u

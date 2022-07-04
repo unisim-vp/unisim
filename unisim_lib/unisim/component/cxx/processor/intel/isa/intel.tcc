@@ -300,6 +300,10 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
 
+    typedef Vex<LENGTH-1> Head;
+    template <typename RHS>
+    AndSeq<Head, typename RHS::B> operator + ( RHS const& rhs ) { return AndSeq<Head, typename RHS::B>( &ref[0], ref[LENGTH-1] ); }
+
     typedef AndSeq<this_type, MRMOpCode> WithMRMOpCode;
     WithMRMOpCode operator / ( int code ) { return WithMRMOpCode( *this, MRMOpCode( code ) ); }
     
