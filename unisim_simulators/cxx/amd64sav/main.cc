@@ -282,7 +282,7 @@ struct Checker
       TextZone(uintptr_t size)
         : p(mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)), sz(size)
       { if (p == MAP_FAILED) throw 0; }
-      void activate() { mprotect(p, sz, PROT_EXEC); }
+      void activate() { mprotect(p, sz, PROT_READ|PROT_EXEC); }
       ~TextZone() { munmap(p, sz); }
       uint8_t* chunk(uintptr_t idx) { return &((uint8_t*)p)[idx]; }
       void* p; uintptr_t sz;

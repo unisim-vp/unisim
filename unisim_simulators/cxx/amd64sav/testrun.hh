@@ -95,7 +95,7 @@ namespace test
       , vmm_storage()
       , mxcsr(0x1fa0)
       , latest_instruction(0)
-        //        , do_disasm(false)
+      , do_disasm(false)
         //        , instruction_count(0)
     {}
 
@@ -237,7 +237,7 @@ namespace test
     frmread( RMOp const& rmop )
     {
       typedef typename TypeFor<Arch,OPSIZE>::f f_type;
-      if (not rmop.is_memory_operand()) return f_type( this->fread( rmop.ereg() ) );
+      if (not rmop.ismem()) return f_type( this->fread( rmop.ereg() ) );
       return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
 
@@ -304,7 +304,7 @@ namespace test
     void
     frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
     {
-      if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
+      if (not rmop.ismem()) return fwrite( rmop.ereg(), f64_t( value ) );
       fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
 
@@ -312,7 +312,7 @@ namespace test
     typename TypeFor<Arch,GOP::SIZE>::u
     rmread( GOP const& g, RMOp const& rmop )
     {
-      if (not rmop.is_memory_operand())
+      if (not rmop.ismem())
         return regread( g, rmop.ereg() );
 
       return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
@@ -322,7 +322,7 @@ namespace test
     void
     rmwrite( GOP const&, RMOp const& rmop, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
-      if (not rmop.is_memory_operand())
+      if (not rmop.ismem())
         return regwrite( GOP(), rmop.ereg(), value );
 
       return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
@@ -505,7 +505,7 @@ namespace test
     ELEM
     vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
+      if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
       return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
 
@@ -513,7 +513,7 @@ namespace test
     void
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
+      if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
       return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
 
@@ -530,6 +530,8 @@ namespace test
     struct Unimplemented {};
     void noexec( Operation const& op );
     bool Test( bool b ) const { return b; }
+
+    bool do_disasm;
   };
 
   struct UInt128

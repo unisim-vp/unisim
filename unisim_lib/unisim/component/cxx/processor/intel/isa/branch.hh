@@ -531,7 +531,7 @@ struct Leave : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     /* TODO: STACKSIZE */
-    if (GOP::size() != ARCH::GR::size()) throw 0;
+    if (GOP::size() != ARCH::GR::size()) arch.unimplemented();
     arch.regwrite( GOP(), 4, arch.regread( GOP(), 5 ) );
     arch.regwrite( GOP(), 5, arch.template pop<GOP::SIZE>() );
   }

@@ -583,7 +583,7 @@ Operation<ARCH>* newMovQ( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const
     return new MovQ<ARCH,VR>( opbase, rm, gn );
   
   RMOp<ARCH> _rm(rm);
-  Operation<ARCH>* res = _rm.is_memory_operand()
+  Operation<ARCH>* res = _rm.ismem()
     ? static_cast<Operation<ARCH>*>( new MovEV<ARCH,VR,GOq>( opbase, rm, gn ) )
     : new MovQ<ARCH,VR>( opbase, make_rop<ARCH>(gn), _rm.ereg() );
   _rm.release();
@@ -849,35 +849,35 @@ template <class ARCH> struct DC<ARCH,MOVFPC> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, vex( "\x0f\x12" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x0f\x12" ) & RM_mem() ))
 
     return newMovFPC<32>( ic, true, _.opbase(), _.rmop(), _.greg(), 0 );
 
-  if (auto _ = match( ic, vex( "\x0f\x13" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x0f\x13" ) & RM_mem() ))
 
     return newMovFPC<32>( ic, false, _.opbase(), _.rmop(), _.greg(), 0 );
 
-  if (auto _ = match( ic, vex( "\x66\x0f\x12" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x12" ) & RM_mem() ))
 
     return newMovFPC<64>( ic, true, _.opbase(), _.rmop(), _.greg(), 0 );
 
-  if (auto _ = match( ic, vex( "\x66\x0f\x13" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x13" ) & RM_mem() ))
 
     return newMovFPC<64>( ic, false, _.opbase(), _.rmop(), _.greg(), 0 );
 
-  if (auto _ = match( ic, vex( "\x0f\x16" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x0f\x16" ) & RM_mem() ))
 
     return newMovFPC<32>( ic, true, _.opbase(), _.rmop(), _.greg(), 1 );
 
-  if (auto _ = match( ic, vex( "\x0f\x17" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x0f\x17" ) & RM_mem() ))
 
     return newMovFPC<32>( ic, false, _.opbase(), _.rmop(), _.greg(), 1 );
 
-  if (auto _ = match( ic, vex( "\x66\x0f\x16" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x16" ) & RM_mem() ))
 
     return newMovFPC<64>( ic, true, _.opbase(), _.rmop(), _.greg(), 1 );
 
-  if (auto _ = match( ic, vex( "\x66\x0f\x17" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x17" ) & RM_mem() ))
 
     return newMovFPC<64>( ic, false, _.opbase(), _.rmop(), _.greg(), 1 );
 
@@ -1045,7 +1045,7 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 template <unsigned OPSIZE>
 Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
 {
-  bool is_mem; { RMOp<ARCH> _rm(rm); is_mem = _rm.is_memory_operand(); _rm.release(); }
+  bool is_mem; { RMOp<ARCH> _rm(rm); is_mem = _rm.ismem(); _rm.release(); }
 
   if (is_mem ? store : not ic.vex())
     {
@@ -1429,7 +1429,7 @@ Operation<ARCH>* newPsllRMI( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 {
   RMOp<ARCH> rm(_rm);
 
-  if (rm.is_memory_operand()) return 0;
+  if (rm.ismem()) return 0;
 
   unsigned gn = rm.ereg();
 

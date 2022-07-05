@@ -434,7 +434,7 @@ struct Processor : public ProcessorBase
   typename TypeFor<Processor,GOP::SIZE>::u
   rmread( GOP const& g, RMOp const& rmop )
   {
-    if (not rmop.is_memory_operand())
+    if (not rmop.ismem())
       return regread( g, rmop.ereg() );
 
     return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
@@ -444,7 +444,7 @@ struct Processor : public ProcessorBase
   void
   rmwrite( GOP const& g, RMOp const& rmop, typename TypeFor<Processor,GOP::SIZE>::u const& value )
   {
-    if (not rmop.is_memory_operand())
+    if (not rmop.ismem())
       return regwrite( g, rmop.ereg(), value );
 
     return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
@@ -463,7 +463,7 @@ struct Processor : public ProcessorBase
   frmread( RMOp const& rmop )
   {
     typedef typename TypeFor<Processor,OPSIZE>::f f_type;
-    if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
+    if (not rmop.ismem()) return f_type( fread( rmop.ereg() ) );
     return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
   }
 
@@ -478,7 +478,7 @@ struct Processor : public ProcessorBase
   void
   frmwrite( RMOp const& rmop, typename TypeFor<Processor,OPSIZE>::f const& value )
   {
-    if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
+    if (not rmop.ismem()) return fwrite( rmop.ereg(), f64_t( value ) );
     fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
@@ -554,14 +554,14 @@ struct Processor : public ProcessorBase
   template <class VR, class ELEM>
   ELEM vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
   {
-    if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
+    if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
     return vmm_memread( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::template TypeInfo<ELEM>::bytecount), e );
   }
 
   template <class VR, class ELEM>
   void vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
   {
-    if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
+    if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
     return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::template TypeInfo<ELEM>::bytecount), e );
   }
 

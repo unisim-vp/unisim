@@ -184,6 +184,7 @@ namespace review
 
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
+    using unisim::util::symbolic::shift_type;
     
     if (not regvalues[reg][pos].node)
       {
@@ -193,7 +194,7 @@ namespace review
         unsigned shift = 8*(pos - src);
         return
           make_operation( "And",
-                          make_operation( "Lsr", regvalues[reg][src], make_const( shift ) ),
+                          make_operation( "Lsr", regvalues[reg][src], make_const<shift_type>( shift ) ),
                           make_const( uint64_t(-1) >> (64-8*size) )
                           );
       }
@@ -211,7 +212,7 @@ namespace review
           {
             if (not regvalues[reg][pos+idx].node)
               continue;
-            concat = make_operation( "Or", make_operation( "Lsl", regvalues[reg][idx], make_const( 8*idx ) ), concat );
+            concat = make_operation( "Or", make_operation( "Lsl", regvalues[reg][idx], make_const<shift_type>( 8*idx ) ), concat );
           }
         return concat;
       }

@@ -564,6 +564,8 @@ namespace test
     int ttl = 100;
     do {
       Operation* op = fetch();
+      if (do_disasm)
+        { op->disasm(std::cout); std::cout << '\n'; }
 
       asm volatile ("operation_execute:");
       op->execute( *this );

@@ -627,7 +627,7 @@ namespace review
     typename TypeFor<Arch,GOP::SIZE>::u
     rmread( GOP const& g, RMOp const& rmop )
     {
-      if (not rmop.is_memory_operand())
+      if (not rmop.ismem())
         return regread( g, rmop.ereg() );
 
       return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
@@ -637,7 +637,7 @@ namespace review
     void
     rmwrite( GOP const& g, RMOp const& rmop, typename TypeFor<Arch,GOP::SIZE>::u const& value )
     {
-      if (not rmop.is_memory_operand())
+      if (not rmop.ismem())
         return regwrite( g, rmop.ereg(), value );
 
       return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
@@ -657,7 +657,7 @@ namespace review
     frmread( RMOp const& rmop )
     {
       typedef typename TypeFor<Arch,OPSIZE>::f f_type;
-      if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
+      if (not rmop.ismem()) return f_type( fread( rmop.ereg() ) );
       return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
 
@@ -672,7 +672,7 @@ namespace review
     void
     frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f const& value )
     {
-      if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
+      if (not rmop.ismem()) return fwrite( rmop.ereg(), f64_t( value ) );
       fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
 
@@ -778,14 +778,14 @@ namespace review
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
+      if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
       return vmm_memread( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
     }
 
     template <class VR, class ELEM>
     void vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
+      if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
       return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
     }
 
@@ -810,68 +810,6 @@ namespace review
     void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
-
-    // template<unsigned OPSIZE>
-    // typename TypeFor<Arch,OPSIZE>::u
-    // xmm_uread( unsigned reg, unsigned sub )
-    // {
-    //   throw 0;
-    //   return typename TypeFor<Arch,OPSIZE>::u( 0 );
-    // }
-
-    // template<unsigned OPSIZE>
-    // void
-    // xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u const& val )
-    // {
-    //   throw 0;
-    // }
-
-    // template<unsigned OPSIZE>
-    // typename TypeFor<Arch,OPSIZE>::u
-    // xmm_uread( RMOp const& rmop, unsigned sub )
-    // {
-    //   if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
-    //   return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
-    // }
-
-    // template<unsigned OPSIZE>
-    // void
-    // xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u const& val )
-    // {
-    //   if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
-    //   return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
-    // }
-
-    // template <unsigned OPSIZE>
-    // typename TypeFor<Arch,OPSIZE>::f
-    // xmm_fread( unsigned reg, unsigned sub )
-    // {
-    //   throw 0;
-    //   return typename TypeFor<Arch,OPSIZE>::f( 0 );
-    // }
-
-    // template <unsigned OPSIZE>
-    // void
-    // xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
-    // {
-    //   throw 0;
-    // }
-
-    // template <unsigned OPSIZE>
-    // typename TypeFor<Arch,OPSIZE>::f
-    // xmm_fread( RMOp const& rmop, unsigned sub )
-    // {
-    //   if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
-    //   return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
-    // }
-
-    // template <unsigned OPSIZE>
-    // void
-    // xmm_fwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
-    // {
-    //   if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
-    //   fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
-    // }
 
     void    unimplemented()               { throw unisim::util::sav::Untestable("unimplemented"); }
     void    interrupt( int op, int code ) { throw unisim::util::sav::Untestable("system"); }
