@@ -69,7 +69,7 @@ template <class ARCH, class OP>
 struct PushAll : public Operation<ARCH>
 {
   PushAll( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
-  void disasm( std::ostream& sink ) const { sink << "push" << ((OP::SIZE==16) ? "w" : (OP::SIZE==32) ? "" : "q"); }
+  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "pusha", (OP::SIZE!=32)*OP::SIZE ); }
   void execute( ARCH& arch ) const
   {
     auto temp = arch.regread( OP(), 4 );
@@ -81,7 +81,7 @@ template <class ARCH, unsigned OPSIZE>
 struct Pushf : public Operation<ARCH>
 {
   Pushf( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
-  void disasm( std::ostream& sink ) const { sink << "pushf" << ((OPSIZE==16) ? "w" : (OPSIZE==32) ? "" : "q"); }
+  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "pushf", (OPSIZE!=32)*OPSIZE ); }
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -221,7 +221,7 @@ template <class ARCH, class OP>
 struct PopAll : public Operation<ARCH>
 {
   PopAll( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
-  void disasm( std::ostream& sink ) const { sink << "popa" << ((OP::SIZE==16) ? "w" : (OP::SIZE==32) ? "" : "q"); }
+  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "popa", (OP::SIZE!=32)*OP::SIZE ); }
   void execute( ARCH& arch ) const
   {
     for (int rn = 0; rn < 8; ++rn) {
@@ -235,7 +235,7 @@ template <class ARCH, unsigned OPSIZE>
 struct Popf : public Operation<ARCH>
 {
   Popf( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
-  void disasm( std::ostream& sink ) const { sink << "popf"; }
+  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "popf", (OPSIZE!=32)*OPSIZE ); }
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::u u_type;

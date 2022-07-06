@@ -38,6 +38,7 @@
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <set>
 #include <memory>
@@ -61,7 +62,8 @@ struct Checker
   typedef std::multiset<review::Interface, TestLess> TestDB;
   
   unisim::util::random::Random rnd;
-  review::AMD64 isa;
+  review::AMD64
+  isa;
   std::set<MemCode> done;
   TestDB testdb;
   std::map<std::string,uintptr_t> stats;
@@ -320,35 +322,53 @@ struct Checker
       {
         fixflags(ws[data_index(0)]);
         if (relval.good())
-          ws[workcells+1+relreg] = reloc;
+          ws[data_index(1+relreg)] = reloc;
       }
       void load(uint64_t* ws, Testbed const& testbed) const
       {
         testbed.load(ws, relval.good() ? 2*workcells : workcells );
       }
-      void check(Testbed const& tb, uint64_t* ref, uint64_t* sim) const
+      void check(Testbed const& tb, uint64_t* ref, uint64_t* sim, test::Arch& arch) const
       {
         fixflags(ref[sink_index(0)]);
         fixflags(sim[sink_index(0)]);
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             if (ref[idx] != sim[idx])
-              error(tb,ref,sim);
+              {
+                error(tb,ref,sim,arch);
+              }
           }
       }
-      void error(Testbed const& tb, uint64_t const* ref, uint64_t const* sim) const
+      void error(Testbed const& tb, uint64_t const* ref, uint64_t const* sim, test::Arch& arch) const
       {
         std::cerr << tb.counter << ": error in " << disasm << '\n';
-        std::cerr << "ref | sim\n";
+        std::cerr << "ref | sim @ " << (void*)sim << "\n";
+        
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
+            std::ostringstream buf;
+            if      (idx < data_index(0))
+              buf << "mem.";
+            else if (idx < sink_index(0))
+              buf << "in.";
+            else
+              buf << "out.";
+            buf << (idx % workcells) << ": ";
             uint64_t r = ref[idx], s = sim[idx];
-            std::cerr << idx << ": " << std::hex << r;
+            std::cerr << std::setw(8) << buf.str() << std::hex << r;
             if (r != s)
               std::cerr << " <> " << s << '\n';
             else
               std::cerr << '\n';
           }
+
+        for (auto op : arch.trace_insns)
+          {
+            op->disasm(std::cerr << std::hex << op->address << "\t");
+            std::cerr << std::endl;
+          }
+
         throw 0;
       }
 
@@ -432,7 +452,7 @@ struct Checker
         test.run( amd64, &workspace[0] );
         
         /* Check for differences */
-        test.check( testbed, &reference[0], &workspace[0]);
+        test.check( testbed, &reference[0], &workspace[0], amd64 );
       }
   }
 };

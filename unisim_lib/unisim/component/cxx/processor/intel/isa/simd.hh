@@ -812,7 +812,9 @@ struct MovfpcVW : public Operation<ARCH>
   MovfpcVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, bool _hi ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), hi(_hi) {} RMOp<ARCH> rm; uint8_t vn, gn; bool hi;
   void disasm( std::ostream& sink ) const
   {
-    sink << (VR::vex() ? "v" : "") << (hi ? "movhp" : "movlp") << SizeID<OPSIZE>::fid() << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
+    sink << (VR::vex() ? "v" : "") << (hi ? "movhp" : "movlp") << SizeID<OPSIZE>::fid() << ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink << ',' << DisasmV( VR(), gn );
   }
   void execute( ARCH& arch ) const
   {
@@ -820,7 +822,7 @@ struct MovfpcVW : public Operation<ARCH>
     for (unsigned idx = 0, end = VR::size()/2/OPSIZE, withrm = hi*end, withvn = end-withrm; idx < end; ++idx)
       {
         arch.vmm_write( VR(), gn, idx + withrm, arch.vmm_read( VR(), rm, idx, f_type() ) );
-        arch.vmm_write( VR(), gn, idx + withvn, arch.vmm_read( VR(), vn, idx, f_type() ) );
+        arch.vmm_write( VR(), gn, idx + withvn, arch.vmm_read( VR(), vn, idx + withvn, f_type() ) );
       }
   }
 };
@@ -886,8 +888,8 @@ template <class ARCH> struct DC<ARCH,MOVFPC> { Operation<ARCH>* get( InputCode<A
 template <unsigned OPSIZE>
 Operation<ARCH>* newMovFPC( InputCode<ARCH> const& ic, bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn, unsigned lohi )
 {
+  if (not ic.vex())     return newMovFPC<SSE,OPSIZE>( load, opbase, rm, gn, gn, lohi );
   unsigned vn = gn;
-  if (not ic.vex())     return newMovFPC<SSE,OPSIZE>( load, opbase, rm, vn, gn, lohi );
   if ((vn = ic.vreg()) and not load) return 0;
   if (ic.vlen() == 128) return newMovFPC<XMM,OPSIZE>( load, opbase, rm, vn, gn, lohi );
   return 0;

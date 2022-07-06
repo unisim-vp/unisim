@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <iosfwd>
+#include <vector>
 #include <cstdlib>
 #include <cassert>
 #include <inttypes.h>
@@ -94,7 +95,7 @@ namespace test
       , umms()
       , vmm_storage()
       , mxcsr(0x1fa0)
-      , latest_instruction(0)
+      , trace_insns(0)
       , do_disasm(false)
         //        , instruction_count(0)
     {}
@@ -523,7 +524,7 @@ namespace test
     void unimplemented();
 
     typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
-    Operation* latest_instruction;
+    std::vector<Operation*> trace_insns;
     Operation* fetch();
 
     void stop();

@@ -169,12 +169,13 @@ namespace test
     Decoder::Mode mode( 1, 0, 1 );
 
     asm volatile ("operation_decode:");
-    latest_instruction = icache.Get( mode, insn_addr, &decbuf[0] );
-    if (not latest_instruction) throw 0;
+    Operation* current = icache.Get( mode, insn_addr, &decbuf[0] );
+    if (not current) throw 0;
+    trace_insns.push_back(current);
   
-    this->rip = insn_addr + latest_instruction->length;
+    this->rip = insn_addr + current->length;
     
-    return latest_instruction;
+    return current;
   }
 
   void test::Arch::fcwwrite( test::Arch::u16_t _value )
@@ -552,6 +553,7 @@ namespace test
   void
   Arch::run(review::Interface::testcode_t testcode, uint64_t* data)
   {
+    trace_insns.clear();
     u64_t const magic_return_address = 0xdeadc0dedeadc0deULL;
 
     uint64_t sim_stack[32];
