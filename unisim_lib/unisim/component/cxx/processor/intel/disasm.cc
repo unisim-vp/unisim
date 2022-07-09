@@ -149,6 +149,23 @@ namespace intel {
       case 128: _sink << SizeID<128>::gid(); break;
       }
   }
+
+  void
+  DisasmSize::operator() ( std::ostream& _sink ) const
+  {
+    struct Bad {};
+    
+    switch (opsize)
+      {
+      default: throw Bad {};
+      case   0: break;
+      case   8: _sink << 'b'; break;
+      case  16: _sink << 'w'; break;
+      case  32: _sink << (style == 'i' ? 'd' : 'l'); break;
+      case  64: _sink << 'q'; break;
+      case 128: _sink << "dq"; break;
+      }
+  }
   
 
 } // end of namespace intel

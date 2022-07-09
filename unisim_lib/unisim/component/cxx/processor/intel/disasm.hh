@@ -246,6 +246,15 @@ namespace intel {
     void operator() ( std::ostream& _sink ) const;
   };
   
+  struct DisasmSize : public DisasmObject
+  {
+    DisasmSize(unsigned _opsize, char _style) : opsize(_opsize), style(_style) {}
+    unsigned opsize;
+    char style;
+    
+    void operator() ( std::ostream& _sink ) const;
+  };
+  
   struct DisasmFPR : public DisasmObject
   {
     DisasmFPR( uint8_t _reg ) : reg( _reg ) {} uint8_t reg;
