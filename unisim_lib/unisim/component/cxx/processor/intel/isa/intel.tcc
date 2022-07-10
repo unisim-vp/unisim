@@ -516,7 +516,7 @@ namespace intel {
     Lockable l;
     if ((pattern.get( l, _ ) - _) != 5)
       { struct Bad {}; throw Bad(); }
-    return PATTERN( pattern );
+    return PATTERN( std::move(pattern) );
   }
   
   struct RM
