@@ -54,7 +54,7 @@ struct LinuxOS
            unisim::service::interfaces::Registers* regs_if,
            unisim::service::interfaces::Memory<addr_t>* mem_if,
            unisim::service::interfaces::MemoryInjection<addr_t>* mem_inject_if );
-  
+
   void Setup();
   void SetVerbose(bool verbose) { linux_impl.SetVerbose(verbose); }
   void ApplyHostEnvironment();

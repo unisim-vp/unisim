@@ -92,7 +92,7 @@ struct Arch
 
   typedef GOq   GR;
   typedef u64_t gr_type;
-  
+
   struct OpHeader
   {
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
@@ -109,12 +109,12 @@ struct Arch
     for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx)
       delete hash_table[idx];
   }
-  
+
   // unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
-  
+
   unisim::service::interfaces::LinuxOS* linux_os;
   std::map<std::string,unisim::service::interfaces::Register*> regmap;
-  
+
   struct ClearMemSet { void operator() ( uint8_t* base, uintptr_t size ) const { __builtin_bzero(base, size); } };
   typedef typename unisim::component::cxx::memory::sparse::Memory<addr_t,15,15,ClearMemSet> Memory;
   Memory                      m_mem;
@@ -125,7 +125,7 @@ struct Arch
   bool WriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
 
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
-  
+
   // MEMORY STATE
   // Segment Registers
   uint16_t segregs[6];
@@ -155,10 +155,10 @@ struct Arch
   void                        lla_memwrite( addr_t _addr, INT_t _val )
   {
     uintptr_t const int_size = sizeof( INT_t );
-      
+
     addr_t last_addr = _addr, addr = _addr;
     typename Memory::Page* page = m_mem.getpage( addr );
-      
+
     for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
       {
         uint8_t byte = (_val >> (idx*8)) & 0xff;
@@ -168,17 +168,17 @@ struct Arch
         page->m_storage[offset] = byte;
       }
   }
-    
+
   template<class INT_t>
   INT_t                       lla_memread( addr_t _addr )
   {
     uintptr_t const int_size = sizeof( INT_t );
-      
+
     addr_t last_addr = _addr, addr = _addr;
     typename Memory::Page* page = m_mem.getpage( addr );
-      
+
     INT_t result = 0;
-      
+
     for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
       {
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
@@ -186,11 +186,11 @@ struct Arch
         addr_t offset = addr % (1 << Memory::Page::s_bits);
         result |= (INT_t( page->m_storage[offset] ) << (idx*8));
       }
-      
+
     return result;
 
   }
-  
+
   f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
   {
     union IEEE754_t { float as_f; uint32_t as_u; } word;
@@ -247,7 +247,7 @@ struct Arch
     if (OPSIZE==80) return fmemwrite80( seg, addr, value );
     throw 0;
   }
-  
+
   template <unsigned OPSIZE>
   void
   frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
@@ -341,8 +341,8 @@ struct Arch
 
     return result;
   }
-  
-  
+
+
   // unisim::service::interfaces::Registers
   unisim::service::interfaces::Register* GetRegister(char const* name)
   {
@@ -375,7 +375,7 @@ struct Arch
 
 
   // Implementation of ExecuteSystemCall
-  
+
   void ExecuteSystemCall( unsigned id )
   {
     if (not linux_os)
@@ -384,7 +384,7 @@ struct Arch
     // auto los = dynamic_cast<LinuxOS*>( linux_os );
     // los->LogSystemCall( id );
   }
-  
+
   addr_t rip;
 
   enum ipproc_t { ipjmp = 0, ipcall, ipret };
@@ -401,7 +401,7 @@ struct Arch
     std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( op ) << ", 0x" << unsigned( code ) << ").\n";
     exit( 0 );
   }
-  
+
   uint64_t u64regs[16]; ///< extended reg
 
   template <class GOP>
@@ -457,13 +457,13 @@ public:
   { return m_flags[flag]; }
   void                        flagwrite( FLAG::Code flag, bit_t fval )
   { m_flags[flag] = fval; }
-  
+
   // FLOATING POINT STATE
 protected:
   double                      m_fregs[8];
   unsigned                    m_ftop;
   uint16_t                    m_fcw;
-    
+
 public:
   void                        fnanchk( f64_t value ) {};
   unsigned                    ftopread() { return m_ftop; }
@@ -502,12 +502,12 @@ public:
     //               (0 << 10/*RC*/) |
     //               (0 << 12/*X*/) );
   }
-    
+
   void  fcwwrite( u16_t _value );
-    
+
   u64_t tscread() { return instruction_count; }
-    
-public: 
+
+public:
   struct VUConfig
   {
     static unsigned const BYTECOUNT = 32;
@@ -526,7 +526,7 @@ public:
 
   template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
   static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
-  
+
   template <class VR, class ELEM>
   ELEM
   vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
@@ -534,7 +534,7 @@ public:
     ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
     return elems[sub];
   }
-  
+
   template <class VR, class ELEM>
   void
   vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
@@ -550,18 +550,18 @@ public:
     typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
     return TYPE(memread<atpinfo::bitsize>(seg,addr));
   }
-  
+
   f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
   f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
   f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
-  
+
   // Integer case
   template <class TYPE> void vmm_memwrite( unsigned seg, addr_t addr, TYPE const& e )
   {
     typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
     memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
   }
-  
+
   void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
   void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
   void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
@@ -573,7 +573,7 @@ public:
     if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
     return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
   }
-    
+
   template <class VR, class ELEM>
   void
   vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
@@ -586,7 +586,7 @@ public:
   void cpuid();
   void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
   void unimplemented() { std::cerr << "Unimplemented.\n"; throw 0; }
-  
+
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
   struct IPage
@@ -596,7 +596,7 @@ public:
     uint64_t key;
     Operation* operations[NUM_OPERATIONS_PER_PAGE];
     uint8_t bytes[NUM_OPERATIONS_PER_PAGE+15];
-    
+
     IPage( IPage* _next, uint64_t _key ) : next( _next ), key( _key ), operations() {}
     ~IPage() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
     Operation*& GetCached(uint64_t offset, uint8_t const* opbytes, unisim::component::cxx::processor::intel::Mode mode)
@@ -610,24 +610,24 @@ public:
       return cache_op;
     }
   };
-    
+
   static unsigned const NUM_HASH_TABLE_ENTRIES = 0x1000;
   IPage* hash_table[NUM_HASH_TABLE_ENTRIES];
   IPage* mru_page;
-  
+
   IPage*
   GetIPage( uint64_t address, uint64_t& offset )
   {
     uint64_t page_key = address / IPage::NUM_OPERATIONS_PER_PAGE;
     offset = address & (IPage::NUM_OPERATIONS_PER_PAGE-1);
-      
+
     if (mru_page and (mru_page->key == page_key)) return mru_page;
-      
+
     unsigned index = page_key % NUM_HASH_TABLE_ENTRIES; // hash the key
-      
+
     IPage* cur = hash_table[index];
     IPage** ref = &hash_table[index];
-      
+
     while (cur) {
       if (cur->key == page_key) {
 
@@ -638,10 +638,10 @@ public:
       ref = &cur->next;
       cur = cur->next;
     }
-      
+
     return (mru_page = hash_table[index] = new IPage( hash_table[index], page_key ));
   }
-  
+
   Operation* fetch();
   Operation* Decode( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes );
   Operation* GetInsn( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes );
@@ -652,7 +652,7 @@ public:
 
   struct Unimplemented {};
   void noexec( Operation const& op );
-  
+
   bool enable_disasm;
   unisim::kernel::variable::Parameter<bool> param_enable_disasm;
   uint64_t instruction_count;

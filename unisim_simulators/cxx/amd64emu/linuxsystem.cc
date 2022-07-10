@@ -63,27 +63,27 @@ LinuxOS::Core( std::string const& coredump )
   typedef typename unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader Loader;
   typedef typename Loader::Elf_Ehdr_type Elf_Ehdr;
   typedef typename Loader::Elf_Phdr_type Elf_Phdr;
-  
+
   std::ifstream is(coredump.c_str(), std::ifstream::in | std::ifstream::binary);
 
   struct hdr { ~hdr() { free(p); } Elf_Ehdr* p; } hdr;
   hdr.p = Loader::ReadElfHeader(is);
   bool need_endian_swap = Loader::NeedEndianSwap(hdr.p);
-    
+
   if (not hdr.p) throw "Could not read ELF header";
-  
+
   struct phdr { ~phdr() { free(p); } Elf_Phdr* p; } phdr_table;
-  
+
   phdr_table.p = Loader::ReadProgramHeaders(hdr.p, is);
   if (not phdr_table.p)
     throw "Can't read program headers";
-  
+
   // Create core blob
   typedef unisim::util::blob::Blob<uint64_t> Blob;
   typedef unisim::util::blob::Segment<uint64_t> Segment;
   Blob* core_blob = new Blob;
   core_blob->Catch();
-  
+
   core_blob->SetFilename(coredump.c_str());
   core_blob->SetArchitecture(Loader::GetArchitecture(hdr.p));
   core_blob->SetEndian(unisim::util::endian::E_LITTLE_ENDIAN);
@@ -93,7 +93,7 @@ LinuxOS::Core( std::string const& coredump )
   core_blob->SetELF_PHENT(sizeof(Elf_Phdr));
   core_blob->SetELF_PHNUM(hdr.p->e_phnum);
   core_blob->SetELF_Flags(hdr.p->e_flags);
-  
+
   for (int idx = 0; idx < hdr.p->e_phnum; ++idx)
     {
       Elf_Phdr* phdr = &phdr_table.p[idx];
@@ -120,7 +120,7 @@ LinuxOS::Core( std::string const& coredump )
 
             core_blob->AddSegment(new Segment(segtype,segattr,segalignment,segaddr,segmem_size,segfile_size,segdata));
           } break;
-          
+
         case PT_NOTE:
           {
             uintptr_t datasize = Loader::GetSegmentFileSize(phdr);
@@ -140,7 +140,7 @@ LinuxOS::Core( std::string const& coredump )
                   }
                 uint8_t* content = note + 12 + ((notehdr->n_namesz + 3) & -4);
                 note = content + ((notehdr->n_descsz + 3) & -4);
-                
+
                 switch (notehdr->n_type)
                   {
                   default: break; // Ignoring unknown note
@@ -188,7 +188,7 @@ LinuxOS::Core( std::string const& coredump )
                             }
                           else
                             linux_impl.SetTargetRegister(regname, regs[idx]);
-                        }                      
+                        }
                     } break;
                   case 0x202: // NT_X86_XSTATE note
                     {
@@ -224,9 +224,9 @@ LinuxOS::Core( std::string const& coredump )
                               regd->SetValue(&xmm_bytes[16*reg]);
                           }
                       }
-                      
+
                     } break;
-                    
+
                   }
               }
           } break;
@@ -237,13 +237,13 @@ LinuxOS::Core( std::string const& coredump )
   for (auto && segment : core_blob->GetSegments())
     {
       if (segment->GetType() != segment->TY_LOADABLE) continue;
-      
+
       uint64_t start, end;
       segment->GetAddrRange(start, end);
-      
+
       if (linux_impl.verbose_)
         std::cerr << "--> writing memory segment start = 0x" << std::hex << start << " end = 0x" << end << std::dec << std::endl;
-      
+
       uint8_t const * data = (uint8_t const *)segment->GetData();
       if (not linux_impl.mem_if_->WriteMemory(start, data, end - start + 1))
         throw "Error while writing the segments into the target memory.";
@@ -270,8 +270,8 @@ LinuxOS::Setup()
                       unm.version,
                       unm.machine,
                       unm.domainname);
-                   
-  
+
+
   // linux_impl.SetUname("Linux" /* sysname */,
   //                     "localhost" /* nodename */,
   //                     "4.14.89-unisim" /* release */,
@@ -303,17 +303,17 @@ LinuxOS::Process( std::vector<std::string> const& simargs )
 {
   if (not linux_impl.SetCommandLine(simargs))
     return false;
-    
+
   // Set the binary that will be simulated in the target simulator
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
     return false;
-  
+
   linux_impl.SetStackBase( 0x40000000UL );
 
   // now it is time to try to run the initialization of the linuxlib
   if (not linux_impl.Load())
     return false;
-  
+
   if (not linux_impl.SetupTarget())
     return false;
 

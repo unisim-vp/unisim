@@ -214,7 +214,7 @@ void
 Arch::StepInstruction()
 {
   uint64_t insn_addr = this->rip;
-  
+
   /*** Handle debugging interface ***/
   if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(insn_addr);
@@ -237,7 +237,7 @@ Arch::StepInstruction()
 
   //cpu.gdbchecker.step(cpu);
   // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-  
+
   if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportCommitInstruction(insn_addr, op->length);
 }

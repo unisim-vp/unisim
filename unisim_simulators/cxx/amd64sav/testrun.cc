@@ -70,34 +70,34 @@ namespace test
       uint64_t key;
       Operation* operations[NUM_OPERATIONS_PER_PAGE];
       uint8_t bytes[NUM_OPERATIONS_PER_PAGE+15];
-    
+
       Page( Page* _next, uint64_t _key ) : next( _next ), key( _key ), operations() {}
       ~Page() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
     };
-    
+
     static unsigned const NUM_HASH_TABLE_ENTRIES = 0x1000;
     Page* hash_table[NUM_HASH_TABLE_ENTRIES];
     Page* mru_page;
     ICache() : hash_table(), mru_page( 0 ) {}
     ~ICache() { for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx) delete hash_table[idx]; }
-  
+
     Operation* Get( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes )
     {
       uint64_t offset;
       Page* page = GetPage( address, offset );
       Operation* operation = page->operations[offset];
-      
+
       if (operation)
         {
           if ((operation->mode == mode) and (memcmp( &bytes[0], &page->bytes[offset], operation->length ) == 0))
             return operation;
           delete operation;
         }
-      
+
       page->operations[offset] = operation = this->Decode( mode, address, bytes );
       if (not operation) return 0;
       memcpy( &page->bytes[offset], bytes, operation->length );
-    
+
       // {
       //   std::ostringstream buf;
       //   buf << std::hex << address << ":\t" << unisim::component::cxx::processor::intel::DisasmBytes(bytes,operation->length) << '\t';
@@ -108,26 +108,26 @@ namespace test
       //       return 0;
       //     }
       // }
-    
+
       return operation;
     }
 
     std::set<std::string> certs;
-    
+
   private:
     Page*
     GetPage( uint64_t address, uint64_t& offset )
     {
       uint64_t page_key = address / Page::NUM_OPERATIONS_PER_PAGE;
       offset = address & (Page::NUM_OPERATIONS_PER_PAGE-1);
-      
+
       if (mru_page and (mru_page->key == page_key)) return mru_page;
-      
+
       unsigned index = page_key % NUM_HASH_TABLE_ENTRIES; // hash the key
-      
+
       Page* cur = hash_table[index];
       Page** ref = &hash_table[index];
-      
+
       while (cur) {
         if (cur->key == page_key) {
 
@@ -138,7 +138,7 @@ namespace test
         ref = &cur->next;
         cur = cur->next;
       }
-      
+
       return (mru_page = hash_table[index] = new Page( hash_table[index], page_key ));
     }
   };
@@ -147,12 +147,12 @@ namespace test
   {
     typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
     typedef unisim::component::cxx::processor::intel::Mode Mode;
-  
+
     Operation* Decode( Mode mode, uint64_t address, uint8_t* bytes )
     {
       if (Operation* op = getoperation( unisim::component::cxx::processor::intel::InputCode<Arch>( mode, bytes, Arch::OpHeader( address ) ) ))
         return op;
-      
+
       std::cerr << "No decoding for " << std::hex << address << ": " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << std::dec << std::endl;
       return 0;
     }
@@ -172,9 +172,9 @@ namespace test
     Operation* current = icache.Get( mode, insn_addr, &decbuf[0] );
     if (not current) throw 0;
     trace_insns.push_back(current);
-  
+
     this->rip = insn_addr + current->length;
-    
+
     return current;
   }
 
@@ -214,7 +214,7 @@ namespace test
   //   switch (this->regread( GOd(), 0 )) {
   //   case 0: {
   //     this->regwrite( GOd(), 0, u32_t( 4 ) );
-  
+
   //     char const* name = "GenuineIntel";
   //     { uint32_t word = 0;
   //       int idx = 12;
@@ -235,14 +235,14 @@ namespace test
   //       (0  << 16 /* extended model */) |
   //       (0  << 20 /* extended family */);
   //     this->regwrite( GOd(), 0, u32_t( eax ) );
-    
+
   //     uint32_t const ebx =
   //       (0 <<  0 /* Brand index */) |
   //       (4 <<  8 /* Cache line size (/ 64bits) */) |
   //       (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
   //       (0 << 24 /* Initial APIC ID */);
   //     this->regwrite( GOd(), 3, u32_t( ebx ) );
-    
+
   //     uint32_t const ecx =
   //       (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
   //       (0 << 0x01 /* PCLMULQDQ Available */) |
@@ -277,7 +277,7 @@ namespace test
   //       (1 << 0x1e /* RDRAND Available */) |
   //       (1 << 0x1f /* Is virtual machine */);
   //     this->regwrite( GOd(), 1, u32_t( ecx ) );
-    
+
   //     uint32_t const edx =
   //       (1 << 0x00 /* Floating Point Unit On-Chip */) |
   //       (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
@@ -312,7 +312,7 @@ namespace test
   //       (0 << 0x1e /* Resrved */) |
   //       (0 << 0x1f /* Pending Break Enable */);
   //     this->regwrite( GOd(), 2, u32_t( edx ) );
-    
+
   //   } break;
   //   case 2: {
   //     this->regwrite( GOd(), 0, u32_t( 0 ) );
@@ -350,7 +350,7 @@ namespace test
   //     } break;
   //     }
   //   } break;
-  
+
   //   case 0x80000000: {
   //     this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
   //     this->regwrite( GOd(), 3, u32_t( 0 ) );
@@ -400,9 +400,9 @@ namespace test
             rem.bits[1] = rem.bits[1] % divisor;
           }
       }
-   
+
     if (quotient.bits[1]) arch._DE();
-  
+
     lo  = quotient.bits[0];
     hi = rem.bits[1];
   }
@@ -441,7 +441,7 @@ namespace test
   //   arch.flagwrite( Arch::FLAG::OF, bool(ovf) );
   //   arch.flagwrite( Arch::FLAG::CF, bool(ovf) );
   // }
-    
+
   Arch::f64_t sine( Arch::f64_t angle ) { return sin( angle ); }
 
   Arch::f64_t cosine( Arch::f64_t angle ) { return cos( angle ); }
@@ -476,7 +476,7 @@ namespace test
   // {
   //   uintptr_t simargs_idx = 1;
   //   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
-  
+
   //   {
   //     std::cerr << "arguments:\n";
   //     unsigned idx = 0;
@@ -484,7 +484,7 @@ namespace test
   //       std::cerr << "  args[" << idx << "]: " << arg << '\n';
   //     }
   //   }
-  
+
   //   if (simargs.size() == 0) {
   //     std::cerr << "Simulation command line empty." << std::endl;
   //     return 1;
@@ -495,7 +495,7 @@ namespace test
   //   cpu.SetLinuxOS( &linux64 );
   //   cpu.do_disasm = false;
   //   linux64.Setup( false );
-  
+
   //   // Loading image
   //   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   //   if (char* var = getenv("CORE_SETUP"))
@@ -516,7 +516,7 @@ namespace test
   //       }
   //       linux64.Process( simargs );
   //     }
-  
+
   //   std::cerr << "\n*** Run ***" << std::endl;
   //   //cpu.gdbchecker.start(cpu);
   //   while (not linux64.exited)
@@ -537,14 +537,14 @@ namespace test
   //     }
 
   //   std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
-  
-  
+
+
   //   return 0;
   // }
 
 
   // Arch::u32_t Arch::EFlagsRegister::eflagsread() const { return unisim::component::cxx::processor::intel::eflagsread( cpu ); }
-    
+
   void Arch::_DE()
   {
     std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr");
@@ -558,11 +558,11 @@ namespace test
 
     uint64_t sim_stack[32];
     regwrite( GOq(), 4, reinterpret_cast<u64_t>( &sim_stack[0] ) + sizeof sim_stack );
-      
+
     push<64>( magic_return_address );
     setnip( reinterpret_cast<addr_t>(testcode), ipcall );
     regwrite( GOq(), 7, reinterpret_cast<u64_t>( data ) );
-      
+
     int ttl = 100;
     do {
       Operation* op = fetch();
@@ -577,9 +577,9 @@ namespace test
 
   void Arch::segregwrite( unsigned idx, uint16_t value ) { throw std::runtime_error("segment write"); }
   uint16_t Arch::segregread( unsigned idx ) { throw std::runtime_error("segment read"); return 0; }
-    
+
   void
-    Arch::unimplemented()
+  Arch::unimplemented()
   {
     std::cerr << "Unimplemented.\n";
     throw 0;
@@ -588,13 +588,13 @@ namespace test
   void Arch::syscall() { throw std::runtime_error("syscall"); }
   void Arch::interrupt( int op, int code ) { throw std::runtime_error("interrupt"); }
   void Arch::stop() { throw std::runtime_error("halt"); }
-  void Arch::xgetbv() { throw std::runtime_error("xgetbv"); } 
+  void Arch::xgetbv() { throw std::runtime_error("xgetbv"); }
   void Arch::cpuid() { throw std::runtime_error("cpuid"); }
   uint64_t Arch::tscread() { throw std::runtime_error("tscread"); return 0; }
 
 
   void
-    Arch::noexec( Arch::Operation const& op )
+  Arch::noexec( Arch::Operation const& op )
   {
     std::cerr
       << "error: no execute method in `" << typeid(op).name() << "'\n"
@@ -604,12 +604,12 @@ namespace test
     throw Unimplemented();
   }
   void
-    Arch::fxam()
+  Arch::fxam()
   {
     double val = this->fread( 0 );
-      
+
     flagwrite( FLAG::C1, __signbit( val ) );
-      
+
     switch (__fpclassify( val )) {
     case FP_NAN:
       flagwrite( FLAG::C3, 0 );
@@ -638,5 +638,19 @@ namespace test
       break;
     }
   }
-    
+
+  float
+  Arch::test_input_validity(float val)
+  {
+    hasnan |= std::isnan(val);
+    return val;
+  }
+
+  double
+  Arch::test_input_validity(double val)
+  {
+    hasnan |= std::isnan(val);
+    return val;
+  }
+
 } /* end of namespace test */

@@ -37,14 +37,14 @@
 #include <fstream>
 
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
-          
+
 struct FIRoundOp
 {
   FIRoundOp(int _rm) : rm(_rm) {} int rm;
   friend int strcmp( FIRoundOp const& a, FIRoundOp const&b ) { return a.rm - b.rm; }
   friend std::ostream& operator << (std::ostream& sink, FIRoundOp const& op) { return (sink << "firound." << op.rm); }
 };
-  
+
 template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
 {
   //return FPT( unisim::util::symbolic::Expr( new ut::FIRound<typename FPT::value_type>( src.expr, x87frnd_mode ) ) );
@@ -69,7 +69,7 @@ namespace review
     flagwrite( FLAG::C2, unisim::util::sav::make_weirdop<bit_t>( "fxam.C2", fpclass ) );
     flagwrite( FLAG::C3, unisim::util::sav::make_weirdop<bit_t>( "fxam.C3", fpclass ) );
   }
-  
+
   void
   Arch::FTop::Repr( std::ostream& sink ) const
   {
@@ -111,7 +111,7 @@ namespace review
               continue;
         return true;
       }
-    
+
     return false;
   }
 
@@ -127,7 +127,7 @@ namespace review
 
     return &_;
   };
-  
+
   unisim::util::symbolic::Expr&
   Arch::fpaccess( unsigned reg, bool write )
   {
@@ -168,7 +168,7 @@ namespace review
       return false;
     if (not interface.gregs.modified(reg))
       return false;
-    
+
     for (unsigned ipos = 1; ipos < REGSIZE; ++ipos)
       if (regvalues[reg][ipos].node)
         return true;
@@ -176,7 +176,7 @@ namespace review
       return rr->idx != interface.gregs.index(reg);
     return true;
   }
-  
+
   Arch::Expr
   Arch::eregread( unsigned reg, unsigned size, unsigned pos )
   {
@@ -185,7 +185,7 @@ namespace review
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
     using unisim::util::symbolic::shift_type;
-    
+
     if (not regvalues[reg][pos].node)
       {
         // requested read is in the middle of a larger value
@@ -216,17 +216,17 @@ namespace review
           }
         return concat;
       }
-    
+
     // requested read is directly available
     return regvalues[reg][pos];
   }
-  
+
   void
   Arch::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
   {
     eregtouch( reg, true );
     Expr nxt[REGSIZE];
-    
+
     for (unsigned ipos = pos, isize = size, cpos;
          cpos = (ipos^isize) & (REGSIZE-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
          isize *= 2, ipos &= -isize
@@ -234,15 +234,15 @@ namespace review
       {
         nxt[cpos] = eregread( reg, isize, cpos );
       }
-    
+
     for (unsigned ipos = 0; ipos < REGSIZE; ++ipos)
       {
         if (nxt[ipos].node)
           regvalues[reg][ipos] = nxt[ipos];
       }
-    
+
     regvalues[reg][pos] = xpr;
-    
+
     for (unsigned rem = 1; rem < size; ++rem)
       {
         regvalues[reg][pos+rem] = 0;
@@ -301,7 +301,7 @@ namespace review
 
     // Instruction Pointer
     path->add_update( new RIPWrite( next_insn_addr, next_insn_mode ) );
-    
+
     // Scalar integer registers
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
       if (eregdiff(reg))
@@ -311,7 +311,7 @@ namespace review
     for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
       if (vmm_diff(reg))
         path->add_update( new VRegWrite( reg, interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
-    
+
     // FPU registers
     for (unsigned reg = 0; reg < 8; ++reg)
       if (fpdiff(reg))
@@ -324,10 +324,10 @@ namespace review
 
     for (Expr const& store : stores)
       path->add_update( store );
-    
+
     return complete;
   }
-  
+
   bool
   Arch::concretize(unisim::util::symbolic::Expr cond)
   {
@@ -395,7 +395,7 @@ namespace review
             throw unisim::util::sav::Untestable(buf.str());
           }
       }
-    
+
     if (addrs.size())
       {
         if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
@@ -407,11 +407,11 @@ namespace review
 
     behavior->simplify();
   }
-  
+
   void Interface::gencode(Text& text) const
   {
     unsigned offset = 0;
-    
+
     /* Load EFLAGS register */
     {
       struct { uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; uint8_t popf; } i;
@@ -426,7 +426,7 @@ namespace review
       text.write(ptr,4);
     }
     offset += 8;
-    
+
     /* Load GP registers */
     for (unsigned reg = 0; reg < gregs.count(); ++reg)
       {
@@ -444,7 +444,7 @@ namespace review
         text.write(ptr,4);
       }
     offset += Arch::REGSIZE*gregs.used();
-    
+
     /* Load AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
       {
@@ -468,7 +468,7 @@ namespace review
     offset += Arch::VUConfig::BYTECOUNT*vregs.used();
 
     if (offset >= 128) throw 0;
-    
+
     text.write(memcode.text(),memcode.length);
 
     /* Fix RDI to destination zone */
@@ -479,13 +479,13 @@ namespace review
       i.opcode = 0x83; /* 83 */
       i.r_m = 7; /* %rdi */
       i.reg = 0; /* /0 */
-      i.mod = 3; 
+      i.mod = 3;
       i.imm = offset; /* ib */
       uint8_t const* ptr = &i.rex;
       text.write(ptr,4);
     }
     offset = 0;
-    
+
     /* Store EFLAGS register */
     {
       struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
@@ -500,7 +500,7 @@ namespace review
       text.write(ptr,4);
     }
     offset += 8;
-    
+
     /* Store GP registers */
     for (unsigned reg = 0; reg < gregs.count(); ++reg)
       {
@@ -518,7 +518,7 @@ namespace review
         text.write(ptr,4);
       }
     offset += Arch::REGSIZE*gregs.used();
-    
+
     /* Store AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
       {
@@ -554,7 +554,7 @@ namespace review
     if (offset % 8) throw "WTF";
     return offset / 8;
   }
-    
+
   struct AddrLess
   {
     typedef unisim::util::symbolic::Expr Expr;
@@ -574,22 +574,22 @@ namespace review
             return itr->second;
           }
         } avi, bvi;
-    
+
         int process( Expr const& a, Expr const& b )
         {
           // Do not compare null expressions
           if (not b.node) return a.node ?  1 : 0;
           if (not a.node) return b.node ? -1 : 0;
-          
+
           /* First compare actual types */
           const std::type_info* til = &typeid(*a.node);
           const std::type_info* tir = &typeid(*b.node);
           if (til < tir) return -1;
           if (til > tir) return +1;
-          
+
           if (dynamic_cast<unisim::util::symbolic::ConstNodeBase const*>(a.node))
             return 0;
-          
+
           if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
             {
               if (int delta = avi[vr->idx] - bvi[dynamic_cast<unisim::util::sav::VirtualRegister const&>(*b.node).idx])
@@ -610,7 +610,7 @@ namespace review
           return 0;
         }
       } comparator;
-      
+
       return comparator.process( a, b ) < 0;
     }
   };
@@ -628,11 +628,11 @@ namespace review
     if (zaddr == *addrs.begin())
       base_addr = addr;
   }
-  
+
   bool AMD64::MemCode::get(std::istream& source)
   {
     unsigned idx = 0;
-        
+
     for (bool nibble = false;;)
       {
         char ch;
@@ -649,7 +649,7 @@ namespace review
         idx += nibble;
         nibble = not nibble;
       }
-      
+
     length = idx;
     return true;
   }

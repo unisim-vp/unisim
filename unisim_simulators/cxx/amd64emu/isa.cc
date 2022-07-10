@@ -52,7 +52,7 @@ Arch::Decode( unisim::component::cxx::processor::intel::Mode mode, uint64_t addr
 {
   if (Operation* op = getoperation( unisim::component::cxx::processor::intel::InputCode<Arch>( mode, bytes, OpHeader( address ) ) ))
     return op;
-  
+
   std::cerr << "No decoding for " << std::hex << address << ": " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << std::dec << std::endl;
   return 0;
 }

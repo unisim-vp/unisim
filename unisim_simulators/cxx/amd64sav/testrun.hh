@@ -100,6 +100,7 @@ namespace test
       , mxcsr(0x1fa0)
       , trace_insns(0)
       , do_disasm(false)
+      , hasnan(false)
         //        , instruction_count(0)
     {}
 
@@ -466,12 +467,16 @@ namespace test
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
 
+    template <typename T> T test_input_validity(T val) { return val; }
+    float test_input_validity(float val);
+    double test_input_validity(double val);
+
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
-      return elems[sub];
+      return test_input_validity(elems[sub]);
     }
 
     template <class VR, class ELEM>
@@ -536,6 +541,7 @@ namespace test
     bool Test( bool b ) const { return b; }
 
     bool do_disasm;
+    bool hasnan;
   };
 
   struct UInt128

@@ -50,7 +50,7 @@ struct Checker
   typedef typename review::AMD64::MemCode MemCode;
   typedef typename review::AMD64::Operation Operation;
   typedef unisim::util::symbolic::Expr Expr;
-  
+
   struct TestLess
   {
     bool operator () ( review::Interface const& a, review::Interface const& b ) const
@@ -58,26 +58,26 @@ struct Checker
       return unisim::util::sav::Comparator().process( *a.behavior, *b.behavior ) < 0;
     }
   };
-  
+
   typedef std::multiset<review::Interface, TestLess> TestDB;
-  
+
   unisim::util::random::Random rnd;
   review::AMD64
   isa;
   std::set<MemCode> done;
   TestDB testdb;
   std::map<std::string,uintptr_t> stats;
-  
+
   bool insert( Operation const& op, MemCode const& code, std::string const& disasm )
   {
     if (done.count(code))
       throw unisim::util::sav::Untestable("duplicate");
-    
+
     review::Interface iif(op, code, disasm);
 
     decltype(testdb.begin()) tstbeg, tstend;
     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
- 
+
     auto count = std::distance(tstbeg, tstend);
     if (count > 1)
         return false;
@@ -99,14 +99,14 @@ struct Checker
         stats[denial.reason] += 1;
       }
     catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& denial) {}
-    
+
     done.insert( trial );
-    
+
     return found;
   }
-  
+
   Checker() : rnd( 1, 2, 3, 4 ) {}
-  
+
   void discover( uintptr_t trials_limit, uintptr_t ttl_reset )
   {
     test( 0 );
@@ -193,7 +193,7 @@ struct Checker
       sink.close();
     }
   }
-  
+
   void
   write_repos( std::string const& reposname )
   {
@@ -207,12 +207,12 @@ struct Checker
   {
     std::string name;
     unsigned    line;
-    
+
     FileLoc( std::string const& _name ) : name( _name ), line(0) {}
     void newline() { line += 1; }
     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
   };
-  
+
   bool
   read_repos( std::string const& reposname )
   {
@@ -220,16 +220,16 @@ struct Checker
     FileLoc fl( reposname );
     std::ifstream source( fl.name );
     bool updated = false;
-    
+
     while (source)
       {
         fl.newline();
-        
+
         MemCode code;
         if (not code.get(source)) break;
         std::string disasm;
         std::getline( source, disasm, '\n' );
-        
+
         try
           {
             std::string updated_disasm;
@@ -253,7 +253,7 @@ struct Checker
           }
         done.insert( code );
       }
-    
+
     return updated;
   }
 
@@ -268,13 +268,13 @@ struct Checker
         virtual void write(uint8_t const*, unsigned sz) { size += sz; }
         void process( review::Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
       } text;
-      
+
       for (review::Interface const& test : testdb)
         {
           workcells = std::max( workcells, test.workcells() * (test.usemem() ? 3 : 2) );
           text.process( test );
         }
-      
+
       textsize = text.size;
     }
 
@@ -297,7 +297,7 @@ struct Checker
     {
       typedef unisim::util::symbolic::Expr Expr;
       typedef review::Interface::testcode_t testcode_t;
-      
+
       Test(review::Interface const* _test, testcode_t _code)
         : disasm(_test->asmcode), code(_code), relval(), relreg(), workcells(_test->workcells())
       {}
@@ -308,7 +308,7 @@ struct Checker
       uint64_t get_reloc(uint64_t const* ws) const
       {
         if (not relval.good()) return 0;
-        
+
         uint64_t value;
         if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
           { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value; }
@@ -330,6 +330,11 @@ struct Checker
       }
       void check(Testbed const& tb, uint64_t* ref, uint64_t* sim, test::Arch& arch) const
       {
+        if (arch.hasnan)
+          {
+            arch.hasnan = false;
+            return;
+          }
         fixflags(ref[sink_index(0)]);
         fixflags(sim[sink_index(0)]);
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
@@ -344,7 +349,7 @@ struct Checker
       {
         std::cerr << tb.counter << ": error in " << disasm << '\n';
         std::cerr << "ref | sim @ " << (void*)sim << "\n";
-        
+
         for (unsigned idx = 0, end = sink_index(workcells); idx < end; ++idx)
           {
             std::ostringstream buf;
@@ -384,11 +389,11 @@ struct Checker
         sim.run( code, &ws[data_index(0)] ); /* code simulation */
         sim.flagwrite( test::Arch::FLAG::DF, false ); /*< Fix DF */
       }
-      
+
     private:
       uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workcells : 0) + idx; }
       uintptr_t sink_index( uintptr_t idx ) const { return workcells + data_index(idx); }
-      
+
       std::string const& disasm;
       review::Interface::testcode_t code;
       Expr relval;
@@ -396,7 +401,7 @@ struct Checker
     };
 
     std::vector<Test> tests;
-    
+
     /* 2nd pass; generating tests (data and code)*/
     textsize = 0;
     for (review::Interface const& test : testdb)
@@ -430,14 +435,14 @@ struct Checker
     textzone.activate();
 
     test::Arch amd64;
-    
+
     std::vector<uint64_t> reference(workcells), workspace(workcells);
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
         if ((testbed.counter % 0x100000) == 0)
           std::cout << testbed.counter << ": " << test.getasm() << std::endl;
-        
+
         /* Perform native test */
         test.load( &workspace[0], testbed );
         // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
@@ -445,12 +450,12 @@ struct Checker
         test.patch( &workspace[0],reloc );
         test.run( &workspace[0] );
         std::copy( workspace.begin(), workspace.end(),reference.begin() );
-        
+
         /* Perform simulation test */
         test.load( &workspace[0], testbed );
         test.patch( &workspace[0], reloc );
         test.run( amd64, &workspace[0] );
-        
+
         /* Check for differences */
         test.check( testbed, &reference[0], &workspace[0], amd64 );
       }
@@ -468,7 +473,7 @@ main( int argc, char** argv )
     }
 
   std::string reposname(argv[1]), suffix(".tests");
-  
+
   if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
     {
       std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
@@ -491,13 +496,13 @@ main( int argc, char** argv )
       if (char const* env = getenv(params[idx].name))
         params[idx].value = strtoull(env,0,0);
       else
-        params[idx].value = params[idx].init; 
+        params[idx].value = params[idx].init;
       std::cerr << "Using " << params[idx].name << " of: " << params[idx].value << std::endl;
     }
-  
-  
+
+
   Checker checker;
-  
+
   bool updated = checker.read_repos( reposname );
 
   if (insn_scan != 0)
@@ -505,10 +510,10 @@ main( int argc, char** argv )
       checker.discover( insn_scan, ttl_reset );
       updated = true;
     }
-  
+
   if (updated)
       checker.write_repos( reposname );
-  
+
   checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 
   return 0;

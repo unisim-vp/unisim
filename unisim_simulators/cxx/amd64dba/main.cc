@@ -97,7 +97,7 @@ main( int argc, char** argv )
 
   intel::Decoder decoder;
   decoder.mode64 = strcmp("intel64", argv[1]) == 0;
-  
+
   if (argc == 3)
     {
       std::ifstream source(argv[2]);
@@ -107,7 +107,7 @@ main( int argc, char** argv )
           usage(std::cerr, argv[0]);
           return 1;
         }
-      
+
       std::string abuf, cbuf;
       for (;;)
         {
@@ -117,10 +117,10 @@ main( int argc, char** argv )
           if (not process(decoder, sink, abuf.c_str(), cbuf.c_str()))
             { usage(std::cerr, argv[0]); return 1; }
         }
-      
+
       return 0;
     }
-  
+
   if (argc != 4)
     {
       std::cerr << "Wrong number of CLI arguments.\n";
@@ -132,7 +132,7 @@ main( int argc, char** argv )
     { usage(std::cerr, argv[0]); return 1; }
 
   //  dbgate_keep();
-  
+
   return 0;
 }
 
