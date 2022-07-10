@@ -2431,10 +2431,11 @@ template <class ARCH, class VR, unsigned OPSZ, class OPERATION>
 struct PShiftVVW : public Op3V<ARCH,VR>
 {
   typedef typename TypeFor<ARCH,OPSZ>::u valtype;
+  typedef typename ARCH::u64_t counttype;
 
-  valtype eval ( VSLL const&, valtype const& src, valtype const& count ) const { return src << count; }
-  valtype eval ( VSRL const&, valtype const& src, valtype const& count ) const { return src >> count; }
-  valtype eval ( VSRA const&, valtype const& src, valtype const& count ) const { return valtype(typename TypeFor<ARCH,OPSZ>::s(src) >> count); }
+  valtype eval ( VSLL const&, valtype const& src, counttype const& count ) const { return src << count; }
+  valtype eval ( VSRL const&, valtype const& src, counttype const& count ) const { return src >> count; }
+  valtype eval ( VSRA const&, valtype const& src, counttype const& count ) const { return valtype(typename TypeFor<ARCH,OPSZ>::s(src) >> count); }
 
   PShiftVVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned vn, unsigned gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn) {}
 
@@ -2444,10 +2445,21 @@ struct PShiftVVW : public Op3V<ARCH,VR>
 
   void execute( ARCH& arch ) const
   {
-    valtype count;
     // spec explicitely says that a whole XMM will be loaded
-    for (unsigned idx = XMM::size()/OPSZ; idx-- > 0;)
-      count = arch.vmm_read( XMM(), rm, idx, valtype() );
+    counttype count;
+    for (unsigned idx = 2; idx-- > 0;)
+      count = arch.vmm_read( XMM(), rm, idx, counttype() );
+    counttype bound(atpinfo<ARCH,valtype>::bitsize-1);
+    if (arch.Test(count > bound))
+      {
+        if (not std::is_same<OPERATION,VSRA>::value)
+          {
+            for (unsigned idx = 0, end = VR::size()/OPSZ; idx < end; ++idx)
+              arch.vmm_write( VR(), gn, idx, valtype(0) );
+            return;
+          }
+        count = bound;
+      }
     for (unsigned idx = 0, end = VR::size()/OPSZ; idx < end; ++idx)
       arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), count ) );
   }
@@ -2854,32 +2866,38 @@ template <class ARCH> struct DC<ARCH,PTEST> { Operation<ARCH>* get( InputCode<AR
 // punpckldq_pq_qq.disasm = { _sink << "punpckldq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 
 template <class ARCH, class VR, class TYPE, bool HI>
-struct Unpack : public Operation<ARCH>
+struct Unpack : public Op3V<ARCH,VR>
 {
   typedef TYPE val_type;
   typedef atpinfo<ARCH,TYPE> CFG;
-  Unpack( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>(opbase), rm( _rm ), vn( _vn ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t vn, gn;
+
+  Unpack( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn ) {}
+
+  using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
+
   template <typename T, typename std::enable_if<T::is_integral == 1, int>::type = 0>
   std::ostream& mnemonic( T const&, std::ostream& sink ) const { sink << 'p' << "unpck" << "lh"[HI] << SizeID<T::bitsize>::iid() << SizeID<2*T::bitsize>::iid(); return sink; }
   template <typename T, typename std::enable_if<T::is_integral == 0, int>::type = 0>
   std::ostream& mnemonic( T const&, std::ostream& sink ) const { sink << "unpck" << "lh"[HI] << 'p' << SizeID<T::bitsize>::fid(); return sink; }
-  void disasm( std::ostream& sink ) const { this->mnemonic(CFG(), sink << (VR::vex() ? "v" : "") ) << ' ' << DisasmW(VR(),rm) << ',' << DisasmV(VR(),gn); }
+
+  void disasm( std::ostream& sink ) const { this->mnemonic(CFG(), sink << vprefix()); disasmVVW(sink); }
+
   void execute( ARCH& arch ) const
   {
-    unsigned const COUNT = 128/CFG::bitsize/2;
-    unsigned const HALF = HI ? COUNT : 0;
+    unsigned const chunk_items = 128/CFG::bitsize;
+    unsigned const srcoffset = HI ? chunk_items/2 : 0;
 
-    for (unsigned chunk = 0, cend = VR::size()/128; chunk < cend; ++chunk)
+    for (unsigned chunk_offset = 0, cend = VR::size()/CFG::bitsize; chunk_offset < cend; chunk_offset += chunk_items)
       {
-        val_type res[2*COUNT];
-        for (unsigned idx = 0; idx < COUNT; ++idx)
+        val_type res[chunk_items];
+        for (unsigned idx = 0; idx < chunk_items; idx+=2)
           {
-            unsigned sidx = idx + HALF + chunk*2*COUNT, didx = 2*idx;
-            res[didx+0] = arch.vmm_read( VR(), vn, sidx, val_type() );
-            res[didx+1] = arch.vmm_read( VR(), rm, sidx, val_type() );
+            unsigned sidx = chunk_offset + srcoffset + idx/2;
+            res[idx+0] = arch.vmm_read( VR(), vn, sidx, val_type() );
+            res[idx+1] = arch.vmm_read( VR(), rm, sidx, val_type() );
           }
-        for (unsigned idx = 0; idx < 2*COUNT; ++idx)
-          arch.vmm_write( VR(), gn, idx, res[idx] );
+        for (unsigned idx = 0; idx < chunk_items; ++idx)
+          arch.vmm_write( VR(), gn, chunk_offset + idx, res[idx] );
       }
   }
 };

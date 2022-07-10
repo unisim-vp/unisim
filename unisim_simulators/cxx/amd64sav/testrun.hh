@@ -39,6 +39,7 @@
 #include <unisim/util/random/random.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/arithmetic/integer.hh>
 #include <iosfwd>
 #include <vector>
 #include <cstdlib>
@@ -55,10 +56,12 @@ namespace test
     typedef uint16_t     u16_t;
     typedef uint32_t     u32_t;
     typedef uint64_t     u64_t;
+    typedef unisim::util::arithmetic::Integer<4,false> u128_t;
     typedef int8_t       s8_t;
     typedef int16_t      s16_t;
     typedef int32_t      s32_t;
     typedef int64_t      s64_t;
+    typedef unisim::util::arithmetic::Integer<4,true> s128_t;
     typedef bool         bit_t;
     typedef uint64_t     addr_t;
     typedef float        f32_t;
@@ -612,8 +615,8 @@ namespace test
 
   void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
   void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor );
-  void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
-  void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier );
+  // void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
+  // void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier );
 
   Arch::f64_t sine( Arch::f64_t );
   Arch::f64_t cosine( Arch::f64_t );

@@ -68,10 +68,12 @@ struct Arch
   typedef uint16_t     u16_t;
   typedef uint32_t     u32_t;
   typedef uint64_t     u64_t;
+  typedef void         u128_t;
   typedef int8_t       s8_t;
   typedef int16_t      s16_t;
   typedef int32_t      s32_t;
   typedef int64_t      s64_t;
+  typedef void         s128_t;
   typedef bool         bit_t;
   typedef uint64_t     addr_t;
   typedef float        f32_t;

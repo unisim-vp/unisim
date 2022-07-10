@@ -1,2 +1,3 @@
 libc/inttypes
+std/iosfwd
 std/iostream

@@ -252,14 +252,15 @@ namespace sav {
   struct Random : public unisim::util::random::Random
   {
     Random() : unisim::util::random::Random(0,0,0,0) {}
-    //uint32_t generate32() { return Generate(); }
+    uint32_t generate32() { return Generate(); }
     //    uint64_t generate64() { return (uint64_t(generate32()) << 32) | generate32(); }
     template <typename T>
     T generate()
     {
+      typedef uint32_t chunk_t;
       T value = 0;
-      for (unsigned idx = sizeof (T) / sizeof (uint32_t); idx-- > 0;)
-        value |= T(Generate()) << (32*idx);
+      for (unsigned idx = sizeof (T) / sizeof (chunk_t); idx-- > 0;)
+        value |= T(chunk_t(Generate())) << (8*sizeof (chunk_t)*idx);
       return value;
     }
     template <typename UOP>
