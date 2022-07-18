@@ -1767,7 +1767,7 @@ struct Pack_S : public Op3V<ARCH,VR>
     return (mask( lbound > x ) & dst_type( lbound )) | (mask( x >= hbound ) & dst_type( hbound - src_type( 1 ) )) | (mask( lbound <= x && x < hbound ) & dst_type( x ));
   }
 
-  Pack_S( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, unsigned gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn) {}
+  Pack_S( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, unsigned gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -1810,13 +1810,13 @@ template <class ARCH> struct DC<ARCH,PACK_S> { Operation<ARCH>* get( InputCode<A
 }
 
   template <class OP, bool SIGN>
-Operation<ARCH>* newPack_S( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+Operation<ARCH>* newPack_S( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned gn )
 {
-  if (not ic.vex())     return new Pack_S<ARCH,SSE,OP,SIGN>( opbase, rm, gn, gn );
+  if (not ic.vex())     return new Pack_S<ARCH,SSE,OP,SIGN>( opbase, std::move(rm), gn, gn );
 
   uint8_t vn = ic.vreg();
-  if (ic.vlen() == 128) return new Pack_S<ARCH,XMM,OP,SIGN>( opbase, rm, vn, gn );
-  if (ic.vlen() == 256) return new Pack_S<ARCH,YMM,OP,SIGN>( opbase, rm, vn, gn );
+  if (ic.vlen() == 128) return new Pack_S<ARCH,XMM,OP,SIGN>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new Pack_S<ARCH,YMM,OP,SIGN>( opbase, std::move(rm), vn, gn );
   return 0;
 }
 };
@@ -1939,8 +1939,8 @@ struct PCmpStr : public Operation<ARCH>
 {
   enum { is_signed = atpinfo<ARCH,TYPE>::is_signed, bitsize = atpinfo<ARCH,TYPE>::bitsize, count = VR::SIZE / bitsize };
 
-  PCmpStr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _im, bool _implicit, bool _index )
-    : Operation<ARCH>( opbase ), rm(_rm), gn(_gn), im(_im), implicit(_implicit), index(_index)
+  PCmpStr( OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, uint8_t _gn, uint8_t _im, bool _implicit, bool _index )
+    : Operation<ARCH>( opbase ), rm(std::move(_rm)), gn(_gn), im(_im), implicit(_implicit), index(_index)
   {}
 
   RMOp<ARCH> rm;
@@ -2084,22 +2084,22 @@ template <class ARCH> struct DC<ARCH,PCMPSTR> { Operation<ARCH>* get( InputCode<
 
   return 0;
 }
-Operation<ARCH>* newPCmpStr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im, bool implicit, bool index )
+Operation<ARCH>* newPCmpStr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn, uint8_t im, bool implicit, bool index )
 {
-  if (not ic.vex())     return newPCmpStr<SSE>( opbase, rm, gn, im, implicit, index );
+  if (not ic.vex())     return newPCmpStr<SSE>( opbase, std::move(rm), gn, im, implicit, index );
   if (ic.vreg()) return 0;
-  if (ic.vlen() == 128) return newPCmpStr<XMM>( opbase, rm, gn, im, implicit, index );
+  if (ic.vlen() == 128) return newPCmpStr<XMM>( opbase, std::move(rm), gn, im, implicit, index );
   return 0;
 }
 template <class VR>
-Operation<ARCH>* newPCmpStr( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im, bool implicit, bool index )
+Operation<ARCH>* newPCmpStr( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn, uint8_t im, bool implicit, bool index )
 {
   switch (im&3)
     {
-    case 0b00: return new PCmpStr<ARCH,VR,typename ARCH:: u8_t>( opbase, rm, gn, im, implicit, index );
-    case 0b01: return new PCmpStr<ARCH,VR,typename ARCH::u16_t>( opbase, rm, gn, im, implicit, index );
-    case 0b10: return new PCmpStr<ARCH,VR,typename ARCH:: s8_t>( opbase, rm, gn, im, implicit, index );
-    case 0b11: return new PCmpStr<ARCH,VR,typename ARCH::s16_t>( opbase, rm, gn, im, implicit, index );
+    case 0b00: return new PCmpStr<ARCH,VR,typename ARCH:: u8_t>( opbase, std::move(rm), gn, im, implicit, index );
+    case 0b01: return new PCmpStr<ARCH,VR,typename ARCH::u16_t>( opbase, std::move(rm), gn, im, implicit, index );
+    case 0b10: return new PCmpStr<ARCH,VR,typename ARCH:: s8_t>( opbase, std::move(rm), gn, im, implicit, index );
+    case 0b11: return new PCmpStr<ARCH,VR,typename ARCH::s16_t>( opbase, std::move(rm), gn, im, implicit, index );
     }
   return 0;
 }
