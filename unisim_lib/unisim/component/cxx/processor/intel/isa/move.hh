@@ -337,7 +337,7 @@ struct MovImm : public Operation<ARCH>
 template <class ARCH, class OP, bool STOE>
 struct MovSeg : public Operation<ARCH>
 {
-  MovSeg( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _seg ) : Operation<ARCH>( opbase ), seg( _seg ), rm( _rm ) {} uint8_t seg; RMOp<ARCH> rm;
+  MovSeg( OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, uint8_t _seg ) : Operation<ARCH>( opbase ), seg( _seg ), rm( std::move(_rm) ) {} uint8_t seg; RMOp<ARCH> rm;
   void disasm( std::ostream& sink ) const {
     if (STOE) sink << "mov " << DisasmS( seg ) << ',' << DisasmE( OP(), rm );
     else      sink << "mov " << DisasmE( OP(), rm ) << ',' << DisasmS( seg );
@@ -464,12 +464,12 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
 
   return 0;
 }
-template <bool DIR> Operation<ARCH>* newMovSeg( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+template <bool DIR> Operation<ARCH>* newMovSeg( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned gn )
 {
   if (gn >= 6) return 0; /* Intel manual only says encoding reserved, do not use... */
-  if (ic.opsize()==16) return new MovSeg<ARCH,GOw,DIR>( opbase, rm, gn );
-  if (ic.opsize()==32) return new MovSeg<ARCH,GOd,DIR>( opbase, rm, gn );
-  if (ic.opsize()==64) return new MovSeg<ARCH,GOq,DIR>( opbase, rm, gn );
+  if (ic.opsize()==16) return new MovSeg<ARCH,GOw,DIR>( opbase, std::move(rm), gn );
+  if (ic.opsize()==32) return new MovSeg<ARCH,GOd,DIR>( opbase, std::move(rm), gn );
+  if (ic.opsize()==64) return new MovSeg<ARCH,GOq,DIR>( opbase, std::move(rm), gn );
   return 0;
 }
 };

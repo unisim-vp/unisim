@@ -480,7 +480,7 @@ main( int argc, char** argv )
       return 1;
     }
 
-  uintptr_t ttl_reset, insn_scan;
+  uintptr_t ttl_reset, insn_scan, skip_test;
   struct {
     char const* name;
     uintptr_t& value;
@@ -489,6 +489,7 @@ main( int argc, char** argv )
       {
        {"INSN_SCAN", insn_scan, 0},
        {"TTL_RESET", ttl_reset, 10000},
+       {"SKIP_TEST", skip_test, 0},
       };
 
   for (unsigned idx = 0, end = sizeof params / sizeof params[0]; idx < end; ++idx)
@@ -514,7 +515,8 @@ main( int argc, char** argv )
   if (updated)
       checker.write_repos( reposname );
 
-  checker.run_tests("01234567890123456789012345678901000000000000000000000000");
+  if (not skip_test)
+    checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 
   return 0;
 }
