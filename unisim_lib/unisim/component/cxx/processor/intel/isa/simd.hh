@@ -900,16 +900,14 @@ Operation<ARCH>* newMovfp( bool load, OpBase<ARCH> const& opbase, RMOp<ARCH>&& r
 };
 
 template <class ARCH, class VR, unsigned OPSIZE>
-struct MovfpcVW : public Operation<ARCH>
+struct MovfpcVW : public Op3V<ARCH,VR>
 {
-  MovfpcVW( OpBase<ARCH> const& opbase, RMOp<ARCH>&& _rm, uint8_t _vn, uint8_t _gn, bool _hi ) : Operation<ARCH>(opbase), rm(std::move(_rm)), vn(_vn), gn(_gn), hi(_hi) {} RMOp<ARCH> rm; uint8_t vn, gn; bool hi;
-  void disasm( std::ostream& sink ) const
-  {
-    sink << (VR::vex() ? "v" : "") << (hi ? "movhp" : "movlp") << SizeID<OPSIZE>::fid();
-    sink  << ' ' << DisasmW( VR(), rm );
-    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
-    sink << ',' << DisasmV( VR(), gn );
-  }
+  MovfpcVW( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn, bool _hi ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn), hi(_hi) {} bool hi;
+
+  using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
+
+  void disasm( std::ostream& sink ) const { sink << vprefix() << (hi ? "movhp" : "movlp") << SizeID<OPSIZE>::fid() << ' '; disasmVVW(sink); }
+
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::f f_type;
@@ -2116,7 +2114,7 @@ struct PCmpVW : public Op3V<ARCH,VR>
   valtype eval( PCmpEQ const&, valtype const& a, valtype const& b ) const { return valtype(a != b) - valtype(1); }
   valtype eval( PCmpGT const&, valtype const& a, valtype const& b ) const { return valtype(a <= b) - valtype(1); }
 
-  PCmpVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn ) {}
+  PCmpVW( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn ) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -2171,12 +2169,12 @@ template <class ARCH> struct DC<ARCH,PCMPEQ> { Operation<ARCH>* get( InputCode<A
   return 0;
 }
 template <class OPERATION, class TYPE>
-Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
 {
-  if (not ic.vex())     return new PCmpVW<ARCH,SSE,TYPE,OPERATION>( opbase, rm, gn, gn );
+  if (not ic.vex())     return new PCmpVW<ARCH,SSE,TYPE,OPERATION>( opbase, std::move(rm), gn, gn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PCmpVW<ARCH,XMM,TYPE,OPERATION>( opbase, rm, vn, gn );
-  if (ic.vlen() == 256) return new PCmpVW<ARCH,YMM,TYPE,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 128) return new PCmpVW<ARCH,XMM,TYPE,OPERATION>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new PCmpVW<ARCH,YMM,TYPE,OPERATION>( opbase, std::move(rm), vn, gn );
   return 0;
 }
 };
@@ -2310,7 +2308,7 @@ Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
 template <class ARCH, class VR, class GR>
 struct PInsr : public Op3V<ARCH,VR>
 {
-  PInsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn, uint8_t _im ) : Op3V<ARCH,VR>(opbase, rm, vn, gn), im(_im) {}
+  PInsr( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn, uint8_t _im ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn), im(_im) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVV;
 
@@ -2364,11 +2362,11 @@ template <class ARCH> struct DC<ARCH,PINSR> { Operation<ARCH>* get( InputCode<AR
   return 0;
 }
 template <class GR>
-Operation<ARCH>* newPInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im )
+Operation<ARCH>* newPInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn, uint8_t im )
 {
-  if (not ic.vex())     return new PInsr<ARCH,SSE,GR>( opbase, rm, gn, gn, im );
+  if (not ic.vex())     return new PInsr<ARCH,SSE,GR>( opbase, std::move(rm), gn, gn, im );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PInsr<ARCH,XMM,GR>( opbase, rm, vn, gn, im );
+  if (ic.vlen() == 128) return new PInsr<ARCH,XMM,GR>( opbase, std::move(rm), vn, gn, im );
   return 0;
 }
 };
@@ -2384,7 +2382,7 @@ struct PMinMax : public Op3V<ARCH, VR>
   valtype eval( PMax const&, valtype const& a, valtype const& b ) const { return Maximum(a, b); }
   valtype eval( PMin const&, valtype const& a, valtype const& b ) const { return Minimum(a, b); }
 
-  PMinMax( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn ) {}
+  PMinMax( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn ) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -2459,12 +2457,12 @@ template <class ARCH> struct DC<ARCH,PMINMAX> { Operation<ARCH>* get( InputCode<
   return 0;
 }
 template <class VOP, class OPERATION>
-Operation<ARCH>* newMinMax( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+Operation<ARCH>* newMinMax( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
 {
-  if (not ic.vex())     return new PMinMax<ARCH,SSE,VOP,OPERATION>( opbase, rm, gn, gn );
+  if (not ic.vex())     return new PMinMax<ARCH,SSE,VOP,OPERATION>( opbase, std::move(rm), gn, gn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PMinMax<ARCH,XMM,VOP,OPERATION>( opbase, rm, vn, gn );
-  if (ic.vlen() == 256) return new PMinMax<ARCH,YMM,VOP,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 128) return new PMinMax<ARCH,XMM,VOP,OPERATION>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new PMinMax<ARCH,YMM,VOP,OPERATION>( opbase, std::move(rm), vn, gn );
   return 0;
 }
 };
@@ -2740,7 +2738,7 @@ struct PShiftVVW : public Op3V<ARCH,VR>
   valtype eval ( VSRL const&, valtype const& src, counttype const& count ) const { return src >> count; }
   valtype eval ( VSRA const&, valtype const& src, counttype const& count ) const { return valtype(typename TypeFor<ARCH,OPSZ>::s(src) >> count); }
 
-  PShiftVVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned vn, unsigned gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn) {}
+  PShiftVVW( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned vn, unsigned gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -2807,12 +2805,12 @@ template <class ARCH> struct DC<ARCH,PSHIFT> { Operation<ARCH>* get( InputCode<A
   return 0;
 }
 template <class OPERATION, unsigned OPSIZE>
-Operation<ARCH>* newPShift( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+Operation<ARCH>* newPShift( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, unsigned gn )
 {
-  if (not ic.vex())     return new PShiftVVW<ARCH,SSE,OPSIZE,OPERATION>( opbase, rm, gn, gn );
+  if (not ic.vex())     return new PShiftVVW<ARCH,SSE,OPSIZE,OPERATION>( opbase, std::move(rm), gn, gn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PShiftVVW<ARCH,XMM,OPSIZE,OPERATION>( opbase, rm, vn, gn );
-  if (ic.vlen() == 256) return new PShiftVVW<ARCH,YMM,OPSIZE,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 128) return new PShiftVVW<ARCH,XMM,OPSIZE,OPERATION>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new PShiftVVW<ARCH,YMM,OPSIZE,OPERATION>( opbase, std::move(rm), vn, gn );
   return 0;
 }
 };
@@ -3174,7 +3172,7 @@ struct Unpack : public Op3V<ARCH,VR>
   typedef TYPE val_type;
   typedef atpinfo<ARCH,TYPE> CFG;
 
-  Unpack( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, rm, vn, gn) {}
+  Unpack( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -3261,12 +3259,12 @@ template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<A
   return 0;
 }
 template <class TYPE,bool LOHI>
-Operation<ARCH>* newUnpack( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn )
+Operation<ARCH>* newUnpack( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn )
 {
-  if (not ic.vex())     return new Unpack<ARCH,SSE,TYPE,LOHI>( opbase, _rm, _gn, _gn );
+  if (not ic.vex())     return new Unpack<ARCH,SSE,TYPE,LOHI>( opbase, std::move(rm), gn, gn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new Unpack<ARCH,XMM,TYPE,LOHI>( opbase, _rm,  vn, _gn );
-  if (ic.vlen() == 256) return new Unpack<ARCH,YMM,TYPE,LOHI>( opbase, _rm,  vn, _gn );
+  if (ic.vlen() == 128) return new Unpack<ARCH,XMM,TYPE,LOHI>( opbase, std::move(rm), vn, gn );
+  if (ic.vlen() == 256) return new Unpack<ARCH,YMM,TYPE,LOHI>( opbase, std::move(rm), vn, gn );
   return 0;
 }
 };
@@ -3274,7 +3272,7 @@ Operation<ARCH>* newUnpack( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbas
 template <class ARCH, class VR, unsigned OPSIZE>
 struct Palignr : public Op3V<ARCH,VR>
 {
-  Palignr( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn, uint8_t _im ) : Op3V<ARCH,VR>(opbase, rm, vn, gn), im(_im) {}
+  Palignr( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn, uint8_t _im ) : Op3V<ARCH,VR>(opbase, std::move(rm), vn, gn), im(_im) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -3334,12 +3332,12 @@ template <class ARCH> struct DC<ARCH,PALIGNR> { Operation<ARCH>* get( InputCode<
   return 0;
 }
 template <unsigned OPSIZE>
-Operation<ARCH>* newPalignr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _im )
+Operation<ARCH>* newPalignr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t gn, uint8_t im )
 {
-  if (not ic.vex())     return new Palignr<ARCH,SSE,OPSIZE>( opbase, _rm, _gn, _gn, _im );
+  if (not ic.vex())     return new Palignr<ARCH,SSE,OPSIZE>( opbase, std::move(rm), gn, gn, im );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new Palignr<ARCH,XMM,OPSIZE>( opbase, _rm,  vn, _gn, _im );
-  if (ic.vlen() == 256) return new Palignr<ARCH,YMM,OPSIZE>( opbase, _rm,  vn, _gn, _im );
+  if (ic.vlen() == 128) return new Palignr<ARCH,XMM,OPSIZE>( opbase, std::move(rm), vn, gn, im );
+  if (ic.vlen() == 256) return new Palignr<ARCH,YMM,OPSIZE>( opbase, std::move(rm), vn, gn, im );
   return 0;
 }
 };
@@ -3509,7 +3507,7 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 template <class ARCH, class VR, unsigned OPSIZE>
 struct Shufp : public Op3V<ARCH,VR>
 {
-  Shufp( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn, uint8_t _imm ) : Op3V<ARCH,VR>( opbase, rm, vn, gn ), imm( _imm ) {}
+  Shufp( OpBase<ARCH> const& opbase, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn, uint8_t _imm ) : Op3V<ARCH,VR>( opbase, std::move(rm), vn, gn ), imm( _imm ) {}
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
@@ -3560,16 +3558,16 @@ template <class ARCH> struct DC<ARCH,SHUFP> { Operation<ARCH>* get( InputCode<AR
   return 0;
 }
 template <unsigned OPSIZE>
-Operation<ARCH>* newShufp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+Operation<ARCH>* newShufp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, RMOp<ARCH>&& rm, uint8_t gn )
 {
   if (not ic.vex())
-    return new Shufp<ARCH,SSE,OPSIZE>( opbase, rm, gn, gn, imm );
+    return new Shufp<ARCH,SSE,OPSIZE>( opbase, std::move(rm), gn, gn, imm );
 
   uint8_t vn = ic.vreg();
   if (ic.vlen() == 128)
-    return new Shufp<ARCH,XMM,OPSIZE>( opbase, rm, vn, gn, imm );
+    return new Shufp<ARCH,XMM,OPSIZE>( opbase, std::move(rm), vn, gn, imm );
   if (ic.vlen() == 256)
-    return new Shufp<ARCH,YMM,OPSIZE>( opbase, rm, vn, gn, imm );
+    return new Shufp<ARCH,YMM,OPSIZE>( opbase, std::move(rm), vn, gn, imm );
 
   return 0;
 }
@@ -3612,9 +3610,13 @@ template <class ARCH> struct DC<ARCH,VZEROUPPER> { Operation<ARCH>* get( InputCo
 template <class ARCH, class VR, class GOP, class DOP>
 struct Extr : public Operation<ARCH>
 {
-  Extr( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ), imm( _imm ) {} RMOp<ARCH> rm; uint8_t gn, imm;
+  Extr( OpBase<ARCH> const& opbase, uint8_t _imm, RMOp<ARCH>&& _rm, uint8_t _gn )
+    : Operation<ARCH>( opbase ), rm( std::move(_rm) ), gn( _gn ), imm( _imm )
+  {}
+
   void disasm( std::ostream& sink ) const { sink << (VR::vex() ? "vp" : "p") << "extr" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmI( imm ) << ',' << DisasmV( VR(), gn ) << ',' << DisasmE( DOP(), rm );
   }
+
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,GOP::SIZE>::u src_type;
@@ -3625,6 +3627,8 @@ struct Extr : public Operation<ARCH>
     else
       arch.rmwrite( GOP(), rm, value );
   }
+
+  RMOp<ARCH> rm; uint8_t gn, imm;
 };
 
 template <class ARCH>
@@ -3648,22 +3652,13 @@ template <class ARCH> struct DC<ARCH,EXTRACT> { Operation<ARCH>* get( InputCode<
 
     return newExtr<GOb>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
 
-  if (auto _ = match( ic, vex( "\x66\x0f\xc5" ) & RM() & Imm<8>() )) {
-    if (ic.vex() && ic.w()) return 0;
-    RMOp<ARCH> rm( _.rmop() );
-    if (not rm.isreg()) return 0;
+  if (auto _ = match( ic, vex( "\x66\x0f\xc5" ) & RM_reg() & Imm<8>() ))
 
     return newExtr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
-  }
 
   if (auto _ = match( ic, vex( "\x66\x0f\x3a\x15" ) & RM() & Imm<8>() ))
 
     return newExtr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
-
-  if (auto _ = match( ic, vex( "\x66\x0f\xc5" ) & RM() & Imm<8>() )) {
-
-    return newExtr<GOw>( ic, _.opbase(), _.i( uint8_t() ), _.rmop(), _.greg() );
-  }
 
   if (auto _ = match( ic, vex( "\x66\x0f\x3a\x16" ) & RM() & Imm<8>() )) {
 
@@ -3683,26 +3678,26 @@ template <class ARCH> struct DC<ARCH,EXTRACT> { Operation<ARCH>* get( InputCode<
   return 0;
 }
 template <class GOP>
-Operation<ARCH>* newExtr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+Operation<ARCH>* newExtr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, RMOp<ARCH>&& rm, uint8_t gn )
 {
-  if (not ic.vex()) return newExtr2<SSE,GOP>( ic, opbase, imm, rm, gn );
+  if (not ic.vex()) return newExtr2<SSE,GOP>( ic, opbase, imm, std::move(rm), gn );
   if (ic.vreg()) return 0;
-  if (ic.vlen() == 128) return newExtr2<XMM,GOP>( ic, opbase, imm, rm, gn );
-  if (ic.vlen() == 256) return newExtr2<YMM,GOP>( ic, opbase, imm, rm, gn );
+  if (ic.vlen() == 128) return newExtr2<XMM,GOP>( ic, opbase, imm, std::move(rm), gn );
+  if (ic.vlen() == 256) return newExtr2<YMM,GOP>( ic, opbase, imm, std::move(rm), gn );
   return 0;
 }
 template <class VR, class GOP>
-Operation<ARCH>* newExtr2( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+Operation<ARCH>* newExtr2( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, RMOp<ARCH>&& rm, uint8_t gn )
 {
-  if (ic.mode64()) return new Extr<ARCH,VR,GOP,GOq>( opbase, imm, rm, gn );
-  else return new Extr<ARCH,VR,GOP,GOd>( opbase, imm, rm, gn );
+  if (ic.mode64()) return new Extr<ARCH,VR,GOP,GOq>( opbase, imm, std::move(rm), gn );
+  else return new Extr<ARCH,VR,GOP,GOd>( opbase, imm, std::move(rm), gn );
 }
 };
 
 template <class ARCH, class VR, class GOP>
 struct Insr : public Op3V<ARCH,VR>
 {
-  Insr( OpBase<ARCH> const& opbase, uint8_t _imm, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>( opbase, rm, vn, gn ), imm( _imm ) {} uint8_t imm;
+  Insr( OpBase<ARCH> const& opbase, uint8_t _imm, RMOp<ARCH>&& rm, uint8_t vn, uint8_t gn ) : Op3V<ARCH,VR>( opbase, std::move(rm), vn, gn ), imm( _imm ) {} uint8_t imm;
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::disasmVV; using Op3V<ARCH,VR>::vprefix;
 
@@ -3781,13 +3776,13 @@ template <class ARCH> struct DC<ARCH,INSERT> { Operation<ARCH>* get( InputCode<A
   return 0;
 }
 template <class GOP>
-Operation<ARCH>* newInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, MOp<ARCH> const* rm, uint8_t gn )
+Operation<ARCH>* newInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, uint8_t imm, RMOp<ARCH>&& rm, uint8_t gn )
 {
   if (not ic.vex())
-    return new Insr<ARCH,SSE,GOP>( opbase, imm, rm, gn, gn );
+    return new Insr<ARCH,SSE,GOP>( opbase, imm, std::move(rm), gn, gn );
 
   if (ic.vlen() != 128) return 0;
 
-  return  new Insr<ARCH,XMM,GOP>( opbase, imm, rm, ic.vreg(), gn );
+  return  new Insr<ARCH,XMM,GOP>( opbase, imm, std::move(rm), ic.vreg(), gn );
 }
 };
