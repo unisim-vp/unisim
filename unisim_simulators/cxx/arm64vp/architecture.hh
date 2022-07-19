@@ -47,6 +47,7 @@
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -202,13 +203,17 @@ struct AArch64
   template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, 0); }
   //  template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
 
+
+  unsigned tfploss(F32 const&) { return tfp32loss; }
+  unsigned tfploss(F64 const&) { return tfp64loss; }
+
   template <typename T> void fprocess( T& value )
   {
     if (not value.ubits) return;
     ++tfpcount;
     typedef typename T::ubits_type bits_type;
     bits_type* vptr = (bits_type*)&value.value;
-    *vptr &= bits_type(-2);
+    *vptr &= (bits_type(-1) << tfploss(value));
   }
 
   template <typename UNIT, typename T> T untaint(UNIT const& unit, TaintedValue<T> const& value)
@@ -986,7 +991,8 @@ public:
   bool     disasm;
   bool     suspend;
   uint64_t tfpcount;
-
+  unsigned tfp32loss, tfp64loss;
+  unisim::kernel::variable::Parameter<unsigned> param_tfp32loss, param_tfp64loss;
   // /*QESCAPTURE*/
   // bool QESCapture();
   // struct QES { uint16_t desc; uint16_t flags; } qes[2];

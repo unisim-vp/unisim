@@ -84,6 +84,10 @@ AArch64::AArch64(char const* name)
   , disasm(false)
   , suspend(false)
   , tfpcount(0)
+  , tfp32loss(0)
+  , tfp64loss(0)
+  , param_tfp32loss("tfp32loss", this, tfp32loss, "tainted fp32 bit loss count")
+  , param_tfp64loss("tfp64loss", this, tfp64loss, "tainted fp64 bit loss count")
 {
   for (int idx = 0; idx < 32; ++idx)
     {
