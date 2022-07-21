@@ -203,14 +203,13 @@ struct AArch64
   template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, 0); }
   //  template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
 
-
-  unsigned tfploss(F32 const&) { return tfp32loss; }
-  unsigned tfploss(F64 const&) { return tfp64loss; }
+  unsigned tfploss(F32 const&) { return tfp32loss; ++tfp32count; }
+  unsigned tfploss(F64 const&) { return tfp64loss; ++tfp64count; }
+  void tfpstats(std::ostream&);
 
   template <typename T> void fprocess( T& value )
   {
     if (not value.ubits) return;
-    ++tfpcount;
     typedef typename T::ubits_type bits_type;
     bits_type* vptr = (bits_type*)&value.value;
     *vptr &= (bits_type(-1) << tfploss(value));
@@ -990,7 +989,7 @@ public:
   bool     terminate;
   bool     disasm;
   bool     suspend;
-  uint64_t tfpcount;
+  uint64_t tfp32count, tfp64count;
   unsigned tfp32loss, tfp64loss;
   unisim::kernel::variable::Parameter<unsigned> param_tfp32loss, param_tfp64loss;
   // /*QESCAPTURE*/

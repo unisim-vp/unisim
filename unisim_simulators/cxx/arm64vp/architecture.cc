@@ -83,12 +83,16 @@ AArch64::AArch64(char const* name)
   , terminate(false)
   , disasm(false)
   , suspend(false)
-  , tfpcount(0)
+  , tfp32count(0)
+  , tfp64count(0)
   , tfp32loss(0)
   , tfp64loss(0)
   , param_tfp32loss("tfp32loss", this, tfp32loss, "tainted fp32 bit loss count")
   , param_tfp64loss("tfp64loss", this, tfp64loss, "tainted fp64 bit loss count")
 {
+  param_tfp32loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  param_tfp64loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+
   for (int idx = 0; idx < 32; ++idx)
     {
       std::ostringstream regname;
@@ -1720,13 +1724,13 @@ AArch64::run( uint64_t suspend_at )
 
           if (terminate)
             {
-              std::cerr << "tfpcount: " << tfpcount << std::endl;
+              tfpstats(std::cerr);
               force_throw();
             }
 
           if (disasm)
             {
-              //static std::ofstream dbgtrace("dbgtrace");
+              // static std::ofstream dbgtrace("dbgtrace");
               std::ostream& sink( std::cerr );
               sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
               DisasmState ds;
@@ -1759,6 +1763,13 @@ AArch64::run( uint64_t suspend_at )
           return;
         }
     }
+}
+
+void
+AArch64::tfpstats(std::ostream& sink)
+{
+  sink << "tfp32count: " << tfp32count << std::endl;
+  sink << "tfp64count: " << tfp64count << std::endl;
 }
 
 void
@@ -2071,7 +2082,7 @@ AArch64::save_snapshot( char const* filename )
 
   sync( *snapshot );
 
-  std::cerr << "tfpcount: " << tfpcount << std::endl;
+  tfpstats(std::cerr);
 }
 
 void
