@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.1
+VERSION=0.0.3
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -154,7 +154,7 @@ Frédéric Recoules <frederic.recoules@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/LICENSE.md"
-Copyright (c) 2007-2021,
+Copyright (c) 2007-2022,
 Commissariat a l'Énergie Atomique et aux Énergies Alternatives (CEA)
 All rights reserved.
 
@@ -202,6 +202,11 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.3 (2022-07-24)
+
+- handling some new VEX encoded instructions (x86)
+- various bug fixes and refactoring
+
 ## 0.0.2 (2022-04-15)
 
 - handling of SSE instructions for AMD64
