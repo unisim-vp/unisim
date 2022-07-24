@@ -263,6 +263,7 @@ struct Processor
   
   void CallSupervisor( uint32_t imm ) { throw 0; }
   void CallHypervisor( uint32_t imm ) { throw 0; }
+  void SoftwareBreakpoint( uint32_t imm ) { throw 0; }
   void ExceptionReturn() { throw 0; }
   
   //   =====================================================================
