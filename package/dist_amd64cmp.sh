@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SIMPKG=amd64emu
-SIMPKG_SRCDIR=cxx/amd64emu
+SIMPKG=amd64cmp
+SIMPKG_SRCDIR=cxx/amd64cmp
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/service/debug/inline_debugger || exit
@@ -20,17 +20,22 @@ import unisim/component/cxx/vector || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/identifier || exit
 import unisim/util/debug || exit
+import unisim/util/loader/elf_loader || exit
 
 import libc/inttypes || exit
-import sys/utsname || exit
 import std/algorithm || exit
 import std/cctype || exit
 import std/cmath || exit
 import std/fstream || exit
 import std/iomanip || exit
 import std/iostream || exit
+import std/sstream || exit
 import std/string || exit
+import std/map || exit
+import std/vector || exit
 
+import m4/pthread || exit
+import m4/endian || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source header template data
@@ -48,6 +53,7 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 arch.cc \
 isa.cc \
 linuxsystem.cc \
+tracee.cc \
 main.cc \
 debugger.cc \
 "
@@ -55,6 +61,7 @@ debugger.cc \
 UNISIM_SIMULATOR_HEADER_FILES="\
 arch.hh \
 linuxsystem.hh \
+tracee.hh \
 debugger.hh \
 "
 
@@ -116,7 +123,7 @@ EOF
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM AMD64EMU C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM AMD64CMP C++ simulator validator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -140,6 +147,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+AX_CXXFLAGS_WARN_ALL
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
