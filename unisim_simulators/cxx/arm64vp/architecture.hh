@@ -203,8 +203,8 @@ struct AArch64
   template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, 0); }
   //  template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
 
-  unsigned tfploss(F32 const&) { return tfp32loss; ++tfp32count; }
-  unsigned tfploss(F64 const&) { return tfp64loss; ++tfp64count; }
+  unsigned tfploss(F32 const&) { ++tfp32count; return tfp32loss; }
+  unsigned tfploss(F64 const&) { ++tfp64count; return tfp64loss; }
   void tfpstats(std::ostream&);
 
   template <typename T> void fprocess( T& value )
@@ -217,7 +217,7 @@ struct AArch64
 
   template <typename UNIT, typename T> T untaint(UNIT const& unit, TaintedValue<T> const& value)
   {
-    if (value.ubits) raise( unit );
+    //    if (value.ubits) raise( unit );
     return value.value;
   }
 
