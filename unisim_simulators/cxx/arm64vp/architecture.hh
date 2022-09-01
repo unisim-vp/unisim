@@ -191,6 +191,7 @@ struct AArch64
   void UndefinedInstruction();
 
   InstructionInfo const& last_insn(int idx) const;
+  void show_exec_stats(std::ostream&);
   void breakdance();
   void uninitialized_error(char const* rsrc);
 
@@ -203,16 +204,27 @@ struct AArch64
   template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, 0); }
   //  template <typename T> TaintedValue<T> PartlyDefined(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
 
-  unsigned tfploss(F32 const&) { ++tfp32count; return tfp32loss; }
-  unsigned tfploss(F64 const&) { ++tfp64count; return tfp64loss; }
-  void tfpstats(std::ostream&);
+  uint32_t tfpprocess(F32 const&, uint32_t bits)
+  {
+    ++tfp32count;
+    tfp32expcount[((bits >> 23) & 0x0ff)] += 1;
+    return bits & (uint32_t(-1) << tfp32loss);
+  }
+  uint64_t tfpprocess(F64 const&, uint64_t bits)
+  {
+    ++tfp64count;
+    tfp64expcount[((bits >> 52) & 0x7ff)] += 1;
+    return bits & (uint64_t(-1) << tfp64loss);
+  }
+  void write_tfpstats();
 
   template <typename T> void fprocess( T& value )
   {
     if (not value.ubits) return;
+    tfpinsncount[last_insn(0).op->GetName()] += 1;
     typedef typename T::ubits_type bits_type;
     bits_type* vptr = (bits_type*)&value.value;
-    *vptr &= (bits_type(-1) << tfploss(value));
+    *vptr = tfpprocess(value, *vptr);
   }
 
   template <typename UNIT, typename T> T untaint(UNIT const& unit, TaintedValue<T> const& value)
@@ -926,6 +938,7 @@ struct AArch64
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
 
   struct Suspend {};
+  struct Stop {};
   void handle_suspend();
 
   void sync( SnapShot& );
@@ -989,9 +1002,14 @@ public:
   bool     terminate;
   bool     disasm;
   bool     suspend;
+  // Tainted FP stats
+  std::string tfpstats_filename;
+  unisim::kernel::variable::Parameter<std::string> param_tfpstats_filename;
   uint64_t tfp32count, tfp64count;
+  std::map<unsigned, uint64_t> tfp32expcount, tfp64expcount;
   unsigned tfp32loss, tfp64loss;
   unisim::kernel::variable::Parameter<unsigned> param_tfp32loss, param_tfp64loss;
+  std::map<char const*, uint64_t> tfpinsncount;
   // /*QESCAPTURE*/
   // bool QESCapture();
   // struct QES { uint16_t desc; uint16_t flags; } qes[2];

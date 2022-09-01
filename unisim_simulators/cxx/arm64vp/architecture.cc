@@ -83,12 +83,15 @@ AArch64::AArch64(char const* name)
   , terminate(false)
   , disasm(false)
   , suspend(false)
+  , tfpstats_filename()
+  , param_tfpstats_filename("tfpstats_filename", this, tfpstats_filename, "filename of tfpstats dump")
   , tfp32count(0)
   , tfp64count(0)
   , tfp32loss(0)
   , tfp64loss(0)
   , param_tfp32loss("tfp32loss", this, tfp32loss, "tainted fp32 bit loss count")
   , param_tfp64loss("tfp64loss", this, tfp64loss, "tainted fp64 bit loss count")
+  , tfpinsncount()
 {
   param_tfp32loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   param_tfp64loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -1724,7 +1727,6 @@ AArch64::run( uint64_t suspend_at )
 
           if (terminate)
             {
-              tfpstats(std::cerr);
               force_throw();
             }
 
@@ -1758,18 +1760,47 @@ AArch64::run( uint64_t suspend_at )
 
       catch (Suspend const&)
         {
-          std::cerr << "Suspend...\n";
+          std::cerr << "Suspending...\n";
           save_snapshot("uvp.shot");
+          return;
+        }
+
+      catch (Stop const&)
+        {
+          std::cerr << "Stopping...\n";
           return;
         }
     }
 }
 
 void
-AArch64::tfpstats(std::ostream& sink)
+AArch64::show_exec_stats(std::ostream& sink)
 {
-  sink << "tfp32count: " << tfp32count << std::endl;
-  sink << "tfp64count: " << tfp64count << std::endl;
+  sink << std::dec
+       << "Executed up to instruction #" << insn_counter << ".\n"
+       << "Written " << tfp32count << " tainted 32-bits floating-point values to register.\n"
+       << "Written " << tfp64count << " tainted 64-bits floating-point values to register.\n"
+       << std::flush;
+}
+
+void
+AArch64::write_tfpstats()
+{
+  if (tfpstats_filename.size() == 0)
+    return;
+  
+  std::ofstream sink(tfpstats_filename.c_str());
+  sink << "opsize,count\n";
+  sink << "32," << tfp32count << '\n';
+  sink << "64," << tfp64count << '\n';
+  sink << "opsize,exp,count\n";
+  for (auto const& kv : tfp32expcount)
+    sink << "32," << kv.first << ',' << kv.second << '\n';
+  for (auto const& kv : tfp64expcount)
+    sink << "64," << kv.first << ',' << kv.second << '\n';
+  sink << "insn,count\n";
+  for (auto const& kv : tfpinsncount)
+    sink << kv.first << ',' << kv.second << '\n';
 }
 
 void
@@ -2081,8 +2112,6 @@ AArch64::save_snapshot( char const* filename )
   std::unique_ptr<SnapShot> snapshot = SnapShot::gzsave(filename);
 
   sync( *snapshot );
-
-  tfpstats(std::cerr);
 }
 
 void

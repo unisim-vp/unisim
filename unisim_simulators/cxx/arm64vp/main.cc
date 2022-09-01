@@ -389,11 +389,12 @@ main(int argc, char *argv[])
       else                                        suspend_at = uint64_t(-1);
       //else                                        suspend_at = arch.insn_counter + 0x1000000000ull;
       arch.run( suspend_at );
-      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
+      arch.show_exec_stats(std::cerr);
+      arch.write_tfpstats();
     }
   catch (...)
     {
-      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
+      arch.show_exec_stats(std::cerr);
       std::ofstream tail("tail");
       for (unsigned idx = 1; idx <= arch.histsize; ++idx)
         if (arch.last_insn(idx).op)
