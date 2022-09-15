@@ -35,7 +35,6 @@
 #include <arch.hh>
 #include <tracee.hh>
 #include <linuxsystem.hh>
-#include <debugger.hh>
 #include <unisim/kernel/logger/console/console_printer.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
@@ -55,73 +54,54 @@ struct Simulator
     : unisim::kernel::Simulator(argc, argv, &default_config)
     , unisim::kernel::Object("top", 0)
     , printer()
-    , cpu("amd64", this, &linux64)
+    , cpu("amd64", this, tracee, &linux64)
     , linux64("amd64linux", this, std::cerr, &cpu, &cpu, &cpu)
     , tracee()
-    , debugger()
-    , enable_debug(false)
     , verbose_linux(false)
-    , param_enable_debug("enable-debug", this, enable_debug, "Enable debug session")
     , param_verbose_linux("verbose-linux", this, verbose_linux, "Verbose linux session")
   {
-    if (enable_debug)
-      debugger = std::make_unique<Debugger>("debugger", this, cpu, linux64);
     linux64.SetVerbose( verbose_linux );
-
     linux64.Setup();
   }
   
-  bool Load()
+  void Run()
   {
+    std::cerr << "\n*** Run ***" << std::endl;
     std::vector<std::string> const& simargs = GetCmdArgs();
     if (simargs.size() == 0)
       {
         std::cerr << "Simulation command line empty." << std::endl;
-        return false;
+        return;
       }
 
-    // Loading image
-    std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
+    std::cerr << "*** Starting: " << simargs[0] << " ***" << std::endl;
 
-    //linux64.ApplyHostEnvironment();
-    {
-      std::vector<std::string> envs{"LANG=C"};
-      linux64.SetEnvironment( envs );
-    }
-    if (not linux64.Process( simargs ))
+    if (not tracee.Process( simargs ))
       {
-        std::cerr << "Error: failed to setup linux emulation.\n";
-        return false;
+        std::cerr << "error: failed to attach debug program \n";
+        unsigned idx = 0;
+        for (std::string const& arg : GetCmdArgs())
+          std::cerr << "  argv[" << idx++ << "]: " << arg << '\n';
+        return;
       }
 
-    if (strcmp(linux64.linux_impl.blob_->GetArchitecture(), "x86_64") != 0)
+    tracee.Load(cpu);
+    
+    try
       {
-        std::cerr << "Error: not an x86_64 executable.\n";
-        return false;
+        for (;;)
+          {
+            cpu.StepInstruction();
+          }
       }
-
-    if (tracee.Process( simargs ))
+    catch (Tracee::Stopped const& stopped)
       {
-        std::cerr << "Error: failed to attach debug program.\n";
-        return false;
+        std::cerr << "Program exited with status:" << stopped.status << std::endl;
       }
-    return true;
-  }
-
-  void run()
-  {
-    std::cerr << "\n*** Run ***" << std::endl;
-    //cpu.gdbchecker.start(cpu);
-    while (not linux64.exited)
+    catch (Tracee::Unexpected const& unx)
       {
-        cpu.StepInstruction();
-        // if (cpu.instruction_count >= 0x100000)
-        //   break;
-        // if ((cpu.instruction_count % 0x1000000) == 0)
-        //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
+        std::cerr << "error: unexpected " << unx.what << " " << unx.code << std::endl;
       }
-
-    std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
   }
 
   static void default_config(unisim::kernel::Simulator* sim);
@@ -130,21 +110,12 @@ struct Simulator
   Arch cpu;
   LinuxOS linux64;
   Tracee tracee;
-  std::unique_ptr<Debugger> debugger;
-  bool enable_debug, verbose_linux;
-  unisim::kernel::variable::Parameter<bool> param_enable_debug;
+  bool verbose_linux;
   unisim::kernel::variable::Parameter<bool> param_verbose_linux;
 };
 
 void Simulator::default_config(unisim::kernel::Simulator* sim)
 {
-  sim->SetVariable("top.debugger.debug-hub.parse-dwarf", false);
-  sim->SetVariable("top.debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/amd64_dwarf_register_number_mapping.xml");
-  sim->SetVariable("top.debugger.debug-hub.architecture[0]", "amd64");
-  sim->SetVariable("top.debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_amd64.xml");
-  sim->SetVariable("top.debugger.gdb-server.verbose", false);
-  sim->SetVariable("top.debugger.inline-debugger.program-counter-name", "rip");
-
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
 
@@ -153,14 +124,6 @@ main( int argc, char *argv[] )
 {
   Simulator simulator(argc, argv);
 
-  if (not  simulator.Load())
-    {
-      unsigned idx = 0;
-      for (std::string const& arg : simulator.GetCmdArgs())
-        std::cerr << "  argv[" << idx++ << "]: " << arg << '\n';
-      return 1;
-    }
-
   switch (simulator.Setup())
     {
     case simulator.ST_ERROR:         return 1;
@@ -168,7 +131,7 @@ main( int argc, char *argv[] )
     default: break;
     }
 
-  simulator.run();
+  simulator.Run();
 
   return 0;
 }

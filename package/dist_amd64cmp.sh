@@ -4,9 +4,6 @@ SIMPKG=amd64cmp
 SIMPKG_SRCDIR=cxx/amd64cmp
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/service/debug/inline_debugger || exit
-import unisim/service/debug/debugger || exit
-import unisim/service/debug/gdb_server || exit
 import unisim/service/interfaces/linux_os || exit
 import unisim/service/interfaces/memory_injection || exit
 import unisim/service/interfaces/memory || exit
@@ -19,7 +16,6 @@ import unisim/component/cxx/memory/sparse || exit
 import unisim/component/cxx/vector || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/identifier || exit
-import unisim/util/debug || exit
 import unisim/util/loader/elf_loader || exit
 
 import libc/inttypes || exit
@@ -55,14 +51,12 @@ isa.cc \
 linuxsystem.cc \
 tracee.cc \
 main.cc \
-debugger.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 arch.hh \
 linuxsystem.hh \
 tracee.hh \
-debugger.hh \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\

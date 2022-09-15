@@ -37,13 +37,32 @@
 
 #include <vector>
 #include <string>
+#include <sys/ptrace.h>
 #include <inttypes.h>
+
+struct Arch;
 
 struct Tracee
 {
   Tracee() : pid(-1) {}
 
   bool Process( std::vector<std::string> const& simargs );
+
+  uintptr_t ptrace(enum __ptrace_request request, uintptr_t addr, uintptr_t data) const;
+
+  enum { RAX = 80, RDX = 96, RSI = 104, RDI = 112, RIP = 128, RSP = 152 };
+  
+  uint64_t GetInsnAddr() const { return ptrace(PTRACE_PEEKUSER, RIP, 0); }
+
+  void StepInstruction() const;
+
+  void Load(Arch& arch) const;
+
+  void MemRead( uint8_t* buffer, uint64_t addr, unsigned size ) const;
+
+  struct Stopped { int status; };
+
+  struct Unexpected { char const* what; int code; };
 
   pid_t pid;
 };

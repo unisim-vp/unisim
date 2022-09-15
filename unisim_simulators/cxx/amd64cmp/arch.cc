@@ -33,6 +33,7 @@
  */
 
 #include <arch.hh>
+#include "tracee.hh"
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -41,23 +42,13 @@
 #include <cmath>
 #include <cassert>
 
-Arch::Arch(char const* name, unisim::kernel::Object* parent, unisim::service::interfaces::LinuxOS* linos)
+Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _tracee, unisim::service::interfaces::LinuxOS* linos)
   : unisim::kernel::Object(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
-  , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, parent)
-  , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
-  , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, parent)
-  , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, parent)
-  , linux_os(linos)
-  , m_mem()
+  , tracee(_tracee)
   , segregs(), fs_base(), gs_base()
-  , requires_memory_access_reporting(false)
-  , requires_fetch_instruction_reporting(false)
-  , requires_commit_instruction_reporting(false)
-  , memory_access_reporting_import("memory-access-reporting-import", this)
-  , debug_yielding_import("debug-yielding-import", this)
   , rip(), u64regs(), m_flags()
   , m_fregs(), m_ftop(0), m_fcw(0x37f)
   , umms(), vmm_storage(), mxcsr(0x1fa0)
@@ -65,7 +56,6 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, unisim::service::in
   , hash_table()
   , mru_page(0)
   , enable_disasm(false)
-  , param_enable_disasm("enable-disasm", this, enable_disasm, "Enable instruction disassembly before instruction execution")
   , instruction_count(0)
     //    , gdbchecker()
 {
@@ -215,31 +205,21 @@ Arch::StepInstruction()
 {
   uint64_t insn_addr = this->rip;
 
-  /*** Handle debugging interface ***/
-  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
-    memory_access_reporting_import->ReportFetchInstruction(insn_addr);
-
-  // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-  //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
-
-  if (debug_yielding_import)
-    debug_yielding_import->DebugYield();
-
   Arch::Operation* op = fetch();
   if (not op) throw op;
 
   this->rip = insn_addr + op->length;
 
-  // op->disasm( std::cerr );
-  // std::cerr << std::endl;
   asm volatile ("operation_execute:");
   op->execute( *this );
+  
+  tracee.StepInstruction();
 
-  //cpu.gdbchecker.step(cpu);
-  // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-
-  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-    memory_access_reporting_import->ReportCommitInstruction(insn_addr, op->length);
+  for (auto const* update : updates)
+    {
+      update->check(tracee);
+      delete update;
+    }
 }
 
 Arch::Operation*
@@ -248,7 +228,7 @@ Arch::fetch()
   addr_t insn_addr = this->rip;
   asm volatile ("operation_fetch:");
   uint8_t decbuf[15];
-  lla_memcpy( decbuf, insn_addr, sizeof (decbuf) );
+  tracee.MemRead( &decbuf[0], insn_addr, sizeof (decbuf) );
   unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
 
   asm volatile ("operation_decode:");
@@ -501,49 +481,50 @@ Arch::f64_t square_root( Arch::f64_t value ) { return sqrt( value ); }
 void
 Arch::fmemwrite80( unsigned int _seg, u64_t _addr, f80_t _val )
 {
-  _addr += u64_t( segbase(_seg) );
-  union IEEE754_t { double as_f; uint64_t as_u; } word;
-  word.as_f = _val;
-  uint8_t sign = (word.as_u >> 63) & 1;
-  int32_t exponent = (word.as_u >> 52) & 0x7ff;
-  uint64_t mantissa = (word.as_u << 12) >> 1;
-  if (exponent != 0x7ff) {
-    if (exponent != 0) {
-      mantissa |= uint64_t( 1 ) << 63;
-    } else if (mantissa != 0) {
-      /* normalizing */
-      int32_t eo = __builtin_clzll( mantissa );
-      exponent = 1 - eo;
-      mantissa <<= eo;
-    } else {
-      exponent = 1023 - 16383;
-    }
-    exponent = exponent - 1023 + 16383;
-    assert( (exponent >= 0) and (exponent < 0x8000) );
-  } else {
-    mantissa |= uint64_t( 1 ) << 63;
-    exponent = 0x7fff;
-  }
+  throw 0;
+  // _addr += u64_t( segbase(_seg) );
+  // union IEEE754_t { double as_f; uint64_t as_u; } word;
+  // word.as_f = _val;
+  // uint8_t sign = (word.as_u >> 63) & 1;
+  // int32_t exponent = (word.as_u >> 52) & 0x7ff;
+  // uint64_t mantissa = (word.as_u << 12) >> 1;
+  // if (exponent != 0x7ff) {
+  //   if (exponent != 0) {
+  //     mantissa |= uint64_t( 1 ) << 63;
+  //   } else if (mantissa != 0) {
+  //     /* normalizing */
+  //     int32_t eo = __builtin_clzll( mantissa );
+  //     exponent = 1 - eo;
+  //     mantissa <<= eo;
+  //   } else {
+  //     exponent = 1023 - 16383;
+  //   }
+  //   exponent = exponent - 1023 + 16383;
+  //   assert( (exponent >= 0) and (exponent < 0x8000) );
+  // } else {
+  //   mantissa |= uint64_t( 1 ) << 63;
+  //   exponent = 0x7fff;
+  // }
 
-  uintptr_t const buf_size = 10;
-  uint8_t buf[buf_size];
+  // uintptr_t const buf_size = 10;
+  // uint8_t buf[buf_size];
 
-  buf[9] = (sign << 7) | (uint8_t( exponent >> 8 ) & 0x7f);
-  buf[8] = uint8_t( exponent ) & 0xff;
-  for ( uintptr_t idx = 0; idx < 8; ++idx)
-    buf[idx] = uint8_t( mantissa >> (idx*8) );
+  // buf[9] = (sign << 7) | (uint8_t( exponent >> 8 ) & 0x7f);
+  // buf[8] = uint8_t( exponent ) & 0xff;
+  // for ( uintptr_t idx = 0; idx < 8; ++idx)
+  //   buf[idx] = uint8_t( mantissa >> (idx*8) );
 
-  addr_t last_addr = _addr, addr = _addr;
-  typename Memory::Page* page = m_mem.getpage( addr );
+  // addr_t last_addr = _addr, addr = _addr;
+  // typename Memory::Page* page = m_mem.getpage( addr );
 
-  for (uintptr_t idx = 0; idx < buf_size; ++idx, ++addr)
-    {
-      uint8_t byte = buf[idx];
-      if ((last_addr ^ addr) >> Memory::Page::s_bits)
-        page = m_mem.getpage( addr );
-      addr_t offset = addr % (1 << Memory::Page::s_bits);
-      page->m_storage[offset] = byte;
-    }
+  // for (uintptr_t idx = 0; idx < buf_size; ++idx, ++addr)
+  //   {
+  //     uint8_t byte = buf[idx];
+  //     if ((last_addr ^ addr) >> Memory::Page::s_bits)
+  //       page = m_mem.getpage( addr );
+  //     addr_t offset = addr % (1 << Memory::Page::s_bits);
+  //     page->m_storage[offset] = byte;
+  //   }
 }
 
 void
@@ -729,66 +710,68 @@ void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )
 Arch::f80_t
 Arch::fmemread80( unsigned int _seg, addr_t _addr )
 {
-  _addr += addr_t( segbase(_seg) );
-  uintptr_t const buf_size = 10;
-  uint8_t buf[buf_size];
-  {
-    addr_t last_addr = _addr, addr = _addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
+  throw 0;
+  return f80_t();
+  // _addr += addr_t( segbase(_seg) );
+  // uintptr_t const buf_size = 10;
+  // uint8_t buf[buf_size];
+  // {
+  //   addr_t last_addr = _addr, addr = _addr;
+  //   typename Memory::Page* page = m_mem.getpage( addr );
 
-    for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
-      {
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        buf[idx] = page->m_storage[offset];
-      }
-  }
-  uint8_t sign = (buf[9] >> 7) & 1;
-  int32_t exponent = ((uint16_t(buf[9]) << 8) & 0x7f00) | (uint16_t(buf[8]) & 0x00ff);
-  uint64_t mantissa = 0;
-  for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
-  union IEEE754_t { double as_f; uint64_t as_u; } word;
+  //   for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
+  //     {
+  //       if ((last_addr ^ addr) >> Memory::Page::s_bits)
+  //         page = m_mem.getpage( addr );
+  //       addr_t offset = addr % (1 << Memory::Page::s_bits);
+  //       buf[idx] = page->m_storage[offset];
+  //     }
+  // }
+  // uint8_t sign = (buf[9] >> 7) & 1;
+  // int32_t exponent = ((uint16_t(buf[9]) << 8) & 0x7f00) | (uint16_t(buf[8]) & 0x00ff);
+  // uint64_t mantissa = 0;
+  // for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
+  // union IEEE754_t { double as_f; uint64_t as_u; } word;
 
-  if (exponent != 0x7fff) {
-    if (exponent == 0) {
-      if (mantissa == 0) return sign ? -0.0 : 0.0;
-      exponent += 1;
-    }
-    exponent -= 16383;
-    /* normalizing */
-    int32_t eo = __builtin_clzll( mantissa );
-    mantissa <<= eo;
-    exponent -= eo;
-    if (exponent < 1024) {
-      if (exponent < -1022) {
-        /* denormalizing */
-        eo = (-1022 - exponent);
-        mantissa >>= eo;
-        exponent = -1023;
-      }
-      word.as_u = ((mantissa << 1) >> 12);
-      word.as_u |= uint64_t(exponent + 1023) << 52;
-      word.as_u |= uint64_t(sign) << 63;
-    } else /* exponent >= 1024 */ {
-      /* huge number, convert to infinity */
-      word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
-    }
-  }
+  // if (exponent != 0x7fff) {
+  //   if (exponent == 0) {
+  //     if (mantissa == 0) return sign ? -0.0 : 0.0;
+  //     exponent += 1;
+  //   }
+  //   exponent -= 16383;
+  //   /* normalizing */
+  //   int32_t eo = __builtin_clzll( mantissa );
+  //   mantissa <<= eo;
+  //   exponent -= eo;
+  //   if (exponent < 1024) {
+  //     if (exponent < -1022) {
+  //       /* denormalizing */
+  //       eo = (-1022 - exponent);
+  //       mantissa >>= eo;
+  //       exponent = -1023;
+  //     }
+  //     word.as_u = ((mantissa << 1) >> 12);
+  //     word.as_u |= uint64_t(exponent + 1023) << 52;
+  //     word.as_u |= uint64_t(sign) << 63;
+  //   } else /* exponent >= 1024 */ {
+  //     /* huge number, convert to infinity */
+  //     word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
+  //   }
+  // }
 
-  else /* (exponent == 0x7fff) */ {
-    if (mantissa >> 63) {
-      /* IEEE 754 compatible */
-      word.as_u = ((mantissa << 1) >> 12);
-      word.as_u |= uint64_t(0x7ff) << 52;
-      word.as_u |= uint64_t(sign) << 63;
-    } else {
-      /* invalid operand ==> convert to quiet NaN (keep sign) */
-      word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
-    }
-  }
+  // else /* (exponent == 0x7fff) */ {
+  //   if (mantissa >> 63) {
+  //     /* IEEE 754 compatible */
+  //     word.as_u = ((mantissa << 1) >> 12);
+  //     word.as_u |= uint64_t(0x7ff) << 52;
+  //     word.as_u |= uint64_t(sign) << 63;
+  //   } else {
+  //     /* invalid operand ==> convert to quiet NaN (keep sign) */
+  //     word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
+  //   }
+  // }
 
-  return word.as_f;
+  // return word.as_f;
 }
 
 void
@@ -864,59 +847,91 @@ Arch::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
   // scanner.Append( GetRegister( "st7" ) );
 }
 
-void
-Arch::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
+
+// /** Disasm an instruction address.
+//  * Returns a string with the disassembling of the instruction found
+//  *   at address addr.
+//  *
+//  * @param addr the address of the instruction to disassemble
+//  * @param next_addr the address following the requested instruction
+//  *
+//  * @return the disassembling of the requested instruction address
+//  */
+// std::string
+// Arch::Disasm(uint64_t addr, uint64_t& next_addr)
+// {
+//   uint8_t decbuf[15];
+//   tracee.MemRead( &decbuf[0], addr, sizeof (decbuf) );
+//   unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
+
+//   struct
+//   {
+//     uint64_t extract(Operation* op, uint64_t addr)
+//     {
+//       op->disasm( buf );
+//       return op->length;
+//     }
+//     std::ostringstream buf;
+//   } _;
+
+//   uint64_t offset;
+//   IPage* page = GetIPage( addr, offset );
+
+//   if (Operation* cache_op = page->GetCached(offset, &decbuf[0], mode))
+//     {
+//       next_addr = addr + _.extract(cache_op, addr);
+//     }
+//   else if (Operation* new_op = this->Decode( mode, addr, &decbuf[0] ))
+//     {
+//       next_addr = addr + _.extract(new_op, addr);
+//       delete new_op;
+//     }
+//   else
+//     {
+//       next_addr = addr;
+//       _.buf << "<bad>";
+//     }
+//   return _.buf.str();
+// }
+
+unisim::service::interfaces::Register*
+Arch::GetRegister(char const* name)
 {
-  switch (type) {
-  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
-  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
-  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
-  default: { struct Bad {}; throw Bad(); }
-  }
+  auto reg = regmap.find( name );
+  return (reg == regmap.end()) ? 0 : reg->second;
 }
 
-/** Disasm an instruction address.
- * Returns a string with the disassembling of the instruction found
- *   at address addr.
- *
- * @param addr the address of the instruction to disassemble
- * @param next_addr the address following the requested instruction
- *
- * @return the disassembling of the requested instruction address
- */
-std::string
-Arch::Disasm(uint64_t addr, uint64_t& next_addr)
+bool
+Arch::InjectReadMemory(addr_t addr, void *buffer, uint32_t size)
 {
-  uint8_t decbuf[15];
-  lla_memcpy( decbuf, addr, sizeof (decbuf) );
-  unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
+  tracee.MemRead( (uint8_t*)buffer, addr, size );
+  return true;
+}
 
-  struct
-  {
-    uint64_t extract(Operation* op, uint64_t addr)
-    {
-      op->disasm( buf );
-      return op->length;
-    }
-    std::ostringstream buf;
-  } _;
+bool
+Arch::InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size)
+{
+  std::cerr << "Tracee should not be written by tracer\n";
+  throw 0;
+  return true;
+}
 
-  uint64_t offset;
-  IPage* page = GetIPage( addr, offset );
+void
+Arch::ResetMemory()
+{
+}
 
-  if (Operation* cache_op = page->GetCached(offset, &decbuf[0], mode))
-    {
-      next_addr = addr + _.extract(cache_op, addr);
-    }
-  else if (Operation* new_op = this->Decode( mode, addr, &decbuf[0] ))
-    {
-      next_addr = addr + _.extract(new_op, addr);
-      delete new_op;
-    }
-  else
-    {
-      next_addr = addr;
-      _.buf << "<bad>";
-    }
-  return _.buf.str();
+bool
+Arch::ReadMemory(addr_t addr, void* buffer, uint32_t size )
+{
+  tracee.MemRead( (uint8_t*)buffer, addr, size );
+  return true;
+}
+
+bool
+Arch::WriteMemory(addr_t addr, void const* buffer, uint32_t size)
+{
+  std::cerr << "Tracee should not be written by tracer\n";
+  throw 0;
+  return true;
 }

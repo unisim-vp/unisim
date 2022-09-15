@@ -41,28 +41,23 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/vector/vector.hh>
-#include <unisim/util/debug/simple_register.hh>
-#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/service/interfaces/debug_yielding.hh>
-#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/util/debug/simple_register.hh>
 #include <map>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
+
+struct Tracee;
 
 struct Arch
   : public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
   , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
-  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t>>
-  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
-  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>
-  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
 {
   typedef uint8_t      u8_t;
   typedef uint16_t     u16_t;
@@ -98,7 +93,9 @@ struct Arch
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
 
-  Arch(char const* name, unisim::kernel::Object* parent, unisim::service::interfaces::LinuxOS*);
+  typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
+
+  Arch(char const* name, unisim::kernel::Object* parent, Tracee const& tracee, unisim::service::interfaces::LinuxOS*);
 
   ~Arch()
   {
@@ -110,29 +107,31 @@ struct Arch
       delete hash_table[idx];
   }
 
-  // unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
-
-  unisim::service::interfaces::LinuxOS* linux_os;
   std::map<std::string,unisim::service::interfaces::Register*> regmap;
 
-  struct ClearMemSet { void operator() ( uint8_t* base, uintptr_t size ) const { __builtin_bzero(base, size); } };
-  typedef typename unisim::component::cxx::memory::sparse::Memory<addr_t,15,15,ClearMemSet> Memory;
-  Memory                      m_mem;
+  // unisim::service::interfaces::Registers
+  unisim::service::interfaces::Register* GetRegister(char const* name);
+  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+
+  // unisim::service::interfaces::MemoryInjection<ADDRESS>
+  bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size);
+  bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size);
 
   // unisim::service::interfaces::Memory<addr_t>
-  void ResetMemory() {}
-  bool ReadMemory(addr_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool WriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  void ResetMemory();
+  bool ReadMemory(addr_t addr, void* buffer, uint32_t size );
+  bool WriteMemory(addr_t addr, void const* buffer, uint32_t size);
 
-  typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
+  // Reference Tracee
+  Tracee const& tracee;
 
-  // MEMORY STATE
   // Segment Registers
   uint16_t segregs[6];
   addr_t fs_base, gs_base;
   addr_t segbase(unsigned seg) const { switch(seg){ case 4: return fs_base; case 5: return gs_base; } return 0; }
   void                        segregwrite( unsigned idx, uint16_t value )
   {
+    throw 0;
     if (idx > 6) throw 0;
     segregs[idx] = value;
   }
@@ -141,54 +140,6 @@ struct Arch
     throw 0;
     if (idx > 6) throw 0;
     return segregs[idx];
-  }
-
-  // Low level memory access routines
-  enum LLAException_t { LLAError };
-  void                        lla_memcpy( addr_t addr, uint8_t const* buf, addr_t size )
-  { m_mem.write( addr, buf, size ); }
-  void                        lla_memcpy( uint8_t* buf, addr_t addr, addr_t size )
-  { m_mem.read( buf, addr, size ); }
-  void                        lla_bzero( addr_t addr, addr_t size )
-  { m_mem.clear( addr, size ); }
-  template<class INT_t>
-  void                        lla_memwrite( addr_t _addr, INT_t _val )
-  {
-    uintptr_t const int_size = sizeof( INT_t );
-
-    addr_t last_addr = _addr, addr = _addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
-
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
-      {
-        uint8_t byte = (_val >> (idx*8)) & 0xff;
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        page->m_storage[offset] = byte;
-      }
-  }
-
-  template<class INT_t>
-  INT_t                       lla_memread( addr_t _addr )
-  {
-    uintptr_t const int_size = sizeof( INT_t );
-
-    addr_t last_addr = _addr, addr = _addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
-
-    INT_t result = 0;
-
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
-      {
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        result |= (INT_t( page->m_storage[offset] ) << (idx*8));
-      }
-
-    return result;
-
   }
 
   f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
@@ -261,19 +212,20 @@ struct Arch
   void
   memwrite( unsigned _seg, u64_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
   {
-    uintptr_t const int_size = (OPSIZE/8);
-    addr_t addr = _addr + segbase(_seg), last_addr = addr;
+    throw 0;
+    // uintptr_t const int_size = (OPSIZE/8);
+    // addr_t addr = _addr + segbase(_seg), last_addr = addr;
 
-    typename Memory::Page* page = m_mem.getpage( addr );
+    // typename Memory::Page* page = m_mem.getpage( addr );
 
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
-      {
-        uint8_t byte = (_val >> (idx*8)) & 0xff;
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        page->m_storage[offset] = byte;
-      }
+    // for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
+    //   {
+    //     uint8_t byte = (_val >> (idx*8)) & 0xff;
+    //     if ((last_addr ^ addr) >> Memory::Page::s_bits)
+    //       page = m_mem.getpage( addr );
+    //     addr_t offset = addr % (1 << Memory::Page::s_bits);
+    //     page->m_storage[offset] = byte;
+    //   }
   }
 
   template <unsigned OPSIZE>
@@ -324,63 +276,32 @@ struct Arch
   typename TypeFor<Arch,OPSIZE>::u
   memread( unsigned _seg, u64_t _addr )
   {
-    uintptr_t const int_size = (OPSIZE/8);
-    addr_t addr = _addr + segbase(_seg), last_addr = addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
-
+    throw 0;
     typedef typename TypeFor<Arch,OPSIZE>::u u_type;
     u_type result = 0;
+    // uintptr_t const int_size = (OPSIZE/8);
+    // addr_t addr = _addr + segbase(_seg), last_addr = addr;
+    // typename Memory::Page* page = m_mem.getpage( addr );
 
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
-      {
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        result |= (u_type( page->m_storage[offset] ) << (idx*8));
-      }
+
+    // for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
+    //   {
+    //     if ((last_addr ^ addr) >> Memory::Page::s_bits)
+    //       page = m_mem.getpage( addr );
+    //     addr_t offset = addr % (1 << Memory::Page::s_bits);
+    //     result |= (u_type( page->m_storage[offset] ) << (idx*8));
+    //   }
 
     return result;
   }
 
-
-  // unisim::service::interfaces::Registers
-  unisim::service::interfaces::Register* GetRegister(char const* name)
-  {
-    auto reg = regmap.find( name );
-    return (reg == regmap.end()) ? 0 : reg->second;
-  }
-  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
-
-  // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
-
-  // unisim::service::interfaces::Disassembly<uint64_t>
-  virtual std::string Disasm(uint64_t addr, uint64_t& next_addr) override;
-  typedef unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export_t;
-  //  disasm_export_t disasm_export() { return disasm_export_t("disasm-export",this); };
-
-  // unisim::service::interfaces::MemoryAccessReportingControl
-  virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
-  bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
-  bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
-
-  // unisim::service::interfaces::MemoryAccessReporting<uint64_t>
-  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
-
-  // unisim::service::interfaces::DebugYielding
-  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
-
-
   // Implementation of ExecuteSystemCall
-
   void ExecuteSystemCall( unsigned id )
   {
-    if (not linux_os)
-      { throw std::logic_error( "No linux OS emulation connected" ); }
-    linux_os->ExecuteSystemCall( id );
+    throw 0;
+    // if (not linux_os)
+    //   { throw std::logic_error( "No linux OS emulation connected" ); }
+    // linux_os->ExecuteSystemCall( id );
     // auto los = dynamic_cast<LinuxOS*>( linux_os );
     // los->LogSystemCall( id );
   }
@@ -654,10 +575,12 @@ public:
   void noexec( Operation const& op );
 
   bool enable_disasm;
-  unisim::kernel::variable::Parameter<bool> param_enable_disasm;
   uint64_t instruction_count;
 
   bool Test( bool b ) const { return b; }
+
+  struct Update { virtual ~Update() {} virtual void check(Tracee const& tracee) const = 0; };
+  std::set<Update const*> updates;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
