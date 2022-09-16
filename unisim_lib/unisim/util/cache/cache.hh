@@ -316,6 +316,7 @@ private:
 template <typename TYPES, typename CACHE>
 struct CacheAccess
 {
+	typedef CACHE CACHE_TYPE;
 	///////////////////////////////// input ///////////////////////////////////
 	typename TYPES::ADDRESS addr;               // logical or virtual address
 	typename TYPES::PHYSICAL_ADDRESS phys_addr; // physical address
