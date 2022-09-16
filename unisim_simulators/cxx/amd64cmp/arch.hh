@@ -48,6 +48,7 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/kernel.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <forward_list>
 #include <map>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
@@ -94,6 +95,8 @@ struct Arch
   };
 
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
+
+  struct Update { virtual ~Update() {} virtual void check(Arch const& arch, Tracee const& tracee) const = 0; };
 
   Arch(char const* name, unisim::kernel::Object* parent, Tracee const& tracee, unisim::service::interfaces::LinuxOS*);
 
@@ -207,25 +210,21 @@ struct Arch
     fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
+  struct MCUpdate : public Update { void memcheck(Tracee const& tracee, u64_t addr, uint8_t const* bytes, unsigned size) const; };
 
   template <unsigned OPSIZE>
   void
-  memwrite( unsigned _seg, u64_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
+  memwrite( unsigned seg, u64_t addr, typename TypeFor<Arch,OPSIZE>::u val )
   {
-    throw 0;
-    // uintptr_t const int_size = (OPSIZE/8);
-    // addr_t addr = _addr + segbase(_seg), last_addr = addr;
+    struct MWUpdate : public MCUpdate
+    {
+      MWUpdate(u64_t _addr, typename TypeFor<Arch,OPSIZE>::u val) : addr(_addr) { memcpy((void*)&bytes[0], (void const*)&val, OPSIZE/8); }
+      virtual void check(Arch const& arch, Tracee const& tracee) const override { memcheck(tracee, addr, &bytes[0], OPSIZE/8); }
+      u64_t addr;
+      uint8_t bytes[OPSIZE/8];
+    };
 
-    // typename Memory::Page* page = m_mem.getpage( addr );
-
-    // for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
-    //   {
-    //     uint8_t byte = (_val >> (idx*8)) & 0xff;
-    //     if ((last_addr ^ addr) >> Memory::Page::s_bits)
-    //       page = m_mem.getpage( addr );
-    //     addr_t offset = addr % (1 << Memory::Page::s_bits);
-    //     page->m_storage[offset] = byte;
-    //   }
+    updates.push_front(new MWUpdate(addr + segbase(seg), val));
   }
 
   template <unsigned OPSIZE>
@@ -337,28 +336,30 @@ struct Arch
     return u8_t( u64regs[reg] >> sh );
   }
 
+  void regcheck(unsigned idx);
+
   template <class GOP>
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
-    //gdbchecker.gmark( idx );
+    regcheck(idx);
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
     unsigned reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
-    //gdbchecker.gmark( reg );
+    regcheck(reg);
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
-    //gdbchecker.gmark( idx );
+    regcheck(idx);
   }
   void regwrite( GOw const&, unsigned idx, u16_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
-    //gdbchecker.gmark( idx );
+    regcheck(idx);
   }
 
   struct FLAG
@@ -579,8 +580,7 @@ public:
 
   bool Test( bool b ) const { return b; }
 
-  struct Update { virtual ~Update() {} virtual void check(Tracee const& tracee) const = 0; };
-  std::set<Update const*> updates;
+  std::forward_list<Update const*> updates;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );

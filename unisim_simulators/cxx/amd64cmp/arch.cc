@@ -55,7 +55,7 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   , latest_instruction(0)
   , hash_table()
   , mru_page(0)
-  , enable_disasm(false)
+  , enable_disasm(true)
   , instruction_count(0)
     //    , gdbchecker()
 {
@@ -217,9 +217,10 @@ Arch::StepInstruction()
 
   for (auto const* update : updates)
     {
-      update->check(tracee);
+      update->check(*this, tracee);
       delete update;
     }
+  updates.clear();
 }
 
 Arch::Operation*
@@ -934,4 +935,26 @@ Arch::WriteMemory(addr_t addr, void const* buffer, uint32_t size)
   std::cerr << "Tracee should not be written by tracer\n";
   throw 0;
   return true;
+}
+
+void
+Arch::MCUpdate::memcheck(Tracee const& tracee, u64_t addr, uint8_t const* bytes, unsigned size) const
+{
+  tracee.MemCmp(bytes, addr, size);
+}
+
+void
+Arch::regcheck(unsigned reg)
+{
+  struct RCUpdate : public Update
+  {
+    RCUpdate(unsigned _reg)  : reg(_reg) {} unsigned reg;
+    virtual void check(Arch const& arch, Tracee const& tracee) const override
+    {
+      if (tracee.GetReg(reg) != arch.u64regs[reg])
+        throw 0;
+    }
+  };
+
+  updates.push_front(new RCUpdate {reg});
 }

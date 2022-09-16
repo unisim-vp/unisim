@@ -36,21 +36,19 @@
 #include "arch.hh"
 #include <iostream>
 #include <cassert>
+#include <sys/ptrace.h>
+#include <sys/reg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/user.h>
 #include <unistd.h>
 
-uintptr_t
-Tracee::ptrace(enum __ptrace_request request, uintptr_t addr, uintptr_t data) const
-{
-  return ::ptrace(request, pid, addr, data);
-}
-
 bool
 Tracee::Process( std::vector<std::string> const& simargs )
 {
+  assert (sizeof (long) == 8);
+
   /*** Search for executable ***/
   char const* filename = simargs[0].c_str();
   {
@@ -123,7 +121,7 @@ Tracee::StepInstruction() const
 {
   for (;;)
     {
-      if (this->ptrace(PTRACE_SINGLESTEP, 0, 0) < 0)
+      if (::ptrace(PTRACE_SINGLESTEP, pid, 0, 0) < 0)
         {
           perror( "Tracee::StepInstruction() @ptrace" );
           throw Unexpected{"ptrace for ", pid};
@@ -167,32 +165,46 @@ Tracee::StepInstruction() const
 }
 
 void
-Tracee::MemRead( uint8_t* buffer, uint64_t addr, unsigned size ) const
-{
-  assert (sizeof (long) == 8);
-  uint64_t begin = addr & -8, end = (addr+size+7) & -8;
-  uint64_t bufsize = end-begin;
-  
-  uint8_t lbuf[32];
-  uint8_t* buf = bufsize <= 32 ? &lbuf[0] : new uint8_t[bufsize];
-
-  for (uint64_t offset = 0; offset < bufsize; offset += 8)
-    {
-      uint64_t cell = this->ptrace(PTRACE_PEEKDATA, begin+offset, NULL);
-      for (unsigned byte = 0; byte < 8; ++byte)
-        buf[offset+byte] = cell >> 8*byte;
-    }
-
-  memcpy(buffer, &buf[addr-begin], size);
-  if (bufsize > 32) delete [] buf;
-}
-
-void
 Tracee::Load(Arch& cpu) const
 {
   struct user_regs_struct registers;
   //  this->rip = tracee.GetInsnAddr();
-  this->ptrace(PTRACE_GETREGS, NULL, (uintptr_t)&registers);
+  ::ptrace(PTRACE_GETREGS, pid, NULL, (uintptr_t)&registers);
   
   cpu.rip = registers.rip;
+  cpu.u64regs[4] = registers.rsp;
+}
+
+uint64_t
+Tracee::PeekData(uint64_t addr) const
+{
+  return ::ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
+}
+  
+//   enum { RSI = 104, RDI = 112 };
+
+uint64_t
+Tracee::GetInsnAddr() const
+{
+  return ptrace(PTRACE_PEEKUSER, pid, 8*RIP, 0);
+}
+
+uint64_t
+Tracee::GetReg(unsigned reg) const
+{
+  unsigned  offset = 0;
+  switch (reg)
+    {
+    default: throw 0;
+    case 0: offset = 8*RAX; break;
+    case 1: offset = 8*RCX; break;
+    case 2: offset = 8*RDX; break;
+    case 3: offset = 8*RBX; break;
+    case 4: offset = 8*RSP; break;
+    case 5: offset = 8*RBP; break;
+    case 6: offset = 8*RSI; break;
+    case 7: offset = 8*RDI; break;
+    }
+  
+  return ptrace(PTRACE_PEEKUSER, pid, offset, 0);
 }

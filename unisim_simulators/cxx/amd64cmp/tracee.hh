@@ -37,7 +37,6 @@
 
 #include <vector>
 #include <string>
-#include <sys/ptrace.h>
 #include <inttypes.h>
 
 struct Arch;
@@ -48,17 +47,33 @@ struct Tracee
 
   bool Process( std::vector<std::string> const& simargs );
 
-  uintptr_t ptrace(enum __ptrace_request request, uintptr_t addr, uintptr_t data) const;
+  uint64_t GetInsnAddr() const;
 
-  enum { RAX = 80, RDX = 96, RSI = 104, RDI = 112, RIP = 128, RSP = 152 };
-  
-  uint64_t GetInsnAddr() const { return ptrace(PTRACE_PEEKUSER, RIP, 0); }
+  uint64_t GetReg(unsigned reg) const;
+
+  uint64_t PeekData(uint64_t addr) const;
 
   void StepInstruction() const;
 
   void Load(Arch& arch) const;
 
-  void MemRead( uint8_t* buffer, uint64_t addr, unsigned size ) const;
+  void MemRead( uint8_t* bytes, uint64_t addr, unsigned size ) const { struct { uint8_t* dst; void Do(uint64_t i, uint8_t src) { dst[i] = src; } } read {bytes}; MemAccess(read, addr, size); }
+
+  void MemCmp( uint8_t const* bytes, uint64_t addr, unsigned size ) const { struct { uint8_t const* ref; void Do(uint64_t i, uint8_t src) { if (ref[i] != src) throw 0; } } cmp {bytes}; MemAccess(cmp, addr, size); }
+
+  template <typename ACCESS>
+  void MemAccess( ACCESS& access, uint64_t addr, unsigned size ) const
+  {
+    uint64_t cell = (addr % 8) ? this->PeekData(addr & -8) : 0;
+    
+    for (uint64_t offset = 0; offset < size; ++offset, ++addr)
+      {
+        unsigned cell_byte = addr % 8;
+        if (cell_byte == 0)
+          cell = this->PeekData(addr);
+        access.Do( offset, cell >> 8*cell_byte );
+      }
+  }
 
   struct Stopped { int status; };
 
