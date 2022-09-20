@@ -56,6 +56,7 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   , hash_table()
   , mru_page(0)
   , enable_disasm(true)
+  , accurate(true)
   , instruction_count(0)
     //    , gdbchecker()
 {
@@ -224,6 +225,7 @@ Arch::StepInstruction()
       delete update;
     }
   updates.clear();
+  accurate = true;
 }
 
 Arch::Operation*
@@ -951,13 +953,18 @@ Arch::regcheck(unsigned reg)
 {
   struct RCUpdate : public Update
   {
-    RCUpdate(unsigned _reg)  : reg(_reg) {} unsigned reg;
-    virtual void check(Arch const& arch, Tracee const& tracee) const override
+    RCUpdate(unsigned _reg, bool _test)  : reg(_reg), test(_test) {} unsigned reg; bool test;
+    virtual void check(Arch& arch, Tracee const& tracee) const override
     {
-      if (tracee.GetReg(reg) != arch.u64regs[reg])
+      if (not test)
+        {
+          arch.u64regs[reg] = tracee.GetReg(reg);
+          return;
+        }
+      if (arch.u64regs[reg] != tracee.GetReg(reg))
         throw 0;
     }
   };
 
-  updates.push_front(new RCUpdate {reg});
+  updates.push_front(new RCUpdate(reg, accurate));
 }

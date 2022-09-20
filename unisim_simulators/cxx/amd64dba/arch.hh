@@ -396,7 +396,9 @@ struct Processor : public ProcessorBase
 
   template <class GOP> void regwrite( GOP const&, unsigned idx, typename TypeFor<Processor,GOP::SIZE>::u const& val )
   {
-    eregwrite( idx, GOP::SIZE / 8, 0, gr_type(val).expr );
+    unsigned const size = GOP::SIZE / 8;
+    if(size > MODE::GREGSIZE) throw Undefined();
+    eregwrite( idx, size, 0, gr_type(val).expr );
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t val )  { eregwrite( idx%4, 1, (idx>>2) & 1, gr_type(val).expr ); }

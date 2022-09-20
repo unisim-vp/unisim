@@ -96,7 +96,7 @@ struct Arch
 
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
 
-  struct Update { virtual ~Update() {} virtual void check(Arch const& arch, Tracee const& tracee) const = 0; };
+  struct Update { virtual ~Update() {} virtual void check(Arch& arch, Tracee const& tracee) const = 0; };
 
   Arch(char const* name, unisim::kernel::Object* parent, Tracee const& tracee, unisim::service::interfaces::LinuxOS*);
 
@@ -219,12 +219,13 @@ struct Arch
     struct MWUpdate : public MCUpdate
     {
       MWUpdate(u64_t _addr, typename TypeFor<Arch,OPSIZE>::u val) : addr(_addr) { memcpy((void*)&bytes[0], (void const*)&val, OPSIZE/8); }
-      virtual void check(Arch const& arch, Tracee const& tracee) const override { memcheck(tracee, addr, &bytes[0], OPSIZE/8); }
+      virtual void check(Arch& arch, Tracee const& tracee) const override { memcheck(tracee, addr, &bytes[0], OPSIZE/8); }
       u64_t addr;
       uint8_t bytes[OPSIZE/8];
     };
 
-    updates.push_front(new MWUpdate(addr + segbase(seg), val));
+    if (accurate)
+      updates.push_front(new MWUpdate(addr + segbase(seg), val));
   }
 
   template <unsigned OPSIZE>
@@ -427,7 +428,7 @@ public:
 
   void  fcwwrite( u16_t _value );
 
-  u64_t tscread() { return instruction_count; }
+  u64_t tscread() { accurate = false; return instruction_count; }
 
 public:
   struct VUConfig
@@ -575,7 +576,7 @@ public:
   struct Unimplemented {};
   void noexec( Operation const& op );
 
-  bool enable_disasm;
+  bool enable_disasm, accurate;
   uint64_t instruction_count;
 
   bool Test( bool b ) const { return b; }
