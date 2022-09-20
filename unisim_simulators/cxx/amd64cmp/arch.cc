@@ -215,6 +215,9 @@ Arch::StepInstruction()
   
   tracee.StepInstruction();
 
+  if (tracee.GetInsnAddr() != this->rip)
+    throw 0;
+  
   for (auto const* update : updates)
     {
       update->check(*this, tracee);

@@ -168,7 +168,6 @@ void
 Tracee::Load(Arch& cpu) const
 {
   struct user_regs_struct registers;
-  //  this->rip = tracee.GetInsnAddr();
   ::ptrace(PTRACE_GETREGS, pid, NULL, (uintptr_t)&registers);
   
   cpu.rip = registers.rip;
@@ -196,14 +195,22 @@ Tracee::GetReg(unsigned reg) const
   switch (reg)
     {
     default: throw 0;
-    case 0: offset = 8*RAX; break;
-    case 1: offset = 8*RCX; break;
-    case 2: offset = 8*RDX; break;
-    case 3: offset = 8*RBX; break;
-    case 4: offset = 8*RSP; break;
-    case 5: offset = 8*RBP; break;
-    case 6: offset = 8*RSI; break;
-    case 7: offset = 8*RDI; break;
+    case 000: offset = 8*RAX; break;
+    case 001: offset = 8*RCX; break;
+    case 002: offset = 8*RDX; break;
+    case 003: offset = 8*RBX; break;
+    case 004: offset = 8*RSP; break;
+    case 005: offset = 8*RBP; break;
+    case 006: offset = 8*RSI; break;
+    case 007: offset = 8*RDI; break;
+    case 010: offset = 8* R8; break;
+    case 011: offset = 8* R9; break;
+    case 012: offset = 8*R10; break;
+    case 013: offset = 8*R11; break;
+    case 014: offset = 8*R12; break;
+    case 015: offset = 8*R13; break;
+    case 016: offset = 8*R14; break;
+    case 017: offset = 8*R15; break;
     }
   
   return ptrace(PTRACE_PEEKUSER, pid, offset, 0);
