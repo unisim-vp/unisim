@@ -822,6 +822,9 @@ namespace review
     void    stop()                        { throw unisim::util::sav::Untestable("hardware"); }
     void    _DE()                         { throw unisim::util::sav::Untestable("system"); }
 
+    void    xsave (unisim::component::cxx::processor::intel::XSaveMode, bool, u64_t, RMOp const&) { throw unisim::util::sav::Untestable("hardware"); }
+    void    xrstor(unisim::component::cxx::processor::intel::XSaveMode, bool, u64_t, RMOp const&) { throw unisim::util::sav::Untestable("hardware"); }
+
     // bool Test( bit_t b ) { return false; }
 
     template <typename T>

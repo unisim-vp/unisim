@@ -587,6 +587,9 @@ public:
   void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
   void unimplemented() { std::cerr << "Unimplemented.\n"; throw 0; }
 
+  void xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop) { unimplemented(); }
+  void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop) { unimplemented(); }
+
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
   struct IPage

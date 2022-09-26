@@ -45,33 +45,16 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <inttypes.h>
 
-struct LinuxOS
-  : public unisim::service::interfaces::LinuxOS
-  , public unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >
-{
-  typedef uint64_t addr_t;
-  LinuxOS( char const* name, unisim::kernel::Object* parent, std::ostream& log,
-           unisim::service::interfaces::Registers* regs_if,
-           unisim::service::interfaces::Memory<addr_t>* mem_if,
-           unisim::service::interfaces::MemoryInjection<addr_t>* mem_inject_if );
+struct Arch;
 
-  void Setup();
-  void SetVerbose(bool verbose) { linux_impl.SetVerbose(verbose); }
-  void ApplyHostEnvironment();
-  void SetEnvironment( std::vector<std::string> const& envs );
-  bool Process( std::vector<std::string> const& simargs );
-  void Core( std::string const& coredump );
+struct Amd64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
+{
+  typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
+  
+  Amd64LinuxOS( Arch& cpu );
+  ~Amd64LinuxOS();
 
   void ExecuteSystemCall( int id );
-  void LogSystemCall(int id);
-  void SetBrk(addr_t brk_addr);
-
-  // unisim::service::interfaces::Blob<uint64_t>
-  virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const { return linux_impl.GetBlob(); }
-
-  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
-  bool exited;
-  int app_ret_status;
 };
 
 #endif // __AMD64EMU_LINUXSYSTEM_HH__

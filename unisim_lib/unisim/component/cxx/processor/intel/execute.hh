@@ -457,34 +457,32 @@ namespace intel {
       (u16_t( 0 )                             << 15 /*  B */);
   }
 
+  template <class ARCH, class ACCESS>
+  void eflagsaccess(ARCH& a, ACCESS& access)
+  {
+    struct { unsigned bit; typename ARCH::FLAG::Code flag; }
+      ffs[] = {{0, ARCH::FLAG::CF}, {2, ARCH::FLAG::PF}, {4, ARCH::FLAG::AF}, {6, ARCH::FLAG::ZF}, {7, ARCH::FLAG::SF}, {10, ARCH::FLAG::DF}, {11, ARCH::FLAG::OF}};
+    for (unsigned idx = 0, end = sizeof(ffs)/sizeof(ffs[0]); idx < end; ++idx)
+      access.Do(a, ffs[idx].flag, ffs[idx].bit);
+  }
+
+  template <class ARCH>
+  void eflagswrite( ARCH& a, typename ARCH::u32_t bits )
+  {
+    typedef typename ARCH::bit_t bit_t;
+    typedef typename ARCH::u32_t u32_t;
+    struct { u32_t efbits; void Do( ARCH& a, typename ARCH::FLAG::Code flag, unsigned bit ) { a.flagwrite( flag, bit_t((efbits >> bit) & 1u) ); } } access {bits};
+    eflagsaccess( a, access );
+  }
+
   template <class ARCH>
   typename ARCH::u32_t
   eflagsread( ARCH& a )
   {
     typedef typename ARCH::u32_t u32_t;
-    //00000286
-    return
-      (u32_t( a.flagread( ARCH::FLAG::CF ) ) <<  0 /* CF */ ) |
-      (u32_t( 1 )                             <<  1 /*  1 */ ) |
-      (u32_t( a.flagread( ARCH::FLAG::PF ) ) <<  2 /* PF */ ) |
-      (u32_t( 0 )                             <<  3 /*  0 */ ) |
-      (u32_t( a.flagread( ARCH::FLAG::AF ) ) <<  4 /* AF */ ) |
-      (u32_t( 0 )                             <<  5 /*  0 */ ) |
-      (u32_t( a.flagread( ARCH::FLAG::ZF ) ) <<  6 /* ZF */ ) |
-      (u32_t( a.flagread( ARCH::FLAG::SF ) ) <<  7 /* SF */ ) |
-      (u32_t( 0 )                             <<  8 /* TF */ ) |
-      (u32_t( 0 )                             <<  9 /* IF */ ) |
-      (u32_t( a.flagread( ARCH::FLAG::DF ) ) << 10 /* DF */ ) |
-      (u32_t( a.flagread( ARCH::FLAG::OF ) ) << 11 /* OF */ ) |
-      (u32_t( 0 )                             << 12 /*IOPL*/ ) |
-      (u32_t( 0 )                             << 14 /* NT */ ) |
-      (u32_t( 0 )                             << 15 /*  0 */ ) |
-      (u32_t( 0 )                             << 16 /* RF */ ) |
-      (u32_t( 0 )                             << 17 /* VM */ ) |
-      (u32_t( 0 )                             << 18 /* AC */ ) |
-      (u32_t( 0 )                             << 19 /* VIF*/ ) |
-      (u32_t( 0 )                             << 20 /* VIP*/ ) |
-      (u32_t( 0 )                             << 21 /* ID */ );
+    struct { u32_t res; void Do( ARCH& a, typename ARCH::FLAG::Code flag, unsigned bit ) { res |= u32_t(a.flagread( flag )) << bit; } } access { u32_t(2) };
+    eflagsaccess( a, access );
+    return access.res;
   }
 
   template <typename T> T const& Minimum( T const& l, T const& r ) { return l < r ? l : r; }

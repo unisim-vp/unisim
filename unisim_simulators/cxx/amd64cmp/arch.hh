@@ -48,12 +48,14 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/kernel.hh>
 #include <unisim/util/debug/simple_register.hh>
-#include <forward_list>
+#include <unisim/util/identifier/identifier.hh>
+#include <set>
 #include <map>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
 struct Tracee;
+struct Amd64LinuxOS;
 
 struct Arch
   : public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
@@ -89,6 +91,8 @@ struct Arch
   typedef GOq   GR;
   typedef u64_t gr_type;
 
+  typedef void StrictCounterTest;
+
   struct OpHeader
   {
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
@@ -96,21 +100,52 @@ struct Arch
 
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
 
-  struct Update { virtual ~Update() {} virtual void check(Arch& arch, Tracee const& tracee) const = 0; };
+  struct UpdateNode
+  {
+    virtual ~UpdateNode() {}
+    virtual int cmp(UpdateNode const& rhs) const = 0;
+    virtual void check(Arch& arch, Tracee const& tracee) const = 0;
+  };
+  struct Update
+  {
+    Update(UpdateNode const* _node) : node(_node) {}
+    Update(Update&& other) : node(other.node) { other.node = 0; }
+    Update(Update const&) = delete;
+    ~Update() { delete node; }
 
-  Arch(char const* name, unisim::kernel::Object* parent, Tracee const& tracee, unisim::service::interfaces::LinuxOS*);
+    UpdateNode const* operator -> () const { return node; }
+
+    int compare(Update const& rhs) const;
+
+    bool operator <(Update const& rhs) const { return compare(rhs) < 0; }
+
+    UpdateNode const* node;
+  };
+
+  Arch(char const* name, unisim::kernel::Object* parent, Tracee const& tracee, Amd64LinuxOS& linux_os);
 
   ~Arch()
   {
     for (auto reg : regmap)
-      delete reg.second;
+      delete reg;
     for (unsigned reg = 0; reg < 16; ++reg)
       umms[reg].Clear(&vmm_storage[reg][0]);
     for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx)
       delete hash_table[idx];
   }
 
-  std::map<std::string,unisim::service::interfaces::Register*> regmap;
+  struct RegisterMapOrdering
+  {
+    using reg_p = unisim::service::interfaces::Register*;
+    using is_transparent = void;
+    int cmp(char const* a, char const* b) const;
+    bool operator() (reg_p a, reg_p b) const { return cmp(a->GetName(), b->GetName()) < 0; }
+    bool operator() (reg_p a, char const* b) const { return cmp(a->GetName(), b) < 0; }
+    bool operator() (char const* a, reg_p b) const { return cmp(a, b->GetName()) < 0; }
+    //    bool operator() (reg_p a, std::string const& b) const { return b.compare(a->GetName()) > 0; }
+  };
+
+  std::set<unisim::service::interfaces::Register*,RegisterMapOrdering> regmap;
 
   // unisim::service::interfaces::Registers
   unisim::service::interfaces::Register* GetRegister(char const* name);
@@ -128,10 +163,17 @@ struct Arch
   // Reference Tracee
   Tracee const& tracee;
 
+  // Linux OS Emulation
+  Amd64LinuxOS& linux_os;
+
   // Segment Registers
   uint16_t segregs[6];
   addr_t fs_base, gs_base;
   addr_t segbase(unsigned seg) const { switch(seg){ case 4: return fs_base; case 5: return gs_base; } return 0; }
+  addr_t& sbase(char seg) { switch(seg) { default: throw 0; case 'f': return fs_base; case 'g': return gs_base; } return fs_base; }
+  addr_t                      sbaseread( char seg ) { return sbase(seg); }
+  void                        sbasewrite( char seg, addr_t addr ) { sbase(seg) = addr; sbasecheck(seg); }
+  void                        sbasecheck( char seg );
   void                        segregwrite( unsigned idx, uint16_t value )
   {
     throw 0;
@@ -210,7 +252,7 @@ struct Arch
     fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
-  struct MCUpdate : public Update { void memcheck(Tracee const& tracee, u64_t addr, uint8_t const* bytes, unsigned size) const; };
+  struct MCUpdate : public UpdateNode { void memcheck(Tracee const& tracee, u64_t addr, uint8_t const* bytes, unsigned size) const; };
 
   template <unsigned OPSIZE>
   void
@@ -220,12 +262,20 @@ struct Arch
     {
       MWUpdate(u64_t _addr, typename TypeFor<Arch,OPSIZE>::u val) : addr(_addr) { memcpy((void*)&bytes[0], (void const*)&val, OPSIZE/8); }
       virtual void check(Arch& arch, Tracee const& tracee) const override { memcheck(tracee, addr, &bytes[0], OPSIZE/8); }
+      virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<MWUpdate const&>(rhs)); }
+      virtual int compare(MWUpdate const& rhs) const
+      {
+        for (unsigned idx = 0, end = OPSIZE/8; idx < end; ++idx)
+          if (int delta = int(bytes[idx]) - int(rhs.bytes[idx]))
+            return delta;
+        return addr < rhs.addr ? -1 : addr > rhs.addr ? +1 : 0;
+      }
       u64_t addr;
       uint8_t bytes[OPSIZE/8];
     };
 
     if (accurate)
-      updates.push_front(new MWUpdate(addr + segbase(seg), val));
+      updates.insert(new MWUpdate(addr + segbase(seg), val));
   }
 
   template <unsigned OPSIZE>
@@ -272,39 +322,22 @@ struct Arch
     return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
+  void MemRead( uint8_t* bytes, uint64_t addr, unsigned size ) const;
+
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
-  memread( unsigned _seg, u64_t _addr )
+  memread( unsigned seg, u64_t addr )
   {
-    throw 0;
-    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-    u_type result = 0;
-    // uintptr_t const int_size = (OPSIZE/8);
-    // addr_t addr = _addr + segbase(_seg), last_addr = addr;
-    // typename Memory::Page* page = m_mem.getpage( addr );
-
-
-    // for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
-    //   {
-    //     if ((last_addr ^ addr) >> Memory::Page::s_bits)
-    //       page = m_mem.getpage( addr );
-    //     addr_t offset = addr % (1 << Memory::Page::s_bits);
-    //     result |= (u_type( page->m_storage[offset] ) << (idx*8));
-    //   }
-
+    unsigned const size = OPSIZE/8;
+    uint8_t bytes[size];
+    MemRead( (uint8_t*)&bytes[0], addr + segbase(seg), size );
+    typename TypeFor<Arch,OPSIZE>::u result = 0;
+    memcpy((void*)&result, (void const*)&bytes[0], OPSIZE/8);
     return result;
   }
 
   // Implementation of ExecuteSystemCall
-  void ExecuteSystemCall( unsigned id )
-  {
-    throw 0;
-    // if (not linux_os)
-    //   { throw std::logic_error( "No linux OS emulation connected" ); }
-    // linux_os->ExecuteSystemCall( id );
-    // auto los = dynamic_cast<LinuxOS*>( linux_os );
-    // los->LogSystemCall( id );
-  }
+  void ExecuteSystemCall( unsigned id );
 
   addr_t rip;
 
@@ -363,6 +396,14 @@ struct Arch
     regcheck(idx);
   }
 
+  struct GPRPatch : public UpdateNode
+  {
+    GPRPatch(unsigned _reg, uint64_t and_m, uint64_t or_m)  : reg(_reg), and_mask(and_m), or_mask(or_m) {} unsigned reg; uint64_t and_mask, or_mask;
+    virtual void check(Arch& arch, Tracee const& tracee) const override;
+    virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<GPRPatch const&>(rhs)); }
+    virtual int compare(GPRPatch const& rhs) const;
+  };
+
   struct FLAG
   {
     enum Code {
@@ -376,10 +417,28 @@ protected:
   bool                        m_flags[FLAG::end];
 
 public:
+  void                        eflagscheck();
   bit_t                       flagread( FLAG::Code flag )
-  { return m_flags[flag]; }
+  {
+    switch (flag)
+      {
+      case FLAG::C0: case FLAG::C1: case FLAG::C2: case FLAG::C3: throw 0;
+      default: break;
+      }
+    return m_flags[flag];
+  }
   void                        flagwrite( FLAG::Code flag, bit_t fval )
-  { m_flags[flag] = fval; }
+  {
+    switch (flag)
+      {
+      default: throw 0;
+      case FLAG::C0: case FLAG::C1: case FLAG::C2: case FLAG::C3: throw 0;
+      case FLAG::CF: case FLAG::PF: case FLAG::AF: case FLAG::ZF: case FLAG::SF: case FLAG::DF: case FLAG::OF:
+        eflagscheck();
+        break;
+      }
+    m_flags[flag] = fval;
+  }
 
   // FLOATING POINT STATE
 protected:
@@ -458,13 +517,15 @@ public:
     return elems[sub];
   }
 
+  void vmm_regcheck(unsigned idx);
+
   template <class VR, class ELEM>
   void
   vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
   {
     ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
     elems[sub] = e;
-    //gdbchecker.xmark(reg);
+    vmm_regcheck(reg);
   }
 
   // Integer case
@@ -510,6 +571,9 @@ public:
   void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
   void unimplemented() { std::cerr << "Unimplemented.\n"; throw 0; }
 
+  void xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop);
+  void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop);
+ 
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
   struct IPage
@@ -581,7 +645,7 @@ public:
 
   bool Test( bool b ) const { return b; }
 
-  std::forward_list<Update const*> updates;
+  std::set<Update> updates;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );

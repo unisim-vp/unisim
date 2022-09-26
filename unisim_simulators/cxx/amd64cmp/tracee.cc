@@ -42,7 +42,9 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/user.h>
+#include <sys/uio.h>
 #include <unistd.h>
+#include <elf.h>
 
 bool
 Tracee::Process( std::vector<std::string> const& simargs )
@@ -172,6 +174,8 @@ Tracee::Load(Arch& cpu) const
   
   cpu.rip = registers.rip;
   cpu.u64regs[4] = registers.rsp;
+  cpu.fs_base = registers.fs_base;
+  cpu.gs_base = registers.gs_base;
 }
 
 uint64_t
@@ -214,4 +218,60 @@ Tracee::GetReg(unsigned reg) const
     }
   
   return ptrace(PTRACE_PEEKUSER, pid, offset, 0);
+}
+
+void
+Tracee::SetReg(unsigned reg, uint64_t value) const
+{
+  unsigned  offset = 0;
+  switch (reg)
+    {
+    default: throw 0;
+    case 000: offset = 8*RAX; break;
+    case 001: offset = 8*RCX; break;
+    case 002: offset = 8*RDX; break;
+    case 003: offset = 8*RBX; break;
+    case 004: offset = 8*RSP; break;
+    case 005: offset = 8*RBP; break;
+    case 006: offset = 8*RSI; break;
+    case 007: offset = 8*RDI; break;
+    case 010: offset = 8* R8; break;
+    case 011: offset = 8* R9; break;
+    case 012: offset = 8*R10; break;
+    case 013: offset = 8*R11; break;
+    case 014: offset = 8*R12; break;
+    case 015: offset = 8*R13; break;
+    case 016: offset = 8*R14; break;
+    case 017: offset = 8*R15; break;
+    }
+  
+  ptrace(PTRACE_POKEUSER, pid, offset, value);
+}
+
+uint64_t
+Tracee::GetSBase(char reg) const
+{
+  unsigned  offset = 0;
+  switch (reg)
+    {
+    default: throw 0;
+    case 'f': offset = 8*FS_BASE; break;
+    case 'g': offset = 8*GS_BASE; break;
+    }
+  
+  return ptrace(PTRACE_PEEKUSER, pid, offset, 0);
+}
+
+void
+Tracee::GetVec(unsigned reg, uint8_t* bytes) const
+{
+  struct _xstate xstate;
+  struct iovec iov = { .iov_base = &xstate, .iov_len = sizeof (struct _xstate) };
+
+  int ret = ptrace(PTRACE_GETREGSET, pid, (void*)NT_X86_XSTATE, &iov);
+  if (ret != 0) throw 0;
+
+  // stitch together xstate.fpstate._xmm and xstate.ymmh assuming LE
+  memcpy(&bytes[0], &xstate.fpstate._xmm[reg].element[0], 16);
+  memcpy(&bytes[16], &xstate.ymmh.ymmh_space[4*reg], 16);
 }

@@ -628,6 +628,9 @@ public:
 
   void _DE()  { abort = true; }
 
+  void xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop) { throw Unimplemented(); /*hardware*/ }
+  void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop) { throw Unimplemented(); /*hardware*/ }
+
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================

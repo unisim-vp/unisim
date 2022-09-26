@@ -54,14 +54,14 @@ struct Simulator
     : unisim::kernel::Simulator(argc, argv, &default_config)
     , unisim::kernel::Object("top", 0)
     , printer()
-    , cpu("amd64", this, tracee, &linux64)
-    , linux64("amd64linux", this, std::cerr, &cpu, &cpu, &cpu)
+    , cpu("amd64", this, tracee, linux64)
+    , linux64(cpu)
     , tracee()
-    , verbose_linux(false)
-    , param_verbose_linux("verbose-linux", this, verbose_linux, "Verbose linux session")
+    // , verbose_linux(false)
+    // , param_verbose_linux("verbose-linux", this, verbose_linux, "Verbose linux session")
   {
-    linux64.SetVerbose( verbose_linux );
-    linux64.Setup();
+    // linux64.SetVerbose( verbose_linux );
+    // linux64.Setup();
   }
   
   void Run()
@@ -108,10 +108,10 @@ struct Simulator
 
   unisim::kernel::logger::console::Printer printer;
   Arch cpu;
-  LinuxOS linux64;
+  Amd64LinuxOS linux64;
   Tracee tracee;
-  bool verbose_linux;
-  unisim::kernel::variable::Parameter<bool> param_verbose_linux;
+  // bool verbose_linux;
+  // unisim::kernel::variable::Parameter<bool> param_verbose_linux;
 };
 
 void Simulator::default_config(unisim::kernel::Simulator* sim)

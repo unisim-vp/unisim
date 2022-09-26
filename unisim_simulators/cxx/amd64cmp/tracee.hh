@@ -51,15 +51,17 @@ struct Tracee
 
   uint64_t GetReg(unsigned reg) const;
 
+  void SetReg(unsigned reg, uint64_t value) const;
+
+  uint64_t GetSBase(char reg) const;
+
+  void GetVec(unsigned reg, uint8_t* bytes) const;
+
   uint64_t PeekData(uint64_t addr) const;
 
   void StepInstruction() const;
 
   void Load(Arch& arch) const;
-
-  void MemRead( uint8_t* bytes, uint64_t addr, unsigned size ) const { struct { uint8_t* dst; void Do(uint64_t i, uint8_t src) { dst[i] = src; } } read {bytes}; MemAccess(read, addr, size); }
-
-  void MemCmp( uint8_t const* bytes, uint64_t addr, unsigned size ) const { struct { uint8_t const* ref; void Do(uint64_t i, uint8_t src) { if (ref[i] != src) throw 0; } } cmp {bytes}; MemAccess(cmp, addr, size); }
 
   template <typename ACCESS>
   void MemAccess( ACCESS& access, uint64_t addr, unsigned size ) const

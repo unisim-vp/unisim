@@ -531,6 +531,9 @@ namespace test
     void _DE();
     void unimplemented();
 
+    void    xsave (unisim::component::cxx::processor::intel::XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
+    void    xrstor(unisim::component::cxx::processor::intel::XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
+
     typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
     std::vector<Operation*> trace_insns;
     Operation* fetch();

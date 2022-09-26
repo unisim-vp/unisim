@@ -67,7 +67,7 @@ namespace intel {
                      PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VBINARY, VFPUNARY,
                      PMOVMSKB, VMOVSD, VMOVZX, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, PMULUDQ,
                      VSHIMM, MOVQ, BROADCAST, EXTRACT, INSERT, PACK_S, PSHUFD, PSHUFB, PSHIFT,
-                     PSHDQ, PTEST, PINSR, PCMPSTR, VFPCMP, SHUFP, VZEROUPPER,
+                     PSHDQ, PTEST, PINSR, PCMPSTR, VFPCMP, SHUFP, VZEROUPPER, XSAVE,
                      operation_count };
 
   template <class ARCH>

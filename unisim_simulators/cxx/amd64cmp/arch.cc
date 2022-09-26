@@ -32,22 +32,50 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <arch.hh>
+#include "arch.hh"
 #include "tracee.hh"
+#include "linuxsystem.hh"
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <unisim/component/cxx/processor/intel/execute.hh>
+// #include <unisim/util/os/linux_os/linux.hh>
+// #include <unisim/util/os/linux_os/amd64.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/likely/likely.hh>
 #include <sstream>
 #include <cmath>
 #include <cassert>
 
-Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _tracee, unisim::service::interfaces::LinuxOS* linos)
+struct VMMRegister : public unisim::service::interfaces::Register
+{
+  typedef unisim::component::cxx::processor::intel::YMM VR;
+  enum { BYTECOUNT = Arch::VUConfig::BYTECOUNT };
+
+  VMMRegister(Arch& _cpu, unsigned _reg) : cpu(_cpu), reg(_reg) { std::ostringstream buf; Disasm(buf); name = buf.str().substr(1); } std::string name; Arch& cpu; unsigned reg;
+  void Disasm(std::ostream& sink) const { sink << unisim::component::cxx::processor::intel::DisasmV( VR(), reg ); }
+  char const* GetName() const override { return name.c_str(); }
+  void GetValue(void *buffer) const override
+  {
+    uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
+    std::fill(&buf[0],&buf[BYTECOUNT],0);
+    auto const& ureg = cpu.umms[reg];
+    ureg.transfer( &buf[0], &cpu.vmm_storage[reg][0], ureg.size, false );
+  }
+  void SetValue(const void *buffer) override
+  {
+    uint8_t* elems = cpu.umms[reg].GetStorage( &cpu.vmm_storage[reg][0], uint8_t(), BYTECOUNT );
+    memcpy(elems,buffer,BYTECOUNT);
+    cpu.vmm_regcheck(reg);
+  }
+  int GetSize() const override { return BYTECOUNT; }
+};
+
+Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _tracee, Amd64LinuxOS& _linux_os)
   : unisim::kernel::Object(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>(name, parent)
   , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
   , tracee(_tracee)
+  , linux_os(_linux_os)
   , segregs(), fs_base(), gs_base()
   , rip(), u64regs(), m_flags()
   , m_fregs(), m_ftop(0), m_fcw(0x37f)
@@ -55,15 +83,14 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   , latest_instruction(0)
   , hash_table()
   , mru_page(0)
-  , enable_disasm(true)
+  , enable_disasm(false)
   , accurate(true)
   , instruction_count(0)
-    //    , gdbchecker()
 {
-  regmap["rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("rip", &this->rip);
-  regmap["fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("fs_base", &this->fs_base);
-  regmap["gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("gs_base", &this->fs_base);
-  regmap["fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("fcw", &this->m_fcw);
+  //  regmap["rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("rip", &this->rip);
+  // regmap["fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("fs_base", &this->fs_base);
+  // regmap["gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("gs_base", &this->fs_base);
+  // regmap["fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("fcw", &this->m_fcw);
 
   struct EFlagsRegister : public unisim::service::interfaces::Register
   {
@@ -98,10 +125,7 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
       case 4: bits = *((uint32_t*)buffer); break;
       case 8: bits = *((uint64_t*)buffer); break;
       }
-      struct { unsigned bit; FLAG::Code flag; }
-      ffs[] = {{0, FLAG::CF}, {2, FLAG::PF}, {4, FLAG::AF}, {6, FLAG::ZF}, {7, FLAG::SF}, {10, FLAG::DF}, {11, FLAG::OF}};
-      for (unsigned idx = 0, end = sizeof(ffs)/sizeof(ffs[0]); idx < end; ++idx)
-        cpu.flagwrite( ffs[idx].flag, bit_t((bits >> ffs[idx].bit) & 1u) );
+      unisim::component::cxx::processor::intel::eflagswrite(cpu, bits);
       uint32_t chk = unisim::component::cxx::processor::intel::eflagsread(cpu);
       if (bits != chk)
         std::cerr << "Warning: imported rflags " << std::hex << bits << " ended with " << chk << std::endl;
@@ -109,53 +133,36 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
     int GetSize() const override { return size; }
   };
 
-  {
-    for (unsigned size = 4; size <= 8; size *= 2)
-      {
-        EFlagsRegister* reg = new EFlagsRegister(*this, size);
-        regmap[reg->GetName()] = reg;
-      }
-  }
+  for (unsigned size = 4; size <= 8; size *= 2)
+    regmap.insert(new EFlagsRegister(*this, size));
 
-  struct XmmRegister : public unisim::service::interfaces::Register
+  for (int idx = 0; idx < 16; ++idx)
+    regmap.insert(new VMMRegister(*this, idx));
+
+  struct GPRegister : public unisim::service::interfaces::Register
   {
-    XmmRegister(std::string const& _name, Arch& _cpu, unsigned _reg) : name(_name), cpu(_cpu), reg(_reg) {}
-    std::string name;
-    Arch& cpu;
-    unsigned reg;
+    GPRegister( Arch& _arch, unsigned _reg ) : name(), arch(_arch), reg(_reg) { std::ostringstream buf; Disasm(buf); name = buf.str().substr(1); } std::string name; Arch& arch; unsigned reg;
+    void Disasm(std::ostream& sink) const { sink << unisim::component::cxx::processor::intel::DisasmG( GOq(), reg ); }
     char const* GetName() const override { return name.c_str(); }
-    void GetValue(void *buffer) const override
-    {
-      uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
-      std::fill(&buf[0],&buf[16],0);
-      auto const& ureg = cpu.umms[reg];
-      ureg.transfer( &buf[0], &cpu.vmm_storage[reg][0], std::min(ureg.size,16u), false );
-    }
-    void SetValue(const void *buffer) override
-    {
-      uint8_t* elems = cpu.umms[reg].GetStorage( &cpu.vmm_storage[reg][0], uint8_t(), VUConfig::BYTECOUNT );
-      memcpy(elems,buffer,16);
-    }
-    int GetSize() const override { return 16; }
+    void GetValue(void *buffer) const { *((u64_t*)buffer) = arch.regread( GOq(), reg ); }
+    void SetValue(const void *buffer) { arch.regwrite( GOq(), reg, *((u64_t*)buffer) ); }
+    int GetSize() const { return 8; }
   };
 
   for (int idx = 0; idx < 16; ++idx)
-    {
-      std::ostringstream regasm;
-      using unisim::component::cxx::processor::intel::DisasmV;
-      typedef unisim::component::cxx::processor::intel::XMM XMM;
-      regasm << DisasmV( XMM(), idx );
-      std::string regname = regasm.str().substr(1);
-      regmap[regname] = new XmmRegister(regname, *this, idx);
-    }
+    regmap.insert(new GPRegister(*this, idx));
 
-  for (int idx = 0; idx < 16; ++idx)
-    {
-      std::ostringstream regasm;
-      regasm << unisim::component::cxx::processor::intel::DisasmG(GOq(), idx);
-      std::string regname = regasm.str().substr(1);
-      regmap[regname] = new unisim::util::debug::SimpleRegister<uint64_t>(regname, &u64regs[idx]);
-    }
+  struct SegBaseRegister : public unisim::service::interfaces::Register
+  {
+    SegBaseRegister( Arch& _arch, char reg ) : arch(_arch), name(std::string(1,reg) + "s_base") {} Arch& arch; std::string name;
+    char const* GetName() const override { return name.c_str(); }
+    void GetValue(void *buffer) const { *((u64_t*)buffer) = arch.sbaseread( name[0] ); }
+    void SetValue(const void *buffer) { arch.sbasewrite( name[0], *((u64_t*)buffer) ); }
+    int GetSize() const { return 8; }
+  };
+
+  for (char const* p = "fg"; *p; ++p)
+    regmap.insert(new SegBaseRegister(*this, *p));
 
   //   struct SegmentRegister : public unisim::service::interfaces::Register
   //   {
@@ -182,23 +189,17 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   //     regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &m_gdt_bases[idx]);
   //   }
 
-    struct X87Register : public unisim::service::interfaces::Register
-    {
-      X87Register( std::string _name, Arch& _arch, unsigned _idx ) : name(_name), arch(_arch), idx(_idx) {}
-      char const* GetName() const { return name.c_str(); }
-      void GetValue(void *buffer) const { *((f64_t*)buffer) = arch.fread( idx ); }
-      void SetValue(const void *buffer) { arch.fwrite( idx, *((f64_t*)buffer) ); }
-      int GetSize() const { return 8; }
-      std::string name;
-      Arch& arch;
-      unsigned idx;
-    };
-    for (int idx = 0; idx < 8; ++idx)
-      {
-        std::ostringstream regname;
-        regname << "st" << idx;
-        regmap[regname.str()] = new X87Register( regname.str(), *this, idx );
-    }
+  struct X87Register : public unisim::service::interfaces::Register
+  {
+    X87Register( Arch& _arch, unsigned _idx ) : name(), arch(_arch), idx(_idx) { std::ostringstream buf; buf << "st" << idx; name = buf.str(); } std::string name; Arch& arch; unsigned idx;
+    char const* GetName() const { return name.c_str(); }
+    void GetValue(void *buffer) const { *((f64_t*)buffer) = arch.fread( idx ); }
+    void SetValue(const void *buffer) { arch.fwrite( idx, *((f64_t*)buffer) ); }
+    int GetSize() const { return 8; }
+  };
+
+  for (int idx = 0; idx < 8; ++idx)
+    regmap.insert(new X87Register( *this, idx ));
 }
 
 void
@@ -213,16 +214,15 @@ Arch::StepInstruction()
 
   asm volatile ("operation_execute:");
   op->execute( *this );
-  
+
   tracee.StepInstruction();
 
   if (tracee.GetInsnAddr() != this->rip)
     throw 0;
-  
-  for (auto const* update : updates)
+
+  for (auto const& update : updates)
     {
       update->check(*this, tracee);
-      delete update;
     }
   updates.clear();
   accurate = true;
@@ -234,7 +234,7 @@ Arch::fetch()
   addr_t insn_addr = this->rip;
   asm volatile ("operation_fetch:");
   uint8_t decbuf[15];
-  tracee.MemRead( &decbuf[0], insn_addr, sizeof (decbuf) );
+  MemRead( &decbuf[0], insn_addr, sizeof (decbuf) );
   unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
 
   asm volatile ("operation_decode:");
@@ -277,180 +277,55 @@ Arch::xgetbv()
   this->regwrite( GOd(), 2, d );
 }
 
-// void
-// Arch::cpuid()
-// {
-//   uint32_t level = this->regread( GOd(), 0 ), count = this->regread( GOd(), 1 );
+void
+Arch::GPRPatch::check(Arch& arch, Tracee const& tracee) const
+{
+  uint64_t  reg_value = tracee.GetReg(reg);
+  uint64_t& sim_value = arch.u64regs[reg];
 
-//   uint32_t r[4];
+  reg_value &= and_mask;
+  reg_value |= or_mask;
 
-//   __asm__ ("cpuid\n\t" : "=a" (r[0]), "=c" (r[1]), "=d" (r[2]), "=b" (r[3]) : "0" (level), "1" (count));
+  sim_value = reg_value;
+  tracee.SetReg(reg, reg_value);
+}
 
-//   for (int idx = 0; idx < 4; ++idx)
-//     this->regwrite( GOd(), idx, r[idx] );
-// }
+int
+Arch::GPRPatch::compare(GPRPatch const& rhs) const
+{
+  for (unsigned shift = 0; shift < 64; shift += 16)
+    {
+      if (int delta = int16_t(and_mask >> shift) - int16_t(rhs.and_mask >> shift)) return delta;
+      if (int delta = int16_t(or_mask >> shift) - int16_t(rhs.or_mask >> shift)) return delta;
+    }
+  return int(reg) - int(rhs.reg);
+}
 
 void
 Arch::cpuid()
 {
-  switch (this->regread( GOd(), 0 )) {
-  case 0: {
-    this->regwrite( GOd(), 0, u32_t( 4 ) );
+  uint32_t eax = this->regread( GOd(), 0 ), ecx = this->regread( GOd(), 1 );
+  std::cout << "CPUID{eax:0x" << std::hex << eax << ",ecx:0x" << std::hex << ecx << "}\n";
 
-    char const* name = "GenuineIntel";
-    { uint32_t word = 0;
-      int idx = 12;
-      while (--idx >= 0) {
-        word = (word << 8) | name[idx];
-        if (idx % 4) continue;
-        this->regwrite( GOd(), 3 - (idx/4), u32_t( word ) );
-        word = 0;
-      }
+  accurate = false;
+
+  for (int idx = 0; idx < 4; ++idx)
+    this->regwrite( GOd(), idx, eax ^ ecx );
+
+  switch (eax)
+    {
+    default:
+    case 0x7:
+      switch(ecx)
+        {
+        case 0x0: {
+          updates.insert(new GPRPatch(3,~uint64_t(0xdc230000),0)); // b16: AVX512F, b17: AVX512DQ. b21: AVX512_IFMA b26: AVX512PF b27: AVX512ER b28: AVX512CD b30: AVX512BW. b31: AVX512VL
+          updates.insert(new GPRPatch(1,~uint64_t(0x00005841),0)); // b1: AVX512_VBMI, b6: AVX512_VBMI2, b11: AVX512_VNNI, b12: AVX512_BITALG, b14: AVX512_VPOPCNTDQ
+          updates.insert(new GPRPatch(2,~uint64_t(0x0000010c),0)); // b2: AVX512_4VNNIW, b3: AVX512_4FMAPS, b8: AVX512_VP2INTERSECT
+        } break;
+          
+        }
     }
-  } break;
-  case 1: {
-    uint32_t const eax =
-      (6  << 0 /* stepping id */) |
-      (0  << 4 /* model */) |
-      (15 << 8 /* family */) |
-      (0  << 12 /* processor type */) |
-      (0  << 16 /* extended model */) |
-      (0  << 20 /* extended family */);
-    this->regwrite( GOd(), 0, u32_t( eax ) );
-
-    uint32_t const ebx =
-      (0 <<  0 /* Brand index */) |
-      (4 <<  8 /* Cache line size (/ 64bits) */) |
-      (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
-      (0 << 24 /* Initial APIC ID */);
-    this->regwrite( GOd(), 3, u32_t( ebx ) );
-
-    uint32_t const ecx =
-      (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
-      (0 << 0x01 /* PCLMULQDQ Available */) |
-      (0 << 0x02 /* 64-bit DS Area */) |
-      (0 << 0x03 /* MONITOR/MWAIT */) |
-      (0 << 0x04 /* CPL Qualified Debug Store */) |
-      (0 << 0x05 /* Virtual Machine Extensions */) |
-      (0 << 0x06 /* Safer Mode Extensions */) |
-      (0 << 0x07 /* Enhanced Intel SpeedStep® technology */) |
-      (0 << 0x08 /* Thermal Monitor 2 */) |
-      (0 << 0x09 /* Supplemental Streaming SIMD Extensions 3 (SSSE3) */) |
-      (0 << 0x0a /* L1 Context ID */) |
-      (0 << 0x0b /* Reserved */) |
-      (0 << 0x0c /* FMA */) |
-      (0 << 0x0d /* CMPXCHG16B Available */) |
-      (0 << 0x0e /* xTPR Update Control */) |
-      (0 << 0x0f /* Perfmon and Debug Capability */) |
-      (0 << 0x10 /* Reserved */) |
-      (0 << 0x11 /* Process-context identifiers */) |
-      (0 << 0x12 /* DCA */) |
-      (0 << 0x13 /* SSE4.1 */) |
-      (0 << 0x14 /* SSE4.2 */) |
-      (0 << 0x15 /* x2APIC */) |
-      (1 << 0x16 /* MOVBE Available */) |
-      (1 << 0x17 /* POPCNT Available */) |
-      (0 << 0x18 /* TSC-Deadline */) |
-      (0 << 0x19 /* AESNI */) |
-      (0 << 0x1a /* XSAVE */) |
-      (0 << 0x1b /* OSXSAVE */) |
-      (0 << 0x1c /* AVX */) |
-      (1 << 0x1d /* F16C */) |
-      (1 << 0x1e /* RDRAND Available */) |
-      (1 << 0x1f /* Is virtual machine */);
-    this->regwrite( GOd(), 1, u32_t( ecx ) );
-
-    uint32_t const edx =
-      (1 << 0x00 /* Floating Point Unit On-Chip */) |
-      (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
-      (0 << 0x02 /* Debugging Extensions */) |
-      (0 << 0x03 /* Page Size Extension */) |
-      (0 << 0x04 /* Time Stamp Counter */) |
-      (0 << 0x05 /* Model Specific Registers RDMSR and WRMSR Instructions */) |
-      (0 << 0x06 /* Physical Address Extension */) |
-      (0 << 0x07 /* Machine Check Exception */) |
-      (0 << 0x08 /* CMPXCHG8B Available */) |
-      (0 << 0x09 /* APIC On-Chip */) |
-      (0 << 0x0a /* Reserved */) |
-      (0 << 0x0b /* SYSENTER and SYSEXIT Instructions */) |
-      (0 << 0x0c /* Memory Type Range Registers */) |
-      (0 << 0x0d /* Page Global Bit */) |
-      (0 << 0x0e /* Machine Check ARCHitecture */) |
-      (1 << 0x0f /* Conditional Move Instructions */) |
-      (0 << 0x10 /* Page Attribute Table */) |
-      (0 << 0x11 /* 36-Bit Page Size Extension */) |
-      (0 << 0x12 /* Processor Serial Number */) |
-      (0 << 0x13 /* CLFLUSH Instruction */) |
-      (0 << 0x14 /* Reserved */) |
-      (0 << 0x15 /* Debug Store */) |
-      (0 << 0x16 /* Thermal Monitor and Software Controlled Clock Facilities */) |
-      (0 << 0x17 /* Intel MMX Technology */) |
-      (0 << 0x18 /* FXSAVE and FXRSTOR Instructions */) |
-      (0 << 0x19 /* SSE */) |
-      (0 << 0x1a /* SSE2 */) |
-      (0 << 0x1b /* Self Snoop */) |
-      (0 << 0x1c /* Max APIC IDs reserved field is Valid */) |
-      (0 << 0x1d /* Thermal Monitor */) |
-      (0 << 0x1e /* Resrved */) |
-      (0 << 0x1f /* Pending Break Enable */);
-    this->regwrite( GOd(), 2, u32_t( edx ) );
-
-  } break;
-  case 2: {
-    this->regwrite( GOd(), 0, u32_t( 0 ) );
-    this->regwrite( GOd(), 3, u32_t( 0 ) );
-    this->regwrite( GOd(), 1, u32_t( 0 ) );
-    this->regwrite( GOd(), 2, u32_t( 0 ) );
-  } break;
-  case 4: {
-    // Small cache config
-    switch (this->regread( GOd(), 1 )) { // %ecx holds requested cache id
-    case 0: { // L1 D-CACHE
-      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
-      this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
-    } break;
-    case 1: { // L1 I-CACHE
-      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
-      this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
-    } break;
-    case 2: { // L2 U-CACHE
-      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
-      this->regwrite( GOd(), 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
-      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
-      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
-    } break;
-    case 3: { // TERMINATING NULL ENTRY
-      // 0, 0, 0, 0
-      this->regwrite( GOd(), 0, u32_t( 0 ) );
-      this->regwrite( GOd(), 3, u32_t( 0 ) );
-      this->regwrite( GOd(), 1, u32_t( 0 ) );
-      this->regwrite( GOd(), 2, u32_t( 0 ) );
-    } break;
-    }
-  } break;
-
-  case 0x80000000: {
-    this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
-    this->regwrite( GOd(), 3, u32_t( 0 ) );
-    this->regwrite( GOd(), 1, u32_t( 0 ) );
-    this->regwrite( GOd(), 2, u32_t( 0 ) );
-  } break;
-  case 0x80000001: {
-    this->regwrite( GOd(), 0, u32_t( 0 ) );
-    this->regwrite( GOd(), 3, u32_t( 0 ) );
-    this->regwrite( GOd(), 1, u32_t( 0 ) );
-    this->regwrite( GOd(), 2, u32_t( 0 ) );
-  } break;
-  default:
-    std::cerr << "Unknown cmd for cpuid, " << std::hex
-              << "%eax=0x" << this->regread( GOd(), 0 ) << ", "
-              << "%eip=0x" << latest_instruction->address << "\n";
-    break;
-  }
 }
 
 struct FPException : public std::exception {};
@@ -867,7 +742,7 @@ Arch::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 // Arch::Disasm(uint64_t addr, uint64_t& next_addr)
 // {
 //   uint8_t decbuf[15];
-//   tracee.MemRead( &decbuf[0], addr, sizeof (decbuf) );
+//   MemRead( &decbuf[0], addr, sizeof (decbuf) );
 //   unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 );
 
 //   struct
@@ -904,13 +779,13 @@ unisim::service::interfaces::Register*
 Arch::GetRegister(char const* name)
 {
   auto reg = regmap.find( name );
-  return (reg == regmap.end()) ? 0 : reg->second;
+  return (reg == regmap.end()) ? 0 : *reg;
 }
 
 bool
 Arch::InjectReadMemory(addr_t addr, void *buffer, uint32_t size)
 {
-  tracee.MemRead( (uint8_t*)buffer, addr, size );
+  MemRead( (uint8_t*)buffer, addr, size );
   return true;
 }
 
@@ -930,7 +805,7 @@ Arch::ResetMemory()
 bool
 Arch::ReadMemory(addr_t addr, void* buffer, uint32_t size )
 {
-  tracee.MemRead( (uint8_t*)buffer, addr, size );
+  MemRead( (uint8_t*)buffer, addr, size );
   return true;
 }
 
@@ -943,28 +818,183 @@ Arch::WriteMemory(addr_t addr, void const* buffer, uint32_t size)
 }
 
 void
+Arch::MemRead( uint8_t* bytes, uint64_t addr, unsigned size ) const
+{
+  struct { uint8_t* dst; void Do(uint64_t i, uint8_t src) { dst[i] = src; } } read {bytes};
+  tracee.MemAccess(read, addr, size);
+}
+
+int
+Arch::Update::compare(Update const& rhs) const
+{
+  // Do not compare null expressions
+  if (not rhs.node) return     node ?  1 : 0;
+  if (not     node) return rhs.node ? -1 : 0;
+
+  /* First compare actual types */
+  const std::type_info* til = &typeid(*node);
+  const std::type_info* tir = &typeid(*rhs.node);
+  if (til < tir) return -1;
+  if (til > tir) return +1;
+
+  /* Same types, call derived comparator */
+  return node->cmp( *rhs.node );
+}
+
+void
 Arch::MCUpdate::memcheck(Tracee const& tracee, u64_t addr, uint8_t const* bytes, unsigned size) const
 {
-  tracee.MemCmp(bytes, addr, size);
+  struct { uint8_t const* ref; void Do(uint64_t i, uint8_t src) { if (ref[i] != src) throw 0; } } cmp {bytes};
+  tracee.MemAccess(cmp, addr, size);
+}
+
+void
+Arch::vmm_regcheck(unsigned idx)
+{
+  struct VRCUpdate : public UpdateNode
+  {
+    VRCUpdate(unsigned _reg, bool _test)  : reg(_reg), test(_test) {} unsigned reg; bool test;
+    virtual void check(Arch& arch, Tracee const& tracee) const override
+    {
+      uint8_t ref_bytes[VMMRegister::BYTECOUNT];
+      tracee.GetVec(reg, &ref_bytes[0]);
+
+      if (not test)
+        {
+          for (unsigned idx = 0, end = VMMRegister::BYTECOUNT; idx < end; ++idx)
+            arch.vmm_write(VMMRegister::VR(), reg, idx, ref_bytes[idx]);
+          return;
+        }
+
+      uint8_t sim_bytes[VMMRegister::BYTECOUNT];
+      VMMRegister vreg(arch, reg);
+      vreg.GetValue(&sim_bytes[0]);
+      for (unsigned idx = 0, end = VMMRegister::BYTECOUNT; idx < end; ++idx)
+        if (sim_bytes[idx] != ref_bytes[idx])
+          throw 0;
+
+      // if (sim_value != ref_value)
+      //   {
+      //     std::cerr << unisim::component::cxx::processor::intel::DisasmG(unisim::component::cxx::processor::intel::GOq(), reg) << ": 0x" << std::hex << sim_value << " != 0x" << ref_value << "\n";
+      //     throw 0;
+      //   }
+    }
+    virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<VRCUpdate const&>(rhs)); }
+    virtual int compare(VRCUpdate const& rhs) const
+    {
+      if (int delta = int(reg) - int(rhs.reg))
+        return delta;
+      return int(test) - int(rhs.test);
+    }
+  };
+
+  updates.insert(new VRCUpdate(idx, accurate));
 }
 
 void
 Arch::regcheck(unsigned reg)
 {
-  struct RCUpdate : public Update
+  struct RCUpdate : public UpdateNode
   {
     RCUpdate(unsigned _reg, bool _test)  : reg(_reg), test(_test) {} unsigned reg; bool test;
     virtual void check(Arch& arch, Tracee const& tracee) const override
     {
+      uint64_t  ref_value = tracee.GetReg(reg);
+      uint64_t& sim_value = arch.u64regs[reg];
+
       if (not test)
         {
-          arch.u64regs[reg] = tracee.GetReg(reg);
+          sim_value = ref_value;
           return;
         }
-      if (arch.u64regs[reg] != tracee.GetReg(reg))
-        throw 0;
+      if (sim_value != ref_value)
+        {
+          std::cerr << unisim::component::cxx::processor::intel::DisasmG(unisim::component::cxx::processor::intel::GOq(), reg) << ": 0x" << std::hex << sim_value << " != 0x" << ref_value << "\n";
+          throw 0;
+        }
+    }
+    virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<RCUpdate const&>(rhs)); }
+    virtual int compare(RCUpdate const& rhs) const
+    {
+      if (int delta = int(reg) - int(rhs.reg))
+        return delta;
+      return int(test) - int(rhs.test);
     }
   };
 
-  updates.push_front(new RCUpdate(reg, accurate));
+  updates.insert(new RCUpdate(reg, accurate));
+}
+
+void
+Arch::ExecuteSystemCall( unsigned id )
+{
+  linux_os.LogSystemCall( id );
+  accurate = false;
+  linux_os.ExecuteSystemCall(id);
+  // regwrite( GR(), 0, 0 );
+}
+
+void
+Arch::sbasecheck( char seg )
+{
+  struct SBUpdate : public UpdateNode
+  {
+    SBUpdate(char _reg, bool _test)  : reg(_reg), test(_test) {} char reg; bool test;
+    virtual void check(Arch& arch, Tracee const& tracee) const override
+    {
+      uint64_t  ref_sbase = tracee.GetSBase(reg);
+      uint64_t& sim_sbase = arch.sbase(reg);
+
+      if (not test)
+        {
+          sim_sbase = ref_sbase;
+          return;
+        }
+      if (sim_sbase != ref_sbase)
+        {
+          std::cerr << unisim::component::cxx::processor::intel::DisasmG(unisim::component::cxx::processor::intel::GOq(), reg) << ": 0x" << std::hex << sim_sbase << " != 0x" << ref_sbase << "\n";
+          throw 0;
+        }
+    }
+    virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<SBUpdate const&>(rhs)); }
+    virtual int compare(SBUpdate const& rhs) const
+    {
+      if (int delta = int(reg) - int(rhs.reg))
+        return delta;
+      return int(test) - int(rhs.test);
+    }
+  };
+
+  updates.insert(new SBUpdate(seg, accurate));
+}
+
+int Arch::RegisterMapOrdering::cmp(char const* a, char const* b) const { return strcmp(a, b); }
+
+void
+Arch::xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t u64, RMOp const& rmop)
+{
+  accurate = false;
+}
+
+void
+Arch::xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t u64, RMOp const& rmop)
+{
+  accurate = false;
+
+  for (int reg = 0; reg < 16; ++reg)
+    {
+      regcheck(reg);
+      vmm_regcheck(reg);
+    }
+
+  for (char const* reg = "fg"; *reg; ++reg)
+    sbasecheck(*reg);
+
+  eflagscheck();
+}
+
+void
+Arch::eflagscheck()
+{
+  throw 0;
 }

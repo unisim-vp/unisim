@@ -198,11 +198,6 @@ namespace linux_os {
     void SetStdoutPipeFilename(const char *filename);
     void SetStderrPipeFilename(const char *filename);
 
-    // TODO: Remove
-    // // Sets the registers to be used
-    // void SetRegisters(std::vector<unisim::service::interfaces::Register *> &registers);
-    // END TODO
-
     // Loads all the defined files using the user settings.
     // Basic usage:
     //   linux_os = new Linux<X,Y>(false);
