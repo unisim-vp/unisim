@@ -113,7 +113,7 @@ Tracee::Process( std::vector<std::string> const& simargs )
   
   // We should now have the tracee stopped at entrypoint.  XXX: sanity check ?
   
-  std::cerr << "entrypoint: " << GetInsnAddr() << std::endl;
+  //  std::cerr << "entrypoint: " << std::hex << GetInsnAddr() << std::endl;
 
   return true;
 }
@@ -246,6 +246,12 @@ Tracee::SetReg(unsigned reg, uint64_t value) const
     }
   
   ptrace(PTRACE_POKEUSER, pid, offset, value);
+}
+
+uint64_t
+Tracee::GetRFlags() const
+{
+  return ptrace(PTRACE_PEEKUSER, pid, 8*EFLAGS, 0);
 }
 
 uint64_t

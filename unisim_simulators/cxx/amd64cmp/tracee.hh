@@ -55,6 +55,8 @@ struct Tracee
 
   uint64_t GetSBase(char reg) const;
 
+  uint64_t GetRFlags() const;
+
   void GetVec(unsigned reg, uint8_t* bytes) const;
 
   uint64_t PeekData(uint64_t addr) const;

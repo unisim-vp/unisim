@@ -83,7 +83,7 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   , latest_instruction(0)
   , hash_table()
   , mru_page(0)
-  , enable_disasm(false)
+  , enable_disasm(true)
   , accurate(true)
   , instruction_count(0)
 {
@@ -996,5 +996,33 @@ Arch::xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64
 void
 Arch::eflagscheck()
 {
-  throw 0;
+  struct EFUpdate : public UpdateNode
+  {
+    EFUpdate(bool _test)  : test(_test) {} bool test;
+    virtual void check(Arch& arch, Tracee const& tracee) const override
+    {
+      uint64_t ref_bits = tracee.GetRFlags();
+
+      if (not test)
+        {
+          unisim::component::cxx::processor::intel::eflagswrite(arch, ref_bits);
+          return;
+        }
+      struct { u32_t bits, mask; void Do( Arch& a, typename FLAG::Code flag, unsigned bit ) { bits |= u32_t(a.flagread( flag )) << bit; mask |= u32_t(1) << bit; } } sim{0,0};
+      unisim::component::cxx::processor::intel::eflagsaccess( arch, sim );
+
+      if ((sim.bits ^ ref_bits) & sim.mask)
+        {
+          std::cerr << "eflags: 0x" << std::hex << sim.bits << " != 0x" << (ref_bits & sim.mask) << "\n";
+          throw 0;
+        }
+    }
+    virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<EFUpdate const&>(rhs)); }
+    virtual int compare(EFUpdate const& rhs) const
+    {
+      return int(test) - int(rhs.test);
+    }
+  };
+
+  updates.insert(new EFUpdate(accurate));
 }
