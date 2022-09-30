@@ -258,6 +258,7 @@ struct CPU
   /** Set the next Program Counter */
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   bool Test( bool cond ) { return cond; }
+  void SoftwareBreakpoint( uint32_t imm );
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
   void ExceptionReturn();

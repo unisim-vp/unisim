@@ -589,6 +589,29 @@ CPU<CPU_IMPL>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
   this->ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
 
+/** SoftwareBreakpoint
+ *
+ *  This method is called by BRK instructions to handle software breakpoints.
+ * @param imm     the "imm" field of the instruction code
+ */
+template <class CPU_IMPL>
+void
+CPU<CPU_IMPL>::SoftwareBreakpoint( uint32_t imm )
+{
+  if (linux_os_import)
+    {
+      // we are executing on linux emulation mode, just report trap
+      if (trap_reporting_import)
+        trap_reporting_import->ReportTrap(*this, "");
+    }
+  else
+    {
+      // we are executing on full system mode
+      struct SWBreakpointException {};
+      throw SWBreakpointException();
+    }
+}
+
 /** CallSupervisor
  *
  *  This method is called by SWI/SVC instructions to handle software interrupts.

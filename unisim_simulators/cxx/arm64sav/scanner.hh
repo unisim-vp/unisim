@@ -384,6 +384,7 @@ struct Scanner
   }
   //bool     Test(bool cond) { return cond; }
 
+  void SoftwareBreakpoint( uint32_t imm ) { dont("system"); }
   void CallSupervisor( uint32_t imm ) { dont("system"); }
   void CallHypervisor( uint32_t imm ) { dont("system"); }
   void ExceptionReturn() { dont("system"); }
