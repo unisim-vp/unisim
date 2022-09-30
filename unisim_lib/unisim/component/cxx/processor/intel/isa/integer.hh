@@ -1472,7 +1472,13 @@ struct SarRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "sar", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_sar( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u uval_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::s sval_t;
+
+    arch.rmwrite( OP(), rmop, uval_t(eval_shift( arch, RSHIFT(), sval_t(arch.rmread( OP(), rmop )), u8_t( imm ) )) );
+  }
 };
 
 template <class ARCH, class OP>
@@ -1482,7 +1488,12 @@ struct SarRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "sar", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_sar( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u uval_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::s sval_t;
+    arch.rmwrite( OP(), rmop, uval_t(eval_shift( arch, RSHIFT(), sval_t(arch.rmread( OP(), rmop )), arch.regread( GOb(), 1 ) )) );
+  }
 };
 
 template <class ARCH, class OP>

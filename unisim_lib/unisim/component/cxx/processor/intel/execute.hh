@@ -312,33 +312,10 @@ namespace intel {
       {
         arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
         arch.flagwrite( ARCH::FLAG::CF, bit_t(op.Do(arg1, sharg - u8_t( 1 )) & lcb) );
-        arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ), sharg == u8_t( 1 ) );
+        arch.flagwrite( ARCH::FLAG::OF, not atpinfo<ARCH,INT>::is_signed or is_left ? bit_t( (arg1 ^ res) & msb ) : bit_t(false), sharg == u8_t( 1 ) );
 
         eval_PSZ( arch, res );
       }
-
-    return res;
-  }
-
-  template <class ARCH, typename INT>
-  INT
-  eval_sar( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
-  {
-    typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u8_t u8_t;
-    //intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
-    //INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
-
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-
-    res = INT( (typename atpinfo<ARCH,INT>::stype( arg1 )) >> sharg );
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
-
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-
-    eval_PSZ( arch, res );
 
     return res;
   }
