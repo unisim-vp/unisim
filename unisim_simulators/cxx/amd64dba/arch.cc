@@ -106,6 +106,21 @@ ProcessorBase::VClear::GetType() const
 }
 
 void
+ProcessorBase::UndefinedValueBase::Repr( std::ostream& sink ) const
+{
+  sink << "UndefinedValue<";
+  GetType()->GetName(sink);
+  sink << ">()";
+}
+
+int
+ProcessorBase::UndefinedValueBase::GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const
+{
+  sink << "\\undef";
+  return GetType()->GetBitSize();
+}
+
+void
 ProcessorBase::VRegID::Repr(std::ostream& sink) const
 {
   sink << char(VmmValue::VPREFIX) << "mm" << std::dec << reg;
@@ -156,3 +171,4 @@ void show(unsigned idx, unisim::util::symbolic::ExprNode const* node)
     node->Repr(std::cerr);
   std::cerr << "\n";
 }
+

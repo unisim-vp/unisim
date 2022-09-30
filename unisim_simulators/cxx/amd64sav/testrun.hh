@@ -393,10 +393,9 @@ namespace test
     bool                        m_flags[FLAG::end];
 
   public:
-    bit_t                       flagread( FLAG::Code flag )
-    { return m_flags[flag]; }
-    void                        flagwrite( FLAG::Code flag, bit_t fval )
-    { m_flags[flag] = fval; }
+    bit_t                       flagread( FLAG::Code flag )                            { return m_flags[flag]; }
+    void                        flagwrite( FLAG::Code flag, bit_t fval )               { m_flags[flag] = fval; }
+    void                        flagwrite( FLAG::Code flag, bit_t fval, bit_t def )    { m_flags[flag] = fval; }
 
     // FLOATING POINT STATE
   protected:
@@ -624,8 +623,6 @@ namespace test
 
   void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
   void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor );
-  // void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
-  // void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier );
 
   Arch::f64_t sine( Arch::f64_t );
   Arch::f64_t cosine( Arch::f64_t );

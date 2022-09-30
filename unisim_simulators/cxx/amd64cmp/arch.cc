@@ -77,7 +77,7 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   , tracee(_tracee)
   , linux_os(_linux_os)
   , segregs(), fs_base(), gs_base()
-  , rip(), u64regs(), m_flags()
+  , rip(), u64regs(), m_flags(), flagmask(0)
   , m_fregs(), m_ftop(0), m_fcw(0x37f)
   , umms(), vmm_storage(), mxcsr(0x1fa0)
   , latest_instruction(0)
@@ -226,6 +226,7 @@ Arch::StepInstruction()
     }
   updates.clear();
   accurate = true;
+  flagmask = 0;
 }
 
 Arch::Operation*
@@ -563,29 +564,6 @@ void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor )
   else      { shi = +uhi; slo = +ulo; }
   if ((slo >> 63) ^ sign) arch._DE();
   hi = shi; lo = slo;
-}
-
-void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier )
-{
-  uint64_t opl = lo, opr = multiplier;
-  uint64_t lhi = uint64_t(opl >> 32), llo = uint64_t(uint32_t(opl)), rhi = uint64_t(opr >> 32), rlo = uint64_t(uint32_t(opr));
-  uint64_t hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
-  hi = (((lolo >> 32) + uint64_t(uint32_t(hilo)) + uint64_t(uint32_t(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
-  lo = opl * opr;
-  arch.flagwrite( Arch::FLAG::OF, bool(hi) );
-  arch.flagwrite( Arch::FLAG::CF, bool(hi) );
-}
-
-void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )
-{
-  UInt128 u128( 0, std::abs(lo) );
-  int64_t sign = (hi >> 63) ^ (lo >> 63);
-  eval_mul( arch, u128.bits[1], u128.bits[0], uint64_t(multiplier) );
-  if (sign) u128.neg();
-  hi = u128.bits[1]; lo = u128.bits[0];
-  bool ovf = (int64_t(u128.bits[0]) >> 63) != int64_t(u128.bits[1]);
-  arch.flagwrite( Arch::FLAG::OF, bool(ovf) );
-  arch.flagwrite( Arch::FLAG::CF, bool(ovf) );
 }
 
 Arch::f80_t
@@ -990,39 +968,55 @@ Arch::xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64
   for (char const* reg = "fg"; *reg; ++reg)
     sbasecheck(*reg);
 
-  eflagscheck();
+  flagcheck( FLAG() );
 }
 
 void
-Arch::eflagscheck()
+Arch::flagcheck(FLAG flag)
 {
+  if (flag.code == flag.PF or flag.code == flag.AF)
+    return;
+
   struct EFUpdate : public UpdateNode
   {
-    EFUpdate(bool _test)  : test(_test) {} bool test;
+    EFUpdate() {}
     virtual void check(Arch& arch, Tracee const& tracee) const override
     {
       uint64_t ref_bits = tracee.GetRFlags();
 
-      if (not test)
+      if (not arch.accurate)
         {
           unisim::component::cxx::processor::intel::eflagswrite(arch, ref_bits);
           return;
         }
-      struct { u32_t bits, mask; void Do( Arch& a, typename FLAG::Code flag, unsigned bit ) { bits |= u32_t(a.flagread( flag )) << bit; mask |= u32_t(1) << bit; } } sim{0,0};
+
+      struct { void Do( Arch& a, typename FLAG::Code flag, unsigned bit ) { bits |= u32_t(a.flagread( flag )) << bit; mask |= uint32_t(1) << bit; } u32_t bits, mask; } sim {0,0};
       unisim::component::cxx::processor::intel::eflagsaccess( arch, sim );
 
-      if ((sim.bits ^ ref_bits) & sim.mask)
+      // Not considering AF and PF flags for now
+      arch.flagwrite(Arch::FLAG::AF, false, false);
+      arch.flagwrite(Arch::FLAG::PF, false, false);
+      uint32_t flagmask = sim.mask & ~arch.flagmask;
+
+      if ((sim.bits ^ ref_bits) & flagmask)
         {
-          std::cerr << "eflags: 0x" << std::hex << sim.bits << " != 0x" << (ref_bits & sim.mask) << "\n";
+          std::cerr << "eflags: 0x" << std::hex << (sim.bits & flagmask) << " != 0x" << (ref_bits & flagmask) << " (sim=0x" << sim.bits << ", ref=0x" << ref_bits << ")\n";
           throw 0;
         }
     }
     virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<EFUpdate const&>(rhs)); }
-    virtual int compare(EFUpdate const& rhs) const
-    {
-      return int(test) - int(rhs.test);
-    }
+    virtual int compare(EFUpdate const& rhs) const { return 0; }
   };
 
-  updates.insert(new EFUpdate(accurate));
+  updates.insert(new EFUpdate());
+}
+
+void
+Arch::flagwrite( FLAG flag, bit_t fval, bit_t defined )
+{
+  if (defined)
+    return flagwrite( flag, fval );
+
+  struct { void Do( Arch& arch, FLAG flag, unsigned bit) { if (uflag == flag) arch.flagmask |= uint32_t(1) << bit; } FLAG uflag; } access {flag};
+  unisim::component::cxx::processor::intel::eflagsaccess(*this, access);
 }

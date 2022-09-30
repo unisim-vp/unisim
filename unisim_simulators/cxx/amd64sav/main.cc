@@ -299,11 +299,11 @@ struct Checker
       typedef review::Interface::testcode_t testcode_t;
 
       Test(review::Interface const* _test, testcode_t _code)
-        : disasm(_test->asmcode), code(_code), relval(), relreg(), workcells(_test->workcells())
+        : disasm(_test->asmcode), code(_code), relval(), relreg(), workcells(_test->workcells()), flagsmask(_test->flagsmask())
       {}
       Test(review::Interface const* _test, testcode_t _code, Expr const& _relreg, Expr const& _relval)
         : disasm(_test->asmcode), code(_code), relval(_relval),
-          relreg(dynamic_cast<review::Arch::GRegRead const*>(_relreg.node)->idx), workcells(_test->workcells())
+          relreg(dynamic_cast<review::Arch::GRegRead const*>(_relreg.node)->idx), workcells(_test->workcells()), flagsmask(_test->flagsmask())
       {}
       uint64_t get_reloc(uint64_t const* ws) const
       {
@@ -317,7 +317,7 @@ struct Checker
 
         return value;
       }
-      static void fixflags( uint64_t& flags ) { flags = (flags & 0xcef) | 2; }
+      void fixflags( uint64_t& flags ) const { flags = (flags & flagsmask & 0xcef) | 2; }
       void patch(uint64_t* ws, uint64_t reloc) const
       {
         fixflags(ws[data_index(0)]);
@@ -398,6 +398,7 @@ struct Checker
       review::Interface::testcode_t code;
       Expr relval;
       unsigned relreg, workcells;
+      uint32_t flagsmask;
     };
 
     std::vector<Test> tests;

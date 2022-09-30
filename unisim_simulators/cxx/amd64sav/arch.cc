@@ -371,6 +371,7 @@ namespace review
     , addrs()
     , base_addr()
     , addressings()
+    , uflags(0)
   {
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
@@ -471,6 +472,14 @@ namespace review
 
     text.write(memcode.text(),memcode.length);
 
+    /* Save flags before any other operation */
+    {
+      struct { uint8_t pushf; } i;
+      i.pushf = 0x9c;
+      uint8_t const* ptr = &i.pushf;
+      text.write(ptr,1);
+    }
+
     /* Fix RDI to destination zone */
     {
       /* REX.W + 83 /0 ib ADD r/m64, imm8 */
@@ -488,16 +497,15 @@ namespace review
 
     /* Store EFLAGS register */
     {
-      struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
+      struct { uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
       /* 8F /0, POP r/m64 x(%rdi) */
-      i.pushf = 0x9c;
       i.opcode = 0x8f; /* 8F */
       i.mod = 1;
       i.r_o = 0; /* /0 */
       i.r_m = 7; /* %rdi */
       i.disp = offset;
-      uint8_t const* ptr = &i.pushf;
-      text.write(ptr,4);
+      uint8_t const* ptr = &i.opcode;
+      text.write(ptr,3);
     }
     offset += 8;
 
@@ -652,6 +660,23 @@ namespace review
 
     length = idx;
     return true;
+  }
+
+  void
+  Arch::flagsetdef( FLAG::Code flag, unisim::util::symbolic::Expr def )
+  {
+    if (unisim::util::symbolic::ConstNodeBase const* cnode = def.ConstSimplify())
+      if (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value)
+        return; // Really defined this time
+
+    // Set undefined
+    struct
+    {
+      void Do(Arch const&, FLAG::Code flag, unsigned bit) {if (flag == uflag) interface.uflags |= uint32_t(1) << bit; }
+      Interface& interface;
+      FLAG::Code uflag;
+    } access {this->interface, flag};
+    unisim::component::cxx::processor::intel::eflagsaccess(*this, access);
   }
 }
 

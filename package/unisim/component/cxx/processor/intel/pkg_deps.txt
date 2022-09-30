@@ -6,3 +6,4 @@ std/cmath
 std/iosfwd
 std/iostream
 std/stdexcept
+unisim/util/identifier

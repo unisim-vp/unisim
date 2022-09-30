@@ -85,12 +85,12 @@ namespace intel {
     typedef uint16_t     u16_t;
     typedef uint32_t     u32_t;
     typedef uint64_t     u64_t;
-    //    typedef Twice<u64_t> u128_t;
+    typedef void         u128_t;
     typedef int8_t       s8_t;
     typedef int16_t      s16_t;
     typedef int32_t      s32_t;
     typedef int64_t      s64_t;
-    //    typedef Twice<s64_t> s128_t;
+    typedef void         s128_t;
     typedef bool         bit_t;
     typedef uint32_t     addr_t;
     
@@ -168,10 +168,9 @@ namespace intel {
     bool                        m_flags[FLAG::end];
     
   public:
-    bit_t                       flagread( FLAG::Code flag )
-    { return m_flags[flag]; }
-    void                        flagwrite( FLAG::Code flag, bit_t fval )
-    { m_flags[flag] = fval; }
+    bit_t                       flagread( FLAG::Code flag ) { return m_flags[flag]; }
+    void                        flagwrite( FLAG::Code flag, bit_t fval ) { m_flags[flag] = fval; }
+    void                        flagwrite( FLAG::Code flag, bit_t fval, bit_t ) { m_flags[flag] = fval; }
     
     // Registers
   protected:
@@ -800,6 +799,9 @@ namespace intel {
       if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
       return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
+
+    void xsave(XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
+    void xrstor(XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
   };
   
 

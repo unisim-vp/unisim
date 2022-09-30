@@ -703,29 +703,6 @@ void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor )
   hi = shi; lo = slo;
 }
 
-void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier )
-{
-  uint64_t opl = lo, opr = multiplier;
-  uint64_t lhi = uint64_t(opl >> 32), llo = uint64_t(uint32_t(opl)), rhi = uint64_t(opr >> 32), rlo = uint64_t(uint32_t(opr));
-  uint64_t hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
-  hi = (((lolo >> 32) + uint64_t(uint32_t(hilo)) + uint64_t(uint32_t(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
-  lo = opl * opr;
-  arch.flagwrite( Arch::FLAG::OF, bool(hi) );
-  arch.flagwrite( Arch::FLAG::CF, bool(hi) );
-}
-
-void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )
-{
-  UInt128 u128( 0, std::abs(lo) );
-  int64_t sign = (hi >> 63) ^ (lo >> 63);
-  eval_mul( arch, u128.bits[1], u128.bits[0], uint64_t(multiplier) );
-  if (sign) u128.neg();
-  hi = u128.bits[1]; lo = u128.bits[0];
-  bool ovf = (int64_t(u128.bits[0]) >> 63) != int64_t(u128.bits[1]);
-  arch.flagwrite( Arch::FLAG::OF, bool(ovf) );
-  arch.flagwrite( Arch::FLAG::CF, bool(ovf) );
-}
-
 Arch::f80_t
 Arch::fmemread80( unsigned int _seg, addr_t _addr )
 {

@@ -1118,7 +1118,7 @@ struct RclRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "rcl", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rcl( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate_carry( arch, LSHIFT(), arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -1128,7 +1128,7 @@ struct RclRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "rcl", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rcl( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate_carry( arch, LSHIFT(), arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1194,7 +1194,7 @@ struct RcrRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "rcr", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rcr( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate_carry( arch, RSHIFT(), arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -1204,7 +1204,7 @@ struct RcrRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "rcr", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rcr( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate_carry( arch, RSHIFT(), arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1270,7 +1270,7 @@ struct ShlRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "shl", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shl( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shift( arch, LSHIFT(), arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -1280,7 +1280,7 @@ struct ShlRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "shl", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shl( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shift( arch, LSHIFT(), arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -1371,7 +1371,7 @@ struct ShrRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "shr", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shr( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shift( arch, RSHIFT(), arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -1381,7 +1381,7 @@ struct ShrRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "shr", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shr( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_shift( arch, RSHIFT(), arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -2141,7 +2141,7 @@ struct ShldIM : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shl( arch, arch.rmread( OP(), rmop ), typename ARCH::u8_t( shift ) );
+    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shift( arch, LSHIFT(), arch.rmread( OP(), rmop ), typename ARCH::u8_t( shift ) );
     if (shift)
       result |= arch.regread( OP(), gn ) >> (OP::SIZE - shift);
     arch.rmwrite( OP(), rmop, result );
@@ -2161,7 +2161,7 @@ struct ShldCL : public Operation<ARCH>
     typedef typename ARCH::u8_t u8_t;
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
     u8_t shift = arch.regread( GOb(), 1 );
-    u_type result = eval_shl( arch, arch.rmread( OP(), rmop ), shift );
+    u_type result = eval_shift( arch, LSHIFT(), arch.rmread( OP(), rmop ), shift );
     shift &= shift_counter<ARCH,u_type>::mask();
     if (arch.Test(shift != u8_t(0)))
       result |= arch.regread( OP(), gn ) >> (u8_t(OP::SIZE) - shift);
@@ -2179,7 +2179,7 @@ struct ShrdIM : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shr( arch, arch.rmread( OP(), rmop ), typename ARCH::u8_t(shift) );
+    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shift( arch, RSHIFT(), arch.rmread( OP(), rmop ), typename ARCH::u8_t(shift) );
     if (shift)
       result |= arch.regread( OP(), gn ) << (OP::SIZE - shift);
     arch.rmwrite( OP(), rmop, result );
@@ -2199,7 +2199,7 @@ struct ShrdCL : public Operation<ARCH>
     typedef typename ARCH::u8_t u8_t;
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
     u8_t shift = arch.regread( GOb(), 1 );
-    u_type result = eval_shr( arch, arch.rmread( OP(), rmop ), shift );
+    u_type result = eval_shift( arch, RSHIFT(), arch.rmread( OP(), rmop ), shift );
     shift &= shift_counter<ARCH,u_type>::mask();
     if (arch.Test(shift != u8_t(0)))
       result |= arch.regread( OP(), gn ) << (u8_t(OP::SIZE) - shift);
@@ -2263,6 +2263,11 @@ struct BitScan : public Operation<ARCH>
     
     bit_t src_is_zero = (src == u_type( 0 ));
     arch.flagwrite( ARCH::FLAG::ZF, src_is_zero );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t(false), bit_t(false) );
     if (arch.Test( src_is_zero )) return;
     
     u_type res = LEAD ? (BitScanReverse( src )) : BitScanForward( src );

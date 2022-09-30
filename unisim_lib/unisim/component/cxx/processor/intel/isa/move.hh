@@ -606,11 +606,22 @@ struct CmpXchg : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    auto mem_operand = arch.rmread( OP(), rm );
-    typename ARCH::bit_t equal = (arch.regread( OP(), 0 ) == mem_operand);
-    arch.flagwrite( ARCH::FLAG::ZF, equal );
-    if (arch.Test( equal )) arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
-    else                 arch.regwrite( OP(), 0, mem_operand );
+    auto dst_operand = arch.rmread( OP(), rm );
+
+    eval_sub( arch, arch.regread( OP(), 0 ), dst_operand );
+
+    if (arch.Test(arch.flagread(ARCH::FLAG::ZF)))
+      arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) );
+    else
+      arch.regwrite( OP(), 0, dst_operand );
+    // """To simplify the interface to the processor’s bus, the
+    // destination operand receives a write cycle without regard to
+    // the result of the comparison.  The destination operand is
+    // written back if the comparison fails; otherwise, the source
+    // operand is written into the destination.  (The processor never
+    // produces a locked read without also producing a locked
+    // write.)"""  TODO: should we add `arch.rmwrite( OP(), rm,
+    // dst_operand );` to the else clause ?
   }
 };
 
@@ -774,7 +785,8 @@ struct XAddEG : public Operation<ARCH>
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
     u_type a = arch.rmread( OP(), rm ), b = arch.regread( OP(), gn );
-    arch.rmwrite( OP(), rm, a + b  );
+    u_type sum = eval_add( arch, a, b );
+    arch.rmwrite( OP(), rm, sum  );
     arch.regwrite( OP(), gn, a );
   }
 };

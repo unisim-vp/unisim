@@ -145,6 +145,7 @@ namespace review
     uintptr_t workcells() const;
     void gencode(Text& text) const;
     bool usemem() const { return addrs.size(); }
+    uint32_t flagsmask() const { return ~uflags; }
 
     MemCode memcode;
     std::string asmcode;
@@ -156,6 +157,7 @@ namespace review
     std::set<uint64_t,RelCmp> addrs;
     Expr base_addr;
     unisim::util::sav::Addressings addressings;
+    uint32_t uflags;
   };
 
   struct VmmRegister
@@ -388,6 +390,8 @@ namespace review
 
     bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
     void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
+    void                        flagsetdef( FLAG::Code flag, Expr def );
+    void                        flagwrite( FLAG flag, bit_t fval, bit_t def ) { flagvalues[flag.idx()] = fval.expr; flagsetdef(flag.code, def.expr); }
 
     u16_t                       segregread( unsigned idx ) { throw unisim::util::sav::Untestable("segment register"); return u16_t(); }
     void                        segregwrite( unsigned idx, u16_t value ) { throw unisim::util::sav::Untestable("segment register"); }
@@ -876,25 +880,8 @@ namespace review
     hi = nhi;
   }
 
-  template <class ARCH, typename INT>
-  void eval_mul64( ARCH& arch, INT& hi, INT& lo, INT const& multiplier )
-  {
-    typedef typename ARCH::bit_t bit_t;
-
-    INT   nlo = unisim::util::sav::make_weirdop<INT>("mul.lo",lo,multiplier);
-    INT   nhi = unisim::util::sav::make_weirdop<INT>("mul.hi",lo,multiplier);
-    lo = nlo;
-    hi = nhi;
-
-    bit_t ovf = unisim::util::sav::make_weirdop<bit_t>("mul.of",nlo,nhi);
-    arch.flagwrite( ARCH::FLAG::OF, ovf );
-    arch.flagwrite( ARCH::FLAG::CF, ovf );
-  }
-
-  inline void eval_div( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
-  inline void eval_div( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
-  inline void eval_mul( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
-  inline void eval_mul( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
+  // inline void eval_div( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
+  // inline void eval_div( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
 
   inline Arch::f64_t eval_fprem ( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus )
   { return unisim::util::sav::make_weirdop<Arch::f64_t>("fprem", dividend, modulus); }

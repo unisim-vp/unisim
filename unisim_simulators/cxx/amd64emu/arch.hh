@@ -41,7 +41,6 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/vector/vector.hh>
-#include <unisim/util/debug/simple_register.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -51,6 +50,8 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/arithmetic/integer.hh>
 #include <map>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
@@ -68,12 +69,12 @@ struct Arch
   typedef uint16_t     u16_t;
   typedef uint32_t     u32_t;
   typedef uint64_t     u64_t;
-  typedef void         u128_t;
+  typedef unisim::util::arithmetic::Integer<4,false> u128_t;
   typedef int8_t       s8_t;
   typedef int16_t      s16_t;
   typedef int32_t      s32_t;
   typedef int64_t      s64_t;
-  typedef void         s128_t;
+  typedef unisim::util::arithmetic::Integer<4,true> s128_t;
   typedef bool         bit_t;
   typedef uint64_t     addr_t;
   typedef float        f32_t;
@@ -453,10 +454,9 @@ protected:
   bool                        m_flags[FLAG::end];
 
 public:
-  bit_t                       flagread( FLAG::Code flag )
-  { return m_flags[flag]; }
-  void                        flagwrite( FLAG::Code flag, bit_t fval )
-  { m_flags[flag] = fval; }
+  bit_t                       flagread( FLAG::Code flag ) { return m_flags[flag]; }
+  void                        flagwrite( FLAG::Code flag, bit_t fval )  { m_flags[flag] = fval; }
+  void                        flagwrite( FLAG::Code flag, bit_t fval, bit_t def )  { m_flags[flag] = fval; }
 
   // FLOATING POINT STATE
 protected:
@@ -665,8 +665,6 @@ public:
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
 void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor );
-void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
-void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier );
 
 Arch::f64_t sine( Arch::f64_t );
 Arch::f64_t cosine( Arch::f64_t );

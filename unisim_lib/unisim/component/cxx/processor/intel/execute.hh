@@ -3,10 +3,10 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -43,7 +43,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
-  
+
   template <class ARCH, typename INT>
   void
   eval_PSZ( ARCH& arch, INT const& res )
@@ -54,27 +54,27 @@ namespace intel {
       for (int shift = 4; shift > 0; shift >>= 1) red ^= (red >> shift);
       arch.flagwrite( ARCH::FLAG::PF, not bit_t( red & INT( 1 ) ) );
     }
-    
+
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
     arch.flagwrite( ARCH::FLAG::SF, bit_t( res & msbmask ) );
     arch.flagwrite( ARCH::FLAG::ZF, bit_t( res == INT( 0 ) ) );
   }
-  
+
   template <class ARCH, typename INT>
   INT
   eval_add( ARCH& arch, INT const& arg1, INT const& arg2 )
   {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 + arg2;
-    
+
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & arg2 & ~res) | (~arg1 & ~arg2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((arg1 | arg2) & ~res) | (arg1 & arg2 & res)) & msbmask) == msbmask ) );
-    
+
     eval_PSZ( arch, res );
-    
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     return res;
   }
 
@@ -84,14 +84,14 @@ namespace intel {
   {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 | arg2;
-    
+
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
-    
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
@@ -102,15 +102,15 @@ namespace intel {
     typedef typename ARCH::bit_t bit_t;
     INT op2 = arg2 + INT( arch.flagread( ARCH::FLAG::CF ) );
     INT res = arg1 + op2;
-    
+
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & op2 & ~res) | (~arg1 & ~op2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((arg1 | op2) & ~res) | (arg1 & op2 & res)) & msbmask) == msbmask ) );
-    
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
@@ -121,15 +121,15 @@ namespace intel {
     typedef typename ARCH::bit_t bit_t;
     INT op2 = arg2 + INT( arch.flagread( ARCH::FLAG::CF ) );
     INT res = arg1 - op2;
-    
+
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & ~op2 & ~res) | (~arg1 & op2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((~arg1 | op2) & res) | (~arg1 & op2 & ~res)) & msbmask) == msbmask ) );
-    
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
@@ -139,14 +139,14 @@ namespace intel {
   {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 & arg2;
-    
+
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
-    
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
@@ -156,15 +156,15 @@ namespace intel {
   {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 - arg2;
-    
+
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & ~arg2 & ~res) | (~arg1 & arg2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((~arg1 | arg2) & res) | (~arg1 & arg2 & ~res)) & msbmask) == msbmask ) );
 
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
@@ -174,17 +174,17 @@ namespace intel {
   {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 ^ arg2;
-    
+
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
-    
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
-  
+
   /* Intel: The count is masked to 5 bits (or 6 bits if in 64-bit mode
    * and REX.W is used). The count range is limited to 0 to 31 (or 63
    * if 64-bit mode and REX.W is used).
@@ -200,7 +200,7 @@ namespace intel {
     typedef typename ARCH::u8_t u8_t;
     static intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     static u8_t mask() { return u8_t( c_shift_counter<bitsize>::mask() ); }
-  }; 
+  };
 
   template <class ARCH, typename INT>
   INT
@@ -212,18 +212,18 @@ namespace intel {
     u8_t const u8bitsize( bitsize );
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
-    
+
     u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
+
     sharg = sharg % u8bitsize;
     res = (arg1 << sharg) | (arg1 >> (u8bitsize - sharg));
     arch.flagwrite( ARCH::FLAG::CF, bit_t( res & INT( 1 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-      
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
@@ -237,125 +237,89 @@ namespace intel {
     u8_t const u8bitsize( bitsize );
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
-    
+
     u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
+
     sharg = sharg % u8bitsize;
     res = (arg1 << (u8bitsize - sharg)) | (arg1 >> sharg);
     arch.flagwrite( ARCH::FLAG::CF, bit_t( res & msb ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-      
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
 
-  template <class ARCH, typename INT>
+  struct LSHIFT
+  {
+    template <typename L, typename R> L Do(L const& l, R const& r) const { return l << r;  }
+    template <typename L, typename R> L RDo(L const& l, R const& r) const { return l >> r;  }
+  };
+  struct RSHIFT
+  {
+    template <typename L, typename R> L Do(L const& l, R const& r) const { return l >> r;  }
+    template <typename L, typename R> L RDo(L const& l, R const& r) const { return l << r;  }
+  };
+
+  template <class ARCH, class OP, typename INT>
   INT
-  eval_rcl( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
+  eval_rotate_carry( ARCH& arch, OP const& op, INT const& arg1, typename ARCH::u8_t const& arg2 )
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::u8_t u8_t;
     intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     INT const msb = INT( 1 ) << (bitsize-1);
-    u8_t lsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), rsh = u8_t( bitsize ) - lsh;
+    u8_t dsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), rsh = u8_t( bitsize ) - dsh;
 
     INT res;
-    if (arch.Test(lsh != u8_t(0)))
+    if (arch.Test(dsh != u8_t(0)))
       {
-        res = (arg1 << lsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh >> 1) | (arg1 >> 1 >> rsh);
-        arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> rsh) & INT(1) ) );
+        bool const is_left = op.Do(1, 1);
+
+        // Computing rotation result
+        unsigned const lcp = is_left ? (bitsize-1) : 0;
+        res = op.Do(arg1, dsh) | op.RDo(op.RDo(arg1, 1) | (INT(arch.flagread( ARCH::FLAG::CF )) << lcp), rsh);
+
+        // Computing carry flag
+        INT const lcb = is_left ? INT(1) : msb;
+        arch.flagwrite( ARCH::FLAG::CF, bit_t( op.RDo(arg1, rsh) & lcb ) );
       }
     else
       res = arg1;
 
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
-    eval_PSZ( arch, res );
-      
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ), dsh == u8_t(1) );
+
     return res;
   }
-  
-  template <class ARCH, typename INT>
+
+  template <class ARCH, class OP, typename INT>
   INT
-  eval_rcr( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
+  eval_shift( ARCH& arch, OP const& op, INT const& arg1, typename ARCH::u8_t const& arg2 )
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::u8_t u8_t;
-    intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
-    INT const msb = INT( 1 ) << (bitsize-1);
-    u8_t rsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), lsh = u8_t( bitsize ) - rsh;
-    
-    INT res;
-    if (arch.Test(rsh != u8_t(0)))
+    INT const msb = INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1);
+    bool const is_left = op.Do(1, 1);
+    INT const lcb = is_left ? msb : INT(1);
+    INT res( 0 );
+
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
+
+    res = op.Do( arg1, sharg );
+    if (arch.Test( sharg != u8_t(0)))
       {
-        res = (arg1 >> rsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh) | (arg1 << 1 << lsh);
-        arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 << lsh) & msb ) );
+        arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
+        arch.flagwrite( ARCH::FLAG::CF, bit_t(op.Do(arg1, sharg - u8_t( 1 )) & lcb) );
+        arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ), sharg == u8_t( 1 ) );
+
+        eval_PSZ( arch, res );
       }
-    else
-      res = arg1;
-    
 
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
-    eval_PSZ( arch, res );
-      
-    return res;
-  }
-  
-  /* TODO: whould implement large rotate through carry */
-  // template <> u64_t eval_rcr( ARCH& arch, u64_t const& arg1, u8_t const& arg2 ) { throw 0; }
-  
-  template <class ARCH, typename INT>
-  INT
-  eval_shl( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
-  {
-    typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u8_t u8_t;
-    intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
-    INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
-    
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
-    res = arg1 << sharg;
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-      
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
-    eval_PSZ( arch, res );
-      
     return res;
   }
 
-  template <class ARCH, typename INT>
-  INT
-  eval_shr( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
-  {
-    typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u8_t u8_t;
-    intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
-    INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
-    
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
-    res = arg1 >> sharg;
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( arg1 & msb ) );
-      
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
-    eval_PSZ( arch, res );
-      
-    return res;
-  }
-  
   template <class ARCH, typename INT>
   INT
   eval_sar( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
@@ -365,20 +329,20 @@ namespace intel {
     //intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     //INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
-    
+
     u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
+
     res = INT( (typename atpinfo<ARCH,INT>::stype( arg1 )) >> sharg );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Test( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
-      
+
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-    
+
     eval_PSZ( arch, res );
-      
+
     return res;
   }
-  
+
   template <class ARCH>
   typename ARCH::bit_t
   eval_cond( ARCH& a, uint32_t _cc )
@@ -397,12 +361,12 @@ namespace intel {
     }
     return res;
   }
-  
+
   template <class ARCH, typename INT>
   void eval_div( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
     if (arch.Test(divisor == INT(0))) arch._DE();
-    
+
     typedef typename atpinfo<ARCH,INT>::utype utype;
     typedef typename atpinfo<ARCH,INT>::twice twice;
     twice dividend = (twice( hi ) << int(atpinfo<ARCH,INT>::bitsize)) | twice( utype( lo ) );
@@ -411,11 +375,7 @@ namespace intel {
     lo = INT( result );
     hi = INT( twice( dividend ) % twice( divisor ) );
   }
-  
-  /* TODO: need to implement very large divisions */
-  //  template <> void eval_div( ARCH& arch, u64_t& hi, u64_t& lo, u64_t const& divisor ) { throw 0; }
-  //  template <> void eval_div( ARCH& arch, s64_t& hi, s64_t& lo, s64_t const& divisor ) { throw 0; }
-  
+
   template <class ARCH, typename INT>
   void eval_mul( ARCH& arch, INT& hi, INT& lo, INT const& multiplier )
   {
@@ -429,12 +389,12 @@ namespace intel {
     bit_t ovf = twice( lores ) != result;
     arch.flagwrite( ARCH::FLAG::OF, ovf );
     arch.flagwrite( ARCH::FLAG::CF, ovf );
+    arch.flagwrite( ARCH::FLAG::SF, lores < INT(0), bit_t(atpinfo<ARCH,INT>::is_signed) );
+    arch.flagwrite( ARCH::FLAG::ZF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t(false), bit_t(false) );
   }
-  
-  /* TODO: need to implement very large multiplications */
-  // template <> void eval_mul( ARCH& arch, u64_t& hi, u64_t& lo, u64_t const& divisor ) { throw 0; }
-  // template <> void eval_mul( ARCH& arch, s64_t& hi, s64_t& lo, s64_t const& divisor ) { throw 0; }
-  
+
   template <class ARCH>
   typename ARCH::u16_t
   fswread( ARCH& a )
@@ -487,7 +447,7 @@ namespace intel {
 
   template <typename T> T const& Minimum( T const& l, T const& r ) { return l < r ? l : r; }
   template <typename T> T const& Maximum( T const& l, T const& r ) { return l > r ? l : r; }
-  
+
   template <class ARCH>
   typename ARCH::f64_t
   eval_fprem1( ARCH& arch, typename ARCH::f64_t const& dividend, typename ARCH::f64_t const& modulus )
@@ -495,7 +455,7 @@ namespace intel {
     typedef typename ARCH::f64_t f64_t;
     typedef typename ARCH::u64_t u64_t;
     typedef typename ARCH::bit_t bit_t;
-    
+
     f64_t res;
     f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
     if (arch.Test( (modulus * threshold) > dividend ))
@@ -518,7 +478,7 @@ namespace intel {
       }
     return res;
   }
-  
+
   template <class ARCH>
   typename ARCH::f64_t
   eval_fprem( ARCH& arch, typename ARCH::f64_t const& dividend, typename ARCH::f64_t const& modulus )
@@ -526,7 +486,7 @@ namespace intel {
     typedef typename ARCH::f64_t f64_t;
     typedef typename ARCH::u64_t u64_t;
     typedef typename ARCH::bit_t bit_t;
-    
+
     f64_t res;
     f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
     if (arch.Test( (modulus * threshold) > dividend ))
@@ -549,7 +509,7 @@ namespace intel {
       }
     return res;
   }
-  
+
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx

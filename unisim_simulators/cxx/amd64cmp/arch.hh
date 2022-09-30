@@ -49,6 +49,7 @@
 #include <unisim/kernel/kernel.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/identifier/identifier.hh>
+#include <unisim/util/arithmetic/integer.hh>
 #include <set>
 #include <map>
 
@@ -66,12 +67,12 @@ struct Arch
   typedef uint16_t     u16_t;
   typedef uint32_t     u32_t;
   typedef uint64_t     u64_t;
-  typedef void         u128_t;
+  typedef unisim::util::arithmetic::Integer<4,false> u128_t;
   typedef int8_t       s8_t;
   typedef int16_t      s16_t;
   typedef int32_t      s32_t;
   typedef int64_t      s64_t;
-  typedef void         s128_t;
+  typedef unisim::util::arithmetic::Integer<4,true> s128_t;
   typedef bool         bit_t;
   typedef uint64_t     addr_t;
   typedef float        f32_t;
@@ -404,41 +405,54 @@ struct Arch
     virtual int compare(GPRPatch const& rhs) const;
   };
 
-  struct FLAG
+  struct FLAG : public unisim::util::identifier::Identifier<FLAG>
   {
     enum Code {
       CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
       C0,     C1,     C2,     C3,
       end
-    };
+    } code;
+    char const* c_str() const
+    {
+      switch (code)
+        {
+        default: break;
+        case    CF: return "cf";
+        case    PF: return "pf";
+        case    AF: return "af";
+        case    ZF: return "zf";
+        case    SF: return "sf";
+        case    DF: return "df";
+        case    OF: return "of";
+        case    C0: return "c0";
+        case    C1: return "c1";
+        case    C2: return "c2";
+        case    C3: return "c3";
+        }
+      return "NA";
+    }
+
+    FLAG() : code(end) {}
+    FLAG( Code _code ) : code(_code) {}
+    FLAG( char const* _code ) : code(end) { init( _code ); }
   };
 
-protected:
   bool                        m_flags[FLAG::end];
+  uint32_t                    flagmask;
+  static bool is_baseflags(FLAG flag) { switch (flag.code) { case FLAG::CF: case FLAG::PF: case FLAG::AF: case FLAG::ZF: case FLAG::SF: case FLAG::DF: case FLAG::OF: return true; default: break; } return false; }
+  static bool is_x87flags(FLAG flag) { switch (flag.code) { case FLAG::C0: case FLAG::C1: case FLAG::C2: case FLAG::C3: return true; default: break; } return false; }
 
-public:
-  void                        eflagscheck();
-  bit_t                       flagread( FLAG::Code flag )
+  void                        flagcheck( FLAG flag );
+  bit_t                       flagread( FLAG flag ) { return m_flags[flag.idx()]; }
+  void                        flagwrite( FLAG flag, bit_t fval )
   {
-    switch (flag)
-      {
-      case FLAG::C0: case FLAG::C1: case FLAG::C2: case FLAG::C3: throw 0;
-      default: break;
-      }
-    return m_flags[flag];
+    m_flags[flag.idx()] = fval;
+    if (is_baseflags(flag))
+      flagcheck(flag);
+    else
+      throw 0;
   }
-  void                        flagwrite( FLAG::Code flag, bit_t fval )
-  {
-    switch (flag)
-      {
-      default: throw 0;
-      case FLAG::C0: case FLAG::C1: case FLAG::C2: case FLAG::C3: throw 0;
-      case FLAG::CF: case FLAG::PF: case FLAG::AF: case FLAG::ZF: case FLAG::SF: case FLAG::DF: case FLAG::OF:
-        eflagscheck();
-        break;
-      }
-    m_flags[flag] = fval;
-  }
+  void                        flagwrite( FLAG flag, bit_t fval, bit_t defined );
 
   // FLOATING POINT STATE
 protected:
@@ -650,8 +664,6 @@ public:
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
 void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor );
-void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
-void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier );
 
 Arch::f64_t sine( Arch::f64_t );
 Arch::f64_t cosine( Arch::f64_t );
