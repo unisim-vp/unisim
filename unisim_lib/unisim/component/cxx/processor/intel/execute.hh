@@ -185,9 +185,14 @@ namespace intel {
     return res;
   }
 
-  /* Intel: The count is masked to 5 bits (or 6 bits if in 64-bit mode
-   * and REX.W is used). The count range is limited to 0 to 31 (or 63
-   * if 64-bit mode and REX.W is used).
+  /* Intel/AMD: The count is masked to 5 bits (or 6 bits if in 64-bit
+   * mode and REX.W is used). The count range is limited to 0 to 31
+   * (or 63 if 64-bit mode and REX.W is used). Note: The 8086 does not
+   * mask the shift count. However, all other IA-32 processors
+   * (starting with the Intel 286 processor) do mask the shift count
+   * to 5 bits. This masking is done in all operating modes (including
+   * the virtual-8086 mode) to reduce the maximum execution time of
+   * the instructions.
    */
   template <unsigned BSZ> struct c_shift_counter {};
   template <> struct c_shift_counter< 8> { static uint8_t mask() { return uint8_t(0x1f); } };
@@ -202,56 +207,6 @@ namespace intel {
     static u8_t mask() { return u8_t( c_shift_counter<bitsize>::mask() ); }
   };
 
-  template <class ARCH, typename INT>
-  INT
-  eval_rol( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
-  {
-    typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u8_t u8_t;
-    intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
-    u8_t const u8bitsize( bitsize );
-    INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
-
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-
-    sharg = sharg % u8bitsize;
-    res = (arg1 << sharg) | (arg1 >> (u8bitsize - sharg));
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( res & INT( 1 ) ) );
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-
-    eval_PSZ( arch, res );
-
-    return res;
-  }
-
-  template <class ARCH, typename INT>
-  INT
-  eval_ror( ARCH& arch, INT const& arg1, typename ARCH::u8_t const& arg2 )
-  {
-    typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u8_t u8_t;
-    intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
-    u8_t const u8bitsize( bitsize );
-    INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
-
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-
-    sharg = sharg % u8bitsize;
-    res = (arg1 << (u8bitsize - sharg)) | (arg1 >> sharg);
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( res & msb ) );
-    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-
-    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
-
-    eval_PSZ( arch, res );
-
-    return res;
-  }
-
   struct LSHIFT
   {
     template <typename L, typename R> L Do(L const& l, R const& r) const { return l << r;  }
@@ -262,6 +217,33 @@ namespace intel {
     template <typename L, typename R> L Do(L const& l, R const& r) const { return l >> r;  }
     template <typename L, typename R> L RDo(L const& l, R const& r) const { return l << r;  }
   };
+
+  template <class ARCH, class OP, typename INT>
+  INT
+  eval_rotate( ARCH& arch, OP const& op, INT const& arg1, typename ARCH::u8_t const& arg2 )
+  {
+    typedef typename ARCH::bit_t bit_t;
+    typedef typename ARCH::u8_t u8_t;
+    intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
+    u8_t const u8bitsize( bitsize );
+    INT const msb = INT( 1 ) << (bitsize-1);
+    bool const is_left = op.Do(1, 1);
+    INT const lcb = is_left ? INT(1) : msb;
+    INT res( 0 );
+
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
+
+    sharg = sharg % u8bitsize;
+    res = op.Do(arg1, sharg) | op.RDo(arg1, u8bitsize - sharg);
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( res & lcb ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
+
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+
+    eval_PSZ( arch, res );
+
+    return res;
+  }
 
   template <class ARCH, class OP, typename INT>
   INT

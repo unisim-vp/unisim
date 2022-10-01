@@ -933,7 +933,7 @@ struct RolRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "rol", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rol( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate( arch, LSHIFT(), arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -943,7 +943,7 @@ struct RolRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "rol", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rol( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate( arch, LSHIFT(), arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1009,7 +1009,7 @@ struct RorRMI : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "ror", rmop.ismem()*OP::SIZE ) << ' ' << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_ror( arch, arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate( arch, RSHIFT(), arch.rmread( OP(), rmop ), u8_t( imm ) ) ); }
 };
 
 template <class ARCH, class OP>
@@ -1019,7 +1019,7 @@ struct RorRMCL : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic( "ror", rmop.ismem()*OP::SIZE ) << ' ' << "%cl," << DisasmE( OP(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_ror( arch, arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rmop, eval_rotate( arch, RSHIFT(), arch.rmread( OP(), rmop ), arch.regread( GOb(), 1 ) ) ); }
 };
 
 template <class ARCH, class OP>
