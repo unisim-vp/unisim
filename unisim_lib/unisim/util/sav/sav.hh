@@ -362,7 +362,7 @@ namespace sav {
   struct Testbed : public TestbedBase
   {
     typedef CELL cell_t;
-    Testbed( char const* seed ) : TestbedBase( seed, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ) {}
+    Testbed( char const* seed ) : TestbedBase( seed, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ), buffer() {}
 
     void serial( std::ostream& sink ) { TestbedBase::serial( sink, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ); }
 

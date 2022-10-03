@@ -2152,10 +2152,34 @@ struct ShldIM : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shift( arch, LSHIFT(), arch.rmread( OP(), rmop ), typename ARCH::u8_t( shift ) );
-    if (shift)
-      result |= arch.regread( OP(), gn ) >> (OP::SIZE - shift);
-    arch.rmwrite( OP(), rmop, result );
+    typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+    typedef typename ARCH::bit_t bit_t;
+
+    if (not shift)
+      return;
+    
+    if (shift >= OP::SIZE)
+      {
+        // TODO: should set destination operand undefined
+        // typename ARCH::FLAG::Code flags[] = {ARCH::FLAG::AF, ARCH::FLAG::CF, ARCH::FLAG::OF, ARCH::FLAG::PF, ARCH::FLAG::SF, ARCH::FLAG::ZF};
+        // for (auto flag: flags)
+        //   arch.flagwrite(flag, bit_t(false), bit_t(false));
+        arch.unimplemented();
+      }
+
+    // TODO: should merge with the eval_shift architecture
+    u_type const msb = u_type( 1 ) << (OP::SIZE-1);
+    unsigned const rshift = OP::SIZE - shift;
+
+    u_type acc = arch.rmread( OP(), rmop );
+    u_type res = (acc << shift) | (arch.regread( OP(), gn ) >> rshift);
+
+    arch.rmwrite( OP(), rmop, res );
+
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t((acc << (shift - 1)) & msb) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (acc ^ res) & msb ), bit_t(shift == 1) );
+    eval_PSZ( arch, res );
   }
 };
 

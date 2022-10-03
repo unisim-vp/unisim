@@ -106,21 +106,6 @@ ProcessorBase::VClear::GetType() const
 }
 
 void
-ProcessorBase::UndefinedValueBase::Repr( std::ostream& sink ) const
-{
-  sink << "UndefinedValue<";
-  GetType()->GetName(sink);
-  sink << ">()";
-}
-
-int
-ProcessorBase::UndefinedValueBase::GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const
-{
-  sink << "\\undef";
-  return GetType()->GetBitSize();
-}
-
-void
 ProcessorBase::VRegID::Repr(std::ostream& sink) const
 {
   sink << char(VmmValue::VPREFIX) << "mm" << std::dec << reg;
@@ -146,6 +131,12 @@ ProcessorBase::VmmIndirectReadBase::Repr( std::ostream& sink ) const
   for (unsigned idx = 0, end = SubCount()-1; idx < end; ++idx)
     sink << GetSub(idx) << ", ";
   sink << index << ")";
+}
+
+void
+ProcessorBase::flagwrite( FLAG flag, bit_t fval, bit_t def )
+{
+  flagvalues[flag.idx()] = this->concretize(def.expr) ? fval.expr : new unisim::util::symbolic::binsec::UndefinedValue<bool>();
 }
 
 namespace

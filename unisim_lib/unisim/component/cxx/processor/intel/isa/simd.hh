@@ -3519,7 +3519,7 @@ struct Shufp : public Op3V<ARCH,VR>
 
     enum {
 	  N = 128 / OPSIZE,
-	  BITSHIFT = SB<128 / OPSIZE>::begin,
+	  BITSHIFT = meta::BitScan<128 / OPSIZE>::forward,
 	  MASK = 128 / OPSIZE - 1
     };
 

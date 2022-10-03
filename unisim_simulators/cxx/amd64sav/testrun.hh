@@ -484,37 +484,46 @@ namespace test
     {
       ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
       elems[sub] = e;
-      //gdbchecker.xmark(reg);
+    }
+
+    template <class ELEM> ELEM vmm_memread( unsigned seg, addr_t addr, unsigned sub, ELEM const& e )
+    {
+      return any_memread( seg, addr + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
+    }
+
+    template <class ELEM> void vmm_memwrite( unsigned seg, addr_t addr, unsigned sub, ELEM const& e )
+    {
+      any_memwrite( seg, addr + sub*VUConfig::TypeInfo<ELEM>::bytecount, e);
     }
 
     // Integer case
-    template <class TYPE> TYPE vmm_memread( unsigned seg, addr_t addr, TYPE const& e )
+    template <class TYPE> TYPE any_memread( unsigned seg, addr_t addr, TYPE const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       return TYPE(memread<atpinfo::bitsize>(seg,addr));
     }
 
-    f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
-    f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
-    f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
-
-    // Integer case
-    template <class TYPE> void vmm_memwrite( unsigned seg, addr_t addr, TYPE const& e )
+    template <class TYPE> void any_memwrite( unsigned seg, addr_t addr, TYPE const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
 
-    void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
-    void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
-    void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
+    // FP Case
+    f32_t any_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
+    f64_t any_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
+    f80_t any_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
+
+    void any_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
+    void any_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
+    void any_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
 
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
-      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ), sub, e );
     }
 
     template <class VR, class ELEM>
@@ -522,7 +531,7 @@ namespace test
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
       if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
-      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ), sub, e );
     }
 
     void xgetbv();

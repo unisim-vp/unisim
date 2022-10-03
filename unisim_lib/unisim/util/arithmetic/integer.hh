@@ -196,12 +196,12 @@ namespace arithmetic {
       if (SIGNED)
         {
           if (int64_t delta = int64_t(scell()) - int64_t(rhs.scell()))
-            return delta >> 32;
+            return int(delta >> 32 | 1);
         }
       for (unsigned idx = CELLCOUNT; idx-->0;)
         {
           if (int64_t delta = int64_t(cells[idx]) - int64_t(rhs.cells[idx]))
-            return delta >> 32;
+            return int(delta >> 32 | 1);
         }
       return 0;
     }

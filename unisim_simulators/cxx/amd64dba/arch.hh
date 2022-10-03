@@ -246,31 +246,11 @@ struct ProcessorBase
     FLAG( char const* _code ) : code(end) { init(_code); }
   };
 
-  struct UndefinedValueBase : public unisim::util::symbolic::binsec::ASExprNode
-  {
-    UndefinedValueBase() {}
-    virtual unsigned SubCount() const override { return 0; };
-    virtual void Repr( std::ostream& sink ) const override;
-    virtual int cmp( ExprNode const& rhs ) const override { return 0; }
-    virtual int GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const;
-  };
-
-  template <typename T>
-  struct UndefinedValue : public UndefinedValueBase
-  {
-    typedef UndefinedValue<T> this_type;
-
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(T()); }
-  };
-
-  
-
   Expr                        flagvalues[FLAG::end];
 
   bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
   void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
-  void                        flagwrite( FLAG flag, bit_t fval, bit_t def ) { flagvalues[flag.idx()] = this->concretize(def.expr) ? fval.expr : new UndefinedValue<bool>(); }
+  void                        flagwrite( FLAG flag, bit_t fval, bit_t def );
 
   /*** SEGMENTS ***/
   struct SegmentID : public unisim::util::identifier::Identifier<SegmentID>
