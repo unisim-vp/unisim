@@ -324,7 +324,7 @@ Arch::cpuid()
           updates.insert(new GPRPatch(1,~uint64_t(0x00005841),0)); // b1: AVX512_VBMI, b6: AVX512_VBMI2, b11: AVX512_VNNI, b12: AVX512_BITALG, b14: AVX512_VPOPCNTDQ
           updates.insert(new GPRPatch(2,~uint64_t(0x0000010c),0)); // b2: AVX512_4VNNIW, b3: AVX512_4FMAPS, b8: AVX512_VP2INTERSECT
         } break;
-          
+
         }
     }
 }
@@ -908,6 +908,10 @@ Arch::ExecuteSystemCall( unsigned id )
 {
   linux_os.LogSystemCall( id );
   accurate = false;
+  regcheck(1); // rcx
+  regcheck(11); // r11
+  struct { void Do( Arch& a, typename FLAG::Code flag, unsigned bit ) { a.flagcheck( flag ); } } flags_affected;
+  unisim::component::cxx::processor::intel::eflagsaccess( *this, flags_affected );
   linux_os.ExecuteSystemCall(id);
   // regwrite( GR(), 0, 0 );
 }
@@ -998,8 +1002,19 @@ Arch::flagcheck(FLAG flag)
       arch.flagwrite(Arch::FLAG::PF, false, false);
       uint32_t flagmask = sim.mask & ~arch.flagmask;
 
-      if ((sim.bits ^ ref_bits) & flagmask)
+      uint32_t diff = (sim.bits ^ ref_bits) & flagmask;
+      if (diff)
         {
+          if (diff == 0x40)
+            {
+              std::ostringstream buf;
+              arch.latest_instruction->disasm(buf);
+              if (buf.str().compare(0, 11, "repz cmpsb ", 11) == 0)
+                {
+                  std::cerr << "Warning, ignoring ZF error in " << buf.str() << std::endl;
+                  return;
+                }
+            }
           std::cerr << "eflags: 0x" << std::hex << (sim.bits & flagmask) << " != 0x" << (ref_bits & flagmask) << " (sim=0x" << sim.bits << ", ref=0x" << ref_bits << ")\n";
           throw 0;
         }
