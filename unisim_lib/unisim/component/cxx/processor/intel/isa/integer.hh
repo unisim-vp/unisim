@@ -2695,3 +2695,38 @@ template <class ARCH> struct DC<ARCH,ADF> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
+template <class ARCH, class OP>
+struct Bzhi : public Operation<ARCH>
+{
+  Bzhi( OpBase<ARCH> const& opbase, uint8_t _gn, MOp<ARCH> const* _rmop, uint8_t _vn ) : Operation<ARCH>( opbase ), rmop( _rmop ), vn( _vn ), gn( _gn ) {}
+  RMOp<ARCH> rmop;
+  uint8_t vn, gn;
+
+  void disasm( std::ostream& sink ) const { sink << "bzhi " << DisasmG( OP(), vn ) << ',' << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), gn ); }
+
+  void execute( ARCH& arch ) const {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    typedef typename ARCH::bit_t bit_t;
+    val_t index = val_t(arch.regread( GOb(), vn ));
+    bit_t carry = index >= val_t(OP::SIZE);
+    val_t mask =
+      ((val_t(carry) - val_t(1)) & (val_t(1) << index)) - val_t(1);
+    arch.regwrite( OP(), gn, arch.rmread( OP(), rmop ) & mask );
+    arch.flagwrite( ARCH::FLAG::CF, carry );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,BZHI> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, vex( "\x0f\x38\xf5" ) & RM() ))
+
+    {
+      if ((not ic.vex()) || (ic.vlen() != 128)) return 0;
+      if (ic.mode64() && ic.w())
+	return new Bzhi<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+      else
+	return new Bzhi<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+    }
+
+  return 0;
+}};
