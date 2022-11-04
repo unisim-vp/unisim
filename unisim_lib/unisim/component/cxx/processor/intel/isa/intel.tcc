@@ -67,7 +67,7 @@ namespace intel {
                      PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VBINARY, VFPUNARY,
                      PMOVMSKB, VMOVSD, VMOVZX, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, PMULUDQ,
                      VSHIMM, MOVQ, BROADCAST, EXTRACT, INSERT, PACK_S, PSHUFD, PSHUFB, PSHIFT,
-                     PSHDQ, PTEST, PINSR, PCMPSTR, VFPCMP, SHUFP, VZEROUPPER,
+                     PSHDQ, PTEST, PINSR, PCMPSTR, VFPCMP, SHUFP, VZEROUPPER, XSAVE,
                      operation_count };
 
   template <class ARCH>
@@ -412,7 +412,7 @@ namespace intel {
     typedef typename ARCH::addr_t addr_t;
     ModD( uint8_t _seg, DISP _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} DISP disp;
     
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(typename __unsigned<DISP>::type(disp)); }
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(typename meta::__unsigned<DISP>::type(disp)); }
     
     addr_t effective_address( ARCH& arch ) const { return addr_t( disp ); };
   };

@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2017,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2018-2022,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,27 +31,59 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
+#ifndef __AMD64CMP_TRACEE_HH__
+#define __AMD64CMP_TRACEE_HH__
+
+#include <vector>
+#include <string>
 #include <inttypes.h>
-#include <iostream>
 
-namespace unisim {
-namespace util {
-namespace arithmetic {
+struct Arch;
 
-  void print_integer( std::ostream& sink, bool is_signed, unsigned cellcount, uint32_t const* cells )
+struct Tracee
+{
+  Tracee() : pid(-1) {}
+
+  bool Process( std::vector<std::string> const& simargs );
+
+  uint64_t GetInsnAddr() const;
+
+  uint64_t GetReg(unsigned reg) const;
+
+  void SetReg(unsigned reg, uint64_t value) const;
+
+  uint64_t GetSBase(char reg) const;
+
+  uint64_t GetRFlags() const;
+
+  void GetVec(unsigned reg, uint8_t* bytes) const;
+
+  uint64_t PeekData(uint64_t addr) const;
+
+  void StepInstruction() const;
+
+  void Load(Arch& arch) const;
+
+  template <typename ACCESS>
+  void MemAccess( ACCESS& access, uint64_t addr, unsigned size ) const
   {
-    sink << "Integer<CELLCOUNT,SIGNED>([" << std::hex;
+    uint64_t cell = (addr % 8) ? this->PeekData(addr & -8) : 0;
     
-    for (char const* sep = ""; cellcount-- > 0; sep = ":")
+    for (uint64_t offset = 0; offset < size; ++offset, ++addr)
       {
-        sink << sep << "0x" << cells[cellcount];
+        unsigned cell_byte = addr % 8;
+        if (cell_byte == 0)
+          cell = this->PeekData(addr);
+        access.Do( offset, cell >> 8*cell_byte );
       }
-    while (cellcount-->0)
-      sink << std::dec << "])";
   }
 
-} // end of namespace arithmetic
-} // end of namespace util
-} // end of namespace unisim
+  struct Stopped { int status; };
 
+  struct Unexpected { char const* what; int code; };
+
+  pid_t pid;
+};
+
+#endif // __AMD64CMP_TRACEE_HH__

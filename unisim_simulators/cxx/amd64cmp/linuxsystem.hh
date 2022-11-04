@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2017,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2018,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,27 +31,30 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
+#ifndef __AMD64EMU_LINUXSYSTEM_HH__
+#define __AMD64EMU_LINUXSYSTEM_HH__
+
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/amd64.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/blob.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <inttypes.h>
-#include <iostream>
 
-namespace unisim {
-namespace util {
-namespace arithmetic {
+struct Arch;
 
-  void print_integer( std::ostream& sink, bool is_signed, unsigned cellcount, uint32_t const* cells )
-  {
-    sink << "Integer<CELLCOUNT,SIGNED>([" << std::hex;
-    
-    for (char const* sep = ""; cellcount-- > 0; sep = ":")
-      {
-        sink << sep << "0x" << cells[cellcount];
-      }
-    while (cellcount-->0)
-      sink << std::dec << "])";
-  }
+struct Amd64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
+{
+  typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
+  
+  Amd64LinuxOS( Arch& cpu );
+  ~Amd64LinuxOS();
 
-} // end of namespace arithmetic
-} // end of namespace util
-} // end of namespace unisim
+  void ExecuteSystemCall( int id );
+};
 
+#endif // __AMD64EMU_LINUXSYSTEM_HH__

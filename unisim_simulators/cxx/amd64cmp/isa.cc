@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2017,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2022,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,27 +31,29 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-#include <inttypes.h>
-#include <iostream>
 
-namespace unisim {
-namespace util {
-namespace arithmetic {
+#include <arch.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
+#include <cmath>
 
-  void print_integer( std::ostream& sink, bool is_signed, unsigned cellcount, uint32_t const* cells )
-  {
-    sink << "Integer<CELLCOUNT,SIGNED>([" << std::hex;
-    
-    for (char const* sep = ""; cellcount-- > 0; sep = ":")
-      {
-        sink << sep << "0x" << cells[cellcount];
-      }
-    while (cellcount-->0)
-      sink << std::dec << "])";
-  }
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
+using unisim::util::arithmetic::BitScanForward;
+using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::endian::ByteSwap;
+}}}}}
 
-} // end of namespace arithmetic
-} // end of namespace util
-} // end of namespace unisim
+#include <unisim/component/cxx/processor/intel/isa/intel.tcc>
+#include <unisim/component/cxx/processor/intel/execute.hh>
+#include <unisim/component/cxx/processor/intel/math.hh>
+
+Arch::Operation*
+Arch::Decode( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes )
+{
+  if (Operation* op = getoperation( unisim::component::cxx::processor::intel::InputCode<Arch>( mode, bytes, OpHeader( address ) ) ))
+    return op;
+
+  std::cerr << "No decoding for " << std::hex << address << ": " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << std::dec << std::endl;
+  return 0;
+}
 

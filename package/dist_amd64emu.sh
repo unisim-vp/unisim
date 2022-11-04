@@ -15,6 +15,8 @@ import unisim/kernel/config/json || exit
 import unisim/kernel/logger/console || exit
 import unisim/component/cxx/processor/intel || exit
 import unisim/component/cxx/processor/intel/isa || exit
+import unisim/component/cxx/memory/sparse || exit
+import unisim/component/cxx/vector || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/identifier || exit
 import unisim/util/debug || exit

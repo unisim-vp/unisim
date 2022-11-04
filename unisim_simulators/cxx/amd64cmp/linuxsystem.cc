@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2017,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2018,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,27 +31,42 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-#include <inttypes.h>
-#include <iostream>
 
-namespace unisim {
-namespace util {
-namespace arithmetic {
+#include <linuxsystem.hh>
+#include <arch.hh>
+#include <unisim/util/os/linux_os/linux.tcc>
+#include <unisim/util/os/linux_os/calls.tcc>
+#include <iomanip>
+#include <sys/utsname.h>
 
-  void print_integer( std::ostream& sink, bool is_signed, unsigned cellcount, uint32_t const* cells )
-  {
-    sink << "Integer<CELLCOUNT,SIGNED>([" << std::hex;
-    
-    for (char const* sep = ""; cellcount-- > 0; sep = ":")
-      {
-        sink << sep << "0x" << cells[cellcount];
-      }
-    while (cellcount-->0)
-      sink << std::dec << "])";
-  }
+Amd64LinuxOS::Amd64LinuxOS(Arch& cpu)
+  : ThisLinux( std::cout, std::cout, std::cout, &cpu, &cpu, &cpu )
+{
+  // Set up the different linuxlib parameters
+  SetTargetSystem(new unisim::util::os::linux_os::AMD64TS<ThisLinux>(*this));
+  SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+  struct utsname unm;
+  uname(&unm);
+  SetUname(unm.sysname, unm.nodename, unm.release, unm.version, unm.machine, unm.domainname);
+  is_load_ = true;
+}
 
-} // end of namespace arithmetic
-} // end of namespace util
-} // end of namespace unisim
+Amd64LinuxOS::~Amd64LinuxOS()
+{
+  delete GetTargetSystem();
+}
 
+void
+Amd64LinuxOS::ExecuteSystemCall(int id)
+{
+  /* Takes special care of FD side effects. Always clear the
+   * descriptor from filelists so that guest IO always fails (and
+   * never translates to host IO). */
+  target_to_host_fildes.clear();
+  target_fildes_free_list = std::queue<int32_t>();
+  bool exited;
+  int app_ret_status;
+  ThisLinux::ExecuteSystemCall( id, exited, app_ret_status );
+  if (exited)
+    throw 0;
+}

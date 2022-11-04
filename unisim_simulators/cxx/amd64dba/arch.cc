@@ -133,6 +133,12 @@ ProcessorBase::VmmIndirectReadBase::Repr( std::ostream& sink ) const
   sink << index << ")";
 }
 
+void
+ProcessorBase::flagwrite( FLAG flag, bit_t fval, bit_t def )
+{
+  flagvalues[flag.idx()] = this->concretize(def.expr) ? fval.expr : new unisim::util::symbolic::binsec::UndefinedValue<bool>();
+}
+
 namespace
 {
   template <class OP>
@@ -156,3 +162,4 @@ void show(unsigned idx, unisim::util::symbolic::ExprNode const* node)
     node->Repr(std::cerr);
   std::cerr << "\n";
 }
+

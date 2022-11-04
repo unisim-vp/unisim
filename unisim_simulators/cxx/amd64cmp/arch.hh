@@ -41,29 +41,27 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/vector/vector.hh>
-#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/service/interfaces/debug_yielding.hh>
-#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/kernel.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/identifier/identifier.hh>
 #include <unisim/util/arithmetic/integer.hh>
+#include <set>
 #include <map>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
+
+struct Tracee;
+struct Amd64LinuxOS;
 
 struct Arch
   : public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t>>
   , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t>>
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
-  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t>>
-  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
-  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>
-  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
 {
   typedef uint8_t      u8_t;
   typedef uint16_t     u16_t;
@@ -94,46 +92,92 @@ struct Arch
   typedef GOq   GR;
   typedef u64_t gr_type;
 
+  typedef void StrictCounterTest;
+
   struct OpHeader
   {
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
 
-  Arch(char const* name, unisim::kernel::Object* parent, unisim::service::interfaces::LinuxOS*);
+  typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
+
+  struct UpdateNode
+  {
+    virtual ~UpdateNode() {}
+    virtual int cmp(UpdateNode const& rhs) const = 0;
+    virtual void check(Arch& arch, Tracee const& tracee) const = 0;
+  };
+  struct Update
+  {
+    Update(UpdateNode const* _node) : node(_node) {}
+    Update(Update&& other) : node(other.node) { other.node = 0; }
+    Update(Update const&) = delete;
+    ~Update() { delete node; }
+
+    UpdateNode const* operator -> () const { return node; }
+
+    int compare(Update const& rhs) const;
+
+    bool operator <(Update const& rhs) const { return compare(rhs) < 0; }
+
+    UpdateNode const* node;
+  };
+
+  Arch(char const* name, unisim::kernel::Object* parent, Tracee const& tracee, Amd64LinuxOS& linux_os);
 
   ~Arch()
   {
     for (auto reg : regmap)
-      delete reg.second;
+      delete reg;
     for (unsigned reg = 0; reg < 16; ++reg)
       umms[reg].Clear(&vmm_storage[reg][0]);
     for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx)
       delete hash_table[idx];
   }
 
-  // unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
+  struct RegisterMapOrdering
+  {
+    using reg_p = unisim::service::interfaces::Register*;
+    using is_transparent = void;
+    int cmp(char const* a, char const* b) const;
+    bool operator() (reg_p a, reg_p b) const { return cmp(a->GetName(), b->GetName()) < 0; }
+    bool operator() (reg_p a, char const* b) const { return cmp(a->GetName(), b) < 0; }
+    bool operator() (char const* a, reg_p b) const { return cmp(a, b->GetName()) < 0; }
+    //    bool operator() (reg_p a, std::string const& b) const { return b.compare(a->GetName()) > 0; }
+  };
 
-  unisim::service::interfaces::LinuxOS* linux_os;
-  std::map<std::string,unisim::service::interfaces::Register*> regmap;
+  std::set<unisim::service::interfaces::Register*,RegisterMapOrdering> regmap;
 
-  struct ClearMemSet { void operator() ( uint8_t* base, uintptr_t size ) const { __builtin_bzero(base, size); } };
-  typedef typename unisim::component::cxx::memory::sparse::Memory<addr_t,15,15,ClearMemSet> Memory;
-  Memory                      m_mem;
+  // unisim::service::interfaces::Registers
+  unisim::service::interfaces::Register* GetRegister(char const* name);
+  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+
+  // unisim::service::interfaces::MemoryInjection<ADDRESS>
+  bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size);
+  bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size);
 
   // unisim::service::interfaces::Memory<addr_t>
-  void ResetMemory() {}
-  bool ReadMemory(addr_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool WriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  void ResetMemory();
+  bool ReadMemory(addr_t addr, void* buffer, uint32_t size );
+  bool WriteMemory(addr_t addr, void const* buffer, uint32_t size);
 
-  typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
+  // Reference Tracee
+  Tracee const& tracee;
 
-  // MEMORY STATE
+  // Linux OS Emulation
+  Amd64LinuxOS& linux_os;
+
   // Segment Registers
   uint16_t segregs[6];
   addr_t fs_base, gs_base;
   addr_t segbase(unsigned seg) const { switch(seg){ case 4: return fs_base; case 5: return gs_base; } return 0; }
+  addr_t& sbase(char seg) { switch(seg) { default: throw 0; case 'f': return fs_base; case 'g': return gs_base; } return fs_base; }
+  addr_t                      sbaseread( char seg ) { return sbase(seg); }
+  void                        sbasewrite( char seg, addr_t addr ) { sbase(seg) = addr; sbasecheck(seg); }
+  void                        sbasecheck( char seg );
   void                        segregwrite( unsigned idx, uint16_t value )
   {
+    throw 0;
     if (idx > 6) throw 0;
     segregs[idx] = value;
   }
@@ -142,54 +186,6 @@ struct Arch
     throw 0;
     if (idx > 6) throw 0;
     return segregs[idx];
-  }
-
-  // Low level memory access routines
-  enum LLAException_t { LLAError };
-  void                        lla_memcpy( addr_t addr, uint8_t const* buf, addr_t size )
-  { m_mem.write( addr, buf, size ); }
-  void                        lla_memcpy( uint8_t* buf, addr_t addr, addr_t size )
-  { m_mem.read( buf, addr, size ); }
-  void                        lla_bzero( addr_t addr, addr_t size )
-  { m_mem.clear( addr, size ); }
-  template<class INT_t>
-  void                        lla_memwrite( addr_t _addr, INT_t _val )
-  {
-    uintptr_t const int_size = sizeof( INT_t );
-
-    addr_t last_addr = _addr, addr = _addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
-
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
-      {
-        uint8_t byte = (_val >> (idx*8)) & 0xff;
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        page->m_storage[offset] = byte;
-      }
-  }
-
-  template<class INT_t>
-  INT_t                       lla_memread( addr_t _addr )
-  {
-    uintptr_t const int_size = sizeof( INT_t );
-
-    addr_t last_addr = _addr, addr = _addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
-
-    INT_t result = 0;
-
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
-      {
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        result |= (INT_t( page->m_storage[offset] ) << (idx*8));
-      }
-
-    return result;
-
   }
 
   f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
@@ -257,24 +253,30 @@ struct Arch
     fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
+  struct MCUpdate : public UpdateNode { void memcheck(Tracee const& tracee, u64_t addr, uint8_t const* bytes, unsigned size) const; };
 
   template <unsigned OPSIZE>
   void
-  memwrite( unsigned _seg, u64_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
+  memwrite( unsigned seg, u64_t addr, typename TypeFor<Arch,OPSIZE>::u val )
   {
-    uintptr_t const int_size = (OPSIZE/8);
-    addr_t addr = _addr + segbase(_seg), last_addr = addr;
-
-    typename Memory::Page* page = m_mem.getpage( addr );
-
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
+    struct MWUpdate : public MCUpdate
+    {
+      MWUpdate(u64_t _addr, typename TypeFor<Arch,OPSIZE>::u val) : addr(_addr) { memcpy((void*)&bytes[0], (void const*)&val, OPSIZE/8); }
+      virtual void check(Arch& arch, Tracee const& tracee) const override { memcheck(tracee, addr, &bytes[0], OPSIZE/8); }
+      virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<MWUpdate const&>(rhs)); }
+      virtual int compare(MWUpdate const& rhs) const
       {
-        uint8_t byte = (_val >> (idx*8)) & 0xff;
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        page->m_storage[offset] = byte;
+        for (unsigned idx = 0, end = OPSIZE/8; idx < end; ++idx)
+          if (int delta = int(bytes[idx]) - int(rhs.bytes[idx]))
+            return delta;
+        return addr < rhs.addr ? -1 : addr > rhs.addr ? +1 : 0;
       }
+      u64_t addr;
+      uint8_t bytes[OPSIZE/8];
+    };
+
+    if (accurate)
+      updates.insert(new MWUpdate(addr + segbase(seg), val));
   }
 
   template <unsigned OPSIZE>
@@ -321,70 +323,22 @@ struct Arch
     return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
+  void MemRead( uint8_t* bytes, uint64_t addr, unsigned size ) const;
+
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
-  memread( unsigned _seg, u64_t _addr )
+  memread( unsigned seg, u64_t addr )
   {
-    uintptr_t const int_size = (OPSIZE/8);
-    addr_t addr = _addr + segbase(_seg), last_addr = addr;
-    typename Memory::Page* page = m_mem.getpage( addr );
-
-    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-    u_type result = 0;
-
-    for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
-      {
-        if ((last_addr ^ addr) >> Memory::Page::s_bits)
-          page = m_mem.getpage( addr );
-        addr_t offset = addr % (1 << Memory::Page::s_bits);
-        result |= (u_type( page->m_storage[offset] ) << (idx*8));
-      }
-
+    unsigned const size = OPSIZE/8;
+    uint8_t bytes[size];
+    MemRead( (uint8_t*)&bytes[0], addr + segbase(seg), size );
+    typename TypeFor<Arch,OPSIZE>::u result = 0;
+    memcpy((void*)&result, (void const*)&bytes[0], OPSIZE/8);
     return result;
   }
 
-
-  // unisim::service::interfaces::Registers
-  unisim::service::interfaces::Register* GetRegister(char const* name)
-  {
-    auto reg = regmap.find( name );
-    return (reg == regmap.end()) ? 0 : reg->second;
-  }
-  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
-
-  // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
-
-  // unisim::service::interfaces::Disassembly<uint64_t>
-  virtual std::string Disasm(uint64_t addr, uint64_t& next_addr) override;
-  typedef unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export_t;
-  //  disasm_export_t disasm_export() { return disasm_export_t("disasm-export",this); };
-
-  // unisim::service::interfaces::MemoryAccessReportingControl
-  virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
-  bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
-  bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
-
-  // unisim::service::interfaces::MemoryAccessReporting<uint64_t>
-  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
-
-  // unisim::service::interfaces::DebugYielding
-  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
-
-
   // Implementation of ExecuteSystemCall
-
-  void ExecuteSystemCall( unsigned id )
-  {
-    if (not linux_os)
-      { throw std::logic_error( "No linux OS emulation connected" ); }
-    linux_os->ExecuteSystemCall( id );
-    // auto los = dynamic_cast<LinuxOS*>( linux_os );
-    // los->LogSystemCall( id );
-  }
+  void ExecuteSystemCall( unsigned id );
 
   addr_t rip;
 
@@ -417,46 +371,88 @@ struct Arch
     return u8_t( u64regs[reg] >> sh );
   }
 
+  void regcheck(unsigned idx);
+
   template <class GOP>
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
-    //gdbchecker.gmark( idx );
+    regcheck(idx);
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
     unsigned reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
-    //gdbchecker.gmark( reg );
+    regcheck(reg);
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
-    //gdbchecker.gmark( idx );
+    regcheck(idx);
   }
   void regwrite( GOw const&, unsigned idx, u16_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
-    //gdbchecker.gmark( idx );
+    regcheck(idx);
   }
 
-  struct FLAG
+  struct GPRPatch : public UpdateNode
+  {
+    GPRPatch(unsigned _reg, uint64_t and_m, uint64_t or_m)  : reg(_reg), and_mask(and_m), or_mask(or_m) {} unsigned reg; uint64_t and_mask, or_mask;
+    virtual void check(Arch& arch, Tracee const& tracee) const override;
+    virtual int cmp(UpdateNode const& rhs) const override { return compare(dynamic_cast<GPRPatch const&>(rhs)); }
+    virtual int compare(GPRPatch const& rhs) const;
+  };
+
+  struct FLAG : public unisim::util::identifier::Identifier<FLAG>
   {
     enum Code {
       CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
       C0,     C1,     C2,     C3,
       end
-    };
+    } code;
+    char const* c_str() const
+    {
+      switch (code)
+        {
+        default: break;
+        case    CF: return "cf";
+        case    PF: return "pf";
+        case    AF: return "af";
+        case    ZF: return "zf";
+        case    SF: return "sf";
+        case    DF: return "df";
+        case    OF: return "of";
+        case    C0: return "c0";
+        case    C1: return "c1";
+        case    C2: return "c2";
+        case    C3: return "c3";
+        }
+      return "NA";
+    }
+
+    FLAG() : code(end) {}
+    FLAG( Code _code ) : code(_code) {}
+    FLAG( char const* _code ) : code(end) { init( _code ); }
   };
 
-protected:
   bool                        m_flags[FLAG::end];
+  uint32_t                    flagmask;
+  static bool is_baseflags(FLAG flag) { switch (flag.code) { case FLAG::CF: case FLAG::PF: case FLAG::AF: case FLAG::ZF: case FLAG::SF: case FLAG::DF: case FLAG::OF: return true; default: break; } return false; }
+  static bool is_x87flags(FLAG flag) { switch (flag.code) { case FLAG::C0: case FLAG::C1: case FLAG::C2: case FLAG::C3: return true; default: break; } return false; }
 
-public:
-  bit_t                       flagread( FLAG::Code flag ) { return m_flags[flag]; }
-  void                        flagwrite( FLAG::Code flag, bit_t fval )  { m_flags[flag] = fval; }
-  void                        flagwrite( FLAG::Code flag, bit_t fval, bit_t def )  { m_flags[flag] = fval; }
+  void                        flagcheck( FLAG flag );
+  bit_t                       flagread( FLAG flag ) { return m_flags[flag.idx()]; }
+  void                        flagwrite( FLAG flag, bit_t fval )
+  {
+    m_flags[flag.idx()] = fval;
+    if (is_baseflags(flag))
+      flagcheck(flag);
+    else
+      throw 0;
+  }
+  void                        flagwrite( FLAG flag, bit_t fval, bit_t defined );
 
   // FLOATING POINT STATE
 protected:
@@ -505,7 +501,7 @@ public:
 
   void  fcwwrite( u16_t _value );
 
-  u64_t tscread() { return instruction_count; }
+  u64_t tscread() { accurate = false; return instruction_count; }
 
 public:
   struct VUConfig
@@ -535,13 +531,15 @@ public:
     return elems[sub];
   }
 
+  void vmm_regcheck(unsigned idx);
+
   template <class VR, class ELEM>
   void
   vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
   {
     ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
     elems[sub] = e;
-    //gdbchecker.xmark(reg);
+    vmm_regcheck(reg);
   }
 
   // Integer case
@@ -587,9 +585,9 @@ public:
   void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
   void unimplemented() { std::cerr << "Unimplemented.\n"; throw 0; }
 
-  void xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop) { unimplemented(); }
-  void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop) { unimplemented(); }
-
+  void xsave(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop);
+  void xrstor(unisim::component::cxx::processor::intel::XSaveMode mode, bool is64, u64_t bv, RMOp const& rmop);
+ 
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
   struct IPage
@@ -656,11 +654,12 @@ public:
   struct Unimplemented {};
   void noexec( Operation const& op );
 
-  bool enable_disasm;
-  unisim::kernel::variable::Parameter<bool> param_enable_disasm;
+  bool enable_disasm, accurate;
   uint64_t instruction_count;
 
   bool Test( bool b ) const { return b; }
+
+  std::set<Update> updates;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );

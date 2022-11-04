@@ -2598,12 +2598,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
           {
             struct Bad {};
-            uint64_t cmd = cpu.untaint(Bad(), value);
-            switch (cmd)
+            uint64_t cmd_id = cpu.untaint(Bad(), value);
+            struct Cmd { virtual ~Cmd() {} virtual char const* Name() const = 0; virtual void Run() const = 0; } *cmd = 0;
+            
+            switch (cmd_id)
               {
-              case 0: throw Suspend();
-              case 1: cpu.terminate = true; break;
+              default: throw 0;
+              case 0: { static struct SuspCmd : Cmd { char const* Name() const { return "suspend"; } void Run() const { throw Suspend(); } } _; cmd = &_; };
+              case 1: { static struct StopCmd : Cmd { char const* Name() const { return "stop"; } void Run() const { throw Stop(); } } _; cmd = &_; };
               }
+
+            std::cerr << "Received <usvp-cmd " << cmd->Name() << ">\n";
+            cmd->Run();
           }
         } x; return &x;
       } break;
