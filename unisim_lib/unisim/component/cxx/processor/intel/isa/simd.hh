@@ -2693,7 +2693,7 @@ struct Pshufb : public Op3V<ARCH, VR>
 
     unsigned const size = 128 / 8;
 
-    for (unsigned chunk = 0, cend = VR::size(); chunk < cend; chunk += size)
+    for (unsigned chunk = 0, cend = VR::size() / 8; chunk < cend; chunk += size)
       {
         u8_t res[size];
 
