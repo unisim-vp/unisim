@@ -1968,11 +1968,14 @@ struct PCmpStr : public Operation<ARCH>
             gnv_b = gnv[idx] = gnv_b and (arch.vmm_read( VR(), gn, idx, null_char ) != null_char);
             rmv_b = rmv[idx] = rmv_b and (arch.vmm_read( VR(), rm, idx, null_char ) != null_char);
           }
+	arch.flagwrite( ARCH::FLAG::ZF, not rmv_b );
+	arch.flagwrite( ARCH::FLAG::SF, not gnv_b );
       }
     else
       {
         PCmpStrUtil::explicit_validity( gnv, arch, 0 );
         PCmpStrUtil::explicit_validity( rmv, arch, 2 );
+	// TODO set flags!
       }
 
     switch (comparison())
@@ -2044,16 +2047,39 @@ struct PCmpStr : public Operation<ARCH>
           arch.vmm_write( VR(), 0, idx, TYPE(TYPE(not intres[idx]) - TYPE(1)) );
         break;
       case MaskLSB:
-        for (unsigned idx = 0; idx < count; ++idx)
-          if (arch.Test( intres[idx] ))
-            arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
+	{
+	  typedef typename ARCH::gr_type res_t;
+	  res_t res(0);
+	  bit_t mask( true );
+	  for (unsigned idx = 0; idx < count; ++idx) {
+	    mask = mask and (not intres[idx]);
+	    res += res_t(mask);
+	  }
+	  arch.regwrite( typename ARCH::GR(), 1, res );
+	}
         break;
       case MaskMSB:
-        for (int idx = count; --idx >= 0;)
-          if (arch.Test( intres[idx] ))
-            arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
+	{
+	  typedef typename ARCH::gr_type res_t;
+	  res_t res(0);
+	  bit_t mask( false );
+	  for (int idx = count; --idx >= 0;) {
+	    mask = mask or intres[idx];
+	    res += res_t(mask);
+	  }
+	  res = (res_t(count) & (res_t(res != res_t(0)) - res_t(1))) | res;
+	  arch.regwrite( typename ARCH::GR(), 1, res );
+	}
         break;
       }
+    bit_t cf( false );
+    for (unsigned idx = 0; idx < count; ++idx) {
+      cf = cf or intres[idx];
+    }
+    arch.flagwrite( ARCH::FLAG::CF, cf );
+    arch.flagwrite( ARCH::FLAG::OF, intres[0] );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t( false ) );
   }
 };
 
@@ -2684,7 +2710,7 @@ struct Pshufb : public Op3V<ARCH, VR>
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
-  void disasm( std::ostream& sink ) const { sink << vprefix() << "pshufd "; disasmVVW(sink); }
+  void disasm( std::ostream& sink ) const { sink << vprefix() << "pshufb "; disasmVVW(sink); }
 
   void execute( ARCH& arch ) const
   {
