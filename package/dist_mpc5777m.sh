@@ -40,6 +40,7 @@ import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
 import unisim/service/debug/profiler || exit
+import unisim/service/debug/hla || exit
 import unisim/service/loader/multiformat_loader || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/time/host_time || exit
@@ -58,9 +59,6 @@ import std/stdexcept || exit
 
 import m4/ax_cflags_warn_all || exit
 
-import m4/hla_rti1516e || exit
-import unisim/service/debug/hla || exit
-
 copy source isa isa_vle header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -78,6 +76,7 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 simulator.cc \
 config.cc \
 debugger.cc \
+hla_federate.cc \
 xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \

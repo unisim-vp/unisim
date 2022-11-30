@@ -63,6 +63,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a e200 CPU core of MPC57XX SoC")
 	, sc_core::sc_module(name)
 	, Super(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugTiming<sc_core::sc_time> >(name, parent)
 	, i_ahb_if("i_ahb_if")
 	, d_ahb_if("d_ahb_if")
 	, s_ahb_if("s_ahb_if")
@@ -80,6 +81,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, p_avec_b("p_avec_b")
 	, p_voffset("p_voffset")
 	, p_iack("p_iack")
+	, debug_timing_export("debug-timing-export", this)
 	, m_clk_prop_proxy(m_clk)
 	, m_i_ahb_clk_prop_proxy(m_i_ahb_clk)
 	, m_d_ahb_clk_prop_proxy(m_d_ahb_clk)
@@ -165,6 +167,12 @@ bool CPU<TYPES, CONFIG>::EndSetup()
 {
 	if(!Super::EndSetup()) return false;
 	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+const sc_core::sc_time& CPU<TYPES, CONFIG>::DebugGetTime() const
+{
+	return run_time;
 }
 
 template <typename TYPES, typename CONFIG>

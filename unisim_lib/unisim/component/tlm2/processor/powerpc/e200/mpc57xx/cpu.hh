@@ -42,6 +42,7 @@
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh>
+#include <unisim/service/interfaces/debug_timing.hh>
 #include <inttypes.h>
 #include <stack>
 #include <vector>
@@ -66,6 +67,7 @@ template <typename TYPES, typename CONFIG>
 class CPU
 	: public sc_core::sc_module
 	, public CONFIG::CPU
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugTiming<sc_core::sc_time> >
 	, public tlm::tlm_bw_transport_if<>
 	, public tlm::tlm_fw_transport_if<>
 {
@@ -102,11 +104,15 @@ public:
 	sc_core::sc_in<sc_dt::sc_uint<14> > p_voffset;        // Interrupt vector offset for vectored interrupts
 	sc_core::sc_out<bool>               p_iack;           // interrupt acknowledge
 	
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugTiming<sc_core::sc_time> > debug_timing_export;
+	
 	CPU(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual void end_of_elaboration();
 	virtual bool EndSetup();
+	
+	virtual const sc_core::sc_time& DebugGetTime() const;
 
 	// Backward path
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);

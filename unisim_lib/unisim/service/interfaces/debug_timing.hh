@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,17 +31,26 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_TIMING_HH__
+#define __UNISIM_SERVICE_INTERFACES_DEBUG_TIMING_HH__
 
-#include <unisim/service/debug/hla/federate.tcc>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
-namespace debug {
-namespace hla {
+namespace interfaces {
 
-template class Federate<uint64_t>;
+template <typename TIME_TYPE>
+class DebugTiming : public ServiceInterface
+{
+public:
+	virtual const TIME_TYPE& DebugGetTime() const = 0;
+	virtual const TIME_TYPE& DebugGetTime(unsigned int prc_num) const { return DebugGetTime(); }
+};
 
-} // end of namespace hla
-} // end of namespace debug
+} // end of namespace interfaces
 } // end of namespace service
 } // end of namespace unisim
+
+#endif

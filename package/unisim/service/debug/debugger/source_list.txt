@@ -1,2 +1,0 @@
-unisim/service/debug/debugger/debugger32.cc
-unisim/service/debug/debugger/debugger64.cc

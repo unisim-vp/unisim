@@ -41,9 +41,11 @@ namespace unisim {
 namespace util {
 namespace unicode {
 
-bool utf8_string_to_unicode_wstring(const std::string& input, std::wstring& output, bool strict = true);
-bool unicode_wstring_to_utf8_string(const std::wstring input, std::string& output, bool strict = true);
+bool append_utf8_string_to_unicode_wstring(const std::string& input, std::wstring& output, bool strict = true);
+bool append_unicode_wchar_to_utf8_string(const wchar_t c, std::string& output, bool strict = true);
+bool append_unicode_wstring_to_utf8_string(const std::wstring input, std::string& output, bool strict = true);
 std::wstring utf8_string_to_unicode_wstring(const std::string& input);
+std::string unicode_wchar_to_utf8_string(const wchar_t c);
 std::string unicode_wstring_to_utf8_string(const std::wstring& input);
 std::wstring utf8_string_to_unicode_wstring(const char *input);
 std::string unicode_wstring_to_utf8_string(const wchar_t *input);

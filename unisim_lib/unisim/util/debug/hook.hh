@@ -103,12 +103,16 @@ template <typename ADDRESS>
 class SourceCodeHook : public CustomHook<ADDRESS, SourceCodeHook<ADDRESS> >
 {
 public:
-	SourceCodeHook(const unisim::util::debug::SourceCodeLocation& _source_code_location) : source_code_location(_source_code_location) {}
+	SourceCodeHook(const unisim::util::debug::SourceCodeLocation& _source_code_location) : source_code_location(_source_code_location), filename() {}
+	SourceCodeHook(const unisim::util::debug::SourceCodeLocation& _source_code_location, const char *_filename) : source_code_location(_source_code_location), filename(_filename) {}
+	SourceCodeHook(const unisim::util::debug::SourceCodeLocation& _source_code_location, const std::string& _filename) : source_code_location(_source_code_location), filename(_filename) {}
 	
 	const unisim::util::debug::SourceCodeLocation& GetSourceCodeLocation() const { return source_code_location; }
+	const std::string& GetFilename() const { return filename; }
 	
 private:
 	SourceCodeLocation source_code_location;
+	std::string filename;
 };
 
 template <typename ADDRESS>

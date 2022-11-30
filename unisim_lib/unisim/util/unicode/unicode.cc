@@ -39,10 +39,9 @@ namespace unisim {
 namespace util {
 namespace unicode {
 
-bool utf8_string_to_unicode_wstring(const std::string& input, std::wstring& output, bool strict)
+bool append_utf8_string_to_unicode_wstring(const std::string& input, std::wstring& output, bool strict)
 {
 	bool status = true;
-	output.clear();
 	std::size_t n = input.size();
 	std::size_t i = 0;
 	while(i < n)
@@ -137,58 +136,68 @@ bool utf8_string_to_unicode_wstring(const std::string& input, std::wstring& outp
 	return status;
 }
 
-bool unicode_wstring_to_utf8_string(const std::wstring input, std::string& output, bool strict)
+bool append_unicode_wchar_to_utf8_string(const wchar_t c, std::string& output, bool strict)
 {
 	bool status = true;
-	output.clear();
+	uint32_t code_point = c;
+	if(code_point <= 0x7f)
+	{
+		// 1-byte UTF-8 character
+		char c0 = (char)(code_point & 0xff);
+		output += c0;
+	}
+	else if(code_point <= 0x7ff)
+	{
+		// 2-byte UTF-8 character: vvvvvxxxxxx => 110vvvvv  10xxxxxx
+		uint16_t v = 0xc080 | ((code_point << 2) & 0x1f00) | (code_point & 0x3f);
+		char c0 = (char)((v >> 8) & 0xff);
+		char c1 = (char)(v & 0xff);
+		output += c0;
+		output += c1;
+	}
+	else if(code_point <= 0xffff)
+	{
+		// 3-byte UTF-8 character: vvvvxxxxxxyyyyyy => 1110vvvv 10xxxxxx 10yyyyyy
+		uint32_t v = 0xe08080 | ((code_point << 4) & 0x0f0000) | ((code_point << 2) & 0x3f00) | (code_point & 0x3f);
+		char c0 = (char)((v >> 16) & 0xff);
+		char c1 = (char)((v >> 8) & 0xff);
+		char c2 = (char)(v & 0xff);
+		output += c0;
+		output += c1;
+		output += c2;
+	}
+	else if(code_point <= 0x10ffff)
+	{
+		// 4-byte UTF-8 character: vvvxxxxxxyyyyyyzzzzzz => 11110vvv 10xxxxxx 10yyyyyy 10zzzzzz
+		uint32_t v = 0xf0808080 | ((code_point << 6) & 0x07000000) | ((code_point << 4) & 0x3f0000) | ((code_point << 2) & 0x3f00) | (code_point & 0x3f);
+		char c0 = (char)((v >> 24) & 0xff);
+		char c1 = (char)((v >> 16) & 0xff);
+		char c2 = (char)((v >> 8) & 0xff);
+		char c3 = (char)(v & 0xff);
+		output += c0;
+		output += c1;
+		output += c2;
+		output += c3;
+	}
+	else
+	{
+		if(strict) return false;
+		output += '?';
+		status = false;
+	}
+	return status;
+}
+
+bool append_unicode_wstring_to_utf8_string(const std::wstring input, std::string& output, bool strict)
+{
+	bool status = true;
 	std::size_t n = input.size();
 	std::size_t i = 0;
 	while(i < n)
 	{
-		uint32_t code_point = input[i++];
-		if(code_point <= 0x7f)
-		{
-			// 1-byte UTF-8 character
-			char c0 = (char)(code_point & 0xff);
-			output += c0;
-		}
-		else if(code_point <= 0x7ff)
-		{
-			// 2-byte UTF-8 character: vvvvvxxxxxx => 110vvvvv  10xxxxxx
-			uint16_t v = 0xc080 | ((code_point << 2) & 0x1f00) | (code_point & 0x3f);
-			char c0 = (char)((v >> 8) & 0xff);
-			char c1 = (char)(v & 0xff);
-			output += c0;
-			output += c1;
-		}
-		else if(code_point <= 0xffff)
-		{
-			// 3-byte UTF-8 character: vvvvxxxxxxyyyyyy => 1110vvvv 10xxxxxx 10yyyyyy
-			uint32_t v = 0xe08080 | ((code_point << 4) & 0x0f0000) | ((code_point << 2) & 0x3f00) | (code_point & 0x3f);
-			char c0 = (char)((v >> 16) & 0xff);
-			char c1 = (char)((v >> 8) & 0xff);
-			char c2 = (char)(v & 0xff);
-			output += c0;
-			output += c1;
-			output += c2;
-		}
-		else if(code_point <= 0x10ffff)
-		{
-			// 4-byte UTF-8 character: vvvxxxxxxyyyyyyzzzzzz => 11110vvv 10xxxxxx 10yyyyyy 10zzzzzz
-			uint32_t v = 0xf0808080 | ((code_point << 6) & 0x07000000) | ((code_point << 4) & 0x3f0000) | ((code_point << 2) & 0x3f00) | (code_point & 0x3f);
-			char c0 = (char)((v >> 24) & 0xff);
-			char c1 = (char)((v >> 16) & 0xff);
-			char c2 = (char)((v >> 8) & 0xff);
-			char c3 = (char)(v & 0xff);
-			output += c0;
-			output += c1;
-			output += c2;
-			output += c3;
-		}
-		else
+		if(!append_unicode_wchar_to_utf8_string(input[i++], output, strict))
 		{
 			if(strict) return false;
-			output += '?';
 			status = false;
 		}
 	}
@@ -198,14 +207,21 @@ bool unicode_wstring_to_utf8_string(const std::wstring input, std::string& outpu
 std::wstring utf8_string_to_unicode_wstring(const std::string& input)
 {
 	std::wstring output;
-	utf8_string_to_unicode_wstring(input, output, false);
+	append_utf8_string_to_unicode_wstring(input, output, false);
+	return output;
+}
+
+std::string unicode_wchar_to_utf8_string(const wchar_t c)
+{
+	std::string output;
+	append_unicode_wchar_to_utf8_string(c, output, false);
 	return output;
 }
 
 std::string unicode_wstring_to_utf8_string(const std::wstring& input)
 {
 	std::string output;
-	unicode_wstring_to_utf8_string(input, output, false);
+	append_unicode_wstring_to_utf8_string(input, output, false);
 	return output;
 }
 

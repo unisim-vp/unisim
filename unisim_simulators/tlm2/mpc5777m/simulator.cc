@@ -4701,6 +4701,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		*debugger->memory_import                         [0] >> main_core_0->memory_export;
 		*debugger->registers_import                      [0] >> main_core_0->registers_export;
 		*debugger->memory_access_reporting_control_import[0] >> main_core_0->memory_access_reporting_control_export;
+		*debugger->debug_timing_import                   [0] >> main_core_0->debug_timing_export;
 
 		// Main Core 1
 		main_core_1->debug_yielding_import                   >> *debugger->debug_yielding_export[1];
@@ -4710,6 +4711,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		*debugger->memory_import                         [1] >> main_core_1->memory_export;
 		*debugger->registers_import                      [1] >> main_core_1->registers_export;
 		*debugger->memory_access_reporting_control_import[1] >> main_core_1->memory_access_reporting_control_export;
+		*debugger->debug_timing_import                   [1] >> main_core_1->debug_timing_export;
 
 		// Peripheral Core 2
 		peripheral_core_2->debug_yielding_import             >> *debugger->debug_yielding_export[2];
@@ -4719,6 +4721,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		*debugger->memory_import                         [2] >> peripheral_core_2->memory_export;
 		*debugger->registers_import                      [2] >> peripheral_core_2->registers_export;
 		*debugger->memory_access_reporting_control_import[2] >> peripheral_core_2->memory_access_reporting_control_export;
+		*debugger->debug_timing_import                   [2] >> peripheral_core_2->debug_timing_export;
 		
 		// Connect debugger to loader
 		debugger->blob_import >> loader->blob_export;
@@ -4786,27 +4789,27 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 			profiler[prc_num]->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[front_end_num];
 		}
 	}
-
+		
 	if(hla_federate)
 	{
-		*debugger->debug_event_listener_import[front_end_num]   >> hla_federate->debug_event_listener_export;
-		*debugger->debug_yielding_import[front_end_num]         >> hla_federate->debug_yielding_export;
-		hla_federate->debug_yielding_request_import             >> *debugger->debug_yielding_request_export[front_end_num];
-		hla_federate->debug_selecting_import                    >> *debugger->debug_selecting_export[front_end_num];
-		hla_federate->debug_event_trigger_import                >> *debugger->debug_event_trigger_export[front_end_num];
-		hla_federate->disasm_import                             >> *debugger->disasm_export[front_end_num];
-		hla_federate->memory_import                             >> *debugger->memory_export[front_end_num];
-		hla_federate->registers_import                          >> *debugger->registers_export[front_end_num];
-		hla_federate->stmt_lookup_import                        >> *debugger->stmt_lookup_export[front_end_num];
-		hla_federate->symbol_table_lookup_import                >> *debugger->symbol_table_lookup_export[front_end_num];
-		hla_federate->backtrace_import                          >> *debugger->backtrace_export[front_end_num];
-		hla_federate->debug_info_loading_import                 >> *debugger->debug_info_loading_export[front_end_num];
-		hla_federate->data_object_lookup_import                 >> *debugger->data_object_lookup_export[front_end_num];
-		hla_federate->subprogram_lookup_import                  >> *debugger->subprogram_lookup_export[front_end_num];
-		hla_federate->stack_unwinding_import                    >> *debugger->stack_unwinding_export[front_end_num];
-		hla_federate->stubbing_import                           >> *debugger->stubbing_export[front_end_num];
-		hla_federate->hooking_import                            >> *debugger->hooking_export[front_end_num];
-		front_end_num++;
+		*debugger->debug_event_listener_import[front_end_num] >> hla_federate->debug_event_listener_export;
+		*debugger->debug_yielding_import[front_end_num]       >> hla_federate->debug_yielding_export;
+		hla_federate->debug_yielding_request_import           >> *debugger->debug_yielding_request_export[front_end_num];
+		hla_federate->debug_selecting_import                  >> *debugger->debug_selecting_export[front_end_num];
+		hla_federate->debug_event_trigger_import              >> *debugger->debug_event_trigger_export[front_end_num];
+		hla_federate->disasm_import                           >> *debugger->disasm_export[front_end_num];
+		hla_federate->memory_import                           >> *debugger->memory_export[front_end_num];
+		hla_federate->registers_import                        >> *debugger->registers_export[front_end_num];
+		hla_federate->stmt_lookup_import                      >> *debugger->stmt_lookup_export[front_end_num];
+		hla_federate->symbol_table_lookup_import              >> *debugger->symbol_table_lookup_export[front_end_num];
+		hla_federate->backtrace_import                        >> *debugger->backtrace_export[front_end_num];
+		hla_federate->debug_info_loading_import               >> *debugger->debug_info_loading_export[front_end_num];
+		hla_federate->data_object_lookup_import               >> *debugger->data_object_lookup_export[front_end_num];
+		hla_federate->subprogram_lookup_import                >> *debugger->subprogram_lookup_export[front_end_num];
+		hla_federate->stack_unwinding_import                  >> *debugger->stack_unwinding_export[front_end_num];
+		hla_federate->stubbing_import                         >> *debugger->stubbing_export[front_end_num];
+		hla_federate->hooking_import                          >> *debugger->hooking_export[front_end_num];
+		hla_federate->debug_timing_import                     >> *debugger->debug_timing_export[front_end_num];
 	}
 	
 	(*loader->memory_import[0]) >> flash->memory_export;
@@ -5225,6 +5228,7 @@ Simulator::~Simulator()
 {
 	unsigned int i;
 	
+	if(hla_federate) delete hla_federate;
 	if(main_core_0) delete main_core_0;
 	if(main_core_1) delete main_core_1;
 	if(peripheral_core_2) delete peripheral_core_2;
@@ -5374,7 +5378,6 @@ Simulator::~Simulator()
 	if(profiler[0]) delete profiler[0];
 	if(profiler[1]) delete profiler[1];
 	if(profiler[2]) delete profiler[2];
-	if(hla_federate) delete hla_federate;
 	if(debugger) delete debugger;
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;

@@ -107,7 +107,7 @@ struct Location
 	Location(unsigned int _lineno) : lineno(_lineno), colno(0) {}
 	Location(unsigned int _lineno, unsigned int _colno) : lineno(_lineno), colno(_colno) {}
 	
-	bool IsDefined() const { return !lineno; }
+	bool IsDefined() const { return lineno != 0; }
 	
 	unsigned int lineno;
 	unsigned int colno;

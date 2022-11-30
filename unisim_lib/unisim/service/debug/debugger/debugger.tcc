@@ -163,6 +163,10 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 		std::stringstream registers_import_name_sstr;
 		registers_import_name_sstr << "registers-import[" << prc_num << "]";
 		registers_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
+		
+		std::stringstream debug_timing_import_name_sstr;
+		debug_timing_import_name_sstr << "debug-timing-import[" << prc_num << "]";
+		debug_timing_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugTiming<TIME_TYPE> >(debug_timing_import_name_sstr.str().c_str(), this);
 	}
 	
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
@@ -226,6 +230,10 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
 		std::stringstream hooking_export_name_sstr;
 		hooking_export_name_sstr << "hooking-export[" << front_end_num << "]";
 		hooking_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> >(hooking_export_name_sstr.str().c_str(), this);
+		
+		std::stringstream debug_timing_export_name_sstr;
+		debug_timing_export_name_sstr << "debug-timing-export[" << front_end_num << "]";
+		debug_timing_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugTiming<TIME_TYPE> >(debug_timing_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_event_listener_import_name_sstr;
 		debug_event_listener_import_name_sstr << "debug-event-listener-import[" << front_end_num << "]";
@@ -381,6 +389,7 @@ Debugger<CONFIG>::~Debugger()
 		delete disasm_import[prc_num];
 		delete memory_import[prc_num];
 		delete registers_import[prc_num];
+		delete debug_timing_import[prc_num];
 	}
 	
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
@@ -400,6 +409,7 @@ Debugger<CONFIG>::~Debugger()
 		delete stack_unwinding_export[front_end_num];
 		delete stubbing_export[front_end_num];
 		delete hooking_export[front_end_num];
+		delete debug_timing_export[front_end_num];
 		delete debug_event_listener_import[front_end_num];
 		delete debug_yielding_import[front_end_num];
 	}
@@ -967,7 +977,7 @@ bool Debugger<CONFIG>::Listen(unsigned int front_end_num, unisim::util::debug::E
 		
 		std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
 		
-		FindStatements(front_end_num, stmts, src_code_brkp->GetSourceCodeLocation());
+		FindStatements(front_end_num, stmts, src_code_brkp->GetSourceCodeLocation(), src_code_brkp->GetFilename());
 		
 		if(stmts.size())
 		{
@@ -1706,16 +1716,18 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 
 // unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
 template <typename CONFIG>
-void Debugger<CONFIG>::ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const
+void Debugger<CONFIG>::ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			elf32_loader->ScanStatements(scanner);
 		}
 	}
@@ -1723,16 +1735,18 @@ void Debugger<CONFIG>::ScanStatements(unsigned int front_end_num, unisim::servic
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			elf64_loader->ScanStatements(scanner);
 		}
 	}
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -1740,9 +1754,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(addr, opt);
 			if(stmt)
 			{
@@ -1771,9 +1787,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(addr, opt);
 			if(stmt)
 			{
@@ -1803,7 +1821,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -1811,9 +1829,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, addr, opt);
 			if(stmt)
 			{
@@ -1842,9 +1862,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, addr, opt);
 			if(stmt)
 			{
@@ -1874,16 +1896,18 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
 {
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(source_code_location);
 			if(stmt) return stmt;
 		}
@@ -1892,9 +1916,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(source_code_location);
 			if(stmt) return stmt;
 		}
@@ -1903,7 +1929,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 }
 
 template <typename CONFIG>
-const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
 {
 	const typename unisim::util::debug::Statement<ADDRESS> *ret = 0;
 	unsigned int i;
@@ -1911,9 +1937,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, source_code_location);
 			
 			if(!ret) ret = stmt;
@@ -1923,9 +1951,11 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
+		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if((filename && ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) && (strcmp(blob->GetFilename(), filename) == 0))) ||
+			 (!filename && ((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])))
 		{
-			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, source_code_location);
 			
 			if(!ret) ret = stmt;
@@ -2471,7 +2501,7 @@ bool Debugger<CONFIG>::SetHook(unsigned int front_end_num, unisim::util::debug::
 		
 		std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
 		
-		FindStatements(front_end_num, stmts, src_code_hook->GetSourceCodeLocation());
+		FindStatements(front_end_num, stmts, src_code_hook->GetSourceCodeLocation(), src_code_hook->GetFilename());
 		
 		if(stmts.size())
 		{
@@ -2610,6 +2640,20 @@ void Debugger<CONFIG>::OnDebugEvent(unsigned int front_end_num, const unisim::ut
 	}
 	
 	front_end_gate[front_end_num]->OnDebugEvent(event);
+}
+
+// unisim::service::interfaces::DebugTiming<TIME_TYPE> (tagged)
+
+template <typename CONFIG>
+const typename Debugger<CONFIG>::TIME_TYPE& Debugger<CONFIG>::DebugGetTime(unsigned int front_end_num) const
+{
+	return sel_prc_gate[front_end_num]->DebugGetTime();
+}
+
+template <typename CONFIG>
+const typename Debugger<CONFIG>::TIME_TYPE& Debugger<CONFIG>::DebugGetTime(unsigned int front_end_num, unsigned int prc_num) const
+{
+	return prc_gate[prc_num]->DebugGetTime();
 }
 
 template <typename CONFIG>

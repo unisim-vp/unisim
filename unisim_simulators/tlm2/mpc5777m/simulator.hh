@@ -76,6 +76,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/debug/hla/federate.hh>
+#include <unisim/util/hla/sc_time/sc_time.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -257,7 +258,7 @@ private:
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
-	typedef unisim::service::debug::hla::Federate<CPU_ADDRESS_TYPE> HLA_FEDERATE;
+	typedef unisim::service::debug::hla::Federate<HLA_FEDERATE_CONFIG> HLA_FEDERATE;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;

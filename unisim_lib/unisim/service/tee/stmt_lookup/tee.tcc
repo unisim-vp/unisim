@@ -75,7 +75,7 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const
+void Tee<ADDRESS, MAX_IMPORTS>::ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -84,14 +84,14 @@ void Tee<ADDRESS, MAX_IMPORTS>::ScanStatements(unisim::service::interfaces::Stat
 		{
 			if(*stmt_lookup_import[i])
 			{
-				(*stmt_lookup_import[i])->ScanStatements(scanner);
+				(*stmt_lookup_import[i])->ScanStatements(scanner, filename);
 			}
 		}
 	}
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -101,7 +101,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(addr, opt);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(addr, filename, opt);
 				if(stmt)
 				{
 					switch(opt)
@@ -131,7 +131,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
 	unsigned int i;
@@ -141,7 +141,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, addr, opt);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, addr, filename, opt);
 				if(stmt)
 				{
 					switch(opt)
@@ -171,7 +171,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -180,7 +180,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(source_code_location);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatement(source_code_location, filename);
 				if(stmt) return stmt;
 			}
 		}
@@ -190,7 +190,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const
 {
 	const unisim::util::debug::Statement<ADDRESS> *ret = 0;
 	unsigned int i;
@@ -200,7 +200,7 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 		{
 			if(*stmt_lookup_import[i])
 			{
-				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, source_code_location);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, source_code_location, filename);
 				if(!ret) ret = stmt;
 			}
 		}

@@ -108,20 +108,25 @@ bool InlineDebuggerBase::LocateFile(const char *filename, std::string& match_fil
 
 	std::vector<std::string> search_paths;
 
-	s.clear();
-	p = search_path.c_str();
-	do
+	for(int pass = 0; pass < 2; ++pass)
 	{
-		if(*p == 0 || *p == ';')
+		s.clear();
+		p = search_path.c_str();
+		do
 		{
-			search_paths.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
+			if(*p == 0 || *p == ';')
+			{
+				if(pass) search_paths.push_back(unisim::kernel::Object::GetSimulator()->GetSharedDataDirectory() + '/' + s);
+				else search_paths.push_back(s);
+				
+				s.clear();
+			}
+			else
+			{
+				s += *p;
+			}
+		} while(*(p++));
+	}
 	
 	std::vector<std::string> hierarchical_path;
 	
@@ -162,16 +167,16 @@ bool InlineDebuggerBase::LocateFile(const char *filename, std::string& match_fil
 					if(!try_file_path.empty()) try_file_path += '/';
 					try_file_path += hierarchical_path[j];
 				}
-				//std::cerr << "try_file_path=\"" << try_file_path << "\":";
+// 				std::cerr << "try_file_path=\"" << try_file_path << "\":";
 				if(access(try_file_path.c_str(), R_OK) == 0)
 				{
-					//std::cerr << "found" << std::endl;
+// 					std::cerr << "found" << std::endl;
 					match = true;
 					match_file_path = try_file_path;
 				}
 				else
 				{
-					//std::cerr << "not found" << std::endl;
+// 					std::cerr << "not found" << std::endl;
 				}
 			}
 		}

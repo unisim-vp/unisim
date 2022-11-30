@@ -54,12 +54,13 @@ class SourceCodeBreakpoint : public CustomEvent<ADDRESS, SourceCodeBreakpoint<AD
 {
 public:
 	SourceCodeBreakpoint(const SourceCodeLocation& source_code_location);
-	SourceCodeBreakpoint(const char *source_code_filename, unsigned int lineno, unsigned int colno = 0);
+	SourceCodeBreakpoint(const char *source_code_filename, unsigned int lineno, const char *filename = 0, unsigned int colno = 0);
 	virtual ~SourceCodeBreakpoint();
 	
 	int GetId() const { return id; }
 	const SourceCodeLocation& GetSourceCodeLocation() const { return source_code_location; }
 	const std::string& GetSourceCodeFilename() const { return source_code_location.GetSourceCodeFilename(); }
+	const std::string& GetFilename() const { return filename; }
 	unsigned int GetLineNo() const { return source_code_location.GetLineNo(); }
 	unsigned int GetColNo() const { return source_code_location.GetColNo(); }
 	
@@ -71,6 +72,7 @@ public:
 	
 private:
 	SourceCodeLocation source_code_location;
+	std::string filename;
 	typedef std::set<Breakpoint<ADDRESS> *> Breakpoints;
 	Breakpoints breakpoints;
 	int id;
@@ -92,9 +94,10 @@ inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint<A
 }
 
 template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const char *source_code_filename, unsigned int lineno, unsigned int colno)
+SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const char *source_code_filename, unsigned int lineno, const char *_filename, unsigned int colno)
 	: CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >()
 	, source_code_location(source_code_filename, lineno, colno)
+	, filename(_filename)
 {
 }
 

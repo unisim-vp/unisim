@@ -151,7 +151,7 @@ std::ostream& operator << (std::ostream& stream, const Location& loc)
 {
 	if(loc.lineno)
 	{
-		stream << "line #" <<loc.lineno;
+		stream << "line #" << loc.lineno;
 		if(loc.colno) stream << ", column #" << loc.colno;
 	}
 	else
@@ -173,7 +173,8 @@ JSON_Value *JSON_Object::Clone() const
 
 JSON_Object::KeysType JSON_Object::Keys() const
 {
-	KeysType keys(members.size());
+	KeysType keys;
+	keys.reserve(members.size());
 	for(typename Members::const_iterator it = members.begin(); it != members.end(); ++it) keys.push_back((*it).second.GetName());
 	return keys;
 }

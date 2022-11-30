@@ -1,4 +1,3 @@
-libc/inttypes
 m4/pthread
 std/cassert
 std/fstream
@@ -15,6 +14,7 @@ unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/debug_info_loading
 unisim/service/interfaces/debug_selecting
+unisim/service/interfaces/debug_timing
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/hooking

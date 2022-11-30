@@ -786,7 +786,7 @@ public:
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
-	//////////////// unisim::service::interfaces::DebugControl /////////////////
+	///////// unisim::service::interfaces::MemoryAccessReportingControl ////////
 	
 	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
 	

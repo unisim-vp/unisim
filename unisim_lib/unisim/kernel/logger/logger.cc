@@ -101,7 +101,7 @@ std::streambuf::int_type LoggerStreamBuffer::overflow(int_type c)
 	return c;
 }
 
-std::streamsize LoggerStreamBuffer::xsputn(const char* s, std::streamsize n)
+std::streamsize LoggerStreamBuffer::xsputn(const char_type* s, std::streamsize n)
 {
 	if(n)
 	{
@@ -150,6 +150,81 @@ LoggerStream::~LoggerStream()
 {
 }
 
+LoggerWStreamBuffer::LoggerWStreamBuffer(Logger& _owner, LoggerServerOutputMethodPtr _logger_server_output_method_ptr)
+	: owner(_owner)
+	, logger_server_output_method_ptr(_logger_server_output_method_ptr)
+	, buffer()
+	, mutex()
+{
+	pthread_mutex_init(&mutex, NULL);
+}
+
+LoggerWStreamBuffer::~LoggerWStreamBuffer()
+{
+	if(!buffer.empty())
+	{
+		Flush();
+	}
+	
+	pthread_mutex_destroy(&mutex);
+}
+
+std::wstreambuf::int_type LoggerWStreamBuffer::overflow(int_type c)
+{
+	Append(c);
+	
+	return c;
+}
+
+std::streamsize LoggerWStreamBuffer::xsputn(const char_type* s, std::streamsize n)
+{
+	if(n)
+	{
+		int count = n;
+		
+		do
+		{
+			char c = *s;
+			Append(c);
+		}
+		while(++s, --count);
+	}
+	
+	return n;
+}
+
+void LoggerWStreamBuffer::Append(wchar_t c)
+{
+	if(c == '\n')
+	{
+		Flush();
+	}
+	else
+	{
+		pthread_mutex_lock(&mutex);
+		buffer.append(1, c);
+		pthread_mutex_unlock(&mutex);
+	}
+}
+
+void LoggerWStreamBuffer::Flush()
+{
+	pthread_mutex_lock(&mutex);
+	(owner.GetServerInstance()->*logger_server_output_method_ptr)(owner.GetName(), unisim::util::unicode::unicode_wstring_to_utf8_string(buffer).c_str());
+	buffer.clear();
+	pthread_mutex_unlock(&mutex);
+}
+
+LoggerWStream::LoggerWStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr)
+	: logger_stream_buffer(owner, logger_server_output_method_ptr)
+{
+	rdbuf(&logger_stream_buffer);
+}
+
+LoggerWStream::~LoggerWStream()
+{
+}
+
 Logger::Logger(const std::string& _name)
 	: name(_name)
 	, buffer()
@@ -159,6 +234,10 @@ Logger::Logger(const std::string& _name)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
 	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
 	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
+	, null_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugNull)
+	, info_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
+	, warning_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
+	, error_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
 {
 	GetServerInstance();
 }
@@ -172,6 +251,10 @@ Logger::Logger(const char * _name)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
 	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
 	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
+	, null_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugNull)
+	, info_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
+	, warning_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
+	, error_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
 {
 	GetServerInstance();
 }
@@ -185,6 +268,10 @@ Logger::Logger(const unisim::kernel::Object& object)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
 	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
 	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
+	, null_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugNull)
+	, info_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
+	, warning_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
+	, error_wstream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
 {
 	GetServerInstance();
 }

@@ -71,6 +71,7 @@
 #include <unisim/service/interfaces/stack_unwinding.hh>
 #include <unisim/service/interfaces/stubbing.hh>
 #include <unisim/service/interfaces/hooking.hh>
+#include <unisim/service/interfaces/debug_timing.hh>
 
 #include <string>
 #include <set>
@@ -93,7 +94,8 @@ using unisim::kernel::logger::EndDebugError;
 #if 0
 struct CONFIG
 {
-	typedef ADDRESS uint32_t;
+	typedef uint32_t ADDRESS;
+	typedef sc_core::sc_time TIME_TYPE;
 	static const unsigned int NUM_PROCESSORS = 1;
 	static const unsigned int MAX_FRONT_ENDS = 1;
 };
@@ -106,6 +108,7 @@ class Debugger
 {
 public:
 	typedef typename CONFIG::ADDRESS ADDRESS;
+	typedef typename CONFIG::TIME_TYPE TIME_TYPE;
 	static const unsigned int NUM_PROCESSORS = CONFIG::NUM_PROCESSORS;
 	static const unsigned int MAX_FRONT_ENDS = CONFIG::MAX_FRONT_ENDS;
 	
@@ -130,6 +133,7 @@ public:
 	unisim::kernel::ServiceExport<unisim::service::interfaces::StackUnwinding>              *stack_unwinding_export[MAX_FRONT_ENDS];     // depends on selected CPU number
 	unisim::kernel::ServiceExport<unisim::service::interfaces::Stubbing<ADDRESS> >          *stubbing_export[MAX_FRONT_ENDS];
 	unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> >           *hooking_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugTiming<TIME_TYPE> >     *debug_timing_export[MAX_FRONT_ENDS];        // depends on selected CPU number
 
 	// Import from Loader
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Blob<ADDRESS> > blob_import;
@@ -139,6 +143,7 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        *disasm_import[NUM_PROCESSORS];
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             *memory_import[NUM_PROCESSORS];
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    *registers_import[NUM_PROCESSORS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugTiming<TIME_TYPE> >      *debug_timing_import[NUM_PROCESSORS];
 
 	// Imports from Front-ends
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > *debug_event_listener_import[MAX_FRONT_ENDS];
@@ -158,11 +163,16 @@ public:
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr, type); }
 
 	// Statements
-	void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const { ScanStatements(MAX_FRONT_ENDS, scanner); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, opt); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, opt); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const { return FindStatement(MAX_FRONT_ENDS, source_code_location); }
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const { return FindStatements(MAX_FRONT_ENDS, stmts, source_code_location); }
+	void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const { ScanStatements(MAX_FRONT_ENDS, scanner, filename); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, filename, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, filename, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { return FindStatement(MAX_FRONT_ENDS, source_code_location, filename); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { return FindStatements(MAX_FRONT_ENDS, stmts, source_code_location, filename); }
+	void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const std::string& filename) const { ScanStatements(MAX_FRONT_ENDS, scanner, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, filename.length() ? filename.c_str() : 0, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, filename.length() ? filename.c_str() : 0, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatement(MAX_FRONT_ENDS, source_code_location, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(MAX_FRONT_ENDS, stmts, source_code_location, filename.length() ? filename.c_str() : 0); }
 	
 private:
 	// Exports to CPUs
@@ -226,11 +236,16 @@ private:
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
-	void ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	void ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const;
+	void ScanStatements(unsigned int front_end_num, unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const std::string& filename) const { ScanStatements(front_end_num, scanner, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(front_end_num, addr, filename.length() ? filename.c_str() : 0, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const std::string& filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(front_end_num, stmts, addr, filename.length() ? filename.c_str() : 0, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatement(front_end_num, source_code_location, filename.length() ? filename.c_str() : 0); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename) const { return FindStatements(front_end_num, stmts, source_code_location, filename.length() ? filename.c_str() : 0); }
 	
 	// unisim::service::interfaces::BackTrace<ADDRESS> (tagged)
 	std::vector<ADDRESS> *GetBackTrace(unsigned int front_end_num) const;
@@ -266,6 +281,10 @@ private:
 	// unisim::service::interfaces::DebugEventListener<ADDRESS> (tagged)
 	void OnDebugEvent(unsigned int front_end_num, const unisim::util::debug::Event<ADDRESS> *event);
 	
+	// unisim::service::interfaces::DebugTiming<TIME_TYPE> (tagged)
+	const TIME_TYPE& DebugGetTime(unsigned int front_end_num) const;
+	const TIME_TYPE& DebugGetTime(unsigned int front_end_num, unsigned int prc_num) const;
+	
 	struct ProcessorGate
 		: unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
 		, unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >
@@ -274,6 +293,7 @@ private:
 		, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
 		, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
 		, unisim::kernel::Client<unisim::service::interfaces::Registers>
+		, unisim::kernel::Client<unisim::service::interfaces::DebugTiming<TIME_TYPE> >
 	{
 		// From Processor
 		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding> debug_yielding_export;
@@ -285,6 +305,7 @@ private:
 		unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_import;
 		unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> > memory_import;
 		unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> registers_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugTiming<TIME_TYPE> > debug_timing_import;
 
 		ProcessorGate(const char *name, unsigned int _id, Debugger<CONFIG> *parent)
 			: unisim::kernel::Object(name, parent)
@@ -295,6 +316,7 @@ private:
 			, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::DebugTiming<TIME_TYPE> >(name, parent)
 			, debug_yielding_export("debug-yielding-export", this)
 			, memory_access_reporting_export("memory-access-reporting-export", this)
 			, trap_reporting_export("trap-reporting-export", this)
@@ -302,6 +324,7 @@ private:
 			, disasm_import("disasm-import", this)
 			, memory_import("memory-import", this)
 			, registers_import("registers-import", this)
+			, debug_timing_import("debug-timing-import", this)
 			, dbg(*parent)
 			, id(_id)
 		{
@@ -313,6 +336,7 @@ private:
 			disasm_import                          >> *dbg.disasm_import[id];
 			memory_import                          >> *dbg.memory_import[id];
 			registers_import                       >> *dbg.registers_import[id];
+			debug_timing_import                    >> *dbg.debug_timing_import[id];
 		}
 		
 		unsigned int GetProcessorNumber() const { return id; }
@@ -346,9 +370,14 @@ private:
 		// unisim::service::interfaces::Registers
 		inline unisim::service::interfaces::Register *GetRegister(const char *name) { return registers_import ? registers_import->GetRegister(name) : 0; }
 		inline void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) { if(registers_import) registers_import->ScanRegisters(scanner); }
-
+		
 		// unisim::service::interfaces::MemoryAccessReportingControl
 		inline void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresMemoryAccessReporting(type, report); }
+		
+		// unisim::service::interfaces::DebugTiming<TIME_TYPE>
+		inline const TIME_TYPE& DebugGetTime() const { static TIME_TYPE t; return debug_timing_import ? debug_timing_import->DebugGetTime(id) : t; }
+		inline const TIME_TYPE& DebugGetTime(unsigned int prc_num) const { static TIME_TYPE t; return debug_timing_import ? debug_timing_import->DebugGetTime(id) : t; }
+		
 	private:
 		Debugger<CONFIG>& dbg;
 		unsigned int id;
@@ -379,6 +408,7 @@ private:
 		, unisim::kernel::Service<unisim::service::interfaces::StackUnwinding>
 		, unisim::kernel::Service<unisim::service::interfaces::Stubbing<ADDRESS> >
 		, unisim::kernel::Service<unisim::service::interfaces::Hooking<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::DebugTiming<TIME_TYPE> >
 		, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
 		, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >
 	{
@@ -398,6 +428,7 @@ private:
 		unisim::kernel::ServiceExport<unisim::service::interfaces::StackUnwinding> stack_unwinding_export;               // depends on selected CPU number 
 		unisim::kernel::ServiceExport<unisim::service::interfaces::Stubbing<ADDRESS> > stubbing_export;
 		unisim::kernel::ServiceExport<unisim::service::interfaces::Hooking<ADDRESS> > hooking_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugTiming<TIME_TYPE> > debug_timing_export;
 		
 		// Imports from Front-end
 		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_import;
@@ -420,6 +451,7 @@ private:
 			, unisim::kernel::Service<unisim::service::interfaces::StackUnwinding>(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::Stubbing<ADDRESS> >(name, parent)
 			, unisim::kernel::Service<unisim::service::interfaces::Hooking<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DebugTiming<TIME_TYPE> >(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, parent)
 			, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
 			, debug_yielding_request_export("debug-yielding-request-export", this)
@@ -437,6 +469,7 @@ private:
 			, stack_unwinding_export("stack-unwinding-export", this)
 			, stubbing_export("stubbing-export", this)
 			, hooking_export("hooking-export", this)
+			, debug_timing_export("debug-timing-export", this)
 			, debug_event_listener_import("debug-event-listener-import", this)
 			, debug_yielding_import("debug-yielding-import", this)
 			, dbg(*parent)
@@ -457,6 +490,7 @@ private:
 			*dbg.stack_unwinding_export       [id] >> stack_unwinding_export;
 			*dbg.stubbing_export              [id] >> stubbing_export;
 			*dbg.hooking_export               [id] >> hooking_export;
+			*dbg.debug_timing_export          [id] >> debug_timing_export;
 			
 			debug_event_listener_import >> *dbg.debug_event_listener_import[id];
 			debug_yielding_import       >> *dbg.debug_yielding_import[id];
@@ -529,11 +563,11 @@ private:
 		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { bool l = dbg.Lock(id); const typename unisim::util::debug::Symbol<ADDRESS> *ret = dbg.FindSymbolByAddr(id, addr, type); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::StatementLookup<ADDRESS>
-		virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanStatements(id, scanner); if(l) { dbg.Unlock(id); } }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, addr, opt); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, addr, opt); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, source_code_location); if(l) { dbg.Unlock(id); } return ret; }
-		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, source_code_location); if(l) { dbg.Unlock(id); } return ret; }
+		virtual void ScanStatements(unisim::service::interfaces::StatementScanner<ADDRESS>& scanner, const char *filename) const { bool l = dbg.Lock(id); dbg.ScanStatements(id, scanner, filename); if(l) { dbg.Unlock(id); } }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, addr, filename, opt); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, const char *filename, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, addr, filename, opt); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatement(id, source_code_location, filename); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const unisim::util::debug::SourceCodeLocation& source_code_location, const char *filename) const { bool l = dbg.Lock(id); const unisim::util::debug::Statement<ADDRESS> *ret = dbg.FindStatements(id, stmts, source_code_location, filename); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// unisim::service::interfaces::BackTrace<ADDRESS>
 		virtual std::vector<ADDRESS> *GetBackTrace() const { bool l = dbg.Lock(id); std::vector<ADDRESS> *ret = dbg.GetBackTrace(id); if(l) { dbg.Unlock(id); } return ret; }
@@ -565,6 +599,10 @@ private:
 		virtual void ScanHooks(unisim::service::interfaces::HookScanner<ADDRESS>& scanner) const { bool l = dbg.Lock(id); dbg.ScanHooks(id, scanner); if(l) { dbg.Unlock(id); } } 
 		virtual bool SetHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(id); bool ret = dbg.SetHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
 		virtual bool RemoveHook(unisim::util::debug::Hook<ADDRESS> *hook) { bool l = dbg.Lock(id); bool ret = dbg.RemoveHook(id, hook); if(l) { dbg.Unlock(id); } return ret; }
+		
+		// unisim::service::interfaces::DebugTiming<TIME_TYPE>
+		virtual const TIME_TYPE& DebugGetTime() const { bool l = dbg.Lock(id); const TIME_TYPE& ret = dbg.DebugGetTime(id); if(l) { dbg.Unlock(id); } return ret; }
+		virtual const TIME_TYPE& DebugGetTime(unsigned int prc_num) const { bool l = dbg.Lock(id); const TIME_TYPE& ret = dbg.DebugGetTime(id, prc_num); if(l) { dbg.Unlock(id); } return ret; }
 		
 		// To Front-end
 		
