@@ -52,7 +52,7 @@ namespace hla {
 /////////////////////////// TimeImplementations<> /////////////////////////////
 
 const wchar_t *TimeImplementations<uint64_t>::HLA_TIME_IMPL_NAME = L"HLAinteger64Time";
-const wchar_t *TimeImplementations<double>::HLA_TIME_IMPL_NAME = L"HLAinteger64Time";
+const wchar_t *TimeImplementations<double>::HLA_TIME_IMPL_NAME = L"HLAfloat64Time";
 
 //////////////////////////////// ObjectClass //////////////////////////////////
 
