@@ -62,7 +62,7 @@ struct MisInsn
   uint64_t addr;
   uint32_t code;
 };
-  
+
 struct Arch
   : Core
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
@@ -79,7 +79,7 @@ struct Arch
   typedef unisim::component::cxx::processor::opcache::OpCache<PPC64Decoder>                      Decoder;
   typedef unisim::component::cxx::processor::powerpc::ppc64::Operation                           Operation;
   typedef unisim::service::interfaces::LinuxOS                                                   LinuxOS;
-  
+
   struct ClearMemSet { void operator() ( uint8_t* base, uintptr_t size ) const { for (uintptr_t idx = 0; idx < size; ++idx) base[idx] = 0; } };
   typedef typename unisim::component::cxx::memory::sparse::Memory<uint64_t,12,12,ClearMemSet>   Memory;
 
@@ -92,10 +92,10 @@ struct Arch
 
   Arch();
   ~Arch();
-  
+
   void SetLinuxOS( LinuxOS* _linux_os ) { linux_os = _linux_os; }
   LinuxOS* GetLinuxOS() { return linux_os; }
-  
+
   // unisim::service::interfaces::Registers
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
@@ -111,32 +111,32 @@ struct Arch
   virtual bool ReadMemory(uint64_t addr, void* buffer, unsigned size );
   virtual bool WriteMemory(uint64_t addr, void const* buffer, unsigned size);
   unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
-  
+
   // unisim::service::interfaces::Disassembly<uint64_t>
   virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
-  
+
   // unisim::service::interfaces::MemoryAccessReportingControl
   virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
   bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
-  
+
+  // unisim::service::interfaces::MemoryAccessReporting<uint64_t>
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+
   // unisim::service::interfaces::DebugYielding
   unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
 
   // unisim::service::interfaces::TrapReporting
   unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
 
-  // unisim::service::interfaces::MemoryAccessReporting<uint64_t>
-  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
-  
   void SystemCall();
 
   bool MoveFromSPR( unsigned  id, U64& value );
   bool MoveToSPR( unsigned  id, U64 value ) { return false; }
-  
+
   template <typename T>
   void
   IntStore( U64 addr, T value )
@@ -183,7 +183,7 @@ struct Arch
   bool Lharx(unsigned id, U64 addr) { return Int16Load( id, addr ); }
   bool Lwarx(unsigned id, U64 addr) { return Int32Load( id, addr ); }
   bool Ldarx(unsigned id, U64 addr) { return Int64Load( id, addr ); }
-  
+
   bool Stbcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int8Store ( id, addr ); }
   bool Sthcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int16Store( id, addr ); }
   bool Stwcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int32Store( id, addr ); }
@@ -194,11 +194,11 @@ struct Arch
   bool Fp32Load(unsigned id, U64 addr);
   bool Fp32Store(unsigned id, U64 addr);
   bool FpStoreLSW(unsigned id, U64 addr);
-  
+
   void Isync() {}
-  
+
   bool InstructionFetch(uint64_t addr, uint32_t& insn);
-  
+
   Operation*   fetch();
   void         commit();
 

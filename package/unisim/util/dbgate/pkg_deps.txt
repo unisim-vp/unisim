@@ -4,3 +4,4 @@ std/iostream
 std/map
 std/set
 std/string
+unisim/util/hypapp

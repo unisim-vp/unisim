@@ -4,14 +4,22 @@ SIMPKG=amd64emu
 SIMPKG_SRCDIR=cxx/amd64emu
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/component/cxx/processor/intel || exit
-import unisim/component/cxx/processor/intel/isa || exit
-import unisim/util/debug || exit
+import unisim/service/debug/inline_debugger || exit
+import unisim/service/debug/debugger || exit
+import unisim/service/debug/gdb_server || exit
 import unisim/service/interfaces/linux_os || exit
 import unisim/service/interfaces/memory_injection || exit
 import unisim/service/interfaces/memory || exit
 import unisim/service/interfaces/registers || exit
-import unisim/util/os/linux_os
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/component/cxx/processor/intel || exit
+import unisim/component/cxx/processor/intel/isa || exit
+import unisim/component/cxx/memory/sparse || exit
+import unisim/component/cxx/vector || exit
+import unisim/util/os/linux_os || exit
+import unisim/util/identifier || exit
+import unisim/util/debug || exit
 
 import libc/inttypes || exit
 import sys/utsname || exit
@@ -34,16 +42,20 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
-"
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
-main.cc \
+arch.cc \
+isa.cc \
 linuxsystem.cc \
+main.cc \
+debugger.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+arch.hh \
 linuxsystem.hh \
+debugger.hh \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\

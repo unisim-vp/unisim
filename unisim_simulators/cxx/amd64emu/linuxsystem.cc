@@ -38,12 +38,14 @@
 #include <iomanip>
 #include <sys/utsname.h>
 
-LinuxOS::LinuxOS( std::ostream& log,
-         unisim::service::interfaces::Registers *regs_if,
-         unisim::service::interfaces::Memory<uint64_t> *mem_if,
-         unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
-         )
-  : unisim::service::interfaces::LinuxOS()
+LinuxOS::LinuxOS(char const* name, unisim::kernel::Object* parent, std::ostream& log,
+                 unisim::service::interfaces::Registers* regs_if,
+                 unisim::service::interfaces::Memory<uint64_t>* mem_if,
+                 unisim::service::interfaces::MemoryInjection<uint64_t>* mem_inject_if
+                 )
+  : unisim::kernel::Object(name, 0)
+  , unisim::service::interfaces::LinuxOS()
+  , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >(name)
   , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
   , exited( false )
   , app_ret_status( -1 )
@@ -61,27 +63,27 @@ LinuxOS::Core( std::string const& coredump )
   typedef typename unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader Loader;
   typedef typename Loader::Elf_Ehdr_type Elf_Ehdr;
   typedef typename Loader::Elf_Phdr_type Elf_Phdr;
-  
+
   std::ifstream is(coredump.c_str(), std::ifstream::in | std::ifstream::binary);
 
   struct hdr { ~hdr() { free(p); } Elf_Ehdr* p; } hdr;
   hdr.p = Loader::ReadElfHeader(is);
   bool need_endian_swap = Loader::NeedEndianSwap(hdr.p);
-    
+
   if (not hdr.p) throw "Could not read ELF header";
-  
+
   struct phdr { ~phdr() { free(p); } Elf_Phdr* p; } phdr_table;
-  
+
   phdr_table.p = Loader::ReadProgramHeaders(hdr.p, is);
   if (not phdr_table.p)
     throw "Can't read program headers";
-  
+
   // Create core blob
   typedef unisim::util::blob::Blob<uint64_t> Blob;
   typedef unisim::util::blob::Segment<uint64_t> Segment;
   Blob* core_blob = new Blob;
   core_blob->Catch();
-  
+
   core_blob->SetFilename(coredump.c_str());
   core_blob->SetArchitecture(Loader::GetArchitecture(hdr.p));
   core_blob->SetEndian(unisim::util::endian::E_LITTLE_ENDIAN);
@@ -91,7 +93,7 @@ LinuxOS::Core( std::string const& coredump )
   core_blob->SetELF_PHENT(sizeof(Elf_Phdr));
   core_blob->SetELF_PHNUM(hdr.p->e_phnum);
   core_blob->SetELF_Flags(hdr.p->e_flags);
-  
+
   for (int idx = 0; idx < hdr.p->e_phnum; ++idx)
     {
       Elf_Phdr* phdr = &phdr_table.p[idx];
@@ -118,7 +120,7 @@ LinuxOS::Core( std::string const& coredump )
 
             core_blob->AddSegment(new Segment(segtype,segattr,segalignment,segaddr,segmem_size,segfile_size,segdata));
           } break;
-          
+
         case PT_NOTE:
           {
             uintptr_t datasize = Loader::GetSegmentFileSize(phdr);
@@ -138,7 +140,7 @@ LinuxOS::Core( std::string const& coredump )
                   }
                 uint8_t* content = note + 12 + ((notehdr->n_namesz + 3) & -4);
                 note = content + ((notehdr->n_descsz + 3) & -4);
-                
+
                 switch (notehdr->n_type)
                   {
                   default: break; // Ignoring unknown note
@@ -154,10 +156,10 @@ LinuxOS::Core( std::string const& coredump )
 
                       struct { char const* name; unsigned size; } coredumpregs[] =
                         {
-                          {"%r15",64}, {"%r14",64}, {"%r13",64}, {"%r12",64}, {"%rbp",64}, {"%rbx",64}, {"%r11",64}, {"%r10",64},
-                          {"%r9", 64}, {"%r8", 64}, {"%rax",64}, {"%rcx",64}, {"%rdx",64}, {"%rsi",64}, {"%rdi",64}, {"!orig_rax",64},
-                          {"%rip",64}, {"!cs", 16}, {"%eflags",32}, {"%rsp",64},
-                          {"!ss", 16}, {"%fs_base",64}, {"%gs_base",64}, {"!ds",16}, {"!es",16}, {"!fs",16}, {"!gs",16}
+                          {"r15",64}, {"r14",64}, {"r13",64}, {"r12",64}, {"rbp",64}, {"rbx",64}, {"r11",64}, {"r10",64},
+                          {"r9", 64}, {"r8", 64}, {"rax",64}, {"rcx",64}, {"rdx",64}, {"rsi",64}, {"rdi",64}, {"!orig_rax",64},
+                          {"rip",64}, {"!cs", 16}, {"eflags",32}, {"rsp",64},
+                          {"!ss", 16}, {"fs_base",64}, {"gs_base",64}, {"!ds",16}, {"!es",16}, {"!fs",16}, {"!gs",16}
                         };
 
                       for (unsigned idx = 0, end = sizeof (coredumpregs) / sizeof coredumpregs[0]; idx < end; ++idx)
@@ -186,15 +188,15 @@ LinuxOS::Core( std::string const& coredump )
                             }
                           else
                             linux_impl.SetTargetRegister(regname, regs[idx]);
-                        }                      
+                        }
                     } break;
                   case 0x202: // NT_X86_XSTATE note
                     {
                       { /* FCW */
                         uint16_t& fcw = *(uint16_t*)(content);
                         if (need_endian_swap) unisim::util::endian::BSwap( fcw );
-                        std::cerr << std::setw(12) << "%fcw" << ": " << std::hex << fcw << std::endl;
-                        if (auto reg = linux_impl.GetDebugRegister("%fcw"))
+                        std::cerr << std::setw(12) << "fcw" << ": " << std::hex << fcw << std::endl;
+                        if (auto reg = linux_impl.GetDebugRegister("fcw"))
                           reg->SetValue(&fcw);
                         else
                           throw 0;
@@ -205,7 +207,7 @@ LinuxOS::Core( std::string const& coredump )
                         if (need_endian_swap) throw 0;
                         for (unsigned reg = 0; reg < 16; ++reg)
                           {
-                            std::ostringstream buf; buf << "%xmm" << std::dec << reg;
+                            std::ostringstream buf; buf << "xmm" << std::dec << reg;
                             char const* regname = buf.str().c_str();
                             std::cerr << std::setw(12) << regname << ':';
                             for (int idx = 16; --idx>= 0;)
@@ -222,9 +224,9 @@ LinuxOS::Core( std::string const& coredump )
                               regd->SetValue(&xmm_bytes[16*reg]);
                           }
                       }
-                      
+
                     } break;
-                    
+
                   }
               }
           } break;
@@ -235,13 +237,13 @@ LinuxOS::Core( std::string const& coredump )
   for (auto && segment : core_blob->GetSegments())
     {
       if (segment->GetType() != segment->TY_LOADABLE) continue;
-      
+
       uint64_t start, end;
       segment->GetAddrRange(start, end);
-      
+
       if (linux_impl.verbose_)
         std::cerr << "--> writing memory segment start = 0x" << std::hex << start << " end = 0x" << end << std::dec << std::endl;
-      
+
       uint8_t const * data = (uint8_t const *)segment->GetData();
       if (not linux_impl.mem_if_->WriteMemory(start, data, end - start + 1))
         throw "Error while writing the segments into the target memory.";
@@ -255,11 +257,9 @@ LinuxOS::Core( std::string const& coredump )
 }
 
 void
-LinuxOS::Setup( bool verbose )
+LinuxOS::Setup()
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(verbose);
-  
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetMemoryPageSize( 0x1000UL );
   struct utsname unm;
@@ -270,8 +270,8 @@ LinuxOS::Setup( bool verbose )
                       unm.version,
                       unm.machine,
                       unm.domainname);
-                   
-  
+
+
   // linux_impl.SetUname("Linux" /* sysname */,
   //                     "localhost" /* nodename */,
   //                     "4.14.89-unisim" /* release */,
@@ -298,24 +298,26 @@ LinuxOS::SetEnvironment( std::vector<std::string> const& envs )
   linux_impl.SetEnvironment(envs);
 }
 
-void
+bool
 LinuxOS::Process( std::vector<std::string> const& simargs )
 {
   if (not linux_impl.SetCommandLine(simargs))
-    throw 0;
-    
+    return false;
+
   // Set the binary that will be simulated in the target simulator
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
-    throw 0;
-  
+    return false;
+
   linux_impl.SetStackBase( 0x40000000UL );
 
   // now it is time to try to run the initialization of the linuxlib
   if (not linux_impl.Load())
-    throw 0;
-  
+    return false;
+
   if (not linux_impl.SetupTarget())
-    throw 0;
+    return false;
+
+  return true;
 }
 
 void

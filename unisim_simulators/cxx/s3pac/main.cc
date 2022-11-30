@@ -100,48 +100,21 @@ struct Processor
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
   typedef unisim::util::symbolic::ExprNode             ExprNode;
-  typedef unisim::util::symbolic::ScalarType           ScalarType;
+  typedef unisim::util::symbolic::ValueType            ValueType;
   typedef unisim::util::symbolic::ccode::ActionNode    ActionNode;
   typedef unisim::util::symbolic::ccode::CNode         CNode;
   typedef unisim::util::symbolic::ccode::Update        Update;
+  typedef unisim::util::symbolic::ccode::RegReadBase   RegReadBase;
+  typedef unisim::util::symbolic::ccode::RegWriteBase  RegWriteBase;
   typedef unisim::util::symbolic::ccode::CCode         CCode;
   typedef unisim::util::symbolic::ccode::SrcMgr        SrcMgr;
 
-  struct RegReadBase : public CNode
-  {
-    RegReadBase() {}
-    
-    virtual char const* GetRegName() const = 0;
-    
-    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { srcmgr << '$' << GetRegName(); }
-    virtual void Repr( std::ostream& sink ) const { sink << GetRegName(); }
-    
-    virtual unsigned SubCount() const { return 0; }
-  };
+  template <typename RID> static Expr newRegRead( RID id ) { return new unisim::util::symbolic::ccode::RegRead<RID>( id ); }
 
-  template <typename RID>
-  struct RegRead : public RegReadBase
-  {
-    typedef RegRead<RID> this_type;
-    RegRead( RID _id, ScalarType::id_t _tid ) : RegReadBase(), tid(_tid), id(_id) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return tid; }
-    virtual char const* GetRegName() const { return id.c_str(); }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-    int compare( this_type const& rhs ) const
-    {
-      if (int delta = int(tid) - int(rhs.tid)) return delta;
-      if (int delta = id.cmp( rhs.id )) return delta;
-      return RegReadBase::compare( rhs );
-    }
-
-    ScalarType::id_t tid;
-    RID id;
-  };
-
-  template <typename RID> static Expr newRegRead( RID id, ScalarType::id_t tp ) { return new RegRead<RID>( id, tp ); }
-
-  struct ForeignRegister : public RegReadBase
+  template <typename RID> static Expr newRegWrite( RID id, Expr const& value ) { return new unisim::util::symbolic::ccode::RegWrite<RID>( id, value ); }
+  
+  struct ForeignRegister
+    : public RegReadBase
   {
     ForeignRegister( uint8_t _mode, unsigned _idx )
       : RegReadBase(), name(), idx(_idx), mode(_mode)
@@ -151,8 +124,8 @@ struct Processor
       buf << (RegID("r0") + idx).c_str() << '_' << mode_ident();
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
+    virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
     virtual ForeignRegister* Mutate() const override { return new ForeignRegister( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     char const* mode_ident() const
     {
       switch (mode)
@@ -170,8 +143,9 @@ struct Processor
       return "";
     }
 
-    virtual char const* GetRegName() const { return &name[0]; }
-    
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { std::ostringstream buf; GetRegName(buf); srcmgr << '$' << buf.str(); }
+    virtual void GetRegName(std::ostream& sink) const { sink << (RegID("r0") + idx).c_str() << '_' << mode_ident(); }
+
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<ForeignRegister const&>( rhs ) ); }
     int compare( ForeignRegister const& rhs ) const
     {
@@ -184,41 +158,6 @@ struct Processor
     unsigned idx;
     uint8_t mode;
   };
-  
-  struct RegWriteBase : public Update
-  {
-    RegWriteBase( Expr const& _value ) : value(_value) {}
-      
-    virtual char const* GetRegName() const = 0;
-    virtual void Repr( std::ostream& sink ) const { sink << GetRegName() << " := "; value->Repr(sink); }
-    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { srcmgr << '$' << GetRegName() << " = " << ccode(value) << ";\n"; }
-    virtual unsigned SubCount() const { return 1; }
-    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
-    int compare( RegWriteBase const& rhs ) const { return 0; }
-      
-    Expr value;
-  };
-
-  template <typename RID>
-  struct RegWrite : public RegWriteBase
-  {
-    typedef RegWrite<RID> this_type;
-    RegWrite( RID _id, Expr const& _value ) : RegWriteBase(_value), id(_id) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual char const* GetRegName() const { return id.c_str(); }
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
-    int compare( this_type const& rhs ) const
-    {
-      if (int delta = id.cmp( rhs.id )) return delta;
-      return RegWriteBase::cmp( rhs );
-    }
-
-    RID id;
-  };
-
-  template <typename RID>
-  static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
   
   struct Br : public RegWriteBase
   {
@@ -234,7 +173,7 @@ struct Processor
       srcmgr << "/* npc: " << ccode(value) << " */\n";
     }
     virtual PCWrite* Mutate() const override { return new PCWrite( *this ); }
-    virtual char const* GetRegName() const { return "pc"; }
+    virtual void GetRegName(std::ostream& sink) const { sink << "pc"; }
   };
 
   struct Load : public CNode
@@ -250,7 +189,7 @@ struct Processor
         throw 0;
       srcmgr << "(*(uint" << unisim::util::symbolic::ccode::dec(8 << size) << "_t*)(" << ccode(addr) << "))";
     }
-    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::IntegerType( false, 8 << size ); }
+    virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8 << size ); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
@@ -289,7 +228,7 @@ struct Processor
     {
       if (bigendian)
         throw 0;
-      srcmgr << "(*(uint" << unisim::util::symbolic::ccode::dec( 8 << size ) << "_t*)(" << ccode(addr) << ")) = " << ccode(value) << ";\n";
+      srcmgr << "(*(uint" << unisim::util::symbolic::ccode::dec(8 << size) << "_t*)(" << ccode(addr) << ")) = " << ccode(value) << ";\n";
     }
     
     Expr value, addr;
@@ -379,13 +318,13 @@ struct Processor
     PSR( Processor& p, StatusRegister const& ref )
       : StatusRegister(ref)
       , proc( p )
-      , n(newRegRead(RegID("n"), ScalarType::BOOL))
-      , z(newRegRead(RegID("z"), ScalarType::BOOL))
-      , c(newRegRead(RegID("c"), ScalarType::BOOL))
-      , v(newRegRead(RegID("v"), ScalarType::BOOL))
-      , q(newRegRead(RegID("q"), ScalarType::BOOL))
-      , itstate(ref.outitb ? U8(0).expr : newRegRead(RegID("itstate"), ScalarType::U8))
-      , bg(newRegRead(RegID("cpsr"), ScalarType::U32))
+      , n(newRegRead(Flag("n")))
+      , z(newRegRead(Flag("z")))
+      , c(newRegRead(Flag("c")))
+      , v(newRegRead(Flag("v")))
+      , q(newRegRead(Flag("q")))
+      , itstate(ref.outitb ? U8(0).expr : newRegRead(ITStateID()))
+      , bg(newRegRead(RegID("cpsr")))
     {}
     
     bool   GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
@@ -456,10 +395,10 @@ struct Processor
     , next_insn_addr()
     , branch_type()
     , cpsr( *this, ref_psr )
-    , spsr( newRegRead(RegID("spsr"), ScalarType::U32) )
+    , spsr( newRegRead(RegID("spsr")) )
     , sregs()
-    , FPSCR( newRegRead(RegID("fpscr"), ScalarType::U32) )
-    , FPEXC( newRegRead(RegID("fpexc"), ScalarType::U32) )
+    , FPSCR( newRegRead(RegID("fpscr")) )
+    , FPEXC( newRegRead(RegID("fpexc")) )
     , stores()
     , unpredictable(false)
     , is_it_assigned(false)
@@ -468,18 +407,18 @@ struct Processor
   {
     // GPR regs
     for (unsigned reg = 0; reg < 15; ++reg)
-      reg_values[reg] = U32( newRegRead( RegID("r0") + reg, ScalarType::U32 ) );
+      reg_values[reg] = U32( newRegRead( RegID("r0") + reg ) );
       
     // Special registers
     for (SRegID reg; reg.next();)
-      sregs[reg.idx()] = U32( newRegRead( reg, ScalarType::U32 ) );
+      sregs[reg.idx()] = U32( newRegRead( reg ) );
   }
 
   struct AssertFalse : public CNode
   {
     AssertFalse() {}
     virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual ValueType const* GetType() const { return unisim::util::symbolic::NoValueType(); }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { throw 0; }
@@ -546,7 +485,7 @@ struct Processor
   bool concretize( Expr cexp )
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->Get( bool() );
+      return dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value;
 
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );
@@ -775,8 +714,12 @@ struct Processor
   /* mask for valid bits in processor control and status registers */
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
 
-  struct SRegID : public unisim::util::identifier::Identifier<SRegID>
+  struct SRegID
+    : public unisim::util::identifier::Identifier<SRegID>
+    , public unisim::util::symbolic::WithValueType<SRegID>
   {
+    typedef uint32_t value_type;
+
     enum Code {
       SCTLR, ACTLR,
       CTR, MPIDR,
@@ -839,6 +782,8 @@ struct Processor
       return "NA";
     }
 
+    void GetName(std::ostream& sink, bool read) const { sink << '$' << c_str(); }
+    
     SRegID() : code(end) {}
     SRegID( Code _code ) : code(_code) {}
     SRegID( char const* _code ) : code(end) { init(_code); }
@@ -851,13 +796,16 @@ struct Processor
     return sregs[reg.idx()];
   }
     
-  struct RegID : public unisim::util::identifier::Identifier<RegID>
+  struct RegID
+    : public unisim::util::identifier::Identifier<RegID>
+    , public unisim::util::symbolic::WithValueType<RegID>
   {
+    typedef uint32_t value_type;
+
     enum Code
       {
         NA = 0,
         r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr,
-        n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
         cpsr, spsr,
         fpscr, fpexc,
         r8_fiq,
@@ -906,11 +854,6 @@ struct Processor
         case         ip: return "ip";
         case         sp: return "sp";
         case         lr: return "lr";
-        case          n: return "n";
-        case          z: return "z";
-        case          c: return "c";
-        case          v: return "v";
-        case    itstate: return "itstate";
         case       cpsr: return "cpsr";
         case       spsr: return "spsr";
         case      fpscr: return "fpscr";
@@ -945,11 +888,45 @@ struct Processor
       return "NA";
     }
       
+    void GetName(std::ostream& sink, bool) const { sink << '$' << c_str(); }
+    void Repr(std::ostream& sink) const { sink << c_str(); }
+
     RegID() : code(end) {}
     RegID( Code _code ) : code(_code) {}
     RegID( char const* _code ) : code(end) { init( _code ); }
   };
     
+  struct Flag
+    : public unisim::util::identifier::Identifier<Flag>
+    , public unisim::util::symbolic::WithValueType<Flag>
+  {
+    typedef bool value_type;
+    enum Code { N, Z, C, V, Q, T, end } code;
+
+    char const* c_str() const
+    {
+      static char const* names[] = {"n", "z", "c", "v", "q", "t", "NA"};
+      return names[int(code)];
+    }
+
+    void GetName(std::ostream& sink, bool) const { sink << '$' << c_str(); }
+    void Repr(std::ostream& sink) const { sink << c_str(); }
+    
+    Flag() : code(end) {}
+    Flag( Code _code ) : code(_code) {}
+    Flag( char const* _code ) : code(end) { init( _code ); }
+  };
+
+  struct ITStateID
+    : public unisim::util::symbolic::WithValueType<ITStateID>
+  {
+    typedef uint8_t value_type;
+    void GetName(std::ostream& sink, bool) const { sink << "itstate"; }
+    void Repr(std::ostream& sink) const { sink << "itstate"; }
+    int cmp(ITStateID const&) const { return 0; }
+    char const* c_str() const { return "itstate"; }
+  };
+
   ActionNode*      path;
   U32              reg_values[16];
   U32              next_insn_addr;

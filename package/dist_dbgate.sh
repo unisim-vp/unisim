@@ -4,21 +4,21 @@ SIMPKG=dbgate
 SIMPKG_SRCDIR=cxx/dbgate
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/util/loader/elf_loader
-import unisim/util/identifier
-import unisim/util/dbgate/py
-import unisim/util/hypapp
+import unisim/util/loader/elf_loader || exit
+import unisim/util/identifier || exit
+import unisim/util/dbgate/py || exit
+import unisim/util/hypapp || exit
 
-import libc/inttypes
-import std/iostream
-import std/sstream
-import std/string
-import std/map
-import std/vector
+import libc/inttypes || exit
+import std/iostream || exit
+import std/sstream || exit
+import std/string || exit
+import std/map || exit
+import std/vector || exit
 
-import m4/pthread
-import m4/python_dev
-import m4/endian
+import m4/pthread || exit
+import m4/python_dev || exit
+import m4/endian || exit
 
 copy source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation

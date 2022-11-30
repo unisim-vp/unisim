@@ -35,10 +35,7 @@
 #include <hw/pnp.hh>
 #include <iostream>
 
-#define VENDORID( VALUE )  ((VALUE & 0x00ff) << 24)
-#define DEVICEID( VALUE )  ((VALUE & 0x0fff) << 12)
-#define VERSION( VALUE )   ((VALUE & 0x001f) <<  5)
-#define IRQ( VALUE )       ((VALUE & 0x001f) <<  0)
+#define PNP(VENDORID, DEVICEID, VERSION, IRQ) (((VENDORID & 0x00ff) << 24) | ((DEVICEID & 0x0fff) << 12) | ((VERSION & 0x001f) <<  5) | ((IRQ & 0x001f) <<  0))
 #define ADDR( VALUE )      ((VALUE & 0x0fff) << 20)
 #define PREFETCHABLE       (0x01 << 17)
 #define CACHEABLE          (0x01 << 16)
@@ -70,7 +67,7 @@ namespace SSv8
       case 64: // European Space Agency; Leon2 Memory Controller
         switch (reg)
           {
-          case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+          case 0: setreg( PNP( 4, 15, 1, 0) ); return true;
           default:
             std::cerr << "Warning: unimplemented AHB.PNP.entry.reg["<< reg<<"] for Leon2 Memory Controller.\n";
             setreg( 0 );
@@ -81,7 +78,7 @@ namespace SSv8
       case 65: // Gaisler Research, AHB/APB Bridge
         switch (reg)
           {
-          case 0: setreg( VENDORID( 1 ) | DEVICEID( 6 ) | VERSION( 0 ) | IRQ( 0 ) ); return true;
+          case 0: setreg( PNP( 1, 6, 0, 0) ); return true;
           case 4: setreg( ADDR( 0x0800 ) | MASK( 0xfff ) | TYPE( 2 ) ); return true;
           default:
             std::cerr << "Warning: unimplemented AHB.PNP.entry.reg["<< reg<<"] for AHB/APB Bridge.\n";
@@ -108,7 +105,7 @@ namespace SSv8
       case 0: // European Space Agency; Leon2 Memory Controller
         switch (reg)
           {
-          case 0: setreg( VENDORID( 4 ) | DEVICEID( 15 ) | VERSION( 1 ) | IRQ( 0 ) ); return true;
+          case 0: setreg( PNP( 4, 15, 1, 0) ); return true;
           default:
             std::cerr << "Warning: unimplemented APB.PNP.entry.reg["<< reg<<"] for Leon2 Memory Controller.\n";
             setreg( 0 );
@@ -119,7 +116,7 @@ namespace SSv8
       case 1: // Gaisler Research, Generic UART
         switch (reg)
           {
-          case 0: setreg( VENDORID( 1 ) | DEVICEID( 12 ) | VERSION( 1 ) | IRQ( 2 ) ); return true;
+          case 0: setreg( PNP( 1, 12, 1, 2) ); return true;
           case 1: setreg( ADDR( 0x0001 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
           default:
             std::cerr << "Warning: unimplemented APB.PNP.entry.reg["<< reg<<"] for Generic UART.\n";
@@ -130,13 +127,13 @@ namespace SSv8
         
       // case 2: // Gaisler Research, Multi-processor Interrupt Ctrl.
       //   switch( reg ) {
-      //   case 0: setreg( VENDORID( 1 ) | DEVICEID( 13 ) | VERSION( 3 ) | IRQ( 0 ) ); return true;
+      //   case 0: setreg( PNP( 1, 13, 3, 0) ); return true;
       //   case 1: setreg( ADDR( 0x0002 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
       //   }
       //   break;
       // case 3: // Gaisler Research, Modular Timer Unit
       //   switch( reg ) {
-      //   case 0: setreg( VENDORID( 1 ) | DEVICEID( 17 ) | VERSION( 0 ) | IRQ( 8 ) ); return true;
+      //   case 0: setreg( PNP( 1, 17, 0, 8) ); return true;
       //   case 1: setreg( ADDR( 0x0003 ) | MASK( 0xfff ) | TYPE( 1 ) ); return true;
       //   }
       //   break;

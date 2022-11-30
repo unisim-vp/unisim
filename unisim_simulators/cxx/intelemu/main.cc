@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/component/cxx/processor/intel/arch.hh>
+#include <unisim/component/cxx/processor/intel/arch32/arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <linuxsystem.hh>
@@ -61,7 +61,7 @@ struct Arch
       regname << unisim::component::cxx::processor::intel::DisasmGd(idx);
       regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_regs[idx]);
     }
-    regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("%eip", &m_EIP);
+    regmap["eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("eip", &m_EIP);
     
     struct SegmentRegister : public unisim::service::interfaces::Register
     {
@@ -131,32 +131,32 @@ struct Arch
   void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
   {
     // General purpose registers
-    scanner.Append( GetRegister( "%eax" ) );
-    scanner.Append( GetRegister( "%ecx" ) );
-    scanner.Append( GetRegister( "%edx" ) );
-    scanner.Append( GetRegister( "%ebx" ) );
-    scanner.Append( GetRegister( "%esp" ) );
-    scanner.Append( GetRegister( "%ebp" ) );
-    scanner.Append( GetRegister( "%esi" ) );
-    scanner.Append( GetRegister( "%edi" ) );
+    scanner.Append( GetRegister( "eax" ) );
+    scanner.Append( GetRegister( "ecx" ) );
+    scanner.Append( GetRegister( "edx" ) );
+    scanner.Append( GetRegister( "ebx" ) );
+    scanner.Append( GetRegister( "esp" ) );
+    scanner.Append( GetRegister( "ebp" ) );
+    scanner.Append( GetRegister( "esi" ) );
+    scanner.Append( GetRegister( "edi" ) );
     // Program counter
-    scanner.Append( GetRegister( "%eip" ) );
+    scanner.Append( GetRegister( "eip" ) );
     // Segments
-    scanner.Append( GetRegister( "%es" ) );
-    scanner.Append( GetRegister( "%cs" ) );
-    scanner.Append( GetRegister( "%ss" ) );
-    scanner.Append( GetRegister( "%ds" ) );
-    scanner.Append( GetRegister( "%fs" ) );
-    scanner.Append( GetRegister( "%gs" ) );
+    scanner.Append( GetRegister( "es" ) );
+    scanner.Append( GetRegister( "cs" ) );
+    scanner.Append( GetRegister( "ss" ) );
+    scanner.Append( GetRegister( "ds" ) );
+    scanner.Append( GetRegister( "fs" ) );
+    scanner.Append( GetRegister( "gs" ) );
     // FP registers
-    scanner.Append( GetRegister( "%st" ) );
-    scanner.Append( GetRegister( "%st(1)" ) );
-    scanner.Append( GetRegister( "%st(2)" ) );
-    scanner.Append( GetRegister( "%st(3)" ) );
-    scanner.Append( GetRegister( "%st(4)" ) );
-    scanner.Append( GetRegister( "%st(5)" ) );
-    scanner.Append( GetRegister( "%st(6)" ) );
-    scanner.Append( GetRegister( "%st(7)" ) );
+    scanner.Append( GetRegister( "st0" ) );
+    scanner.Append( GetRegister( "st1" ) );
+    scanner.Append( GetRegister( "st2" ) );
+    scanner.Append( GetRegister( "st3" ) );
+    scanner.Append( GetRegister( "st4" ) );
+    scanner.Append( GetRegister( "st5" ) );
+    scanner.Append( GetRegister( "st6" ) );
+    scanner.Append( GetRegister( "st7" ) );
   }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }

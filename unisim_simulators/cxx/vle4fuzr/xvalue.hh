@@ -11,10 +11,11 @@
 #ifndef __VLE4FUZR_XVALUE_HH__
 #define __VLE4FUZR_XVALUE_HH__
 
-#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <inttypes.h>
+using unisim::util::arithmetic::RotateRight;
+#include <unisim/component/cxx/processor/arm/execute.hh>
 
 namespace x
 {

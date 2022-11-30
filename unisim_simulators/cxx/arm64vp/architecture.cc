@@ -41,15 +41,20 @@
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
-AArch64::AArch64()
-  : regmap()
+AArch64::AArch64(char const* name)
+  : unisim::kernel::Object(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Registers>(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >(name, 0)
+  , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, 0)
+  , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, 0)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
+  , regmap()
   , devices()
   , gic()
   , uart("uart", 0)
@@ -78,8 +83,19 @@ AArch64::AArch64()
   , terminate(false)
   , disasm(false)
   , suspend(false)
-  , tfpcount(0)
+  , tfpstats_filename()
+  , param_tfpstats_filename("tfpstats_filename", this, tfpstats_filename, "filename of tfpstats dump")
+  , tfp32count(0)
+  , tfp64count(0)
+  , tfp32loss(0)
+  , tfp64loss(0)
+  , param_tfp32loss("tfp32loss", this, tfp32loss, "tainted fp32 bit loss count")
+  , param_tfp64loss("tfp64loss", this, tfp64loss, "tainted fp64 bit loss count")
+  , tfpinsncount()
 {
+  param_tfp32loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  param_tfp64loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+
   for (int idx = 0; idx < 32; ++idx)
     {
       std::ostringstream regname;
@@ -116,23 +132,18 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
 {
   struct Bad {};
 
-  uint64_t count = size;
   uint8_t* ptr = static_cast<uint8_t*>(buffer);
 
-  while (count > 0)
+  try
     {
-      MMU::TLB::Entry entry(addr);
-      try { translate_address(entry, 1, mem_acc_type::debug); }
-      catch (DataAbort const& x) { return false; }
-      Page const& page = get_page(entry.pa);
-      uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
-      uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
-      if (std::any_of(&udat[0], &udat[done], [](uint8_t b) { return b != 0; } )) throw Bad();
-      std::copy( &data[0], &data[done], ptr );
-      count -= done;
-      ptr += done;
-      addr += done;
+      for (SliceIterator slice(addr, size, mem_acc_type::debug); slice.vnext(*this);)
+        {
+          if (std::any_of(slice.udat, slice.udat + slice.size, [](uint8_t b) { return b != 0; } )) raise( Bad() );
+          std::copy( slice.data, slice.data + slice.size, ptr );
+          ptr += slice.size;
+        }
     }
+  catch (DataAbort const& x) { return false; }
 
   return true;
 }
@@ -140,25 +151,18 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
 bool
 AArch64::WriteMemory(uint64_t addr, void const* buffer, unsigned size)
 {
-  struct Bad {};
-
-  uint64_t count = size;
   uint8_t const* ptr = static_cast<uint8_t const*>(buffer);
 
-  while (count > 0)
+  try
     {
-      MMU::TLB::Entry entry(addr);
-      try { translate_address(entry, 1, mem_acc_type::debug); }
-      catch (DataAbort const& x) { return false; }
-      Page const& page = get_page(entry.pa);
-      uint64_t done = std::min(std::min(count, entry.size_after()), page.size_from(entry.pa));
-      uint8_t *udat = page.udat_abs(entry.pa), *data = page.data_abs(entry.pa);
-      std::fill(&udat[0], &udat[done], 0);
-      std::copy(&ptr[0], &ptr[done], data);
-      count -= done;
-      ptr += done;
-      addr += done;
+      for (SliceIterator slice(addr, size, mem_acc_type::debug); slice.vnext(*this);)
+        {
+          std::fill(slice.udat, slice.udat + slice.size, 0);
+          std::copy(ptr,  ptr + slice.size, slice.data);
+          ptr += slice.size;
+        }
     }
+  catch (DataAbort const& x) { return false; }
 
   return true;
 }
@@ -315,7 +319,7 @@ AArch64::TODO()
  * @param imm     the "imm" field of the instruction code
  */
 void
-AArch64::CallSupervisor( unsigned imm )
+AArch64::CallSupervisor( uint32_t imm )
 {
   //  static std::ofstream strace("strace.log");
   // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
@@ -341,9 +345,9 @@ AArch64::CallSupervisor( unsigned imm )
 
   // route_to_el2 = AArch64.GeneralExceptionsToEL2();
 
-  // ReportException
   unsigned const target_el = 1;
-  // ESR[target_el] = ec<5:0>:il:syndrome;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
   get_el(target_el).ESR = U32(0)
     | U32(0x15) << 26 // exception class AArch64.SVC
     | U32(1) << 25 // IL Instruction Length == 32 bits
@@ -381,6 +385,26 @@ AArch64::CallHypervisor( uint32_t imm )
     }
 
   raise( Bad() );
+}
+
+/** SoftwareBreakpoint
+ *
+ *  This method is called by BRK instructions to handle software breakpoints.
+ * @param imm     the "imm" field of the instruction code
+ */
+void
+AArch64::SoftwareBreakpoint( uint32_t imm )
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32(0x38) << 26 // exception class AArch64.SoftwareBreakpoint !from_32
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
+    | U32(imm);
+
+  TakeException(1, 0x0, current_insn_addr);
 }
 
 AArch64::MMU::TLB::TLB()
@@ -777,12 +801,6 @@ AArch64::ExceptionReturn()
   BranchTo(elr, B_ERET);
 }
 
-void
-AArch64::TakePhysicalIRQException()
-{
-  TakeException(1, 0x80, current_insn_addr);
-}
-
 uint32_t
 AArch64::PState::AsSPSR() const
 {
@@ -808,9 +826,9 @@ AArch64::PState::AsSPSR() const
 //   // if (seen.insert(current_insn_addr).second)
 //   //   uninitialized_error("condition");
 //   // return possible;
- 
+
 //   struct ShouldNotHappen {};
-  
+
 //   if (   current_insn_addr == 0xffffffc0105c70f8
 //     //or current_insn_addr == 0xffffffc0109fb270
 //          )
@@ -990,7 +1008,7 @@ struct AArch64::Device::Request
     return true;
   }
   template <typename T>
-  bool access( T& reg )
+  bool rw( T& reg )
   {
     struct Undefined {};
     struct _
@@ -1006,8 +1024,9 @@ struct AArch64::Device::Request
     try { return tainted_access ( _ ); } catch(Undefined const&) {}
     return false;
   }
-  template <typename T> bool ro(T  value) { return not write and access(value); }
-  template <typename T> bool wo(T& value) { return     write and access(value); }
+  template <typename T> bool ro(T  value) { return not write and rw(value); }
+  template <typename T> bool wo(T& value) { return     write and rw(value); }
+  bool rd() const { return not write; }
   static void location(std::ostream& sink, uint64_t addr, unsigned size)
   {
     sink << std::hex << addr << std::dec << "[" << size << "]";
@@ -1109,14 +1128,14 @@ AArch64::map_rtc(uint64_t base_addr)
         return req.ro(rtc.get_counter(arch));
       if (req.addr == 0x4) // Match Register, RTCMR
         {
-          if (not req.access(rtc.MR)) return false;
+          if (not req.rw(rtc.MR)) return false;
           if (not req.write) return true;
           rtc.program(arch);
           return true;
         }
       if (req.addr == 0x8) // Load Register, RTCLR
         {
-          if (not req.access(rtc.LR)) return false;
+          if (not req.rw(rtc.LR)) return false;
           if (not req.write) return true;
           rtc.flush_lr(arch);
           rtc.program(arch);
@@ -1126,7 +1145,7 @@ AArch64::map_rtc(uint64_t base_addr)
         {
           uint32_t started = rtc.started;
           if (not req.write) return req.ro(started);
-          if (not req.access(started)) return false;
+          if (not req.rw(started)) return false;
           if (started & rtc.started) { rtc.LR = 0; rtc.flush_lr(arch); }
           rtc.started = started;
           rtc.program(arch);
@@ -1136,7 +1155,7 @@ AArch64::map_rtc(uint64_t base_addr)
         {
           uint32_t masked = rtc.masked;
           if (not req.write) return req.ro(masked);
-          if (not req.access(masked)) return false;
+          if (not req.rw(masked)) return false;
           if (masked and not rtc.masked) arch.handle_rtc();
           rtc.masked = masked;
           return true;
@@ -1153,7 +1172,7 @@ AArch64::map_rtc(uint64_t base_addr)
           /* ARM PrimeCell (R) Real Time Clock (PL031) Revision: r1p3 */
           uint32_t value(0x00041031);
           uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       if ((req.addr & -16) == 0xff0)
@@ -1161,7 +1180,7 @@ AArch64::map_rtc(uint64_t base_addr)
           if (req.write) return error( req.dev, "Cannot write PCellID" );
 
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       return false;
@@ -1197,10 +1216,12 @@ AArch64::map_virtio_placeholder(unsigned id, uint64_t base_addr)
 
 namespace {
   //  virtual Slice access(uint64_t addr, uint64_t size, bool is_write) const = 0;
-  
-  struct VIOA : public VIOAccess
+
+  struct VIOA : public VIODisk::Access
   {
     VIOA(AArch64& _core, unsigned _irq) : core(_core), irq(_irq) {} AArch64& core; unsigned irq;
+
+    AArch64& GetCore() const override { return core; }
 
     uint64_t read(uint64_t addr, unsigned size) const override
     {
@@ -1212,7 +1233,7 @@ namespace {
         { if (ubuf[idx]) raise( Bad() ); res = (res << 8) | dbuf[idx]; }
       return res;
     }
-    
+
     void write(uint64_t addr, unsigned size, uint64_t value) const override
     {
       struct Bad {};
@@ -1223,26 +1244,6 @@ namespace {
       if (core.get_page(addr).write(addr,&dbuf[0],&ubuf[0],size) != size)
         throw Bad {};
     }
-  
-    struct Iterator
-    {
-      Iterator(uint64_t addr, uint64_t size) : page(), ptr(addr), left(size), pbytes(0) {}
-      AArch64::Page const* page;
-      uint64_t ptr, left, pbytes;
-      bool next(AArch64& core)
-      {
-        if (uint64_t nleft = left - pbytes)
-          { left = nleft; ptr += pbytes; }
-        else
-          return false;
-        page = &core.get_page(ptr);
-        pbytes = std::min(page->size_from(ptr), left);
-        return true;
-      }
-      uint8_t*  slice_data() const { return page->data_abs(ptr); }
-      uint8_t*  slice_udat() const { return page->udat_abs(ptr); }
-      uintptr_t slice_size() const { return pbytes; }
-    };
 
     // void flag(uint64_t addr) const override
     // {
@@ -1256,125 +1257,6 @@ namespace {
       core.gic.program(core);
     }
   };
-}
-
-void
-ArchDisk::uread(uint8_t* udat, uint64_t size)
-{
-  uint64_t pos = tell();
-  auto itr = upages.lower_bound(Page::index(pos));
-
-  // struct { char const* sep = "[Tainted] Disk read "; auto next() { auto r = sep; sep = " "; return r; } } sep;
-  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
-    {
-      psize = std::min(Page::size_from(pos), left);
-      
-      if (itr == upages.end() or itr->base > pos)
-        std::fill(&udat[0], &udat[psize], 0);
-      else
-        {
-          // std::cerr << sep.next() << '.' << std::hex << pos;
-          itr->read(pos, psize, udat);
-          ++itr;
-        }
-    }
-  // if (*sep.sep == ' ')
-  //   std::cerr << " (" << std::hex << tell() << ", " << size << ")\n";
-}
-
-void
-ArchDisk::read(VIOAccess const& vioa, uint64_t addr, uint64_t size)
-{
-  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
-  for (VIOA::Iterator itr(addr, size); itr.next(core);)
-    {
-      uread(itr.slice_udat(), itr.slice_size());
-      dread(itr.slice_data(), itr.slice_size());
-    }
-}
-
-void
-ArchDisk::uwrite(uint8_t const* udat, uint64_t size)
-{
-  uint64_t pos = tell();
-  auto itr = upages.lower_bound(Page::index(pos));
-  
-  // struct { char const* sep = "[Tainted] Disk write "; auto next() { auto r = sep; sep = " "; return r; } } sep;
-  for (uint64_t left = size, psize = 0; left; left -= psize, udat += psize, pos += psize)
-    {
-      psize = std::min(Page::size_from(pos), left);
-      bool has_udat = std::any_of(&udat[0], &udat[psize], [](uint8_t b) { return b != 0; } );
-
-      if (itr == upages.end() or itr->base > pos)
-        {
-          if (not has_udat) continue;
-          // std::cerr << sep.next() << '+' << std::hex << pos;
-          itr = upages.insert(itr, pos);
-        }
-      else if (not has_udat and Page::index(psize))
-        {
-          // std::cerr << sep.next() << '-' << std::hex << pos;
-          itr = upages.erase(itr);
-          continue;
-        }
-      else
-        {
-          // std::cerr << sep.next() << '!' << std::hex << pos;
-        }
-      itr->write(pos, psize, udat);
-      ++itr;
-    }
-  // if (*sep.sep == ' ')
-  //   std::cerr << " (" << std::hex << tell() << ", " << size << ") -> " << std::dec << upages.size() << " pages\n";
-}
-
-void
-ArchDisk::write(VIOAccess const& vioa, uint64_t addr, uint64_t size)
-{
-  AArch64& core = dynamic_cast<VIOA const&>(vioa).core;
-  for (VIOA::Iterator itr(addr, size); itr.next(core);)
-    {
-      uwrite(itr.slice_udat(), itr.slice_size());
-      dwrite(itr.slice_data(), itr.slice_size());
-    }
-}
-
-VolatileDisk::~VolatileDisk()
-{
-  munmap(storage, disksize);
-}
-
-void
-VolatileDisk::open(char const* filename)
-{
-  struct Error {};
-  int fd = ::open(filename,O_RDONLY);
-  struct stat info;
-  if (fstat(fd, &info) < 0)
-    throw Error();
-  Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
-  disksize = Capacity * BLKSIZE;
-  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-  ::close(fd);
-  if (not storage)
-    throw Error();
-}
-
-void
-VolatileDisk::sync(SnapShot& snapshot)
-{
-  if (snapshot.is_save())
-    std::cerr << "VolatileDisk storage lost...\n";
-  VIODisk::sync(snapshot);
-}
-
-void
-StreamDisk::open(char const* filename)
-{
-  storage.open(filename);
-  if (not storage or not storage.is_open()) { struct Bad {}; raise( Bad() ); }
-  uint64_t size = storage.seekg( 0, std::ios::end ).tellg();
-  Capacity = size / BLKSIZE;
 }
 
 void
@@ -1401,9 +1283,9 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
         {
           switch (req.addr)
             {
-            case 0x118: return req.ro<uint8_t>(0); // logical blocks per physical block (log)
-            case 0x119: return req.ro<uint8_t>(0); // offset of first aligned logical block
-            case 0x120: return req.access(viodisk.WriteBack);
+            case 0x118: return req.ro<uint8_t>(0); /* ________ logical blocks per physical block (log) */
+            case 0x119: return req.ro<uint8_t>(0); /* ________ offset of first aligned logical block */
+            case 0x120: return req.rw(viodisk.WriteBack); /* _ write back*/
             }
         }
 
@@ -1417,37 +1299,38 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 
       else if (req.size == 4)
         {
+          // convenience method to handle sub register accesses (TODO: host endianness)
+          struct { uint32_t& sub32(uint64_t& reg, unsigned addr) { return (reinterpret_cast<uint32_t*>(&reg))[addr >> 2 & 1]; } } r64;
           uint32_t tmp;
+          
+          
           switch (req.addr)
             {
-            case 0x00: return req.ro<uint32_t>(0x74726976);              /* Magic Value: 'virt' */
-            case 0x04: return req.ro<uint32_t>(0x2);                     /* Device version number: Virtio 1 - 1.1 */
-            case 0x08: return req.ro<uint32_t>(2);                       /* Virtio Subsystem Device ID: block device */
-            case 0x0c: return req.ro(viodisk.Vendor());                  /* Virtio Subsystem Vendor ID: 'usvp' */
-            case 0x10: return req.ro(viodisk.ClaimedFeatures());         /* features supported by the device */
-            case 0x14: return req.wo(viodisk.DeviceFeaturesSel);         /* Device (host) features word selection. */
-            case 0x20: return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* features used by the driver  */
-            case 0x24: return req.wo(viodisk.DriverFeaturesSel);         /* Activated (guest) features word selection */
-            case 0x30: return req.wo(tmp) and (tmp == 0);                /* Virtual queue index (only 0: rq) */
-            case 0x34: return req.ro(viodisk.QueueNumMax());             /* Maximum virtual queue size */
-            case 0x38: return req.wo(viodisk.rq.size);                   /* Virtual queue size */
-            case 0x44: return req.access(viodisk.rq.ready)               /* Virtual queue ready bit */
-                and (not req.write or viodisk.SetupQueue(vioa));
-            case 0x50: return req.wo(tmp) and viodisk.ReadQueue(vioa);   /* Queue notifier */
-            case 0x60: return req.ro(viodisk.InterruptStatus);           /* Interrupt status */
-            case 0x64: return req.wo(tmp) and viodisk.InterruptAck(tmp); /* Interrupt status */
-            case 0x70: return req.access(viodisk.Status)                 /* Device status */
-                and (not req.write or viodisk.CheckStatus());
-            case 0x80:
-            case 0x84: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.desc_area))[req.addr >> 2 & 1]);
+            case 0x00:  return req.ro<uint32_t>(0x74726976); /* ____________________________________________ Magic Value: 'virt' */
+            case 0x04:  return req.ro<uint32_t>(0x2); /* ___________________________________________________ Device version number: Virtio 1 - 1.1 */
+            case 0x08:  return req.ro<uint32_t>(2); /* _____________________________________________________ Virtio Subsystem Device ID: block device */
+            case 0x0c:  return req.ro(viodisk.Vendor()); /* ________________________________________________ Virtio Subsystem Vendor ID: 'usvp' */
+            case 0x10:  return req.ro(viodisk.ClaimedFeatures()); /* _______________________________________ features supported by the device */
+            case 0x14:  return req.wo(viodisk.DeviceFeaturesSel); /* _______________________________________ Device (host) features word selection */
+            case 0x20:  return req.wo(tmp) and viodisk.UsedFeatures(tmp); /* _______________________________ features used by the driver  */
+            case 0x24:  return req.wo(viodisk.DriverFeaturesSel); /* _______________________________________ Activated (guest) features word selection */
+            case 0x30:  return req.wo(tmp) and viodisk.QueueSel(tmp); /* ___________________________________ Virtual queue index (only 1 queue := 0) */
+            case 0x34:  return req.ro(viodisk.QueueNumMax()); /* ___________________________________________ Maximum virtual queue size */
+            case 0x38:  return req.wo(viodisk.QueueNum()); /* ______________________________________________ Virtual queue size */
+            case 0x44:  return req.rw(viodisk.QueueReady()) and (req.rd() or viodisk.QueueReady(vioa)); /* _ Virtual queue ready bit */
+            case 0x50:  return req.wo(tmp) and viodisk.ReadQueue(vioa); /* _________________________________ Queue notifier */
+            case 0x60:  return req.ro(viodisk.InterruptStatus); /* _________________________________________ Interrupt status */
+            case 0x64:  return req.wo(tmp) and viodisk.InterruptAck(tmp); /* _______________________________ Interrupt acknowledgment */
+            case 0x70:  return req.rw(viodisk.Status) and (req.rd() or viodisk.CheckStatus()); /* __________ Device status */
+            case 0x80: 
+            case 0x84:  return req.wo(r64.sub32(viodisk.QueueDesc(), req.addr)); /* ________________________ Descriptor Area */
             case 0x90:
-            case 0x94: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.driver_area))[req.addr >> 2 & 1]);
+            case 0x94:  return req.wo(r64.sub32(viodisk.QueueDriver(), req.addr)); /* ______________________ Driver Area */
             case 0xa0:
-            case 0xa4: return req.wo((reinterpret_cast<uint32_t*>(&viodisk.rq.device_area))[req.addr >> 2 & 1]);
-            case 0xfc: return req.ro(viodisk.ConfigGeneration);
-              //            case 0x100: return req.ro(viodisk.Capacity);
+            case 0xa4:  return req.wo(r64.sub32(viodisk.QueueDevice(), req.addr)); /* ______________________ Device Area */
+            case 0xfc:  return req.ro(viodisk.ConfigGeneration); /* ________________________________________ ConfigGeneration */
             case 0x100:
-            case 0x104: return req.access( (reinterpret_cast<uint32_t*>(&viodisk.Capacity))[req.addr >> 2 & 1] );
+            case 0x104: return req.rw(r64.sub32(viodisk.Capacity, req.addr)); /* ___________________________ Disk Capacity */
               // case 0x108: return req.ro<uint32_t>(viodisk.SizeMax());
             case 0x10c: return req.ro(viodisk.SegMax());
             case 0x114: return req.ro(viodisk.BlkSize());
@@ -1479,7 +1362,7 @@ AArch64::map_uart(uint64_t base_addr)
 
       if ((req.addr & -4) == 0x0)
         {
-          if (req.addr & 3) { uint8_t dummy=0; return req.access(dummy); }
+          if (req.addr & 3) { uint8_t dummy=0; return req.rw(dummy); }
           U8 chr = U8('\0');
           if (not req.write)                 { uart.rx_pop( arch, chr );  }
           if (not req.tainted_access( chr )) { return false; }
@@ -1491,15 +1374,15 @@ AArch64::map_uart(uint64_t base_addr)
         {
           switch (req.addr)
             {
-            case 0x18: return req.ro(uart.flags());  /* Flag Register */
-            case 0x24: return req.access(uart.IBRD); /* Integer Baud Rate Register */
-            case 0x28: return req.access(uart.FBRD); /* Fractional Baud Rate Register */
-            case 0x2c: return req.access(uart.LCR);  /* Line Control Register */
-            case 0x30: return req.access(uart.CR);   /* Control Register */
-            case 0x34: return req.access(uart.IFLS); /* Interrupt FIFO Level Select Register */
-            case 0x38: return req.access(uart.IMSC); /* Interrupt Mask Set/Clear Register */
-            case 0x3c: return req.ro(uart.RIS);      /* Raw Interrupt Status Register */
-            case 0x40: return req.ro(uart.mis());    /* Masked Interrupt Status Register */
+            case 0x18: return req.ro(uart.flags()); /* _ Flag Register */
+            case 0x24: return req.rw(uart.IBRD); /* ____ Integer Baud Rate Register */
+            case 0x28: return req.rw(uart.FBRD); /* ____ Fractional Baud Rate Register */
+            case 0x2c: return req.rw(uart.LCR); /* _____ Line Control Register */
+            case 0x30: return req.rw(uart.CR); /* ______ Control Register */
+            case 0x34: return req.rw(uart.IFLS); /* ____ Interrupt FIFO Level Select Register */
+            case 0x38: return req.rw(uart.IMSC); /* ____ Interrupt Mask Set/Clear Register */
+            case 0x3c: return req.ro(uart.RIS); /* _____ Raw Interrupt Status Register */
+            case 0x40: return req.ro(uart.mis()); /* ___ Masked Interrupt Status Register */
             }
         }
 
@@ -1507,7 +1390,7 @@ AArch64::map_uart(uint64_t base_addr)
         {
           if (not req.write) return error(req.dev, "Cannot read Interrupt Clear Register" );
           uint16_t icr = 0;
-          if (not req.access(icr)) return false;
+          if (not req.rw(icr)) return false;
           uart.RIS &= ~icr;
           return true;
         }
@@ -1518,7 +1401,7 @@ AArch64::map_uart(uint64_t base_addr)
           /* ARM PrimeCell (R) UART (PL011) Revision: r1p5 */
           uint32_t value(0x00341011);
           uint8_t byte = (req.addr & 3) ? uint8_t(0) : uint8_t(value >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       if ((req.addr & -16) == 0xff0)
@@ -1526,7 +1409,7 @@ AArch64::map_uart(uint64_t base_addr)
           if (req.write) return error(req.dev, "Cannot write PCellID" );
 
           uint8_t byte = (req.addr & 3) ? 0 : (0xB105F00D >> 8*(req.addr >> 2 & 3));
-          return req.access(byte);
+          return req.rw(byte);
         }
 
       return false;
@@ -1574,10 +1457,10 @@ AArch64::map_gic(uint64_t base_addr)
       uint32_t raz_wi_32(0);
 
       if (req.addr == 0x100) /* CPU Interface Control Register */
-        return req.access(arch.gic.C_CTLR);
+        return req.rw(arch.gic.C_CTLR);
 
       if (req.addr == 0x104) /* Interrupt Priority Mask Register */
-        return req.access(arch.gic.C_PMR);
+        return req.rw(arch.gic.C_PMR);
 
       if (req.addr == 0x10c) /* Interrupt Acknowledge Register */
         {
@@ -1611,7 +1494,7 @@ AArch64::map_gic(uint64_t base_addr)
         {
           if (req.addr & 3) return false;
           /* Active Priorities Registers (secure and not secure) */
-          return req.access(raz_wi_32);
+          return req.rw(raz_wi_32);
         }
 
       if (req.addr == 0x1fc) /* Identification Register, GICC_IIDR */
@@ -1627,7 +1510,7 @@ AArch64::map_gic(uint64_t base_addr)
         }
 
       if (req.addr == 0x1000) /* Distributor Control Register */
-        return req.access( arch.gic.D_CTLR );
+        return req.rw( arch.gic.D_CTLR );
 
       if (req.addr == 0x1004) /* Interrupt Controller Type Register */
         {
@@ -1652,11 +1535,11 @@ AArch64::map_gic(uint64_t base_addr)
           unsigned idx = (req.addr - 0x1100)/4, cns = idx / 32, rtp = cns / 2;
           idx %= 32; cns %= 2;
           if (32*idx >= arch.gic.ITLinesCount)
-            return req.access(raz_wi_32);
+            return req.rw(raz_wi_32);
           auto iscreg = rtp == 0 ? &AArch64::GIC::D_IENABLE : rtp == 1 ? &AArch64::GIC::D_IPENDING : &AArch64::GIC::D_IACTIVE;
           uint32_t& reg = (arch.gic.*iscreg)[idx];
           uint32_t value = reg;
-          if (not req.access(value))
+          if (not req.rw(value))
             return false;
           if (req.write) { if (cns) reg &= ~value; else reg |= value; }
           return true;
@@ -1670,9 +1553,9 @@ AArch64::map_gic(uint64_t base_addr)
            */
           unsigned idx = req.addr - 0x1400;
           if (idx < arch.gic.ITLinesCount)
-            return req.access( arch.gic.D_IPRIORITYR[idx] );
+            return req.rw( arch.gic.D_IPRIORITYR[idx] );
           uint8_t raz_wi(0);
-          return req.access(raz_wi);
+          return req.rw(raz_wi);
         }
 
       if (0x1800 <= req.addr and req.addr < 0x1c00)
@@ -1682,7 +1565,7 @@ AArch64::map_gic(uint64_t base_addr)
            * the one processor, and the GICD_ITARGETSRs are RAZ/WI.
            */
           uint8_t raz_wi(0);
-          return req.access(raz_wi);
+          return req.rw(raz_wi);
         }
 
       if (0x1c00 <= req.addr and req.addr < 0x1d00)
@@ -1692,8 +1575,8 @@ AArch64::map_gic(uint64_t base_addr)
            */
           unsigned idx = (req.addr - 0x1c00)/4;
           if (16*idx < arch.gic.ITLinesCount)
-            return req.access( arch.gic.D_ICFGR[idx] );
-          return req.access(raz_wi_32);
+            return req.rw( arch.gic.D_ICFGR[idx] );
+          return req.rw(raz_wi_32);
         }
       return false;
     }
@@ -1743,13 +1626,19 @@ AArch64::has_irqs() const
 }
 
 void
+AArch64::PhysicalIRQException::proceed(AArch64& cpu) const
+{
+  // TakePhysicalIRQException
+  cpu.TakeException(1, 0x80, cpu.current_insn_addr);
+}
+
+void
 AArch64::handle_irqs()
 {
   if (not has_irqs())
     return;
 
-  TakePhysicalIRQException();
-  throw Abort();
+  throw PhysicalIRQException();
 }
 
 void
@@ -1776,7 +1665,7 @@ AArch64::RNDR()
   uint64_t rval =       (random = random * 22695477 + 1);
   rval = (rval << 32) | (random = random * 22695477 + 1);
   nzcv = U8(0);
-  
+
   return U64(rval);
 }
 
@@ -1791,11 +1680,11 @@ AArch64::run( uint64_t suspend_at )
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
       uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
 
-      //if (insn_addr == halt_on_addr) { Stop(0); return; }
+      //  if (insn_addr == halt_on_addr) { Stop(0); return; }
 
       try
         {
-          /* Handle asynchronous events */
+          /*** Handle asynchronous events ***/
           while (next_event <= insn_timer)
             {
               event_handler_t method = pop_next_event();
@@ -1805,8 +1694,28 @@ AArch64::run( uint64_t suspend_at )
 
           if (insn_counter == suspend_at)
             throw Suspend();
-          
-          Operation* op = fetch_and_decode(insn_addr);
+
+          /*** Handle debugging interface ***/
+          if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+            memory_access_reporting_import->ReportFetchInstruction(insn_addr);
+
+          // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+          //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+
+          if (debug_yielding_import)
+            debug_yielding_import->DebugYield();
+
+          /*** Fetch instruction ***/
+          MMU::TLB::Entry tlb_entry(insn_addr);
+          translate_address(tlb_entry, pstate.GetEL(), AArch64::mem_acc_type::exec);
+
+          uint32_t insn = 0;
+          for (uint8_t *beg = ipb.access(*this, tlb_entry.pa), *itr = &beg[4]; --itr >= beg;)
+            insn = insn << 8 | *itr;
+
+          /*** Decode instruction ***/
+          Operation* op = decode(tlb_entry.pa, insn);
+          last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
 
           this->next_insn_addr += 4;
 
@@ -1816,17 +1725,14 @@ AArch64::run( uint64_t suspend_at )
               // disasm = true;
             }
 
-          if (current_insn_addr == 0x7fba767d38)
+          if (terminate)
             {
-              std::cerr << "Buggy loop entered at instruction #" << std::dec << insn_counter << " and tick #"  << insn_timer << "\n";
               force_throw();
             }
 
-          if (terminate) { force_throw(); }
-
           if (disasm)
             {
-              //static std::ofstream dbgtrace("dbgtrace");
+              // static std::ofstream dbgtrace("dbgtrace");
               std::ostream& sink( std::cerr );
               sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
               DisasmState ds;
@@ -1838,27 +1744,63 @@ AArch64::run( uint64_t suspend_at )
           asm volatile( "arm64_operation_execute:" );
           op->execute( *this );
 
-          // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-          //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
+          if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+            memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 
           insn_counter++; /* Instruction regularly finished */
         }
 
-      catch (Abort const& abort)
+      catch (Exception const& exception)
         {
-          abort.proceed(*this);
-          /* Instruction aborted, proceed to next */
-          //   if (unlikely(trap_reporting_import))
-          //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+          /* Instruction aborted, proceed to next step */
+          if (unlikely(trap_reporting_import))
+            trap_reporting_import->ReportTrap( *this, exception.nature() );
+          exception.proceed(*this);
         }
-      
+
       catch (Suspend const&)
         {
-          std::cerr << "Suspend...\n";
+          std::cerr << "Suspending...\n";
           save_snapshot("uvp.shot");
           return;
         }
+
+      catch (Stop const&)
+        {
+          std::cerr << "Stopping...\n";
+          return;
+        }
     }
+}
+
+void
+AArch64::show_exec_stats(std::ostream& sink)
+{
+  sink << std::dec
+       << "Executed up to instruction #" << insn_counter << ".\n"
+       << "Written " << tfp32count << " tainted 32-bits floating-point values to register.\n"
+       << "Written " << tfp64count << " tainted 64-bits floating-point values to register.\n"
+       << std::flush;
+}
+
+void
+AArch64::write_tfpstats()
+{
+  if (tfpstats_filename.size() == 0)
+    return;
+  
+  std::ofstream sink(tfpstats_filename.c_str());
+  sink << "opsize,count\n";
+  sink << "32," << tfp32count << '\n';
+  sink << "64," << tfp64count << '\n';
+  sink << "opsize,exp,count\n";
+  for (auto const& kv : tfp32expcount)
+    sink << "32," << kv.first << ',' << kv.second << '\n';
+  for (auto const& kv : tfp64expcount)
+    sink << "64," << kv.first << ',' << kv.second << '\n';
+  sink << "insn,count\n";
+  for (auto const& kv : tfpinsncount)
+    sink << kv.first << ',' << kv.second << '\n';
 }
 
 void
@@ -2046,7 +1988,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     case mem_acc_type::write:              fail = not perm_w; break;
     case mem_acc_type::exec:               fail = not perm_x; break;
     case mem_acc_type::debug:              fail = false; break;
-    default: throw 0;
+    default: { struct Bad {}; raise( Bad() ); }
     }
 
   if (fail)
@@ -2170,8 +2112,6 @@ AArch64::save_snapshot( char const* filename )
   std::unique_ptr<SnapShot> snapshot = SnapShot::gzsave(filename);
 
   sync( *snapshot );
-
-  std::cerr << "tfpcount: " << tfpcount << std::endl;
 }
 
 void
@@ -2298,7 +2238,7 @@ AArch64::sync(SnapShot& snapshot)
         uint64_t date = snapshot.is_save() and evt != next_events.end() ? evt->first : 0;
         snapshot.sync(date);
         if (not date) break;
-      
+
         if (snapshot.is_load())
           {
             int mid; snapshot.sync(mid);
@@ -2339,7 +2279,7 @@ AArch64::sync(SnapShot& snapshot)
   snapshot.sync(excmon.valid);
 
   mmu.sync(snapshot);
-    
+
   for (unsigned reg = 0; reg < 32; ++reg)
     tvsync(snapshot, gpr[reg]);
 
@@ -2359,9 +2299,9 @@ AArch64::sync(SnapShot& snapshot)
     tvsync(snapshot, *reg);
   snapshot.sync(el1.FAR);
   snapshot.sync(el1.SCTLR);
-  
+
   pstate.sync(snapshot);
-  
+
   tvsync(snapshot, nzcv);
   for (auto reg : {&current_insn_addr, &next_insn_addr, &insn_counter, &insn_timer})
     snapshot.sync(*reg);
@@ -2378,4 +2318,63 @@ AArch64::sync(SnapShot& snapshot)
 //   static std::ofstream sink("ptlog");
 //   return sink;
 // }
+
+void
+AArch64::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
+{
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: { struct Bad {}; raise( Bad() ); }
+  }
+}
+
+/** Disasm an instruction address.
+ * Returns a string with the disassembling of the instruction found
+ *   at address addr.
+ *
+ * @param addr the address of the instruction to disassemble
+ * @param next_addr the address following the requested instruction
+ *
+ * @return the disassembling of the requested instruction address
+ */
+std::string
+AArch64::Disasm(uint64_t addr, uint64_t& next_addr)
+{
+  std::stringstream buffer;
+  MMU::TLB::Entry tlb_entry(addr);
+
+  try { translate_address(tlb_entry, 1, AArch64::mem_acc_type::debug); }
+  catch (DataAbort const& x)
+    {
+      buffer << "Could not read from memory";
+      return buffer.str();
+    }
+
+  unsigned const insn_size = 4;
+  uint8_t bytes[insn_size], ubuf[insn_size];
+  if (get_page(tlb_entry.pa).read(tlb_entry.pa, &bytes[0], &ubuf[0], insn_size) != insn_size)
+    {
+      buffer << "Could not read from memory";
+      return buffer.str();
+    }
+
+  uint32_t insn = 0;
+  for (uint8_t *beg = &bytes[0], *itr = &beg[insn_size]; --itr >= beg;)
+    insn = insn << 8 | *itr;
+
+  Operation* op = decode(tlb_entry.pa, insn);
+
+  buffer << std::hex << std::setfill('0') << std::setw(8) << op->GetEncoding() << std::dec << " ";
+  DisasmState ds;
+  op->disasm(ds, buffer);
+
+  next_addr = addr + insn_size;
+
+  if (not std::all_of( &ubuf[0], &ubuf[insn_size], [](unsigned char const byte) { return byte == 0; } ))
+    buffer << " /* undefined bits in instruction */";
+
+  return buffer.str();
+}
 

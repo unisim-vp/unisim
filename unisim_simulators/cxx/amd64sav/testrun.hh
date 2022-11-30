@@ -39,7 +39,9 @@
 #include <unisim/util/random/random.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/arithmetic/integer.hh>
 #include <iosfwd>
+#include <vector>
 #include <cstdlib>
 #include <cassert>
 #include <inttypes.h>
@@ -54,10 +56,12 @@ namespace test
     typedef uint16_t     u16_t;
     typedef uint32_t     u32_t;
     typedef uint64_t     u64_t;
+    typedef unisim::util::arithmetic::Integer<4,false> u128_t;
     typedef int8_t       s8_t;
     typedef int16_t      s16_t;
     typedef int32_t      s32_t;
     typedef int64_t      s64_t;
+    typedef unisim::util::arithmetic::Integer<4,true> s128_t;
     typedef bool         bit_t;
     typedef uint64_t     addr_t;
     typedef float        f32_t;
@@ -94,8 +98,9 @@ namespace test
       , umms()
       , vmm_storage()
       , mxcsr(0x1fa0)
-      , latest_instruction(0)
-        //        , do_disasm(false)
+      , trace_insns(0)
+      , do_disasm(false)
+      , hasnan(false)
         //        , instruction_count(0)
     {}
 
@@ -237,7 +242,7 @@ namespace test
     frmread( RMOp const& rmop )
     {
       typedef typename TypeFor<Arch,OPSIZE>::f f_type;
-      if (not rmop.is_memory_operand()) return f_type( this->fread( rmop.ereg() ) );
+      if (not rmop.ismem()) return f_type( this->fread( rmop.ereg() ) );
       return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
 
@@ -304,7 +309,7 @@ namespace test
     void
     frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
     {
-      if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
+      if (not rmop.ismem()) return fwrite( rmop.ereg(), f64_t( value ) );
       fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
 
@@ -312,7 +317,7 @@ namespace test
     typename TypeFor<Arch,GOP::SIZE>::u
     rmread( GOP const& g, RMOp const& rmop )
     {
-      if (not rmop.is_memory_operand())
+      if (not rmop.ismem())
         return regread( g, rmop.ereg() );
 
       return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
@@ -322,7 +327,7 @@ namespace test
     void
     rmwrite( GOP const&, RMOp const& rmop, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
-      if (not rmop.is_memory_operand())
+      if (not rmop.ismem())
         return regwrite( GOP(), rmop.ereg(), value );
 
       return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
@@ -333,7 +338,6 @@ namespace test
     enum ipproc_t { ipjmp = 0, ipcall, ipret };
     addr_t                      getnip() { return rip; }
     void                        setnip( addr_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
-    //void                        addeip( u64_t offset ) { rip += offset; }
 
     void                        syscall();
     void                        interrupt( int op, int code );
@@ -389,10 +393,9 @@ namespace test
     bool                        m_flags[FLAG::end];
 
   public:
-    bit_t                       flagread( FLAG::Code flag )
-    { return m_flags[flag]; }
-    void                        flagwrite( FLAG::Code flag, bit_t fval )
-    { m_flags[flag] = fval; }
+    bit_t                       flagread( FLAG::Code flag )                            { return m_flags[flag]; }
+    void                        flagwrite( FLAG::Code flag, bit_t fval )               { m_flags[flag] = fval; }
+    void                        flagwrite( FLAG::Code flag, bit_t fval, bit_t def )    { m_flags[flag] = fval; }
 
     // FLOATING POINT STATE
   protected:
@@ -450,10 +453,11 @@ namespace test
       template <typename T> using TypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
       typedef u8_t Byte;
     };
+    static unsigned const VREGCOUNT = 16;
 
-    unisim::component::cxx::vector::VUnion<VUConfig> umms[16];
+    unisim::component::cxx::vector::VUnion<VUConfig> umms[VREGCOUNT];
+    uint8_t vmm_storage[VREGCOUNT][VUConfig::BYTECOUNT];
 
-    uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
     uint32_t mxcsr;
 
     void mxcswrite(uint32_t v) { mxcsr = v; }
@@ -462,12 +466,16 @@ namespace test
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
 
+    template <typename T> T test_input_validity(T val) { return val; }
+    float test_input_validity(float val);
+    double test_input_validity(double val);
+
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
-      return elems[sub];
+      return test_input_validity(elems[sub]);
     }
 
     template <class VR, class ELEM>
@@ -476,45 +484,54 @@ namespace test
     {
       ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
       elems[sub] = e;
-      //gdbchecker.xmark(reg);
+    }
+
+    template <class ELEM> ELEM vmm_memread( unsigned seg, addr_t addr, unsigned sub, ELEM const& e )
+    {
+      return any_memread( seg, addr + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
+    }
+
+    template <class ELEM> void vmm_memwrite( unsigned seg, addr_t addr, unsigned sub, ELEM const& e )
+    {
+      any_memwrite( seg, addr + sub*VUConfig::TypeInfo<ELEM>::bytecount, e);
     }
 
     // Integer case
-    template <class TYPE> TYPE vmm_memread( unsigned seg, addr_t addr, TYPE const& e )
+    template <class TYPE> TYPE any_memread( unsigned seg, addr_t addr, TYPE const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       return TYPE(memread<atpinfo::bitsize>(seg,addr));
     }
 
-    f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
-    f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
-    f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
-
-    // Integer case
-    template <class TYPE> void vmm_memwrite( unsigned seg, addr_t addr, TYPE const& e )
+    template <class TYPE> void any_memwrite( unsigned seg, addr_t addr, TYPE const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
 
-    void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
-    void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
-    void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
+    // FP Case
+    f32_t any_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
+    f64_t any_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
+    f80_t any_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
+
+    void any_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
+    void any_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
+    void any_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
 
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
-      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
+      if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ), sub, e );
     }
 
     template <class VR, class ELEM>
     void
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
-      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
+      if (not rmop.ismem()) return vmm_write( vr, rmop.ereg(), sub, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ), sub, e );
     }
 
     void xgetbv();
@@ -522,14 +539,20 @@ namespace test
     void _DE();
     void unimplemented();
 
+    void    xsave (unisim::component::cxx::processor::intel::XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
+    void    xrstor(unisim::component::cxx::processor::intel::XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
+
     typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
-    Operation* latest_instruction;
+    std::vector<Operation*> trace_insns;
     Operation* fetch();
 
     void stop();
     struct Unimplemented {};
     void noexec( Operation const& op );
     bool Test( bool b ) const { return b; }
+
+    bool do_disasm;
+    bool hasnan;
   };
 
   struct UInt128
@@ -609,8 +632,6 @@ namespace test
 
   void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor );
   void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor );
-  void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier );
-  void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier );
 
   Arch::f64_t sine( Arch::f64_t );
   Arch::f64_t cosine( Arch::f64_t );

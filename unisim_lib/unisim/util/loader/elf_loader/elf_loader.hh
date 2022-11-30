@@ -87,6 +87,7 @@ public:
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
+	bool Load(std::istream&);
 	void ParseSymbols();
 	
 	void SetDebugInfoStream(std::ostream& debug_info_stream);

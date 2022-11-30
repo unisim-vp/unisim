@@ -132,7 +132,7 @@ namespace intel {
     {
       typedef REGDIS DisasmReg;
       
-      if (rmop.is_memory_operand())   rmop->disasm_memory_operand( sink );
+      if (rmop.ismem())   rmop->disasm_memory_operand( sink );
       else                            sink << DisasmReg( rmop.ereg() );
     }
     
@@ -197,7 +197,7 @@ namespace intel {
     
     void operator () ( std::ostream& sink ) const
     {
-      typename __unsigned<T>::type uv = value;
+      typename meta::__unsigned<T>::type uv = value;
       if (std::numeric_limits<T>::is_signed and value < T(0))
         { PutChar(sink, '-'); uv = -value; }
       PutHex( sink, uv );
@@ -237,19 +237,22 @@ namespace intel {
   template <> struct SizeID< 64> { static char const* gid() { return "q"; }  static char const* iid() { return "q"; } static char const* fid() { return "d"; } };
   template <> struct SizeID<128> { static char const* gid() { return "dq"; } static char const* iid() { return "dq"; } };
   
-  template <unsigned OPSIZE>
   struct DisasmMnemonic : public DisasmObject
   {
-    DisasmMnemonic( char const* _mnemonic, bool _implicit_size = true ) : mnemonic( _mnemonic ), implicit_size( _implicit_size ) {}
+    DisasmMnemonic( char const* _mnemonic, unsigned _opsize ) : mnemonic( _mnemonic ), opsize(_opsize) {}
     char const* mnemonic;
-    bool implicit_size;
+    unsigned opsize;
     
-    void operator() ( std::ostream& _sink ) const
-    {
-      PutString( _sink, mnemonic );
-      if (not implicit_size) PutString( _sink, SizeID<OPSIZE>::gid() );
-      PutChar( _sink, ' ' );
-    }
+    void operator() ( std::ostream& _sink ) const;
+  };
+  
+  struct DisasmSize : public DisasmObject
+  {
+    DisasmSize(unsigned _opsize, char _style) : opsize(_opsize), style(_style) {}
+    unsigned opsize;
+    char style;
+    
+    void operator() ( std::ostream& _sink ) const;
   };
   
   struct DisasmFPR : public DisasmObject

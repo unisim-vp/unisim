@@ -276,13 +276,14 @@ struct Checker
       {
         if (not relval.good()) return 0;
         
-        uint64_t value;
         if (auto v = relval.Eval( Scanner::RelocEval(&ws[data_index(0)], uint64_t(ws)) ))
-          { Expr dispose(v); value = v->Get( uint64_t() ); }
-        else
-          throw "WTF";
-
-        return value;
+          {
+            Expr dispose(v);
+            return dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value;
+          }
+        
+        throw "WTF";
+        return 0;
       }
       void patch(uint64_t* ws, uint64_t reloc) const
       {

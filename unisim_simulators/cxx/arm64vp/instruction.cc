@@ -44,23 +44,10 @@ using std::isnan;
 template class unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>;
 
 AArch64::Operation*
-AArch64::fetch_and_decode(uint64_t insn_addr)
+AArch64::decode(uint64_t insn_addr, CodeType insn)
 {
-  // Instruction Fetch Decode and Execution (may generate exceptions
-  // known as synchronous aborts since their occurences are a direct
-  // consequence of the instruction execution).
-
-  // Fetch
-  MMU::TLB::Entry entry(insn_addr);
-  translate_address(entry, pstate.GetEL(), AArch64::mem_acc_type::exec);
-  
-  unisim::component::cxx::processor::arm::isa::arm64::CodeType insn = 0;
-  for (uint8_t *beg = ipb.access(*this, entry.pa), *itr = &beg[4]; --itr >= beg;)
-    insn = insn << 8 | *itr;
-
-  /* Decode current PC. TODO: should provide physical address for caching purpose */
-  Operation* op = decoder.Decode(entry.pa, insn);
-  last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
+  /* Decode current PC. */
+  Operation* op = decoder.Decode(insn_addr, insn);
 
   return op;
 }

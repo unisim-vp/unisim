@@ -5,3 +5,4 @@ std/set
 std/sstream
 std/vector
 unisim/util/symbolic
+unisim/util/symbolic/vector

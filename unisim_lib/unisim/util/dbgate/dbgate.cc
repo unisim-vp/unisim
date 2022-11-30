@@ -40,17 +40,24 @@ namespace unisim {
 namespace util {
 namespace dbgate {
   
-  DBGated::DBGated(int _port, char const* _root)
-    : port(_port)
+  DBGated::DBGated(int port, char const* _root)
+    : hypapp::HttpServer(port ? port : 12345, 16)
     , root()
+    , verbose(false)
   {
     if (_root)
       root.assign(_root);
     else
       { char tmpdirbuf[] = "/tmp/dbgateXXXXXX"; root = mkdtemp( tmpdirbuf ); }
-    if (not _port)
-      port = 12345;
+    StartLoopThread();
   }
+
+  DBGated::~DBGated()
+  {
+    JoinLoopThread();
+  }
+   
+
   
   void
   DBGated::write(int cd, char const* buffer, uintptr_t size)
@@ -121,6 +128,303 @@ namespace dbgate {
   DBGated::Sink::Sink(std::string&& _chanpath, std::string&& _filepath)
     : chanpath(std::move(_chanpath)), filepath(std::move(_filepath)), stream(filepath.c_str())
   {}
+
+  namespace
+  {
+    template <uintptr_t N>
+    char const*
+    pop( std::string const& str, char const (&ref)[N] )
+    {
+      for (uintptr_t idx = 0; idx < (N-1); ++idx)
+        if (ref[idx] != str[idx]) return 0;
+      return &str[N-1];
+    }
+
+    char const*
+    pop( std::string const& str, std::string const& ref )
+    {
+      if (str.compare(0,ref.size(),ref) != 0)
+        {
+          // if (verbose)
+          //   std::cerr << "Can't pop " << ref << " from " << str << "\n";
+          return str.c_str();
+        }
+      return &str[ref.size()];
+    }
+  }
+  
+  void
+  DBGated::Serve(hypapp::ClientConnection const& conn)
+  {
+    struct MessageLoop : public unisim::util::hypapp::MessageLoop
+    {
+      MessageLoop(DBGated& _http_server)
+        : unisim::util::hypapp::MessageLoop(_http_server, std::cerr, std::cerr, std::cerr)
+        , http_server(_http_server)
+      {
+      }
+		
+      virtual bool SendResponse(unisim::util::hypapp::Request const& req, unisim::util::hypapp::ClientConnection const& conn)
+      {
+        unisim::util::hypapp::HttpRequest http_request(req, std::cerr, std::cerr, std::cerr);
+			
+        if(http_request.IsValid()) // http request is valid?
+          {
+            if (http_server.verbose)
+              std::cerr << "URI \"" << req.GetRequestURI() << "\" is valid\n";
+
+            if (char const* filename = pop(http_request.GetAbsolutePath(), "/get/"))
+              {
+                if (http_server.verbose)
+                  std::cerr << "URI \"" << req.GetRequestURI() << "\" refers to file\n";
+                return http_server.ServeFile(http_request, conn, filename);
+              }
+            
+            //   if(http_request.GetAbsolutePath() == "/favicon.ico")
+            //     {
+            //       return http_server.ServeFile(http_request, http_server.GetSimulator()->GetSharedDataDirectory() + "/unisim/service/http_server/favicon.ico", conn);
+            //     }
+            
+            if (char const* filename = pop(http_request.GetAbsolutePath(), "/"))
+              {
+                if (http_server.verbose)
+                  std::cerr << "URI \"" << req.GetRequestURI() << "\" refers to root\n";
+                return http_server.ServeView(http_request, conn, filename);
+              }
+          }
+        else
+          {
+            if (http_server.verbose)
+              std::cerr << "URI \"" << req.GetRequestURI() << "\" is invalid\n";
+          }
+			
+        if (http_server.verbose)
+          std::cerr << "sending HTTP response 404 Not Found\n";
+			
+        if (not http_server.ServeError(http_request, conn, hypapp::HttpResponse::NOT_FOUND))
+          {
+            std::cerr << "I/O error or connection closed by peer while sending HTTP 404 Not Found\n";
+          }
+
+        return false;
+      }
+		
+    private:
+      DBGated& http_server;
+    };
+	
+    MessageLoop msg_loop(*this);
+    msg_loop.Run(conn);
+  }
+
+  bool
+  DBGated::ServeView(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, char const* filename)
+  {
+    hypapp::HttpResponse response;
+    
+    response << "<!DOCTYPE html>\n<html lang=\"en\">\n";
+    response << "<head><title>Debug Visual (" << filename << ")</title>\n"
+             << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
+             << "<meta name=\"description\" content=\"Debug Visual (" << filename << ")\">"
+             << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+             << "<style>.selected {background-color: #FFFF00;}</style>"
+             << "</head>\n";
+    response << "<body>";
+    response << "<table style=\"width:100%;\"><tbody>\n"
+             << "<tr><td rowspan=\"2\" style=\"width:160px; vertical-align: top;\"><ul>\n";
+
+    std::string filepath = root + "/" + filename;
+
+    typedef decltype(&*files.cbegin()) namepair;
+    namepair last = 0, prev = 0, selected = 0, next = 0;
+    for (auto const& kv : files)
+      {
+        bool this_one = kv.second == filepath;
+        if (this_one)
+          { prev = last; selected = &kv; }
+        else if (selected and selected == last)
+          { next = &kv; }
+        response << "<li><a " << (this_one ? " class=\"selected\"" : "") << " href=\"" << pop(kv.second, root) << "\">" << kv.first << "</a></li>\n";
+        last = &kv;
+      }
+    
+    response << "</ul></td>\n";
+    response << "<td>";
+    char const* fup = "";
+    if (prev)
+      response << "<a href=\"" << pop(prev->second, root) << "\">", fup = "</a>";
+    response << "&#x25C0;" << fup << "&nbsp;";
+    fup = "";
+    if (next)
+      response << "<a href=\"" << pop(next->second, root) << "\">", fup = "</a>";
+    response << "&#x25B6;" << fup;
+    response << "</td></tr>\n";
+    response << "<tr><td><iframe style=\"width:100%; height:900px;\" src=\"/get/" << filename << "\" title=\"Debug Object View\"></iframe></td></tr>\n";
+    response << "</tbody></table>\n";
+    response << "</body>\n";
+    response << "</html>\n";
+
+    return conn.Send(response.ToString());
+  }
+  
+  bool
+  DBGated::ServeFile(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, char const* filename)
+  {
+    hypapp::HttpResponse response;
+
+    if (not *filename)
+      {
+        response << "<!DOCTYPE html>\n<html lang=\"en\"><head><title>Empty</title></head><body></body></html>";
+        conn.Send(response.ToString());
+      }
+
+    std::string filepath = root + "/" + filename;
+    
+    std::ifstream file(filepath, std::fstream::binary);
+
+    if (file.is_open())
+      {
+        if ((req.GetRequestType() == unisim::util::hypapp::Request::GET) or (req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
+          {
+            if (file.seekg(0, file.end))
+              {
+                std::streampos length = file.tellg();
+				
+                if(file.seekg(0, file.beg))
+                  {
+                    // if(enable_cache)
+                    //   {
+                    //     response.EnableCache();
+                    //   }
+
+                    
+                    std::string ext = std::string(filename);
+                    ext = ext.substr(ext.find_last_of("/."));
+					
+                    if((ext == ".htm") || (ext == ".html"))
+                      response.SetContentType("text/html; charset=utf-8");
+                    else if(ext == ".css")
+                      response.SetContentType("text/css");
+                    else if(ext == ".js")
+                      response.SetContentType("application/javascript");
+                    else if(ext == ".png")
+                      response.SetContentType("image/png");
+                    else if((ext == ".jpg") || (ext == ".jpeg"))
+                      response.SetContentType("image/jpeg");
+                    else if(ext == ".svg")
+                      response.SetContentType("image/svg+xml");
+                    else if(ext == ".ico")
+                      response.SetContentType("image/x-icon");
+                    else
+                      response.SetContentType("application/octet-stream");
+
+                    if(length > 0)
+                      {
+                        char buffer[4096];
+                        std::streampos count = length;
+                        do
+                          {
+                            std::streamsize n = file.readsome(buffer, sizeof(buffer));
+							
+                            if(file.fail()) return false;
+							
+                            if(n > 0)
+                              {
+                                response.write(buffer, n);
+                                count -= n;
+                              }
+                          }
+                        while(count > 0);
+                      }
+                  }
+                else
+                  {
+                    if (verbose)
+                      std::cerr << "Can't seek at beginning of File \"" << filepath << "\"\n";
+                    return ServeError(req, conn, hypapp::HttpResponse::INTERNAL_SERVER_ERROR);
+                  }
+              }
+            else
+              {
+                if (verbose)
+                  std::cerr << "Can't seek at end of File \"" << filepath << "\"\n";
+                return ServeError(req, conn, hypapp::HttpResponse::INTERNAL_SERVER_ERROR);
+              }
+          }
+        else if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+          {
+            response.Allow("OPTIONS, GET, HEAD");
+          }
+        else
+          {
+            if (verbose)
+              std::cerr << "Method not allowed\n";
+            return Serve405(req, conn, "OPTIONS, GET, HEAD");
+          }
+      }
+    else
+      {
+        if (verbose)
+          std::cerr << "Can' open File \"" << filepath << "\" for reading\n";
+        return ServeError(req, conn, hypapp::HttpResponse::NOT_FOUND);
+      }
+	
+    return conn.Send(response.ToString((req.GetRequestType() == unisim::util::hypapp::Request::HEAD) || (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)));
+  }
+  
+  bool DBGated::Serve405(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, char const* methods)
+  {
+    unisim::util::hypapp::HttpResponse response;
+	
+    response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+    response.Allow(methods);
+	
+    response << "<!DOCTYPE html>" << std::endl;
+    response << "<html lang=\"en\">" << std::endl;
+    response << "\t<head>" << std::endl;
+    response << "\t\t<title>Error 405 (Method Not Allowed)</title>" << std::endl;
+    response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+    response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
+    response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+    response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+    response << "\t\t<style>" << std::endl;
+    response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+    response << "\t\t</style>" << std::endl;
+    response << "\t</head>" << std::endl;
+    response << "\t<body>" << std::endl;
+    response << "\t\t<p>HTTP Method not allowed</p>" << std::endl;
+    response << "\t</body>" << std::endl;
+    response << "</html>" << std::endl;
+	
+    return conn.Send(response.ToString());
+  }
+
+  bool
+  DBGated::ServeError(hypapp::HttpRequest const& req, hypapp::ClientConnection const& conn, hypapp::HttpResponse::StatusCode response_code)
+  {
+    hypapp::HttpResponse response;
+    
+    response.SetStatus(response_code);
+
+    char const* msg = 0;
+    switch (response_code)
+      {
+      case unisim::util::hypapp::HttpResponse::NOT_FOUND: msg = "Not Found"; break;
+      default: msg = "???"; break;
+      }
+    
+
+    response << "<!DOCTYPE html>\n<html lang=\"en\">\n";
+    response << "<head><title>Error " << int(response_code) << " (" << msg << ")</title>\n"
+             << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
+             << "<meta name=\"description\" content=\"Error " << int(response_code) << " (" << msg << ")\">"
+             << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+             << "</head>\n";
+    response << "<body><p>Unavailable</p></body>\n";
+    response << "</html>\n";
+
+    return conn.Send(response.ToString());
+  }
   
 } /* end of namespace dbgate */
 } /* end of namespace util */

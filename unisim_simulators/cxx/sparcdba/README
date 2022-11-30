@@ -1,0 +1,4 @@
+This package contains:
+- armsec: a sparc decoder for conversion of sparc-v8 instructions to
+  DBA intermediate representation
+See INSTALL for installation instructions.

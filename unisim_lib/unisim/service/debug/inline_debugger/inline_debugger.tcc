@@ -221,7 +221,7 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 	
 	if(!program_counter)
 	{
-		std::cerr << this->GetName() << "ERROR! can't access program counter" << std::endl;
+		std::cerr << this->GetName() << ": ERROR! can't access program counter" << std::endl;
 		return false;
 	}
 	

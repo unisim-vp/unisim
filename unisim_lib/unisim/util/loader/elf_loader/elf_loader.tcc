@@ -285,20 +285,6 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load()
 {
-	if(blob)
-	{
-		blob->Release();
-	}
-
-	Elf_Ehdr *hdr = 0;
-	Elf_Phdr *phdr = 0;
-	Elf_Phdr *phdr_table = 0;
-	const Elf_Shdr *shdr = 0;
-	Elf_Shdr *shdr_table = 0;
-	char *sh_string_table = 0;
-	int i;
-	bool success = true;
-
 	if(filename.empty())
 	{
 		GetDebugErrorStream() << "Don't know which executable file to load." << std::endl;
@@ -312,6 +298,25 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	std::ifstream is(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 	
+	return Load(is);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load(std::istream& is)
+{
+	if(blob)
+	{
+		blob->Release();
+	}
+
+	Elf_Phdr *phdr = 0;
+	Elf_Phdr *phdr_table = 0;
+	const Elf_Shdr *shdr = 0;
+	Elf_Shdr *shdr_table = 0;
+	char *sh_string_table = 0;
+	int i;
+	bool success = true;
+
 	if(is.fail())
 	{
 		GetDebugErrorStream() << "Can't open executable \"" << filename << "\"" << std::endl;
@@ -323,7 +328,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		GetDebugInfoStream() << "Reading ELF header" << std::endl;
 	}
 
-	hdr = ReadElfHeader(is);
+	Elf_Ehdr *hdr = ReadElfHeader(is);
 
 	if(!hdr)
 	{

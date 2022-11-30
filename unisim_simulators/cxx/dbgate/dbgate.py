@@ -56,7 +56,7 @@ def setup():
     open = SERVER.open
     close = SERVER.close
 
-CALLRE = re.compile('^(\w*) *\((.*)\)$')
+CALLRE = re.compile('^([\w\.]*) *\((.*)\)$')
 
 def call( callstr ):
     match = CALLRE.match(callstr)
@@ -69,7 +69,7 @@ def call( callstr ):
         cd = open(path)
         args = '%s%d%s' % (before,cd,after)
 
-    gdb.execute('break %s' % fun)
+#    gdb.execute('break %s' % fun)
     try:
         gdb.execute('call %s(%s)' % (fun,args))
     except gdb.error as err:

@@ -36,14 +36,6 @@
 // reference should, most probably, all go through the ModRM mechanism
 // (to hide address size management).
 
-// struct StrOp
-// {
-//   SrtOp( uint8_t _segment, uint8_t _reg ) : segment( _segment ), reg( _reg ) {} uint8_t segment; uint8_t reg;
-//   virtual ~MOp() {}
-//   virtual void  disasm_memory_operand( std::ostream& _sink ) const { throw 0; };
-//   virtual u32_t effective_address( ARCH& _arch ) const { throw 0; return u32_t( 0 ); };
-// };
-
 template <class ARCH>
 struct StringEngine
 {
@@ -69,6 +61,30 @@ struct StringEngine
   virtual void adddst( ARCH& arch, int step ) const = 0;
   
   virtual ~StringEngine() {};
+};
+
+/*  According to the specification and the actual hardware, in the
+ * repeated string instruction, the null counter termination test is
+ * performed twice: before and after the execution of the inner linked
+ * string instruction. doing the test only once (like a while loop)
+ * provides the same result at the expense of sometimes having an
+ * extra final step. By default, the extra counter test is skipped.
+ * Declaring a StrictCounterTest type in the ARCH class sticks to the
+ * specification.
+ */
+template < class T >
+struct HasStrictCounterTest
+{
+  using Yes = char[2];
+  using  No = char[1];
+
+  struct Fallback { struct StrictCounterTest { }; };
+  struct Derived : T, Fallback { };
+
+  template < typename U > static No& test ( typename U::StrictCounterTest* );
+  template < typename U > static Yes& test ( U* );
+
+  enum { value = sizeof(test<Derived>(0)) == sizeof(Yes) };
 };
 
 template <class ARCH, class OP>
@@ -106,7 +122,7 @@ namespace {
       case 2: return &se32;
       case 3: return &se64;
       }
-    throw 0;
+    struct Bad {}; throw Bad ();
     return 0;
   }
 }
@@ -117,7 +133,7 @@ struct Movs : public Operation<ARCH>
   Movs( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   
   void disasm( std::ostream& _sink ) const {
-    _sink << (REP?"rep ":"") << DisasmMnemonic<OP::SIZE>( "movs" ) << str->getsrc(segment) << ',' << str->getdst();
+    _sink << (REP?"rep ":"") << DisasmMnemonic( "movs", OP::SIZE ) << ' ' << str->getsrc(segment) << ',' << str->getdst();
                                                                                                 
   }
   
@@ -135,6 +151,7 @@ struct Movs : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
+      if (HasStrictCounterTest<ARCH>::value and not str->tstcounter( arch )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
@@ -181,7 +198,7 @@ struct Stos : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
-      if (not str->tstcounter( arch )) return;
+      if (HasStrictCounterTest<ARCH>::value and not str->tstcounter( arch )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
@@ -232,6 +249,7 @@ struct Cmps : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
+      if (HasStrictCounterTest<ARCH>::value and not str->tstcounter( arch )) return;
       if (arch.Test( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
@@ -243,9 +261,9 @@ template <class ARCH> struct DC<ARCH,CMPS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xa6" ) ))
   
     {
-      if (ic.rep==0) return new Cmps<ARCH,GOb,3>( _.opbase(), ic.segment, mkse( ic ) );
+      if (ic.rep==0) return new Cmps<ARCH,GOb,0>( _.opbase(), ic.segment, mkse( ic ) );
       if (ic.rep==2) return new Cmps<ARCH,GOb,2>( _.opbase(), ic.segment, mkse( ic ) );
-      else           return new Cmps<ARCH,GOb,0>( _.opbase(), ic.segment, mkse( ic ) );
+      else           return new Cmps<ARCH,GOb,3>( _.opbase(), ic.segment, mkse( ic ) );
     }
 
   
@@ -297,6 +315,7 @@ struct Scas : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
+      if (HasStrictCounterTest<ARCH>::value and not str->tstcounter( arch )) return;
       if (arch.Test( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
@@ -358,6 +377,7 @@ struct Lods : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
+      if (HasStrictCounterTest<ARCH>::value and not str->tstcounter( arch )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
@@ -390,7 +410,7 @@ template <class ARCH, unsigned OPSIZE, bool REP>
 struct Outs : public Operation<ARCH>
 {
   Outs( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "outs" ) << str->getsrc(segment) << ",(" << DisasmG( GOw(), 2 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic( "outs", OPSIZE ) << ' ' << str->getsrc(segment) << ",(" << DisasmG( GOw(), 2 ) << ")"; }
 };
 
 template <class ARCH> struct DC<ARCH,OUTS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -420,7 +440,7 @@ template <class ARCH, unsigned OPSIZE, bool REP>
 struct Ins : public Operation<ARCH>
 {
   Ins( OpBase<ARCH> const& opbase, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), str(_str) {}; StringEngine<ARCH>* str;
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "ins" ) << "(" << DisasmG( GOw(), 2 ) << ")," << str->getdst(); }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic( "ins", OPSIZE ) << ' ' << "(" << DisasmG( GOw(), 2 ) << ")," << str->getdst(); }
 };
 
 template <class ARCH> struct DC<ARCH,INS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

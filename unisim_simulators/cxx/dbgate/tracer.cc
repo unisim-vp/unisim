@@ -60,7 +60,7 @@ main(int argc, char** argv)
     }
 
   unisim::util::dbgate::DBGated server(12345, getenv("DBGATEDROOT"));
-  std::cerr << "DBGate server started in " << server.root << " at localhost:" << server.port << "\n";
+  std::cerr << "DBGate server started in " << server.root << " at localhost:" << server.GetPort() << "\n";
 
   for (DBGateMethodID method; (method = tracee.nextcall()).good();)
     {

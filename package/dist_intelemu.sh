@@ -7,6 +7,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel
 import unisim/component/cxx/processor/intel/isa
+import unisim/component/cxx/processor/intel/arch32
 import unisim/util/debug
 import unisim/service/interfaces/linux_os
 import unisim/service/interfaces/memory_injection

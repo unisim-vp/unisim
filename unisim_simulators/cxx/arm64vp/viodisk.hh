@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2021,
+ *  Copyright (c) 2019-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,150 +36,76 @@
 #define __ARM64VP_VIODISK_HH__
 
 #include "snapshot.hh"
-#include <fstream>
+#include <unisim/util/virtio/virtio.hh>
+#include <set>
+#include <string>
 #include <inttypes.h>
 
-struct VIOQueue
-{
-  struct DescIterator
-  {
-    DescIterator() : index(0), wrap(1) {}
-    void sync(SnapShot& snapshot);
-    void next(VIOQueue const& vq) { if (++index < vq.size) return; index = 0; wrap ^= 1;  }
-    bool available(uint16_t flags) const { return (flags >> 15 ^ wrap) & ~(flags >> 7 ^ wrap) & 1; }
-    uint16_t used(bool write) const { return wrap << 15 | wrap << 7 | int(write) << 1; }
-    uint16_t idx() const { return (index & 0x7fff) | (wrap << 15); }
-    unsigned offset() const { return 16*index; }
-  private:
-    uint16_t index;
-    uint16_t wrap;
-  };
+struct AArch64;
 
-  //enum { NEXT=1, WRITE=2, INDIRECT=4 };
-
-  VIOQueue() : size(0), ready(0), desc_area(0), driver_area(0), device_area(0), head() {}
-  void sync(SnapShot& snapshot);
-  uint64_t desc_addr(DescIterator const& desc) const { return desc_area + desc.offset(); }
-
-  uint32_t size, ready;
-  uint64_t desc_area, driver_area, device_area;
-  DescIterator head;
-};
-
-struct VIOAccess
-{
-  virtual ~VIOAccess() {}
-  
-  //  virtual void flag(uint64_t addr) const = 0;
-  virtual void notify() const = 0;
-  
-  virtual uint64_t read(uint64_t addr, unsigned size) const = 0;
-  virtual void write(uint64_t addr, unsigned size, uint64_t value) const = 0;
-};
-
-struct VIODisk
+struct VIODisk : public unisim::util::virtio::BlockDevice
 {
   VIODisk();
-  virtual ~VIODisk() {}
+  ~VIODisk();
 
-  enum { BLKSIZE = 512 };
-  
-  virtual void seek(uint64_t pos) = 0;
-  virtual uint64_t tell() = 0;
-  virtual void read(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
-  virtual void write(VIOAccess const&, uint64_t addr, uint64_t size) = 0;
-  
-  virtual void sync(SnapShot& snapshot);
-  void reset();
-  
-  // Generic Config
-  static uint32_t Vendor() { return 0x70767375; }
-  static uint32_t QueueNumMax() { return 1024; }
-  uint32_t ClaimedFeatures();
-  bool UsedFeatures(uint32_t);
-  bool CheckFeatures();
-  bool CheckStatus();
-  bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
-  bool ReadQueue(VIOAccess const& vioa);
-  bool SetupQueue(VIOAccess const& vioa);
-  
-  // Block Device Config
-  static uint32_t SegMax() { return 254; }
-  static uint32_t BlkSize() { return 512; }
-  static uint32_t DiscardSectorAlignment() { return 1; }
-  static uint32_t MaxDiscardSectors() { return 0x3fffff; }
-  static uint32_t MaxDiscardSeg() { return 1; }
-  static uint32_t MaxWriteZeroesSectors() { return 0x3fffff; }
-  
-  // Generic Config
-  uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
+  struct Access : public unisim::util::virtio::Access
+  {
+    virtual AArch64& GetCore() const = 0;
+  };
 
-  // Block Device Config
-  VIOQueue rq;
-  uint64_t Capacity;
-  uint8_t  WriteBack;
+  struct SyncQMgr
+  {
+    virtual ~SyncQMgr() {}
+    virtual void sync(SnapShot&, unisim::util::virtio::Queue*) const = 0;
+    virtual bool is_packed() const = 0;
+  };
+
+  struct Delta
+  {
+    Delta(uint64_t _index) : index(_index >> shift << shift), udat() {}
+    Delta(Delta&& pg) : index(pg.index), udat(pg.udat) { pg.udat = 0; }
+    Delta(const Delta&) = delete;
+    ~Delta() { delete [] udat; }
+
+    bool operator < (Delta const& rhs) const { return index < rhs.index; }
+
+    enum { shift = 12 };
+    static constexpr uint64_t fullsize() { return 1<<shift; }
+
+    static uint64_t size_from( uint64_t addr ) { return (~addr % fullsize()) + 1; }
+
+    void uwrite(uint64_t pos, uint64_t size, uint8_t const* src) const;
+    
+    void uread(uint64_t pos, uint64_t size, uint8_t* dst) const;
+
+    uint64_t    index;
+    mutable uint8_t* udat;
+  };
+
+  typedef std::set<Delta> Deltas;
+
+  void open(char const* filename);
+  void sync(SnapShot& snapshot);
+
+  static uint32_t Vendor() { return 0x70767375; /*usvp*/ }
+  uint32_t  ClaimedFeatures();
+  bool      UsedFeatures(uint32_t);
+  void      SetupQueues(bool is_packed);
+
+  void read(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
+  void write(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
+  void seek(uint64_t pos) override { diskpos = pos; }
+
+  // Configuration
+  SyncQMgr*   sqmgr;
+  uint8_t     WriteBack;
+
+  // Storage state
+  std::string diskfilename;
+  uint64_t    Capacity, diskpos, disksize;
+  uint8_t*    storage;
+  Deltas      deltas;
 };
-
-struct VIOConsole
-{
-  // Generic Config
-  static uint32_t Vendor() { return 0x70767375; }
-  static uint32_t QueueNumMax() { return 1024; }
-  uint32_t ClaimedFeatures();
-  bool UsedFeatures(uint32_t);
-  bool CheckFeatures();
-  bool CheckStatus();
-  bool InterruptAck(uint32_t mask) { InterruptStatus &= ~mask; return true; }
-  bool ReadQueue(VIOAccess const& vioa);
-  bool SetupQueue(VIOAccess const& vioa);
-  
-  // Generic Config
-  // uint32_t Status, Features, DeviceFeaturesSel, DriverFeaturesSel, ConfigGeneration, InterruptStatus;
-  uint32_t DeviceFeaturesSel, DriverFeaturesSel, InterruptStatus;
-};
-
-template <typename FEATTYPE, FEATTYPE FEAT> struct Feature {};
-
-struct CommonFeatures
-{
-  enum Code { RING_INDIRECT_DESC, RING_EVENT_IDX, VERSION_1, ACCESS_PLATFORM, RING_PACKED, end };
-};
-
-#define COMMON_FEATURE(FEAT,BPOS) template <> struct Feature<CommonFeatures::Code,CommonFeatures::FEAT> { enum {BIT=BPOS}; static char const* name() { return #FEAT; } }
-
-COMMON_FEATURE(   RING_INDIRECT_DESC, 28); // Device supports buffer indirection
-COMMON_FEATURE(       RING_EVENT_IDX, 29); // used_event and avail_event availables
-COMMON_FEATURE(            VERSION_1, 32); // This indicates compliance with this specification
-COMMON_FEATURE(      ACCESS_PLATFORM, 33); // Device supports IOMMU
-COMMON_FEATURE(          RING_PACKED, 34); // Device supports the packed virtqueue layout
-// COMMON_FEATURE(          IN_ORDER, 35); // Device supports in-order use of buffers
-// COMMON_FEATURE(    ORDER_PLATFORM, 36); // Device needs platform ordering
-// COMMON_FEATURE(            SR_IOV, 37); // Device supports Single Root I/O Virtualization
-// COMMON_FEATURE( NOTIFICATION_DATA, 38); // Device support extended notifications
-
-#undef COMMON_FEATURE
-
-struct BlockFeatures
-{
-  enum Code { SEG_MAX, BLK_SIZE, FLUSH, TOPOLOGY, CONFIG_WCE, DISCARD, WRITE_ZEROES, end };
-};
-
-#define BLOCK_FEATURE(FEAT,BPOS) template <> struct Feature<BlockFeatures::Code,BlockFeatures::FEAT> { enum {BIT=BPOS}; static char const* name() { return #FEAT; } }
-
-// BLOCK_FEATURE(            BARRIER,  0); // Device supports request barriers (legacy).
-// BLOCK_FEATURE(           SIZE_MAX,  1); // Maximum size of a segment is in size_max.
-BLOCK_FEATURE(               SEG_MAX,  2); // Maximum number of segments in a request is in seg_max.
-// BLOCK_FEATURE(           GEOMETRY,  4); // Disk-style geometry specified in geometry.
-// BLOCK_FEATURE(                 RO,  5); // Device is read-only.
-BLOCK_FEATURE(              BLK_SIZE,  6); // Block size of disk is in blk_size.
-// BLOCK_FEATURE(               SCSI,  7); // Device supports scsi packet commands (legacy).
-BLOCK_FEATURE(                 FLUSH,  9); // Cache flush command support (a.k.a WCE in legacy).
-BLOCK_FEATURE(              TOPOLOGY, 10); // Device exports information on optimal I/O alignment.
-BLOCK_FEATURE(            CONFIG_WCE, 11); // Device can toggle its cache between writeback and writethrough modes.
-BLOCK_FEATURE(               DISCARD, 13); // Support discard command with max_discard_sectors and max_discard_seg limits.
-BLOCK_FEATURE(          WRITE_ZEROES, 14); // Support write zeroes command with max_write_zeroes_sectors and max_write_zeroes_seg limits.
-
-#undef BLOCK_FEATURE
 
 #endif /* __ARM64VP_VIODISK_HH__ */
 

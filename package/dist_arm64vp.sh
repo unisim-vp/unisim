@@ -16,6 +16,7 @@ import unisim/kernel/logger/text_file || exit
 import unisim/kernel/logger/http || exit
 import unisim/kernel/logger/xml_file || exit
 import unisim/kernel/logger/netstream || exit
+import unisim/util/virtio || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/likely || exit
 import unisim/util/random || exit
@@ -59,6 +60,8 @@ architecture.cc \
 snapshot.cc \
 serial.cc \
 viodisk.cc \
+vioconsole.cc \
+transfer.cc \
 system.cc \
 instruction.cc \
 main.cc \
@@ -72,6 +75,8 @@ architecture.hh \
 snapshot.hh \
 serial.hh \
 viodisk.hh \
+vioconsole.hh \
+transfer.hh \
 debugger.hh \
 "
 

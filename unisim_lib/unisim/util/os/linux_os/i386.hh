@@ -58,24 +58,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  // Register names
-  static char const* const kI386_eax = "%eax";
-  static char const* const kI386_ecx = "%ecx";
-  static char const* const kI386_edx = "%edx";
-  static char const* const kI386_ebx = "%ebx";
-  static char const* const kI386_esp = "%esp";
-  static char const* const kI386_ebp = "%ebp";
-  static char const* const kI386_esi = "%esi";
-  static char const* const kI386_edi = "%edi";
-  static char const* const kI386_eip = "%eip";
-
-  static char const* const kI386_es = "%es";
-  static char const* const kI386_cs = "%cs";
-  static char const* const kI386_ss = "%ss";
-  static char const* const kI386_ds = "%ds";
-  static char const* const kI386_fs = "%fs";
-  static char const* const kI386_gs = "%gs";
-
   template <class LINUX>
   struct I386TS : public LINUX::TargetSystem
   {
@@ -165,15 +147,15 @@ namespace linux_os {
       // Reset all target registers
       {
         char const* clear_registers[] = {
-          "%eax", "%ecx", "%edx", "%ebx", "%ebp", "%esi", "%edi",
-          "%st", "%st(1)", "%st(2)", "%st(3)", "%st(4)", "%st(5)", "%st(6)", "%st(7)"
+          "eax", "ecx", "edx", "ebx", "ebp", "esi", "edi",
+          "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7"
         };
         for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
           if (not lin.ClearTargetRegister(clear_registers[idx]))
             return false;
       }
       // Set EIP to the program entry point
-      if (not lin.SetTargetRegister(kI386_eip, lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister("eip", lin.GetEntryPoint()))
         return false;
       // Set ESP to the base of the created stack
       unisim::util::blob::Section<address_type> const * esp_section =
@@ -183,7 +165,7 @@ namespace linux_os {
           lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
-      if (not lin.SetTargetRegister(kI386_esp, esp_section->GetAddr()))
+      if (not lin.SetTargetRegister("esp", esp_section->GetAddr()))
         return false;
           
       // Pseudo GDT initialization  (flat memory + early TLS)
@@ -198,12 +180,12 @@ namespace linux_os {
         }
       lin.SetTargetRegister("@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
           
-      this->WriteSegmentSelector(kI386_cs,(1<<3) | (0<<2) | 3); // code
-      this->WriteSegmentSelector(kI386_ss,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_ds,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_es,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_fs,(2<<3) | (0<<2) | 3); // data
-      this->WriteSegmentSelector(kI386_gs,(3<<3) | (0<<2) | 3); // tls
+      this->WriteSegmentSelector("cs",(1<<3) | (0<<2) | 3); // code
+      this->WriteSegmentSelector("ss",(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector("ds",(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector("es",(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector("fs",(2<<3) | (0<<2) | 3); // data
+      this->WriteSegmentSelector("gs",(3<<3) | (0<<2) | 3); // tls
           
       return true;
     }
@@ -318,7 +300,7 @@ namespace linux_os {
       return ret;
     }
 
-    static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { lin.SetTargetRegister(kI386_eax, (parameter_type) ret); }
+    static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { lin.SetTargetRegister("eax", (parameter_type) ret); }
     void SetSystemCallStatus(int64_t ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
@@ -326,12 +308,12 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: lin.GetTargetRegister(kI386_ebx, val); break;
-      case 1: lin.GetTargetRegister(kI386_ecx, val); break;
-      case 2: lin.GetTargetRegister(kI386_edx, val); break;
-      case 3: lin.GetTargetRegister(kI386_esi, val); break;
-      case 4: lin.GetTargetRegister(kI386_edi, val); break;
-      case 5: lin.GetTargetRegister(kI386_ebp, val); break;
+      case 0: lin.GetTargetRegister("ebx", val); break;
+      case 1: lin.GetTargetRegister("ecx", val); break;
+      case 2: lin.GetTargetRegister("edx", val); break;
+      case 3: lin.GetTargetRegister("esi", val); break;
+      case 4: lin.GetTargetRegister("edi", val); break;
+      case 5: lin.GetTargetRegister("ebp", val); break;
       default: throw std::logic_error("internal error");
       }
           

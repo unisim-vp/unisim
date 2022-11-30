@@ -36,12 +36,14 @@
 #define __ARM64VP_DEBUGGER_HH__
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-//#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <iosfwd>
 #include <inttypes.h>
 
-struct Arch;
+struct AArch64;
 
 struct Debugger
+  : public unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>
 {
   struct DEBUGGER_CONFIG
   {
@@ -50,17 +52,21 @@ struct Debugger
     /* gdb_server, inline_debugger and/or monitor */
     static const unsigned int MAX_FRONT_ENDS = 1;
   };
-  
-  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
-  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
-  //  typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
-  
-  DebugHub debug_hub;
-  //  GDBServer gdb_server;
-  InlineDebugger inline_debugger;
 
-  Debugger(Arch&, char const*);
+  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
+  //typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
+
+
+  Debugger(char const* name, AArch64&, std::istream&);
   ~Debugger();
+
+  virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const override { return blob; }
+
+  DebugHub debug_hub;
+  //GDBServer gdb_server;
+  InlineDebugger inline_debugger;
+  unisim::util::blob::Blob<uint64_t> const* blob;
 };
 
 #endif // __ARM64VP_LINUX_DEBUGGER_HH__

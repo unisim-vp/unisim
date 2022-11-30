@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_TYPES_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_TYPES_HH__
 
+#include <unisim/util/identifier/identifier.hh>
 #include <cstdint>
 
 namespace unisim {
@@ -97,19 +98,41 @@ namespace intel {
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s32_t>
   { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: s64_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 32 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype;                                      enum nfo { is_signed = 0, is_integral = 1, bitsize = 64 }; };
+  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::u128_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype;                                      enum nfo { is_signed = 1, is_integral = 1, bitsize = 64 }; };
+  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::s128_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u128_t>
-  { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype; typedef typename ARCH::u128_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 128 }; };
+  { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype;                                    enum nfo { is_signed = 0, is_integral = 1, bitsize = 128 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s128_t>
-  { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype; typedef typename ARCH::s128_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 128 }; };
+  { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype;                                    enum nfo { is_signed = 1, is_integral = 1, bitsize = 128 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f32_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 32 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f64_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f80_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 80 }; };
 
   enum x87frnd_mode_t { x87frnd_error = -1, x87frnd_nearest = 0, x87frnd_down = 1, x87frnd_up = 2, x87frnd_toward0 = 3 };
   
+  struct XSaveMode : public unisim::util::identifier::Identifier<XSaveMode>
+  {
+    enum Code { BASE = 0, OPT, C, S, end } code;
+
+    char const* c_str() const
+    {
+      switch (code)
+        {
+        default: break;
+        case BASE: return "base";
+        case  OPT: return "opt";
+        case    C: return "c";
+        case    S: return "s";
+        }
+      return "NA";
+    }
+
+    XSaveMode() : code(end) {}
+    XSaveMode( Code _code ) : code(_code) {}
+    XSaveMode( char const* _code ) : code(end) { init( _code ); }
+  };
+
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx

@@ -71,7 +71,18 @@ struct ScannerTypes
     NeonRegister() = default;
     NeonRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
     unisim::util::symbolic::Expr expr;
-    static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
+    static unisim::util::symbolic::ValueType const* GetType()
+    {
+      static struct NRType : public unisim::util::symbolic::ValueType
+      {
+        NRType() : ValueType(unisim::util::symbolic::ValueType::NA) {}
+        
+        //return unisim::util::symbolic::ValueType::VOID;
+        virtual unsigned GetBitSize() const override { return 8*BYTECOUNT; }
+        virtual void GetName(std::ostream& sink) const override { sink << "NeonQ"; }
+      } _;
+      return &_;
+    }
   };
 
   template <typename T>
@@ -101,7 +112,7 @@ struct Scanner
 
   typedef unisim::util::symbolic::Expr Expr;
   typedef unisim::util::symbolic::ExprNode ExprNode;
-  typedef unisim::util::symbolic::ScalarType ScalarType;
+  typedef unisim::util::symbolic::ValueType ValueType;
   typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
   typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
@@ -112,7 +123,7 @@ struct Scanner
 
   struct Update : public ExprNode
   {
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
   };
 
   struct RegReadBase : public unisim::util::symbolic::ExprNode
@@ -129,8 +140,7 @@ struct Scanner
     RegRead( RID _id ) : id(_id) {}
     virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual char const* GetRegName() const override { return id.c_str(); };
-    virtual ScalarType::id_t GetType() const
-    { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
+    virtual ValueType const* GetType() const { return RID::GetType(); }
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
@@ -157,7 +167,7 @@ struct Scanner
     VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
     virtual ExprNode* Mutate() const override { return new this_type(*this); }
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-    virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
+    virtual ValueType const* GetType() const override { return T::GetType(); }
   };
 
   struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
@@ -179,14 +189,16 @@ struct Scanner
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
   };
 
-  struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
-  struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
+  struct VReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "VReg"; } };
+  struct GReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "GReg"; } };
 
   typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
   /**/                           typedef VRWrite<GReg> GRegWrite;
 
-  struct SP {
-    typedef uint64_t register_type;
+  struct SP
+    : public unisim::util::symbolic::WithValueType<SP>
+  {
+    typedef uint64_t value_type;
     char const* c_str() const { return "sp"; }
     int cmp( SP const& ) const { return 0; }
     ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
@@ -198,8 +210,9 @@ struct Scanner
   };
     
   struct PC
+    : public unisim::util::symbolic::WithValueType<PC>
   {
-    typedef uint64_t register_type;
+    typedef uint64_t value_type;
     char const* c_str() const { return "pc"; }
     int cmp( PC const& ) const { return 0; }
     ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
@@ -210,9 +223,11 @@ struct Scanner
     }
   };
 
-  struct Flag : public unisim::util::identifier::Identifier<Flag>
+  struct Flag
+    : public unisim::util::identifier::Identifier<Flag>
+    , public unisim::util::symbolic::WithValueType<Flag>
   {
-    typedef bool register_type;
+    typedef bool value_type;
     enum Code { N, Z, C, V, end } code;
 
     char const* c_str() const
@@ -234,35 +249,36 @@ struct Scanner
 
   struct Load : public ExprNode
   {
-    Load( ScalarType::id_t _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
+    Load( ValueType const* _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
     virtual Load* Mutate() const override { return new Load( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { sink << "Load" << ScalarType(tp).name << "(" << addr << ")"; }
+    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink << "Load"); sink << "(" << addr << ")"; }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
-    int compare( Load const& rhs ) const { return int(tp) - int(rhs.tp); }
-    virtual ScalarType::id_t GetType() const { return tp; }
+    int compare( Load const& rhs ) const { return tp < rhs.tp ? -1 : tp > rhs.tp ? +1 : 0; }
+    virtual ValueType const* GetType() const { return tp; }
 
     Expr addr;
-    ScalarType::id_t tp;
+    ValueType const* tp;
   };
 
   struct Store : public Update
   {
-    Store( ScalarType::id_t _tp, Expr const& _addr, Expr const& _value )
+    Store( ValueType const* _tp, Expr const& _addr, Expr const& _value )
       : addr( _addr ), value( _value ), tp(_tp)
     {}
     virtual Store* Mutate() const override { return new Store( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { sink << "Store" << ScalarType(tp).name << "( " << addr << ", " << value <<  " )"; }
+    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink << "Store"); sink << "( " << addr << ", " << value <<  " )"; }
     virtual unsigned SubCount() const override { return 2; }
     virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
-    int compare( Store const& rhs ) const { return int(tp) - int(rhs.tp); }
+    int compare( Store const& rhs ) const { return tp < rhs.tp ? -1 : tp > rhs.tp ? +1 : 0; }
       
     Expr addr;
     Expr value;
-    ScalarType::id_t tp;
+    ValueType const* tp;
   };
+    
 
   typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
 
@@ -368,11 +384,12 @@ struct Scanner
   }
   //bool     Test(bool cond) { return cond; }
 
+  void SoftwareBreakpoint( uint32_t imm ) { dont("system"); }
   void CallSupervisor( uint32_t imm ) { dont("system"); }
   void CallHypervisor( uint32_t imm ) { dont("system"); }
   void ExceptionReturn() { dont("system"); }
 
-  Expr MemRead(ScalarType::id_t tp, Expr const& addr)
+  Expr MemRead(ValueType const* tp, Expr const& addr)
   {
     interface.memaccess( addr, false );
     return new Load( tp, addr );
@@ -384,7 +401,7 @@ struct Scanner
   U16 MemRead16(U64 addr) { return MemReadT<U16>(addr); }
   U8  MemRead8 (U64 addr) { return MemReadT<U8> (addr); }
 
-  void MemWrite(ScalarType::id_t tp, Expr const& addr, Expr const& data)
+  void MemWrite(ValueType const* tp, Expr const& addr, Expr const& data)
   {
     interface.memaccess( addr, true );
     stores.insert( new Store( tp, addr, data ) );

@@ -83,6 +83,8 @@ bool process( intel::Decoder& decoder, std::ostream& sink, char const* as, char 
   return true;
 }
 
+//extern void dbgate_keep();
+
 int
 main( int argc, char** argv )
 {
@@ -95,7 +97,7 @@ main( int argc, char** argv )
 
   intel::Decoder decoder;
   decoder.mode64 = strcmp("intel64", argv[1]) == 0;
-  
+
   if (argc == 3)
     {
       std::ifstream source(argv[2]);
@@ -105,19 +107,20 @@ main( int argc, char** argv )
           usage(std::cerr, argv[0]);
           return 1;
         }
-      
+
       std::string abuf, cbuf;
       for (;;)
         {
           if (not (source >> abuf).good() or not getline(source, cbuf).good()) break;
-          std::ofstream sink("/dev/null");
+          //std::ofstream sink("/dev/null");
+          std::ostream& sink(std::cout);
           if (not process(decoder, sink, abuf.c_str(), cbuf.c_str()))
             { usage(std::cerr, argv[0]); return 1; }
         }
-      
+
       return 0;
     }
-  
+
   if (argc != 4)
     {
       std::cerr << "Wrong number of CLI arguments.\n";
@@ -127,7 +130,36 @@ main( int argc, char** argv )
 
   if (not process(decoder, std::cout, argv[2], argv[3] ))
     { usage(std::cerr, argv[0]); return 1; }
-  
+
+  //  dbgate_keep();
+
   return 0;
 }
 
+
+// #include <unisim/util/dbgate/client/client.hh>
+// #include <unisim/util/symbolic/symbolic.hh>
+
+// DBGATE_DEFS;
+
+// extern "C" {
+//   void dbgate_print_expr( unisim::util::symbolic::ExprNode const* node, int cd )
+//   {
+//     unisim::util::dbgate::client::odbgstream sink(cd);
+//     sink << "<!DOCTYPE html>\n" << "<html><body>\n";
+//     sink << "<p>ExprNode::" << "Repr@" << (void*)node << "</p>\n<p>";
+//     node->Repr(sink);
+//     sink << "</p></body></html>\n";
+//   }
+// }
+
+
+// int dbgate_global;
+// void
+// dbgate_keep()
+// {
+//   if (dbgate_global)
+//     {
+//       puts((char const*)&dbgate_print_expr);
+//     }
+// }

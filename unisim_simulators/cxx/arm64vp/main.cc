@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020,
+ *  Copyright (c) 2020-2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,6 +33,7 @@
  */
 
 #include "architecture.hh"
+#include "debugger.hh"
 #include <unisim/kernel/logger/console/console_printer.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
@@ -223,6 +224,12 @@ void simdefault(unisim::kernel::Simulator* sim)
   sim->SetVariable("netstreamer.filter-null-character", true);
   sim->SetVariable("netstreamer.verbose", false);
 
+  sim->SetVariable("debugger.gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
+  sim->SetVariable("debugger.debug-hub.parse-dwarf", false);
+  sim->SetVariable("debugger.debug-hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.debug-hub.architecture[0]", "aarch64");
+
+
   new unisim::kernel::config::json::JSONConfigFileHelper(sim);
 }
 
@@ -267,7 +274,7 @@ struct StreamSpy
   
   void advance(char const* _out, char const* _in, step_t _step)
   {
-    if (outgoing and *outgoing) throw 0;
+    if (outgoing and *outgoing) { struct Bad {}; raise( Bad() ); }
     outgoing = _out;
     incoming = _in;
     expect = _in;
@@ -307,7 +314,7 @@ struct StreamSpy
 int
 main(int argc, char *argv[])
 {
-  char const* disk_filename = "rootfs.ext4";
+  char const* disk_filename = "root.fs";
 
   unisim::kernel::Simulator simulator(argc, argv, &simdefault);
   unisim::kernel::logger::console::Printer printer;
@@ -315,7 +322,7 @@ main(int argc, char *argv[])
   // unisim::service::web_terminal::WebTerminal web_terminal("web-terminal");
   unisim::service::netstreamer::NetStreamer netstreamer("netstreamer");
 
-  AArch64 arch;
+  AArch64 arch("arm64vp");
 
   StreamSpy stream_spy("stream-spy", 0, arch);
 
@@ -324,6 +331,14 @@ main(int argc, char *argv[])
   // arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
+  // std::unique_ptr<Debugger> dbg;
+  // {
+  //   // if a vmlinux file is given, start the debugger
+  //   std::ifstream linux_elf ("linux.elf");
+  //   if (linux_elf)
+  //     dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
+  // }
+  
   switch (simulator.Setup())
     {
     case simulator.ST_ERROR:         return 1;
@@ -374,11 +389,12 @@ main(int argc, char *argv[])
       else                                        suspend_at = uint64_t(-1);
       //else                                        suspend_at = arch.insn_counter + 0x1000000000ull;
       arch.run( suspend_at );
-      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
+      arch.show_exec_stats(std::cerr);
+      arch.write_tfpstats();
     }
   catch (...)
     {
-      std::cerr << "Executed " << std::dec << arch.insn_counter << " instructions: " << std::endl;
+      arch.show_exec_stats(std::cerr);
       std::ofstream tail("tail");
       for (unsigned idx = 1; idx <= arch.histsize; ++idx)
         if (arch.last_insn(idx).op)

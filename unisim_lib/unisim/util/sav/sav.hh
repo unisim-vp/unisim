@@ -161,6 +161,76 @@ namespace sav {
     }
   };
   
+  struct Comparator
+  {
+    int process( unisim::util::sav::ActionNode const& a, unisim::util::sav::ActionNode const& b ) const
+    {
+      if (int delta = a.updates.size() - b.updates.size()) return delta;
+      auto rci = b.updates.begin();
+      for (Expr const& update : a.updates)
+        { if (int delta = process( update,  *rci )) return delta; ++rci; }
+          
+      if (int delta = process( a.cond, b.cond )) return delta;
+      for (int idx = 0; idx < 2; ++idx)
+        {
+          if     (not a.nexts[idx])
+            { if (b.nexts[idx]) return -1; }
+          else if(b.nexts[idx])
+            { if (int delta = process( *a.nexts[idx], *b.nexts[idx] )) return delta; }
+        }
+      return 0;
+    }
+
+    typedef unisim::util::symbolic::Expr Expr;
+
+    int process( Expr const& a, Expr const& b ) const
+    {
+      // Do not compare null expressions
+      if (not b.node) return a.node ?  1 : 0;
+      if (not a.node) return b.node ? -1 : 0;
+      
+      /* First compare actual types */
+      const std::type_info* til = &typeid(*a.node);
+      const std::type_info* tir = &typeid(*b.node);
+      if (til < tir) return -1;
+      if (til > tir) return +1;
+        
+      /* Same types, call derived comparator except for Constants (compare popcount)*/
+      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+      if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
+        {
+          int abits = 0, bbits = 0;
+          for (unsigned idx = 0, end = (an->GetType()->GetBitSize()+63)/64; idx < end; ++idx)
+            {
+              uint64_t av = an->GetBits( idx ), bv = dynamic_cast<ConstNodeBase const&>(*b.node).GetBits( idx );
+              abits += __builtin_popcountll(av);
+              bbits += __builtin_popcountll(bv);
+            }
+          if (int delta = abits - bbits)
+            return  delta;
+        }
+      else if (auto vr = dynamic_cast<unisim::util::sav::VirtualRegister const*>(a.node))
+        {
+          unsigned ai = vr->idx, bi = dynamic_cast<unisim::util::sav::VirtualRegister const&>(*b.node).idx;
+          if (int delta = int(ai) - int(bi))
+            return delta;
+        }
+      else if (int delta = a.node->cmp( *b.node ))
+        return delta;
+      
+      /* Compare sub operands recursively */
+      unsigned subcount = a.node->SubCount();
+      if (int delta = int(subcount) - int(b.node->SubCount()))
+        return delta;
+      for (unsigned idx = 0; idx < subcount; ++idx)
+        if (int delta = process( a.node->GetSub(idx), b.node->GetSub(idx)))
+          return delta;
+
+      /* equal to us */
+      return 0;
+    }
+  };
+  
   struct Addressings
   {
     typedef unisim::util::symbolic::Expr Expr;
@@ -182,14 +252,15 @@ namespace sav {
   struct Random : public unisim::util::random::Random
   {
     Random() : unisim::util::random::Random(0,0,0,0) {}
-    //uint32_t generate32() { return Generate(); }
+    uint32_t generate32() { return Generate(); }
     //    uint64_t generate64() { return (uint64_t(generate32()) << 32) | generate32(); }
     template <typename T>
     T generate()
     {
+      typedef uint32_t chunk_t;
       T value = 0;
-      for (unsigned idx = sizeof (T) / sizeof (uint32_t); idx-- > 0;)
-        value |= T(Generate()) << (32*idx);
+      for (unsigned idx = sizeof (T) / sizeof (chunk_t); idx-- > 0;)
+        value |= T(chunk_t(Generate())) << (8*sizeof (chunk_t)*idx);
       return value;
     }
     template <typename UOP>
@@ -213,13 +284,15 @@ namespace sav {
   template <unsigned SUBCOUNT, class OP>
   struct WeirdOpBase : public unisim::util::symbolic::ExprNode
   {
-    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::ValueType ValueType;
     typedef unisim::util::symbolic::Expr Expr;
     typedef WeirdOpBase<SUBCOUNT,OP> this_type;
     WeirdOpBase( OP && _op ) : op(_op) {}
     virtual void Repr(std::ostream& sink) const override
     {
-      sink << "WeirdOp<" << ScalarType(GetType()).name << "," << SUBCOUNT << "," << op << ">( ";
+      sink << "WeirdOp<";
+      GetType()->GetName(sink);
+      sink << "," << SUBCOUNT << "," << op << ">( ";
       char const* sep = "";
       for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
         sink << sep << subs[idx];
@@ -242,7 +315,7 @@ namespace sav {
 
     WeirdOp( OP && name ) : base_type(std::move(name)) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual typename base_type::ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType(); }
+    virtual typename base_type::ValueType const* GetType() const { return unisim::util::symbolic::CValueType(typename T::value_type()); }
   };
 
   template <class OUT, class OP, class T1>
@@ -289,7 +362,7 @@ namespace sav {
   struct Testbed : public TestbedBase
   {
     typedef CELL cell_t;
-    Testbed( char const* seed ) : TestbedBase( seed, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ) {}
+    Testbed( char const* seed ) : TestbedBase( seed, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ), buffer() {}
 
     void serial( std::ostream& sink ) { TestbedBase::serial( sink, reinterpret_cast<uint8_t*>(&buffer[0]), COUNT ); }
 

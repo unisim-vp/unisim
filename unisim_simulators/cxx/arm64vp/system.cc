@@ -96,17 +96,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override
     {
-      std::cerr << std::hex << cpu.current_insn_addr << ": System register undefined write in `" << std::dec;
+      std::cerr << "error : undefined system register write in:\n" << std::hex << cpu.current_insn_addr << std::dec << ":\t";
       DisasmWrite(op0, op1, crn, crm, op2, 0b11111, std::cerr);
-      std::cerr << "`.\n";
+      std::cerr << "\n";
       cpu.UndefinedInstruction();
     }
 
     U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override
     {
-      std::cerr << std::hex << cpu.current_insn_addr << ": System register undefined read in `" << std::dec;
+      std::cerr << "error : undefined system register read in:\n" << std::hex << cpu.current_insn_addr << std::dec << ":\t";
       DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr);
-      std::cerr << "`.\n";
+      std::cerr << "\n";
       cpu.UndefinedInstruction();
       return U64();
     }
@@ -194,6 +194,21 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public WOOpSysReg {
           void Disasm(Encoding, std::ostream& sink) const override { sink << "wfi\t; Wait For Interrupt"; } 
           void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64) const override { cpu.notify(1,&AArch64::wfi); }
+        } x; return &x;
+      }
+
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b100 ):
+      {
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "sev\t; Send Event"; } 
+        } x; return &x;
+      }
+
+    case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b101 ):
+      {
+        static struct : public WOOpSysReg {
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "sevl\t; Send Event Local"; }
+          // void Write(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, AArch64& cpu, U64 v) const override { BaseSysReg::Write(a,b,c,d,e,cpu,v); }
         } x; return &x;
       }
 
@@ -316,6 +331,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public DCSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "cvac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Coherency"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b011,0b0111,0b1011,0b001):
@@ -324,10 +341,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "cvau"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            cpu.untaint(AddrTV(), addr);
-            // No caches, so normally nothing to do...
-          }
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b000,0b0111,0b0110,0b010):
@@ -343,10 +357,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "ivac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            cpu.untaint(AddrTV(), addr);
-            // No caches, so normally nothing to do...
-          }
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
 
@@ -356,10 +367,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "civac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean and Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 addr) const override
-          {
-            cpu.untaint(AddrTV(), addr);
-            /* No caches, so normally nothing to do... */
-          }
+          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
         } x; return &x;
       } break;
 
@@ -983,13 +991,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "ESR_EL" << GetExceptionLevel(e.op1); }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
-          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override
-          {
-            U64 value(cpu.get_el(GetExceptionLevel(op1)).ESR);
-            //            Print(std::cerr << "ESR=", value);
-            //            std::cerr << '@' << std::hex << cpu.current_insn_addr << std::endl;
-            return value;
-          }
+          U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).ESR); }
           void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.get_el(GetExceptionLevel(op1)).ESR = U32(value); }
         } x; return &x;
       } break;
@@ -1002,6 +1004,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding e, std::ostream& sink) const override { sink << "FAR_EL" << GetExceptionLevel(e.op1); }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL" << GetExceptionLevel(e.op1) << ")"; }
           U64  Read(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.get_el(GetExceptionLevel(op1)).FAR); }
+          void Write(uint8_t, uint8_t op1, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
+          { struct Bad {}; cpu.get_el(GetExceptionLevel(op1)).FAR = cpu.untaint(Bad(), value); }
         } x; return &x;
       } break;
 
@@ -2564,6 +2568,49 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ICH_VTR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller VGIC Type Register"; }
+        } x; return &x;
+      } break;
+
+      /*** IMPLEMENTATION DEFINED registers ***/
+    case SYSENCODE(0b11,0b011,0b1111,0b0001,0b000): // s3_3_c15_c1_0: File Transfer In
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "USVP_GET_EL0"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "File Transfer In"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.transfer.get(cpu)); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1111,0b0001,0b001): // s3_3_c15_c1_1: File Transfer Out
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "USVP_PUT_EL0"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "File Transfer Out"; }
+          U64 Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.transfer.put(cpu)); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1111,0b0001,0b110): // s3_3_c15_c1_1: cmd
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "USVP_CMD"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "Sim Command"; }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override
+          {
+            struct Bad {};
+            uint64_t cmd_id = cpu.untaint(Bad(), value);
+            struct Cmd { virtual ~Cmd() {} virtual char const* Name() const = 0; virtual void Run() const = 0; } *cmd = 0;
+            
+            switch (cmd_id)
+              {
+              default: throw 0;
+              case 0: { static struct SuspCmd : Cmd { char const* Name() const { return "suspend"; } void Run() const { throw Suspend(); } } _; cmd = &_; };
+              case 1: { static struct StopCmd : Cmd { char const* Name() const { return "stop"; } void Run() const { throw Stop(); } } _; cmd = &_; };
+              }
+
+            std::cerr << "Received <usvp-cmd " << cmd->Name() << ">\n";
+            cmd->Run();
+          }
         } x; return &x;
       } break;
 

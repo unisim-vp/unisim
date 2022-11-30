@@ -36,7 +36,7 @@ namespace Mips
   
     //   typedef unisim::util::symbolic::FP                   FP;
     typedef unisim::util::symbolic::Expr                 Expr;
-    typedef unisim::util::symbolic::ScalarType           ScalarType;
+    typedef unisim::util::symbolic::ValueType           ValueType;
 
     typedef unisim::util::forbint::debug::ScalarElement  FDScalarElement;
     typedef unisim::util::forbint::debug::MemoryState    FDMemoryState;
@@ -74,7 +74,7 @@ namespace Mips
     {
       typedef unisim::util::symbolic::Expr Expr;
       
-      virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+      virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
       virtual std::unique_ptr<SideEffect> InterpretForward(ComputationResult& res) const = 0;
     };
     
@@ -100,7 +100,7 @@ namespace Mips
     {
       Load( Expr const& _addr, unsigned _bytes ) : addr(_addr), bytes(_bytes) {}
       virtual Load* Mutate() const override { return new Load(*this); }
-      virtual ScalarType::id_t GetType() const override { return ScalarType::IntegerType(false, bytes); }
+      virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8*bytes); }
       virtual void Repr(std::ostream& sink) const override;
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
       int compare( Load const& rhs ) const { return int(bytes) - int(rhs.bytes); }
@@ -136,7 +136,7 @@ namespace Mips
       
       RegRead( RegisterIndex _reg ) : reg(_reg) {}
       virtual RegRead* Mutate() const override { return new RegRead( *this ); }
-      virtual ScalarType::id_t GetType() const override { return ScalarType::U32; }
+      virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
       virtual void Repr(std::ostream& sink) const override;
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
@@ -255,8 +255,11 @@ namespace Mips
       return complete;
     }
 
-    bool concretize( Expr const& cexp )
+    bool concretize( Expr cexp )
     {
+      if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
+        return dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*cnode).value;
+
       bool predicate = path->proceed( cexp );
       path = path->next( predicate );
       return predicate;
@@ -268,11 +271,7 @@ namespace Mips
       if (not cond.expr.good())
         throw std::logic_error( "Not a valid condition" );
 
-      Expr cexp( BOOL(cond).expr );
-      if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-        return cnode->Get( bool() );
-
-      return concretize( cexp );
+      return concretize( BOOL(cond).expr );
     }
 
     bool     IsBigEndian() const { return false; }
