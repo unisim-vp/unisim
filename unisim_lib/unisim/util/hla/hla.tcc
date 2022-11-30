@@ -37,6 +37,7 @@
 
 #include <unisim/util/hla/hla.hh>
 #include <cstring>
+#include <limits>
 
 namespace unisim {
 namespace util {
