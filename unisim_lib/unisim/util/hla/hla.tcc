@@ -245,18 +245,18 @@ Federate<TIME_TRAIT>::Federate()
 
 template <typename TIME_TRAIT>
 Federate<TIME_TRAIT>::Federate(
-	const std::wstring& url,
-	const std::wstring& federation_execution_name,
-	const std::wstring& fom_module,
-	const std::wstring& federate_name,
-	const std::wstring& federate_type,
+	const std::wstring& _url,
+	const std::wstring& _federation_execution_name,
+	const std::wstring& _fom_module,
+	const std::wstring& _federate_name,
+	const std::wstring& _federate_type,
 	const TIME_TYPE& _lookahead)
 	: FederateBase(
-		url,
-		federation_execution_name,
-		fom_module,
-		federate_name,
-		federate_type
+		_url,
+		_federation_execution_name,
+		_fom_module,
+		_federate_name,
+		_federate_type
 	)
 	, hla_time_factory()
 	, lookahead(TIME_ADAPTER::IsNull(_lookahead) ? TIME_ADAPTER::Epsilon() : _lookahead)
