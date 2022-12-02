@@ -59,6 +59,8 @@
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
 
+#include <systemc>
+
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -108,6 +110,7 @@ private:
 	struct DEBUGGER_CONFIG
 	{
 		typedef CPU_CONFIG::address_t ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger, profiler */
 		static const unsigned int MAX_FRONT_ENDS = 3;

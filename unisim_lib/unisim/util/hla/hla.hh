@@ -35,7 +35,13 @@
 #ifndef __UNISIM_UTIL_HLA_HLA_HH__
 #define __UNISIM_UTIL_HLA_HLA_HH__
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include <unisim/util/unicode/unicode.hh>
+
+#if defined(HAVE_HLA_RTI1516E)
 
 #include <memory> // Note: missing include in RTI headers for std::auto_ptr!
 #include <RTI/RTIambassador.h>
@@ -46,6 +52,8 @@
 #include <RTI/time/HLAinteger64Time.h>
 #include <RTI/time/HLAfloat64TimeFactory.h>
 #include <RTI/time/HLAfloat64Time.h>
+
+#endif // HAVE_HLA_RTI1516E
 
 #include <string>
 #include <map>
@@ -84,18 +92,17 @@ struct Exception : std::runtime_error
 struct UndefinedAttributeError : Exception
 {
 	UndefinedAttributeError(const std::wstring& attr_name) : Exception(std::wstring(L"Undefined attribute ") + attr_name) {}
+#if defined(HAVE_HLA_RTI1516E)
 	UndefinedAttributeError(const rti1516e::AttributeHandle& attr_handle) : Exception(std::wstring(L"Undefined attribute with handle ") + attr_handle.toString()) {}
+#endif
 };
 
 struct AttributeTypeError : Exception
 {
 	AttributeTypeError(const std::wstring& attr_name) : Exception(std::wstring(L"Type error for attribute ") + attr_name) {}
+#if defined(HAVE_HLA_RTI1516E)
 	AttributeTypeError(const rti1516e::AttributeHandle& attr_handle) : Exception(std::wstring(L"Type error for attribute with handle ") + attr_handle.toString()) {}
-};
-
-struct InvalidWaitDelay : Exception
-{
-	InvalidWaitDelay() : Exception(L"Invalid wait delay (delay shall be > lookahead") {}
+#endif
 };
 
 struct ObjectClassAlreadyExists : Exception
@@ -138,18 +145,24 @@ struct ObjectClass
 	template <typename T> const Attribute<T>& GetAttribute(const std::wstring& attr_name) const;
 	template <typename T> Attribute<T>& GetAttribute(const std::string& attr_name);
 	template <typename T> Attribute<T>& GetAttribute(const std::wstring& attr_name);
+#if defined(HAVE_HLA_RTI1516E)
 	template <typename T> const Attribute<T>& GetAttribute(const rti1516e::AttributeHandle& attr_handle) const;
 	template <typename T> Attribute<T>& GetAttribute(const rti1516e::AttributeHandle& attr_handle);
+#endif
 	bool HasPublishedAttributes() const;
 protected:
 	template <typename TIME_TRAIT> friend struct Federate;
 	friend struct AttributeBase;
 	friend struct ObjectInstance;
-	rti1516e::ObjectClassHandle handle;
 	FederateBase& federate;
+#if defined(HAVE_HLA_RTI1516E)
+	rti1516e::ObjectClassHandle handle;
+#endif
 	std::wstring name;
+#if defined(HAVE_HLA_RTI1516E)
 	typedef std::map<rti1516e::AttributeHandle, AttributeBase *> Attributes;
 	Attributes attrs;
+#endif
 	typedef std::map<std::wstring, AttributeBase *> AttributesPerName;
 	AttributesPerName attrs_per_name;
 	typedef std::map<std::wstring, ObjectInstance *> ObjectInstances;
@@ -174,19 +187,27 @@ struct ObjectInstance
 	template <typename T> const AttributeValue<T>& GetAttributeValue(const std::wstring& attr_name) const;
 	template <typename T> AttributeValue<T>& GetAttributeValue(const std::string& attr_name);
 	template <typename T> AttributeValue<T>& GetAttributeValue(const std::wstring& attr_name);
+#if defined(HAVE_HLA_RTI1516E)
 	template <typename T> const AttributeValue<T>& GetAttributeValue(const rti1516e::AttributeHandle& attr_handle) const;
 	template <typename T> AttributeValue<T>& GetAttributeValue(const rti1516e::AttributeHandle& attr_handle);
+#endif
 protected:
 	template <typename TIME_TRAIT> friend struct Federate;
 	
-	rti1516e::ObjectInstanceHandle handle;
 	ObjectClass& object_class;
+#if defined(HAVE_HLA_RTI1516E)
+	rti1516e::ObjectInstanceHandle handle;
+#endif
 	std::wstring name;
+#if defined(HAVE_HLA_RTI1516E)
 	typedef std::map<rti1516e::AttributeHandle, AttributeValueBase *> AttributeValues;
 	AttributeValues attr_values;
+#endif
 	typedef std::map<std::wstring, AttributeValueBase *> AttributeValuesPerName;
 	AttributeValuesPerName attr_values_per_name;
+#if defined(HAVE_HLA_RTI1516E)
 	rti1516e::VariableLengthData user_supplied_tag;
+#endif
 };
 
 /////////////////////////////// AttributeBase /////////////////////////////////
@@ -209,8 +230,10 @@ protected:
 	
 	virtual AttributeValueBase *CreateAttributeValue(const ObjectInstance& object_instance) = 0;
 	
-	rti1516e::AttributeHandle handle;
 	ObjectClass& object_class;
+#if defined(HAVE_HLA_RTI1516E)
+	rti1516e::AttributeHandle handle;
+#endif
 	std::wstring name;
 	std::wstring type_name;
 	bool publish;
@@ -241,8 +264,10 @@ struct AttributeValueBase
 	AttributeValueBase(const ObjectInstance& object_instance, const AttributeBase& attr_base);
 	virtual ~AttributeValueBase();
 	
+#if defined(HAVE_HLA_RTI1516E)
 	virtual void Get(rti1516e::VariableLengthData& value) = 0;
 	virtual void Set(const rti1516e::VariableLengthData& value) = 0;
+#endif
 	virtual std::wostream& Print(std::wostream& stream) const = 0;
 	
 	const ObjectInstance& GetObjectInstance() const;
@@ -268,8 +293,10 @@ struct AttributeValue : AttributeValueBase
 	AttributeValue<T>& operator = (const T& value);
 	operator const T& () const;
 	
+#if defined(HAVE_HLA_RTI1516E)
 	virtual void Get(rti1516e::VariableLengthData& value);
 	virtual void Set(const rti1516e::VariableLengthData& value);
+#endif
 	virtual std::wostream& Print(std::wostream& stream) const;
 protected:
 	template <typename TIME_TRAIT> friend struct Federate;
@@ -290,6 +317,8 @@ struct TimeAdapters
 };
 
 /////////////////////////// TimeImplementations<> /////////////////////////////
+
+#if defined(HAVE_HLA_RTI1516E)
 
 template <typename SCALAR_TYPE>
 struct TimeImplementations
@@ -314,9 +343,14 @@ struct TimeImplementations<double>
 	static const wchar_t *HLA_TIME_IMPL_NAME;
 };
 
+#endif
+
 //////////////////////////////// FederateBase /////////////////////////////////
 
-struct FederateBase : rti1516e::NullFederateAmbassador
+struct FederateBase
+#if defined(HAVE_HLA_RTI1516E)
+	: rti1516e::NullFederateAmbassador
+#endif
 {
 	FederateBase();
 	FederateBase(
@@ -353,11 +387,15 @@ protected:
 	std::wstring fom_module;
 	std::wstring federate_name;
 	std::wstring federate_type;
+#if defined(HAVE_HLA_RTI1516E)
 	RTI_UNIQUE_PTR<rti1516e::RTIambassador> rti_ambassador;
+#endif
 	typedef std::map<std::wstring, ObjectClass *> ObjectClasses;
 	ObjectClasses object_classes;
+#if defined(HAVE_HLA_RTI1516E)
 	typedef std::map<rti1516e::ObjectInstanceHandle, ObjectInstance *> ObjectInstances;
 	ObjectInstances object_instances;
+#endif
 	typedef std::map<std::wstring, ObjectInstance *> ObjectInstancesPerName;
 	ObjectInstancesPerName object_instances_per_name;
 	bool joined;
@@ -379,9 +417,11 @@ struct Federate : FederateBase
 {
 	typedef typename TIME_TRAIT::TIME_TYPE TIME_TYPE;
 	typedef typename TIME_TRAIT::SCALAR_TYPE SCALAR_TYPE;
+#if defined(HAVE_HLA_RTI1516E)
 	typedef typename TimeImplementations<SCALAR_TYPE>::HLA_TIME_FACTORY HLA_TIME_FACTORY;
 	typedef typename TimeImplementations<SCALAR_TYPE>::HLA_TIME HLA_TIME;
 	typedef typename TimeImplementations<SCALAR_TYPE>::HLA_TIME_INTERVAL HLA_TIME_INTERVAL;
+#endif
 	typedef TimeAdapters<TIME_TYPE, SCALAR_TYPE> TIME_ADAPTER;
 	
 	Federate();
@@ -399,11 +439,16 @@ struct Federate : FederateBase
 	void Wait(const TIME_TYPE& delay);
 	const TIME_TYPE& TimeStamp() const;
 private:
+#if defined(HAVE_HLA_RTI1516E)
 	HLA_TIME_FACTORY hla_time_factory;
+#endif
 	TIME_TYPE lookahead;
 	TIME_TYPE time_stamp;
+#if defined(HAVE_HLA_RTI1516E)
 	RTI_UNIQUE_PTR<HLA_TIME> hla_time;
+#endif
 	
+#if defined(HAVE_HLA_RTI1516E)
 	virtual void objectInstanceNameReservationSucceeded(
 		std::wstring const & theObjectInstanceName)
 		RTI_THROW ((
@@ -466,6 +511,7 @@ private:
 		rti1516e::LogicalTime const & theTime)
 		RTI_THROW ((
 			rti1516e::FederateInternalError));
+#endif
 };
 
 } // end of namespace hla

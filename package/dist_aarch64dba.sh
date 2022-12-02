@@ -5,6 +5,8 @@ SIMPKG_SRCDIR=cxx/aarch64dba
 
 source "$(dirname $0)/dist_common.sh"
 
+import_genisslib || exit
+
 import unisim/component/cxx/processor/arm || exit
 import unisim/component/cxx/processor/arm/isa/arm64 || exit
 import unisim/util/symbolic/binsec || exit
@@ -22,7 +24,6 @@ import std/set || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source isa header header template data
-dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -142,7 +143,7 @@ CLEANFILES=\
 
 \$(top_builddir)/aarch64dec.tcc: \$(top_builddir)/aarch64dec.hh
 \$(top_builddir)/aarch64dec.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_TOP_ISA}
-	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/aarch64dec -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/aarch64dec -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
 	 
 EOF
 )

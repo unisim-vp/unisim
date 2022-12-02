@@ -914,7 +914,7 @@ void MMU<TYPES, CONFIG>::LoadTLBEntryByEffectiveAddress(EFFECTIVE_ADDRESS ea)
 	const PTELO& ptelo = cpu->GetPTELO();
 	
 	PAGE_INDEX page_index = TYPES::EA::PAGE_INDEX::template Get<EFFECTIVE_ADDRESS>(ea);
-	unsigned int tlb_way = ea % EXEC ? CONFIG::ITLB_CONFIG::ASSOCIATIVITY : CONFIG::DTLB_CONFIG::ASSOCIATIVITY;
+	unsigned int tlb_way = ea % (EXEC ? CONFIG::ITLB_CONFIG::ASSOCIATIVITY : CONFIG::DTLB_CONFIG::ASSOCIATIVITY);
 	
 	TLB_ENTRY<TYPES>& tlb_entry = EXEC ? itlb.GetEntry(page_index, tlb_way) : dtlb.GetEntry(page_index, tlb_way);
 	

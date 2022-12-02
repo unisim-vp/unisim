@@ -870,10 +870,6 @@ PMACBootX::PMACBootX(const char *name, Object *parent) :
 	param_screen_height("screen-height", this, screen_height, "screen height in pixels"),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
-	loader_export.SetupDependsOn(loader_import);
-	loader_export.SetupDependsOn(memory_import);
-	loader_export.SetupDependsOn(registers_import);
-	
 }
 
 void PMACBootX::Setup(Blob<uint32_t>*)
@@ -920,7 +916,7 @@ bool PMACBootX::BeginSetup()
 	return true;
 }
 
-void PMACBootX::SetupBlob()
+bool PMACBootX::SetupBlob()
 {
 	if(blob)
 		return true;

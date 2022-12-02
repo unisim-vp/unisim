@@ -35,6 +35,10 @@
 #ifndef __UNISIM_UTIL_HLA_HLA_TCC__
 #define __UNISIM_UTIL_HLA_HLA_TCC__
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include <unisim/util/hla/hla.hh>
 #include <cstring>
 #include <limits>
@@ -79,6 +83,8 @@ template <typename T> Attribute<T>& ObjectClass::GetAttribute(const std::wstring
 	return *attr;
 }
 
+#if defined(HAVE_HLA_RTI1516E)
+
 template <typename T> const Attribute<T>& ObjectClass::GetAttribute(const rti1516e::AttributeHandle& attr_handle) const
 {
 	Attributes::const_iterator it = attrs.find(attr_handle);
@@ -98,6 +104,8 @@ template <typename T> Attribute<T>& ObjectClass::GetAttribute(const rti1516e::At
 	if(!attr) throw AttributeTypeError(attr_handle);
 	return *attr;
 }
+
+#endif
 
 ////////////////////////////// ObjectInstance /////////////////////////////////
 
@@ -135,6 +143,8 @@ AttributeValue<T>& ObjectInstance::GetAttributeValue(const std::wstring& attr_na
 	return *attr_value;
 }
 
+#if defined(HAVE_HLA_RTI1516E)
+
 template <typename T>
 const AttributeValue<T>& ObjectInstance::GetAttributeValue(const rti1516e::AttributeHandle& attr_handle) const
 {
@@ -156,6 +166,8 @@ AttributeValue<T>& ObjectInstance::GetAttributeValue(const rti1516e::AttributeHa
 	if(!attr_value) throw AttributeTypeError(attr_handle);
 	return *attr_value;
 }
+
+#endif
 
 //////////////////////////////// Attribute<> //////////////////////////////////
 
@@ -212,6 +224,8 @@ AttributeValue<T>::operator const T& () const
 	return value;
 }
 
+#if defined(HAVE_HLA_RTI1516E)
+
 template <typename T>
 void AttributeValue<T>::Get(rti1516e::VariableLengthData& _value)
 {
@@ -224,6 +238,8 @@ void AttributeValue<T>::Set(const rti1516e::VariableLengthData& _value)
 	memcpy(&value, _value.data(), std::min(_value.size(), sizeof(value)));
 }
 
+#endif
+
 template <typename T>
 std::wostream& AttributeValue<T>::Print(std::wostream& stream) const
 {
@@ -235,12 +251,18 @@ std::wostream& AttributeValue<T>::Print(std::wostream& stream) const
 template <typename TIME_TRAIT>
 Federate<TIME_TRAIT>::Federate()
 	: FederateBase()
+#if defined(HAVE_HLA_RTI1516E)
 	, hla_time_factory()
+#endif
 	, lookahead(TIME_ADAPTER::Epsilon())
 	, time_stamp()
+#if defined(HAVE_HLA_RTI1516E)
 	, hla_time()
+#endif
 {
+#if defined(HAVE_HLA_RTI1516E)
 	hla_time = hla_time_factory.makeLogicalTime(0);
+#endif
 }
 
 template <typename TIME_TRAIT>
@@ -258,12 +280,18 @@ Federate<TIME_TRAIT>::Federate(
 		_federate_name,
 		_federate_type
 	)
+#if defined(HAVE_HLA_RTI1516E)
 	, hla_time_factory()
+#endif
 	, lookahead(TIME_ADAPTER::IsNull(_lookahead) ? TIME_ADAPTER::Epsilon() : _lookahead)
 	, time_stamp()
+#if defined(HAVE_HLA_RTI1516E)
 	, hla_time()
+#endif
 {
+#if defined(HAVE_HLA_RTI1516E)
 	hla_time = hla_time_factory.makeLogicalTime(0);
+#endif
 }
 
 template <typename TIME_TRAIT>
@@ -281,6 +309,8 @@ void Federate<TIME_TRAIT>::SetLookahead(const TIME_TYPE& _lookahead)
 template <typename TIME_TRAIT>
 bool Federate<TIME_TRAIT>::Initialize()
 {
+#if defined(HAVE_HLA_RTI1516E)
+
 	rti1516e::RTIambassadorFactory rti_ambassador_factory;
 	
 	rti_ambassador = rti_ambassador_factory.createRTIambassador();
@@ -561,11 +591,16 @@ bool Federate<TIME_TRAIT>::Initialize()
 	}
 	
 	return true;
+#else
+	DebugErrorStream() << "No HLA RTI available" << std::endl;
+	return false;
+#endif
 }
 
 template <typename TIME_TRAIT>
 Federate<TIME_TRAIT>::~Federate()
 {
+#if defined(HAVE_HLA_RTI1516E)
 	if(rti_ambassador.get() && joined)
 	{
 		if(verbose)
@@ -588,7 +623,10 @@ Federate<TIME_TRAIT>::~Federate()
 			DebugWarningStream() << e.what() << std::endl;
 		}
 	}
+#endif
 }
+
+#if defined(HAVE_HLA_RTI1516E)
 
 template <typename TIME_TRAIT>
 void Federate<TIME_TRAIT>::objectInstanceNameReservationSucceeded(
@@ -815,9 +853,12 @@ void Federate<TIME_TRAIT>::timeAdvanceGrant (
 	time_advance_granted = true;
 }
 
+#endif
+
 template <typename TIME_TRAIT>
 void Federate<TIME_TRAIT>::WaitUntil(const TIME_TYPE& until)
 {
+#if defined(HAVE_HLA_RTI1516E)
 	if(debug)
 	{
 		DebugInfoStream() << "Waiting until " << unisim::util::unicode::utf8_string_to_unicode_wstring(TIME_ADAPTER::ToString(until)) << std::endl;
@@ -922,6 +963,7 @@ void Federate<TIME_TRAIT>::WaitUntil(const TIME_TYPE& until)
 		DebugInfoStream() << "Granted time " << unisim::util::unicode::utf8_string_to_unicode_wstring(TIME_ADAPTER::ToString(until)) << std::endl;
 	}
 	time_stamp = until;
+#endif
 }
 
 template <typename TIME_TRAIT>

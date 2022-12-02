@@ -4,7 +4,7 @@
 #####################################################
 AC_DEFUN([UNISIM_CHECK_HLA_RTI1516E], [
     # Check if HLA RTI 1516e library path has been overloaded
-    AC_ARG_WITH(systemc,
+    AC_ARG_WITH(hla-rti1516e,
 	AS_HELP_STRING([--with-hla-rti1516e=<path>], [Overrides search path to HLA RTI 1516e library (e.g. OpenRTI)]))
     if test -n "${with_hla_rti1516e}"; then
 		AC_MSG_NOTICE([using HLA RTI 1516e library at $with_hla_rti1516e])

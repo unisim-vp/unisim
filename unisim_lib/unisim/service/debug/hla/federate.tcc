@@ -38,7 +38,6 @@
 #include <unisim/service/debug/hla/federate.hh>
 #include <unisim/util/debug/data_object.tcc>
 #include <unisim/util/hla/hla.tcc>
-#include <RTI/RTIambassadorFactory.h>
 #include <climits>
 #include <fstream>
 

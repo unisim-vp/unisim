@@ -257,10 +257,10 @@ template <class PHYSICAL_ADDR,
 		class PCI_ADDR,
 		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
 void
-MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::Setup(Memory<PHYSICAL_ADDR>*)OA
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::Setup(Memory<PHYSICAL_ADDR>*)
 {
 	if(not SetupMemory())
-		throw unsim::kernel::ServiceAgent::SetupError();
+		throw unisim::kernel::ServiceAgent::SetupError();
 }
 
 template <class PHYSICAL_ADDR, 

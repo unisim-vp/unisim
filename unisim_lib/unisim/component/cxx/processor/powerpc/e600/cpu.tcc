@@ -117,8 +117,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, srr1(static_cast<typename CONFIG::CPU *>(this))
 	, tlbmiss(static_cast<typename CONFIG::CPU *>(this))
 {
-	disasm_export.SetupDependsOn(this->memory_import);
-	
 	param_processor_version.SetMutable(false);
 	
 	UpdatePowerSave();
@@ -950,6 +948,12 @@ void CPU<TYPES, CONFIG>::PowerManagement()
 	{
 		this->Idle();
 	}
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::Setup(unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS>*)
+{
+	this->memory_import.RequireSetup();
 }
 
 template <typename TYPES, typename CONFIG>

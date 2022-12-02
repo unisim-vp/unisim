@@ -56,6 +56,8 @@
 #include <unisim/component/tlm2/processor/powerpc/e600/mpc7447a/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
+#include <systemc>
+
 #include <iostream>
 #include <stdexcept>
 
@@ -121,6 +123,7 @@ private:
 	struct DEBUGGER_CONFIG
 	{
 		typedef CPU_ADDRESS_TYPE ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger and/or monitor */
 		static const unsigned int MAX_FRONT_ENDS = 2;
