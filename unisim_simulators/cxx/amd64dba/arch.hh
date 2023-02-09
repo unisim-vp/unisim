@@ -409,20 +409,19 @@ struct Processor : public ProcessorBase
   template <class GOP>
   typename TypeFor<Processor,GOP::SIZE>::u regread( GOP const&, unsigned idx )
   {
-    return typename TypeFor<Processor,GOP::SIZE>::u( gr_type(eregread( idx, GOP::SIZE / 8, 0 )) );
+    return typename TypeFor<Processor,GOP::SIZE>::u( gr_type( eregread(idx, GOP::SIZE / 8, 0) ) );
   }
 
-  u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type(eregread( idx%4, 1, (idx >> 2) & 1 )) ); }
+  u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type( eregread(idx%4, 1, (idx >> 2) & 1)) ); }
 
-  template <class GOP> void regwrite( GOP const&, unsigned idx, typename TypeFor<Processor,GOP::SIZE>::u const& val )
+  template <class GOP>
+  void regwrite( GOP const&, unsigned idx, typename TypeFor<Processor,GOP::SIZE>::u const& val )
   {
-    unsigned const size = GOP::SIZE / 8;
-    if(size > MODE::GREGSIZE) throw Undefined();
-    eregwrite( idx, size, 0, gr_type(val).expr );
+    eregwrite( idx, GOP::SIZE / 8, 0, gr_type(val).expr );
   }
 
-  void regwrite( GObLH const&, unsigned idx, u8_t val )  { eregwrite( idx%4, 1, (idx>>2) & 1, gr_type(val).expr ); }
-  void regwrite( GOd const&,   unsigned idx, u32_t val ) { eregwrite( idx,   GREGSIZE,     0, gr_type(val).expr ); }
+  void regwrite( GObLH const&, unsigned idx, u8_t val ) { eregwrite( idx%4, 1, (idx>>2) & 1, gr_type(val).expr ); }
+  void regwrite( GOd const&, unsigned idx, u32_t val ) { eregwrite( idx, GREGSIZE, 0, gr_type(val).expr ); }
 
   addr_t                      getnip() { return next_insn_addr; }
   void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp )
@@ -708,12 +707,12 @@ Processor<MODE>::eregread( unsigned reg, unsigned size, unsigned pos ) const
       unsigned src = pos;
       do { src = src & (src-1); } while (not regvalues[reg][src].node);
       unsigned shift = 8*(pos - src);
-      return new unisim::util::symbolic::binsec::BitFilter( regvalues[reg][src], 64, shift, 8*size, 64, false );
+      return new unisim::util::symbolic::binsec::BitFilter( regvalues[reg][src], 8*GREGSIZE, shift, 8*size, 8*GREGSIZE, false );
     }
   else if (not regvalues[reg][(pos|size)&(GREGSIZE-1)].node)
     {
       // requested read is in lower bits of a larger value
-      return new unisim::util::symbolic::binsec::BitFilter( regvalues[reg][pos], 64, 0, 8*size, 64, false );
+      return new unisim::util::symbolic::binsec::BitFilter( regvalues[reg][pos], 8*GREGSIZE, 0, 8*size, 8*GREGSIZE, false );
     }
   else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
     {
@@ -821,7 +820,7 @@ Processor<MODE>::eregsinks( Processor<MODE> const& ref, unsigned reg ) const
             core.path->add_sink( newRegWrite( IRegID(reg), value ) );
           else
             {
-              unisim::util::symbolic::binsec::BitFilter bf( value, 64, 0, size*8, size*8, false );
+              unisim::util::symbolic::binsec::BitFilter bf( value, 8*GREGSIZE, 0, 8*size, 8*size, false );
               bf.Retain(); // Not a heap-allocated object (never delete);
               value = bf.Simplify();
               if (value.node == &bf) value = new unisim::util::symbolic::binsec::BitFilter( bf );

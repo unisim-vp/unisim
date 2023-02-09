@@ -20,6 +20,7 @@ import unisim/component/cxx/vector || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/identifier || exit
 import unisim/util/debug || exit
+import unisim/util/trace || exit
 
 import libc/inttypes || exit
 import sys/utsname || exit

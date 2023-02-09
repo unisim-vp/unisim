@@ -398,30 +398,32 @@ namespace review
 
     typedef std::map<unsigned,unsigned> RegMap;
 
-    static unsigned const REGCOUNT = AMD64::GREGCOUNT;
-    static unsigned const REGSIZE = 8;
+    static unsigned const GREGCOUNT = AMD64::GREGCOUNT;
+    static unsigned const GREGSIZE = 8;
 
     void                        eregtouch( unsigned reg, bool w );
     bool                        eregdiff( unsigned reg );
     Expr                        eregread( unsigned reg, unsigned size, unsigned pos );
     void                        eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr );
 
-    Expr                        regvalues[REGCOUNT][REGSIZE];
+    Expr                        regvalues[GREGCOUNT][GREGSIZE];
 
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
     {
-      return typename TypeFor<Arch,GOP::SIZE>::u( gr_type(eregread( idx, GOP::SIZE / 8, 0 )) );
+      return typename TypeFor<Arch,GOP::SIZE>::u( gr_type( eregread(idx, GOP::SIZE / 8, 0) ) );
     }
 
-    u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type(eregread( idx%4, 1, (idx >> 2) & 1 )) ); }
+    u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type( eregread(idx%4, 1, (idx >> 2) & 1) ) ); }
 
-    template <class GOP> void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u const& val )
-    { eregwrite( idx, 8, 0, u64_t(val).expr ); }
+    template <class GOP>
+    void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u const& val )
+    {
+      eregwrite( idx, GOP::SIZE / 8, 0, gr_type(val).expr );
+    }
 
-    void regwrite( GObLH const&, unsigned idx, u8_t val ) { eregwrite( idx%4, 1, (idx>>2) & 1, val.expr ); }
-    void regwrite( GOb const&, unsigned idx, u8_t val )   { eregwrite( idx, 1, 0, val.expr ); }
-    void regwrite( GOw const&, unsigned idx, u16_t val )  { eregwrite( idx, 2, 0, val.expr ); }
+    void regwrite( GObLH const&, unsigned idx, u8_t val ) { eregwrite( idx%4, 1, (idx>>2) & 1, gr_type(val).expr ); }
+    void regwrite( GOd const&, unsigned idx, u32_t val ) { eregwrite( idx, GREGSIZE, 0, gr_type(val).expr ); }
 
     enum ipproc_t { ipjmp, ipcall, ipret };
     Expr                        next_insn_addr;

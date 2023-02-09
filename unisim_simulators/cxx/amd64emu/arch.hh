@@ -53,6 +53,7 @@
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/arithmetic/integer.hh>
 #include <map>
+#include <unisim/util/trace/callstack.hh>
 
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
@@ -387,10 +388,12 @@ struct Arch
   }
 
   addr_t rip;
+  unisim::util::trace::CallStack<unisim::util::trace::SimpleLoc<addr_t>> callstack;
 
   enum ipproc_t { ipjmp = 0, ipcall, ipret };
   addr_t                      getnip() { return rip; }
-  void                        setnip( addr_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
+  void                        csupdate( ipproc_t ipproc, addr_t retaddr, addr_t dstaddr );
+  void                        setnip( addr_t _rip, ipproc_t ipproc = ipjmp ) { csupdate(ipproc, rip, _rip); rip = _rip; }
 
   void                        syscall()
   {

@@ -51,7 +51,7 @@ namespace trace {
     
       Site* resolve_recursion()
       {
-        // By convention, if the targets pointer is odd the site is a
+        // By convention, if the target pointer is odd the site is a
         // recursion site.  The real site is obtained by dereferencing
         // the even pointer.
         uintptr_t rec = (uintptr_t)targets;
@@ -63,62 +63,53 @@ namespace trace {
     {
       Call* up;
       Site* site;
+      address_type return_address;
 
-      Call(Call* _up, Site* _site, address_type return_address)
-        : up(_up), site(_site)
-      {}
+      Call(Call* _up, Site* _site, address_type ra) : up(_up), site(_site), return_address(ra) {}
     };
 
     loc_type& loc() { return current->loc; }
-  
-    
-    void enter( address_type target_address, address_type return_address )
+
+    void enter(address_type to_address, address_type from_address)
     {
+      Site* site = getsite(to_address, from_address);
       current = site;
-      calls = new Call( calls, site, return_address );
-      return;
+      calls = new Call( calls, site, from_address );
     }
 
-    void site_at( address_type target_address, address_type return_address )
+    Site* getsite( address_type to_address, address_type from_address )
     {
       // Look for a known call
       for (Site* site = current->targets; site; site = site->siblings)
         {
-          if (not site->loc.match(target_address, return_address))
+          if (not site->loc.match(to_address, from_address))
             continue;
-          return = site->resolve_recursion();
+          return site->resolve_recursion();
         }
 
       // Look for recursion
       for (Call* call = calls; call; call = call->up)
         {
           Site* site = call->site;
-          if (not site->loc.match(target_address, return_address))
+          if (not site->loc.match(to_address, from_address))
             continue;
-          current->targets = new Site(current->targets, target_address, return_address, site);
+          current->targets = new Site(current->targets, to_address, from_address, site);
           return site;
         }
 
-      return (current->targets = new Site(current->targets, target_address, return_address));
+      return (current->targets = new Site(current->targets, to_address, from_address));
     }
 
-    void leave( address_type source_address, address_type return_address )
+    void leave( address_type to_address, address_type from_address )
     {
-      Site* site = call->site;
-
-      if (not site->return_address != return_address)
+      if (calls->return_address != to_address)
         throw 0;
-      
-      for (; call; call = call->up)
-        {
-          Site* site = call->site;
-          if (not site->loc.match(target_address, return_address))
-            continue;
-          current->targets = new Site(current->targets, target_address, return_address, site);
-          return site;
-        }
-      
-      throw 0;
+
+      Call* out = calls;
+      calls = calls->up;
+      current = calls->site;
+
+      delete out;
     }
   
     Site* current;

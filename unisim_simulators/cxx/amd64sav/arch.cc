@@ -169,7 +169,7 @@ namespace review
     if (not interface.gregs.modified(reg))
       return false;
 
-    for (unsigned ipos = 1; ipos < REGSIZE; ++ipos)
+    for (unsigned ipos = 1; ipos < GREGSIZE; ++ipos)
       if (regvalues[reg][ipos].node)
         return true;
     if (auto rr = dynamic_cast<GRegRead const*>( regvalues[reg][0].node ))
@@ -186,6 +186,8 @@ namespace review
     using unisim::util::symbolic::make_const;
     using unisim::util::symbolic::shift_type;
 
+    uint64_t const value_mask = uint64_t(-1) >> (64-8*size);
+
     if (not regvalues[reg][pos].node)
       {
         // requested read is in the middle of a larger value
@@ -195,14 +197,14 @@ namespace review
         return
           make_operation( "And",
                           make_operation( "Lsr", regvalues[reg][src], make_const<shift_type>( shift ) ),
-                          make_const( uint64_t(-1) >> (64-8*size) )
+                          make_const( value_mask )
                           );
       }
-    else if (not regvalues[reg][(pos|size)&(REGSIZE-1)].node)
+    else if (not regvalues[reg][(pos|size)&(GREGSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
         return
-          make_operation( "And", regvalues[reg][pos], make_const( uint64_t(-1) >> (64-8*size) ) );
+          make_operation( "And", regvalues[reg][pos], make_const( value_mask ) );
       }
     else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
       {
@@ -225,17 +227,17 @@ namespace review
   Arch::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
   {
     eregtouch( reg, true );
-    Expr nxt[REGSIZE];
+    Expr nxt[GREGSIZE];
 
     for (unsigned ipos = pos, isize = size, cpos;
-         cpos = (ipos^isize) & (REGSIZE-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
+         cpos = (ipos^isize) & (GREGSIZE-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
          isize *= 2, ipos &= -isize
          )
       {
         nxt[cpos] = eregread( reg, isize, cpos );
       }
 
-    for (unsigned ipos = 0; ipos < REGSIZE; ++ipos)
+    for (unsigned ipos = 0; ipos < GREGSIZE; ++ipos)
       {
         if (nxt[ipos].node)
           regvalues[reg][ipos] = nxt[ipos];
@@ -303,9 +305,9 @@ namespace review
     path->add_update( new RIPWrite( next_insn_addr, next_insn_mode ) );
 
     // Scalar integer registers
-    for (unsigned reg = 0; reg < REGCOUNT; ++reg)
+    for (unsigned reg = 0; reg < GREGCOUNT; ++reg)
       if (eregdiff(reg))
-        path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
+        path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, GREGSIZE, 0 ) ) );
 
     // Vector Registers
     for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
@@ -440,11 +442,11 @@ namespace review
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + Arch::REGSIZE*gregs.index(reg);
+        i.disp = offset + Arch::GREGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
         text.write(ptr,4);
       }
-    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::GREGSIZE*gregs.used();
 
     /* Load AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
@@ -521,11 +523,11 @@ namespace review
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + Arch::REGSIZE*gregs.index(reg);
+        i.disp = offset + Arch::GREGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
         text.write(ptr,4);
       }
-    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::GREGSIZE*gregs.used();
 
     /* Store AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
@@ -557,7 +559,7 @@ namespace review
   {
     uintptr_t offset = 0;
     offset += 8;
-    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::GREGSIZE*gregs.used();
     offset += Arch::VUConfig::BYTECOUNT*vregs.used();
     if (offset % 8) throw "WTF";
     return offset / 8;
