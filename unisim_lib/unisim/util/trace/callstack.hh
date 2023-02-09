@@ -33,7 +33,7 @@ namespace trace {
     typedef LOCATION loc_type;
     typedef typename LOCATION::address_type address_type;
 
-    CallStack() : current(new Site(0, 0, 0)), calls() {}
+    CallStack() : current(new Site(0, 0, 0)), frames() {}
 
     struct Site
     {
@@ -59,13 +59,13 @@ namespace trace {
       }
     };
 
-    struct Call
+    struct Frame
     {
-      Call* up;
+      Frame* up;
       Site* site;
       address_type return_address;
 
-      Call(Call* _up, Site* _site, address_type ra) : up(_up), site(_site), return_address(ra) {}
+      Frame(Frame* _up, Site* _site, address_type ra) : up(_up), site(_site), return_address(ra) {}
     };
 
     loc_type& loc() { return current->loc; }
@@ -74,12 +74,12 @@ namespace trace {
     {
       Site* site = getsite(to_address, from_address);
       current = site;
-      calls = new Call( calls, site, from_address );
+      frames = new Frame( frames, site, from_address );
     }
 
     Site* getsite( address_type to_address, address_type from_address )
     {
-      // Look for a known call
+      // Look for a known frame
       for (Site* site = current->targets; site; site = site->siblings)
         {
           if (not site->loc.match(to_address, from_address))
@@ -88,9 +88,9 @@ namespace trace {
         }
 
       // Look for recursion
-      for (Call* call = calls; call; call = call->up)
+      for (Frame* frame = frames; frame; frame = frame->up)
         {
-          Site* site = call->site;
+          Site* site = frame->site;
           if (not site->loc.match(to_address, from_address))
             continue;
           current->targets = new Site(current->targets, to_address, from_address, site);
@@ -102,18 +102,39 @@ namespace trace {
 
     void leave( address_type to_address, address_type from_address )
     {
-      if (calls->return_address != to_address)
-        throw 0;
-
-      Call* out = calls;
-      calls = calls->up;
-      current = calls->site;
-
-      delete out;
+      if (frames->return_address == to_address)
+        {
+          Frame* out = frames;
+          frames = frames->up;
+          delete out;
+        }
+      else
+        {
+          // Lost... try to locate best match
+          Frame* best = 0;
+          address_type best_address = 0;
+          for (Frame* frame = frames; frame; frame = frame->up)
+            {
+              address_type frame_address = frame->site->loc.entry_address;
+              if (frame_address > to_address or frame_address <= best_address)
+                continue;
+              best = frame;
+              best_address = frame_address;
+            }
+          if (not best)
+            throw 0;
+          for (Frame *frame = frames, *nxt; frame != best; frame = nxt)
+            {
+              (nxt = frame->up);
+              delete frame;
+            }
+          frames = best;
+        }
+      current = frames->site;
     }
   
     Site* current;
-    Call* calls;
+    Frame* frames;
   };
 
 } // end of namespace trace
