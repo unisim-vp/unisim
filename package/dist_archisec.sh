@@ -423,7 +423,7 @@ echo >> "${DEST_DIR}/dune"
 cat <<EOF >> "${DEST_DIR}/dune"
 (test
  (name unittest)
- (modes native)
+ (modes (best exe))
  (modules unittest)
  (libraries arm32dba aarch64dba amd64dba))
 EOF
