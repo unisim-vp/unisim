@@ -1,3 +1,2 @@
 unisim/component/cxx/processor/powerpc/config.cc
-unisim/component/cxx/processor/powerpc/disasm.cc
 unisim/component/cxx/processor/powerpc/floating.cc

@@ -37,7 +37,7 @@
 
 #include <core.hh>
 #include <top_ppc64.hh>
-#include <unisim/component/cxx/processor/powerpc/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2018,
+ *  Copyright (c) 2009-2020,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,49 +32,49 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-/***************************************/
-/*** Convenience disassembly methods ***/
-/***************************************/
-
-#include <unisim/component/cxx/processor/powerpc/disasm.hh>
+#include <decoder.hh>
 #include <iostream>
+#include <cstdlib>
+#include <inttypes.h>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace powerpc {
+template <typename T>
+bool getu( T& res, char const* arg )
+{
+  char *end;
+  uint64_t tmp = strtoull( arg, &end, 0 );
+  if ((*arg == '\0') or (*end != '\0'))
+    return false;
+  res = tmp;
+  return true;
+}
 
-	std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
-	{
-		dap.Print(sink);
-		return sink;
-	}
+char const* usage()
+{
+  return
+    "usage: <program> [<flags>] <address> <encoding>\n";
+}
 
-	void GPRPrint::Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
-	void FPRPrint::Print( std::ostream& sink ) const { sink << "f" << std::dec << reg; }
-	void HexPrint::Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
-	void CRPrint::Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
-	void CondPrint::Print( std::ostream& sink ) const
-	{
-		char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
-		char const* condname = condnames[(crb&3)|(expect?4:0)];
-		if (crb >= 4)
-			sink << "4*" << CRPrint(crb>>2) << '+';
-		sink << condname;
-	}
-	void EAPrint::Print( std::ostream& sink ) const
-	{
-		sink << std::dec << idx << '(';
-		if (reg)
-			sink << GPRPrint(reg);
-		else
-			sink << '0';
-		sink << ')';
-	}
+int
+main( int argc, char** argv )
+{
+  if (argc < 3)
+    {
+      std::cerr << "Wrong number of CLI arguments.\n" << usage();
+      return 1;
+    }
 
-} /* end of namespace powerpc */
-} /* end of namespace processor */
-} /* end of namespace cxx */
-} /* end of namespace component */
-} /* end of namespace unisim */
+  uint64_t addr;
+  uint32_t code;
+
+  if (not getu(addr, argv[argc-2]) or not getu(code, argv[argc-1]))
+    {
+      std::cerr << "<addr> and <code> should be, respectively, 64bits and 32bits numeric values.\n" << usage();
+      return 1;
+    }
+
+  ppc64::Decoder decoder;
+
+  decoder.process( std::cout, addr, code );
+
+  return 0;
+}

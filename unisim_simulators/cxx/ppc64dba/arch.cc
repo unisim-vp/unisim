@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2023,
+ *  Copyright (c) 2009-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,46 +31,33 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-/**********************************************
 
-             ARM64 TOP ISA DESCRIPTION
+#include "arch.hh"
 
-**********************************************/
+namespace ppc64 {
 
-namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little
-set addressclass {uint64_t}
-template <{typename} {ARCH}>
+  Arch::Arch( U64 const& insn_addr )
+    : path(0)
+    , current_instruction_address(insn_addr)
+    , next_instruction_address(insn_addr + U64(4))
+    , branch_type(B_JMP)
+  {
+  }
+  
+  bool
+  Arch::close( Arch const& ref, uint64_t linear_nia )
+  {
+    bool complete = path->close();
+  //   if (branch_type == B_CALL)
+  //     path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Call<uint64_t>( next_instruction_address.expr, linear_nia ) ) );
+  //   else
+  //     path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
+  //   if (unpredictable)
+  //     {
+  //       path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
+  //       return complete;
+  //     }
+     return complete;
+  }
+} // end of namespace ppc64
 
-decl {
-#include <iosfwd>
-#include <stdint.h>
-} // end of decl
-
-impl {
-#include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
-#include <unisim/util/arithmetic/arithmetic.hh>
-#include <iostream>
-
-using unisim::util::arithmetic::RotateRight;
-using unisim::util::arithmetic::BitScanReverse;
-
-#include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
-#include <unisim/component/cxx/processor/arm/execute.hh>
-
-}
-
-action {void} execute({ARCH &} {cpu}) { cpu.UndefinedInstruction(this); }
-
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) {
-  sink << "; Unknown AARCH64 instruction";
-}
-
-impl {
-} // end of impl
-
-include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"

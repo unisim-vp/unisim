@@ -659,7 +659,7 @@ namespace symbolic {
     SmartValue<bool> operator > ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ); }
 
     SmartValue<bool> operator ! () const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( make_operation( "Not", expr ) ); }
+    { return SmartValue<bool>( make_operation( "Not", SmartValue<bool>( *this ).expr ) ); }
 
     SmartValue<bool> operator && ( SmartValue<bool> const& other ) const
     { AssertBool<value_type>::check(); return SmartValue<bool>( make_operation( "And", expr, other.expr ) ); }

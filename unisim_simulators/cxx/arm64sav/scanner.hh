@@ -280,7 +280,7 @@ struct Scanner
   };
     
 
-  typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
+  //  typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
 
   struct AddrEval : public EvalSpace {};
   

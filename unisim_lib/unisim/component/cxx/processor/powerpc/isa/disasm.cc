@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2023,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,46 +31,50 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-/**********************************************
 
-             ARM64 TOP ISA DESCRIPTION
+/***************************************/
+/*** Convenience disassembly methods ***/
+/***************************************/
 
-**********************************************/
-
-namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little
-set addressclass {uint64_t}
-template <{typename} {ARCH}>
-
-decl {
-#include <iosfwd>
-#include <stdint.h>
-} // end of decl
-
-impl {
-#include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
-#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <iostream>
 
-using unisim::util::arithmetic::RotateRight;
-using unisim::util::arithmetic::BitScanReverse;
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
 
-#include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
-#include <unisim/component/cxx/processor/arm/execute.hh>
+	std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
+	{
+		dap.Print(sink);
+		return sink;
+	}
 
-}
+	void GPRPrint::Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+	void FPRPrint::Print( std::ostream& sink ) const { sink << "f" << std::dec << reg; }
+	void HexPrint::Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
+	void CRPrint::Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
+	void CondPrint::Print( std::ostream& sink ) const
+	{
+		char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
+		char const* condname = condnames[(crb&3)|(expect?4:0)];
+		if (crb >= 4)
+			sink << "4*" << CRPrint(crb>>2) << '+';
+		sink << condname;
+	}
+	void EAPrint::Print( std::ostream& sink ) const
+	{
+		sink << std::dec << idx << '(';
+		if (reg)
+			sink << GPRPrint(reg);
+		else
+			sink << '0';
+		sink << ')';
+	}
 
-action {void} execute({ARCH &} {cpu}) { cpu.UndefinedInstruction(this); }
-
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) {
-  sink << "; Unknown AARCH64 instruction";
-}
-
-impl {
-} // end of impl
-
-include "unisim/component/cxx/processor/arm/isa/arm64/base.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm64/simd.isa"
-//include "unisim/component/cxx/processor/arm/isa/arm64/floating-point.isa"
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
