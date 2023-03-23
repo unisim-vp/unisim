@@ -41,7 +41,11 @@ namespace ppc64 {
     , current_instruction_address(insn_addr)
     , next_instruction_address(insn_addr + U64(4))
     , branch_type(B_JMP)
+    , cr(*this)
+    , xer(*this)
   {
+    for (IRegID reg; reg.next();)
+      regvalues[reg.idx()] = newRegRead( reg );
   }
   
   bool
@@ -59,5 +63,6 @@ namespace ppc64 {
   //     }
      return complete;
   }
+
 } // end of namespace ppc64
 

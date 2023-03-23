@@ -152,21 +152,6 @@ struct Processor
 
     return concretize( BOOL(cond).expr );
   }
-  
-  // template <typename T>
-  // bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )
-  // {
-  //   if (not cond.expr.good())
-  //     throw std::logic_error( "Not a valid condition" );
-      
-  //   Expr cexp( BOOL(cond).expr );
-  //   if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-  //     return cnode->Get( bool() );
-      
-  //   bool predicate = path->proceed( cexp );
-  //   path = path->next( predicate );
-  //   return predicate;
-  // }
 
   //   =====================================================================
   //   =             General Purpose Registers access methods              =

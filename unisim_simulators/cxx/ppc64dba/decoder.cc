@@ -93,7 +93,7 @@ struct Translator
         return;
       }
 
-    Arch::U64      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
+    U64      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     // Arch::U64      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
     Arch reference( insn_addr );
 

@@ -64,19 +64,6 @@ impl {
 
 namespace ppc64
 {
-  typedef Arch::BOOL  BOOL;
-  typedef Arch::U8    U8;
-  typedef Arch::U16   U16;
-  typedef Arch::U32   U32;
-  typedef Arch::U64   U64;
-  typedef Arch::S8    S8;
-  typedef Arch::S16   S16;
-  typedef Arch::S32   S32;
-  typedef Arch::S64   S64;
-
-  // typedef Arch::UINT UINT;
-  // typedef Arch::SINT SINT;
-  // typedef Arch::ADDRESS ADDRESS;
 }
   // using ut::Flags;
 
@@ -133,13 +120,13 @@ namespace ppc64
 #undef unlikely
 #endif
 
-#define likely(x)       __builtin_expect(Arch::Concretize(x),1)
-#define evenly(x)       (Arch::Concretize(x))
-#define unlikely(x)     __builtin_expect(Arch::Concretize(x),0)
+#define likely(x)       __builtin_expect(Arch::Test(x),1)
+#define evenly(x)       (Arch::Test(x))
+#define unlikely(x)     __builtin_expect(Arch::Test(x),0)
 #else
-#define likely(x)       (Arch::Concretize(x))
-#define evenly(x)       (Arch::Concretize(x))
-#define unlikely(x)     (Arch::Concretize(x))
+#define likely(x)       (Arch::Test(x))
+#define evenly(x)       (Arch::Test(x))
+#define unlikely(x)     (Arch::Test(x))
 #endif
 
 }
