@@ -1014,7 +1014,13 @@ namespace binsec {
   {
     sink << "UndefinedValue<";
     GetType()->GetName(sink);
-    sink << ">()";
+    sink << ">(";
+    for (unsigned idx = 0, end = this->SubCount(); idx < end; ++idx)
+      {
+        sink << (idx ? ", " : "");
+        this->GetSub(idx)->Repr(sink);
+      }
+    sink << ")";
   }
 
   int

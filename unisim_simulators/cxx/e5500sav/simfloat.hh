@@ -210,7 +210,6 @@ namespace ut
   template <typename T,typename D> void GenFPSCR_FR(U64& r, D const& d, Flags const& f) { r.expr = make_function("GenFPSCR_FR",r.expr,f.op); }
   template <typename T> void GenFPSCR_FI(U64& r, Flags const& f) { r.expr = make_function("GenFPSCR_FI",r.expr,f.op); }
   template <typename T,typename D> void GenFPSCR_FPRF(U64& r, D const& d) { r.expr = make_function("GenFPSCR_FI",r.expr,d.expr); }
-  template <typename T> void GenFPSCR_XX(U64& r) { r.expr = make_function("GenFPSCR_XX",r.expr); }
   template <typename T> void GenFPSCR_FX(U64& r, U64& ar) { r.expr = make_function("GenFPSCR_FX",r.expr,ar.expr); }
   template <typename T> void GenFPSCR_VX(U64& r) { r.expr = make_function("GenFPSCR_VX",r.expr); }
   template <typename T> void GenFPSCR_FEX(U64& r) { r.expr = make_function("GenFPSCR_FEX",r.expr); }

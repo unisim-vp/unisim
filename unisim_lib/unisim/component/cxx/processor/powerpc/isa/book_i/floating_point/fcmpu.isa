@@ -53,19 +53,10 @@ fcmpu.execute = {
 	SoftDouble const& b = cpu->GetFPR(fb);
 	
 	// Do the floating point comparison
-	unsigned c;
-	switch (a.compare(b))
-	{
-		case SoftDouble::CRNaN: c = 1; break;
-		case SoftDouble::CRLess: c = 8; break;
-		case SoftDouble::CREqual: c = 2; break;
-		case SoftDouble::CRGreater: c = 4; break;
-		default:
-			throw "Internal error";
-	}
+	U8 cmp = FPCompare(a, b);
 
 	// Generate FPCC
-	fpscr.Set<FPSCR::FPCC>(UINT(c));
+	fpscr.Set<FPSCR::FPCC>(cmp);
 
 	// Generate VXSNAN
 	if (unlikely(a.isSNaN() or b.isSNaN()))
@@ -80,14 +71,14 @@ fcmpu.execute = {
 	CR& cr = cpu->GetCR();
 	switch(crfD)
 	{
-	case 0: cr.Set<CR::CR0>(c); break;
-	case 1: cr.Set<CR::CR1>(c); break;
-	case 2: cr.Set<CR::CR2>(c); break;
-	case 3: cr.Set<CR::CR3>(c); break;
-	case 4: cr.Set<CR::CR4>(c); break;
-	case 5: cr.Set<CR::CR5>(c); break;
-	case 6: cr.Set<CR::CR6>(c); break;
-	case 7: cr.Set<CR::CR7>(c); break;
+	case 0: cr.Set<CR::CR0>(cmp); break;
+	case 1: cr.Set<CR::CR1>(cmp); break;
+	case 2: cr.Set<CR::CR2>(cmp); break;
+	case 3: cr.Set<CR::CR3>(cmp); break;
+	case 4: cr.Set<CR::CR4>(cmp); break;
+	case 5: cr.Set<CR::CR5>(cmp); break;
+	case 6: cr.Set<CR::CR6>(cmp); break;
+	case 7: cr.Set<CR::CR7>(cmp); break;
 	}
 	
 	return true;

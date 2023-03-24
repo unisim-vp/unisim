@@ -112,7 +112,6 @@ impl {
   using ut::GenFPSCR_VXCVI;
   using ut::GenFPSCR_FR;
   using ut::GenFPSCR_FPRF;
-  using ut::GenFPSCR_XX;
   using ut::GenFPSCR_FX;
   using ut::GenFPSCR_VX;
   using ut::GenFPSCR_FEX;

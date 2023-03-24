@@ -7,7 +7,8 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import unisim/component/cxx/processor/powerpc || exit
+import unisim/component/cxx/processor/powerpc/isa || exit
+#import unisim/component/cxx/processor/powerpc || exit
 import unisim/util/sav || exit
 import unisim/util/random || exit
 import unisim/util/symbolic || exit

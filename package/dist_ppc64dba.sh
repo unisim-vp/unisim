@@ -59,6 +59,7 @@ main.cc \
 UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_TOP_ISA} \
 arch.hh \
+types.hh \
 decoder.hh \
 "
 

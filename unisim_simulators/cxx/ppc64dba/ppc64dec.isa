@@ -65,40 +65,6 @@ impl {
 namespace ppc64
 {
 }
-  // using ut::Flags;
-
-  // typedef ut::Arch CPU;
-  // typedef ut::Arch CONFIG;
-  
-  // using ut::XER;
-  // // using ut::LR;
-  // using ut::CTR;
-  // using ut::MSR;
-  // using ut::CR;
-  // using ut::FPSCR;
-  // // using ut::ADDRESS;
-  // // using ut::RN_NEAREST;
-  // // using ut::RN_ZERO;
-  // // using ut::RN_UP;
-  // // using ut::RN_DOWN;
-  // using ut::SoftFloat;
-  // using ut::SoftDouble;
-  
-  // using ut::UnsignedMultiplyHigh;
-  // using ut::SignedMultiplyHigh;
-  // using ut::RotL32;
-
-  // using ut::GenFPSCR_OX;
-  // using ut::GenFPSCR_UX;
-  // using ut::GenFPSCR_VXSNAN;
-  // using ut::GenFPSCR_VXISI;
-  // using ut::GenFPSCR_VXCVI;
-  // using ut::GenFPSCR_FR;
-  // using ut::GenFPSCR_FPRF;
-  // using ut::GenFPSCR_XX;
-  // using ut::GenFPSCR_FX;
-  // using ut::GenFPSCR_VX;
-  // using ut::GenFPSCR_FEX;
   
   // using ut::GenSPEFSCR_FOVF;
   // using ut::GenSPEFSCR_FUNF;
@@ -108,8 +74,6 @@ namespace ppc64
   // using ut::GenSPEFSCR_FX;
   // using ut::DoesSPEFSCR_TriggerException;
   // using ut::GenSPEFSCR_FG;
-
-  //}
  
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
 #if defined(likely)

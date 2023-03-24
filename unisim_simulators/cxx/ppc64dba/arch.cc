@@ -43,6 +43,7 @@ namespace ppc64 {
     , branch_type(B_JMP)
     , cr(*this)
     , xer(*this)
+    , fpscr(*this)
   {
     for (IRegID reg; reg.next();)
       regvalues[reg.idx()] = newRegRead( reg );
