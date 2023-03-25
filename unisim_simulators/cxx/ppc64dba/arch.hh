@@ -309,8 +309,8 @@ namespace ppc64 {
       FRegID( char const* _code ) : code(end) { init( _code ); }
     };
 
-    SoftDouble  GetFPR(unsigned idx) { return fregvalues[idx]; }
-    void SetFPR(unsigned idx, SoftDouble value) { fregvalues[idx] = value; }
+    SoftDouble const& GetFPR(unsigned idx) { return fregvalues[idx]; }
+    void SetFPR(unsigned idx, SoftDouble const& value) { fregvalues[idx] = value; }
 
     struct FPSCR
     {

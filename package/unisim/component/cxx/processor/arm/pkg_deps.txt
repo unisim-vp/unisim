@@ -3,12 +3,12 @@ libc/stdlib
 std/cmath
 std/cstring
 std/iosfwd
-std/iostream
 std/map
 std/set
 std/sstream
 std/stdexcept
 std/string
+unisim/component/cxx/processor/arm/isa
 unisim/component/cxx/vector
 unisim/kernel/logger
 unisim/kernel/variable
@@ -18,8 +18,6 @@ unisim/util/arithmetic
 unisim/util/backtrace
 unisim/util/debug
 unisim/util/endian
-unisim/util/identifier
 unisim/util/inlining
 unisim/util/likely
 unisim/util/simfloat
-unisim/util/truth_table

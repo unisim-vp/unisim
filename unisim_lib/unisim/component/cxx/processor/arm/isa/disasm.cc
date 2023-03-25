@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2016,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,8 +36,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/psr.hh"
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 
 namespace unisim {
 namespace component {
@@ -225,37 +225,10 @@ namespace arm {
   /* IT sequence disassembly */
   void DisasmITSequence::operator() ( std::ostream& sink ) const
   {
-    PSR pseudo_psr;
-    pseudo_psr.ITSetState( 0, m_mask );
-    do {
-      sink << (pseudo_psr.ITGetCondition() ? 'e' : 't');
-      pseudo_psr.ITAdvance();
-    } while (pseudo_psr.InITBlock());
+    for (uint32_t state = m_mask; state & 0xf; state = state << 1)
+      sink << (state & 0x10 ? 'e' : 't');
   }
-  
-  std::ostream&
-  operator << ( std::ostream& sink, PSR const& psr )
-  {
-    std::ostringstream oss;
-    oss << std::hex
-        <<    "N=" << psr.Get(N)
-        <<  ", Z=" << psr.Get(Z)
-        <<  ", C=" << psr.Get(C)
-        <<  ", V=" << psr.Get(V)
-        <<  ", Q=" << psr.Get(Q)
-        << ", GE=" << psr.Get(GE)
-        <<  ", E=" << psr.Get(E)
-        <<  ", J=" << psr.Get(J)
-        <<  ", T=" << psr.Get(T)
-        << ", IT=" << psr.ITGetState()
-        <<  ", A=" << psr.Get(A)
-        <<  ", I=" << psr.Get(I)
-        <<  ", F=" << psr.Get(F)
-        <<  ", M=" << psr.Get(M);
-    sink << oss.str();
-    return sink;
-  }
-  
+    
   void DisasmBunch::operator () ( std::ostream& sink ) const
   {
     struct DisasmD : public DisasmObject

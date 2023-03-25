@@ -22,11 +22,12 @@ function includes()
 
 # ARMv7
 
-import dist_armsec
+import unisim/component/cxx/processor/arm/isa/arm32 || exit
+import unisim/component/cxx/processor/arm/isa/thumb2 || exit
+import unisim/component/cxx/processor/arm/isa/thumb || exit
 
 # ARMv8
 
-import unisim/component/cxx/processor/arm || exit
 import unisim/component/cxx/processor/arm/isa/arm64 || exit
 
 # x86
@@ -36,9 +37,10 @@ import unisim/component/cxx/processor/intel/isa || exit
 
 # Common
 
+import unisim/component/cxx/vector || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
-import unisim/util/random || exit
+import unisim/util/likely || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 
@@ -65,7 +67,7 @@ import sys/mman || exit
 
 copy source header template data
 
-AARCH32_SRCDIR=cxx/armsec
+AARCH32_SRCDIR=cxx/aarch32dba
 AARCH32_DSTDIR=aarch32
 AARCH32_SRC_FILES="\
 decoder.hh \
@@ -154,7 +156,7 @@ Frédéric Recoules <frederic.recoules@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/LICENSE.md"
-Copyright (c) 2007-2021,
+Copyright (c) 2007-2023,
 Commissariat a l'Énergie Atomique et aux Énergies Alternatives (CEA)
 All rights reserved.
 

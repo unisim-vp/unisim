@@ -7,7 +7,10 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import dist_armdecoder || exit
+import unisim/component/cxx/processor/arm/isa/arm32 || exit
+import unisim/component/cxx/processor/arm/isa/thumb || exit
+import unisim/component/cxx/processor/arm/isa/thumb2 || exit
+import unisim/component/cxx/processor/arm/isa || exit
 import unisim/util/forbint/contract || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit

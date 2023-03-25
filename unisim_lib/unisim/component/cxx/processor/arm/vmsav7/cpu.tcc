@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2020,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,7 +39,7 @@
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
 using unisim::util::arithmetic::RotateRight;
-#include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
@@ -443,7 +443,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == PSR::HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -486,7 +486,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
 
   uint32_t mva = addr & ~lo_mask;
   AddressDescriptor loc( mva );
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_write, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_write, size );
 
   // Send the request to the memory interface
   if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
@@ -544,14 +544,14 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == PSR::HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
   uint32_t mva = addr & ~lo_mask;
   AddressDescriptor loc( mva );
 
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_read, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_read, size );
 
   uint8_t data[4];
 
@@ -999,7 +999,7 @@ void
 CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
-  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != PSR::USER_MODE, mat_exec, IPB_LINE_SIZE );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   uint32_t buffer_index = address % (IPB_LINE_SIZE);
 
   if (unlikely(ipb_base_address != loc.address))
@@ -1026,7 +1026,7 @@ void
 CPU<CPU_IMPL>::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
-  bool ispriv = cpsr.Get(M) != PSR::USER_MODE;
+  bool ispriv = cpsr.Get(M) != USER_MODE;
   TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
   intptr_t buffer_index = address % (IPB_LINE_SIZE);
 
@@ -1175,13 +1175,13 @@ CPU<CPU_IMPL>::DataAbort(uint32_t va, uint64_t ipa,
     }
     else { // Short descriptor format
       // UFSR<13> = TLBLookupCameFromCacheMaintenance();
-      RegisterField<13,1>().Set( UFSR, 0 );
+      unisim::util::arithmetic::BitField<13,1>().Set( UFSR, 0 );
       if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
-        RegisterField<12,1>().Set( UFSR, 0 );
-      RegisterField<11,1>().Set( UFSR, (mat == mat_write) ? 1 : 0 );
-      RegisterField<9,1>().Set( UFSR, 0 );
+        unisim::util::arithmetic::BitField<12,1>().Set( UFSR, 0 );
+      unisim::util::arithmetic::BitField<11,1>().Set( UFSR, (mat == mat_write) ? 1 : 0 );
+      unisim::util::arithmetic::BitField<9,1>().Set( UFSR, 0 );
       // UFSR<8> = bit UNKNOWN;
-      RegisterField<8,1>().Set( UFSR, 0 );
+      unisim::util::arithmetic::BitField<8,1>().Set( UFSR, 0 );
       // domain_valid = ((type == DAbort_Domain) ||
       //                 ((level == 2) &&
       //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
@@ -1189,12 +1189,12 @@ CPU<CPU_IMPL>::DataAbort(uint32_t va, uint64_t ipa,
       //                 (!HaveLPAE() && (type == DAbort_Permission)));
       // if (domain_valid)   UFSR<7:4> = domain;
       // else                UFSR<7:4> = bits(4) UNKNOWN;
-      RegisterField<4,4>().Set( UFSR, domain );
+      unisim::util::arithmetic::BitField<4,4>().Set( UFSR, domain );
       struct FS {
         FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
         void Set( uint32_t value ) {
-          RegisterField<10,1>().Set( dfsr, value >> 4 );
-          RegisterField<0,4>() .Set( dfsr, value >> 0 );
+          unisim::util::arithmetic::BitField<10,1>().Set( dfsr, value >> 4 );
+          unisim::util::arithmetic::BitField<0,4>() .Set( dfsr, value >> 0 );
         }
       } fault_status( UFSR );
       switch (type) {
@@ -1426,10 +1426,10 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
 
   case 1: {
     // Large page or Small page
-    tlbe.domain = RegisterField<5,4>().Get( l1desc );
+    tlbe.domain = unisim::util::arithmetic::BitField<5,4>().Get( l1desc );
     // level = 2;
-    tlbe.pxn = RegisterField<2,1>().Get( l1desc );
-    tlbe.NS = RegisterField<3,1>().Get( l1desc );
+    tlbe.pxn = unisim::util::arithmetic::BitField<2,1>().Get( l1desc );
+    tlbe.NS = unisim::util::arithmetic::BitField<3,1>().Get( l1desc );
 
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
@@ -1442,26 +1442,26 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
-    if (RegisterField<0,2>().Get(l2desc) == 0)
+    if (unisim::util::arithmetic::BitField<0,2>().Get(l2desc) == 0)
       {
         DataAbort(mva, 0, tlbe.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
       }
-    tlbe.memattrs = (RegisterField<10,1>().Get( l2desc ) << 5) | RegisterField<2,2>().Get( l2desc ); /* S[1] : ?[3] : CB[2]*/
-    tlbe.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<4,2>().Get( l2desc );
-    tlbe.nG = RegisterField<11,1>().Get( l2desc );
-    if (RegisterField<1,1>().Get(l2desc))
+    tlbe.memattrs = (unisim::util::arithmetic::BitField<10,1>().Get( l2desc ) << 5) | unisim::util::arithmetic::BitField<2,2>().Get( l2desc ); /* S[1] : ?[3] : CB[2]*/
+    tlbe.ap = (unisim::util::arithmetic::BitField<9,1>().Get( l2desc ) << 2) | unisim::util::arithmetic::BitField<4,2>().Get( l2desc );
+    tlbe.nG = unisim::util::arithmetic::BitField<11,1>().Get( l2desc );
+    if (unisim::util::arithmetic::BitField<1,1>().Get(l2desc))
       {
         // Small page (4kB)
-        tlbe.memattrs |= (RegisterField<12,3>().Get( l2desc ) << 2); /* ?[1] : TEX[3] : ?[2] */
-        tlbe.xn = RegisterField<0,1>().Get( l2desc );
+        tlbe.memattrs |= (unisim::util::arithmetic::BitField<12,3>().Get( l2desc ) << 2); /* ?[1] : TEX[3] : ?[2] */
+        tlbe.xn = unisim::util::arithmetic::BitField<0,1>().Get( l2desc );
         tlbe.lsb = 12;
         tlbe.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
       }
     else
       {
         // Large page (64kB)
-        tlbe.memattrs |= (RegisterField<6,3>().Get( l2desc ) << 2); /* ?[1] : TEX[3] : ?[2] */
-        tlbe.xn = RegisterField<15,1>().Get( l2desc );
+        tlbe.memattrs |= (unisim::util::arithmetic::BitField<6,3>().Get( l2desc ) << 2); /* ?[1] : TEX[3] : ?[2] */
+        tlbe.xn = unisim::util::arithmetic::BitField<15,1>().Get( l2desc );
         tlbe.lsb = 16;
         tlbe.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
       }
@@ -1469,27 +1469,27 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
 
   case 2: case 3: {
     // Section or Supersection
-    tlbe.memattrs = (RegisterField<16,1>().Get( l1desc ) << 5) | (RegisterField<12,3>().Get( l1desc ) << 2) | RegisterField<2,2>().Get( l1desc ); /* S[1] : TEX[3] : CB[2]*/
-    tlbe.ap = (RegisterField<15,1>().Get( l1desc ) << 2) | RegisterField<10,2>().Get( l1desc );
-    tlbe.xn = RegisterField<4,1>().Get( l1desc );
-    tlbe.pxn = RegisterField<0,1>().Get( l1desc );
-    tlbe.nG = RegisterField<17,1>().Get( l1desc );
+    tlbe.memattrs = (unisim::util::arithmetic::BitField<16,1>().Get( l1desc ) << 5) | (unisim::util::arithmetic::BitField<12,3>().Get( l1desc ) << 2) | unisim::util::arithmetic::BitField<2,2>().Get( l1desc ); /* S[1] : TEX[3] : CB[2]*/
+    tlbe.ap = (unisim::util::arithmetic::BitField<15,1>().Get( l1desc ) << 2) | unisim::util::arithmetic::BitField<10,2>().Get( l1desc );
+    tlbe.xn = unisim::util::arithmetic::BitField<4,1>().Get( l1desc );
+    tlbe.pxn = unisim::util::arithmetic::BitField<0,1>().Get( l1desc );
+    tlbe.nG = unisim::util::arithmetic::BitField<17,1>().Get( l1desc );
     // level = 1;
-    tlbe.NS = RegisterField<19,1>().Get( l1desc );
+    tlbe.NS = unisim::util::arithmetic::BitField<19,1>().Get( l1desc );
 
-    if (RegisterField<18,1>().Get(l1desc))
+    if (unisim::util::arithmetic::BitField<18,1>().Get(l1desc))
       {
         // Supersection (16MB)
         tlbe.domain = 0b0000;
         tlbe.lsb = 24;
-        if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
+        if (unisim::util::arithmetic::BitField<20,4>().Get( l1desc ) or unisim::util::arithmetic::BitField<5,4>().Get( l1desc ))
           throw std::logic_error("LPAE not implemented"); /* Large 40-bit extended address */
         tlbe.pa = (l1desc & 0xff000000) | (mva & 0x00ffffff);
       }
     else
       {
         // Section (1MB)
-        tlbe.domain = RegisterField<5,4>().Get( l1desc );
+        tlbe.domain = unisim::util::arithmetic::BitField<5,4>().Get( l1desc );
         tlbe.lsb = 20;
         tlbe.pa = (l1desc & 0xfff00000) | (mva & 0x000fffff);
       }
@@ -1536,7 +1536,7 @@ CPU<CPU_IMPL>::TranslateAddress( AddressDescriptor& loc, bool ispriv, mem_acc_ty
   // FirstStageTranslation
 
   if (arm::sctlr::M.Get( this->SCTLR )) {
-    bool ishyp = cpsr.Get(M) == PSR::HYPERVISOR_MODE;
+    bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
     TLB::Entry tlbe;
 
     // Stage 1 MMU enabled

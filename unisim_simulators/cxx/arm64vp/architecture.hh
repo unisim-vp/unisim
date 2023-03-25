@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2021,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -1044,6 +1044,6 @@ T FPMulSub(AArch64& cpu, T const& acc, T const& op1, T const& op2)
   return acc - (op1 * op2);
 }
 
-template <unsigned posT> void FPProcessException( AArch64&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <unsigned posT> void FPProcessException( AArch64&, unisim::util::arithmetic::BitField<posT,1> const& ) {}
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

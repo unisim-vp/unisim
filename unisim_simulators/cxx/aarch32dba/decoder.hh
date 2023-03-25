@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2021,
+ *  Copyright (c) 2009-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -35,24 +35,16 @@
 #ifndef __AARCH32_DECODER_HH__
 #define __AARCH32_DECODER_HH__
 
-#include <unisim/component/cxx/processor/arm/psr.hh>
 #include <iosfwd>
 #include <inttypes.h>
 
-namespace armsec
+namespace aarch32
 {
   struct StatusRegister
   {
     enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE };
 
-    typedef unisim::component::cxx::processor::arm::PSR PSR;
-  
-    StatusRegister()
-      : iset(Arm)                  // Default is ARM instruction set
-      , itstate(-1)                // initial itstate
-      , bigendian(false)           // Default is Little Endian
-      , mode(PSR::SUPERVISOR_MODE) // Default mode is supervisor
-    {}
+    StatusRegister();
 
     bool IsThumb() const { return iset == Thumb; }
 

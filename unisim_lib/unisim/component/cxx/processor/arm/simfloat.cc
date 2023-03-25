@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,9 +32,9 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <unisim/util/simfloat/integer.hh>
 #include <unisim/util/simfloat/integer.tcc>
 #include <unisim/util/simfloat/floating.hh>

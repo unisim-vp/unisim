@@ -7,7 +7,6 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import unisim/component/cxx/processor/arm || exit
 import unisim/component/cxx/processor/arm/isa/arm64 || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/symbolic/vector || exit

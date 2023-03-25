@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2013-2018,
+ *  Copyright (c) 2013-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_ATTRIBUTES_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_ATTRIBUTES_HH__
 
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -51,17 +51,17 @@ namespace arm {
     enum attr_t { NonCacheable = 0b00, WriteThrough = 0b10, WriteBack = 0b11 /* 0b01: RESERVED */ };
     enum hint_t { NoAllocate = 0b00, WriteAllocate = 0b01, ReadAllocate = 0b10, RWAllocate = 0b11 };
     
-    typedef RegisterField< 0,2> type;
-    typedef RegisterField< 2,2> innerattrs;
-    typedef RegisterField< 4,2> innerhints;
-    typedef RegisterField< 2,4> innerattrshints;
-    typedef RegisterField< 6,2> outerattrs;
-    typedef RegisterField< 8,2> outerhints;
-    typedef RegisterField< 6,4> outerattrshints;
-    typedef RegisterField<10,1> innertransient;
-    typedef RegisterField<11,1> outertransient;
-    typedef RegisterField<12,1> shareable;
-    typedef RegisterField<13,1> outershareable;
+    typedef unisim::util::arithmetic::BitField< 0,2> type;
+    typedef unisim::util::arithmetic::BitField< 2,2> innerattrs;
+    typedef unisim::util::arithmetic::BitField< 4,2> innerhints;
+    typedef unisim::util::arithmetic::BitField< 2,4> innerattrshints;
+    typedef unisim::util::arithmetic::BitField< 6,2> outerattrs;
+    typedef unisim::util::arithmetic::BitField< 8,2> outerhints;
+    typedef unisim::util::arithmetic::BitField< 6,4> outerattrshints;
+    typedef unisim::util::arithmetic::BitField<10,1> innertransient;
+    typedef unisim::util::arithmetic::BitField<11,1> outertransient;
+    typedef unisim::util::arithmetic::BitField<12,1> shareable;
+    typedef unisim::util::arithmetic::BitField<13,1> outershareable;
 
     struct Inner { typedef innerattrs attrs; typedef innerhints hints; typedef innertransient transient; typedef MemAttrs::shareable shareable;  };
     struct Outer { typedef outerattrs attrs; typedef outerhints hints; typedef outertransient transient; typedef outershareable shareable; };

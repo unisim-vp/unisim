@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2020,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,7 +38,7 @@
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>

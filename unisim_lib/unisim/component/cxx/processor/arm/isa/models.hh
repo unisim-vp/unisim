@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2016,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MODELS_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MODELS_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_MODELS_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_MODELS_HH__
 
 #include <inttypes.h>
 
@@ -61,4 +61,4 @@ static const uint32_t ARMEMU = 1000;
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MODELS_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_MODELS_HH__

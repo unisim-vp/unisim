@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2018,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/util/truth_table/truth_table.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <inttypes.h>
@@ -290,7 +290,7 @@ namespace arm {
     BOOL const scr_fw( false ); // prevents Non-secure masking of FIQs that are taken to Monitor mode
     BOOL const have_virt_ext( false ); // HaveVirtExt()
 
-    BOOL privileged = core.CPSR().Get(M) != U32(PSR::USER_MODE);
+    BOOL privileged = core.CPSR().Get(M) != U32(USER_MODE);
     
     if (A.Get( psr_mask ) and not core.Test
         (privileged and (is_secure or  scr_aw or have_virt_ext)))
@@ -429,9 +429,9 @@ namespace arm {
   };
   
   template <class ARCH, unsigned posT, typename FPCTRL>
-  void FPProcessException( ARCH& arch, RegisterField<posT,1> const& rf, FPCTRL const& fpscr_val )
+  void FPProcessException( ARCH& arch, unisim::util::arithmetic::BitField<posT,1> const& rf, FPCTRL const& fpscr_val )
   {
-    RegisterField<posT+8,1> const enable;
+    unisim::util::arithmetic::BitField<posT+8,1> const enable;
     if (arch.Test(enable.Get( fpscr_val )))
       arch.FPTrap( posT );
     else

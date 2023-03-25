@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2013-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,54 +29,43 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/**********************************************
 
-             ARM64 TOP ISA DESCRIPTION
+#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
+#include <sstream>
+#include <inttypes.h>
 
-**********************************************/
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
 
-namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little;
-set addressclass {uint64_t}
-template <{typename} {ARCH}>
+  void PSR::Print(std::ostream& sink) const
+  {
+    std::ostringstream buf;
+    buf << std::hex
+        <<    "N=" << this->Get(N)
+        <<  ", Z=" << this->Get(Z)
+        <<  ", C=" << this->Get(C)
+        <<  ", V=" << this->Get(V)
+        <<  ", Q=" << this->Get(Q)
+        << ", GE=" << this->Get(GE)
+        <<  ", E=" << this->Get(E)
+        <<  ", J=" << this->Get(J)
+        <<  ", T=" << this->Get(T)
+        << ", IT=" << this->ITGetState()
+        <<  ", A=" << this->Get(A)
+        <<  ", I=" << this->Get(I)
+        <<  ", F=" << this->Get(F)
+        <<  ", M=" << this->Get(M);
+    sink << buf.str();
+  }
 
-decl {
-#include <iosfwd>
-#include <stdint.h>
-} // end of decl
-
-impl {
-#include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
-#include <unisim/util/arithmetic/arithmetic.hh>
-#include <iostream>
-#include <cmath>
-
-#include <unisim/util/likely/likely.hh>
-#define evenly(x) (x)
-
-using unisim::util::arithmetic::RotateRight;
-using unisim::util::arithmetic::BitScanReverse;
-using unisim::util::arithmetic::PopCount;
-
-#include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
-#include <unisim/component/cxx/processor/arm/isa/execute.hh>
-}
-
-action {void} execute({ARCH &} {cpu}) const {
-  cpu.UndefinedInstruction(this);
-}
-
-action {void} disasm({typename ARCH::DisasmState &} {cpu}, {std::ostream&} {sink}) const {
-  sink << "; Unknown AARCH64 instruction";
-}
-
-impl {
-} // end of impl
-
-include "base.isa"
-include "simd.isa"
-include "floating-point.isa"
+} // end of namespace arm
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

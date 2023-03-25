@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2020,
+ *  Copyright (c) 2009-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,7 +33,8 @@
  */
 
 #include <decoder.hh>
-#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <iostream>
 #include <string>
 #include <algorithm>
@@ -82,8 +83,7 @@ main( int argc, char** argv )
       return 1;
     }
 
-  armsec::Decoder decoder;
-  typedef armsec::StatusRegister::PSR PSR;
+  aarch32::Decoder decoder;
 
   std::string exec_flags(argv[1]);
   exec_flags += ',';
@@ -97,15 +97,15 @@ main( int argc, char** argv )
       else if (flag == "thumb")      { decoder.iset = decoder.Thumb; }
       else if (flag == "little")     { decoder.bigendian = false; }
       else if (flag == "big")        { decoder.bigendian = true; }
-      else if (flag == "user")       { decoder.mode = PSR::USER_MODE; }
-      else if (flag == "fiq")        { decoder.mode = PSR::FIQ_MODE; }
-      else if (flag == "irq")        { decoder.mode = PSR::IRQ_MODE; }
-      else if (flag == "supervisor") { decoder.mode = PSR::SUPERVISOR_MODE; }
-      else if (flag == "monitor")    { decoder.mode = PSR::MONITOR_MODE; }
-      else if (flag == "abort")      { decoder.mode = PSR::ABORT_MODE; }
-      else if (flag == "hypervisor") { decoder.mode = PSR::HYPERVISOR_MODE; }
-      else if (flag == "undefined")  { decoder.mode = PSR::UNDEFINED_MODE; }
-      else if (flag == "system")     { decoder.mode = PSR::SYSTEM_MODE; }
+      else if (flag == "user")       { decoder.mode = unisim::component::cxx::processor::arm::USER_MODE; }
+      else if (flag == "fiq")        { decoder.mode = unisim::component::cxx::processor::arm::FIQ_MODE; }
+      else if (flag == "irq")        { decoder.mode = unisim::component::cxx::processor::arm::IRQ_MODE; }
+      else if (flag == "supervisor") { decoder.mode = unisim::component::cxx::processor::arm::SUPERVISOR_MODE; }
+      else if (flag == "monitor")    { decoder.mode = unisim::component::cxx::processor::arm::MONITOR_MODE; }
+      else if (flag == "abort")      { decoder.mode = unisim::component::cxx::processor::arm::ABORT_MODE; }
+      else if (flag == "hypervisor") { decoder.mode = unisim::component::cxx::processor::arm::HYPERVISOR_MODE; }
+      else if (flag == "undefined")  { decoder.mode = unisim::component::cxx::processor::arm::UNDEFINED_MODE; }
+      else if (flag == "system")     { decoder.mode = unisim::component::cxx::processor::arm::SYSTEM_MODE; }
       else if (flag == "outitb")     { decoder.itstate = 0; }
       else if (char const* it = after(flag, "it"))
         {

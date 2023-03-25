@@ -1,13 +1,16 @@
 #!/bin/bash
 
-SIMPKG=armsec
-SIMPKG_SRCDIR=cxx/armsec
+SIMPKG=aarch32dba
+SIMPKG_SRCDIR=cxx/aarch32dba
 
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import dist_armsec || exit
+import unisim/component/cxx/processor/arm/isa/arm32 || exit
+import unisim/component/cxx/processor/arm/isa/thumb || exit
+import unisim/component/cxx/processor/arm/isa/thumb2 || exit
+import unisim/component/cxx/processor/arm/isa || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
@@ -92,7 +95,7 @@ done
 # Simulator
 
 output_simulator_configure_ac <(cat << EOF
-AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM aarch32dba ARMv7 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])

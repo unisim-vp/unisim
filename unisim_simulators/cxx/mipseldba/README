@@ -1,4 +1,4 @@
 This package contains:
-- armsec: an ARMv7 decoder for conversion of arm instruction to DBA
+- mipseldba: a Mips decoder for conversion of arm instruction to DBA
   intermediate representation 
 See INSTALL for installation instructions.

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2016,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -246,10 +246,6 @@ namespace arm {
     
     unsigned rb, ra, align;
   };
-
-  struct PSR;
-  
-  std::ostream& operator << ( std::ostream& sink, PSR const& dobj );
 
   struct DisasmV : public DisasmObject
   {

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2020,
+ *  Copyright (c) 2009-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -248,6 +248,7 @@ struct Processor
   
   void CallSupervisor( uint32_t imm ) { throw 0; }
   void CallHypervisor( uint32_t imm ) { throw 0; }
+  void SoftwareBreakpoint( uint32_t imm ) { throw 0; }
   void ExceptionReturn() { throw 0; }
   
   //   =====================================================================

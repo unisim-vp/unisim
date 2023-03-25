@@ -1,9 +1,9 @@
 /////////////////////////////////
 //
 // Library   : Static Analysis
-// Unit      : armsec
-// File      : armsec_memory_callback.h
-// Copyright : CEA LIST - 2020
+// Unit      : forbint
+// File      : forbint_memory_callback.h
+// Copyright : CEA LIST - 2020-2023
 //
 // Description :
 //   Definition of a generic C Interface to manipulate abstract domains

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,7 +38,7 @@
 #include <systemc>
 #include <tlm>
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.hh>
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <inttypes.h>
 
@@ -150,7 +150,7 @@ public:
   void PrefetchMemory(unsigned op, uint64_t addr);
 };
 
-template <unsigned posT> void FPProcessException( CPU&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <unsigned posT> void FPProcessException( CPU&, unisim::util::arithmetic::BitField<posT,1> const& ) {}
 template <typename FLOAT> FLOAT FPNaN( CPU&, FLOAT value ) { return value; }
 
 } // end of namespace cortex_a53

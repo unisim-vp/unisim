@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2013-2016,
+ *  Copyright (c) 2013-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,28 +32,25 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_REGISTER_FIELD_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_REGISTER_FIELD_HH__
+#ifndef __UNISIM_UTIL_ARITHMETIC_BITFIELD_HH__
+#define __UNISIM_UTIL_ARITHMETIC_BITFIELD_HH__
 
 #include <inttypes.h>
 
 namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace arm {
+namespace util {
+namespace arithmetic {
   
-  /** RegisterField
+  /** BitField
    *
    * This structure allows to declare names referring to bitfields of
-   * status/control ARM registers (e.g. PSR, FPSCR). It is implemented
-   * as a templated Traits structure that contains the position and
-   * size of the bitfield. It also contains convenience methods for
-   * getting/setting bitfield values in registers values (provided
-   * this values behave like scalar integers)
+   * Integer or Integer-like types. It is implemented as a templated
+   * Traits structure that contains the position and size of the
+   * bitfield. It also contains convenience methods for
+   * getting/setting bitfield in integer-like values
    */
   template <unsigned posT, unsigned sizeT>
-  struct RegisterField
+  struct BitField
   {
     enum pos_e { pos = posT };
     enum size_e { size = sizeT };
@@ -99,32 +96,8 @@ namespace arm {
     }
   };
   
-  /* Common bitfields */
-  RegisterField<0,32> const ALL32;  /* Raw 32 bits of the any status/control register*/
-  RegisterField<0,64> const ALL64;  /* Raw 64 bits of the any status/control register*/
-  
-  template <typename T>
-  struct FieldRegister
-  {
-    T m_value;
-    
-    FieldRegister() : m_value() {}
-    FieldRegister( T _value ) : m_value( _value ) {}
-    
-    template <typename RF>
-    T Get( RF const& rf ) const { return rf.Get( m_value ); }
-    template <typename RF>
-    void     Set( RF const& rf, T value ) { return rf.Set( m_value, value ); }
-    
-    /* Raw bits accessor */
-    T& bits() { return m_value; }
-  };
-  
-
-} // end of namespace arm
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
+} // end of namespace arithmetic
+} // end of namespace util
 } // end of namespace unisim
 
-#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_REGISTER_FIELD_HH__ */
+#endif /* __UNISIM_UTIL_ARITHMETIC_BITFIELD_HH__ */

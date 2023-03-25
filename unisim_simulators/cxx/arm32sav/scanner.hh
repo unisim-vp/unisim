@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020,
+ *  Copyright (c) 2020-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,8 +38,8 @@
 #include <test.hh>
 #include <top_arm32.hh>
 #include <top_thumb.hh>
-#include <unisim/component/cxx/processor/arm/psr.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
@@ -340,19 +340,19 @@ struct Scanner
     U32 bits() const { return arch.GetPSR( unisim::component::cxx::processor::arm::ALL32 ); }
   };
 
-  template <unsigned POS, unsigned SIZE> using RegisterField = unisim::component::cxx::processor::arm::RegisterField<POS, SIZE>;
+  template <unsigned POS, unsigned SIZE> using BitField = unisim::util::arithmetic::BitField<POS, SIZE>;
 
-  U32 GetPSR(RegisterField<31, 1> const&) { return U32(flags[Flag::N]); }
-  U32 GetPSR(RegisterField<30, 1> const&) { return U32(flags[Flag::Z]); }
-  U32 GetPSR(RegisterField<29, 1> const&) { return U32(flags[Flag::C]); }
-  U32 GetPSR(RegisterField<28, 1> const&) { return U32(flags[Flag::V]); }
+  U32 GetPSR(BitField<31, 1> const&) { return U32(flags[Flag::N]); }
+  U32 GetPSR(BitField<30, 1> const&) { return U32(flags[Flag::Z]); }
+  U32 GetPSR(BitField<29, 1> const&) { return U32(flags[Flag::C]); }
+  U32 GetPSR(BitField<28, 1> const&) { return U32(flags[Flag::V]); }
 
   template <class T> U32 GetPSR(T const&) { return dontread<U32>("cpsr"); }
 
-  void SetPSR(RegisterField<31, 1> const&, U32 const& value) { flags[Flag::N] = BOOL(value); }
-  void SetPSR(RegisterField<30, 1> const&, U32 const& value) { flags[Flag::Z] = BOOL(value); }
-  void SetPSR(RegisterField<29, 1> const&, U32 const& value) { flags[Flag::C] = BOOL(value); }
-  void SetPSR(RegisterField<28, 1> const&, U32 const& value) { flags[Flag::V] = BOOL(value); }
+  void SetPSR(BitField<31, 1> const&, U32 const& value) { flags[Flag::N] = BOOL(value); }
+  void SetPSR(BitField<30, 1> const&, U32 const& value) { flags[Flag::Z] = BOOL(value); }
+  void SetPSR(BitField<29, 1> const&, U32 const& value) { flags[Flag::C] = BOOL(value); }
+  void SetPSR(BitField<28, 1> const&, U32 const& value) { flags[Flag::V] = BOOL(value); }
 
   template <class T> void SetPSR(T const&, U32 const& value) { dont("cpsr"); }
 

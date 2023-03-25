@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -601,6 +601,11 @@ namespace ut
     static bool const HAS_FLOATING_POINT_SQRT = true;
   };
 
+  template <class FP>
+  U8 FPCompare( FP const& lhs, FP const& rhs )
+  {
+    return U8( make_function( "FPCompare", lhs.expr, rhs.expr ) );
+  }
 
   inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ){ return U64( make_function( "UnsignedMultiplyHigh", lop.expr, rop.expr ) ); }
   inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { return S64( make_function( "SignedMultiplyHigh", lop.expr, rop.expr ) ); }

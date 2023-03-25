@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -34,7 +34,7 @@
 
 #include <runner.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <iomanip>
 #include <ostream>
 #include <cmath>
@@ -43,7 +43,7 @@ Runner::Runner( char const* name )
   : unisim::kernel::Object( name, 0 )
   , CPU(name,0)
 {
-  cpsr.Set(unisim::component::cxx::processor::arm::M, unisim::component::cxx::processor::arm::PSR::USER_MODE);
+  cpsr.Set(unisim::component::cxx::processor::arm::M, unisim::component::cxx::processor::arm::USER_MODE);
 }
 
 Runner::~Runner()

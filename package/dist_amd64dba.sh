@@ -6,10 +6,9 @@ source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel || exit
 import unisim/component/cxx/processor/intel/isa || exit
-import unisim/util/dbgate/client || exit
+import unisim/component/cxx/vector || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
-import unisim/util/random || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 

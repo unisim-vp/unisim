@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2017,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,9 +36,9 @@
 #include <runner.hh>
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
-#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>

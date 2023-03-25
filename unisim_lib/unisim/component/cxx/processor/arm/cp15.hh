@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2016,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CP15_HH__
 
 
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -44,7 +44,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-
 
   /** SCTLR Manips
    *
@@ -55,23 +54,23 @@ namespace arm {
    */
   namespace sctlr
   {
-    RegisterField<31,1> const IE;      // Instruction Endianness (-v7)
-    RegisterField<30,1> const TE;      // Thumb Exception enable (-v7)
-    RegisterField<27,1> const NMFI;    // Non-maskable FIQ (NMFI) support (-v7)
-    RegisterField<25,1> const EE;      // Exception Endianness. (-v8)
-    RegisterField<24,1> const VE;      // Interrupt Vectors Enable
-    RegisterField<22,1> const U;       // Alignment Model (-v6)
-    RegisterField<21,1> const FI;      // Fast interrupts configuration enable
-    RegisterField<14,1> const RR;      // Round Robin select
-    RegisterField<13,1> const V;       // Vectors bit
-    RegisterField<12,1> const I;       // Instruction cache enable
-    RegisterField<11,1> const Z;       // Branch prediction enable.
-    RegisterField<10,1> const SW;      // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-    RegisterField< 7,1> const B;       // Endianness model (up to ARMv6)
-    RegisterField< 5,1> const CP15BEN; // CP15 barrier enable.
-    RegisterField< 2,1> const C;       // Cache enable. This is a global enable bit for data and unified caches.
-    RegisterField< 1,1> const A;       // Alignment check enable
-    RegisterField< 0,1> const M;       // MMU/MPU enable.
+    unisim::util::arithmetic::BitField<31,1> const IE;      // Instruction Endianness (-v7)
+    unisim::util::arithmetic::BitField<30,1> const TE;      // Thumb Exception enable (-v7)
+    unisim::util::arithmetic::BitField<27,1> const NMFI;    // Non-maskable FIQ (NMFI) support (-v7)
+    unisim::util::arithmetic::BitField<25,1> const EE;      // Exception Endianness. (-v8)
+    unisim::util::arithmetic::BitField<24,1> const VE;      // Interrupt Vectors Enable
+    unisim::util::arithmetic::BitField<22,1> const U;       // Alignment Model (-v6)
+    unisim::util::arithmetic::BitField<21,1> const FI;      // Fast interrupts configuration enable
+    unisim::util::arithmetic::BitField<14,1> const RR;      // Round Robin select
+    unisim::util::arithmetic::BitField<13,1> const V;       // Vectors bit
+    unisim::util::arithmetic::BitField<12,1> const I;       // Instruction cache enable
+    unisim::util::arithmetic::BitField<11,1> const Z;       // Branch prediction enable.
+    unisim::util::arithmetic::BitField<10,1> const SW;      // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+    unisim::util::arithmetic::BitField< 7,1> const B;       // Endianness model (up to ARMv6)
+    unisim::util::arithmetic::BitField< 5,1> const CP15BEN; // CP15 barrier enable.
+    unisim::util::arithmetic::BitField< 2,1> const C;       // Cache enable. This is a global enable bit for data and unified caches.
+    unisim::util::arithmetic::BitField< 1,1> const A;       // Alignment check enable
+    unisim::util::arithmetic::BitField< 0,1> const M;       // MMU/MPU enable.
   };
 
 

@@ -13,7 +13,6 @@ import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
-import unisim/util/random || exit
 
 import m4/ax_cflags_warn_all || exit
 

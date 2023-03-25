@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2019,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -37,8 +37,9 @@
 
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
+#include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
@@ -105,7 +106,7 @@ struct CPU
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
   /* Number of logic registers */
   static unsigned const num_log_gprs = 16;
-  
+
   /** Base class for the ARM Modes
    *
    * This class is the base for all ARM Modes specifying the interface

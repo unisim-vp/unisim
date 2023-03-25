@@ -47,23 +47,35 @@ namespace ppc64 {
   {
     for (IRegID reg; reg.next();)
       regvalues[reg.idx()] = newRegRead( reg );
+    for (FRegID reg; reg.next();)
+      fregvalues[reg.idx()].expr = newRegRead( reg );
   }
   
   bool
   Arch::close( Arch const& ref, uint64_t linear_nia )
   {
     bool complete = path->close();
-  //   if (branch_type == B_CALL)
-  //     path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Call<uint64_t>( next_instruction_address.expr, linear_nia ) ) );
-  //   else
-  //     path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
-  //   if (unpredictable)
-  //     {
-  //       path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
-  //       return complete;
-  //     }
+    /* TODO: branch_type */
+    path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
+
+    for (IRegID reg; reg.next();)
+      if (regvalues[reg.idx()].expr != ref.regvalues[reg.idx()].expr)
+        path->sinks.insert( Expr( newRegWrite( reg, regvalues[reg.idx()].expr ) ) );
+
      return complete;
   }
 
+  void
+  Arch::IRegID::Repr(std::ostream& sink) const
+  {
+    sink << c_str();
+  }
+  
+  void
+  Arch::FRegID::Repr(std::ostream& sink) const
+  {
+    sink << c_str();
+  }
+  
 } // end of namespace ppc64
 

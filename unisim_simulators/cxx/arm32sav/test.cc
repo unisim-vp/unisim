@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -34,7 +34,7 @@
 
 #include <test.hh>
 #include <scanner.hh>
-#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <algorithm>
 #include <sstream>
 

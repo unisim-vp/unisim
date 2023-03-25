@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_FLOATING_HH__
 
 #include <unisim/util/simfloat/floating.hh>
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/register.hh>
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2016,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CP15_HH__
 
 
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -56,11 +56,11 @@ namespace vmsav7 {
 
   namespace sctlr
   {
-    RegisterField<29,1> const AFE;     // Access flag enable
-    RegisterField<28,1> const TRE;     // TEX remap enable
-    RegisterField<20,1> const UWXN;    // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
-    RegisterField<19,1> const WXN;     // Write permission implies XN (Virtualization Extensions)
-    RegisterField<17,1> const HA;      // Hardware Access flag enable
+    unisim::util::arithmetic::BitField<29,1> const AFE;     // Access flag enable
+    unisim::util::arithmetic::BitField<28,1> const TRE;     // TEX remap enable
+    unisim::util::arithmetic::BitField<20,1> const UWXN;    // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+    unisim::util::arithmetic::BitField<19,1> const WXN;     // Write permission implies XN (Virtualization Extensions)
+    unisim::util::arithmetic::BitField<17,1> const HA;      // Hardware Access flag enable
   }
   
   /** TTBCR Manips
@@ -71,10 +71,10 @@ namespace vmsav7 {
   namespace TTBCR
   {
     
-    RegisterField<31,1> const EAE;   // Extended Address Enable
-    RegisterField< 5,1> const PD1;   // Translation table walk disable for TTBR1
-    RegisterField< 4,1> const PD0;   // Translation table walk disable for TTBR0
-    RegisterField< 0,3> const N;     // Bit considered for TTBR selection
+    unisim::util::arithmetic::BitField<31,1> const EAE;   // Extended Address Enable
+    unisim::util::arithmetic::BitField< 5,1> const PD1;   // Translation table walk disable for TTBR1
+    unisim::util::arithmetic::BitField< 4,1> const PD0;   // Translation table walk disable for TTBR0
+    unisim::util::arithmetic::BitField< 0,3> const N;     // Bit considered for TTBR selection
   };
 
 

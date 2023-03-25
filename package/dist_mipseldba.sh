@@ -1,18 +1,13 @@
 #!/bin/bash
 
-SIMPKG=mipselsec
-SIMPKG_SRCDIR=cxx/mipselsec
+SIMPKG=mipseldba
+SIMPKG_SRCDIR=cxx/mipseldba
 
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import unisim/component/cxx/memory/sparse || exit
 import unisim/component/cxx/processor/mips/isa || exit
-import unisim/service/os/linux_os || exit
-import unisim/util/debug || exit
-import unisim/util/arithmetic || exit
-import unisim/util/endian || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
@@ -81,7 +76,7 @@ done
 # Simulator
 
 output_simulator_configure_ac <(cat << EOF
-AC_INIT([UNISIM Mipselsec little endian Mips symbolic translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM Mipseldba little endian Mips symbolic translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])

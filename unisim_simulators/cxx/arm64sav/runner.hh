@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,7 +38,7 @@
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <iosfwd>
 #include <cstdlib>
 #include <cassert>
@@ -138,7 +138,7 @@ struct Runner
   U64   current_insn_addr, next_insn_addr;
 };
 
-template <unsigned posT> void FPProcessException( Runner&, unisim::component::cxx::processor::arm::RegisterField<posT,1> const& ) {}
+template <unsigned posT> void FPProcessException( Runner&, unisim::util::arithmetic::BitField<posT,1> const& ) {}
 extern float clearsignaling( float );
 extern double clearsignaling( double );
 template <typename FLOAT> FLOAT FPNaN( Runner&, FLOAT value ) { return clearsignaling(value); }
