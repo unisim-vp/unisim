@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2017-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -36,6 +36,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <algorithm>
 
@@ -43,6 +44,34 @@ namespace unisim {
 namespace util {
 namespace symbolic {
 
+  char const*
+  Expr::dbgrepr() const
+  {
+    static std::string result_string;
+    std::ostringstream buf;
+    node->Repr(buf);
+    result_string = buf.str();
+    return result_string.c_str();
+  }
+
+  void
+  ValueType::GetName(std::ostream& sink) const
+  {
+    unsigned bitsize = GetBitSize();
+    switch (encoding)
+      {
+      default:                  sink << "?"; break;
+      case ValueType::FLOAT:    sink << 'F'; break;
+      case ValueType::UNSIGNED: sink << "U"; break;
+      case ValueType::SIGNED:   sink << "S"; break;
+      case ValueType::BOOL:
+        sink << "BOOL";
+        if (bitsize == 1) return;
+        break;
+      }
+    sink << bitsize;
+  }
+  
   ValueType const* CValueType(ValueType::encoding_t encoding, unsigned bitsize)
   {
     typedef long double f80_t;
@@ -102,7 +131,6 @@ namespace symbolic {
     
     return sink;
   }
-  std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
   ConstNodeBase const*
   Expr::Eval( EvalSpace const& evs ) const
@@ -154,7 +182,58 @@ namespace symbolic {
     return 0;
   }
     
-  
+  void
+  OpNodeBase::Repr( std::ostream& sink ) const
+  {
+    sink << op.c_str() << "( ";
+    char const* sep = "";
+    for (unsigned idx = 0, end = SubCount(); idx < end; sep = ", ", ++idx)
+      sink << sep << GetSub(idx);
+    sink << " )";
+  }
+
+  void
+  ConstNodeBase::Repr( std::ostream& sink ) const
+  {
+    typedef long double f80_t;
+    ValueType const* tp = GetType();
+    tp->GetName(sink);
+    sink << '(';
+    switch (tp->encoding)
+      {
+      case ValueType::UNSIGNED:
+        if (tp->GetBitSize() > 64) std::cerr << "Warning: oversized unsigned number.\n";
+        sink << GetBits(0);
+        break;
+      case ValueType::SIGNED:
+        if (tp->GetBitSize() > 64) std::cerr << "Warning: oversized signed number.\n";
+        sink << int64_t(GetBits(0));
+        break;
+      case ValueType::FLOAT:
+        sink << GetFloat(f80_t());
+        break;
+      default:
+        sink << "???";
+        break;
+      }
+    sink << ')';
+  }
+
+  void
+  CastNodeBase::Repr( std::ostream& sink ) const
+  {
+    GetType()->GetName(sink);
+    sink << "( " << src << " )";
+  }
+
+  void FP::DefaultNaNNode::Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
+  void FP::IsNaNNode::Repr( std::ostream& sink ) const { sink << "IsNaN(" << src << ", " << int(signaling) << ", " << int(quiet) << ")"; }
+  void FP::MulAddNode::Repr( std::ostream& sink ) const { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }
+  void FP::IsInvalidMulAddNode::Repr( std::ostream& sink ) const { sink << "IsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
+  void FP::FtoFNode::Repr( std::ostream& sink ) const { sink << "FtoF( " << src << " )"; }
+  void FP::FtoINodeBase::Repr( std::ostream& sink ) const { sink << "FtoI( " << src << " )"; }
+  void FP::ItoFNodeBase::Repr( std::ostream& sink ) const { sink << "ItoF( " << src << " )"; }
+
   bool   EvalMul( bool, bool ) { throw std::logic_error( "No * for bool." ); }
   
   long double   EvalMod( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }

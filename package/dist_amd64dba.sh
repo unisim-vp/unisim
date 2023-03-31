@@ -4,7 +4,6 @@ SIMPKG=amd64dba
 SIMPKG_SRCDIR=cxx/amd64dba
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/component/cxx/processor/intel || exit
 import unisim/component/cxx/processor/intel/isa || exit
 import unisim/component/cxx/vector || exit
 import unisim/util/arithmetic || exit

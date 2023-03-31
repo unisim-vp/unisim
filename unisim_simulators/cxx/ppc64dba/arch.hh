@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2022-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -63,11 +63,10 @@ namespace ppc64 {
     template <typename T>
     using SmartValue = unisim::util::symbolic::SmartValue<T>;
 
-    struct Source : public unisim::util::symbolic::binsec::ASExprNode
+    struct Source
     {
       typedef unisim::util::symbolic::ValueType ValueType;
       Source( Arch& _arch ) : arch(_arch) {} Arch& arch;
-      unsigned SubCount() const override { return 0; };
 
       static Arch* SeekArch( unisim::util::symbolic::Expr const& expr )
       {
@@ -80,21 +79,16 @@ namespace ppc64 {
       }
     };
 
-    struct SourceForward : Source
-    {
-      using Expr = unisim::util::symbolic::Expr;
-      SourceForward( Arch& arch, Expr const& _src ) : Source(arch), src(_src) {} Expr src;
-      unsigned SubCount() const override { return 1; };
-      Expr const& GetSub(unsigned idx) const override { if (idx!= 0) return unisim::util::symbolic::ExprNode::GetSub(idx); return src; }
-      void Repr(std::ostream& sink) const override { return src->Repr(sink); }
-      int cmp(const unisim::util::symbolic::ExprNode&) const override { return 0; }
-      ExprNode* Mutate() const { return new SourceForward(*this); }
-      ValueType const* GetType() const override { return src->GetType(); }
-      int GenCode(Label& label, Variables& vars, std::ostream& sink) const { return GenerateCode(src, vars, label, sink); }
-    };
-
     template <typename RID>
-    Expr newRegRead( RID id ) { return new SourceForward( *this, new unisim::util::symbolic::binsec::RegRead<RID>( id ) ); }
+    Expr newRegRead( RID id )
+    {
+      struct RegRead : public Source, public unisim::util::symbolic::binsec::RegRead<RID>
+      {
+        RegRead( Arch& arch, RID id ) : Source(arch), unisim::util::symbolic::binsec::RegRead<RID>(id) {}
+        virtual RegRead* Mutate() const override { return new RegRead(*this); }
+      };
+      return new RegRead( *this, id );
+    }
 
     template <typename RID>
     Expr newRegWrite( RID id, Expr const& value ) { return new unisim::util::symbolic::binsec::RegWrite<RID>( id, value ); }
@@ -143,10 +137,10 @@ namespace ppc64 {
     {
       using Expr =      unisim::util::symbolic::Expr;
       using ExprNode =      unisim::util::symbolic::ExprNode;
-      BitInsertNode(Expr const& _dst, Expr const& _src, unsigned _pos, unsigned _size) : dst(_dst), src(_src), pos(_pos) {} Expr const& dst; Expr const& src; unsigned pos, size;
+      BitInsertNode(Expr const& _dst, Expr const& _src, unsigned _pos, unsigned _size) : dst(_dst), src(_src), pos(_pos) {} Expr dst, src; unsigned pos, size;
       unsigned SubCount() const override { return 2; };
       Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return dst; case 1: return src; } return ExprNode::GetSub(idx); }
-      void Repr(std::ostream& sink) const override { sink << "BitInsertNode("; dst->Repr(sink); sink << ','; src->Repr(sink); sink << ',' << pos << ")";  }
+      void Repr(std::ostream& sink) const override;
       int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<BitInsertNode const&>(rhs) ); }
       int compare(BitInsertNode const& rhs) const { if (int delta = int(size) - int(rhs.size)) return delta; return int(pos) - int(rhs.pos); }
       ExprNode* Mutate() const { return new BitInsertNode(*this); }
@@ -169,7 +163,7 @@ namespace ppc64 {
       operator U32 () { return value; }
       CR& operator= ( U32 const& _value ) { value = _value; return *this; }
 
-      struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint32_t value_type; void Repr(std::ostream& sink) const {} int cmp(ID) const { return 0; } };
+      struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint32_t value_type; void Repr(std::ostream& sink) const; int cmp(ID) const { return 0; } };
 
       CR( Arch& arch ) : value( arch.newRegRead(ID()) ) {}
 
@@ -193,7 +187,7 @@ namespace ppc64 {
       operator U64 () { return value; }
       XER& operator= ( U64 const& _value ) { value = value; return *this; }
 
-      struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint64_t value_type; void Repr(std::ostream& sink) const {} int cmp(ID) const { return 0; } };
+      struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint64_t value_type; void Repr(std::ostream& sink) const; int cmp(ID) const { return 0; } };
 
       XER( Arch& arch ) : value( arch.newRegRead(ID()) ) {}
 
@@ -384,7 +378,7 @@ namespace ppc64 {
         //   Register<FPSCR>::Set<FEX>( U64(1) );
       }
 
-      struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint32_t value_type; void Repr(std::ostream& sink) const {} int cmp(ID) const { return 0; } };
+      struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint32_t value_type; void Repr(std::ostream& sink) const; int cmp(ID) const { return 0; } };
 
       FPSCR( Arch& arch ) : value( arch.newRegRead(ID()) ) {}
 
@@ -398,16 +392,25 @@ namespace ppc64 {
     //   =====================================================================
     //   =                      Memory Transfer methods                      =
     //   =====================================================================
+    Expr newLoad( U64 const& addr, unsigned size )
+    {
+      struct Load : public Source, public unisim::util::symbolic::binsec::Load
+      {
+        Load( Arch& arch, Expr const& addr, unsigned size ) : Source(arch), unisim::util::symbolic::binsec::Load(addr, size, 0, true) {}
+        virtual Load* Mutate() const override { return new Load(*this); }
+      };
+      return new Load( *this, addr.expr, size );
+    }
 
-    bool  Int8Load (unsigned n, U64 addr) { SetGPR(n, UINT(U8 (Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 1, 0, true )))) ); return true; }
-    bool  Int16Load(unsigned n, U64 addr) { SetGPR(n, UINT(U16(Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 2, 0, true )))) ); return true; }
-    bool  Int32Load(unsigned n, U64 addr) { SetGPR(n, UINT(U32(Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 4, 0, true )))) ); return true; }
-    bool  Int64Load(unsigned n, U64 addr) { SetGPR(n, UINT(U64(Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 8, 0, true )))) ); return true; }
+    bool  Int8Load (unsigned n, U64 addr) { SetGPR(n, UINT(U8 (newLoad(addr, 1))) ); return true; }
+    bool  Int16Load(unsigned n, U64 addr) { SetGPR(n, UINT(U16(newLoad(addr, 2))) ); return true; }
+    bool  Int32Load(unsigned n, U64 addr) { SetGPR(n, UINT(U32(newLoad(addr, 4))) ); return true; }
+    bool  Int64Load(unsigned n, U64 addr) { SetGPR(n, UINT(U64(newLoad(addr, 8))) ); return true; }
 
-    bool  SInt8Load (unsigned n, U64 addr) { SetGPR(n, UINT(S8 (Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 1, 0, true )))) ); return true; }
-    bool  SInt16Load(unsigned n, U64 addr) { SetGPR(n, UINT(S16(Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 2, 0, true )))) ); return true; }
-    bool  SInt32Load(unsigned n, U64 addr) { SetGPR(n, UINT(S32(Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 4, 0, true )))) ); return true; }
-    bool  SInt64Load(unsigned n, U64 addr) { SetGPR(n, UINT(S64(Expr(new unisim::util::symbolic::binsec::Load( addr.expr, 8, 0, true )))) ); return true; }
+    bool  SInt8Load (unsigned n, U64 addr) { SetGPR(n, UINT(S8 (newLoad(addr, 1))) ); return true; }
+    bool  SInt16Load(unsigned n, U64 addr) { SetGPR(n, UINT(S16(newLoad(addr, 2))) ); return true; }
+    bool  SInt32Load(unsigned n, U64 addr) { SetGPR(n, UINT(S32(newLoad(addr, 4))) ); return true; }
+    bool  SInt64Load(unsigned n, U64 addr) { SetGPR(n, UINT(S64(newLoad(addr, 8))) ); return true; }
 
     bool  Int8Store (unsigned n, U64 addr) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, U8 (GetGPR(n)).expr, 1, 0, true ) ); return true; }
     bool  Int16Store(unsigned n, U64 addr) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, U16(GetGPR(n)).expr, 2, 0, true ) ); return true; }

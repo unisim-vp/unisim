@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2023,
+ *  Copyright (c) 2022-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -62,7 +62,16 @@ namespace ppc64 {
       if (regvalues[reg.idx()].expr != ref.regvalues[reg.idx()].expr)
         path->sinks.insert( Expr( newRegWrite( reg, regvalues[reg.idx()].expr ) ) );
 
-     return complete;
+    if (cr.value.expr != ref.cr.value.expr)
+      throw 0;
+    
+    if (xer.value.expr != ref.xer.value.expr)
+      throw 0;
+    
+    if (fpscr.value.expr != ref.fpscr.value.expr)
+      throw 0;
+    
+    return complete;
   }
 
   void
@@ -76,6 +85,19 @@ namespace ppc64 {
   {
     sink << c_str();
   }
-  
+
+  void
+  Arch::BitInsertNode::Repr(std::ostream& sink) const
+  {
+    sink << "BitInsertNode(";
+    dst->Repr(sink);
+    sink << ',';
+    src->Repr(sink);
+    sink << ',' << pos << ")";
+  }
+
+  void ppc64::Arch::FPSCR::ID::Repr(std::ostream& sink) const { sink << "fpscr"; }
+  void ppc64::Arch::XER::ID::Repr(std::ostream& sink) const { sink << "xer"; }
+  void ppc64::Arch::CR::ID::Repr(std::ostream& sink) const { sink << "cr"; }
 } // end of namespace ppc64
 

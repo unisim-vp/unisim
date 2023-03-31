@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2017-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -37,12 +37,12 @@
 
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/identifier/identifier.hh>
-#include <ostream>
-#include <map>
 #include <stdexcept>
+#include <map>
 #include <limits>
 #include <typeinfo>
 #include <cstring>
+#include <iosfwd>
 #include <inttypes.h>
 
 namespace unisim {
@@ -73,30 +73,24 @@ namespace symbolic {
   struct TypeInfo
   {
     enum { BITSIZE = 8*sizeof(VALUE_TYPE), ENCODING = std::numeric_limits<VALUE_TYPE>::is_signed ? ValueType::SIGNED : ValueType::UNSIGNED };
-    static void GetName(std::ostream& sink) { sink << "US"[std::numeric_limits<VALUE_TYPE>::is_signed] << BITSIZE; }
   };
 
   template <> struct TypeInfo<bool>
   {
     enum { BITSIZE = 1, ENCODING = ValueType::BOOL };
-    static void GetName(std::ostream& sink) { sink << "Bool"; }
   };
   template <> struct TypeInfo<float>
   {
     enum { BITSIZE = 32, ENCODING = ValueType::FLOAT };
-    static void GetName(std::ostream& sink) { sink << "F32"; }
   };
   template <> struct TypeInfo<double>
   {
     enum { BITSIZE = 64, ENCODING = ValueType::FLOAT };
-    static void GetName(std::ostream& sink) { sink << "F64"; }
   };
   template <> struct TypeInfo<long double>
   {
     enum { BITSIZE = 80, ENCODING = ValueType::FLOAT };
-    static void GetName(std::ostream& sink) { sink << "F80"; }
   };
-
 
   template <typename T>
   ValueType const* CValueType( T const& )
@@ -105,8 +99,9 @@ namespace symbolic {
     {
       NatType() : ValueType(ValueType::encoding_t(TypeInfo<T>::ENCODING)) {}
       virtual unsigned GetBitSize() const override { return TypeInfo<T>::BITSIZE; }
-      virtual void GetName(std::ostream& sink) const override { TypeInfo<T>::GetName(sink); }
+      virtual void GetName(std::ostream& sink) const override { ValueType::GetName(sink); }
     } type_desc;
+
     return &type_desc;
   }
 
@@ -235,7 +230,7 @@ namespace symbolic {
     virtual double GetFloat( double ) const = 0;
     virtual long double GetFloat( long double ) const = 0;
     virtual uint64_t GetBits( unsigned ) const = 0;
-    static std::ostream& warn();
+    virtual void Repr( std::ostream& sink ) const override;
   };
 
   typedef uint8_t shift_type;
@@ -358,7 +353,8 @@ namespace symbolic {
 
     ConstNodeBase const* Eval( EvalSpace const& evs ) const;
     ConstNodeBase const* ConstSimplify();
-
+ 
+    char const* dbgrepr() const;
     bool good() const { return node; }
     friend std::ostream& operator << (std::ostream&, Expr const&);
   };
@@ -399,14 +395,7 @@ namespace symbolic {
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<OpNodeBase const&>( rhs ) ); }
     int compare( OpNodeBase const& rhs ) const { return op.cmp( rhs.op ); }
 
-    virtual void Repr( std::ostream& sink ) const override
-    {
-      sink << op.c_str() << "( ";
-      char const* sep = "";
-      for (unsigned idx = 0, end = SubCount(); idx < end; sep = ", ", ++idx)
-        sink << sep << GetSub(idx);
-      sink << " )";
-    }
+    virtual void Repr( std::ostream& sink ) const override;
 
     Op op;
   };
@@ -418,8 +407,6 @@ namespace symbolic {
 
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
     virtual this_type* Mutate() const override { return new this_type( *this ); };
-
-    virtual void Repr( std::ostream& sink ) const override { TypeInfo<VALUE_TYPE>::GetName(sink); sink << '(' << value << ')'; }
 
     static VALUE_TYPE GetValue( ConstNodeBase const* cnb );
 
@@ -481,10 +468,12 @@ namespace symbolic {
         case Op::FMin: break;
 
         case Op::Cast: /* Should have been handled elsewhere */
-        case Op::end:   throw std::logic_error("???");
+        case Op::end:
+          break;
         }
 
-      warn() << "Unhandled unary operation: " << op.c_str() << "\n";
+      struct BadOperation {};
+      throw BadOperation();
       return 0;
     }
     float GetFloat( float ) const override { return float(value); }
@@ -545,7 +534,7 @@ namespace symbolic {
     virtual ValueType const* GetSrcType() const = 0;
     virtual unsigned SubCount() const override { return 1; };
     virtual Expr const& GetSub(unsigned idx) const override { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
-    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink); sink << "( " << src << " )"; }
+    virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<CastNodeBase const&>( rhs ) ); }
     int compare( CastNodeBase const& rhs ) const { return 0; }
 
@@ -716,7 +705,7 @@ namespace symbolic {
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
       virtual DefaultNaNNode* Mutate() const override { return new DefaultNaNNode( *this ); }
-      virtual void Repr( std::ostream& sink ) const override { sink << "DefaultNaN()"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual unsigned SubCount() const override { return 0; };
       virtual ValueType const* GetType() const override { return CValueType(ValueType::FLOAT, fsz); }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<DefaultNaNNode const&>( rhs ) ); }
@@ -755,7 +744,7 @@ namespace symbolic {
     {
       IsNaNNode( Expr const& _src, bool _signaling, bool _quiet ) : src(_src), signaling(_signaling), quiet(_quiet) {} Expr src; bool signaling, quiet;
       virtual IsNaNNode* Mutate() const override { return new IsNaNNode( *this ); }
-      virtual void Repr( std::ostream& sink ) const override { sink << "IsNaN(" << src << ", " << int(signaling) << ", " << int(quiet) << ")"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<IsNaNNode const&>( rhs ) ); }
       int compare( IsNaNNode const& rhs ) const { if (int delta = int(signaling) - int(rhs.signaling)) return delta; return int(quiet) - int(rhs.quiet); }
       virtual unsigned SubCount() const override { return 1; };
@@ -811,7 +800,7 @@ namespace symbolic {
       virtual unsigned SubCount() const override { return 3; };
       virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
 
-      virtual void Repr( std::ostream& sink ) const override { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual ValueType const* GetType() const override { return GetSub(0)->GetType(); }
 
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<MulAddNode const&>( rhs ) ); }
@@ -835,7 +824,7 @@ namespace symbolic {
       virtual unsigned SubCount() const override { return 3; };
       virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
 
-      virtual void Repr( std::ostream& sink ) const override { sink << "IsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual void Repr( std::ostream& sink ) const override;
 
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<IsInvalidMulAddNode const&>( rhs ) ); }
       int compare( IsInvalidMulAddNode const& rhs ) const { return 0; }
@@ -864,7 +853,7 @@ namespace symbolic {
       {} Expr src; int ssz; int dsz;
       virtual FtoFNode* Mutate() const override { return new FtoFNode( *this ); }
 
-      virtual void Repr( std::ostream& sink ) const override { sink << "FtoF( " << src << " )"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       virtual ValueType const* GetType() const override { return CValueType(ValueType::FLOAT, dsz); }
@@ -882,18 +871,23 @@ namespace symbolic {
       dst = SmartValue<ofpT>( Expr( new FtoFNode( src.expr, TypeInfo<ifpT>::BITSIZE, TypeInfo<ofpT>::BITSIZE ) ) );
     }
 
-    template <typename intT, typename fpT>
-    struct FtoINode : public ExprNode
+    struct FtoINodeBase : public ExprNode
     {
-      FtoINode( Expr const& _src, int _fb ) : src( _src ), fb( _fb ) {} Expr src; int fb;
-      virtual FtoINode* Mutate() const override { return new FtoINode( *this ); }
-      virtual ValueType const* GetType() const override { return CValueType(intT()); }
-
-      virtual void Repr( std::ostream& sink ) const override { sink << "FtoI( " << src << " )"; }
+      FtoINodeBase( Expr const& _src, int _fb ) : src( _src ), fb( _fb ) {}
+      virtual void Repr( std::ostream& sink ) const override;
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; }
-      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FtoINode const&>( rhs ) ); }
-      int compare( FtoINode const& rhs ) const { return fb - rhs.fb; }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FtoINodeBase const&>( rhs ) ); }
+      int compare( FtoINodeBase const& rhs ) const { return fb - rhs.fb; }
+      Expr src; int fb;
+    };
+
+    template <typename intT, typename fpT>
+    struct FtoINode : public FtoINodeBase
+    {
+      FtoINode( Expr const& _src, int _fb ) : FtoINode(_src, _fb) {}
+      virtual FtoINode* Mutate() const override { return new FtoINode( *this ); }
+      virtual ValueType const* GetType() const override { return CValueType(intT()); }
     };
 
     template <typename intT, typename fpT, class ARCH> static
@@ -902,19 +896,23 @@ namespace symbolic {
       dst = SmartValue<intT>( Expr( new FtoINode<intT,fpT>( src.expr, fracbits) ) );
     }
 
-    template <typename fpT, typename intT>
-    struct ItoFNode : public ExprNode
+    struct ItoFNodeBase : public ExprNode
     {
-      ItoFNode( Expr const& _src, int _fb )
-        : src( _src ), fb( _fb )
-      {} Expr src; int fb;
-      virtual ItoFNode* Mutate() const override { return new ItoFNode( *this ); }
-      virtual ValueType const* GetType() const override { return CValueType(fpT()); }
-      virtual void Repr( std::ostream& sink ) const override { sink << "ItoF( " << src << " )"; }
+      ItoFNodeBase( Expr const& _src, int _fb ) : src( _src ), fb( _fb ) {}
+      virtual void Repr( std::ostream& sink ) const override;
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return src; }
-      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<ItoFNode const&>( rhs ) ); }
-      int compare( ItoFNode const& rhs ) const { return fb - rhs.fb; }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<ItoFNodeBase const&>( rhs ) ); }
+      int compare( ItoFNodeBase const& rhs ) const { return fb - rhs.fb; }
+      Expr src; int fb;
+    };
+
+    template <typename fpT, typename intT>
+    struct ItoFNode : public ItoFNodeBase
+    {
+      ItoFNode( Expr const& src, int fb ) : ItoFNodeBase(src, fb) {}
+      virtual ItoFNode* Mutate() const override { return new ItoFNode( *this ); }
+      virtual ValueType const* GetType() const override { return CValueType(fpT()); }
     };
 
     template <typename fpT, typename intT, class ARCH> static

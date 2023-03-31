@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 20017-2018,
+ *  Copyright (c) 2017-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -37,6 +37,7 @@
 
 #include <unisim/util/symbolic/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
+#include <iostream>
 #include <map>
 #include <set>
 #include <vector>

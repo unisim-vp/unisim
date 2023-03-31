@@ -11,7 +11,7 @@ source "$(dirname $0)/dist_common.sh"
 function includes()
 {
     local SEARCH_PATH=$1/$2
-    local SRC_FILES=$(find ${SEARCH_PATH} -name *.cc)
+    local SRC_FILES=$(find ${SEARCH_PATH} -name "*.cc")
     for i in $(gcc -MM -I$1 -I${SEARCH_PATH} ${SRC_FILES} |\
 		   tr '\n\\' ' ' |\
 		   sed -e 's/[^ ][^ ]*\.o: [ ]*[^ ][^ ]*//g' |\
@@ -32,17 +32,30 @@ import unisim/component/cxx/processor/arm/isa/arm64 || exit
 
 # x86
 
-import unisim/component/cxx/processor/intel || exit
 import unisim/component/cxx/processor/intel/isa || exit
+
+# PPC64
+
+import unisim/component/cxx/processor/powerpc/isa/book_i/branch || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/floating_point || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/legacy_move_assist || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/syscall || exit
+import unisim/component/cxx/processor/powerpc/isa/book_ii || exit
+import unisim/component/cxx/processor/powerpc/isa/book_iii_e || exit
+import unisim/component/cxx/processor/powerpc/isa/book_e || exit
+import unisim/component/cxx/processor/powerpc/isa || exit
 
 # Common
 
 import unisim/component/cxx/vector || exit
+import unisim/util/symbolic/vector || exit
+import unisim/util/symbolic/binsec || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
 import unisim/util/likely || exit
-import unisim/util/symbolic/vector || exit
-import unisim/util/symbolic/binsec || exit
 
 import libc/inttypes || exit
 import libc/stdint || exit
@@ -83,15 +96,15 @@ for file in ${AARCH32_SRC_FILES}; do
               "${DEST_DIR}/${AARCH32_DSTDIR}/${file}"
 done
 
-mkdir -p ${AARCH32_DSTDIR}
+#mkdir -p ${AARCH32_DSTDIR}
 for isa in ${AARCH32_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${AARCH32_DSTDIR}/${isa} \
+		       -o ${DEST_DIR}/${AARCH32_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH32_SRCDIR}/${isa}.isa
 done
-rsync --remove-source-files -a ${AARCH32_DSTDIR}/* ${DEST_DIR}/${AARCH32_DSTDIR}
-rm -r ${AARCH32_DSTDIR}
+#rsync --remove-source-files -a ${AARCH32_DSTDIR}/* ${DEST_DIR}/${AARCH32_DSTDIR}
+#rm -r ${AARCH32_DSTDIR}
 
 AARCH64_SRCDIR=cxx/aarch64dba
 AARCH64_DSTDIR=aarch64
@@ -109,15 +122,15 @@ for file in ${AARCH64_SRC_FILES}; do
     "${DEST_DIR}/${AARCH64_DSTDIR}/${file}"
 done
 
-mkdir -p ${AARCH64_DSTDIR}
+#mkdir -p ${AARCH64_DSTDIR}
 for isa in ${AARCH64_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
 		       -o ${AARCH64_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${isa}.isa
 done
-rsync --remove-source-files -a ${AARCH64_DSTDIR}/* ${DEST_DIR}/${AARCH64_DSTDIR}
-rm -r ${AARCH64_DSTDIR}
+#rsync --remove-source-files -a ${AARCH64_DSTDIR}/* ${DEST_DIR}/${AARCH64_DSTDIR}
+#rm -r ${AARCH64_DSTDIR}
 
 
 AMD64_SRCDIR=cxx/amd64dba
