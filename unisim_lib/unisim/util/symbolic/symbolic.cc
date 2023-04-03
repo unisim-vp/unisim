@@ -36,6 +36,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <vector>
 #include <algorithm>
@@ -131,22 +132,22 @@ namespace symbolic {
     
     return sink;
   }
-  
+
   ConstNodeBase const*
   Expr::Eval( EvalSpace const& evs ) const
   {
     unsigned subcount = node->SubCount();
-    Expr dispose[subcount];
+    Expr args[subcount];
     ConstNodeBase const* cnbs[subcount];
     for (unsigned idx = 0; idx < subcount; ++idx)
       {
         if (not (cnbs[idx] = node->GetSub(idx).Eval( evs )))
           return 0;
-        dispose[idx] = cnbs[idx];
+        args[idx] = cnbs[idx];
       }
     return node->Eval( evs, &cnbs[0] );
   }
-    
+
   ConstNodeBase const*
   Expr::ConstSimplify()
   {
@@ -217,6 +218,86 @@ namespace symbolic {
         break;
       }
     sink << ')';
+  }
+
+  void
+  Zero::Repr( std::ostream& sink ) const
+  {
+    GetType()->GetName(sink << "Zero.");
+    sink << "()";
+  }
+
+  ValueType const*
+  Zero::GetType() const
+  {
+    struct ZTP : public ValueType
+    {
+      ZTP(bool is_signed, unsigned _bitsize) : ValueType(is_signed ? SIGNED : UNSIGNED ), bitsize(_bitsize) {}
+      virtual unsigned GetBitSize() const override { return bitsize; }
+      virtual void GetName(std::ostream& sink) const override { ValueType::GetName(sink); }
+      bool operator < (ZTP const& rhs) const { if (int delta = int(encoding) - int(rhs.encoding)) return delta < 0; return bitsize < rhs.bitsize; }
+      unsigned bitsize;
+    };
+
+    static std::set<ZTP> type_descriptors;
+    auto tp = type_descriptors.insert(ZTP(is_signed, bitsize)).first;
+
+    return &*tp;
+  }
+
+  ConstNodeBase const*
+  Zero::AsConstNode() const
+  {
+    auto tp = GetType();
+    typedef long double f80_t;
+    static Expr  F32Zero = make_const    <float>(0);
+    static Expr  F64Zero = make_const   <double>(0);
+    static Expr  F80Zero = make_const    <f80_t>(0);
+    static Expr   U8Zero = make_const  <uint8_t>(0);
+    static Expr  U16Zero = make_const <uint16_t>(0);
+    static Expr  U32Zero = make_const <uint32_t>(0);
+    static Expr  U64Zero = make_const <uint64_t>(0);
+    static Expr   S8Zero = make_const   <int8_t>(0);
+    static Expr  S16Zero = make_const  <int16_t>(0);
+    static Expr  S32Zero = make_const  <int32_t>(0);
+    static Expr  S64Zero = make_const  <int64_t>(0);
+    static Expr BOOLZero = make_const     <bool>(0);
+
+    ExprNode const* node = 0;
+
+    switch (tp->encoding)
+      {
+      case ValueType::FLOAT:
+        switch (bitsize) {
+        default: break;
+        case 32: node =  F32Zero.node; break;
+        case 64: node =  F64Zero.node; break;
+        case 80: node =  F80Zero.node; break;
+        } break;
+      case ValueType::UNSIGNED:
+        switch (bitsize) {
+        default: break;;
+        case  8: node =  U8Zero.node; break;
+        case 16: node =  U16Zero.node; break;
+        case 32: node =  U32Zero.node; break;
+        case 64: node =  U64Zero.node; break;
+        } break;
+      case ValueType::SIGNED:
+        switch (bitsize) {
+        default: break;;
+        case  8: node =  S8Zero.node; break;
+        case 16: node =  S16Zero.node; break;
+        case 32: node =  S32Zero.node; break;
+        case 64: node =  S64Zero.node; break;
+        } break;
+      case ValueType::BOOL:
+        if (bitsize == 1)
+          node =  BOOLZero.node;
+        break;
+      default:
+        break;
+      }
+    return static_cast<ConstNodeBase const*>(node);
   }
 
   void

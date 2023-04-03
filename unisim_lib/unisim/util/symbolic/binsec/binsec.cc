@@ -45,7 +45,12 @@ namespace binsec {
   std::ostream&
   operator << ( std::ostream& sink, dbx const& _ )
   {
-    sink << "0x" << std::hex << std::setw(_.bytes*2) << std::setfill('0') << _.value << std::dec;
+    std::ios_base::fmtflags f( sink.flags() );
+
+    sink << "0x" << std::hex << std::setw(_.bytes*2) << std::setfill('0') << _.value;
+
+    sink.flags( f );
+
     return sink;
   }
 
@@ -67,10 +72,10 @@ namespace binsec {
 
     struct Simplified
     {
-      Simplified(ExprNode const* _e, Expr* _subs, unsigned _subc)
-        : e(_e), subs(_subs), subc(_subc), diff(false)
+      Simplified(ExprNode const* _e, Expr* _subs, unsigned _subcount)
+        : e(_e), subs(_subs), subcount(_subcount), diff(false)
       {
-        for (unsigned idx = 0; idx < subc; ++idx)
+        for (unsigned idx = 0; idx < subcount; ++idx)
           {
             Expr const& sub = e->GetSub(idx);
             if (sub != (subs[idx] = ASExprNode::Simplify( sub )))
@@ -81,7 +86,7 @@ namespace binsec {
       {
         if (ExprNode* r = diff ? e->Mutate() : 0)
           {
-            for (unsigned idx = 0; idx < subc; ++idx)
+            for (unsigned idx = 0; idx < subcount; ++idx)
               const_cast<Expr&>(r->GetSub(idx)) = subs[idx];
             return r;
           }
@@ -89,7 +94,7 @@ namespace binsec {
       }
       ExprNode const* e;
       Expr* subs;
-      unsigned subc;
+      unsigned subcount;
       bool diff;
     } simplified(ixpr.node,&subs[0],subcount);
 
@@ -118,7 +123,7 @@ namespace binsec {
                       default:  { struct Bad {}; throw Bad(); }
                       }
 
-                    return BitFilter( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend ).mksimple();
+                    return BitFilter::mksimple( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
                   }
 
               }
@@ -143,7 +148,7 @@ namespace binsec {
                       unsigned select = arithmetic::BitScanReverse(v)+1;
                       if (select >= bitsize)
                         return subs[idx^1];
-                      return BitFilter( subs[idx^1], bitsize, 0, select, bitsize, false ).mksimple();
+                      return BitFilter::mksimple( subs[idx^1], bitsize, 0, select, bitsize, false );
                     }
               }
             break;
@@ -162,14 +167,10 @@ namespace binsec {
                 if (src_bit_size == dst_bit_size)
                   return subs[0];
 
-                return BitFilter( subs[0], src_bit_size, 0, std::min(src_bit_size, dst_bit_size), dst_bit_size, dst_bit_size > src_bit_size and src->encoding == src->SIGNED ).mksimple();
+                return BitFilter::mksimple( subs[0], src_bit_size, 0, std::min(src_bit_size, dst_bit_size), dst_bit_size, dst_bit_size > src_bit_size and src->encoding == src->SIGNED );
               }
             break;
           }
-      }
-    else if (dynamic_cast<ASExprNode const*>( ixpr.node ))
-      {
-        return dynamic_cast<ASExprNode const*>( simplified.base() )->Simplify();
       }
 
     return simplified.base();
@@ -198,9 +199,19 @@ namespace binsec {
           case ValueType::SIGNED: case ValueType::UNSIGNED:
             {
               unsigned bitsize = tp->GetBitSize();
-              if (bitsize > 64)
-                throw 0;
-              sink << dbx(bitsize / 8, node->GetBits(0));
+              if (bitsize % 8) throw 0;
+
+              {
+                std::ios_base::fmtflags f( sink.flags() );
+                sink << "0x" << std::hex << std::setfill('0');
+                unsigned bytes = bitsize / 8;
+                unsigned intro = ((bytes - 1) & 7) + 1;
+                unsigned idx = (bytes - intro)/8;
+                sink << std::setw(intro*2) << node->GetBits(idx);
+                while (idx-- > 0) sink << std::setw(16) << node->GetBits(idx);
+                sink.flags( f );
+              }
+
               return bitsize;
             }
           }
@@ -426,13 +437,13 @@ namespace binsec {
   }
 
   Expr
-  BitFilter::mksimple()
+  BitFilter::mksimple( Expr const& input, unsigned source, unsigned rshift, unsigned select, unsigned extend, bool sxtend )
   {
-    // Prevent deletion of this stack-allocated object
-    if (ExprNode::refs != 0) throw 0;
-    this->Retain();
-    Expr bf = this->Simplify();
-    return (bf.node == this) ? new BitFilter( *this ) : bf.node;
+    BitFilter bf( input, source, rshift, select, extend, sxtend );
+
+    bf.Retain(); // Prevent deletion of this stack-allocated object
+    Expr sbf = bf.Simplify();
+    return (sbf.node == &bf) ? new BitFilter( bf ) : sbf.node;
   }
 
   Expr
@@ -446,11 +457,12 @@ namespace binsec {
         ConstNodeBase const* cnb = onb->GetSub(1).Eval(EvalSpace());
         if (not cnb) return this;
         unsigned lshift = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
-        if (lshift > rshift) return this;
-        BitFilter bf( *this );
-        bf.rshift -= lshift;
-        bf.input = onb->GetSub(0);
-        return bf.mksimple();
+        if (lshift > rshift)
+          {
+            if (lshift < unsigned(rshift + select)) return this;
+            return new Zero(this->sxtend, this->extend);
+          }
+        return BitFilter::mksimple(onb->GetSub(0), this->source, this->rshift - lshift, this->select, this->extend, this->sxtend);
       }
 
     if (BitFilter const* bf = dynamic_cast<BitFilter const*>( input.node ))
@@ -466,13 +478,13 @@ namespace binsec {
         unsigned new_rshift = bf->rshift + rshift;
 
         if ((rshift + select) <= bf->select)
-          return BitFilter( bf->input, bf->source, new_rshift, select, extend, sxtend ).mksimple();
+          return BitFilter::mksimple( bf->input, bf->source, new_rshift, select, extend, sxtend );
 
         // (rshift + select) > bf->select
         if (not sxtend and bf->sxtend)
           return this;
 
-        return BitFilter( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend ).mksimple();
+        return BitFilter::mksimple( bf->input, bf->source, new_rshift, bf->select - rshift, extend, bf->sxtend );
       }
 
     return this;

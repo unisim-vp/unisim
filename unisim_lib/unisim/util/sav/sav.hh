@@ -37,6 +37,7 @@
 
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/random/random.hh>
+#include <iostream>
 #include <map>
 #include <set>
 #include <inttypes.h>
@@ -57,19 +58,7 @@ namespace sav {
 
     ActionNode() : unisim::util::symbolic::Conditional<ActionNode>(), updates() {}
 
-    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
-    {
-      for (auto && update : an.updates)
-        sink << update << ";\n";
-      if (not an.cond.node)
-        return sink;
-      sink << "if (" << an.cond << ")\n{\n";
-      if (auto nxt = an.nexts[0]) sink << *nxt;
-      sink << "}\nelse\n{\n";
-      if (auto nxt = an.nexts[1]) sink << *nxt;
-      sink << "}\n";
-      return sink;
-    }
+    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an);
 
     void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
 

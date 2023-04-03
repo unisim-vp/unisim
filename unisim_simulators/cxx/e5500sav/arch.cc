@@ -47,7 +47,9 @@ namespace ut
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
   void FPSCR::FPSCRNode::Repr( std::ostream& sink ) const { sink << "FPSCR"; }
-  
+  void Arch::CIA::Repr( std::ostream& sink ) const { sink << "CIA"; }
+  void Unknown::Repr( std::ostream& sink ) const { sink << "?"; }
+
   Interface::Interface( e5500::Operation& op )
     : xer(0)
     , cr(0)

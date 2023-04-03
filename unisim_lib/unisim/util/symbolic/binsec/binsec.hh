@@ -217,20 +217,15 @@ namespace binsec {
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
-    virtual Expr Simplify() const { return this; }
     static  Expr Simplify( Expr const& );
   };
 
   struct BitFilter : public ASExprNode
   {
-    BitFilter( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend )
-      : input(_input), source(_source), pad0(), rshift(_rshift), pad1(), select(_select), pad2(), extend(_extend), sxtend(_sxtend)
-    {}
+    static Expr mksimple( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend );
 
-    Expr mksimple();
     virtual BitFilter* Mutate() const override { return new BitFilter( *this ); }
-    virtual Expr Simplify() const override;
-    virtual ValueType const* GetType() const { return CValueType(ValueType::UNSIGNED, extend); }
+    virtual ValueType const* GetType() const { return CValueType(sxtend ? ValueType::SIGNED : ValueType::UNSIGNED, extend); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
@@ -239,16 +234,23 @@ namespace binsec {
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
 
     virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const;
-    
+
+  private:
+    BitFilter(BitFilter const&) = default;
+    BitFilter( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend )
+      : input(_input), source(_source), pad0(), rshift(_rshift), pad1(), select(_select), pad2(), extend(_extend), sxtend(_sxtend)
+    {}
+    Expr Simplify() const;
+
     Expr     input;
-    uint64_t source   : 15;
+    uint64_t source   : 15; // Source bit size
     uint64_t pad0     :  1;
-    uint64_t rshift   : 15;
+    uint64_t rshift   : 15; // Source less significant bit selected
     uint64_t pad1     :  1;
-    uint64_t select   : 15;
+    uint64_t select   : 15; // Source selected bit size
     uint64_t pad2     :  1;
-    uint64_t extend   : 15;
-    uint64_t sxtend   :  1;
+    uint64_t extend   : 15; // Destination bit size
+    uint64_t sxtend   :  1; // Destination is signed extended from `select` to `extend`
   };
 
   struct GetCode

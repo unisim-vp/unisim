@@ -578,10 +578,7 @@ public:
               core.path->add_sink( newRegWrite( NeonReg(reg), value ) );
             else
               {
-                unisim::util::symbolic::binsec::BitFilter bf( value, 64, 0, size*8, size*8, false );
-                bf.Retain(); // Not a heap-allocated object (never delete);
-                value = bf.Simplify();
-                if (value.node == &bf) value = new unisim::util::symbolic::binsec::BitFilter( bf );
+                value = unisim::util::symbolic::binsec::BitFilter::mksimple( value, 64, 0, size*8, size*8, false );
                 core.path->add_sink( newPartialRegWrite( NeonReg(reg), 8*pos, 8*size, value ) );
               }
           }
@@ -620,12 +617,12 @@ public:
         unsigned src = pos;
         do { src = src & (src-1); } while (not neonregs[reg][src].node);
         unsigned shift = 8*(pos - src);
-        return new unisim::util::symbolic::binsec::BitFilter( neonregs[reg][src], 64, shift, 8*size, 64, false );
+        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][src], 64, shift, 8*size, 64, false );
       }
     else if (not neonregs[reg][(pos|size)&(NEONSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
-        return new unisim::util::symbolic::binsec::BitFilter( neonregs[reg][pos], 64, 0, 8*size, 64, false );
+        return unisim::util::symbolic::binsec::BitFilter::mksimple( neonregs[reg][pos], 64, 0, 8*size, 64, false );
       }
     else if ((size > 1) and (neonregs[reg][pos|(size >> 1)].node))
       {
@@ -705,10 +702,10 @@ public:
   void SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
   {
     using unisim::util::symbolic::binsec::BitFilter;
+
     auto uvalue = ucast( value );
     unsigned usz = tsizeof( uvalue );
-    Expr neonval( new BitFilter( uvalue.expr, usz*8, 0, usz*8, 64, false ) );
-    eneonwrite( reg, usz, usz*idx, neonval );
+    eneonwrite( reg, usz, usz*idx, BitFilter::mksimple( uvalue.expr, usz*8, 0, usz*8, 64, false ) );
   }
 
   template <class ELEMT>
@@ -733,7 +730,7 @@ public:
 
   void BranchExchange( U32 const& target, branch_type_t branch_type )
   {
-    cpsr.nthumb = new unisim::util::symbolic::binsec::BitFilter( target.expr, 32, 0, 1, 1, false );
+    cpsr.nthumb = unisim::util::symbolic::binsec::BitFilter::mksimple( target.expr, 32, 0, 1, 1, false );
     Branch( target, branch_type );
   }
 

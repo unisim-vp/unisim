@@ -63,7 +63,15 @@ namespace ppc64 {
         path->sinks.insert( Expr( newRegWrite( reg, regvalues[reg.idx()].expr ) ) );
 
     if (cr.value.expr != ref.cr.value.expr)
-      throw 0;
+      {
+        for (unsigned idx = 32; idx-- > 0;)
+          {
+            Expr crbit = unisim::util::symbolic::binsec::BitFilter::mksimple(cr.value.expr, 32, 31 ^ idx, 1, 1, false);
+            crbit->Repr(std::cerr << "cr<" << idx << ">: ");
+            std::cerr << '\n';
+          }
+        throw 0;
+      }
     
     if (xer.value.expr != ref.xer.value.expr)
       throw 0;

@@ -176,17 +176,6 @@ struct ProcessorBase
     int cmp(VRegID const& rhs) const { return int(reg) - int(rhs.reg); }
   };
 
-  struct VClear : public unisim::util::symbolic::binsec::ASExprNode
-  {
-    VClear(unsigned _size) : size(_size) {} unsigned size;
-    virtual VClear* Mutate() const override { return new VClear( *this ); };
-    virtual unsigned SubCount() const override { return 0; };
-    virtual void Repr( std::ostream& sink ) const override;
-    ValueType const* GetType() const override;
-    virtual int cmp( ExprNode const& rhs ) const override { return 0; }
-    virtual int GenCode(unisim::util::symbolic::binsec::Label&, unisim::util::symbolic::binsec::Variables&, std::ostream& sink) const;
-  };
-
   // VRegRead should never be a binsec::node (no dba available for it)
   // struct VRegRead : public unisim::util::symbolic::ExprNode
   // {
@@ -698,7 +687,6 @@ template <class MODE>
 ProcessorBase::Expr
 Processor<MODE>::eregread( unsigned reg, unsigned size, unsigned pos ) const
 {
-  using unisim::util::symbolic::ExprNode;
   using unisim::util::symbolic::make_const;
 
   if (not regvalues[reg][pos].node)
@@ -707,12 +695,12 @@ Processor<MODE>::eregread( unsigned reg, unsigned size, unsigned pos ) const
       unsigned src = pos;
       do { src = src & (src-1); } while (not regvalues[reg][src].node);
       unsigned shift = 8*(pos - src);
-      return new unisim::util::symbolic::binsec::BitFilter( regvalues[reg][src], 8*GREGSIZE, shift, 8*size, 8*GREGSIZE, false );
+      return unisim::util::symbolic::binsec::BitFilter::mksimple( regvalues[reg][src], 8*GREGSIZE, shift, 8*size, 8*GREGSIZE, false );
     }
   else if (not regvalues[reg][(pos|size)&(GREGSIZE-1)].node)
     {
       // requested read is in lower bits of a larger value
-      return new unisim::util::symbolic::binsec::BitFilter( regvalues[reg][pos], 8*GREGSIZE, 0, 8*size, 8*GREGSIZE, false );
+      return unisim::util::symbolic::binsec::BitFilter::mksimple( regvalues[reg][pos], 8*GREGSIZE, 0, 8*size, 8*GREGSIZE, false );
     }
   else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
     {
@@ -768,7 +756,7 @@ Processor<MODE>::vregsinks( Processor<MODE> const& ref, unsigned reg ) const
   unsigned const vector_size = umms[reg].size;
 
   if (unsigned psize = 8*(VUConfig::BYTECOUNT - vector_size))
-    path->add_sink( newPartialRegWrite( VRegID(reg), 8*vector_size, psize, new VClear(psize) ) );
+    path->add_sink( newPartialRegWrite( VRegID(reg), 8*vector_size, psize, new unisim::util::symbolic::Zero(false, psize) ) );
 
   if (vector_size == 0)
     return;
@@ -820,10 +808,7 @@ Processor<MODE>::eregsinks( Processor<MODE> const& ref, unsigned reg ) const
             core.path->add_sink( newRegWrite( IRegID(reg), value ) );
           else
             {
-              unisim::util::symbolic::binsec::BitFilter bf( value, 8*GREGSIZE, 0, 8*size, 8*size, false );
-              bf.Retain(); // Not a heap-allocated object (never delete);
-              value = bf.Simplify();
-              if (value.node == &bf) value = new unisim::util::symbolic::binsec::BitFilter( bf );
+              value = unisim::util::symbolic::binsec::BitFilter::mksimple( value, 8*GREGSIZE, 0, 8*size, 8*size, false );
               core.path->add_sink( newPartialRegWrite( IRegID(reg), 8*pos, 8*size, value ) );
             }
         }

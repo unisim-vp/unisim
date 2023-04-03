@@ -141,6 +141,20 @@ namespace symbolic {
     virtual ValueType const* GetType() const = 0;
   };
 
+  struct Zero : public ExprNode
+  {
+    Zero(bool _is_signed, unsigned _bitsize) : bitsize(_bitsize), is_signed(_is_signed) {} unsigned bitsize; bool is_signed;
+    virtual Zero* Mutate() const override { return new Zero( *this ); };
+    virtual unsigned SubCount() const override { return 0; };
+    virtual ConstNodeBase const* AsConstNode() const override;
+    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return AsConstNode(); }
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual ValueType const* GetType() const override;
+    virtual int cmp( ExprNode const& rhs ) const override { return 0; }
+    // virtual int cmp( ExprNode const& rhs ) const override { return compare(dunamic_cast<Zero const&>(rhs)); }
+    // int compare(Zero const& rhs) const { if (int delta = int(is_signed) - rhs.is_signed) return delta; return int(bitsize) - int (rhs.bitsize); }
+  };
+
   struct Op : public identifier::Identifier<Op>
   {
     enum Code
@@ -885,7 +899,7 @@ namespace symbolic {
     template <typename intT, typename fpT>
     struct FtoINode : public FtoINodeBase
     {
-      FtoINode( Expr const& _src, int _fb ) : FtoINode(_src, _fb) {}
+      FtoINode( Expr const& _src, int _fb ) : FtoINodeBase(_src, _fb) {}
       virtual FtoINode* Mutate() const override { return new FtoINode( *this ); }
       virtual ValueType const* GetType() const override { return CValueType(intT()); }
     };

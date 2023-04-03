@@ -173,11 +173,11 @@ namespace ut
     
     Unknown( Arch& _arch ) : ArchExprNode( _arch ) {}
     virtual Unknown* Mutate() const override { return new Unknown(*this); }
-    virtual void Repr( std::ostream& sink ) const { sink << "?"; }
-    virtual unsigned SubCount() const { return 0; };
-    virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual unsigned SubCount() const override { return 0; };
+    virtual Expr const& GetSub(unsigned idx) const override { return ExprNode::GetSub(idx); };
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
   };
   
   template <class T>
@@ -499,13 +499,12 @@ namespace ut
     U64          reg_values[32];
     U64          cia;
     SoftDouble   fpr_values[32];
-    
-    
+
     struct CIA : public ArchExprNode
     {
       CIA( Arch& _arch ) : ArchExprNode( _arch ) {}
       virtual CIA* Mutate() const override { return new CIA(*this); }
-      virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
       virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }

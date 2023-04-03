@@ -17,6 +17,7 @@ import unisim/component/cxx/processor/powerpc/isa/book_e || exit
 import unisim/component/cxx/processor/powerpc/isa/book_vle || exit
 import unisim/component/cxx/processor/powerpc/isa/lsp || exit
 import unisim/component/cxx/processor/powerpc/isa/mpu || exit
+import unisim/component/cxx/processor/powerpc/isa || exit
 import unisim/component/cxx/processor/powerpc || exit
 
 # ARMv7
