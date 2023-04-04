@@ -310,10 +310,13 @@ struct Checker
         if (not relval.good()) return 0;
 
         uint64_t value;
-        if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
-          { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value; }
+        {
+          Expr scratch = relval;
+        if (auto v = scratch.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
+          { value = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value; }
         else
-          throw "WTF";
+          { struct WTF {}; throw WTF(); }
+        }
 
         return value;
       }

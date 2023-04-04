@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -72,7 +72,7 @@ namespace symbolic {
       }
     sink << bitsize;
   }
-  
+
   ValueType const* CValueType(ValueType::encoding_t encoding, unsigned bitsize)
   {
     typedef long double f80_t;
@@ -129,27 +129,36 @@ namespace symbolic {
       expr->Repr( sink );
     else
       sink << "*null*";
-    
+
     return sink;
   }
 
+  ConstNodeBase const* Evaluator::Simplify( Expr& expr, EvalSpace const& evs ) const { return expr.Simplify(*this, evs); }
+
   ConstNodeBase const*
-  Expr::Eval( EvalSpace const& evs ) const
+  Expr::Eval( EvalSpace const& evs )
   {
-    unsigned subcount = node->SubCount();
-    Expr args[subcount];
-    ConstNodeBase const* cnbs[subcount];
-    for (unsigned idx = 0; idx < subcount; ++idx)
+    struct FullConstantPropagation : public Evaluator
+    {
+      struct Stop {};
+      ConstNodeBase const* Simplify( Expr& expr, EvalSpace const& evs ) const override
       {
-        if (not (cnbs[idx] = node->GetSub(idx).Eval( evs )))
-          return 0;
-        args[idx] = cnbs[idx];
+        if (ConstNodeBase const* res = expr.Simplify(*this, evs))
+          return res;
+        throw FullConstantPropagation::Stop();
+        return 0;
       }
-    return node->Eval( evs, &cnbs[0] );
+    } evaluator;
+
+    try { return Simplify(evaluator, evs); }
+
+    catch (FullConstantPropagation::Stop const&) {}
+
+    return 0;
   }
 
   ConstNodeBase const*
-  Expr::ConstSimplify()
+  Expr::Simplify( Evaluator const& evaluator, EvalSpace const& evs )
   {
     unsigned subcount = node->SubCount();
     Expr args[subcount];
@@ -157,12 +166,13 @@ namespace symbolic {
     bool const_args = true, simplified = false;
     for (unsigned idx = 0; idx < subcount; ++idx)
       {
-        if (not (cnbs[idx] = (args[idx] = node->GetSub(idx)).ConstSimplify()))
+        args[idx] = node->GetSub(idx);
+        if (not (cnbs[idx] = evaluator.Simplify(args[idx], evs)))
           const_args = false;
         if (args[idx] != node->GetSub(idx))
           simplified = true;
       }
-    
+
     if (const_args)
       {
         if (ConstNodeBase const* cn = node->Eval( EvalSpace(), &cnbs[0] ))
@@ -179,10 +189,10 @@ namespace symbolic {
           const_cast<Expr&>( nn->GetSub(idx) ) = args[idx];
         *this = Expr( nn );
       }
-    
+
     return 0;
   }
-    
+
   void
   OpNodeBase::Repr( std::ostream& sink ) const
   {
@@ -316,46 +326,46 @@ namespace symbolic {
   void FP::ItoFNodeBase::Repr( std::ostream& sink ) const { sink << "ItoF( " << src << " )"; }
 
   bool   EvalMul( bool, bool ) { throw std::logic_error( "No * for bool." ); }
-  
+
   long double   EvalMod( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalMod( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalMod( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
-  
+
   long double   EvalXor( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
-  
+
   long double   EvalAnd( long double l, long double r ) { throw std::logic_error( "No & for long double." ); }
   double   EvalAnd( double l, double r ) { throw std::logic_error( "No & for double." ); }
   float    EvalAnd( float l, float r ) { throw std::logic_error( "No & for float." ); }
-  
+
   long double   EvalOr( long double l, long double r ) { throw std::logic_error( "No | for long double." ); }
   double   EvalOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
   float    EvalOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
-  
+
   long double   EvalNot( long double val ) { throw std::logic_error( "No ~ for long double." ); }
   double   EvalNot( double val ) { throw std::logic_error( "No ~ for double." ); }
   float    EvalNot( float val ) { throw std::logic_error( "No ~ for float." ); }
-  
+
   bool   EvalSHL( bool, shift_type ) { throw std::logic_error( "No << for bool." ); }
   long double   EvalSHL( long double, shift_type ) { throw std::logic_error( "No << for long double." ); }
   double   EvalSHL( double, shift_type ) { throw std::logic_error( "No << for double." ); }
   float    EvalSHL( float, shift_type ) { throw std::logic_error( "No << for float." ); }
-  
+
   long double   EvalSHR( long double, shift_type ) { throw std::logic_error( "No >> for long double." ); }
   double   EvalSHR( double, shift_type ) { throw std::logic_error( "No >> for double." ); }
   float    EvalSHR( float, shift_type ) { throw std::logic_error( "No >> for float." ); }
-  
+
   uint32_t EvalByteSwap( uint32_t v ) { return unisim::util::endian::ByteSwap( v ); }
   uint16_t EvalByteSwap( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }
-  
+
   uint32_t EvalBitScanReverse( uint32_t v ) { return unisim::util::arithmetic::BitScanReverse( v ); }
 
   uint32_t EvalBitScanForward( uint32_t v ) { return unisim::util::arithmetic::BitScanForward( v ); }
-  
+
   uint32_t EvalPopCount( uint32_t v ) { return unisim::util::arithmetic::PopCount( v ); }
   uint64_t EvalPopCount( uint64_t v ) { return unisim::util::arithmetic::PopCount( v ); }
-  
+
   uint32_t EvalRotateRight( uint32_t v, shift_type s ) { return unisim::util::arithmetic::RotateRight( v, s ); }
   uint64_t EvalRotateRight( uint64_t v, shift_type s ) { return unisim::util::arithmetic::RotateRight( v, s ); }
 

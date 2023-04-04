@@ -152,10 +152,13 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, unsigned size, b
 {
   aligned &= isaligned;
   uint32_t zaddr;
-  if (auto z = addr.Eval( Scanner::AddrEval() ))
-    { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*z).value; }
-  else
-    throw "WTF";
+  {
+    Expr scratch = addr;
+    if (auto z = scratch.Eval( Scanner::AddrEval() ))
+      { zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*z).value; }
+    else
+      { struct WTF {}; throw WTF(); }
+  }
 
   if (not base_addr.good() or int32_t(zaddr - memrange[1]) > 0)
     {

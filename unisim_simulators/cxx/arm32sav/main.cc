@@ -371,10 +371,13 @@ struct Checker
         if (not relval.good()) return 0;
         
         uint32_t value;
-        if (auto v = relval.Eval(Scanner::RelocEval(&ws[data_index(1)], tif, uintptr_t(ws))))
-          { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*v).value; }
-        else
-          throw "WTF";
+        {
+          Expr scratch = relval;
+          if (auto v = scratch.Eval(Scanner::RelocEval(&ws[data_index(1)], tif, uintptr_t(ws))))
+            { value = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*v).value; }
+          else
+            { struct WTF {}; throw WTF(); }
+        }
 
         return value;
       }

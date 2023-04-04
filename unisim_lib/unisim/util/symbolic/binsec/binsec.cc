@@ -109,7 +109,7 @@ namespace binsec {
           case Op::Lsr:
             if (subcount == 2)
               {
-                if (ConstNodeBase const* cnb = subs[1].Eval(EvalSpace()))
+                if (ConstNodeBase const* cnb = subs[1]->AsConstNode())
                   {
                     unsigned sh = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
                     unsigned bitsize = subs[0]->GetType()->GetBitSize();
@@ -134,22 +134,23 @@ namespace binsec {
             if (subcount == 2)
               {
                 for (unsigned idx = 0; idx < 2; ++idx)
-                  if (ConstNodeBase const* node = subs[idx].Eval(EvalSpace()))
-                    {
-                      Expr dispose(node);
-                      unsigned bitsize = node->GetType()->GetBitSize();
-                      if (bitsize > 64)
-                        continue;
-                      uint64_t v = node->GetBits(0);
-                      if (v & (v+1))
-                        continue;
-                      if (v == 0)
-                        return subs[idx];
-                      unsigned select = arithmetic::BitScanReverse(v)+1;
-                      if (select >= bitsize)
-                        return subs[idx^1];
-                      return BitFilter::mksimple( subs[idx^1], bitsize, 0, select, bitsize, false );
-                    }
+                  {
+                    if (ConstNodeBase const* node = subs[idx]->AsConstNode())
+                      {
+                        unsigned bitsize = node->GetType()->GetBitSize();
+                        if (bitsize > 64)
+                          continue;
+                        uint64_t v = node->GetBits(0);
+                        if (v & (v+1))
+                          continue;
+                        if (v == 0)
+                          return subs[idx];
+                        unsigned select = arithmetic::BitScanReverse(v)+1;
+                        if (select >= bitsize)
+                          return subs[idx^1];
+                        return BitFilter::mksimple( subs[idx^1], bitsize, 0, select, bitsize, false );
+                      }
+                  }
               }
             break;
 
@@ -188,9 +189,9 @@ namespace binsec {
       }
 
     /*** Sub expression process ***/
-    if (ConstNodeBase const* node = expr.Eval(EvalSpace()))
+    Expr constant = expr;
+    if (ConstNodeBase const* node = constant.Eval(EvalSpace()))
       {
-        Expr dispose( node );
         auto tp = node->GetType();
         switch (tp->encoding)
           {
@@ -455,7 +456,8 @@ namespace binsec {
     if (OpNodeBase const* onb = input->AsOpNode())
       {
         if (onb->op.code != onb->op.Lsl) return this;
-        ConstNodeBase const* cnb = onb->GetSub(1).Eval(EvalSpace());
+        Expr scratch = onb->GetSub(1);
+        ConstNodeBase const* cnb = scratch.Eval(EvalSpace());
         if (not cnb) return this;
         unsigned lshift = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
         if (lshift > rshift)

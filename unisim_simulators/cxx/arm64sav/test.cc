@@ -181,10 +181,13 @@ void
 Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
 {
   uint64_t zaddr;
-  if (auto z = addr.Eval( Scanner::AddrEval() ))
-    { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*z).value; }
-  else
-    throw "WTF";
+  {
+    Expr scratch = addr;
+    if (auto z = scratch.Eval( Scanner::AddrEval() ))
+      { zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*z).value; }
+    else
+      { struct WTF {}; throw WTF(); }
+  }
   addrs.insert(zaddr);
 
   if (zaddr == *addrs.begin())

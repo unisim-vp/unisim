@@ -68,7 +68,7 @@ namespace symbolic {
     virtual void GetName(std::ostream&) const = 0;
     int cmp(ValueType const& rhs) const { return this < &rhs ? -1 : this > &rhs ? +1 : 0; }
   };
-  
+
   template <typename VALUE_TYPE>
   struct TypeInfo
   {
@@ -113,7 +113,7 @@ namespace symbolic {
   {
     static ValueType const* GetType() { return CValueType(typename T::value_type()); }
   };
-  
+
   struct Expr;
 
   struct ConstNodeBase;
@@ -121,24 +121,38 @@ namespace symbolic {
 
   struct EvalSpace { virtual ~EvalSpace() {} };
 
+  struct Evaluator
+  {
+    virtual ~Evaluator() {}
+    virtual ConstNodeBase const* Simplify(Expr&, EvalSpace const&) const;
+  };
+
   struct ExprNode
   {
-    virtual ~ExprNode() {}
+    /* Resource management */
     ExprNode() : refs(0) {}
     ExprNode(ExprNode const&) : refs(0) {}
-    mutable uintptr_t refs;
+    virtual ~ExprNode() {}
     void Retain() const { ++refs; }
     void Release() const { if (--refs == 0) delete this; }
-    /* Generic functions */
+    virtual ExprNode* Mutate() const = 0;
+    /* Expression-Tree accessors */
     virtual unsigned SubCount() const = 0;
     virtual Expr const& GetSub(unsigned idx) const { throw std::logic_error("out of bound sub expression"); }
-    virtual void Repr( std::ostream& sink ) const = 0;
+    /* Value accessors */
     virtual int cmp( ExprNode const& ) const = 0;
-    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return 0; }
-    virtual ConstNodeBase const* AsConstNode() const { return 0; }
-    virtual OpNodeBase const*    AsOpNode() const { return 0; }
-    virtual ExprNode* Mutate() const = 0;
     virtual ValueType const* GetType() const = 0;
+    virtual ConstNodeBase const* AsConstNode() const { return 0; } /* Cannot allocate */
+    virtual OpNodeBase const*    AsOpNode() const { return 0; } /* Cannot allocate */
+    /* Debugging */
+    virtual void Repr( std::ostream& sink ) const = 0;
+
+  private:
+    friend class Expr;
+
+    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return 0; } /* may allocate */
+
+    mutable uintptr_t refs;
   };
 
   struct Zero : public ExprNode
@@ -365,9 +379,11 @@ namespace symbolic {
     bool operator  < ( Expr const& rhs ) const { return compare( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return compare( rhs )  > 0; }
 
-    ConstNodeBase const* Eval( EvalSpace const& evs ) const;
-    ConstNodeBase const* ConstSimplify();
- 
+    ConstNodeBase const* Eval( EvalSpace const& evs );
+    ConstNodeBase const* ConstSimplify() { return Simplify(Evaluator(), EvalSpace()); }
+
+    ConstNodeBase const* Simplify( Evaluator const& evaluator, EvalSpace const& evs );
+
     char const* dbgrepr() const;
     bool good() const { return node; }
     friend std::ostream& operator << (std::ostream&, Expr const&);
