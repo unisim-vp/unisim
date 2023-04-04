@@ -1231,7 +1231,7 @@ namespace
         if (instruction.bytecount == 2)
           encoding &= 0xffff;
 
-        sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(instruction.bytecount, encoding) << ")\n(size . " << (instruction.bytecount) << ")\n";
+        sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(instruction.bytecount, encoding) << ")\n(size . " << std::dec << (instruction.bytecount) << ")\n";
       }
 
       Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
@@ -1299,7 +1299,7 @@ namespace
       program.Generate( coderoot );
       typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
       for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-        sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << itr->first << ") " << itr->second << std::endl;
+        sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << std::dec << itr->first << ") " << itr->second << std::endl;
     }
 
     StatusRegister const& status;

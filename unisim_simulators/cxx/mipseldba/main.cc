@@ -377,7 +377,7 @@ struct Translator
     program.Generate( coderoot );
     typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
     for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-      sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << itr->first << ") " << itr->second << std::endl;
+      sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << std::dec << itr->first << ") " << itr->second << std::endl;
   }
 
   uint32_t    addr, code;

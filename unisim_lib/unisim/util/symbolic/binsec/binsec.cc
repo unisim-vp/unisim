@@ -207,7 +207,8 @@ namespace binsec {
                 unsigned bytes = bitsize / 8;
                 unsigned intro = ((bytes - 1) & 7) + 1;
                 unsigned idx = (bytes - intro)/8;
-                sink << std::setw(intro*2) << node->GetBits(idx);
+                uint64_t intromask = uint64_t(-1) >> (-bitsize & 0x3f);
+                sink << std::setw(intro*2) << (node->GetBits(idx) & intromask);
                 while (idx-- > 0) sink << std::setw(16) << node->GetBits(idx);
                 sink.flags( f );
               }
