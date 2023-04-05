@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -300,28 +300,21 @@ namespace review
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
 
-    struct AddrEval : public unisim::util::symbolic::EvalSpace {};
-    struct RelocEval : public unisim::util::symbolic::EvalSpace
+    struct ExpectedAddress : public unisim::util::symbolic::ExprNode
     {
-      RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
-      uint64_t const* regvalues;
-      uint64_t address;
+      ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+      virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+      virtual int cmp(ExprNode const& rhs) const override { return 0; }
+      virtual unsigned SubCount() const override { return 0; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+      virtual unisim::util::symbolic::ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
 
     struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
     {
       GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-      {
-        if (dynamic_cast<AddrEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
-        if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( l->regvalues[idx] );
-        return 0;
-      };
     };
-
 
     struct RegWriteBase : public Update
     {
@@ -448,13 +441,6 @@ namespace review
 
     struct RIPRead : public SPRRead<RIP>
     {
-      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-      {
-        if (dynamic_cast<AddrEval const*>( &evs ))
-          throw unisim::util::sav::Untestable("RIP relative addressing");
-        return 0;
-      }
     };
 
     struct RIPWrite : public RegWriteBase

@@ -106,7 +106,6 @@ struct Scanner
   typedef unisim::util::symbolic::ExprNode ExprNode;
   typedef unisim::util::symbolic::ValueType ValueType;
   typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-  typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
   struct Config
   {
@@ -120,18 +119,6 @@ struct Scanner
     static bool const     insnsRM = false;
     static bool const     insnsT2 = true;
     static bool const     insns7  = true;
-  };
-
-  struct AddrEval : public EvalSpace {};
-
-  struct RelocEval : public EvalSpace
-  {
-    RelocEval( uint32_t const* _regs, Interface const& _tif, uint32_t _address )
-      : regs(_regs), tif(_tif), address(_address) {}
-    uint32_t GetReg(unsigned reg) const { return regs[tif.gindex(reg)]; }
-    uint32_t const* regs;
-    Interface const& tif;
-    uint32_t address;
   };
 
   struct Update : public ExprNode
@@ -157,7 +144,6 @@ struct Scanner
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-    ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
 
     RID id;
   };
@@ -213,14 +199,6 @@ struct Scanner
   struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
   {
     GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-    virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( uint64_t(reg) << 28 );
-      if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( l->GetReg(reg) );
-      return 0;
-    };
   };
 
   struct RegWriteBase : public Update
@@ -301,12 +279,6 @@ struct Scanner
     typedef uint32_t value_type;
     char const* c_str() const { return "pc"; }
     int cmp( PC const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("pc-relative addressing");
-      return 0;
-    }
   };
 
   struct Flag : public unisim::util::identifier::Identifier<Flag>, public unisim::util::symbolic::WithValueType<Flag>
@@ -318,12 +290,6 @@ struct Scanner
     {
       static char const* names[] = {"n", "z", "c", "v", "NA"};
       return names[int(code)];
-    }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("flag-dependant addressing");
-      return 0;
     }
 
     Flag() : code(end) {}

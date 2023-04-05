@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -190,7 +190,7 @@ namespace binsec {
 
     /*** Sub expression process ***/
     Expr constant = expr;
-    if (ConstNodeBase const* node = constant.Eval(EvalSpace()))
+    if (ConstNodeBase const* node = constant.ConstSimplify())
       {
         auto tp = node->GetType();
         switch (tp->encoding)
@@ -456,10 +456,15 @@ namespace binsec {
     if (OpNodeBase const* onb = input->AsOpNode())
       {
         if (onb->op.code != onb->op.Lsl) return this;
-        Expr scratch = onb->GetSub(1);
-        ConstNodeBase const* cnb = scratch.Eval(EvalSpace());
-        if (not cnb) return this;
-        unsigned lshift = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
+
+        unsigned lshift;
+        try
+          {
+            Expr scratch = onb->GetSub(1);
+            lshift = dynamic_cast<ConstNode<shift_type> const&>(*FullEval().Simplify(scratch)).value;
+          }
+        catch (FullEval::Failure) { return this; }
+
         if (lshift > rshift)
           {
             if (lshift < unsigned(rshift + select)) return this;
@@ -504,7 +509,7 @@ namespace binsec {
   }
 
   ConstNodeBase const*
-  BitFilter::Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const
+  BitFilter::Eval( ConstNodeBase const** cnbs ) const
   {
     ConstNodeBase const* args[2] = {cnbs[0], 0};
     Expr dispose;

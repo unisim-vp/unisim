@@ -133,32 +133,18 @@ namespace symbolic {
     return sink;
   }
 
-  ConstNodeBase const* Evaluator::Simplify( Expr& expr, EvalSpace const& evs ) const { return expr.Simplify(*this, evs); }
+  ConstNodeBase const* Evaluator::Simplify( Expr& expr ) const { return expr.Simplify(*this); }
 
-  ConstNodeBase const*
-  Expr::Eval( EvalSpace const& evs )
+  ConstNodeBase const* FullEval::Simplify(Expr& expr) const
   {
-    struct FullConstantPropagation : public Evaluator
-    {
-      struct Stop {};
-      ConstNodeBase const* Simplify( Expr& expr, EvalSpace const& evs ) const override
-      {
-        if (ConstNodeBase const* res = expr.Simplify(*this, evs))
-          return res;
-        throw FullConstantPropagation::Stop();
-        return 0;
-      }
-    } evaluator;
-
-    try { return Simplify(evaluator, evs); }
-
-    catch (FullConstantPropagation::Stop const&) {}
-
+    if (auto res = expr.Simplify(*this))
+      return res;
+    throw Failure {};
     return 0;
   }
 
   ConstNodeBase const*
-  Expr::Simplify( Evaluator const& evaluator, EvalSpace const& evs )
+  Expr::Simplify( Evaluator const& evaluator )
   {
     unsigned subcount = node->SubCount();
     Expr args[subcount];
@@ -167,7 +153,7 @@ namespace symbolic {
     for (unsigned idx = 0; idx < subcount; ++idx)
       {
         args[idx] = node->GetSub(idx);
-        if (not (cnbs[idx] = evaluator.Simplify(args[idx], evs)))
+        if (not (cnbs[idx] = evaluator.Simplify( args[idx] )))
           const_args = false;
         if (args[idx] != node->GetSub(idx))
           simplified = true;
@@ -175,7 +161,7 @@ namespace symbolic {
 
     if (const_args)
       {
-        if (ConstNodeBase const* cn = node->Eval( EvalSpace(), &cnbs[0] ))
+        if (ConstNodeBase const* cn = node->Eval( &cnbs[0] ))
           {
             *this = Expr( cn );
             return cn;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -267,7 +267,8 @@ namespace ccode {
     }
     
     /*** Sub expression process ***/
-    if (ConstNodeBase const* node = ep.expr.Eval(unisim::util::symbolic::EvalSpace()))
+    Expr constant = ep.expr;
+    if (ConstNodeBase const* node = constant.ConstSimplify())
       {
         Expr cexp( node );
         auto tp = node->GetType();

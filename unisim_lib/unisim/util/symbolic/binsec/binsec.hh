@@ -233,7 +233,7 @@ namespace binsec {
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
 
-    virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const;
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** cnbs ) const;
 
   private:
     BitFilter(BitFilter const&) = default;

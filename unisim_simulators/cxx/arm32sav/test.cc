@@ -110,24 +110,6 @@ Interface::start()
       if (uint32_t(memspread()) >= 1024)
         throw unisim::util::sav::Untestable("spread out memory accesses");
 
-      struct ExpectedAddress : public unisim::util::symbolic::ExprNode
-      {
-        ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
-        virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
-        virtual int cmp(ExprNode const& rhs) const override { return 0; }
-        virtual unsigned SubCount() const override { return 0; }
-        virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-        typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-        typedef unisim::util::symbolic::ValueType ValueType;
-        virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
-        virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-        {
-          if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
-            return new unisim::util::symbolic::ConstNode<uint32_t>( l->address );
-          return 0;
-        };
-      };
-      
       if (not addressings.solve(base_addr, new ExpectedAddress()))
         throw unisim::util::sav::Untestable("malformed address");
     }
@@ -153,11 +135,27 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, unsigned size, b
   aligned &= isaligned;
   uint32_t zaddr;
   {
+    struct GetAddr : public unisim::util::symbolic::Evaluator
+    {
+      using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
+
+      ConstNodeBase const* Simplify( Expr& expr ) const override
+      {
+        if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
+          return new unisim::util::symbolic::ConstNode<uint32_t>( uint64_t(reg->reg) << 28 );
+        if (dynamic_cast<Scanner::Flag const*>(expr.node))
+          Scanner::dont("flag-relative addressing");
+        if (dynamic_cast<Scanner::PC const*>(expr.node))
+          Scanner::dont("pc-relative addressing");
+        if (ConstNodeBase const* res = expr.Simplify(*this))
+          return res;
+        throw *this;
+        return 0;
+      }
+    } evaluator;
+
     Expr scratch = addr;
-    if (auto z = scratch.Eval( Scanner::AddrEval() ))
-      { zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*z).value; }
-    else
-      { struct WTF {}; throw WTF(); }
+    zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*evaluator.Simplify(scratch)).value;
   }
 
   if (not base_addr.good() or int32_t(zaddr - memrange[1]) > 0)

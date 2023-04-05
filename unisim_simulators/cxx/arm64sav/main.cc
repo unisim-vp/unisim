@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2022,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -48,18 +48,18 @@
 struct Checker
 {
   typedef unisim::util::symbolic::Expr Expr;
-    
+
   Scanner::ISA isa;
   TestDB testdb;
   std::map<std::string,uintptr_t> stats;
-  
+
   bool insert( Scanner::Operation const& op, uint32_t code, std::string const& disasm )
   {
     Interface iif(op, code, disasm);
 
     decltype(testdb.begin()) tstbeg, tstend;
     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
- 
+
     auto count = std::distance(tstbeg, tstend);
     if (count >= 2)
         return false;
@@ -80,12 +80,12 @@ struct Checker
       {
         stats[denial.reason] += 1;
       }
-    
+
     return found;
   }
-  
+
   Checker() {}
-  
+
   void discover( uintptr_t count, uintptr_t ttl_reset )
   {
     std::cerr << "Scanning for " << count << " new instructions.\n";
@@ -120,12 +120,12 @@ struct Checker
       sink.close();
     }
   }
-  
+
   void
   write_repos( std::string const& reposname )
   {
     std::cerr << "Writing repository " << reposname << '\n';
-    
+
     std::ofstream sink( reposname );
 
     for (Interface const& test : testdb)
@@ -136,7 +136,7 @@ struct Checker
   {
     std::string name;
     unsigned    line;
-    
+
     FileLoc( std::string const& _name ) : name( _name ), line(0) {}
     void newline() { line += 1; }
     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << std::dec << fl.line << ": "; return sink; }
@@ -168,7 +168,7 @@ struct Checker
         std::cerr << kv.first << " matched " << kv.second << " time" << (kv.second > 1 ? "s" : "") << '\n';
       }
   }
-  
+
   bool
   read_repos( std::string const& reposname )
   {
@@ -178,7 +178,7 @@ struct Checker
     std::ifstream source( fl.name );
     bool updated = false;
     std::set<std::string> gilcoverage;
-    
+
     while (source)
       {
         fl.newline();
@@ -191,7 +191,7 @@ struct Checker
                       { std::cerr << fl << ": parse error.\n"; break; } }
         std::string disasm;
         std::getline( source, disasm, '\n' );
-        
+
         try
           {
             std::string updated_disasm;
@@ -218,7 +218,7 @@ struct Checker
       }
 
     std::cerr << "Instruction coverage: " << gilcoverage.size() << " (genisslib instructions).\n";
-    
+
     return updated;
   }
 
@@ -234,13 +234,13 @@ struct Checker
         void write(uint32_t) override { size += 4; }
         void process( Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
       } text;
-      
+
       for (Interface const& test : testdb)
         {
           workcells = std::max( workcells, test.workcells() * (test.usemem() ? 3 : 2) );
           text.process( test );
         }
-      
+
       textsize = text.size;
     }
 
@@ -263,7 +263,7 @@ struct Checker
     {
       typedef Interface::testcode_t testcode_t;
       typedef unisim::util::symbolic::Expr Expr;
-      
+
       Test(Interface const& _tif, testcode_t _code)
         : tif(_tif), code(_code), relval(), relreg(), workcells(_tif.workcells())
       {}
@@ -276,13 +276,28 @@ struct Checker
       {
         if (not relval.good()) return 0;
 
-        Expr scratch = relval;
-        if (auto v = scratch.Eval( Scanner::RelocEval(&ws[data_index(0)], uint64_t(ws)) ))
-          return dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value;
+        struct GetReloc : public unisim::util::symbolic::Evaluator
+        {
+          GetReloc( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
+          using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
 
-        struct WTF {};
-        throw WTF();
-        return 0;
+          ConstNodeBase const* Simplify( Expr& expr ) const override
+          {
+            if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
+              return new unisim::util::symbolic::ConstNode<uint64_t>( regvalues[reg->idx] );
+            if (dynamic_cast<Scanner::ExpectedAddress const*>(expr.node))
+              return new unisim::util::symbolic::ConstNode<uint64_t>( address );
+            if (ConstNodeBase const* res = expr.Simplify(*this))
+              return res;
+            throw *this;
+            return 0;
+          }
+          uint64_t const* regvalues;
+          uint64_t address;
+        } evaluator(&ws[data_index(0)], uint64_t(ws));
+
+        Expr scratch = relval;
+        return dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(scratch)).value;
       }
       void patch(uint64_t* ws, uint64_t reloc) const
       {
@@ -328,7 +343,7 @@ struct Checker
       {
         sim.run( code, &ws[data_index(0)] ); /* code simulation */
       }
-      
+
     private:
       uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workcells : 0) + idx; }
       uintptr_t sink_index( uintptr_t idx ) const { return workcells + data_index(idx); }
@@ -354,7 +369,7 @@ struct Checker
     };
 
     std::vector<Test> tests;
-    
+
     /* 2nd pass; generating tests (data and code)*/
     textsize = 0;
     for (Interface const& test : testdb)
@@ -390,14 +405,14 @@ struct Checker
     textzone.activate();
 
     Runner arm64;
-    
+
     std::vector<uint64_t> reference(workcells), workspace(workcells);
     for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
         if ((testbed.counter % insn_pong) == 0)
           std::cout << testbed.counter << ":" << test.getgil() << ": " << test.getasm() << std::endl;
-        
+
         /* Perform native test */
         test.load( &workspace[0], testbed );
         // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
@@ -405,12 +420,12 @@ struct Checker
         test.patch( &workspace[0],reloc );
         test.run( &workspace[0] );
         std::copy( workspace.begin(), workspace.end(),reference.begin() );
-        
+
         /* Perform simulation test */
         test.load( &workspace[0], testbed );
         test.patch( &workspace[0], reloc );
         test.run( arm64, &workspace[0] );
-        
+
         /* Check for differences */
         test.check( testbed, &reference[0], &workspace[0]);
       }
@@ -428,7 +443,7 @@ main( int argc, char** argv )
     }
 
   std::string reposname(argv[1]), suffix(".tests");
-  
+
   if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
     {
       std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
@@ -436,7 +451,7 @@ main( int argc, char** argv )
     }
 
   char const *ttl_reset = 0, *insn_scan = 0, *insn_pong = 0, *insn_skip = 0;
-  
+
   struct { char const *&value, *name, *init; }
     params [] =
       {
@@ -451,13 +466,13 @@ main( int argc, char** argv )
       if (char const* env = getenv(params[idx].name))
         params[idx].value = env;
       else
-        params[idx].value = params[idx].init; 
+        params[idx].value = params[idx].init;
       std::cerr << "Using " << params[idx].name << " of: " << params[idx].value << std::endl;
     }
-  
-  
+
+
   Checker checker;
-  
+
   bool updated = checker.read_repos( reposname );
 
   if (uintptr_t count = strtoull(insn_scan,0,0))
@@ -465,7 +480,7 @@ main( int argc, char** argv )
       checker.discover( count, strtoull(ttl_reset,0,0) );
       updated = true;
     }
-  
+
   if (updated)
       checker.write_repos( reposname );
 

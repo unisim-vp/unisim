@@ -119,14 +119,6 @@ namespace symbolic {
   struct ConstNodeBase;
   struct OpNodeBase;
 
-  struct EvalSpace { virtual ~EvalSpace() {} };
-
-  struct Evaluator
-  {
-    virtual ~Evaluator() {}
-    virtual ConstNodeBase const* Simplify(Expr&, EvalSpace const&) const;
-  };
-
   struct ExprNode
   {
     /* Resource management */
@@ -150,7 +142,7 @@ namespace symbolic {
   private:
     friend class Expr;
 
-    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return 0; } /* may allocate */
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** ) const { return 0; } /* may allocate */
 
     mutable uintptr_t refs;
   };
@@ -161,7 +153,7 @@ namespace symbolic {
     virtual Zero* Mutate() const override { return new Zero( *this ); };
     virtual unsigned SubCount() const override { return 0; };
     virtual ConstNodeBase const* AsConstNode() const override;
-    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return AsConstNode(); }
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** ) const { return AsConstNode(); }
     virtual void Repr( std::ostream& sink ) const override;
     virtual ValueType const* GetType() const override;
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
@@ -251,7 +243,7 @@ namespace symbolic {
   struct ConstNodeBase : public ExprNode
   {
     virtual unsigned SubCount() const override { return 0; };
-    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const override { return this; }
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** ) const override { return this; }
     ConstNodeBase const* AsConstNode() const override { return this; };
     virtual ConstNodeBase* apply( Op op, ConstNodeBase const** args ) const = 0;
     virtual float GetFloat( float ) const = 0;
@@ -326,6 +318,18 @@ namespace symbolic {
   VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, shift_type shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
   uint32_t   EvalRotateLeft( uint32_t v, shift_type shift );
 
+  struct Evaluator
+  {
+    virtual ~Evaluator() {}
+    virtual ConstNodeBase const* Simplify(Expr&) const;
+  };
+  
+  struct FullEval : public Evaluator
+  {
+    struct Failure {};
+    ConstNodeBase const* Simplify(Expr& expr) const override;
+  };
+
   struct Expr
   {
     Expr() : node() {} ExprNode const* node;
@@ -379,10 +383,9 @@ namespace symbolic {
     bool operator  < ( Expr const& rhs ) const { return compare( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return compare( rhs )  > 0; }
 
-    ConstNodeBase const* Eval( EvalSpace const& evs );
-    ConstNodeBase const* ConstSimplify() { return Simplify(Evaluator(), EvalSpace()); }
+    ConstNodeBase const* ConstSimplify() { return Simplify(Evaluator()); }
 
-    ConstNodeBase const* Simplify( Evaluator const& evaluator, EvalSpace const& evs );
+    ConstNodeBase const* Simplify( Evaluator const& evaluator );
 
     char const* dbgrepr() const;
     bool good() const { return node; }
@@ -545,7 +548,7 @@ namespace symbolic {
     OpNode( Op _op ) : OpNodeBase(_op) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
 
-    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return cnbs[0]->apply( op, &cnbs[0] ); }
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** cnbs ) const override { return cnbs[0]->apply( op, &cnbs[0] ); }
 
     virtual unsigned SubCount() const override { return SUBCOUNT; };
     virtual Expr const& GetSub(unsigned idx) const override
@@ -579,7 +582,7 @@ namespace symbolic {
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual ValueType const* GetSrcType() const { return CValueType(SRC_VALUE_TYPE()); }
     virtual ValueType const* GetType() const override { return CValueType(DST_VALUE_TYPE()); }
-    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** cnbs ) const override
     {
       return new ConstNode<DST_VALUE_TYPE>( DST_VALUE_TYPE(dynamic_cast<ConstNode<SRC_VALUE_TYPE> const&>(**cnbs).value) );
     }

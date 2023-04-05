@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -84,7 +84,6 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   typedef unisim::util::symbolic::ExprNode ExprNode;
   typedef unisim::util::symbolic::ValueType ValueType;
   typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-  typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
   void noexec( Operation const& op )
   {
@@ -114,7 +113,6 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-    ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
 
     RID id;
   };
@@ -170,10 +168,8 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     typedef uint32_t value_type;
     char const* c_str() const { return "%y"; }
     int cmp( Y const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+    ConstNodeBase const* eval(ConstNodeBase const**) const
     {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("y-relative addressing");
       return 0;
     }
   };
@@ -211,26 +207,9 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     ValueType const* tp;
   };
 
-  struct AddrEval : public EvalSpace {};
-  
-  struct RelocEval : public EvalSpace
-  {
-    RelocEval( uint32_t const* _regvalues, uint32_t _address ) : regvalues(_regvalues), address(_address) {}
-    uint32_t const* regvalues;
-    uint32_t address;
-  };
-
   struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
   {
     GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-    virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( uint32_t(reg) << 16 );
-      if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( l->regvalues[idx] );
-      return 0;
-    };
   };
 
   struct RegWriteBase : public Update
@@ -271,18 +250,24 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
       static char const* names[] = {"c", "v", "z", "n"};
       return (idx < 4) ? names[idx] : "NA";
     }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("flag-dependant addressing");
-      return 0;
-    }
 
     Flag() : code(end) {}
     Flag( Code _code ) : code(_code) {}
     Flag( char const* _code ) : code(end) { init( _code ); }
   };
 
+  struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+  {
+    ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+    virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+    virtual int cmp(ExprNode const& rhs) const override { return 0; }
+    virtual unsigned SubCount() const override { return 0; }
+    virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+    typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+    typedef unisim::util::symbolic::ValueType ValueType;
+    virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+  };
+      
   Scanner( Interface& iif );
   ~Scanner();
 

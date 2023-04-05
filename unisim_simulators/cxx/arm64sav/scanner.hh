@@ -114,7 +114,6 @@ struct Scanner
   typedef unisim::util::symbolic::ExprNode ExprNode;
   typedef unisim::util::symbolic::ValueType ValueType;
   typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-  typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
   void noexec( Operation const& op )
   {
@@ -144,7 +143,6 @@ struct Scanner
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-    ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
 
     RID id;
   };
@@ -201,12 +199,6 @@ struct Scanner
     typedef uint64_t value_type;
     char const* c_str() const { return "sp"; }
     int cmp( SP const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("sp-relative addressing");
-      return 0;
-    }
   };
     
   struct PC
@@ -215,12 +207,6 @@ struct Scanner
     typedef uint64_t value_type;
     char const* c_str() const { return "pc"; }
     int cmp( PC const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("pc-relative addressing");
-      return 0;
-    }
   };
 
   struct Flag
@@ -234,12 +220,6 @@ struct Scanner
     {
       static char const* names[] = {"n", "z", "c", "v", "NA"};
       return names[int(code)];
-    }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("flag-dependant addressing");
-      return 0;
     }
 
     Flag() : code(end) {}
@@ -282,26 +262,9 @@ struct Scanner
 
   //  typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
 
-  struct AddrEval : public EvalSpace {};
-  
-  struct RelocEval : public EvalSpace
-  {
-    RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
-    uint64_t const* regvalues;
-    uint64_t address;
-  };
-
   struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
   {
     GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-    virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
-      if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint64_t>( l->regvalues[idx] );
-      return 0;
-    };
   };
 
   struct RegWriteBase : public Update
@@ -331,6 +294,17 @@ struct Scanner
 
   template <typename RID> RegWrite<RID>* newRegWrite( RID _id, Expr const& _value ) { return new RegWrite<RID>(_id, _value); }
 
+  struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+  {
+    ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+    virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+    virtual int cmp(ExprNode const& rhs) const override { return 0; }
+    virtual unsigned SubCount() const override { return 0; }
+    virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+    typedef unisim::util::symbolic::ValueType ValueType;
+    virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
+  };
+      
   Scanner( Interface& iif );
   ~Scanner();
 

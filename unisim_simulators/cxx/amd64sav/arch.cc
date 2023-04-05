@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -341,28 +341,6 @@ namespace review
     return predicate;
   }
 
-  namespace
-  {
-    struct ExpectedAddress : public unisim::util::symbolic::ExprNode
-    {
-      ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
-      virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
-      virtual int cmp(ExprNode const& rhs) const override { return 0; }
-      virtual unsigned SubCount() const override { return 0; }
-      virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-      {
-        if (auto l = dynamic_cast<Arch::RelocEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
-        return 0;
-      };
-      typedef unisim::util::symbolic::ValueType ValueType;
-      virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
-    };
-  }
-
-
   Interface::Interface( Operation const& op, MemCode const& code, std::string const& disasm )
     : memcode(code)
     , asmcode(disasm)
@@ -404,7 +382,7 @@ namespace review
         if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
           throw unisim::util::sav::Untestable("spread out memory accesses");
 
-        if (not addressings.solve(base_addr, new ExpectedAddress()))
+        if (not addressings.solve(base_addr, new Arch::ExpectedAddress()))
           throw unisim::util::sav::Untestable("malformed address");
       }
 
@@ -630,11 +608,25 @@ namespace review
   {
     uint64_t zaddr;
     {
+      struct GetAddr : public unisim::util::symbolic::Evaluator
+      {
+        using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
+
+        ConstNodeBase const* Simplify( Expr& expr ) const override
+        {
+          if (auto reg = dynamic_cast<review::Arch::GRegRead const*>(expr.node))
+            return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg->reg) << 60 );
+          if (dynamic_cast<review::Arch::RIPRead const*>(expr.node))
+            throw unisim::util::sav::Untestable("RIP relative addressing");
+          if (ConstNodeBase const* res = expr.Simplify(*this))
+            return res;
+          throw *this;
+          return 0;
+        }
+      } evaluator;
+
       Expr scratch = addr;
-      if (auto z = scratch.Eval( Arch::AddrEval() ))
-        { zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*z).value; }
-      else
-        { struct WTF {}; throw WTF(); }
+      zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(scratch)).value;
     }
     addrs.insert(zaddr);
 
