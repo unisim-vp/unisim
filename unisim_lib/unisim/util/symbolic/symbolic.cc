@@ -153,9 +153,10 @@ namespace symbolic {
     for (unsigned idx = 0; idx < subcount; ++idx)
       {
         args[idx] = node->GetSub(idx);
+        ExprNode const* original = args[idx].node;
         if (not (cnbs[idx] = evaluator.Simplify( args[idx] )))
           const_args = false;
-        if (args[idx] != node->GetSub(idx))
+        if (args[idx].node != original)
           simplified = true;
       }
 

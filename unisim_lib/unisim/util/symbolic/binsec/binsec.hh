@@ -217,7 +217,6 @@ namespace binsec {
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
-    static  Expr Simplify( Expr const& );
   };
 
   struct BitFilter : public ASExprNode
@@ -251,6 +250,12 @@ namespace binsec {
     uint64_t pad2     :  1;
     uint64_t extend   : 15; // Destination bit size
     uint64_t sxtend   :  1; // Destination is signed extended from `select` to `extend`
+  };
+
+  struct PrettyCode : Evaluator
+  {
+    /* Enhances generated code by leveraging BitFilter node. */
+    ConstNodeBase const* Simplify(Expr&) const override;
   };
 
   struct GetCode

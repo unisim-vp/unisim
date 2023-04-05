@@ -800,7 +800,7 @@ Processor<MODE>::eregsinks( Processor<MODE> const& ref, unsigned reg ) const
       Expr value = core.eregread(reg,size,pos);
       if (value == ref.eregread(reg,size,pos))
         return;
-      value = unisim::util::symbolic::binsec::ASExprNode::Simplify( value );
+      unisim::util::symbolic::binsec::PrettyCode().Simplify(value);
       unsigned half = size / 2, mid = pos+half;
       if (value.ConstSimplify() or size <= 1 or not core.regvalues[reg][mid].node)
         {

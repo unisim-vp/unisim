@@ -64,41 +64,14 @@ namespace binsec {
     return true;
   }
 
-  Expr
-  ASExprNode::Simplify( Expr const& ixpr )
+  ConstNodeBase const* PrettyCode::Simplify(Expr& expr) const
   {
-    unsigned subcount = ixpr->SubCount();
-    Expr subs[subcount];
+    if (ConstNodeBase const* constnode = expr.Simplify(*this))
+      return constnode;
 
-    struct Simplified
-    {
-      Simplified(ExprNode const* _e, Expr* _subs, unsigned _subcount)
-        : e(_e), subs(_subs), subcount(_subcount), diff(false)
-      {
-        for (unsigned idx = 0; idx < subcount; ++idx)
-          {
-            Expr const& sub = e->GetSub(idx);
-            if (sub != (subs[idx] = ASExprNode::Simplify( sub )))
-              diff = true;
-          }
-      }
-      ExprNode const* base()
-      {
-        if (ExprNode* r = diff ? e->Mutate() : 0)
-          {
-            for (unsigned idx = 0; idx < subcount; ++idx)
-              const_cast<Expr&>(r->GetSub(idx)) = subs[idx];
-            return r;
-          }
-        return e;
-      }
-      ExprNode const* e;
-      Expr* subs;
-      unsigned subcount;
-      bool diff;
-    } simplified(ixpr.node,&subs[0],subcount);
+    unsigned subcount = expr->SubCount();
 
-    if (OpNodeBase const* node = simplified.e->AsOpNode())
+    if (OpNodeBase const* node = expr->AsOpNode())
       {
         switch (node->op.code)
           {
@@ -109,10 +82,11 @@ namespace binsec {
           case Op::Lsr:
             if (subcount == 2)
               {
-                if (ConstNodeBase const* cnb = subs[1]->AsConstNode())
+                if (ConstNodeBase const* cnb = expr->GetSub(1)->AsConstNode())
                   {
                     unsigned sh = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
-                    unsigned bitsize = subs[0]->GetType()->GetBitSize();
+                    Expr const& src = expr->GetSub(0);
+                    unsigned bitsize = src->GetType()->GetBitSize();
                     if (sh >= bitsize) { struct Bad {}; throw Bad(); }
 
                     unsigned rshift, sxtend;
@@ -123,7 +97,7 @@ namespace binsec {
                       default:  { struct Bad {}; throw Bad(); }
                       }
 
-                    return BitFilter::mksimple( subs[0], bitsize, rshift, bitsize - sh, bitsize, sxtend );
+                    expr = BitFilter::mksimple( src, bitsize, rshift, bitsize - sh, bitsize, sxtend );
                   }
 
               }
@@ -135,7 +109,7 @@ namespace binsec {
               {
                 for (unsigned idx = 0; idx < 2; ++idx)
                   {
-                    if (ConstNodeBase const* node = subs[idx]->AsConstNode())
+                    if (ConstNodeBase const* node = expr->GetSub(idx)->AsConstNode())
                       {
                         unsigned bitsize = node->GetType()->GetBitSize();
                         if (bitsize > 64)
@@ -144,11 +118,14 @@ namespace binsec {
                         if (v & (v+1))
                           continue;
                         if (v == 0)
-                          return subs[idx];
+                          { expr = node; return node; }
                         unsigned select = arithmetic::BitScanReverse(v)+1;
+                        Expr const& src = expr->GetSub(idx^1);
                         if (select >= bitsize)
-                          return subs[idx^1];
-                        return BitFilter::mksimple( subs[idx^1], bitsize, 0, select, bitsize, false );
+                          expr = src;
+                        else
+                          expr = BitFilter::mksimple( src, bitsize, 0, select, bitsize, false );
+                        break;
                       }
                   }
               }
@@ -157,24 +134,25 @@ namespace binsec {
           case Op::Cast:
             if (subcount == 1)
               {
-                CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *ixpr.node );
+                CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
                 auto src = cnb.GetSrcType(), dst = cnb.GetType();
                 if ((dst->encoding != dst->UNSIGNED and dst->encoding != dst->SIGNED) or
                     (src->encoding != src->UNSIGNED and src->encoding != src->SIGNED and src->encoding != src->BOOL))
-                  return simplified.base(); // Complex casts
+                  break; // Complex casts
 
                 unsigned src_bit_size = src->GetBitSize(), dst_bit_size = dst->GetBitSize();
 
+                Expr const& input = expr->GetSub(0);
                 if (src_bit_size == dst_bit_size)
-                  return subs[0];
-
-                return BitFilter::mksimple( subs[0], src_bit_size, 0, std::min(src_bit_size, dst_bit_size), dst_bit_size, dst_bit_size > src_bit_size and src->encoding == src->SIGNED );
+                  expr = input;
+                else
+                  expr = BitFilter::mksimple( input, src_bit_size, 0, std::min(src_bit_size, dst_bit_size), dst_bit_size, dst_bit_size > src_bit_size and src->encoding == src->SIGNED );
               }
             break;
           }
       }
 
-    return simplified.base();
+    return expr->AsConstNode();
   }
 
   int
@@ -246,9 +224,9 @@ namespace binsec {
               Expr rhs = node->GetSub(1);
               switch (lhs_size)
                 {
-                case 16: rhs = Simplify( U16(U8(rhs)).expr ); break;
-                case 32: rhs = Simplify( U32(U8(rhs)).expr ); break;
-                case 64: rhs = Simplify( U64(U8(rhs)).expr ); break;
+                case 16: rhs = U16(U8(rhs)).expr; PrettyCode().Simplify(rhs); break;
+                case 32: rhs = U32(U8(rhs)).expr; PrettyCode().Simplify(rhs); break;
+                case 64: rhs = U64(U8(rhs)).expr; PrettyCode().Simplify(rhs); break;
                 }
               sink << ' ' << op << ' ' << GetCode( rhs, vars, label ) << ')';
               return lhs_size;
@@ -458,11 +436,7 @@ namespace binsec {
         if (onb->op.code != onb->op.Lsl) return this;
 
         unsigned lshift;
-        try
-          {
-            Expr scratch = onb->GetSub(1);
-            lshift = dynamic_cast<ConstNode<shift_type> const&>(*FullEval().Simplify(scratch)).value;
-          }
+        try { lshift = onb->GetSub(1).Eval<shift_type>(); }
         catch (FullEval::Failure) { return this; }
 
         if (lshift > rshift)
@@ -688,8 +662,7 @@ namespace binsec {
   {
     while (cond.good())
       {
-        cond = ASExprNode::Simplify( cond );
-        if (ConstNodeBase const* c = cond.ConstSimplify())
+        if (ConstNodeBase const* c = PrettyCode().Simplify(cond))
           {
             //            std::cerr << "warning: post simplification of if-then-else condition\n";
             bool eval = dynamic_cast<ConstNode<bool> const&>(*c).value;
@@ -714,8 +687,8 @@ namespace binsec {
       std::set<Expr> nsinks;
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
         {
-          Expr x = ASExprNode::Simplify( *itr );
-          x.ConstSimplify();
+          Expr x(*itr);
+          PrettyCode().Simplify(x);
           nsinks.insert( x );
         }
       std::swap(nsinks, sinks);

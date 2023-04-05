@@ -570,7 +570,7 @@ public:
         Expr value = core.eneonread(reg,size,pos);
         if (value == ref.eneonread(reg,size,pos))
           return;
-        value = unisim::util::symbolic::binsec::ASExprNode::Simplify( value );
+        unisim::util::symbolic::binsec::PrettyCode().Simplify( value );
         unsigned half = size / 2, mid = pos+half;
         if (value.ConstSimplify() or size <= 1 or not core.neonregs[reg][mid].node)
           {

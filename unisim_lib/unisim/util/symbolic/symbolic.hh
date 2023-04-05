@@ -384,6 +384,7 @@ namespace symbolic {
     bool operator  > ( Expr const& rhs ) const { return compare( rhs )  > 0; }
 
     ConstNodeBase const* ConstSimplify() { return Simplify(Evaluator()); }
+    template <typename VALUE_TYPE> VALUE_TYPE Eval() const;
 
     ConstNodeBase const* Simplify( Evaluator const& evaluator );
 
@@ -533,6 +534,13 @@ namespace symbolic {
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0; }
   };
+
+  template <typename VALUE_TYPE>
+  VALUE_TYPE Expr::Eval() const
+  {
+    Expr scratch = *this;
+    return dynamic_cast<ConstNode<VALUE_TYPE> const&>(*FullEval().Simplify(scratch)).value;
+  }
 
   template <typename VALUE_TYPE>
   VALUE_TYPE ConstNode<VALUE_TYPE>::GetValue( ConstNodeBase const* cnb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *cnb ).value; }
