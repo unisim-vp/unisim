@@ -35,11 +35,6 @@
 #include "types.hh"
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
-// #include <ppc64dec.hh>
-// #include <iostream>
-// #include <iomanip>
-// #include <cstdlib>
-// #include <set>
 #include <inttypes.h>
 
 namespace ppc64 {
@@ -59,6 +54,7 @@ namespace ppc64 {
     using ActionNode = unisim::util::symbolic::binsec::ActionNode;
     using Label = unisim::util::symbolic::binsec::Label;
     using Variables = unisim::util::symbolic::binsec::Variables;
+    using BitInsertNode = unisim::util::symbolic::binsec::BitInsertNode;
 
     template <typename T>
     using SmartValue = unisim::util::symbolic::SmartValue<T>;
@@ -132,21 +128,6 @@ namespace ppc64 {
     //   =====================================================================
     //   =                         Condition Register                        =
     //   =====================================================================
-
-    struct BitInsertNode : public unisim::util::symbolic::binsec::ASExprNode
-    {
-      using Expr =      unisim::util::symbolic::Expr;
-      using ExprNode =      unisim::util::symbolic::ExprNode;
-      BitInsertNode(Expr const& _dst, Expr const& _src, unsigned _pos, unsigned _size) : dst(_dst), src(_src), pos(_pos) {} Expr dst, src; unsigned pos, size;
-      unsigned SubCount() const override { return 2; };
-      Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return dst; case 1: return src; } return ExprNode::GetSub(idx); }
-      void Repr(std::ostream& sink) const override;
-      int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<BitInsertNode const&>(rhs) ); }
-      int compare(BitInsertNode const& rhs) const { if (int delta = int(size) - int(rhs.size)) return delta; return int(pos) - int(rhs.pos); }
-      ExprNode* Mutate() const { return new BitInsertNode(*this); }
-      unisim::util::symbolic::ValueType const* GetType() const override { return dst->GetType(); }
-      int GenCode(Label&, Variables&, std::ostream&) const { throw 0; return 0; }
-    };
 
     struct CR
     {

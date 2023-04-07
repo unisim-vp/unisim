@@ -139,7 +139,7 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, unsigned size, b
     {
       using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
 
-      ConstNodeBase const* Simplify( Expr& expr ) const override
+      ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
       {
         if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
           return new unisim::util::symbolic::ConstNode<uint32_t>( uint64_t(reg->reg) << 28 );
@@ -155,7 +155,7 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, unsigned size, b
     } evaluator;
 
     Expr scratch = addr;
-    zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*evaluator.Simplify(scratch)).value;
+    zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*evaluator.Simplify(0, scratch)).value;
   }
 
   if (not base_addr.good() or int32_t(zaddr - memrange[1]) > 0)

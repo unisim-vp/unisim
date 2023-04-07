@@ -133,15 +133,7 @@ namespace symbolic {
     return sink;
   }
 
-  ConstNodeBase const* Evaluator::Simplify( Expr& expr ) const { return expr.Simplify(*this); }
-
-  ConstNodeBase const* FullEval::Simplify(Expr& expr) const
-  {
-    if (auto res = expr.Simplify(*this))
-      return res;
-    throw Failure {};
-    return 0;
-  }
+  ConstNodeBase const* Evaluator::Simplify( unsigned, Expr& expr ) const { return expr.Simplify(*this); }
 
   ConstNodeBase const*
   Expr::Simplify( Evaluator const& evaluator )
@@ -154,7 +146,7 @@ namespace symbolic {
       {
         args[idx] = node->GetSub(idx);
         ExprNode const* original = args[idx].node;
-        if (not (cnbs[idx] = evaluator.Simplify( args[idx] )))
+        if (not (cnbs[idx] = evaluator.Simplify( idx, args[idx] )))
           const_args = false;
         if (args[idx].node != original)
           simplified = true;
@@ -224,28 +216,19 @@ namespace symbolic {
     sink << "()";
   }
 
-  ValueType const*
-  Zero::GetType() const
-  {
-    struct ZTP : public ValueType
-    {
-      ZTP(bool is_signed, unsigned _bitsize) : ValueType(is_signed ? SIGNED : UNSIGNED ), bitsize(_bitsize) {}
-      virtual unsigned GetBitSize() const override { return bitsize; }
-      virtual void GetName(std::ostream& sink) const override { ValueType::GetName(sink); }
-      bool operator < (ZTP const& rhs) const { if (int delta = int(encoding) - int(rhs.encoding)) return delta < 0; return bitsize < rhs.bitsize; }
-      unsigned bitsize;
-    };
+  // ValueType const*
+  // Zero::GetType() const
+  // {
 
-    static std::set<ZTP> type_descriptors;
-    auto tp = type_descriptors.insert(ZTP(is_signed, bitsize)).first;
+  //   static std::set<ZTP> type_descriptors;
+  //   auto tp = type_descriptors.insert(ZTP(is_signed, bitsize)).first;
 
-    return &*tp;
-  }
+  //   return &*tp;
+  // }
 
   ConstNodeBase const*
   Zero::AsConstNode() const
   {
-    auto tp = GetType();
     typedef long double f80_t;
     static Expr  F32Zero = make_const    <float>(0);
     static Expr  F64Zero = make_const   <double>(0);
@@ -261,18 +244,17 @@ namespace symbolic {
     static Expr BOOLZero = make_const     <bool>(0);
 
     ExprNode const* node = 0;
-
-    switch (tp->encoding)
+    switch (type.encoding)
       {
       case ValueType::FLOAT:
-        switch (bitsize) {
+        switch (type.bitsize) {
         default: break;
         case 32: node =  F32Zero.node; break;
         case 64: node =  F64Zero.node; break;
         case 80: node =  F80Zero.node; break;
         } break;
       case ValueType::UNSIGNED:
-        switch (bitsize) {
+        switch (type.bitsize) {
         default: break;;
         case  8: node =  U8Zero.node; break;
         case 16: node =  U16Zero.node; break;
@@ -280,7 +262,7 @@ namespace symbolic {
         case 64: node =  U64Zero.node; break;
         } break;
       case ValueType::SIGNED:
-        switch (bitsize) {
+        switch (type.bitsize) {
         default: break;;
         case  8: node =  S8Zero.node; break;
         case 16: node =  S16Zero.node; break;
@@ -288,7 +270,7 @@ namespace symbolic {
         case 64: node =  S64Zero.node; break;
         } break;
       case ValueType::BOOL:
-        if (bitsize == 1)
+        if (type.bitsize == 1)
           node =  BOOLZero.node;
         break;
       default:
@@ -357,7 +339,7 @@ namespace symbolic {
   uint64_t EvalRotateRight( uint64_t v, shift_type s ) { return unisim::util::arithmetic::RotateRight( v, s ); }
 
   uint32_t EvalRotateLeft( uint32_t v, shift_type s ) { return unisim::util::arithmetic::RotateLeft( v, s ); }
-
+  
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */

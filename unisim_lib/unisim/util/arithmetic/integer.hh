@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2022,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  University of Perpignan (UPVD)
  *  All rights reserved.
@@ -38,6 +38,7 @@
 
 #include <inttypes.h>
 #include <unisim/util/inlining/inlining.hh>
+#include <iosfwd>
 #include <limits>
 
 namespace unisim {

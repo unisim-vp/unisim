@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2020,
+ *  Copyright (c) 2009-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -37,11 +37,6 @@
 #include "ppc64dec.hh"
 
 #include <unisim/util/symbolic/binsec/binsec.hh>
-// #include <unisim/util/symbolic/symbolic.hh>
-// #include <iostream>
-// #include <iomanip>
-// #include <cstdlib>
-// #include <set>
 
 namespace ppc64 {
 

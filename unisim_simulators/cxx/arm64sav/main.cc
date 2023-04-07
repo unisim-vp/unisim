@@ -281,7 +281,7 @@ struct Checker
           GetReloc( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
           using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
 
-          ConstNodeBase const* Simplify( Expr& expr ) const override
+          ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
           {
             if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
               return new unisim::util::symbolic::ConstNode<uint64_t>( regvalues[reg->idx] );
@@ -289,7 +289,7 @@ struct Checker
               return new unisim::util::symbolic::ConstNode<uint64_t>( address );
             if (ConstNodeBase const* res = expr.Simplify(*this))
               return res;
-            throw *this;
+            throw Failure();
             return 0;
           }
           uint64_t const* regvalues;
@@ -297,7 +297,7 @@ struct Checker
         } evaluator(&ws[data_index(0)], uint64_t(ws));
 
         Expr scratch = relval;
-        return dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(scratch)).value;
+        return dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(0, scratch)).value;
       }
       void patch(uint64_t* ws, uint64_t reloc) const
       {

@@ -64,11 +64,9 @@ namespace binsec {
     return true;
   }
 
-  ConstNodeBase const* PrettyCode::Simplify(Expr& expr) const
+  void
+  BitFilter::Fix(Expr& expr)
   {
-    if (ConstNodeBase const* constnode = expr.Simplify(*this))
-      return constnode;
-
     unsigned subcount = expr->SubCount();
 
     if (OpNodeBase const* node = expr->AsOpNode())
@@ -84,20 +82,20 @@ namespace binsec {
               {
                 if (ConstNodeBase const* cnb = expr->GetSub(1)->AsConstNode())
                   {
-                    unsigned sh = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
+                    unsigned shift = dynamic_cast<ConstNode<shift_type> const&>(*cnb).value;
                     Expr const& src = expr->GetSub(0);
                     unsigned bitsize = src->GetType()->GetBitSize();
-                    if (sh >= bitsize) { struct Bad {}; throw Bad(); }
+                    if (shift >= bitsize) { struct Bad {}; throw Bad(); }
 
-                    unsigned rshift, sxtend;
+                    unsigned sxtend;
                     switch (node->op.code)
                       {
-                      case Op::Lsr: rshift = sh; sxtend = false; break;
-                      case Op::Asr: rshift = sh; sxtend = true; break;
+                      case Op::Lsr: sxtend = false; break;
+                      case Op::Asr: sxtend = true; break;
                       default:  { struct Bad {}; throw Bad(); }
                       }
 
-                    expr = BitFilter::mksimple( src, bitsize, rshift, bitsize - sh, bitsize, sxtend );
+                    expr = BitFilter::mksimple( src, bitsize, shift, bitsize - shift, bitsize, sxtend );
                   }
 
               }
@@ -118,7 +116,7 @@ namespace binsec {
                         if (v & (v+1))
                           continue;
                         if (v == 0)
-                          { expr = node; return node; }
+                          { expr = node; return; }
                         unsigned select = arithmetic::BitScanReverse(v)+1;
                         Expr const& src = expr->GetSub(idx^1);
                         if (select >= bitsize)
@@ -151,6 +149,14 @@ namespace binsec {
             break;
           }
       }
+  }
+
+  ConstNodeBase const* PrettyCode::Simplify(unsigned, Expr& expr) const
+  {
+    if (auto cst = expr.Simplify(*this))
+      return cst;
+
+    BitFilter::Fix(expr);
 
     return expr->AsConstNode();
   }
@@ -224,9 +230,9 @@ namespace binsec {
               Expr rhs = node->GetSub(1);
               switch (lhs_size)
                 {
-                case 16: rhs = U16(U8(rhs)).expr; PrettyCode().Simplify(rhs); break;
-                case 32: rhs = U32(U8(rhs)).expr; PrettyCode().Simplify(rhs); break;
-                case 64: rhs = U64(U8(rhs)).expr; PrettyCode().Simplify(rhs); break;
+                case 16: rhs = U16(U8(rhs)).expr; PrettyCode::Do(rhs); break;
+                case 32: rhs = U32(U8(rhs)).expr; PrettyCode::Do(rhs); break;
+                case 64: rhs = U64(U8(rhs)).expr; PrettyCode::Do(rhs); break;
                 }
               sink << ' ' << op << ' ' << GetCode( rhs, vars, label ) << ')';
               return lhs_size;
@@ -437,12 +443,12 @@ namespace binsec {
 
         unsigned lshift;
         try { lshift = onb->GetSub(1).Eval<shift_type>(); }
-        catch (FullEval::Failure) { return this; }
+        catch (Evaluator::Failure) { return this; }
 
         if (lshift > rshift)
           {
             if (lshift < unsigned(rshift + select)) return this;
-            return new Zero(this->sxtend, this->extend);
+            return new Zero(GetType());
           }
         return BitFilter::mksimple(onb->GetSub(0), this->source, this->rshift - lshift, this->select, this->extend, this->sxtend);
       }
@@ -662,7 +668,7 @@ namespace binsec {
   {
     while (cond.good())
       {
-        if (ConstNodeBase const* c = PrettyCode().Simplify(cond))
+        if (ConstNodeBase const* c = PrettyCode::Do(cond))
           {
             //            std::cerr << "warning: post simplification of if-then-else condition\n";
             bool eval = dynamic_cast<ConstNode<bool> const&>(*c).value;
@@ -688,7 +694,7 @@ namespace binsec {
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
         {
           Expr x(*itr);
-          PrettyCode().Simplify(x);
+          PrettyCode::Do(x);
           nsinks.insert( x );
         }
       std::swap(nsinks, sinks);
@@ -1022,6 +1028,184 @@ namespace binsec {
     sink << "\\undef";
     return GetType()->GetBitSize();
   }
+
+  int
+  BitInsertNode::GenCode(Label&, Variables&, std::ostream&) const
+  {
+    throw 0;
+    return 0;
+  }
+
+  void
+  BitInsertNode::Repr(std::ostream& sink) const
+  {
+    sink << "BitInsertNode(";
+    dst->Repr(sink);
+    sink << ',';
+    src->Repr(sink);
+    sink << ',' << pos << ',' << size << ")";
+  }
+
+  ConstNodeBase const*
+  BitSimplify::Process(Expr const& mask, Expr& expr) const
+  {
+    struct UniBitSimplify : public BitSimplify
+    {
+      UniBitSimplify(Expr const& _mask, unsigned _count) : mask(_mask), count(_count) {}
+      ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process(idx < count ? mask : Expr(), expr); }
+      Expr mask;
+      unsigned count;
+    };
+
+    if (mask.good() and make_operation("Tzero", mask).Eval<bool>())
+      return mask->AsConstNode();
+
+    unsigned subcount = expr->SubCount();
+
+    for (ExprNode const* original = 0; original != expr.node;)
+      {
+        original = expr.node;
+        BitFilter::Fix(expr);
+        if (original != expr.node)
+          continue;
+
+        if (auto const* node = expr->AsOpNode())
+          {
+            switch (node->op.code)
+              {
+              default: break;
+
+              case Op::And:
+                {
+                  Expr nmask = mask;
+                  for (unsigned side = 0; side < subcount; ++side)
+                    if (ConstNodeBase const* cst = expr->GetSub(side)->AsConstNode())
+                      nmask = nmask.good() ? make_operation("And", nmask, cst) : Expr(cst);
+                  if (auto cst = expr.Simplify(UniBitSimplify(nmask.good() ? nmask.ConstSimplify() : 0, 2)))
+                    return cst;
+                  continue;
+                }
+                break;
+              case Op::Or:
+                {
+                  Expr nmask = mask.good() ? make_operation("Not", mask) : mask;
+                  for (unsigned side = 0; side < subcount; ++side)
+                    if (ConstNodeBase const* cst = expr->GetSub(side)->AsConstNode())
+                      nmask = nmask.good() ? make_operation("Or", nmask, cst) : Expr(cst);
+                  nmask = nmask.good() ? make_operation("Not", nmask) : nmask;
+                  if (auto cst = expr.Simplify(UniBitSimplify(nmask.good() ? nmask.ConstSimplify() : 0, 2)))
+                    return cst;
+                  continue;
+                }
+                break;
+
+              case Op::Xor:
+                if (auto cst = expr.Simplify(UniBitSimplify(mask, subcount)))
+                  return cst;
+                continue;
+                break;
+
+              case Op::Asr:
+              case Op::Lsr:
+              case Op::Lsl:
+                if (subcount == 2)
+                  {
+                    if (ConstNodeBase const* cst = expr->GetSub(1)->AsConstNode())
+                      {
+                        Expr nmask = mask;
+                        auto tp = expr->GetType();
+                        if (not mask.good())
+                          nmask = make_operation(node->op.Not, new Zero(tp));
+                        auto op = node->op.code == node->op.Lsl ? tp->encoding == tp->SIGNED ? node->op.Asr : node->op.Lsr : node->op.Lsl;
+                        nmask = make_operation(op, nmask, cst);
+                        if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+                          return cst;
+                        continue;
+                      }
+                    else if (mask.good())
+                      {
+                        if (node->op.code == node->op.Lsl)
+                          {
+                            Expr nmask = make_operation(node->op.BSR, mask);
+                            unsigned shift = nmask.ConstSimplify()->GetBits(0);
+                            nmask = make_operation(node->op.Not, new Zero(expr->GetType()));
+                            nmask = make_operation(node->op.Lsl, nmask, make_const<shift_type>(shift));
+                            nmask = make_operation(node->op.Not, nmask);
+                            if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+                              return cst;
+                          }
+                        else
+                          {
+                            Expr nmask = make_operation("Or", mask, make_operation("Neg", mask));
+                            if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+                              return cst;
+                          }
+                        continue;
+                      }
+                  }
+                break;
+              }
+          }
+        else if (auto node = dynamic_cast<BitFilter const*>(expr.node))
+          {
+            expr = node->Simplify();
+            if (expr.node != original)
+              continue;
+            auto tp = expr->GetType();
+            Expr nmask = make_operation("Not", new Zero(tp));
+            if (node->select < node->extend)
+              nmask = make_operation("Not", make_operation("Lsl", nmask, make_const<shift_type>(node->select)));
+            if (mask.good())
+              nmask = make_operation("And", nmask, mask);
+            auto childtype = expr->GetSub(0)->GetType();
+            nmask = make_operation("CastAs", Expr(new Zero(childtype))->AsConstNode(), nmask);
+            if (node->rshift)
+              nmask = make_operation("Lsl", nmask, make_const<shift_type>(node->rshift));
+            if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+              return cst;
+            continue;
+          }
+        else if (auto node = dynamic_cast<BitInsertNode const*>(expr.node))
+          {
+            auto tp = expr->GetType();
+            Expr xmask[2];
+            xmask[1] = make_operation("Not", new Zero(tp));
+            xmask[1] = make_operation("Not", make_operation("Lsl", xmask[1], make_const<shift_type>(node->size)));
+            Expr fgmask = make_operation("Lsl", xmask[1].ConstSimplify(), make_const<shift_type>(node->pos));
+            bool notinfg = mask.good() ? make_operation("Tzero", make_operation("And", fgmask, mask)).Eval<bool>() : true;
+            xmask[0] = make_operation("Not", fgmask);
+            bool notinbg = mask.good() ? make_operation("Tzero", make_operation("And", xmask[0], mask)).Eval<bool>() : true;
+            if (notinfg)
+              {
+                expr = expr->GetSub(0);
+                continue;
+              }
+            else if (notinbg)
+              {
+                if (node->pos)
+                  expr = make_operation("Lsl",expr->GetSub(1),make_const<shift_type>(node->pos));
+                else
+                  expr = expr->GetSub(1);
+                continue;
+              }
+            
+            struct BinBitSimplify : public BitSimplify
+            {
+              BinBitSimplify(Expr const* _masks) : masks(_masks) {}
+              ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process(idx < 2 ? masks[idx] : Expr(), expr); }
+              Expr const* masks;
+            };
+            if (auto cst = expr.Simplify(BinBitSimplify(&xmask[0])))
+              return cst;
+              
+            continue;
+          }
+
+        if (auto cst = expr.Simplify(BitSimplify()))
+          return cst;
+      }
+    return 0;
+  };
 
 } /* end of namespace binsec */
 } /* end of namespace symbolic */

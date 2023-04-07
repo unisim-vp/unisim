@@ -234,7 +234,7 @@ struct Checker
           GetReloc( uint32_t const* _regvalues, uint32_t _address ) : regvalues(_regvalues), address(_address) {}
           using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
 
-          ConstNodeBase const* Simplify( Expr& expr ) const override
+          ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
           {
             if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
               return new unisim::util::symbolic::ConstNode<uint32_t>( regvalues[reg->idx] );
@@ -242,7 +242,7 @@ struct Checker
               return new unisim::util::symbolic::ConstNode<uint32_t>( address );
             if (ConstNodeBase const* res = expr.Simplify(*this))
               return res;
-            throw *this;
+            throw Failure();
             return 0;
           }
           uint32_t const* regvalues;
@@ -250,7 +250,7 @@ struct Checker
         } evaluator(&ws[data_index(0)], uintptr_t(ws));
 
         Expr scratch = relval;
-        return dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*evaluator.Simplify(scratch)).value;
+        return dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*evaluator.Simplify(0, scratch)).value;
       }
       static void cut_nzvc( uint32_t& flags ) { flags &= 0xf00000; }
       void patch(uint32_t* ws, uint32_t reloc) const

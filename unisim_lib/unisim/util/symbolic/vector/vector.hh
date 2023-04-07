@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2020,
+ *  Copyright (c) 2017-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -86,7 +86,7 @@ namespace vector {
     {
       Byte() : sexp(), span() {}
       Byte( Expr const& _sexp, int _span ) : sexp(_sexp), span(_span) {}
-      Byte(unsigned value) : sexp(unisim::util::symbolic::make_const(uint8_t(value))), span(1) {}
+      Byte(unsigned value) : sexp(make_const(uint8_t(value))), span(1) {}
 
       void source( Expr const& _sexp, unsigned _span ) { sexp = _sexp; span = _span; }
       void repeat( unsigned dist ) { sexp = Expr(); span = dist; }

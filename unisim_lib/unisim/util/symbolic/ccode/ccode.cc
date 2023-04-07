@@ -57,7 +57,6 @@ namespace ccode {
   namespace {
     struct SinksMerger
     {
-      typedef unisim::util::symbolic::Expr Expr;
       void operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) { sinks.insert( l ); }
     };
   }  
@@ -85,11 +84,11 @@ namespace ccode {
     
     if (leaf)
       {
-        cond = unisim::util::symbolic::Expr();
+        cond = Expr();
         return;
       }
 
-    if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
+    if (OpNodeBase const* onb = cond->AsOpNode())
       if ((onb->op.code == onb->op.Not) and (nexts[false]))
         {
           // If condition begins with a logical not, remove the not and
@@ -100,7 +99,7 @@ namespace ccode {
 
     if (not nexts[true])
       {
-        cond = unisim::util::symbolic::make_operation("not", cond);
+        cond = make_operation("not", cond);
         std::swap( nexts[false], nexts[true] );
       }
   }
@@ -249,13 +248,6 @@ namespace ccode {
   
   SrcMgr& operator << (SrcMgr& srcmgr, CCode::ExprPrinter const& ep)
   {
-    using unisim::util::symbolic::ConstNodeBase;
-    using unisim::util::symbolic::CastNodeBase;
-    using unisim::util::symbolic::OpNodeBase;
-    using unisim::util::symbolic::Op;
-    using unisim::util::symbolic::Expr;
-    using unisim::util::symbolic::ValueType;
-
     /*** Pre expression process ***/
     {
       auto itr = ep.ccode.tmps.find( ep.expr );
@@ -276,7 +268,7 @@ namespace ccode {
           {
           default: break;
           case ValueType::BOOL:
-            srcmgr << (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*node).value ? "true" : "false");
+            srcmgr << (dynamic_cast<ConstNode<bool> const&>(*node).value ? "true" : "false");
             return srcmgr;
           case ValueType::UNSIGNED:
             switch (tp->GetBitSize())
@@ -408,7 +400,6 @@ namespace ccode {
   void
   CCode::make_temp( SrcMgr& sink, Expr const& e )
   {
-    using unisim::util::symbolic::ValueType;
     auto tp = e->GetType();
     std::ostringstream buf;
     switch (tp->encoding)

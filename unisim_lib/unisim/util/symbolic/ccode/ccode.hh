@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 20017-2018,
+ *  Copyright (c) 2017-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -55,10 +55,8 @@ namespace ccode {
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
 
-  struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
+  struct ActionNode : public Conditional<ActionNode>
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    
     ActionNode() : Conditional<ActionNode>(), updates() {}
     void                     Repr( std::ostream& sink ) const;
     
@@ -144,8 +142,6 @@ namespace ccode {
   
   struct CCode
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    
     CCode() : tmps() {}
     
     struct ExprPrinter
@@ -159,7 +155,7 @@ namespace ccode {
     std::map<Expr,Variable> tmps;
   };
   
-  struct CNode : public unisim::util::symbolic::ExprNode
+  struct CNode : public ExprNode
   {
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const = 0;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<CNode const&>( rhs ) ); }

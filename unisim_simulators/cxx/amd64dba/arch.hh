@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -756,7 +756,7 @@ Processor<MODE>::vregsinks( Processor<MODE> const& ref, unsigned reg ) const
   unsigned const vector_size = umms[reg].size;
 
   if (unsigned psize = 8*(VUConfig::BYTECOUNT - vector_size))
-    path->add_sink( newPartialRegWrite( VRegID(reg), 8*vector_size, psize, new unisim::util::symbolic::Zero(false, psize) ) );
+    path->add_sink( newPartialRegWrite( VRegID(reg), 8*vector_size, psize, new unisim::util::symbolic::Zero(unisim::util::symbolic::ValueType::UNSIGNED, psize) ) );
 
   if (vector_size == 0)
     return;
@@ -800,7 +800,7 @@ Processor<MODE>::eregsinks( Processor<MODE> const& ref, unsigned reg ) const
       Expr value = core.eregread(reg,size,pos);
       if (value == ref.eregread(reg,size,pos))
         return;
-      unisim::util::symbolic::binsec::PrettyCode().Simplify(value);
+      unisim::util::symbolic::binsec::PrettyCode::Do(value);
       unsigned half = size / 2, mid = pos+half;
       if (value.ConstSimplify() or size <= 1 or not core.regvalues[reg][mid].node)
         {

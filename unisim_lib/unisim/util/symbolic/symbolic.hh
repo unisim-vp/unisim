@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/arithmetic/integer.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <stdexcept>
 #include <map>
@@ -149,16 +150,25 @@ namespace symbolic {
 
   struct Zero : public ExprNode
   {
-    Zero(bool _is_signed, unsigned _bitsize) : bitsize(_bitsize), is_signed(_is_signed) {} unsigned bitsize; bool is_signed;
+    Zero(ValueType::encoding_t encoding, unsigned bitsize) : type(encoding, bitsize) {}
+    Zero(ValueType const* tp) : type(tp) {}
     virtual Zero* Mutate() const override { return new Zero( *this ); };
     virtual unsigned SubCount() const override { return 0; };
     virtual ConstNodeBase const* AsConstNode() const override;
     virtual ConstNodeBase const* Eval( ConstNodeBase const** ) const { return AsConstNode(); }
     virtual void Repr( std::ostream& sink ) const override;
-    virtual ValueType const* GetType() const override;
+    virtual ValueType const* GetType() const override { return &type; }
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
     // virtual int cmp( ExprNode const& rhs ) const override { return compare(dunamic_cast<Zero const&>(rhs)); }
     // int compare(Zero const& rhs) const { if (int delta = int(is_signed) - rhs.is_signed) return delta; return int(bitsize) - int (rhs.bitsize); }
+    struct Type : public ValueType
+    {
+      Type(ValueType::encoding_t encoding, unsigned _bitsize) : ValueType(encoding), bitsize(_bitsize) {}
+      Type(ValueType const* tp) : ValueType(tp->encoding), bitsize(tp->GetBitSize()) {}
+      virtual unsigned GetBitSize() const override { return bitsize; }
+      virtual void GetName(std::ostream& sink) const override { ValueType::GetName(sink); }
+      unsigned bitsize;
+    } type;
   };
 
   struct Op : public identifier::Identifier<Op>
@@ -168,11 +178,11 @@ namespace symbolic {
         Xor, And, Or,
         Ror, Rol, Lsl, Asr, Lsr,
         Add, Sub, Div, Divu, Mod, Modu, Mul, Min, Max,
-        Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
+        Tzero, Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
         BSwp, BSR, BSF, POPCNT, Not, Neg,
         FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
         FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
-        Cast,
+        Cast, CastAs,
         end
       } code;
 
@@ -197,6 +207,7 @@ namespace symbolic {
         case    Lsl: return "Lsl";
         case    Asr: return "Asr";
         case    Lsr: return "Lsr";
+        case  Tzero: return "Tzero";
         case    Teq: return "Teq";
         case    Tne: return "Tne";
         case    Tge: return "Tge";
@@ -230,6 +241,7 @@ namespace symbolic {
         case  FMax: return "FMax";
         case  FMin: return "FMin";
         case   Cast: return "Cast";
+        case CastAs: return "CastAs";
         case    end: break;
         }
       return "NA";
@@ -318,22 +330,44 @@ namespace symbolic {
   VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, shift_type shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
   uint32_t   EvalRotateLeft( uint32_t v, shift_type shift );
 
+  template <typename VALUE_TYPE>
+  VALUE_TYPE EvalCastAs( VALUE_TYPE res, ConstNodeBase const* cst )
+  {
+    if (std::is_floating_point<VALUE_TYPE>::value)
+      {
+        throw std::logic_error( "No CastAs for this type" );
+      }
+    return cst->GetBits(0);
+  }
+
+  template <unsigned CELLCOUNT, bool SIGNED>
+  unisim::util::arithmetic::Integer<CELLCOUNT,SIGNED> EvalCastAs( unisim::util::arithmetic::Integer<CELLCOUNT,SIGNED> res, ConstNodeBase const* cst )
+  {
+    if (CELLCOUNT & 1)
+      res.cells[CELLCOUNT-1] = cst->GetBits(CELLCOUNT/2);
+    
+    for (unsigned idx = CELLCOUNT/2; idx-- > 0;)
+      {
+        uint64_t bits = cst->GetBits(idx);
+        res.cells[idx+1] = bits >> 32;
+        res.cells[idx+0] = bits >>  0;
+      }
+
+    return res;
+  }
+
   struct Evaluator
   {
+    struct Failure {};
     virtual ~Evaluator() {}
-    virtual ConstNodeBase const* Simplify(Expr&) const;
+    virtual ConstNodeBase const* Simplify(unsigned, Expr&) const;
   };
   
-  struct FullEval : public Evaluator
-  {
-    struct Failure {};
-    ConstNodeBase const* Simplify(Expr& expr) const override;
-  };
-
   struct Expr
   {
     Expr() : node() {} ExprNode const* node;
     Expr( Expr const& expr ) : node( expr.node ) { if (node) node->Retain(); }
+    Expr( Expr&& expr ) : node( expr.node ) { expr.node = 0; }
     Expr( ExprNode const* _node ) : node( _node ) { if (node) node->Retain(); }
     ~Expr() { if (node) node->Release(); }
 
@@ -409,10 +443,11 @@ namespace symbolic {
         case Op::Lsl:  case Op::Lsr: case Op::Asr:  case Op::Ror:   case Op::Rol:
         case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max:
         case Op::Mul:  case Op::Div: case Op::Mod: case Op::Divu: case Op::Modu:
+        case Op::CastAs:
 
           return GetSub(0)->GetType();
 
-        case Op::FDen:
+        case Op::FDen: case Op::Tzero:
         case Op::Teq: case Op::Tne:  case Op::Tleu: case Op::Tle:  case Op::Tltu:
         case Op::Tlt: case Op::Tgeu: case Op::Tge:  case Op::Tgtu: case Op::Tgt:
           return CValueType(bool());
@@ -471,6 +506,7 @@ namespace symbolic {
         case Op::Mod:
         case Op::Modu:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
 
+        case Op::Tzero:  return new ConstNode   <bool>   ( value == VALUE_TYPE() );
         case Op::Teq:    return new ConstNode   <bool>   ( value == GetValue( args[1] ) );
         case Op::Tne:    return new ConstNode   <bool>   ( value != GetValue( args[1] ) );
         case Op::Tleu:
@@ -483,6 +519,7 @@ namespace symbolic {
         case Op::Tgt:    return new ConstNode   <bool>   ( value >  GetValue( args[1] ) );
         case Op::Ror:    return new this_type( EvalRotateRight( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
         case Op::Rol:    return new this_type( EvalRotateLeft( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
+        case Op::CastAs: return new this_type( EvalCastAs( value, args[1] ) );
 
         case Op::FSQB:   break;
         case Op::FFZ:    break;
@@ -538,8 +575,19 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   VALUE_TYPE Expr::Eval() const
   {
+    struct : public Evaluator
+    {
+      ConstNodeBase const* Simplify(unsigned, Expr& expr) const override
+      {
+        if (auto res = expr.Simplify(*this))
+          return res;
+        throw Evaluator::Failure {};
+        return 0;
+      }
+    } evaluator;
+
     Expr scratch = *this;
-    return dynamic_cast<ConstNode<VALUE_TYPE> const&>(*FullEval().Simplify(scratch)).value;
+    return dynamic_cast<ConstNode<VALUE_TYPE> const&>(*evaluator.Simplify(0, scratch)).value;
   }
 
   template <typename VALUE_TYPE>

@@ -50,7 +50,7 @@ namespace ppc64 {
     for (FRegID reg; reg.next();)
       fregvalues[reg.idx()].expr = newRegRead( reg );
   }
-  
+
   bool
   Arch::close( Arch const& ref, uint64_t linear_nia )
   {
@@ -64,21 +64,31 @@ namespace ppc64 {
 
     if (cr.value.expr != ref.cr.value.expr)
       {
+        cr.value.expr->Repr(std::cerr << "cr: ");
+        std::cerr << '\n';
+
         for (unsigned idx = 32; idx-- > 0;)
           {
-            Expr crbit = unisim::util::symbolic::binsec::BitFilter::mksimple(cr.value.expr, 32, 31 ^ idx, 1, 1, false);
-            crbit->Repr(std::cerr << "cr<" << idx << ">: ");
+            Expr
+              new_crbit = unisim::util::symbolic::binsec::BitFilter::mksimple(cr.value.expr, 32, 31 ^ idx, 1, 1, false),
+              old_crbit = unisim::util::symbolic::binsec::BitFilter::mksimple(ref.cr.value.expr, 32, 31 ^ idx, 1, 1, false);
+
+            unisim::util::symbolic::binsec::BitSimplify::Do(new_crbit);
+            unisim::util::symbolic::binsec::BitSimplify::Do(old_crbit);
+            if (new_crbit == old_crbit)
+              continue;
+            new_crbit->Repr(std::cerr << "cr<" << idx << ">: ");
             std::cerr << '\n';
           }
         throw 0;
       }
-    
+
     if (xer.value.expr != ref.xer.value.expr)
       throw 0;
-    
+
     if (fpscr.value.expr != ref.fpscr.value.expr)
       throw 0;
-    
+
     return complete;
   }
 
@@ -87,21 +97,11 @@ namespace ppc64 {
   {
     sink << c_str();
   }
-  
+
   void
   Arch::FRegID::Repr(std::ostream& sink) const
   {
     sink << c_str();
-  }
-
-  void
-  Arch::BitInsertNode::Repr(std::ostream& sink) const
-  {
-    sink << "BitInsertNode(";
-    dst->Repr(sink);
-    sink << ',';
-    src->Repr(sink);
-    sink << ',' << pos << ")";
   }
 
   void ppc64::Arch::FPSCR::ID::Repr(std::ostream& sink) const { sink << "fpscr"; }
