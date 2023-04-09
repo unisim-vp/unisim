@@ -178,7 +178,9 @@ namespace symbolic {
         Xor, And, Or,
         Ror, Rol, Lsl, Asr, Lsr,
         Add, Sub, Div, Divu, Mod, Modu, Mul, Min, Max,
-        Tzero, Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
+        Inc, Dec,
+        Tzero, Tnzero,
+        Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
         BSwp, BSR, BSF, POPCNT, Not, Neg,
         FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
         FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
@@ -207,7 +209,10 @@ namespace symbolic {
         case    Lsl: return "Lsl";
         case    Asr: return "Asr";
         case    Lsr: return "Lsr";
+        case    Inc: return "Inc";
+        case    Dec: return "Dec";
         case  Tzero: return "Tzero";
+        case Tnzero: return "Tnzero";
         case    Teq: return "Teq";
         case    Tne: return "Tne";
         case    Tge: return "Tge";
@@ -443,11 +448,11 @@ namespace symbolic {
         case Op::Lsl:  case Op::Lsr: case Op::Asr:  case Op::Ror:   case Op::Rol:
         case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max:
         case Op::Mul:  case Op::Div: case Op::Mod: case Op::Divu: case Op::Modu:
-        case Op::CastAs:
+        case Op::CastAs: case Op::Inc: case Op::Dec:
 
           return GetSub(0)->GetType();
 
-        case Op::FDen: case Op::Tzero:
+        case Op::FDen: case Op::Tzero: case Op::Tnzero:
         case Op::Teq: case Op::Tne:  case Op::Tleu: case Op::Tle:  case Op::Tltu:
         case Op::Tlt: case Op::Tgeu: case Op::Tge:  case Op::Tgtu: case Op::Tgt:
           return CValueType(bool());
@@ -505,7 +510,10 @@ namespace symbolic {
         case Op::Divu:   return new this_type( value / GetValue( args[1] ) );
         case Op::Mod:
         case Op::Modu:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
+	case Op::Inc:    return new this_type( value + VALUE_TYPE(1) );
+	case Op::Dec:    return new this_type( value - VALUE_TYPE(1) );
 
+        case Op::Tnzero: return new ConstNode   <bool>   ( value != VALUE_TYPE() );
         case Op::Tzero:  return new ConstNode   <bool>   ( value == VALUE_TYPE() );
         case Op::Teq:    return new ConstNode   <bool>   ( value == GetValue( args[1] ) );
         case Op::Tne:    return new ConstNode   <bool>   ( value != GetValue( args[1] ) );
