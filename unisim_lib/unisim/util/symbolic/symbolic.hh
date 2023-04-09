@@ -320,6 +320,7 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalBitScanReverse( VALUE_TYPE v ) { throw std::logic_error( "No BitScanReverse for this type" ); }
   uint32_t   EvalBitScanReverse( uint32_t v );
+  uint32_t   EvalBitScanReverse( uint64_t v );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalBitScanForward( VALUE_TYPE v ) { throw std::logic_error( "No BitScanForward for this type" ); }
   uint32_t   EvalBitScanForward( uint32_t v );

@@ -329,6 +329,7 @@ namespace symbolic {
   uint16_t EvalByteSwap( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }
 
   uint32_t EvalBitScanReverse( uint32_t v ) { return unisim::util::arithmetic::BitScanReverse( v ); }
+  uint32_t EvalBitScanReverse( uint64_t v ) { return unisim::util::arithmetic::BitScanReverse( v ); }
 
   uint32_t EvalBitScanForward( uint32_t v ) { return unisim::util::arithmetic::BitScanForward( v ); }
 

@@ -1059,12 +1059,18 @@ namespace binsec {
 
     unsigned subcount = expr->SubCount();
 
+    struct
+    {
+      Expr mask(ValueType const* tp)
+      {
+        unsigned bitsize = tp->GetBitSize();
+        return new Zero(bitsize == 1 ? tp->BOOL : tp->UNSIGNED, bitsize);
+      }
+    } zero;
+
     for (ExprNode const* original = 0; original != expr.node;)
       {
         original = expr.node;
-        BitFilter::Fix(expr);
-        if (original != expr.node)
-          continue;
 
         if (auto const* node = expr->AsOpNode())
           {
@@ -1072,31 +1078,66 @@ namespace binsec {
               {
               default: break;
 
+              case Op::Or:
               case Op::And:
                 {
-                  Expr nmask = mask;
+                  /* Compute significant bits for AND and ignored bits
+                   * for OR. `umask` is for upstream bits and `dmask` is
+                   * for downstream bits.
+                   */
+                  Expr umask = mask.good() ? mask : zero.mask(expr->GetType());
+                  if (mask.good() xor (op == Op::And))
+                    umask = make_operation("Not", umask);
+                  Expr dmask = umask;
+
+                  unsigned isvar = 0; /* keep track of non-const sub-expressions */
                   for (unsigned side = 0; side < subcount; ++side)
                     if (ConstNodeBase const* cst = expr->GetSub(side)->AsConstNode())
-                      nmask = nmask.good() ? make_operation("And", nmask, cst) : Expr(cst);
-                  if (auto cst = expr.Simplify(UniBitSimplify(nmask.good() ? nmask.ConstSimplify() : 0, 2)))
-                    return cst;
-                  continue;
-                }
-                break;
-              case Op::Or:
-                {
-                  Expr nmask = mask.good() ? make_operation("Not", mask) : mask;
-                  for (unsigned side = 0; side < subcount; ++side)
-                    if (ConstNodeBase const* cst = expr->GetSub(side)->AsConstNode())
-                      nmask = nmask.good() ? make_operation("Or", nmask, cst) : Expr(cst);
-                  nmask = nmask.good() ? make_operation("Not", nmask) : nmask;
-                  if (auto cst = expr.Simplify(UniBitSimplify(nmask.good() ? nmask.ConstSimplify() : 0, 2)))
+                      dmask = make_operation(op, dmask, cst);
+                    else
+                      isvar |= 1 << side;
+
+                  if (isvar and not (isvar & (isvar-1)))
+                    {
+                      /* There is one non-const source left. See if we
+                       * can make a simpler expression from it.
+                       */
+                      Expr const& src = expr->GetSub(arithmetic::BitScanForward(isvar));
+                      if (op == Op::And and make_operation(Op::Tzero, make_operation(Op::And, dmask, make_operation(Op::Inc, dmask))).Eval<bool>())
+                        {
+                          if (make_operation(Op::Tzero, dmask).Eval<bool>())
+                            { expr = dmask; return expr.ConstSimplify(); }
+
+                          /* Make it a BitFilter */
+                          unsigned
+                            select = make_operation(Op::Inc, make_operation(Op::BSR, dmask)).ConstSimplify()->GetBits(0),
+                            bitsize = src->GetType()->GetBitSize();
+                          
+                          if (select >= bitsize)
+                            expr = src;
+                          else
+                            expr = BitFilter::mksimple( src, bitsize, 0, select, bitsize, false );
+                          continue;
+                        }
+                      if (make_operation( Op::Teq, umask, dmask ).Eval<bool>())
+                        {
+                          /* The AND/OR operation is not doing anything useful; its clearing/setting bits that will be ignored later. */
+                          expr = src;
+                          continue;
+                        }
+                    }
+
+                  if (op == Op::Or)
+                    dmask = make_operation("Not", dmask);
+
+                  if (auto cst = expr.Simplify(UniBitSimplify(dmask, 2)))
                     return cst;
                   continue;
                 }
                 break;
 
               case Op::Xor:
+                /* TODO: Simplify trivial cases (xor 0 and xor -1) */
                 if (auto cst = expr.Simplify(UniBitSimplify(mask, subcount)))
                   return cst;
                 continue;
@@ -1120,13 +1161,11 @@ namespace binsec {
                             expr = BitFilter::mksimple( src, bitsize, shift, bitsize - shift, bitsize, op == Op::Asr );
                           }
 
-                        Expr nmask = mask;
                         auto tp = expr->GetType();
-                        if (not mask.good())
-                          nmask = make_operation(Op::Not, new Zero(tp));
-                        auto unsh = op == Op::Lsl ? tp->encoding == tp->SIGNED ? Op::Asr : Op::Lsr : Op::Lsl;
-                        nmask = make_operation(unsh, nmask, cst);
-                        if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+                        Expr dmask = mask.good() ? mask : make_operation(Op::Not, zero.mask(tp));
+                        auto unsh = op == Op::Lsl ? Op::Lsr : Op::Lsl;
+                        dmask = make_operation(unsh, dmask, cst);
+                        if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
                           return cst;
                         continue;
                       }
@@ -1134,18 +1173,18 @@ namespace binsec {
                       {
                         if (op == Op::Lsl)
                           {
-                            Expr nmask = make_operation(Op::BSR, mask);
-                            unsigned shift = nmask.ConstSimplify()->GetBits(0);
-                            nmask = make_operation(Op::Not, new Zero(expr->GetType()));
-                            nmask = make_operation(Op::Lsl, nmask, make_const<shift_type>(shift));
-                            nmask = make_operation(Op::Not, nmask);
-                            if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+                            Expr dmask = make_operation(Op::BSR, mask);
+                            unsigned shift = dmask.ConstSimplify()->GetBits(0);
+                            dmask = make_operation(Op::Not, zero.mask(expr->GetType()));
+                            dmask = make_operation(Op::Lsl, dmask, make_const<shift_type>(shift));
+                            dmask = make_operation(Op::Not, dmask);
+                            if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
                               return cst;
                           }
                         else
                           {
-                            Expr nmask = make_operation("Or", mask, make_operation("Neg", mask));
-                            if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+                            Expr dmask = make_operation("Or", mask, make_operation("Neg", mask));
+                            if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
                               return cst;
                           }
                         continue;
@@ -1195,16 +1234,16 @@ namespace binsec {
             if (expr.node != original)
               continue;
             auto tp = expr->GetType();
-            Expr nmask = make_operation("Not", new Zero(tp));
+            Expr dmask = make_operation("Not", zero.mask(tp));
             if (node->select < node->extend)
-              nmask = make_operation("Not", make_operation("Lsl", nmask, make_const<shift_type>(node->select)));
+              dmask = make_operation("Not", make_operation("Lsl", dmask, make_const<shift_type>(node->select)));
             if (mask.good())
-              nmask = make_operation("And", nmask, mask);
+              dmask = make_operation("And", dmask, mask);
             auto childtype = expr->GetSub(0)->GetType();
-            nmask = make_operation("CastAs", Expr(new Zero(childtype))->AsConstNode(), nmask);
+            dmask = make_operation("CastAs", Expr(new Zero(childtype))->AsConstNode(), dmask);
             if (node->rshift)
-              nmask = make_operation("Lsl", nmask, make_const<shift_type>(node->rshift));
-            if (auto cst = expr.Simplify(UniBitSimplify(nmask.ConstSimplify(), 1)))
+              dmask = make_operation("Lsl", dmask, make_const<shift_type>(node->rshift));
+            if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
               return cst;
             continue;
           }
@@ -1212,7 +1251,7 @@ namespace binsec {
           {
             auto tp = expr->GetType();
             Expr xmask[2];
-            xmask[1] = make_operation("Not", new Zero(tp));
+            xmask[1] = make_operation("Not", zero.mask(tp));
             xmask[1] = make_operation("Not", make_operation("Lsl", xmask[1], make_const<shift_type>(node->size)));
             Expr fgmask = make_operation("Lsl", xmask[1].ConstSimplify(), make_const<shift_type>(node->pos));
             bool notinfg = mask.good() ? make_operation("Tzero", make_operation("And", fgmask, mask)).Eval<bool>() : true;
