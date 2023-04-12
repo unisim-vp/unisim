@@ -124,7 +124,7 @@ struct Processor
       buf << (RegID("r0") + idx).c_str() << '_' << mode_ident();
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
-    virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+    virtual ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
     virtual ForeignRegister* Mutate() const override { return new ForeignRegister( *this ); }
     char const* mode_ident() const
     {
@@ -189,7 +189,7 @@ struct Processor
         throw 0;
       srcmgr << "(*(uint" << unisim::util::symbolic::ccode::dec(8 << size) << "_t*)(" << ccode(addr) << "))";
     }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8 << size ); }
+    virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8 << size ); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
@@ -418,7 +418,7 @@ struct Processor
   {
     AssertFalse() {}
     virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType GetType() const { return unisim::util::symbolic::NoValueType(); }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { throw 0; }

@@ -91,7 +91,7 @@ struct ExpectedAddress : public unisim::util::symbolic::ExprNode
   virtual int cmp(ExprNode const& rhs) const override { return 0; }
   virtual unsigned SubCount() const override { return 0; }
   virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-  virtual unisim::util::symbolic::ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+  virtual unisim::util::symbolic::ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
 };
       
 #endif // ARM32SAV_REVIEW_HH

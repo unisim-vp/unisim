@@ -123,7 +123,7 @@ struct Scanner
 
   struct Update : public ExprNode
   {
-    virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType GetType() const override { return unisim::util::symbolic::NoValueType(); }
   };
 
   struct RegReadBase : public unisim::util::symbolic::ExprNode
@@ -140,7 +140,7 @@ struct Scanner
     RegRead( RID _id ) : id(_id) {}
     virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual char const* GetRegName() const override { return id.c_str(); };
-    virtual ValueType const* GetType() const { return RID::GetType(); }
+    virtual ValueType GetType() const { return RID::GetType(); }
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
@@ -166,7 +166,7 @@ struct Scanner
     VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
     virtual ExprNode* Mutate() const override { return new this_type(*this); }
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-    virtual ValueType const* GetType() const override { return T::GetType(); }
+    virtual ValueType GetType() const override { return T::GetType(); }
   };
 
   struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
@@ -188,9 +188,9 @@ struct Scanner
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
   };
 
-  struct VReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "VReg"; } };
-  // struct FReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(double()); } static char const* name() { return "FReg"; } };
-  struct GReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "GReg"; } };
+  struct VReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "VReg"; } };
+  // struct FReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(double()); } static char const* name() { return "FReg"; } };
+  struct GReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "GReg"; } };
 
   typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
   //  typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
@@ -230,34 +230,34 @@ struct Scanner
 
   struct Load : public ExprNode
   {
-    Load( ValueType const* _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
+    Load( ValueType _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
     virtual Load* Mutate() const override { return new Load( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink << "Load"); sink << "(" << addr << ")"; }
+    virtual void Repr( std::ostream& sink ) const override { GetType().Repr(sink << "Load"); sink << "(" << addr << ")"; }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
-    int compare( Load const& rhs ) const { return tp->cmp(*rhs.tp); }
-    virtual ValueType const* GetType() const override { return tp; }
+    int compare( Load const& rhs ) const { return tp.cmp(rhs.tp); }
+    virtual ValueType GetType() const override { return tp; }
 
     Expr addr;
-    ValueType const* tp;
+    ValueType tp;
   };
 
   struct Store : public Update
   {
-    Store( ValueType const* _tp, Expr const& _addr, Expr const& _value )
+    Store( ValueType _tp, Expr const& _addr, Expr const& _value )
       : addr( _addr ), value( _value ), tp(_tp)
     {}
     virtual Store* Mutate() const override { return new Store( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink << "Store"); sink << "( " << addr << ", " << value <<  " )"; }
+    virtual void Repr( std::ostream& sink ) const override { GetType().Repr(sink << "Store"); sink << "( " << addr << ", " << value <<  " )"; }
     virtual unsigned SubCount() const override { return 2; }
     virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
-    int compare( Store const& rhs ) const { return tp->cmp(*rhs.tp); }
+    int compare( Store const& rhs ) const { return tp.cmp(rhs.tp); }
 
     Expr addr;
     Expr value;
-    ValueType const* tp;
+    ValueType tp;
   };
 
   static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
@@ -367,9 +367,9 @@ struct Scanner
 
 //     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ dont("system"); }
 
-  Expr MemRead(ValueType const* tp, Expr const& addr, bool aligned)
+  Expr MemRead(ValueType tp, Expr const& addr, bool aligned)
   {
-    interface.memaccess( addr, tp->GetBitSize()/8, false, aligned );
+    interface.memaccess( addr, tp.bitsize/8, false, aligned );
     return new Load( tp, addr );
   }
   template <typename T>
@@ -381,9 +381,9 @@ struct Scanner
   U16  MemRead16( U32 const& addr ) { return MemReadT<U16>( addr, true ); }
   U8  MemRead8( U32 const& addr ) { return MemReadT<U8>( addr, true ); }
 
-  void MemWrite(ValueType const* tp, Expr const& addr, Expr const& data, bool aligned)
+  void MemWrite(ValueType tp, Expr const& addr, Expr const& data, bool aligned)
   {
-    interface.memaccess( addr, tp->GetBitSize()/8, true, aligned );
+    interface.memaccess( addr, tp.bitsize/8, true, aligned );
     stores.insert( new Store( tp, addr, data ) );
   }
   template <typename T>

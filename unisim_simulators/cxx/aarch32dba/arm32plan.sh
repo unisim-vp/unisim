@@ -1,4 +1,3 @@
-set -ex
 ${ARMSEC} arm 0x40c8 0xe2a33a9c # adc	r3, r3, #638976
 ${ARMSEC} arm 0x40c8 0xe2b11912 # adcs	r1, r1, #294912
 ${ARMSEC} arm 0x40c8 0xe2a230cf # adc	r3, r2, #207
@@ -308,13 +307,10 @@ ${ARMSEC} arm 0x40c8 0xe0210350 # eor	r0, r1, r0, asr r3
 ${ARMSEC} arm 0x40c8 0xe0302132 # eors	r2, r0, r2, lsr r1
 ${ARMSEC} arm 0x40c8 0xe0220331 # eor	r0, r2, r1, lsr r3
 ${ARMSEC} arm 0x40c8 0xe0313052 # eors	r3, r1, r2, asr r0
-${ARMSEC} arm 0x40c8 0xe9300001 # ldmdb	r0!, {r0}
 ${ARMSEC} arm 0x40c8 0xe8910008 # ldmia	r1, {r3}
-${ARMSEC} arm 0x40c8 0xe9b00005 # ldmib	r0!, {r0, r2}
 ${ARMSEC} arm 0x40c8 0xe9920006 # ldmib	r2, {r1, r2}
 ${ARMSEC} arm 0x40c8 0xe991000c # ldmib	r1, {r2, r3}
 ${ARMSEC} arm 0x40c8 0xe991000e # ldmib	r1, {r1, r2, r3}
-${ARMSEC} arm 0x40c8 0xe832000d # ldmda	r2!, {r0, r2, r3}
 ${ARMSEC} arm 0x40c8 0xe9100007 # ldmdb	r0, {r0, r1, r2}
 ${ARMSEC} arm 0x40c8 0xe811000d # ldmda	r1, {r0, r2, r3}
 ${ARMSEC} arm 0x40c8 0xe811000f # ldmda	r1, {r0, r1, r2, r3}

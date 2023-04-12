@@ -80,18 +80,6 @@ ProcessorBase::VRegID::Repr(std::ostream& sink) const
   sink << char(VmmValue::VPREFIX) << "mm" << std::dec << reg;
 }
 
-unisim::util::symbolic::ValueType const*
-VmmValue::GetType()
-{
-  static struct Type : unisim::util::symbolic::ValueType
-  {
-    Type() : ValueType(unisim::util::symbolic::ValueType::NA) {}
-    virtual unsigned GetBitSize() const override { return 8*VmmValue::BYTECOUNT; }
-    virtual void GetName(std::ostream& sink) const override { sink << "VmmValue"; }
-  } _;
-  return &_;
-}
-
 void
 ProcessorBase::VmmIndirectReadBase::Repr( std::ostream& sink ) const
 {

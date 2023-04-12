@@ -222,10 +222,9 @@ namespace binsec {
   struct BitFilter : public ASExprNode
   {
     static Expr mksimple( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend );
-    static void Fix(Expr&);
 
     virtual BitFilter* Mutate() const override { return new BitFilter( *this ); }
-    virtual ValueType const* GetType() const { return extend == 1 ? CValueType(bool()) : CValueType(sxtend ? ValueType::SIGNED : ValueType::UNSIGNED, extend); }
+    virtual ValueType GetType() const { return extend == 1 ? CValueType(bool()) : CValueType(sxtend ? ValueType::SIGNED : ValueType::UNSIGNED, extend); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
@@ -264,7 +263,7 @@ namespace binsec {
     int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<BitInsertNode const&>(rhs) ); }
     int compare(BitInsertNode const& rhs) const { if (int delta = int(size) - int(rhs.size)) return delta; return int(pos) - int(rhs.pos); }
     ExprNode* Mutate() const { return new BitInsertNode(*this); }
-    ValueType const* GetType() const override { return dst->GetType(); }
+    ValueType GetType() const override { return dst->GetType(); }
     int GenCode(Label&, Variables&, std::ostream&) const override;
 
     friend class BitSimplify;
@@ -272,13 +271,6 @@ namespace binsec {
   private:
     Expr dst, src;
     unsigned pos, size;
-  };
-
-  struct PrettyCode : Evaluator
-  {
-    /* Enhances generated code by leveraging BitFilter node. */
-    ConstNodeBase const* Simplify(unsigned, Expr&) const override;
-    static ConstNodeBase const* Do(Expr& expr) { return PrettyCode().Simplify(0,expr); }
   };
 
   struct BitSimplify : public Evaluator
@@ -324,7 +316,7 @@ namespace binsec {
     typedef RegReadBase Super;
     RegRead( RID _id ) : Super(), id(_id) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ValueType const* GetType() const override { return RID::GetType(); }
+    virtual ValueType GetType() const override { return RID::GetType(); }
     virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
     int compare( RegRead const& rhs ) const { if (int delta = Super::compare(rhs)) return delta; return id.cmp( rhs.id ); }
@@ -336,7 +328,7 @@ namespace binsec {
   {
     Assignment( Expr const& _value ) : value(_value) {}
     
-    virtual ValueType const* GetType() const { return NoValueType(); }
+    virtual ValueType GetType() const { return NoValueType(); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
     
@@ -369,7 +361,7 @@ namespace binsec {
     typedef RegWrite<RID> this_type;
     typedef RegWriteBase Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value, TypeInfo<typename RID::value_type>::BITSIZE), id(_id) {}
-    RegWrite( RID _id, int rbase, int rsize, Expr const& _value ) : Super(_value, RID::GetType()->GetBitSize(), rbase, rsize), id(_id) {}
+    RegWrite( RID _id, int rbase, int rsize, Expr const& _value ) : Super(_value, RID::GetType().bitsize, rbase, rsize), id(_id) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
@@ -422,7 +414,7 @@ namespace binsec {
       sink << "assert (false)";
       return 0;
     }
-    virtual ValueType const* GetType() const override{ return NoValueType(); }
+    virtual ValueType GetType() const override{ return NoValueType(); }
 
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual unsigned SubCount() const override { return 0; }
@@ -457,7 +449,7 @@ namespace binsec {
       : MemAccess(_addr, _size, _alignment, _bigendian)
     {}
     virtual Load* Mutate() const override { return new Load(*this); }
-    virtual ValueType const* GetType() const override { return CValueType(ValueType::UNSIGNED, 8*bytecount()); }
+    virtual ValueType GetType() const override { return CValueType(ValueType::UNSIGNED, 8*bytecount()); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override;
     virtual void Repr( std::ostream& sink ) const override { MemAccess::Repr(sink); }
     virtual unsigned SubCount() const override { return 1; }
@@ -469,7 +461,7 @@ namespace binsec {
     Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
       : MemAccess(_addr, _size, _alignment, _bigendian), value(_value)
     {}
-    virtual ValueType const* GetType() const override { return NoValueType(); }
+    virtual ValueType GetType() const override { return NoValueType(); }
     virtual Store* Mutate() const override { return new Store(*this); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const override;
     virtual void Repr( std::ostream& sink ) const override;
@@ -494,7 +486,7 @@ namespace binsec {
 
     virtual unsigned SubCount() const override { return 0; };
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ValueType const* GetType() const override { return CValueType(T()); }
+    virtual ValueType GetType() const override { return CValueType(T()); }
   };
 
   template <typename T, unsigned SUBCOUNT>
@@ -505,7 +497,7 @@ namespace binsec {
     virtual unsigned SubCount() const override { return SUBCOUNT; };
     virtual Expr const& GetSub(unsigned idx) const override { if (idx < SUBCOUNT) { return subs[idx]; } return ExprNode::GetSub(idx); }
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ValueType const* GetType() const override { return CValueType(T()); }
+    virtual ValueType GetType() const override { return CValueType(T()); }
 
     Expr subs[SUBCOUNT];
   };

@@ -115,19 +115,6 @@ namespace review
     return false;
   }
 
-  unisim::util::symbolic::ValueType const*
-  VmmRegister::GetType()
-  {
-    static struct VRType : public unisim::util::symbolic::ValueType
-    {
-      VRType() : unisim::util::symbolic::ValueType(unisim::util::symbolic::ValueType::NA) {}
-      virtual unsigned GetBitSize() const override { return 8*BYTECOUNT; }
-      virtual void GetName(std::ostream& sink) const override { sink << "Vmm"; }
-    } _;
-
-    return &_;
-  };
-
   unisim::util::symbolic::Expr&
   Arch::fpaccess( unsigned reg, bool write )
   {

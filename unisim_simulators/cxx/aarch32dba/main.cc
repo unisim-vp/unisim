@@ -36,6 +36,7 @@
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <algorithm>
 #include <cstdlib>
@@ -51,10 +52,11 @@ uint32_t getu32( uint32_t& res, char const* arg )
   return true;
 }
 
-char const* usage()
+void usage( std::ostream& sink, char const* progname )
 {
-  return
-    "usage: <program> arm|thumb <address> <encoding>\n";
+  sink << "usage:\n"
+       << "  " << progname << " <exec_status_flags> <address> <encoding>\n"
+       << "  " << progname << " <exec_status_flags> <file>\n";
 }
 
 template <unsigned N>
@@ -66,26 +68,8 @@ char const* after(std::string const& s, char const (&ref)[N])
   return &s[size];
 }
 
-int
-main( int argc, char** argv )
+bool process( aarch32::Decoder& decoder, std::ostream& sink, std::string exec_flags, char const* as, char const* cs )
 {
-  if (argc != 4)
-    {
-      std::cerr << "Wrong number of CLI arguments.\n" << usage();
-      return 1;
-    }
-
-  uint32_t addr, code;
-
-  if (not getu32(addr, argv[2]) or not getu32(code, argv[3]))
-    {
-      std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
-      return 1;
-    }
-
-  aarch32::Decoder decoder;
-
-  std::string exec_flags(argv[1]);
   exec_flags += ',';
   for (std::string::iterator cur = exec_flags.begin(), end = exec_flags.end(), nxt; cur != end; cur = nxt+1 )
     {
@@ -132,7 +116,53 @@ main( int argc, char** argv )
 
     }
 
-  decoder.process( std::cout, addr, code );
+  uint32_t addr, code;
+
+  if (not getu32(addr, as) or not getu32(code, cs))
+    {
+      std::cerr << "<addr> and <code> should be 32bits numeric values.\n";
+      return 1;
+    }
+
+  decoder.process( sink, addr, code );
+  return true;
+}
+
+int
+main( int argc, char** argv )
+{
+  aarch32::Decoder decoder;
+
+  if (argc == 2)
+    {
+      std::ifstream source(argv[1]);
+      if (not source.good())
+        {
+          std::cerr << "Cannot open " << argv[1] << "\n";
+          usage(std::cerr, argv[0]);
+          return 1;
+        }
+      std::string fbuf, abuf, cbuf;
+      for (;; getline(source, fbuf))
+        {
+          if (not (source >> fbuf).good() or not (source >> abuf).good() or not (source >> cbuf).good()) break;
+          //std::ofstream sink("/dev/null");                                                                                                                                                 
+          std::ostream& sink(std::cout);
+          if (not process(decoder, sink, fbuf.c_str(), abuf.c_str(), cbuf.c_str()))
+            { usage(std::cerr, argv[0]); return 1; }
+        }
+      return 0;
+    }
+
+  if (argc != 4)
+    {
+      std::cerr << "Wrong number of CLI arguments.\n";
+      usage(std::cerr, argv[0]);
+      return 1;
+    }
+
+  if (not process(decoder, std::cout, argv[1], argv[2], argv[3] ))
+    { usage(std::cerr, argv[0]); return 1; }
 
   return 0;
 }

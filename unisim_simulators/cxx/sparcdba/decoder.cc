@@ -357,13 +357,13 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   {
     if (asi.code != asi.user_data) throw 0;
     auto tp = T::GetType();
-    return T( Expr(new unisim::util::symbolic::binsec::Load( addr.expr, tp->GetBitSize()/8, 0, true )) );
+    return T( Expr(new unisim::util::symbolic::binsec::Load( addr.expr, tp.bitsize/8, 0, true )) );
   }
   template <typename T> void MemWrite(ASI asi, U32 const& addr, T const& data)
   {
     if (asi.code != asi.user_data) throw 0;
     auto tp = T::GetType();
-    stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, data.expr, tp->GetBitSize()/8, 0, true ) );
+    stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, data.expr, tp.bitsize/8, 0, true ) );
   }
 
   template <typename T> T FMemRead( T const&, ASI asi, U32 const& addr ) { throw 0; return T(); }

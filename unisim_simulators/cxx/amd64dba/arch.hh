@@ -62,7 +62,8 @@ struct VmmValue
   VmmValue() = default;
   VmmValue(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
   unisim::util::symbolic::Expr expr;
-  static unisim::util::symbolic::ValueType const* GetType();
+  using ValueType = unisim::util::symbolic::ValueType;
+  static ValueType GetType() { return ValueType(ValueType::NA, 8*BYTECOUNT); }
   //{ return unisim::util::symbolic::NoValueType(); }
 };
 
@@ -159,7 +160,7 @@ struct ProcessorBase
 
   struct FRegID : public unisim::util::identifier::Identifier<FRegID>
   {
-    static unisim::util::symbolic::ValueType const* GetType() { return unisim::util::symbolic::CValueType(double()); }
+    static unisim::util::symbolic::ValueType GetType() { return unisim::util::symbolic::CValueType(double()); }
     enum Code { st0=0, st1, st2, st3, st4, st5, st6, st7, end } code;
     char const* c_str() const { return &"st0\0st1\0st2\0st3\0st4\0st5\0st6\0st7"[(unsigned(code) % 8)*4]; }
     FRegID() : code(end) {}
@@ -171,7 +172,7 @@ struct ProcessorBase
   struct VRegID
   {
     VRegID(unsigned _reg) : reg(_reg) {} unsigned reg;
-    static unisim::util::symbolic::ValueType const* GetType() { return VmmValue::GetType(); }
+    static unisim::util::symbolic::ValueType GetType() { return VmmValue::GetType(); }
     void Repr( std::ostream& ) const;
     int cmp(VRegID const& rhs) const { return int(reg) - int(rhs.reg); }
   };
@@ -181,7 +182,7 @@ struct ProcessorBase
   // {
   //   VRegRead( unsigned _reg ) : reg(_reg) {}
   //   virtual VRegRead* Mutate() const override { return new VRegRead( *this ); }
-  //   virtual ValueType const* GetType() const { return ValueType::VOID; }
+  //   virtual ValueType GetType() const { return ValueType::VOID; }
   //   virtual unsigned SubCount() const override { return 0; }
   //   virtual void Repr( std::ostream& sink ) const override;
   //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegRead const&>( rhs ) ); }
@@ -325,7 +326,7 @@ struct Processor : public ProcessorBase
   /*** SEGMENTS ***/
   struct SegBaseID : public SegmentID
   {
-    static unisim::util::symbolic::ValueType const* GetType() { return unisim::util::symbolic::CValueType(nat_addr_t()); }
+    static unisim::util::symbolic::ValueType GetType() { return unisim::util::symbolic::CValueType(nat_addr_t()); }
     void Repr(std::ostream& sink) const { sink << c_str() << "_base"; }
     SegBaseID() = default;
     SegBaseID( Code _code ) : SegmentID(_code) {}
@@ -525,7 +526,7 @@ struct Processor : public ProcessorBase
     typedef VmmIndirectRead<VR,ELEM> this_type;
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual unsigned GetVSize() const override { return VR::SIZE; }
-    virtual void GetVName(std::ostream& sink) const override { return GetType()->GetName(sink); }
+    virtual void GetVName(std::ostream& sink) const override { return GetType().Repr(sink); }
     virtual unsigned SubCount() const { return elemcount+1; }
     virtual Expr const& GetSub(unsigned idx) const
     {
@@ -533,7 +534,7 @@ struct Processor : public ProcessorBase
       if (idx == elemcount) return index;
       return ExprNode::GetSub(idx);
     }
-    virtual ValueType const* GetType() const override { return ELEM::GetType(); }
+    virtual ValueType GetType() const override { return ELEM::GetType(); }
     virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
     int compare( this_type const& rhs ) const { return 0; }
 
@@ -800,7 +801,7 @@ Processor<MODE>::eregsinks( Processor<MODE> const& ref, unsigned reg ) const
       Expr value = core.eregread(reg,size,pos);
       if (value == ref.eregread(reg,size,pos))
         return;
-      unisim::util::symbolic::binsec::PrettyCode::Do(value);
+      unisim::util::symbolic::binsec::BitSimplify::Do(value);
       unsigned half = size / 2, mid = pos+half;
       if (value.ConstSimplify() or size <= 1 or not core.regvalues[reg][mid].node)
         {

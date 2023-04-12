@@ -123,7 +123,7 @@ namespace Mips
         auto valtype = node->GetType();
         if (valtype->encoding == valtype->UNSIGNED or valtype->encoding == valtype->SIGNED)
           {
-            unsigned bitsize = valtype->GetBitSize();
+            unsigned bitsize = valtype.bitsize;
             if (bitsize > 64) { struct Ouch {}; throw Ouch(); }
             uint64_t val = node->GetBits(0);
             res.setMultiBitResultFromConstant(&val, bitsize, valtype->encoding == valtype->SIGNED);
@@ -136,7 +136,7 @@ namespace Mips
           }
 
         typedef long double float_container;
-        res.setMultiFloatResultFromConstant(node->GetFloat(float_container()), int(valtype->GetBitSize()));
+        res.setMultiFloatResultFromConstant(node->GetFloat(float_container()), int(valtype.bitsize));
         return;
       }
     else if (auto node = expr->AsOpNode())
@@ -148,7 +148,7 @@ namespace Mips
             switch (node->op.code)
               {
               case Op::Not:
-                  if (expr.node->GetType()->GetBitSize() == 1)
+                  if (expr.node->GetType()->bitsize == 1)
                      res.applyBitNegate();
                   else
                      res.applyMultiBitNegate();
@@ -160,7 +160,7 @@ namespace Mips
                   auto const& cnb = dynamic_cast<unisim::util::symbolic::CastNodeBase const&>( *expr.node );
                   auto dst = cnb.GetType(), src = cnb.GetSrcType();
                   if ((dst->encoding == dst->UNSIGNED or dst->encoding == dst->SIGNED) and (src->encoding == src->UNSIGNED or src->encoding == src->SIGNED))
-                    res.applyMultiBitCast(src->GetBitSize() > 1, dst->GetBitSize() > 1, dst->encoding == dst->SIGNED, dst->GetBitSize());
+                    res.applyMultiBitCast(src->bitsize > 1, dst->bitsize > 1, dst->encoding == dst->SIGNED, dst->bitsize);
                   else
                     { struct NotYet {}; throw NotYet(); }
                 }
@@ -179,19 +179,19 @@ namespace Mips
             switch (node->op.code)
               {
               case Op::Xor:
-                if (valtype->GetBitSize() == 1)
+                if (valtype->bitsize == 1)
                   res.applyBitExclusiveOr(*arg);
                 else
                   res.applyMultiBitExclusiveOr(*arg);
                 return;
               case Op::And:
-                if (valtype->GetBitSize() == 1)
+                if (valtype->bitsize == 1)
                   res.applyBitAnd(*arg);
                 else
                   res.applyMultiBitAnd(*arg);
                 return;
               case Op::Or:
-                if (valtype->GetBitSize() == 1)
+                if (valtype->bitsize == 1)
                   res.applyBitOr(*arg);
                 else
                   res.applyMultiBitOr(*arg);
@@ -213,7 +213,7 @@ namespace Mips
                 return;
               case Op::Teq:
                 if ((valtype->encoding == valtype->UNSIGNED or valtype->encoding == valtype->SIGNED)) {
-                  if (valtype->GetBitSize() == 1)
+                  if (valtype->bitsize == 1)
                     res.applyBitCompareEqual(*arg);
                   else
                     res.applyMultiBitCompareEqual(*arg);
@@ -223,7 +223,7 @@ namespace Mips
                 return;
               case Op::Tne:
                 if ((valtype->encoding == valtype->UNSIGNED or valtype->encoding == valtype->SIGNED)) {
-                  if (valtype->GetBitSize() == 1)
+                  if (valtype->bitsize == 1)
                     res.applyBitCompareDifferent(*arg);
                   else
                     res.applyMultiBitCompareDifferent(*arg);

@@ -36,6 +36,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
+#include <iomanip>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -56,12 +57,11 @@ namespace symbolic {
   }
 
   void
-  ValueType::GetName(std::ostream& sink) const
+  ValueType::Repr(std::ostream& sink) const
   {
-    unsigned bitsize = GetBitSize();
     switch (encoding)
       {
-      default:                  sink << "?"; break;
+      default:                  sink << "X"; break;
       case ValueType::FLOAT:    sink << 'F'; break;
       case ValueType::UNSIGNED: sink << "U"; break;
       case ValueType::SIGNED:   sink << "S"; break;
@@ -73,7 +73,7 @@ namespace symbolic {
     sink << bitsize;
   }
 
-  ValueType const* CValueType(ValueType::encoding_t encoding, unsigned bitsize)
+  ValueType CValueType(ValueType::Code encoding, unsigned bitsize)
   {
     typedef long double f80_t;
     switch (encoding)
@@ -108,19 +108,10 @@ namespace symbolic {
         break;
       }
     struct Bad {}; throw Bad();
-    return 0;
+    return NoValueType();
   }
 
-  ValueType const* NoValueType()
-  {
-    static struct NoType: public ValueType
-    {
-      NoType() : ValueType(ValueType::NA) {}
-      virtual unsigned GetBitSize() const override { return 0; }
-      virtual void GetName(std::ostream& sink) const override { sink << "NoType"; }
-    } type_desc;
-    return &type_desc;
-  }
+  ValueType NoValueType() { return ValueType(ValueType::NA, 0); }
 
   std::ostream&
   operator << (std::ostream& sink, Expr const& expr )
@@ -186,24 +177,57 @@ namespace symbolic {
   ConstNodeBase::Repr( std::ostream& sink ) const
   {
     typedef long double f80_t;
-    ValueType const* tp = GetType();
-    tp->GetName(sink);
+
+    struct SaveFlags
+    {
+      SaveFlags( std::ostream& _sink ) : sink(_sink), flags(_sink.flags()) {} std::ostream& sink; std::ios_base::fmtflags flags;
+      ~SaveFlags() { sink.flags(flags); }
+    } save_flags(sink);
+
+    ValueType tp = GetType();
+    tp.Repr(sink);
+
     sink << '(';
-    switch (tp->encoding)
+    switch (tp.encoding)
       {
       case ValueType::UNSIGNED:
-        if (tp->GetBitSize() > 64) std::cerr << "Warning: oversized unsigned number.\n";
-        sink << GetBits(0);
-        break;
       case ValueType::SIGNED:
-        if (tp->GetBitSize() > 64) std::cerr << "Warning: oversized signed number.\n";
-        sink << int64_t(GetBits(0));
+        {
+          unsigned msb = tp.bitsize-1;
+          bool neg = tp.encoding == ValueType::SIGNED and (GetBits(msb/64) >> (msb%64) & 1);
+
+          struct
+          {
+            bool go(std::ostream& sink, ConstNodeBase const* cst, unsigned idx, unsigned last, bool neg, bool carry)
+            {
+              if (idx > last)
+                {
+                  sink << (neg ? "-" : "") << "0x" << std::hex << std::setfill('0');
+                  return false;
+                }
+              uint64_t bits = (uint64_t(-neg) ^ cst->GetBits(idx)) + uint64_t(carry);
+              if (go(sink, cst, idx+1, last, neg, carry and not bits))
+                sink << std::setw(16) << bits;
+              else if (bits or idx == 0)
+                sink << std::setw(0) << bits;
+              else
+                return false;
+              return true;
+            }
+          } print;
+          print.go(sink, this, 0, msb/64, neg, neg );
+        }
         break;
+
       case ValueType::FLOAT:
-        sink << GetFloat(f80_t());
+        sink << GetFloat(f80_t()) << ')';
         break;
+
+      case ValueType::BOOL:
+        sink << (GetBits(0) ? "true" : "false");
+        break;
+
       default:
-        sink << "???";
         break;
       }
     sink << ')';
@@ -212,7 +236,7 @@ namespace symbolic {
   void
   Zero::Repr( std::ostream& sink ) const
   {
-    GetType()->GetName(sink << "Zero.");
+    GetType().Repr(sink << "Zero.");
     sink << "()";
   }
 
@@ -282,7 +306,7 @@ namespace symbolic {
   void
   CastNodeBase::Repr( std::ostream& sink ) const
   {
-    GetType()->GetName(sink);
+    GetType().Repr(sink);
     sink << "( " << src << " )";
   }
 

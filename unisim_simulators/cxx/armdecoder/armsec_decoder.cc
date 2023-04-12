@@ -160,45 +160,6 @@ class DecisionVector {
       {  return vuLastInstructionDecisions.back().second == target; }
 };
 
-struct ValueType
-{
-  enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
-  static id_t IntegerType( bool is_signed, unsigned bits )
-  {
-    switch (bits) {
-    default: throw VOID;
-    case 8:  return is_signed ? S8 :  U8;
-    case 16: return is_signed ? S16 : U16;
-    case 32: return is_signed ? S32 : U32;
-    case 64: return is_signed ? S64 : U64;
-    }
-    return VOID;
-  }
-  ValueType( id_t id )
-    : name(0), bitsize(0), is_signed(false), is_integer(false)
-  {
-    switch (id)
-      {
-      case VOID: bitsize = 0;  is_integer = false; is_signed = false; name = "VOID"; break;
-      case BOOL: bitsize = 1;  is_integer = true;  is_signed = false; name = "BOOL"; break;
-      case U8:   bitsize = 8;  is_integer = true;  is_signed = false; name = "U8";  break;
-      case S8:   bitsize = 8;  is_integer = true;  is_signed = true;  name = "S8";  break;
-      case U16:  bitsize = 16; is_integer = true;  is_signed = false; name = "U16"; break;
-      case S16:  bitsize = 16; is_integer = true;  is_signed = true;  name = "S16"; break;
-      case U32:  bitsize = 32; is_integer = true;  is_signed = false; name = "U32"; break;
-      case S32:  bitsize = 32; is_integer = true;  is_signed = true;  name = "S32"; break;
-      case U64:  bitsize = 64; is_integer = true;  is_signed = false; name = "U64"; break;
-      case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
-      case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
-      case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
-      }
-  }
-  char const* name;
-  unsigned bitsize;
-  bool is_signed, is_integer;
-};
-  
-
 char const* debugPrint(const unisim::util::forbint::contract::DomainValue* value)
 {
   if (value and value->isValid())

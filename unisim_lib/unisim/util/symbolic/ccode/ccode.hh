@@ -164,7 +164,7 @@ namespace ccode {
 
   struct Update : public CNode
   {
-    virtual ValueType const* GetType() const override { return NoValueType(); }
+    virtual ValueType GetType() const override { return NoValueType(); }
   };
     
   struct RegReadBase : public CNode
@@ -181,7 +181,7 @@ namespace ccode {
     RegRead( RID _id ) : id(_id) {}
     virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { return id.GetName(sink, true); }
-    virtual ValueType const* GetType() const { return RID::GetType(); }
+    virtual ValueType GetType() const { return RID::GetType(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
     int compare( RegRead const& rhs ) const { return id.cmp( rhs.id ); }
 
