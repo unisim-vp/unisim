@@ -170,7 +170,7 @@ namespace symbolic {
         BSwp, BSR, BSF, POPCNT, Not, Neg,
         FCmp, FSQB, FFZ, FNeg, FSqrt, FAbs, FDen, FMod, FPow,
         FCeil, FFloor, FTrunc, FRound, FNear, FMax, FMin,
-        Cast, CastAs,
+        Cast, ReinterpretAs,
         end
       } code;
 
@@ -232,7 +232,7 @@ namespace symbolic {
         case  FMax: return "FMax";
         case  FMin: return "FMin";
         case   Cast: return "Cast";
-        case CastAs: return "CastAs";
+        case ReinterpretAs: return "ReinterpretAs";
         case    end: break;
         }
       return "NA";
@@ -323,17 +323,19 @@ namespace symbolic {
   uint32_t   EvalRotateLeft( uint32_t v, shift_type shift );
 
   template <typename VALUE_TYPE>
-  VALUE_TYPE EvalCastAs( VALUE_TYPE res, ConstNodeBase const* cst )
+  VALUE_TYPE EvalReinterpretAs( VALUE_TYPE res, ConstNodeBase const* cst )
   {
     if (std::is_floating_point<VALUE_TYPE>::value)
       {
-        throw std::logic_error( "No CastAs for this type" );
+        throw std::logic_error( "No ReinterpretAs for this type" );
       }
+    if (CmpTypes<VALUE_TYPE,bool>::same)
+      return cst->GetBits(0) & 1;
     return cst->GetBits(0);
   }
 
   template <unsigned CELLCOUNT, bool SIGNED>
-  unisim::util::arithmetic::Integer<CELLCOUNT,SIGNED> EvalCastAs( unisim::util::arithmetic::Integer<CELLCOUNT,SIGNED> res, ConstNodeBase const* cst )
+  unisim::util::arithmetic::Integer<CELLCOUNT,SIGNED> EvalReinterpretAs( unisim::util::arithmetic::Integer<CELLCOUNT,SIGNED> res, ConstNodeBase const* cst )
   {
     if (CELLCOUNT & 1)
       res.cells[CELLCOUNT-1] = cst->GetBits(CELLCOUNT/2);
@@ -435,7 +437,7 @@ namespace symbolic {
         case Op::Lsl:  case Op::Lsr: case Op::Asr:  case Op::Ror:   case Op::Rol:
         case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max:
         case Op::Mul:  case Op::Div: case Op::Mod: case Op::Divu: case Op::Modu:
-        case Op::CastAs: case Op::Inc: case Op::Dec:
+        case Op::ReinterpretAs: case Op::Inc: case Op::Dec:
 
           return GetSub(0)->GetType();
 
@@ -514,7 +516,7 @@ namespace symbolic {
         case Op::Tgt:    return new ConstNode   <bool>   ( value >  GetValue( args[1] ) );
         case Op::Ror:    return new this_type( EvalRotateRight( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
         case Op::Rol:    return new this_type( EvalRotateLeft( value, dynamic_cast<ConstNode<shift_type> const&>(*args[1]).value ) );
-        case Op::CastAs: return new this_type( EvalCastAs( value, args[1] ) );
+        case Op::ReinterpretAs: return new this_type( EvalReinterpretAs( value, args[1] ) );
 
         case Op::FSQB:   break;
         case Op::FFZ:    break;
@@ -652,6 +654,16 @@ namespace symbolic {
   {
     OpNode<2>* res = new OpNode<2>( op );
     res->subs[0] = left; res->subs[1] = right;
+    return res;
+  }
+
+  /* 3 operands operation */
+  inline Expr make_operation( Op op, Expr const& arg0, Expr const& arg1, Expr const& arg2 )
+  {
+    OpNode<3>* res = new OpNode<3>( op );
+    res->subs[0] = arg0;
+    res->subs[1] = arg1;
+    res->subs[2] = arg2;
     return res;
   }
 

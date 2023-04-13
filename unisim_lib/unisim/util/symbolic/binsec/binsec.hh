@@ -216,6 +216,7 @@ namespace binsec {
   struct ASExprNode : public ExprNode
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
+    virtual ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const;
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
   };
 
@@ -224,7 +225,7 @@ namespace binsec {
     static Expr mksimple( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend );
 
     virtual BitFilter* Mutate() const override { return new BitFilter( *this ); }
-    virtual ValueType GetType() const { return extend == 1 ? CValueType(bool()) : CValueType(sxtend ? ValueType::SIGNED : ValueType::UNSIGNED, extend); }
+    virtual ValueType GetType() const { return ValueType(extend == 1 ? ValueType::BOOL : ValueType::UNSIGNED, extend); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
@@ -232,7 +233,8 @@ namespace binsec {
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
 
-    virtual ConstNodeBase const* Eval( ConstNodeBase const** cnbs ) const;
+    virtual ConstNodeBase const* Eval( ConstNodeBase const** cnbs ) const override;
+    virtual ConstNodeBase const* Simplify( Expr const&, Expr& ) const override;
 
     friend class BitSimplify;
 
@@ -241,7 +243,6 @@ namespace binsec {
     BitFilter( Expr const& _input, unsigned _source, unsigned _rshift, unsigned _select, unsigned _extend, bool _sxtend )
       : input(_input), source(_source), pad0(), rshift(_rshift), pad1(), select(_select), pad2(), extend(_extend), sxtend(_sxtend)
     {}
-    Expr Simplify() const;
 
     Expr     input;
     uint64_t source   : 15; // Source bit size
@@ -265,6 +266,7 @@ namespace binsec {
     ExprNode* Mutate() const { return new BitInsertNode(*this); }
     ValueType GetType() const override { return dst->GetType(); }
     int GenCode(Label&, Variables&, std::ostream&) const override;
+    ConstNodeBase const* Simplify( Expr const&, Expr& ) const override;
 
     friend class BitSimplify;
 
@@ -278,6 +280,7 @@ namespace binsec {
     ConstNodeBase const* Process(Expr const& mask, Expr& expr) const;
     ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process(Expr(), expr); }
     static ConstNodeBase const* Do(Expr& expr) { return BitSimplify().Simplify(0,expr); }
+    static Expr make_zero(ValueType);
   };
 
   struct GetCode
