@@ -33,6 +33,8 @@
  */
 
 #include "arch.hh"
+#include <iostream>
+#include <iomanip>
 
 namespace ppc64 {
 
@@ -51,6 +53,42 @@ namespace ppc64 {
       fregvalues[reg.idx()].expr = newRegRead( reg );
   }
 
+  namespace
+  {
+    struct CRBIT : public unisim::util::symbolic::WithValueType<CRBIT>
+    {
+      typedef bool value_type;
+      CRBIT(unsigned _bit) : bit(_bit) {}
+      void Repr(std::ostream& sink) const { sink << "cr" << (bit / 4) << &"lt\0gt\0eq\0so"[(bit%4)*3]; }
+      int cmp(CRBIT rhs) const { return int(bit) - int(rhs.bit); }
+      unsigned bit;
+    };
+    
+    struct BitRead : public Arch::Source, public unisim::util::symbolic::binsec::RegRead<CRBIT>
+    {
+      BitRead( Arch& arch, CRBIT bit ) : Arch::Source(arch), unisim::util::symbolic::binsec::RegRead<CRBIT>(bit) {}
+      virtual BitRead* Mutate() const override { return new BitRead(*this); }
+    };
+  }
+
+  unisim::util::symbolic::ConstNodeBase const*
+  Arch::CR::Read::Simplify( Expr const& mask, Expr& expr ) const
+  {
+    if (not mask.good())
+      return 0;
+
+    uint32_t maskval = mask.Eval<uint32_t>();
+    if (maskval & (maskval-1))
+      return 0;
+
+    unisim::util::symbolic::shift_type pos = __builtin_ctz(maskval);
+    Expr scratch = new BitRead( arch, CRBIT(31^pos) );
+    scratch = unisim::util::symbolic::binsec::BitFilter::mksimple(scratch, 1, 0, 32, 32, false);
+    expr = unisim::util::symbolic::make_operation(unisim::util::symbolic::Op::Lsl, scratch, unisim::util::symbolic::make_const(pos));
+
+    return 0;
+  }
+
   bool
   Arch::close( Arch const& ref, uint64_t linear_nia )
   {
@@ -60,12 +98,12 @@ namespace ppc64 {
 
     for (IRegID reg; reg.next();)
       if (regvalues[reg.idx()].expr != ref.regvalues[reg.idx()].expr)
-        path->sinks.insert( Expr( newRegWrite( reg, regvalues[reg.idx()].expr ) ) );
+        path->sinks.insert( newRegWrite( reg, regvalues[reg.idx()].expr ) );
 
     if (cr.value.expr != ref.cr.value.expr)
       {
-        cr.value.expr->Repr(std::cerr << "cr: ");
-        std::cerr << '\n';
+        // cr.value.expr->Repr(std::cerr << "cr: ");
+        // std::cerr << '\n';
 
         for (unsigned idx = 32; idx-- > 0;)
           {
@@ -73,14 +111,14 @@ namespace ppc64 {
               new_crbit = unisim::util::symbolic::binsec::BitFilter::mksimple(cr.value.expr, 32, 31 ^ idx, 1, 1, false),
               old_crbit = unisim::util::symbolic::binsec::BitFilter::mksimple(ref.cr.value.expr, 32, 31 ^ idx, 1, 1, false);
 
-            unisim::util::symbolic::binsec::BitSimplify::Do(new_crbit);
-            unisim::util::symbolic::binsec::BitSimplify::Do(old_crbit);
+            // unisim::util::symbolic::binsec::BitSimplify::Do(new_crbit);
+            // unisim::util::symbolic::binsec::BitSimplify::Do(old_crbit);
             if (new_crbit == old_crbit)
               continue;
-            new_crbit->Repr(std::cerr << "cr<" << idx << ">: ");
-            std::cerr << '\n';
+            path->sinks.insert( newRegWrite( CRBIT(idx), new_crbit ) );
+            // new_crbit->Repr(std::cerr << "cr<" << idx << ">: ");
+            // std::cerr << '\n';
           }
-        throw 0;
       }
 
     if (xer.value.expr != ref.xer.value.expr)

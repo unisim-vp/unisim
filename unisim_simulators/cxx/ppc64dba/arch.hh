@@ -146,7 +146,14 @@ namespace ppc64 {
 
       struct ID : public unisim::util::symbolic::WithValueType<ID> { typedef uint32_t value_type; void Repr(std::ostream& sink) const; int cmp(ID) const { return 0; } };
 
-      CR( Arch& arch ) : value( arch.newRegRead(ID()) ) {}
+      struct Read : public Source, public unisim::util::symbolic::binsec::RegRead<ID>
+      {
+        Read( Arch& arch ) : Source(arch), unisim::util::symbolic::binsec::RegRead<ID>(ID()) {}
+        virtual Read* Mutate() const override { return new Read(*this); }
+        virtual unisim::util::symbolic::ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const override;
+      };
+
+      CR( Arch& arch ) : value( new Read(arch) ) {}
 
       U32 value;
     };
