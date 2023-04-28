@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2020,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -192,8 +192,8 @@ namespace intel {
     template <class GOP>
     void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
-      gr_type keep = ~gr_type( typename CTypeFor<Arch,GOP::SIZE>::u(-1) );
-      m_regs[idx] = (m_regs[reg] & keep) | gr_type( value );
+      gr_type keep = ~gr_type( typename CTypeFor<GOP::SIZE>::u(-1) );
+      m_regs[idx] = (m_regs[idx] & keep) | gr_type( value );
     }
 
     void regwrite( GObLH const&, unsigned idx, u8_t value )
