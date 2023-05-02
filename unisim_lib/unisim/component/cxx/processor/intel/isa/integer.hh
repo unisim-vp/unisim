@@ -2706,13 +2706,20 @@ struct Bzhi : public Operation<ARCH>
 
   void execute( ARCH& arch ) const {
     typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::s sval_t;
     typedef typename ARCH::bit_t bit_t;
     val_t index = val_t(arch.regread( GOb(), vn ));
     bit_t carry = index >= val_t(OP::SIZE);
     val_t mask =
       ((val_t(carry) - val_t(1)) & (val_t(1) << index)) - val_t(1);
-    arch.regwrite( OP(), gn, arch.rmread( OP(), rmop ) & mask );
+    val_t res = arch.rmread( OP(), rmop ) & mask;
+    arch.regwrite( OP(), gn, res );
+    arch.flagwrite( ARCH::FLAG::ZF, bit_t(res == val_t(0)) );
     arch.flagwrite( ARCH::FLAG::CF, carry );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t(sval_t(res) < sval_t(0)) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false), bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t(false), bit_t(false) );
   }
 };
 
