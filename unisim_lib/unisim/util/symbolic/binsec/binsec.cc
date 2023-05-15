@@ -921,7 +921,14 @@ namespace binsec {
       Expr mask;
       unsigned count;
     };
-
+    
+    struct FiltBitSimplify : public BitSimplify
+    {
+      FiltBitSimplify(Expr const& _mask, unsigned _filter) : mask(_mask), filter(_filter) {}
+      ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process((idx >> filter & 1) ? mask : Expr(), expr); }
+      Expr mask;
+      unsigned filter;
+    };
   }
 
   ConstNodeBase const*
@@ -1026,7 +1033,7 @@ namespace binsec {
                   if (op == Op::Or)
                     dmask = make_operation(Op::Not, dmask);
 
-                  if (auto cst = expr.Simplify(UniBitSimplify(dmask, 2)))
+                  if (auto cst = expr.Simplify(FiltBitSimplify(dmask, isvar)))
                     return cst;
                   continue;
                 }
