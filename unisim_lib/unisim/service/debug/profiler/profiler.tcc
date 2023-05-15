@@ -139,7 +139,7 @@ FunctionNameLocationConversion<ADDRESS>::FunctionNameLocationConversion(unisim::
 			
 			std::vector<const unisim::util::debug::Statement<ADDRESS> *> stmts;
 			
-			if(stmt_lookup_if->FindStatements(stmts, addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT))
+			if(stmt_lookup_if->FindStatements(stmts, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT))
 			{
 				typename std::vector<const unisim::util::debug::Statement<ADDRESS> *>::const_iterator stmt_it;
 				
@@ -1427,7 +1427,7 @@ void SourceCodeProfile<ADDRESS, T>::Print(std::ostream& os, Visitor& visitor) co
 template <typename ADDRESS, typename T>
 bool SourceCodeProfile<ADDRESS, T>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *>& stmts, ADDRESS addr)
 {
-	const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_if->FindStatements(stmts, addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+	const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_if->FindStatements(stmts, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
 	
 	if(stmt) return stmt;
 	
@@ -1448,7 +1448,7 @@ bool SourceCodeProfile<ADDRESS, T>::FindStatements(std::vector<const unisim::uti
 
 	// could not find exact statemement, try to find nearest statements
 	stmts.clear();
-	stmt = stmt_lookup_if->FindStatements(stmts, addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
+	stmt = stmt_lookup_if->FindStatements(stmts, addr, /* filename */ 0, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
 	
 	// filter statements outside from the function scope
 	if(stmt && (stmt->GetAddress() >= func_start_addr) && (stmt->GetAddress() <= func_end_addr))

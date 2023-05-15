@@ -53,15 +53,18 @@ public:
 	typedef std::map<std::string, Parameter> Parameters;
 	typedef unisim::util::debug::DataObjectRef<ADDRESS> ReturnValue;
 	
-	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram) {}
+	Stub(const SubProgram<ADDRESS> *_subprogram) : subprogram(_subprogram), prc_num(-1) {}
 	virtual ~Stub() {}
 	
 	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
+	int GetProcessorNumber() const { return prc_num; }
+	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
 	
 	virtual bool Run(Parameters& parameters, ReturnValue& return_value) = 0;
 
 private:
 	const SubProgram<ADDRESS> *subprogram;
+	int prc_num;
 };
 
 } // end of namespace debug

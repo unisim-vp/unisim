@@ -75,6 +75,8 @@
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/debug/hla/federate.hh>
+#include <unisim/util/hla/sc_time/sc_time.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -256,6 +258,7 @@ private:
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+	typedef unisim::service::debug::hla::Federate<HLA_FEDERATE_CONFIG> HLA_FEDERATE;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
@@ -450,6 +453,8 @@ private:
 	INLINE_DEBUGGER *inline_debugger[NUM_PROCESSORS];
 	//  - profiler
 	PROFILER *profiler[NUM_PROCESSORS];
+	//  - HLA federate
+	HLA_FEDERATE *hla_federate;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -501,6 +506,7 @@ private:
 	bool enable_profiler0;
 	bool enable_profiler1;
 	bool enable_profiler2;
+	bool enable_hla_federate;
 	bool enable_serial_terminal0;
 	bool enable_serial_terminal1;
 	bool enable_serial_terminal2;
@@ -550,6 +556,7 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler0;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler1;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler2;
+	unisim::kernel::variable::Parameter<bool> param_enable_hla_federate;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal0;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal1;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal2;

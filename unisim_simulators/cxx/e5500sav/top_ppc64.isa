@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018,
+ *  Copyright (c) 2018-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,10 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-/***************************************/
-/*** Convenience disassembly methods ***/
-/***************************************/
-
 namespace e5500
 
 set addressclass {uint64_t}
@@ -57,7 +53,7 @@ namespace e5500
 
 impl {
 #include <arch.hh>
-#include <unisim/component/cxx/processor/powerpc/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
   //#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 #include <unisim/util/likely/likely.hh>
@@ -116,7 +112,6 @@ impl {
   using ut::GenFPSCR_VXCVI;
   using ut::GenFPSCR_FR;
   using ut::GenFPSCR_FPRF;
-  using ut::GenFPSCR_XX;
   using ut::GenFPSCR_FX;
   using ut::GenFPSCR_VX;
   using ut::GenFPSCR_FEX;

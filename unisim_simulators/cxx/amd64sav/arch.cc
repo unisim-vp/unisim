@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -115,19 +115,6 @@ namespace review
     return false;
   }
 
-  unisim::util::symbolic::ValueType const*
-  VmmRegister::GetType()
-  {
-    static struct VRType : public unisim::util::symbolic::ValueType
-    {
-      VRType() : unisim::util::symbolic::ValueType(unisim::util::symbolic::ValueType::NA) {}
-      virtual unsigned GetBitSize() const override { return 8*BYTECOUNT; }
-      virtual void GetName(std::ostream& sink) const override { sink << "Vmm"; }
-    } _;
-
-    return &_;
-  };
-
   unisim::util::symbolic::Expr&
   Arch::fpaccess( unsigned reg, bool write )
   {
@@ -169,7 +156,7 @@ namespace review
     if (not interface.gregs.modified(reg))
       return false;
 
-    for (unsigned ipos = 1; ipos < REGSIZE; ++ipos)
+    for (unsigned ipos = 1; ipos < GREGSIZE; ++ipos)
       if (regvalues[reg][ipos].node)
         return true;
     if (auto rr = dynamic_cast<GRegRead const*>( regvalues[reg][0].node ))
@@ -186,6 +173,8 @@ namespace review
     using unisim::util::symbolic::make_const;
     using unisim::util::symbolic::shift_type;
 
+    uint64_t const value_mask = uint64_t(-1) >> (64-8*size);
+
     if (not regvalues[reg][pos].node)
       {
         // requested read is in the middle of a larger value
@@ -195,14 +184,14 @@ namespace review
         return
           make_operation( "And",
                           make_operation( "Lsr", regvalues[reg][src], make_const<shift_type>( shift ) ),
-                          make_const( uint64_t(-1) >> (64-8*size) )
+                          make_const( value_mask )
                           );
       }
-    else if (not regvalues[reg][(pos|size)&(REGSIZE-1)].node)
+    else if (not regvalues[reg][(pos|size)&(GREGSIZE-1)].node)
       {
         // requested read is in lower bits of a larger value
         return
-          make_operation( "And", regvalues[reg][pos], make_const( uint64_t(-1) >> (64-8*size) ) );
+          make_operation( "And", regvalues[reg][pos], make_const( value_mask ) );
       }
     else if ((size > 1) and (regvalues[reg][pos|(size >> 1)].node))
       {
@@ -225,17 +214,17 @@ namespace review
   Arch::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
   {
     eregtouch( reg, true );
-    Expr nxt[REGSIZE];
+    Expr nxt[GREGSIZE];
 
     for (unsigned ipos = pos, isize = size, cpos;
-         cpos = (ipos^isize) & (REGSIZE-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
+         cpos = (ipos^isize) & (GREGSIZE-1), (not regvalues[reg][ipos].node) or (not regvalues[reg][cpos].node);
          isize *= 2, ipos &= -isize
          )
       {
         nxt[cpos] = eregread( reg, isize, cpos );
       }
 
-    for (unsigned ipos = 0; ipos < REGSIZE; ++ipos)
+    for (unsigned ipos = 0; ipos < GREGSIZE; ++ipos)
       {
         if (nxt[ipos].node)
           regvalues[reg][ipos] = nxt[ipos];
@@ -303,9 +292,9 @@ namespace review
     path->add_update( new RIPWrite( next_insn_addr, next_insn_mode ) );
 
     // Scalar integer registers
-    for (unsigned reg = 0; reg < REGCOUNT; ++reg)
+    for (unsigned reg = 0; reg < GREGCOUNT; ++reg)
       if (eregdiff(reg))
-        path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
+        path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, GREGSIZE, 0 ) ) );
 
     // Vector Registers
     for (unsigned reg = 0; reg < VREGCOUNT; ++reg)
@@ -338,28 +327,6 @@ namespace review
     path = path->next( predicate );
     return predicate;
   }
-
-  namespace
-  {
-    struct ExpectedAddress : public unisim::util::symbolic::ExprNode
-    {
-      ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
-      virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
-      virtual int cmp(ExprNode const& rhs) const override { return 0; }
-      virtual unsigned SubCount() const override { return 0; }
-      virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-      {
-        if (auto l = dynamic_cast<Arch::RelocEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
-        return 0;
-      };
-      typedef unisim::util::symbolic::ValueType ValueType;
-      virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
-    };
-  }
-
 
   Interface::Interface( Operation const& op, MemCode const& code, std::string const& disasm )
     : memcode(code)
@@ -402,7 +369,7 @@ namespace review
         if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
           throw unisim::util::sav::Untestable("spread out memory accesses");
 
-        if (not addressings.solve(base_addr, new ExpectedAddress()))
+        if (not addressings.solve(base_addr, new Arch::ExpectedAddress()))
           throw unisim::util::sav::Untestable("malformed address");
       }
 
@@ -440,11 +407,11 @@ namespace review
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + Arch::REGSIZE*gregs.index(reg);
+        i.disp = offset + Arch::GREGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
         text.write(ptr,4);
       }
-    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::GREGSIZE*gregs.used();
 
     /* Load AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
@@ -521,11 +488,11 @@ namespace review
         i.mod = 1;
         i.reg = reg % 8;
         i.r_m = 7; /*%rdi*/
-        i.disp = offset + Arch::REGSIZE*gregs.index(reg);
+        i.disp = offset + Arch::GREGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
         text.write(ptr,4);
       }
-    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::GREGSIZE*gregs.used();
 
     /* Store AVX registers */
     for (unsigned reg = 0; reg < vregs.count(); ++reg)
@@ -557,7 +524,7 @@ namespace review
   {
     uintptr_t offset = 0;
     offset += 8;
-    offset += Arch::REGSIZE*gregs.used();
+    offset += Arch::GREGSIZE*gregs.used();
     offset += Arch::VUConfig::BYTECOUNT*vregs.used();
     if (offset % 8) throw "WTF";
     return offset / 8;
@@ -627,10 +594,27 @@ namespace review
   Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
   {
     uint64_t zaddr;
-    if (auto z = addr.Eval( Arch::AddrEval() ))
-      { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*z).value; }
-    else
-      throw "WTF";
+    {
+      struct GetAddr : public unisim::util::symbolic::Evaluator
+      {
+        using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
+
+        ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
+        {
+          if (auto reg = dynamic_cast<review::Arch::GRegRead const*>(expr.node))
+            return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg->reg) << 60 );
+          if (dynamic_cast<review::Arch::RIPRead const*>(expr.node))
+            throw unisim::util::sav::Untestable("RIP relative addressing");
+          if (ConstNodeBase const* res = expr.Simplify(*this))
+            return res;
+          throw *this;
+          return 0;
+        }
+      } evaluator;
+
+      Expr scratch = addr;
+      zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(0, scratch)).value;
+    }
     addrs.insert(zaddr);
 
     if (zaddr == *addrs.begin())

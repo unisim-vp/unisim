@@ -5,6 +5,8 @@ SIMPKG_SRCDIR=cxx/mpc57sav
 
 source "$(dirname $0)/dist_common.sh"
 
+import_genisslib || exit
+
 import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit
 import unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs || exit
 import unisim/component/cxx/processor/powerpc/isa/book_ii || exit
@@ -33,7 +35,6 @@ import std/vector || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source isa isa_vle header template data
-dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -148,7 +149,7 @@ CLEANFILES=\
 
 \$(top_builddir)/top_mpc57.cc: \$(top_builddir)/top_mpc57.hh
 \$(top_builddir)/top_mpc57.hh: ${UNISIM_SIMULATOR_ISA_FILES} ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(top_srcdir)/genisslib.py \$(GILFLAGS) -o \$(top_builddir)/top_mpc57 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_mpc57.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py \$(GILFLAGS) -o \$(top_builddir)/top_mpc57 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_mpc57.isa
 
 EOF
 )

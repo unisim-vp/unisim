@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2016,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -57,7 +57,7 @@ inline int issignaling(float f)
 }
 #endif
 
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 
 namespace unisim {
 namespace component {

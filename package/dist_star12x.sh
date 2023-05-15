@@ -5,6 +5,8 @@ SIMPKG_SRCDIR=tlm2/s12x
 
 source "$(dirname $0)/dist_common.sh"
 
+import_genisslib || exit
+
 import unisim/kernel/config/xml || exit
 import unisim/kernel/config/ini || exit
 import unisim/kernel/config/json || exit
@@ -46,7 +48,6 @@ import std/stdexcept || exit
 import m4/ax_cflags_warn_all || exit
 
 copy source isa isa_s12xgate isa_xb header template data
-dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -216,15 +217,15 @@ CLEANFILES=\
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb.hh: ${UNISIM_LIB_SIMULATOR_ISA_XB_FILES}
-	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x -I \$(top_builddir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x -I \$(top_builddir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.isa
 	 
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} \$(top_builddir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa
-	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/hcs12x -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.isa
 	 
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc: \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh
 \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh: ${UNISIM_LIB_SIMULATOR_ISA_S12XGATE_FILES}
-	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/hcs12x/s12xgate -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/hcs12x \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.isa
 
 EOF
 )

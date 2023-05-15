@@ -5,18 +5,18 @@ SIMPKG_SRCDIR=cxx/sparcdba
 
 source "$(dirname $0)/dist_common.sh"
 
+import_genisslib || exit
+
 import unisim/component/cxx/processor/sparc/isa/sv8 || exit
 
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
-import unisim/util/random || exit
 
 import m4/ax_cflags_warn_all || exit
 
 copy source isa header template data
-dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -134,7 +134,7 @@ CLEANFILES=\
 
 \$(top_builddir)/sparc.tcc: \$(top_builddir)/sparc.hh
 \$(top_builddir)/sparc.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_TOP_ISA}
-	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/sparc -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/sparc -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
 
 EOF
 )

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -932,12 +932,12 @@ ldm_usr.execute = {
   typedef typename ARCH::U32 U32;
 
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Test(runmode == U32(PSR::HYPERVISOR_MODE)) ))
+  if (unlikely( cpu.Test(runmode == U32(HYPERVISOR_MODE)) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Test((runmode == U32(PSR::USER_MODE)) or (runmode == U32(PSR::SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(USER_MODE)) or (runmode == U32(SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -946,7 +946,7 @@ ldm_usr.execute = {
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
   while (itr.next()) {
-    cpu.SetBankedRegister( PSR::USER_MODE, itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
+    cpu.SetBankedRegister( USER_MODE, itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
 };
 
@@ -963,12 +963,12 @@ ldm_rfe.execute = {
   typedef typename ARCH::U32 U32;
 
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Test( runmode == U32(PSR::HYPERVISOR_MODE) ) ))
+  if (unlikely( cpu.Test( runmode == U32(HYPERVISOR_MODE) ) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Test((runmode == U32(PSR::USER_MODE)) or (runmode == U32(PSR::SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(USER_MODE)) or (runmode == U32(SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -986,7 +986,7 @@ ldm_rfe.execute = {
 
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   // Cannot return to Hyp mode and ThumbEE state
-  if (unlikely( cpu.Test((cpu.CPSR().Get(M) == U32(PSR::HYPERVISOR_MODE)) and
+  if (unlikely( cpu.Test((cpu.CPSR().Get(M) == U32(HYPERVISOR_MODE)) and
                                (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1))) ))
     cpu.UnpredictableInsnBehaviour();
 
@@ -1013,12 +1013,12 @@ stm_usr.execute = {
   typedef typename ARCH::U32 U32;
 
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Test(runmode == U32(PSR::HYPERVISOR_MODE)) ))
+  if (unlikely( cpu.Test(runmode == U32(HYPERVISOR_MODE)) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Test((runmode == U32(PSR::USER_MODE)) or (runmode == U32(PSR::SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(USER_MODE)) or (runmode == U32(SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -1027,7 +1027,7 @@ stm_usr.execute = {
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetBankedRegister( PSR::USER_MODE, itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetBankedRegister( USER_MODE, itr.reg() ) );
   }
 };
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -309,13 +309,29 @@ struct Checker
       {
         if (not relval.good()) return 0;
 
-        uint64_t value;
-        if (auto v = relval.Eval( review::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
-          { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*v).value; }
-        else
-          throw "WTF";
+        struct GetReloc : public unisim::util::symbolic::Evaluator
+        {
+          GetReloc( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
+          using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
 
-        return value;
+          ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
+          {
+            if (auto reg = dynamic_cast<review::Arch::GRegRead const*>(expr.node))
+              return new unisim::util::symbolic::ConstNode<uint64_t>( regvalues[reg->idx] );
+            if (dynamic_cast<review::Arch::ExpectedAddress const*>(expr.node))
+              return new unisim::util::symbolic::ConstNode<uint64_t>( address );
+            if (ConstNodeBase const* res = expr.Simplify(*this))
+              return res;
+            throw Failure();
+            return 0;
+          }
+
+          uint64_t const* regvalues;
+          uint64_t address;
+        } evaluator(&ws[data_index(1)], uint64_t(ws));
+
+        Expr scratch = relval;
+        return dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(0, scratch)).value;
       }
       void fixflags( uint64_t& flags ) const { flags = (flags & flagsmask & 0xcef) | 2; }
       void patch(uint64_t* ws, uint64_t reloc) const

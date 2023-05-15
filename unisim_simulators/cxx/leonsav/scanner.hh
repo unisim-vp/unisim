@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -84,7 +84,6 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
   typedef unisim::util::symbolic::ExprNode ExprNode;
   typedef unisim::util::symbolic::ValueType ValueType;
   typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-  typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
   void noexec( Operation const& op )
   {
@@ -93,7 +92,7 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
 
   struct Update : public ExprNode
   {
-    virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType GetType() const override { return unisim::util::symbolic::NoValueType(); }
   };
 
   struct RegReadBase : public unisim::util::symbolic::ExprNode
@@ -110,11 +109,10 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     RegRead( RID _id ) : id(_id) {}
     virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual char const* GetRegName() const override { return id.c_str(); };
-    virtual ValueType const* GetType() const { return RID::GetType(); }
+    virtual ValueType GetType() const { return RID::GetType(); }
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-    ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
 
     RID id;
   };
@@ -137,7 +135,7 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
     virtual ExprNode* Mutate() const override { return new this_type(*this); }
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-    virtual ValueType const* GetType() const override { return T::GetType(); }
+    virtual ValueType GetType() const override { return T::GetType(); }
   };
 
   struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
@@ -159,7 +157,7 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
   };
 
-  struct GReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint32_t()); } static char const* name() { return "GReg"; } };
+  struct GReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(uint32_t()); } static char const* name() { return "GReg"; } };
 
   // typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
   // typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
@@ -170,67 +168,48 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
     typedef uint32_t value_type;
     char const* c_str() const { return "%y"; }
     int cmp( Y const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
+    ConstNodeBase const* eval(ConstNodeBase const**) const
     {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("y-relative addressing");
       return 0;
     }
   };
     
   struct Load : public ExprNode
   {
-    Load( ValueType const* _tp, ASI _asi, Expr const& _addr ) : addr(_addr), asi(_asi), tp(_tp) {}
+    Load( ValueType _tp, ASI _asi, Expr const& _addr ) : addr(_addr), asi(_asi), tp(_tp) {}
     virtual Load* Mutate() const override { return new Load( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { tp->GetName( sink << "Load" ); sink << "(" << addr << ")"; }
+    virtual void Repr( std::ostream& sink ) const override { tp.Repr( sink << "Load" ); sink << "(" << addr << ")"; }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
-    int compare( Load const& rhs ) const { return tp->cmp(*rhs.tp); }
-    virtual ValueType const* GetType() const { return tp; }
+    int compare( Load const& rhs ) const { return tp.cmp(rhs.tp); }
+    virtual ValueType GetType() const { return tp; }
 
     Expr addr;
     ASI asi;
-    ValueType const* tp;
+    ValueType tp;
   };
 
   struct Store : public Update
   {
-    Store( ValueType const* _tp, Expr const& _addr, Expr const& _value )
+    Store( ValueType _tp, Expr const& _addr, Expr const& _value )
       : addr( _addr ), value( _value ), tp(_tp)
     {}
     virtual Store* Mutate() const override { return new Store( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { tp->GetName( sink << "Store" ); sink << "( " << addr << ", " << value <<  " )"; }
+    virtual void Repr( std::ostream& sink ) const override { tp.Repr( sink << "Store" ); sink << "( " << addr << ", " << value <<  " )"; }
     virtual unsigned SubCount() const override { return 2; }
     virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
-    int compare( Store const& rhs ) const { return tp->cmp(*rhs.tp); }
+    int compare( Store const& rhs ) const { return tp.cmp(rhs.tp); }
       
     Expr addr;
     Expr value;
-    ValueType const* tp;
-  };
-
-  struct AddrEval : public EvalSpace {};
-  
-  struct RelocEval : public EvalSpace
-  {
-    RelocEval( uint32_t const* _regvalues, uint32_t _address ) : regvalues(_regvalues), address(_address) {}
-    uint32_t const* regvalues;
-    uint32_t address;
+    ValueType tp;
   };
 
   struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
   {
     GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-    virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( uint32_t(reg) << 16 );
-      if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( l->regvalues[idx] );
-      return 0;
-    };
   };
 
   struct RegWriteBase : public Update
@@ -271,18 +250,24 @@ struct Scanner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch
       static char const* names[] = {"c", "v", "z", "n"};
       return (idx < 4) ? names[idx] : "NA";
     }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("flag-dependant addressing");
-      return 0;
-    }
 
     Flag() : code(end) {}
     Flag( Code _code ) : code(_code) {}
     Flag( char const* _code ) : code(end) { init( _code ); }
   };
 
+  struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+  {
+    ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+    virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+    virtual int cmp(ExprNode const& rhs) const override { return 0; }
+    virtual unsigned SubCount() const override { return 0; }
+    virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+    typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+    typedef unisim::util::symbolic::ValueType ValueType;
+    virtual ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+  };
+      
   Scanner( Interface& iif );
   ~Scanner();
 

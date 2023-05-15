@@ -5,6 +5,8 @@ SIMPKG_SRCDIR=cxx/rv64emu
 
 source "$(dirname $0)/dist_common.sh"
 
+import_genisslib || exit
+
 import unisim/component/cxx/memory/sparse || exit
 import unisim/component/cxx/processor/riscv/isa/rv64 || exit
 import unisim/component/cxx/processor/opcache || exit
@@ -29,7 +31,6 @@ import std/vector || exit
 import m4/ax_cflags_warn_all || exit
 
 copy isa source header template data
-dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -146,7 +147,7 @@ CLEANFILES=\
 
 \$(top_builddir)/${UNISIM_ISA_PREFIX}_rv64.tcc: \$(top_builddir)/${UNISIM_ISA_PREFIX}_rv64.hh
 \$(top_builddir)/${UNISIM_ISA_PREFIX}_rv64.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(top_srcdir)/genisslib.py -o \$(top_builddir)/${UNISIM_ISA_PREFIX}_rv64 -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_ISA_PREFIX}/rv64/riscv.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/${UNISIM_ISA_PREFIX}_rv64 -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_ISA_PREFIX}/rv64/riscv.isa
 	 
 EOF
 )

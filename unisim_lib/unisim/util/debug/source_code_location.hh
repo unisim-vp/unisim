@@ -58,6 +58,8 @@ public:
 	const std::string& GetSourceCodeFilename() const { return source_code_filename; }
 	unsigned int GetLineNo() const { return lineno; }
 	unsigned int GetColNo() const { return colno; }
+	
+	bool operator == (const SourceCodeLocation& o) const { return (source_code_filename == o.source_code_filename) && (lineno == o.lineno) && (colno == o.colno); }
 private:
 	std::string source_code_filename;
 	unsigned int lineno;

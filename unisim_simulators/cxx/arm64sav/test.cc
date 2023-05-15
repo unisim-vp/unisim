@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -76,25 +76,7 @@ Interface::Interface( Operation const& op, uint32_t code, std::string const& dis
       if (uint64_t(*addrs.rbegin() - *addrs.begin()) > 1024)
         throw unisim::util::sav::Untestable("spread out memory accesses");
 
-      struct ExpectedAddress : public unisim::util::symbolic::ExprNode
-      {
-        ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
-        virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
-        virtual int cmp(ExprNode const& rhs) const override { return 0; }
-        virtual unsigned SubCount() const override { return 0; }
-        virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
-        typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-        typedef unisim::util::symbolic::ValueType ValueType;
-        virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
-        virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-        {
-          if (auto l = dynamic_cast<Scanner::RelocEval const*>( &evs ))
-            return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
-          return 0;
-        };
-      };
-      
-      if (not addressings.solve(base_addr, new ExpectedAddress()))
+      if (not addressings.solve(base_addr, new Scanner::ExpectedAddress()))
         throw unisim::util::sav::Untestable("malformed address");
     }
 
@@ -181,10 +163,31 @@ void
 Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
 {
   uint64_t zaddr;
-  if (auto z = addr.Eval( Scanner::AddrEval() ))
-    { Expr dispose(z); zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*z).value; }
-  else
-    throw "WTF";
+  {
+    struct GetAddr : public unisim::util::symbolic::Evaluator
+    {
+      using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
+
+      ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
+      {
+        if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
+          return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg->reg) << 60 );
+        if (dynamic_cast<Scanner::PC const*>(expr.node))
+          Scanner::dont("pc-relative addressing");
+        if (dynamic_cast<Scanner::SP const*>(expr.node))
+          Scanner::dont("sp-relative addressing");
+        if (dynamic_cast<Scanner::Flag const*>(expr.node))
+          Scanner::dont("flag-relative addressing");
+        if (ConstNodeBase const* res = expr.Simplify(*this))
+          return res;
+        throw *this;
+        return 0;
+      }
+    } evaluator;
+
+    Expr scratch = addr;
+    zaddr = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const&>(*evaluator.Simplify(0, scratch)).value;
+  }
   addrs.insert(zaddr);
 
   if (zaddr == *addrs.begin())

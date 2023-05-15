@@ -2737,3 +2737,48 @@ template <class ARCH> struct DC<ARCH,BZHI> { Operation<ARCH>* get( InputCode<ARC
 
   return 0;
 }};
+
+template <class ARCH, class OP>
+struct MovbeRM : public Operation<ARCH>
+{
+  MovbeRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+
+  void disasm( std::ostream& sink ) const { sink << "movbe " << DisasmE( OP(), rm ) << ',' << DisasmG( OP(), gn ); }
+
+  void execute( ARCH& arch ) const { arch.regwrite( OP(), gn, ByteSwap( arch.rmread( OP(), rm ) ) ); }
+};
+
+template <class ARCH, class OP>
+struct MovbeMR : public Operation<ARCH>
+{
+  MovbeMR( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+
+  void disasm( std::ostream& sink ) const { sink << "movbe " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
+
+  void execute( ARCH& arch ) const { arch.rmwrite( OP(), rm, ByteSwap( arch.regread( OP(), gn ) ) ); }
+};
+
+template <class ARCH> struct DC<ARCH,MOVBE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  // MOVBE -- Movbee
+  if (auto _ = match( ic, opcode( "\x0f\x38\xf0" ) & RM() ))
+
+    {
+      if (ic.opsize()==16) return new MovbeRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.opsize()==32) return new MovbeRM<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.opsize()==64) return new MovbeRM<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
+
+  if (auto _ = match( ic, opcode( "\x0f\x38\xf1" ) & RM() ))
+
+    {
+      if (ic.opsize()==16) return new MovbeMR<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.opsize()==32) return new MovbeMR<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.opsize()==64) return new MovbeMR<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
+
+  return 0;
+}
+};

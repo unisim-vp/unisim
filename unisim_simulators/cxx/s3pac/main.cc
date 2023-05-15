@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017-2018,
+ *  Copyright (c) 2017-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include <unisim/component/cxx/processor/arm/disasm.hh>
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/util/symbolic/ccode/ccode.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <top_arm32.tcc>
@@ -124,7 +124,7 @@ struct Processor
       buf << (RegID("r0") + idx).c_str() << '_' << mode_ident();
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
-    virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+    virtual ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
     virtual ForeignRegister* Mutate() const override { return new ForeignRegister( *this ); }
     char const* mode_ident() const
     {
@@ -189,7 +189,7 @@ struct Processor
         throw 0;
       srcmgr << "(*(uint" << unisim::util::symbolic::ccode::dec(8 << size) << "_t*)(" << ccode(addr) << "))";
     }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8 << size ); }
+    virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8 << size ); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
@@ -290,25 +290,25 @@ struct Processor
   
   struct PSR : public StatusRegister
   {
-    typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<28,1> VRF; /* Overflow Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+    typedef unisim::util::arithmetic::BitField<31,1> NRF; /* Negative Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<30,1> ZRF; /* Zero     Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<29,1> CRF; /* Carry    Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<28,1> VRF; /* Overflow Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<27,1> QRF; /* Cumulative saturation flag */
       
-    typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
+    typedef unisim::util::arithmetic::BitField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
       
       
-    typedef unisim::component::cxx::processor::arm::RegisterField<24,1> JRF; /* Jazelle execution state bit */
-    typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
-    typedef unisim::component::cxx::processor::arm::RegisterField< 5,1> TRF; /* Thumb execution state bit */
+    typedef unisim::util::arithmetic::BitField<24,1> JRF; /* Jazelle execution state bit */
+    typedef unisim::util::arithmetic::BitField< 9,1> ERF; /* Endianness execution state */
+    typedef unisim::util::arithmetic::BitField< 5,1> TRF; /* Thumb execution state bit */
       
-    typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
+    typedef unisim::util::arithmetic::BitField< 0,5> MRF; /* Mode field */
       
-    typedef unisim::component::cxx::processor::arm::RegisterField<10,6> ITHIRF;
-    typedef unisim::component::cxx::processor::arm::RegisterField<25,2> ITLORF;
+    typedef unisim::util::arithmetic::BitField<10,6> ITHIRF;
+    typedef unisim::util::arithmetic::BitField<25,2> ITLORF;
       
-    typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALLRF;
+    typedef unisim::util::arithmetic::BitField< 0,32> ALLRF;
       
     static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
 
@@ -418,7 +418,7 @@ struct Processor
   {
     AssertFalse() {}
     virtual AssertFalse* Mutate() const override { return new AssertFalse( *this ); }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType GetType() const { return unisim::util::symbolic::NoValueType(); }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { throw 0; }
@@ -710,9 +710,6 @@ struct Processor
   static uint32_t const COND_GT = 0x0c;
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
-    
-  /* mask for valid bits in processor control and status registers */
-  static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
 
   struct SRegID
     : public unisim::util::identifier::Identifier<SRegID>
@@ -1848,10 +1845,10 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
 void
 Processor::PSR::Set( NZCVRF const& _, U32 const& value )
 {
-  n = BOOL( unisim::component::cxx::processor::arm::RegisterField< 3,1>().Get( value ) ).expr;
-  z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
-  c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
-  v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
+  n = BOOL( unisim::util::arithmetic::BitField< 3,1>().Get( value ) ).expr;
+  z = BOOL( unisim::util::arithmetic::BitField< 2,1>().Get( value ) ).expr;
+  c = BOOL( unisim::util::arithmetic::BitField< 1,1>().Get( value ) ).expr;
+  v = BOOL( unisim::util::arithmetic::BitField< 0,1>().Get( value ) ).expr;
 }
 
 Processor::U32

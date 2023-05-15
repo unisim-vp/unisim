@@ -83,7 +83,7 @@ Arch::Arch(char const* name, unisim::kernel::Object* parent, Tracee const& _trac
   , latest_instruction(0)
   , hash_table()
   , mru_page(0)
-  , enable_disasm(true)
+  , enable_disasm(false)
   , accurate(true)
   , instruction_count(0)
 {

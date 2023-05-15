@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2018,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,7 +39,7 @@
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
-#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <unisim/util/arithmetic/bitfield.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <iostream>
 #include <sstream>
@@ -47,7 +47,7 @@
 #include <stdexcept>
 #include <inttypes.h>
 
-using unisim::component::cxx::processor::arm::RegisterField;
+using unisim::util::arithmetic::BitField;
 
 CPU::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
   : unisim::kernel::Object(name, parent)
@@ -597,10 +597,10 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       d.Access( CR );
       if (d.wnr) {
         uint32_t const zero(0);
-        if (RegisterField<0,1>().Swap( CR, zero ))
+        if (BitField<0,1>().Swap( CR, zero ))
           RxFIFO.Clear();
-        RegisterField<1,1>().Set( CR, zero );
-        if (RegisterField<6,1>().Swap( CR, zero ))
+        BitField<1,1>().Set( CR, zero );
+        if (BitField<6,1>().Swap( CR, zero ))
           reload_rxtout( update_time );
       }
       return true;
@@ -641,16 +641,16 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       // Channel_sts_reg
       if (d.wnr) return false;
       uint32_t SR = 0;
-      RegisterField<14,1>().Set( SR, TxFIFO.NearlyFull() );
-      RegisterField<13,1>().Set( SR, TxFIFO.Trig( TTRIG ) );
-      RegisterField<12,1>().Set( SR, (FDEL >= 4) and RxFIFO.Trig( FDEL ) );
-      RegisterField<11,1>().Set( SR, false );
-      RegisterField<10,1>().Set( SR, false );
-      RegisterField <4,1>().Set( SR, TxFIFO.Full() );
-      RegisterField <3,1>().Set( SR, TxFIFO.Empty() );
-      RegisterField <2,1>().Set( SR, RxFIFO.Full() );
-      RegisterField <1,1>().Set( SR, RxFIFO.Empty() );
-      RegisterField <0,1>().Set( SR, RxFIFO.Trig( RTRIG ) );
+      BitField<14,1>().Set( SR, TxFIFO.NearlyFull() );
+      BitField<13,1>().Set( SR, TxFIFO.Trig( TTRIG ) );
+      BitField<12,1>().Set( SR, (FDEL >= 4) and RxFIFO.Trig( FDEL ) );
+      BitField<11,1>().Set( SR, false );
+      BitField<10,1>().Set( SR, false );
+      BitField <4,1>().Set( SR, TxFIFO.Full() );
+      BitField <3,1>().Set( SR, TxFIFO.Empty() );
+      BitField <2,1>().Set( SR, RxFIFO.Full() );
+      BitField <1,1>().Set( SR, RxFIFO.Empty() );
+      BitField <0,1>().Set( SR, RxFIFO.Trig( RTRIG ) );
       d.Access( SR );
     } return true;
     case 0x30: { 
@@ -679,7 +679,7 @@ PS_UART::PutChar( Data const& d )
     throw std::logic_error("no IO client connected");
   char_io_import->PutChar( char(value) );
   
-  if (RegisterField<3,1>().Get( IMR )) /* TEMPTY */
+  if (BitField<3,1>().Get( IMR )) /* TEMPTY */
     exchange_event.notify( 8*bit_period );
 }
 
@@ -705,20 +705,20 @@ PS_UART::ExchangeProcess()
   // No error possible
   
   /*** - ISR update ***/
-  RegisterField <9,1>().Set( ISR, 0 ); // DMSI, Delta Modem Status Indicator
-  RegisterField <7,1>().Set( ISR, 0 ); // PARE, Receiver Parity Error
-  RegisterField <6,1>().Set( ISR, 0 ); // FRAME, Receiver Framing Error 
-  RegisterField <5,1>().Set( ISR, 0 ); // ROVR, Receiver Overflow Error
+  BitField <9,1>().Set( ISR, 0 ); // DMSI, Delta Modem Status Indicator
+  BitField <7,1>().Set( ISR, 0 ); // PARE, Receiver Parity Error
+  BitField <6,1>().Set( ISR, 0 ); // FRAME, Receiver Framing Error 
+  BitField <5,1>().Set( ISR, 0 ); // ROVR, Receiver Overflow Error
   
   /*** Tx Handling ***/
   char_io_import->FlushChars();
   
   /*** - ISR update ***/
-  RegisterField<12,1>().Set( ISR, 0 ); // TOVR, Transmitter FIFO Overflow
-  RegisterField<11,1>().Set( ISR, 0 ); // TNFULL, Transmitter FIFO Nearly Full
-  RegisterField<10,1>().Set( ISR, 0 ); // TTRIG, Transmitter FIFO Trigger
-  RegisterField <4,1>().Set( ISR, 0 ); // TFUL, Transmitter FIFO Full
-  RegisterField <3,1>().Set( ISR, 1 ); // TEMPTY, Transmitter FIFO Empty
+  BitField<12,1>().Set( ISR, 0 ); // TOVR, Transmitter FIFO Overflow
+  BitField<11,1>().Set( ISR, 0 ); // TNFULL, Transmitter FIFO Nearly Full
+  BitField<10,1>().Set( ISR, 0 ); // TTRIG, Transmitter FIFO Trigger
+  BitField <4,1>().Set( ISR, 0 ); // TFUL, Transmitter FIFO Full
+  BitField <3,1>().Set( ISR, 1 ); // TEMPTY, Transmitter FIFO Empty
   
   /*** Rx Handling ***/
   for (char ch; (not RxFIFO.Full()) and (char_io_import->GetChar( ch ));) {
@@ -728,16 +728,16 @@ PS_UART::ExchangeProcess()
   
   /*** - ISR update ***/
   if (rx_timeout_active and RXTOUT and ((update_time - last_rx) >= (bit_period*rx_timeout_ticks()))) {
-    RegisterField <8,1>().Set( ISR, 1 ); // TIMEOUT, Receiver Timeout Error
+    BitField <8,1>().Set( ISR, 1 ); // TIMEOUT, Receiver Timeout Error
     //rx_timeout_active = false; // WTF? xilinx says that timeout is inactive until RST_TO (which linux never gives)
     reload_rxtout( update_time );
   }
   if (RxFIFO.Full())
-    RegisterField <2,1>().Set( ISR, 1 ); // RFUL, Receiver FIFO Full
+    BitField <2,1>().Set( ISR, 1 ); // RFUL, Receiver FIFO Full
   if (RxFIFO.Empty())
-    RegisterField <1,1>().Set( ISR, 1 ); // REMPTY, Receiver FIFO Empty
+    BitField <1,1>().Set( ISR, 1 ); // REMPTY, Receiver FIFO Empty
   if (RxFIFO.Trig( RTRIG ))
-    RegisterField <0,1>().Set( ISR, 1 ); // RTRIG, Receiver FIFO Trigger
+    BitField <0,1>().Set( ISR, 1 ); // RTRIG, Receiver FIFO Trigger
   
   /*** Interrupt Generation ***/
   if (ISR & IMR)
@@ -1053,27 +1053,27 @@ Simulator::UpdateClocks()
 {
   /* PLLs*/
   sc_core::sc_time
-    arm_pll_period = ps_clk_period / RegisterField<12,7>().Get( slcr.ARM_PLL_CTRL ), // PLL Feedback divider
-    ddr_pll_period = ps_clk_period / RegisterField<12,7>().Get( slcr.DDR_PLL_CTRL ), // PLL Feedback divider
-    io_pll_period  = ps_clk_period / RegisterField<12,7>().Get( slcr.IO_PLL_CTRL );  // PLL Feedback divider
+    arm_pll_period = ps_clk_period / BitField<12,7>().Get( slcr.ARM_PLL_CTRL ), // PLL Feedback divider
+    ddr_pll_period = ps_clk_period / BitField<12,7>().Get( slcr.DDR_PLL_CTRL ), // PLL Feedback divider
+    io_pll_period  = ps_clk_period / BitField<12,7>().Get( slcr.IO_PLL_CTRL );  // PLL Feedback divider
   
-  if (RegisterField<3,2>().Get( slcr.ARM_PLL_CTRL ) & 2)
+  if (BitField<3,2>().Get( slcr.ARM_PLL_CTRL ) & 2)
     throw std::logic_error("ARM PLL Bypass not supported");
-  if (RegisterField<3,2>().Get( slcr.DDR_PLL_CTRL ) & 2)
+  if (BitField<3,2>().Get( slcr.DDR_PLL_CTRL ) & 2)
     throw std::logic_error("DDR PLL Bypass not supported");
-  if (RegisterField<3,2>().Get( slcr.IO_PLL_CTRL ) & 2)
+  if (BitField<3,2>().Get( slcr.IO_PLL_CTRL ) & 2)
     throw std::logic_error("IO PLL Bypass not supported");
   
   
   /* CPU Clock */
   {
     // Source selection
-    unsigned srcsel = RegisterField<4,2>().Get( slcr.ARM_CLK_CTRL );
+    unsigned srcsel = BitField<4,2>().Get( slcr.ARM_CLK_CTRL );
     sc_core::sc_time& pll_period = (srcsel & 2) ? (srcsel & 1) ? io_pll_period : ddr_pll_period : arm_pll_period;
     // 6-bit Programmable Divider
-    sc_core::sc_time cpu_6x4x_period = pll_period * RegisterField<8,6>().Get( slcr.ARM_CLK_CTRL ); // divisor
+    sc_core::sc_time cpu_6x4x_period = pll_period * BitField<8,6>().Get( slcr.ARM_CLK_CTRL ); // divisor
     // Clock Ratio Generator
-    bool is621( RegisterField<0,1>().Get( slcr.CLK_621_TRUE ) );
+    bool is621( BitField<0,1>().Get( slcr.CLK_621_TRUE ) );
     sc_core::sc_time cpu_3x2x_period = cpu_6x4x_period * 2;
     sc_core::sc_time cpu_2x_period = cpu_6x4x_period * (is621 ? 3 : 2);
     sc_core::sc_time cpu_1x_period = cpu_2x_period * 2;
@@ -1094,8 +1094,8 @@ Simulator::UpdateClocks()
   /* DDR Clock */
   {
     // 6-bit Programmable Divider
-    sc_core::sc_time ddr_3x_period = ddr_pll_period * RegisterField<20,6>().Get( slcr.DDR_CLK_CTRL ); // divisor
-    sc_core::sc_time ddr_2x_period = ddr_pll_period * RegisterField<26,6>().Get( slcr.DDR_CLK_CTRL ); // divisor
+    sc_core::sc_time ddr_3x_period = ddr_pll_period * BitField<20,6>().Get( slcr.DDR_CLK_CTRL ); // divisor
+    sc_core::sc_time ddr_2x_period = ddr_pll_period * BitField<26,6>().Get( slcr.DDR_CLK_CTRL ); // divisor
     std::cerr << "ddr_3x_period: " << ddr_3x_period.to_string() << " -> " << std::endl
               << "ddr_2x_period: " << ddr_2x_period.to_string() << " -> main_ram" << std::endl;
     // Clock activation ...
@@ -1180,7 +1180,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 
   // meta information
   sim->SetVariable("program-name", "UNISIM Zynq7000");
-  sim->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
+  sim->SetVariable("copyright", "Copyright (C) 2017-2023, Commissariat a l'Energie Atomique (CEA)");
   sim->SetVariable("license", "BSD (see file COPYING)");
   sim->SetVariable("authors", "Yves Lhuillier <yves.lhuillier@cea.fr>");
   sim->SetVariable("version", VERSION);

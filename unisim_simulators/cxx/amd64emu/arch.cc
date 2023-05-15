@@ -897,3 +897,22 @@ Arch::Disasm(uint64_t addr, uint64_t& next_addr)
     }
   return _.buf.str();
 }
+
+void
+Arch::csupdate( ipproc_t ipproc, addr_t retaddr, addr_t dstaddr )
+{
+  switch (ipproc)
+    {
+    default: break;
+
+    case ipcall:
+      // std::cerr << "Entering: " << std::hex << dstaddr << ", from: " << std::hex << retaddr << '\n';
+      callstack.enter(dstaddr, retaddr);
+      break;
+
+    case ipret:
+      // std::cerr << "Leaving: " << std::hex << dstaddr << ", from: " << std::hex << retaddr << '\n';
+      callstack.leave(dstaddr, retaddr);
+      break;
+    }
+}

@@ -120,7 +120,6 @@ public:
 	virtual bool BeginSetup();
 	virtual void Setup(Memory<ADDRESS>*);
 	virtual void Setup(MemoryAccessReporting<ADDRESS>*);
-	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	virtual void Reset();
 	bool Read(ADDRESS physical_addr, void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);

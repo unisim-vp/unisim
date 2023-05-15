@@ -54,6 +54,11 @@ int main(int argc, const char *argv[])
 	unisim::util::json::JSON_Value *root = json_parser.Parse(*stream, json_ast_builder);
 	if(root)
 	{
+		unisim::util::json::JSON_Object& o = root->AsObject();
+		o["tutu"] = "toto";
+		o["tata"] = unisim::util::json::undefined;
+		o["childs"].AsArray()[10] = "titi";
+		
 		unisim::util::json::JSON_AST_Printer json_ast_printer;
 		json_ast_printer.Print(std::cout, *root);
 		

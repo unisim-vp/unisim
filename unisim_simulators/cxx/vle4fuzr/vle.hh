@@ -16,7 +16,7 @@
 #include "xvalue.hh"
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-#include <unisim/component/cxx/processor/powerpc/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/symbolic/symbolic.hh>

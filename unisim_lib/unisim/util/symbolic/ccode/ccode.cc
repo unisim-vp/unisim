@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2017,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA),
  *  All rights reserved.
  *
@@ -57,7 +57,6 @@ namespace ccode {
   namespace {
     struct SinksMerger
     {
-      typedef unisim::util::symbolic::Expr Expr;
       void operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) { sinks.insert( l ); }
     };
   }  
@@ -85,11 +84,11 @@ namespace ccode {
     
     if (leaf)
       {
-        cond = unisim::util::symbolic::Expr();
+        cond = Expr();
         return;
       }
 
-    if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
+    if (OpNodeBase const* onb = cond->AsOpNode())
       if ((onb->op.code == onb->op.Not) and (nexts[false]))
         {
           // If condition begins with a logical not, remove the not and
@@ -100,7 +99,7 @@ namespace ccode {
 
     if (not nexts[true])
       {
-        cond = unisim::util::symbolic::make_operation("not", cond);
+        cond = make_operation("not", cond);
         std::swap( nexts[false], nexts[true] );
       }
   }
@@ -249,13 +248,6 @@ namespace ccode {
   
   SrcMgr& operator << (SrcMgr& srcmgr, CCode::ExprPrinter const& ep)
   {
-    using unisim::util::symbolic::ConstNodeBase;
-    using unisim::util::symbolic::CastNodeBase;
-    using unisim::util::symbolic::OpNodeBase;
-    using unisim::util::symbolic::Op;
-    using unisim::util::symbolic::Expr;
-    using unisim::util::symbolic::ValueType;
-
     /*** Pre expression process ***/
     {
       auto itr = ep.ccode.tmps.find( ep.expr );
@@ -267,18 +259,19 @@ namespace ccode {
     }
     
     /*** Sub expression process ***/
-    if (ConstNodeBase const* node = ep.expr.Eval(unisim::util::symbolic::EvalSpace()))
+    Expr constant = ep.expr;
+    if (ConstNodeBase const* node = constant.ConstSimplify())
       {
         Expr cexp( node );
         auto tp = node->GetType();
-        switch (tp->encoding)
+        switch (tp.encoding)
           {
           default: break;
           case ValueType::BOOL:
-            srcmgr << (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*node).value ? "true" : "false");
+            srcmgr << (dynamic_cast<ConstNode<bool> const&>(*node).value ? "true" : "false");
             return srcmgr;
           case ValueType::UNSIGNED:
-            switch (tp->GetBitSize())
+            switch (tp.bitsize)
               {
               default: break;
               case 8:  case 16: case 32: case 64:
@@ -286,7 +279,7 @@ namespace ccode {
                 return srcmgr;
               } break;
           case ValueType::SIGNED:
-            switch (tp->GetBitSize())
+            switch (tp.bitsize)
               {
               default: break;
               case 8:  case 16: case 32: case 64:
@@ -294,7 +287,7 @@ namespace ccode {
                 return srcmgr;
               } break;
           case ValueType::FLOAT:
-            switch (tp->GetBitSize())
+            switch (tp.bitsize)
               {
               default: break;
               case 32: case 64: case 80:
@@ -333,8 +326,8 @@ namespace ccode {
               case Op::Modu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
         
               case Op::Xor:     cbinop( srcmgr, ep.ccode, lhs, rhs, " xor " ); break;
-              case Op::Or:      cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType()->GetBitSize() == 1) ? " or " : " | " ); break;
-              case Op::And:     cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType()->GetBitSize() == 1) ? " and " : " & " ); break;
+              case Op::Or:      cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType().bitsize == 1) ? " or " : " | " ); break;
+              case Op::And:     cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType().bitsize == 1) ? " and " : " & " ); break;
         
               case Op::Teq:     cbinop( srcmgr, ep.ccode, lhs, rhs, " == " ); break;
               case Op::Tne:     cbinop( srcmgr, ep.ccode, lhs, rhs, " != " ); break;
@@ -365,7 +358,7 @@ namespace ccode {
               {
               default:         srcmgr << "([" << node->op.c_str() << "] " << ep.ccode(operand) << ")"; break;
         
-              case Op::Not:    srcmgr << (operand->GetType()->GetBitSize() == 1 ? "(not " : "(~") << ep.ccode(operand) << ")"; break;
+              case Op::Not:    srcmgr << (operand->GetType().bitsize == 1 ? "(not " : "(~") << ep.ccode(operand) << ")"; break;
               case Op::Neg:    srcmgr << "(-" << ep.ccode(operand) << ")"; break;
         
                 // case Op::BSwp:  break;
@@ -378,12 +371,12 @@ namespace ccode {
               case Op::Cast:
                 {
                   auto tp = node->GetType();
-                  switch (tp->encoding)
+                  switch (tp.encoding)
                     {
                     case ValueType::BOOL:     srcmgr << "bool"; break;
-                    case ValueType::UNSIGNED: srcmgr << "uint" << dec(tp->GetBitSize()) << "_t"; break;
-                    case ValueType::SIGNED:   srcmgr <<  "int" << dec(tp->GetBitSize()) << "_t"; break;
-                    case ValueType::FLOAT:    srcmgr << (tp->GetBitSize() == 32 ? "float" : "double"); break;
+                    case ValueType::UNSIGNED: srcmgr << "uint" << dec(tp.bitsize) << "_t"; break;
+                    case ValueType::SIGNED:   srcmgr <<  "int" << dec(tp.bitsize) << "_t"; break;
+                    case ValueType::FLOAT:    srcmgr << (tp.bitsize == 32 ? "float" : "double"); break;
                     default: throw std::logic_error("cast error");
                     }
                   srcmgr << "(" << ep.ccode(operand) << ")";
@@ -407,22 +400,21 @@ namespace ccode {
   void
   CCode::make_temp( SrcMgr& sink, Expr const& e )
   {
-    using unisim::util::symbolic::ValueType;
     auto tp = e->GetType();
     std::ostringstream buf;
-    switch (tp->encoding)
+    switch (tp.encoding)
       {
       case ValueType::BOOL: buf << "ltmp"; break;
       case ValueType::SIGNED:
         buf << 's';
       case ValueType::UNSIGNED:
-        if (unsigned sz = tp->GetBitSize())
+        if (unsigned sz = tp.bitsize)
           { buf << (sz <= 8 ? 'b' : sz <= 16 ? 'w' : sz <= 32 ? 'd' : 'q') << "tmp"; }
         else
           { buf << '?'; }
         break;
       case ValueType::FLOAT:
-        if (unsigned sz = tp->GetBitSize())
+        if (unsigned sz = tp.bitsize)
           { buf << (sz == 32 ? "ftmp" : "gtmp"); }
         break;
       default: throw std::logic_error("can't encode type");

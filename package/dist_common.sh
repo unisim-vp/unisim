@@ -15,8 +15,6 @@ if [ -z "${SIMPKG_SRCDIR}" ]; then
 	exit -1
 fi
 
-has_two_levels_dirs=no
-genisslib_imported=no
 PACKAGE_DIR=$(cd $(dirname $BASH_SOURCE); pwd)
 UNISIM_DIR=$(cd $(dirname $(dirname $BASH_SOURCE)); pwd)
 UNISIM_TOOLS_DIR="${UNISIM_DIR}/unisim_tools"
@@ -139,140 +137,14 @@ function dist_copy() {
 	return 1
 }
 
-function enable_two_levels_dirs()
-{
-	if [ -z "${SIMPKG_DSTDIR}" ]; then
-		echo "SIMPKG_DSTDIR is not set"
-		exit -1
-	fi
-	
-	has_two_levels_dirs=yes;
-}
-
-function make_pkg_configure_cross()
-{
-	local CONFIGURE_CROSS="$1"
-	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
-#!/bin/bash
-HERE=\$(pwd)
-MY_DIR=\$(cd \$(dirname \$0); pwd)
-
-# remove --host from command line arguments
-host=""
-help=""
-i=0
-j=0
-for arg in "\$@"
-do
-	case "\${arg}" in
-		--host=*)
-			host=\$(printf '%s' "\${arg}" | cut -f 2- -d '=')
-			;;
-		--help=* | --help)
-			help="yes"
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-		*)
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-	esac
-	i=\$((\${i}+1))
-done
-
-if test "\${help}" != "yes"; then
-	if test -z "\${host}"; then
-		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
-		exit -1
-	fi
-fi
-
-if test "\${help}" = "yes"; then
-	echo "=== configure help for genisslib"
-else
-	echo "=== configuring in genisslib (\${HERE}/genisslib)"
-	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
-fi
-if test ! -d \${HERE}/genisslib; then
-	mkdir "\${HERE}/genisslib"
-fi
-cd "\${HERE}/genisslib"
-\${MY_DIR}/genisslib/configure --disable-option-checking "\${args[@]}"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
-
-if test "\${help}" = "yes"; then
-	echo "=== configure help for ${SIMPKG}"
-else
-	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG_DSTDIR}) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG_DSTDIR}/configure \$@"
-fi
-
-if test ! -d \${HERE}/${SIMPKG_DSTDIR}; then
-	mkdir \${HERE}/${SIMPKG_DSTDIR}
-fi
-cd \${HERE}/${SIMPKG_DSTDIR}
-\${MY_DIR}/${SIMPKG_DSTDIR}/configure "\$@"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
-
-if test "\${help}" = "yes"; then
-	exit 0
-fi
-
-echo "\$(basename \$0): creating Makefile.cross"
-cat << EOF_MAKEFILE_CROSS > Makefile.cross
-#!/usr/bin/make -f
-all: ${SIMPKG}-all
-clean: genisslib-clean ${SIMPKG}-clean
-distclean: genisslib-distclean ${SIMPKG}-distclean
-	rm -f \${HERE}/Makefile.cross
-install: ${SIMPKG}-install
-
-genisslib-all:
-	@\\\$(MAKE) -C \${HERE}/genisslib all
-${SIMPKG}-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} all
-genisslib-clean:
-	@\\\$(MAKE) -C \${HERE}/genisslib clean
-${SIMPKG}-clean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} clean
-genisslib-distclean:
-	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-${SIMPKG}-distclean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} distclean
-${SIMPKG}-install:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} install
-EOF_MAKEFILE_CROSS
-
-chmod +x Makefile.cross
-
-echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
-EOF_CONFIGURE_CROSS
-	chmod +x "${CONFIGURE_CROSS}"
-}
-
 function copy()
 {
 	local status=0
 	for LIST_NAME in "$@"; do
 		for FILE in $(files ${LIST_NAME}); do
-			if [ "${has_two_levels_dirs}" = "yes" ]; then
-				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${FILE}"; then
-					status=1
-				fi
-			else
 				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${FILE}"; then
 					status=1
 				fi
-			fi
 		done
 	done
 	return ${status}
@@ -280,95 +152,14 @@ function copy()
 
 function import_genisslib()
 {
-	enable_two_levels_dirs
-
-	if ! GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib; then
-		return 1
-	fi
-	genisslib_imported=yes
-
-	return 0
-}
-
-function output_top_configure_ac()
-{
-	if [ "${has_two_levels_dirs}" = "no" ]; then
-		echo "Please remove useless call to output_top_configure_ac"
-		exit
-	fi
-
-	local CONFIGURE_AC="${DEST_DIR}/configure.ac"
-	if has_to_build "${CONFIGURE_AC}" "$0" || \
-	   has_to_build "${CONFIGURE_AC}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
-	   has_to_build "${CONFIGURE_AC}" "${PACKAGE_DIR}/dist_common.sh"; then
-		echo "Generating configure.ac"
-		cat "$1" > "${CONFIGURE_AC}"
-		has_to_build_configure=yes
-	fi
-}
-
-function output_top_makefile_am()
-{
-	if [ "${has_two_levels_dirs}" = "no" ]; then
-		echo "Please remove useless call to output_top_makefile_am"
-		exit
-	fi
-
-	local MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-	if has_to_build "${MAKEFILE_AM}" "$0" || \
-	   has_to_build "${MAKEFILE_AM}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
-	   has_to_build "${MAKEFILE_AM}" "${PACKAGE_DIR}/dist_common.sh"; then
-		echo "Generating Makefile.am"
-		cat "$1" > "${MAKEFILE_AM}"
-		has_to_build_configure=yes
-	fi
-}
-
-function build_top_configure()
-{
-	if [ "${has_two_levels_dirs}" = "no" ]; then
-		echo "Please remove useless call to build_top_configure"
-		exit
-	fi
-
-	mkdir -p "${DEST_DIR}/config"
-	
-	local CONFIGURE="${DEST_DIR}/configure"
-	if has_to_build "${CONFIGURE}" "${PACKAGE_DIR}/dist_common.sh"; then
-		has_to_build_configure=yes
-	fi
-	
-	if [ "${has_to_build_configure}" = "yes" ]; then
-		echo "Building configure"
-		local CMD="cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
-		echo "Running: ${CMD}"
-		${SHELL} -c "${CMD}"
-	fi
-}
-
-function build_top_configure_cross()
-{
-	if [ "${has_two_levels_dirs}" = "no" ]; then
-		echo "Please remove useless call to build_top_configure_cross"
-		exit
-	fi
-
-	local CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
-	if has_to_build "${CONFIGURE_CROSS}" "$0" || \
-	   has_to_build "${CONFIGURE_CROSS}" "${CONFIGURE_CROSS}/dist_common.sh"; then
-		echo "Building configure.cross"
-		make_pkg_configure_cross "${CONFIGURE_CROSS}"
-	fi  # has to build configure cross
+  dist_copy "${UNISIM_TOOLS_DIR}/genisslib/genisslib.py" "${DEST_DIR}/genisslib.py"
+  import m4/ax_python
 }
 
 function output_simulator_configure_ac()
 {
 	local SIMULATOR_CONFIGURE_AC
-	if [ "${has_two_levels_dirs}" = "yes" ]; then
-		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG_DSTDIR}/configure.ac"
-	else
-		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
-	fi
+	SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
 	if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0" || \
 	   pkg_deps_changed "${SIMULATOR_CONFIGURE_AC}" || \
 	   has_to_build "${SIMULATOR_CONFIGURE_AC}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
@@ -382,11 +173,7 @@ function output_simulator_configure_ac()
 function output_simulator_makefile_am()
 {
 	local SIMULATOR_MAKEFILE_AM
-	if [ "${has_two_levels_dirs}" = "yes" ]; then
-		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG_DSTDIR}/Makefile.am"
-	else
-		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-	fi
+	SIMULATOR_MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 	
 	if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0" || \
 	   pkg_deps_changed "${SIMULATOR_MAKEFILE_AM}" || \
@@ -404,17 +191,10 @@ function build_simulator_configure()
 	local SIMULATOR_CONFIGURE_AC
 	local SIMULATOR_CONFIGURE
 	local SIMULATOR_DIR
-	if [ "${has_two_levels_dirs}" = "yes" ]; then
-		SIMULATOR_CONFIG="${DEST_DIR}/${SIMPKG_DSTDIR}/config"
-		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG_DSTDIR}/configure.ac"
-		SIMULATOR_CONFIGURE="${DEST_DIR}/${SIMPKG_DSTDIR}/configure"
-		SIMULATOR_DIR="${DEST_DIR}/${SIMPKG_DSTDIR}"
-	else
-		SIMULATOR_CONFIG="${DEST_DIR}/config"
-		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
-		SIMULATOR_CONFIGURE="${DEST_DIR}/configure"
-		SIMULATOR_DIR="${DEST_DIR}"
-	fi
+  SIMULATOR_CONFIG="${DEST_DIR}/config"
+  SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
+  SIMULATOR_CONFIGURE="${DEST_DIR}/configure"
+  SIMULATOR_DIR="${DEST_DIR}"
 	
 	mkdir -p "${SIMULATOR_CONFIG}"
 	

@@ -42,6 +42,7 @@
 #include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/unicode/unicode.hh>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -842,14 +843,6 @@ VariableBase::DataType Variable<float>::GetDataType() const
 }
 
 template <>
-Variable<float>::operator std::string () const
-{
-	std::stringstream sstr;
-	sstr << Get();
-	return sstr.str();
-}
-
-template <> 
 Variable<std::string>::Variable(const char *_name, Object *_owner, std::string& _storage, Type type, const char *_description)
   : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
@@ -866,6 +859,55 @@ template <>
 VariableBase::DataType Variable<std::string>::GetDataType() const
 {
 	return DT_STRING;
+}
+
+template <>
+Variable<std::wstring>::Variable(const char *_name, Object *_owner, std::wstring& _storage, Type type, const char *_description)
+  : VariableBase(_name, _owner, type, _description), storage(&_storage)
+{
+	Initialize();
+}
+
+template <>
+const char *Variable<std::wstring>::GetDataTypeName() const
+{
+	return "string";
+}
+
+template <>
+VariableBase::DataType Variable<std::wstring>::GetDataType() const
+{
+	return DT_STRING;
+}
+
+namespace
+{
+  long long ParseSigned( char const* value )
+  {
+    return (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+  }
+  unsigned long long ParseUnsigned( char const* value )
+  {
+    return (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+  }
+  double ParseDouble( char const* value )
+  {
+    return (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+  }
+  long long ParseSigned( std::string const& value )
+  {
+    return ParseSigned( value.c_str() );
+  }
+#if 0
+  unsigned long long ParseUnsigned( std::string const& value )
+  {
+    return ParseUnsigned( value.c_str() );
+  }
+#endif
+  double ParseDouble(std::string const& value )
+  {
+    return ParseDouble( value.c_str() );
+  }
 }
 
 template <> Variable<bool>::operator std::string () const
@@ -887,23 +929,6 @@ template <> Variable<bool>::operator std::string () const
 	return sstr.str();
 }
 
-namespace
-{
-  long long ParseSigned( char const* value )
-  {
-    return (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-  }
-  unsigned long long ParseUnsigned( char const* value )
-  {
-    return (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-  }
-  double ParseDouble( char const* value )
-  {
-    return (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
-  }
-  
-}
-
 template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -911,6 +936,7 @@ template <> VariableBase& Variable<bool>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<signed char>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -918,6 +944,7 @@ template <> VariableBase& Variable<signed char>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -925,6 +952,7 @@ template <> VariableBase& Variable<short>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -932,6 +960,7 @@ template <> VariableBase& Variable<int>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -939,6 +968,7 @@ template <> VariableBase& Variable<long>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -946,6 +976,7 @@ template <> VariableBase& Variable<long long>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -953,6 +984,7 @@ template <> VariableBase& Variable<unsigned char>::operator = (const char *value
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -960,6 +992,7 @@ template <> VariableBase& Variable<unsigned short>::operator = (const char *valu
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -967,6 +1000,7 @@ template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -974,6 +1008,7 @@ template <> VariableBase& Variable<unsigned long>::operator = (const char *value
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -981,6 +1016,7 @@ template <> VariableBase& Variable<unsigned long long>::operator = (const char *
 	}
 	return *this;
 }
+
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
 	if (IsMutable()) {
@@ -994,6 +1030,14 @@ template <> VariableBase& Variable<double>::operator = (const char *value)
 		Set( ParseDouble( value ) );
 	}
 	return *this;
+}
+
+template <>
+Variable<float>::operator std::string () const
+{
+	std::stringstream sstr;
+	sstr << Get();
+	return sstr.str();
 }
 
 template <> Variable<std::string>::operator bool () const { return ParseSigned(storage->c_str()); }
@@ -1047,6 +1091,61 @@ template <> VariableBase& Variable<std::string>::operator = (const char *value)
 	if (IsMutable())
 	{
 		Set( value );
+	}
+	return *this;
+}
+
+template <> Variable<std::wstring>::operator bool () const { return ParseSigned(unisim::util::unicode::unicode_wstring_to_utf8_string(*storage)); }
+template <> Variable<std::wstring>::operator long long () const { return ParseSigned(unisim::util::unicode::unicode_wstring_to_utf8_string(*storage)); }
+template <> Variable<std::wstring>::operator unsigned long long () const { return ParseSigned(unisim::util::unicode::unicode_wstring_to_utf8_string(*storage)); }
+template <> Variable<std::wstring>::operator double () const { return ParseDouble(unisim::util::unicode::unicode_wstring_to_utf8_string(*storage)); }
+template <> Variable<std::wstring>::operator std::string () const { return unisim::util::unicode::unicode_wstring_to_utf8_string(*storage); }
+
+template <> VariableBase& Variable<std::wstring>::operator = (bool value)
+{
+	if (IsMutable()) {
+		Set( value ? L"true" : L"false" );
+	}
+	return *this;
+}
+template <> VariableBase& Variable<std::wstring>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		std::wstringstream sstr;
+		sstr << "0x" << std::hex << value;
+		std::wstring tmp = sstr.str();
+		Set( tmp );
+	}
+	return *this;
+}
+template <> VariableBase& Variable<std::wstring>::operator = (unsigned long long value)
+{
+	if (IsMutable())
+	{
+		std::wstringstream sstr;
+		sstr << "0x" << std::hex << value;
+		std::wstring tmp = sstr.str();
+		Set( tmp );
+	}
+	return *this;
+}
+template <> VariableBase& Variable<std::wstring>::operator = (double value)
+{
+	if (IsMutable())
+	{
+		std::wstringstream sstr;
+		sstr << value;
+		std::wstring tmp = sstr.str();
+		Set( tmp );
+	}
+	return *this;
+}
+template <> VariableBase& Variable<std::wstring>::operator = (const char *value)
+{
+	if (IsMutable())
+	{
+		Set( unisim::util::unicode::utf8_string_to_unicode_wstring(value) );
 	}
 	return *this;
 }

@@ -39,4 +39,3 @@ unisim/util/debug
 unisim/util/endian
 unisim/util/ieee754
 unisim/util/likely
-unisim/util/loader/elf_loader

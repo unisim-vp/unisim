@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,8 +33,8 @@
  */
 
 #include <scanner.hh>
-#include <unisim/component/cxx/processor/arm/execute.hh>
-#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <sstream>
 #include <iostream>

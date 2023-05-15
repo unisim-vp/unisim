@@ -1,0 +1,4 @@
+This package contains:
+- aarch32dba: an ARMv7 decoder for conversion of arm (arm32 and thumb2) instructions to DBA
+  intermediate representation 
+See INSTALL for installation instructions.

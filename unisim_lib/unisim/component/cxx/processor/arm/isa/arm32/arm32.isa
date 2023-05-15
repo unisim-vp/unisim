@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2021,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -58,9 +58,8 @@ action {void} disasm({std::ostream&} {buffer}) {
 
 impl {
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
-#include <unisim/component/cxx/processor/arm/disasm.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
@@ -79,7 +78,7 @@ using unisim::util::arithmetic::RotateRight;
 // using unisim::util::arithmetic::RotateRight;
 // using unisim::util::arithmetic::UnsignedSub8;
 
-#include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/execute.hh>
 } // end of impl
 
 include "unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa"

@@ -48,9 +48,11 @@ class Event
 public:
 	typedef unsigned int Type;
 	
-	Event(Type _type) : type(_type), event_id(next_event_id++), prc_num(-1), front_end_num(-1), ref_count(0) {}
+	Event(Type _type) : type(_type), ref(0), event_id(next_event_id++), prc_num(-1), front_end_num(-1), ref_count(0) {}
+	Event(Type _type, Event<ADDRESS> *_ref) : type(_type), ref(_ref), event_id(next_event_id++), prc_num(-1), front_end_num(-1), ref_count(0) {}
 	virtual ~Event() {}
 	Type GetType() const { return type; }
+	Event<ADDRESS> *GetReference() const { return ref; }
 	unsigned int GetEventId() const { return event_id; }
 	int GetProcessorNumber() const { return prc_num; }
 	int GetFrontEndNumber() const { return front_end_num; }
@@ -61,6 +63,7 @@ public:
 	
 private:
 	Type type;
+	Event<ADDRESS> *ref;
 	unsigned int event_id;
 	int prc_num;
 	int front_end_num;
@@ -82,6 +85,7 @@ public:
 	static const typename Event<ADDRESS>::Type TYPE;
 	
 	CustomEvent() : Event<ADDRESS>(TYPE) {}
+	CustomEvent(Event<ADDRESS> *ref) : Event<ADDRESS>(TYPE, ref) {}
 };
 
 template <typename ADDRESS, typename T>

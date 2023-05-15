@@ -192,18 +192,14 @@ namespace intel {
     template <class GOP>
     void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
-      m_regs[idx] = u32_t( value );
+      gr_type keep = ~gr_type( typename CTypeFor<Arch,GOP::SIZE>::u(-1) );
+      m_regs[idx] = (m_regs[reg] & keep) | gr_type( value );
     }
 
     void regwrite( GObLH const&, unsigned idx, u8_t value )
     {
-      uint32_t reg = idx%4, sh = idx*2 & 8;
-      m_regs[reg] = (m_regs[reg] & ~u32_t(0xff << sh)) | ((value & u32_t(0xff)) << sh);
-    }
-    
-    void regwrite( GOw const&, unsigned idx, u16_t value )
-    {
-      m_regs[idx] = (m_regs[idx] & ~u32_t(0xffff)) | ((value & u32_t(0xffff)));
+      unsigned reg = idx%4, sh = idx*2 & 8;
+      m_regs[reg] = (m_regs[reg] & ~gr_type(0xff << sh)) | (gr_type(value) << sh);
     }
     
     // low level register access routines

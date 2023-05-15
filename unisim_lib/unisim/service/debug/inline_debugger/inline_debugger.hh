@@ -61,8 +61,6 @@
 #include <unisim/util/debug/commit_insn_event.hh>
 #include <unisim/util/debug/trap_event.hh>
 #include <unisim/util/debug/source_code_breakpoint.hh>
-#include <unisim/util/loader/elf_loader/elf32_loader.hh>
-#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <unisim/util/ieee754/ieee754.hh>
 
 #include <unisim/kernel/kernel.hh>

@@ -1,8 +1,8 @@
 std/iosfwd
 std/iostream
-unisim/component/cxx/processor/powerpc
 unisim/component/cxx/processor/powerpc/e600
 unisim/component/cxx/processor/powerpc/e600/mpc7447a
+unisim/component/cxx/processor/powerpc/isa
 unisim/component/cxx/processor/powerpc/isa/book_i/branch
 unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point

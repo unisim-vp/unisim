@@ -33,6 +33,7 @@
  */
  
 #include <unisim/util/sav/sav.hh>
+#include <iostream>
 
 namespace unisim {
 namespace util {
@@ -43,6 +44,20 @@ namespace sav {
       typedef unisim::util::symbolic::Expr Expr;
       void operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) { updates.insert( l ); }
     };
+  }
+
+  std::ostream& operator << (std::ostream& sink, ActionNode const& an)
+  {
+    for (auto && update : an.updates)
+      sink << update << ";\n";
+    if (not an.cond.node)
+      return sink;
+    sink << "if (" << an.cond << ")\n{\n";
+    if (auto nxt = an.nexts[0]) sink << *nxt;
+    sink << "}\nelse\n{\n";
+    if (auto nxt = an.nexts[1]) sink << *nxt;
+    sink << "}\n";
+    return sink;
   }
 
   void

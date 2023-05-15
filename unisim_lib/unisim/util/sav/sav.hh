@@ -37,6 +37,7 @@
 
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/random/random.hh>
+#include <iostream>
 #include <map>
 #include <set>
 #include <inttypes.h>
@@ -57,19 +58,7 @@ namespace sav {
 
     ActionNode() : unisim::util::symbolic::Conditional<ActionNode>(), updates() {}
 
-    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
-    {
-      for (auto && update : an.updates)
-        sink << update << ";\n";
-      if (not an.cond.node)
-        return sink;
-      sink << "if (" << an.cond << ")\n{\n";
-      if (auto nxt = an.nexts[0]) sink << *nxt;
-      sink << "}\nelse\n{\n";
-      if (auto nxt = an.nexts[1]) sink << *nxt;
-      sink << "}\n";
-      return sink;
-    }
+    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an);
 
     void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
 
@@ -200,7 +189,7 @@ namespace sav {
       if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
         {
           int abits = 0, bbits = 0;
-          for (unsigned idx = 0, end = (an->GetType()->GetBitSize()+63)/64; idx < end; ++idx)
+          for (unsigned idx = 0, end = (an->GetType().bitsize+63)/64; idx < end; ++idx)
             {
               uint64_t av = an->GetBits( idx ), bv = dynamic_cast<ConstNodeBase const&>(*b.node).GetBits( idx );
               abits += __builtin_popcountll(av);
@@ -291,7 +280,7 @@ namespace sav {
     virtual void Repr(std::ostream& sink) const override
     {
       sink << "WeirdOp<";
-      GetType()->GetName(sink);
+      GetType().Repr(sink);
       sink << "," << SUBCOUNT << "," << op << ">( ";
       char const* sep = "";
       for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
@@ -315,7 +304,7 @@ namespace sav {
 
     WeirdOp( OP && name ) : base_type(std::move(name)) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual typename base_type::ValueType const* GetType() const { return unisim::util::symbolic::CValueType(typename T::value_type()); }
+    virtual typename base_type::ValueType GetType() const { return unisim::util::symbolic::CValueType(typename T::value_type()); }
   };
 
   template <class OUT, class OP, class T1>

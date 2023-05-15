@@ -1,7 +1,7 @@
 std/iosfwd
-unisim/component/cxx/processor/powerpc
 unisim/component/cxx/processor/powerpc/e200/mpc57xx
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3
+unisim/component/cxx/processor/powerpc/isa
 unisim/component/cxx/processor/powerpc/isa/book_e
 unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point

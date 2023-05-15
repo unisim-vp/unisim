@@ -4,12 +4,10 @@ SIMPKG=amd64dba
 SIMPKG_SRCDIR=cxx/amd64dba
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/component/cxx/processor/intel || exit
 import unisim/component/cxx/processor/intel/isa || exit
-import unisim/util/dbgate/client || exit
+import unisim/component/cxx/vector || exit
 import unisim/util/arithmetic || exit
 import unisim/util/endian || exit
-import unisim/util/random || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic/binsec || exit
 
@@ -152,14 +150,14 @@ libtool: \$(LIBTOOL_DEPS)
 
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
-unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+# unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+# unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library
-noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
-libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+# noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+# libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+# libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}

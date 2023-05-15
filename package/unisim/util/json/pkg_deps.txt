@@ -1,9 +1,11 @@
-libc/assert
 libc/ctype
-libc/stdint
 libc/stdlib
+std/cassert
 std/iostream
+std/map
 std/sstream
+std/stdexcept
 std/string
 std/vector
 unisim/util/dictionary
+unisim/util/unicode

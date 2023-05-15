@@ -1,6 +1,6 @@
 #include "armsec_decoder.hh"
-#include <unisim/component/cxx/processor/arm/disasm.hh>
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/util/forbint/contract/contract.hh>
 #include <unisim/util/identifier/identifier.hh>
 #include <unisim/util/likely/likely.hh>
@@ -159,45 +159,6 @@ class DecisionVector {
    bool acceptTarget(uint64_t target) const
       {  return vuLastInstructionDecisions.back().second == target; }
 };
-
-struct ValueType
-{
-  enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
-  static id_t IntegerType( bool is_signed, unsigned bits )
-  {
-    switch (bits) {
-    default: throw VOID;
-    case 8:  return is_signed ? S8 :  U8;
-    case 16: return is_signed ? S16 : U16;
-    case 32: return is_signed ? S32 : U32;
-    case 64: return is_signed ? S64 : U64;
-    }
-    return VOID;
-  }
-  ValueType( id_t id )
-    : name(0), bitsize(0), is_signed(false), is_integer(false)
-  {
-    switch (id)
-      {
-      case VOID: bitsize = 0;  is_integer = false; is_signed = false; name = "VOID"; break;
-      case BOOL: bitsize = 1;  is_integer = true;  is_signed = false; name = "BOOL"; break;
-      case U8:   bitsize = 8;  is_integer = true;  is_signed = false; name = "U8";  break;
-      case S8:   bitsize = 8;  is_integer = true;  is_signed = true;  name = "S8";  break;
-      case U16:  bitsize = 16; is_integer = true;  is_signed = false; name = "U16"; break;
-      case S16:  bitsize = 16; is_integer = true;  is_signed = true;  name = "S16"; break;
-      case U32:  bitsize = 32; is_integer = true;  is_signed = false; name = "U32"; break;
-      case S32:  bitsize = 32; is_integer = true;  is_signed = true;  name = "S32"; break;
-      case U64:  bitsize = 64; is_integer = true;  is_signed = false; name = "U64"; break;
-      case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
-      case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
-      case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
-      }
-  }
-  char const* name;
-  unsigned bitsize;
-  bool is_signed, is_integer;
-};
-  
 
 char const* debugPrint(const unisim::util::forbint::contract::DomainValue* value)
 {
@@ -1428,25 +1389,25 @@ struct Processor
   struct _FPSCR;
   struct PSR : public StatusRegister
   {
-    typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
-    typedef unisim::component::cxx::processor::arm::RegisterField<28,1> VRF; /* Overflow Integer Condition Flag */
-    //typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+    typedef unisim::util::arithmetic::BitField<31,1> NRF; /* Negative Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<30,1> ZRF; /* Zero     Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<29,1> CRF; /* Carry    Integer Condition Flag */
+    typedef unisim::util::arithmetic::BitField<28,1> VRF; /* Overflow Integer Condition Flag */
+    //typedef unisim::util::arithmetic::BitField<27,1> QRF; /* Cumulative saturation flag */
       
-    typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
+    typedef unisim::util::arithmetic::BitField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
       
       
-    typedef unisim::component::cxx::processor::arm::RegisterField<24,1> JRF; /* Jazelle execution state bit */
-    typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
-    typedef unisim::component::cxx::processor::arm::RegisterField< 5,1> TRF; /* Thumb execution state bit */
+    typedef unisim::util::arithmetic::BitField<24,1> JRF; /* Jazelle execution state bit */
+    typedef unisim::util::arithmetic::BitField< 9,1> ERF; /* Endianness execution state */
+    typedef unisim::util::arithmetic::BitField< 5,1> TRF; /* Thumb execution state bit */
       
-    typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
+    typedef unisim::util::arithmetic::BitField< 0,5> MRF; /* Mode field */
       
-    typedef unisim::component::cxx::processor::arm::RegisterField<10,6> ITHIRF;
-    typedef unisim::component::cxx::processor::arm::RegisterField<25,2> ITLORF;
+    typedef unisim::util::arithmetic::BitField<10,6> ITHIRF;
+    typedef unisim::util::arithmetic::BitField<25,2> ITLORF;
       
-    typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALLRF;
+    typedef unisim::util::arithmetic::BitField< 0,32> ALLRF;
       
     static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
       
@@ -2199,9 +2160,6 @@ public:
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
     
-  /* mask for valid bits in processor control and status registers */
-  static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
-
   PSR              cpsr;
   struct _FPSCR {
     _FPSCR(Processor& aproc) : proc(&aproc) {}

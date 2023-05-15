@@ -2369,7 +2369,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 		(*std_output_stream) << source_path << " (not found)";
 	}
 	
-	(*std_output_stream) << ":" << lineno;
+	(*std_output_stream) << ":" << std::dec << lineno;
 	(*std_output_stream) << ": ";
 
 	if(match)
@@ -2629,7 +2629,7 @@ const unisim::util::debug::Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStat
 	switch(opt)
 	{
 		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
-			return stmt_lookup_import->FindStatement(addr, opt);
+			return stmt_lookup_import->FindStatement(addr, /* filename */ 0, opt);
 		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
 		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
 			{
@@ -2648,7 +2648,7 @@ const unisim::util::debug::Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStat
 					}
 				}
 
-				const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, opt);
+				const unisim::util::debug::Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, /* filename */ 0, opt);
 				
 				if(stmt && (stmt->GetAddress() >= func_start_addr) && (stmt->GetAddress() <= func_end_addr))
 				{

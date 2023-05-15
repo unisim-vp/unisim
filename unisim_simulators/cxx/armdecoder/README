@@ -1,4 +1,4 @@
 This package contains:
-- armsec: an ARMv7 decoder for conversion of arm instruction to DBA
-  intermediate representation 
+- armdecoder: an ARMv7 decoder for conversion of arm (arm32 and
+  thumb2) instructions to Chariot semantic interface
 See INSTALL for installation instructions.

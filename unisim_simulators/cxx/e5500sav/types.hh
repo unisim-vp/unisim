@@ -87,7 +87,7 @@ namespace ut
     this_type* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
     virtual unsigned SubCount() const { return SUBS; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx < SUBS) return srcs[idx]; return ExprNode::GetSub(idx); };
-    virtual ValueType const* GetType() const { return GetSub(0)->GetType(); }
+    virtual ValueType GetType() const { return GetSub(0)->GetType(); }
     Expr srcs[SUBS];
   };
 

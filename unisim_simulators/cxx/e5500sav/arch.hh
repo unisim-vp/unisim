@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -161,7 +161,7 @@ namespace ut
     virtual unsigned SubCount() const { return 0; };
     virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<SourceReg const&>( rhs ) ); }
     int compare( SourceReg const& rhs ) const { return int(reg) - int(rhs.reg); }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
+    virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     unsigned reg;
   };
   
@@ -173,11 +173,11 @@ namespace ut
     
     Unknown( Arch& _arch ) : ArchExprNode( _arch ) {}
     virtual Unknown* Mutate() const override { return new Unknown(*this); }
-    virtual void Repr( std::ostream& sink ) const { sink << "?"; }
-    virtual unsigned SubCount() const { return 0; };
-    virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual unsigned SubCount() const override { return 0; };
+    virtual Expr const& GetSub(unsigned idx) const override { return ExprNode::GetSub(idx); };
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-    virtual ValueType const* GetType() const { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType GetType() const override { return unisim::util::symbolic::NoValueType(); }
   };
   
   template <class T>
@@ -208,7 +208,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
     
     XER( Arch& _arch ) : xer_value( new XERNode( _arch ) ) {}
@@ -245,7 +245,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint32_t()); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(uint32_t()); }
     };
 
     CR( Arch& _arch ) : cr_value( new CRNode( _arch ) ) {}
@@ -343,7 +343,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( ExprNode const& brhs ) const override { return 0; }
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
 
     FPSCR( Arch& _arch ) : fpscr_value( new FPSCRNode( _arch ) ) {}
@@ -499,16 +499,15 @@ namespace ut
     U64          reg_values[32];
     U64          cia;
     SoftDouble   fpr_values[32];
-    
-    
+
     struct CIA : public ArchExprNode
     {
       CIA( Arch& _arch ) : ArchExprNode( _arch ) {}
       virtual CIA* Mutate() const override { return new CIA(*this); }
-      virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
+      virtual void Repr( std::ostream& sink ) const override;
       virtual unsigned SubCount() const { return 0; };
       virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
     
     U64 GetCIA() { return cia; };
@@ -531,7 +530,7 @@ namespace ut
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
       virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
       Expr addr;
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, BITS); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, BITS); }
     };
     
     template <unsigned BITS> Expr MemRead( ADDRESS const& _addr )
@@ -601,6 +600,11 @@ namespace ut
     static bool const HAS_FLOATING_POINT_SQRT = true;
   };
 
+  template <class FP>
+  U8 FPCompare( FP const& lhs, FP const& rhs )
+  {
+    return U8( make_function( "FPCompare", lhs.expr, rhs.expr ) );
+  }
 
   inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ){ return U64( make_function( "UnsignedMultiplyHigh", lop.expr, rop.expr ) ); }
   inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { return S64( make_function( "SignedMultiplyHigh", lop.expr, rop.expr ) ); }

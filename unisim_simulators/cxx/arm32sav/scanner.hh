@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020,
+ *  Copyright (c) 2020-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,8 +38,8 @@
 #include <test.hh>
 #include <top_arm32.hh>
 #include <top_thumb.hh>
-#include <unisim/component/cxx/processor/arm/psr.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/vector/vector.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/symbolic/vector/vector.hh>
@@ -106,7 +106,6 @@ struct Scanner
   typedef unisim::util::symbolic::ExprNode ExprNode;
   typedef unisim::util::symbolic::ValueType ValueType;
   typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-  typedef unisim::util::symbolic::EvalSpace EvalSpace;
 
   struct Config
   {
@@ -122,21 +121,9 @@ struct Scanner
     static bool const     insns7  = true;
   };
 
-  struct AddrEval : public EvalSpace {};
-
-  struct RelocEval : public EvalSpace
-  {
-    RelocEval( uint32_t const* _regs, Interface const& _tif, uint32_t _address )
-      : regs(_regs), tif(_tif), address(_address) {}
-    uint32_t GetReg(unsigned reg) const { return regs[tif.gindex(reg)]; }
-    uint32_t const* regs;
-    Interface const& tif;
-    uint32_t address;
-  };
-
   struct Update : public ExprNode
   {
-    virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
+    virtual ValueType GetType() const override { return unisim::util::symbolic::NoValueType(); }
   };
 
   struct RegReadBase : public unisim::util::symbolic::ExprNode
@@ -153,11 +140,10 @@ struct Scanner
     RegRead( RID _id ) : id(_id) {}
     virtual RegRead* Mutate() const override { return new RegRead( *this ); }
     virtual char const* GetRegName() const override { return id.c_str(); };
-    virtual ValueType const* GetType() const { return RID::GetType(); }
+    virtual ValueType GetType() const { return RID::GetType(); }
     virtual unsigned SubCount() const override { return 0; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
     int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-    ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
 
     RID id;
   };
@@ -180,7 +166,7 @@ struct Scanner
     VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
     virtual ExprNode* Mutate() const override { return new this_type(*this); }
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-    virtual ValueType const* GetType() const override { return T::GetType(); }
+    virtual ValueType GetType() const override { return T::GetType(); }
   };
 
   struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
@@ -202,9 +188,9 @@ struct Scanner
     virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
   };
 
-  struct VReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "VReg"; } };
-  // struct FReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(double()); } static char const* name() { return "FReg"; } };
-  struct GReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "GReg"; } };
+  struct VReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "VReg"; } };
+  // struct FReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(double()); } static char const* name() { return "FReg"; } };
+  struct GReg { static ValueType GetType() { return unisim::util::symbolic::CValueType(uint64_t()); } static char const* name() { return "GReg"; } };
 
   typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
   //  typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
@@ -213,14 +199,6 @@ struct Scanner
   struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
   {
     GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-    virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( uint64_t(reg) << 28 );
-      if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-        return new unisim::util::symbolic::ConstNode<uint32_t>( l->GetReg(reg) );
-      return 0;
-    };
   };
 
   struct RegWriteBase : public Update
@@ -252,34 +230,34 @@ struct Scanner
 
   struct Load : public ExprNode
   {
-    Load( ValueType const* _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
+    Load( ValueType _tp, Expr const& _addr ) : addr(_addr), tp(_tp) {}
     virtual Load* Mutate() const override { return new Load( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink << "Load"); sink << "(" << addr << ")"; }
+    virtual void Repr( std::ostream& sink ) const override { GetType().Repr(sink << "Load"); sink << "(" << addr << ")"; }
     virtual unsigned SubCount() const override { return 1; }
     virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
-    int compare( Load const& rhs ) const { return tp->cmp(*rhs.tp); }
-    virtual ValueType const* GetType() const override { return tp; }
+    int compare( Load const& rhs ) const { return tp.cmp(rhs.tp); }
+    virtual ValueType GetType() const override { return tp; }
 
     Expr addr;
-    ValueType const* tp;
+    ValueType tp;
   };
 
   struct Store : public Update
   {
-    Store( ValueType const* _tp, Expr const& _addr, Expr const& _value )
+    Store( ValueType _tp, Expr const& _addr, Expr const& _value )
       : addr( _addr ), value( _value ), tp(_tp)
     {}
     virtual Store* Mutate() const override { return new Store( *this ); }
-    virtual void Repr( std::ostream& sink ) const override { GetType()->GetName(sink << "Store"); sink << "( " << addr << ", " << value <<  " )"; }
+    virtual void Repr( std::ostream& sink ) const override { GetType().Repr(sink << "Store"); sink << "( " << addr << ", " << value <<  " )"; }
     virtual unsigned SubCount() const override { return 2; }
     virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
-    int compare( Store const& rhs ) const { return tp->cmp(*rhs.tp); }
+    int compare( Store const& rhs ) const { return tp.cmp(rhs.tp); }
 
     Expr addr;
     Expr value;
-    ValueType const* tp;
+    ValueType tp;
   };
 
   static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
@@ -301,12 +279,6 @@ struct Scanner
     typedef uint32_t value_type;
     char const* c_str() const { return "pc"; }
     int cmp( PC const& ) const { return 0; }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("pc-relative addressing");
-      return 0;
-    }
   };
 
   struct Flag : public unisim::util::identifier::Identifier<Flag>, public unisim::util::symbolic::WithValueType<Flag>
@@ -318,12 +290,6 @@ struct Scanner
     {
       static char const* names[] = {"n", "z", "c", "v", "NA"};
       return names[int(code)];
-    }
-    ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-    {
-      if (dynamic_cast<AddrEval const*>( &evs ))
-        dont("flag-dependant addressing");
-      return 0;
     }
 
     Flag() : code(end) {}
@@ -340,19 +306,19 @@ struct Scanner
     U32 bits() const { return arch.GetPSR( unisim::component::cxx::processor::arm::ALL32 ); }
   };
 
-  template <unsigned POS, unsigned SIZE> using RegisterField = unisim::component::cxx::processor::arm::RegisterField<POS, SIZE>;
+  template <unsigned POS, unsigned SIZE> using BitField = unisim::util::arithmetic::BitField<POS, SIZE>;
 
-  U32 GetPSR(RegisterField<31, 1> const&) { return U32(flags[Flag::N]); }
-  U32 GetPSR(RegisterField<30, 1> const&) { return U32(flags[Flag::Z]); }
-  U32 GetPSR(RegisterField<29, 1> const&) { return U32(flags[Flag::C]); }
-  U32 GetPSR(RegisterField<28, 1> const&) { return U32(flags[Flag::V]); }
+  U32 GetPSR(BitField<31, 1> const&) { return U32(flags[Flag::N]); }
+  U32 GetPSR(BitField<30, 1> const&) { return U32(flags[Flag::Z]); }
+  U32 GetPSR(BitField<29, 1> const&) { return U32(flags[Flag::C]); }
+  U32 GetPSR(BitField<28, 1> const&) { return U32(flags[Flag::V]); }
 
   template <class T> U32 GetPSR(T const&) { return dontread<U32>("cpsr"); }
 
-  void SetPSR(RegisterField<31, 1> const&, U32 const& value) { flags[Flag::N] = BOOL(value); }
-  void SetPSR(RegisterField<30, 1> const&, U32 const& value) { flags[Flag::Z] = BOOL(value); }
-  void SetPSR(RegisterField<29, 1> const&, U32 const& value) { flags[Flag::C] = BOOL(value); }
-  void SetPSR(RegisterField<28, 1> const&, U32 const& value) { flags[Flag::V] = BOOL(value); }
+  void SetPSR(BitField<31, 1> const&, U32 const& value) { flags[Flag::N] = BOOL(value); }
+  void SetPSR(BitField<30, 1> const&, U32 const& value) { flags[Flag::Z] = BOOL(value); }
+  void SetPSR(BitField<29, 1> const&, U32 const& value) { flags[Flag::C] = BOOL(value); }
+  void SetPSR(BitField<28, 1> const&, U32 const& value) { flags[Flag::V] = BOOL(value); }
 
   template <class T> void SetPSR(T const&, U32 const& value) { dont("cpsr"); }
 
@@ -401,9 +367,9 @@ struct Scanner
 
 //     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ dont("system"); }
 
-  Expr MemRead(ValueType const* tp, Expr const& addr, bool aligned)
+  Expr MemRead(ValueType tp, Expr const& addr, bool aligned)
   {
-    interface.memaccess( addr, tp->GetBitSize()/8, false, aligned );
+    interface.memaccess( addr, tp.bitsize/8, false, aligned );
     return new Load( tp, addr );
   }
   template <typename T>
@@ -415,9 +381,9 @@ struct Scanner
   U16  MemRead16( U32 const& addr ) { return MemReadT<U16>( addr, true ); }
   U8  MemRead8( U32 const& addr ) { return MemReadT<U8>( addr, true ); }
 
-  void MemWrite(ValueType const* tp, Expr const& addr, Expr const& data, bool aligned)
+  void MemWrite(ValueType tp, Expr const& addr, Expr const& data, bool aligned)
   {
-    interface.memaccess( addr, tp->GetBitSize()/8, true, aligned );
+    interface.memaccess( addr, tp.bitsize/8, true, aligned );
     stores.insert( new Store( tp, addr, data ) );
   }
   template <typename T>

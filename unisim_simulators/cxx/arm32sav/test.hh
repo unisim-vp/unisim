@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -84,4 +84,14 @@ struct TestLess { bool operator () ( Interface const& a, Interface const& b ) co
 
 typedef std::multiset<Interface, TestLess> TestDB;
 
+struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+{
+  ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+  virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+  virtual int cmp(ExprNode const& rhs) const override { return 0; }
+  virtual unsigned SubCount() const override { return 0; }
+  virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+  virtual unisim::util::symbolic::ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+};
+      
 #endif // ARM32SAV_REVIEW_HH

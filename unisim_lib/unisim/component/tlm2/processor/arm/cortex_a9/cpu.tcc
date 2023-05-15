@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -37,7 +37,7 @@
 
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/logger/logger.hh>

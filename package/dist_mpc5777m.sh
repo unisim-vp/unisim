@@ -1,7 +1,7 @@
 #!/bin/bash
 SIMPKG=mpc5777m
 SIMPKG_SRCDIR=tlm2/mpc5777m
-SIMPKG_DSTDIR=mpc5777m
+
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
@@ -36,10 +36,12 @@ import unisim/kernel/logger/http || exit
 import unisim/kernel/logger/xml_file || exit
 import unisim/kernel/logger/netstream || exit
 import unisim/util/backtrace || exit
+import unisim/util/hla/sc_time || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
 import unisim/service/debug/profiler || exit
+import unisim/service/debug/hla || exit
 import unisim/service/loader/multiformat_loader || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/time/host_time || exit
@@ -72,9 +74,11 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
+main.cc \
 simulator.cc \
 config.cc \
 debugger.cc \
+hla_federate.cc \
 xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \
@@ -131,23 +135,6 @@ sema4.cc \
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
 config.hh \
-"
-
-UNISIM_SIMULATOR_EXTRA_FILES="\
-trace32-core0.cmm.in \
-trace32-core1.cmm.in \
-trace32-core2.cmm.in \
-trace32-multi.cmm.in \
-sim_gtkwave.sh.in \
-"
-
-UNISIM_SIMULATOR_PKG_DATA_FILES="\
-COPYING \
-README \
-INSTALL \
-AUTHORS \
-NEWS \
-ChangeLog \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
@@ -224,16 +211,6 @@ soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \
 soft/libsys/src/fs/lfs_util.c \
-sim_config.xml \
-gtkwave_init_script.tcl \
-bandwidth_gtkwave_init_script.tcl \
-.gtkwaverc \
-gtkwave.ini \
-config.t32 \
-baf.bin \
-"
-
-UNISIM_SIMULATOR_SCRIPTS_FILES="\
 soft/libsys/bin/small/common/gcc-wrapper \
 soft/libsys/bin/small/Z4_2/bin/powerpc-eabivle-ranlib \
 soft/libsys/bin/small/Z4_2/bin/powerpc-eabivle-gcc \
@@ -266,61 +243,32 @@ soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-gcc \
 soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-ld \
 soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-strip \
 soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-ar \
-"
-
-UNISIM_SIMULATOR_TESTBENCH_FILES="\
-main.cc \
+sim_config.xml \
+gtkwave_init_script.tcl \
+bandwidth_gtkwave_init_script.tcl \
+.gtkwaverc \
+gtkwave.ini \
+config.t32 \
+baf.bin \
+trace32-core0.cmm.in \
+trace32-core1.cmm.in \
+trace32-core2.cmm.in \
+trace32-multi.cmm.in \
+sim_gtkwave.sh.in \
 "
 
 UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \
 ${UNISIM_SIMULATOR_HEADER_FILES} \
-${UNISIM_SIMULATOR_EXTRA_FILES} \
 ${UNISIM_SIMULATOR_DATA_FILES} \
-${UNISIM_SIMULATOR_SCRIPTS_FILES} \
-${UNISIM_SIMULATOR_TESTBENCH_FILES} \
 "
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
-done
-
-for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
-# Top level
-
-output_top_configure_ac <(cat << EOF
-AC_INIT([UNISIM MPC5777M Simulator Package], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}])
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_CONFIG_SUBDIRS([genisslib]) 
-AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}]) 
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-)
-
-output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG_DSTDIR}
-EXTRA_DIST = configure.cross
-EOF
-)
-
-build_top_configure
-build_top_configure_cross
-
-# Simulator
-
 output_simulator_configure_ac <(cat << EOF
-AC_INIT([UNISIM MPC5777M Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM MPC5777M Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -347,8 +295,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
-AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([trace32-core0.cmm])
@@ -369,7 +315,7 @@ libtool: \$(LIBTOOL_DEPS)
 
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_TESTBENCH_FILES} ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
 #unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
 unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
@@ -400,11 +346,11 @@ CLEANFILES=\
 
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.isa
 
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.isa
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.isa
 EOF
 )
 

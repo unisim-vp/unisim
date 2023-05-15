@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2020,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -167,7 +167,7 @@ namespace review
     VmmRegister() = default;
     VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
     unisim::util::symbolic::Expr expr;
-    static unisim::util::symbolic::ValueType const* GetType();
+    static unisim::util::symbolic::ValueType GetType() { return unisim::util::symbolic::ValueType(unisim::util::symbolic::ValueType::NA, 8*BYTECOUNT); }
   };
 
   struct Arch
@@ -221,7 +221,7 @@ namespace review
 
     struct Update : public ExprNode
     {
-      virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
+      virtual ValueType GetType() const override { return unisim::util::symbolic::NoValueType(); }
     };
 
     Arch( Interface& iif );
@@ -246,7 +246,7 @@ namespace review
       RegRead( RID _id ) : id(_id) {}
       virtual RegRead* Mutate() const override { return new RegRead( *this ); }
       virtual char const* GetRegName() const override { return id.c_str(); };
-      virtual ValueType const* GetType() const { return RID::GetType(); }
+      virtual ValueType GetType() const { return RID::GetType(); }
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
       int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
@@ -271,7 +271,7 @@ namespace review
       VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
       virtual ExprNode* Mutate() const override { return new this_type(*this); }
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-      virtual ValueType const* GetType() const override { return T::scalar_type(); }
+      virtual ValueType GetType() const override { return T::scalar_type(); }
     };
 
     struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
@@ -292,36 +292,29 @@ namespace review
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
     };
 
-    struct VReg { static ValueType const* scalar_type() { return unisim::util::symbolic::CValueType(uint64_t()); };  static char const* name() { return "VReg"; } };
-    struct FReg { static ValueType const* scalar_type() { return unisim::util::symbolic::CValueType(double()); };  static char const* name() { return "FReg"; } };
-    struct GReg { static ValueType const* scalar_type() { return unisim::util::symbolic::NoValueType(); }; static char const* name() { return "GReg"; } };
+    struct VReg { static ValueType scalar_type() { return unisim::util::symbolic::CValueType(uint64_t()); };  static char const* name() { return "VReg"; } };
+    struct FReg { static ValueType scalar_type() { return unisim::util::symbolic::CValueType(double()); };  static char const* name() { return "FReg"; } };
+    struct GReg { static ValueType scalar_type() { return unisim::util::symbolic::NoValueType(); }; static char const* name() { return "GReg"; } };
 
     typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
 
-    struct AddrEval : public unisim::util::symbolic::EvalSpace {};
-    struct RelocEval : public unisim::util::symbolic::EvalSpace
+    struct ExpectedAddress : public unisim::util::symbolic::ExprNode
     {
-      RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
-      uint64_t const* regvalues;
-      uint64_t address;
+      ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+      virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+      virtual int cmp(ExprNode const& rhs) const override { return 0; }
+      virtual unsigned SubCount() const override { return 0; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+      virtual unisim::util::symbolic::ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
     };
 
     struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
     {
       GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-      {
-        if (dynamic_cast<AddrEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
-        if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( l->regvalues[idx] );
-        return 0;
-      };
     };
-
 
     struct RegWriteBase : public Update
     {
@@ -398,30 +391,32 @@ namespace review
 
     typedef std::map<unsigned,unsigned> RegMap;
 
-    static unsigned const REGCOUNT = AMD64::GREGCOUNT;
-    static unsigned const REGSIZE = 8;
+    static unsigned const GREGCOUNT = AMD64::GREGCOUNT;
+    static unsigned const GREGSIZE = 8;
 
     void                        eregtouch( unsigned reg, bool w );
     bool                        eregdiff( unsigned reg );
     Expr                        eregread( unsigned reg, unsigned size, unsigned pos );
     void                        eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr );
 
-    Expr                        regvalues[REGCOUNT][REGSIZE];
+    Expr                        regvalues[GREGCOUNT][GREGSIZE];
 
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
     {
-      return typename TypeFor<Arch,GOP::SIZE>::u( gr_type(eregread( idx, GOP::SIZE / 8, 0 )) );
+      return typename TypeFor<Arch,GOP::SIZE>::u( gr_type( eregread(idx, GOP::SIZE / 8, 0) ) );
     }
 
-    u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type(eregread( idx%4, 1, (idx >> 2) & 1 )) ); }
+    u8_t regread( GObLH const&, unsigned idx ) { return u8_t( gr_type( eregread(idx%4, 1, (idx >> 2) & 1) ) ); }
 
-    template <class GOP> void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u const& val )
-    { eregwrite( idx, 8, 0, u64_t(val).expr ); }
+    template <class GOP>
+    void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u const& val )
+    {
+      eregwrite( idx, GOP::SIZE / 8, 0, gr_type(val).expr );
+    }
 
-    void regwrite( GObLH const&, unsigned idx, u8_t val ) { eregwrite( idx%4, 1, (idx>>2) & 1, val.expr ); }
-    void regwrite( GOb const&, unsigned idx, u8_t val )   { eregwrite( idx, 1, 0, val.expr ); }
-    void regwrite( GOw const&, unsigned idx, u16_t val )  { eregwrite( idx, 2, 0, val.expr ); }
+    void regwrite( GObLH const&, unsigned idx, u8_t val ) { eregwrite( idx%4, 1, (idx>>2) & 1, gr_type(val).expr ); }
+    void regwrite( GOd const&, unsigned idx, u32_t val ) { eregwrite( idx, GREGSIZE, 0, gr_type(val).expr ); }
 
     enum ipproc_t { ipjmp, ipcall, ipret };
     Expr                        next_insn_addr;
@@ -439,20 +434,13 @@ namespace review
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return 0; }
       virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read()"; }
-      virtual ValueType const* GetType() const override { return T::scalar_type(); }
+      virtual ValueType GetType() const override { return T::scalar_type(); }
     };
 
-    struct RIP { static ValueType const* scalar_type() { return unisim::util::symbolic::CValueType(uint64_t()); }; static char const* name() { return "RIP"; } };
+    struct RIP { static ValueType scalar_type() { return unisim::util::symbolic::CValueType(uint64_t()); }; static char const* name() { return "RIP"; } };
 
     struct RIPRead : public SPRRead<RIP>
     {
-      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
-      {
-        if (dynamic_cast<AddrEval const*>( &evs ))
-          throw unisim::util::sav::Untestable("RIP relative addressing");
-        return 0;
-      }
     };
 
     struct RIPWrite : public RegWriteBase
@@ -501,7 +489,7 @@ namespace review
       typedef Load<dstT> this_type;
       Load( unsigned bytes, unsigned segment, Expr const& addr ) : LoadBase(bytes, segment, addr) {}
       virtual this_type* Mutate() const override { return new this_type( *this ); }
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(dstT()); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(dstT()); }
     };
 
     // struct FRegWrite : public Update
@@ -576,7 +564,7 @@ namespace review
       virtual FTop* Mutate() const override { return new FTop(*this); }
       virtual unsigned SubCount() const { return 0; }
       virtual int cmp(ExprNode const&) const override { return 0; }
-      virtual ValueType const* GetType() const { return unisim::util::symbolic::CValueType(uint8_t()); }
+      virtual ValueType GetType() const { return unisim::util::symbolic::CValueType(uint8_t()); }
       virtual void Repr( std::ostream& sink ) const;
     };
 
@@ -687,7 +675,7 @@ namespace review
     // {
     //   virtual MXCSRRead* Mutate() const override { return new MXCSRRead( *this ); }
     //   virtual char const* GetRegName() const override { return "mxcsr"; };
-    //   virtual ValueType const* GetType() const override { return ValueType::U16; }
+    //   virtual ValueType GetType() const override { return ValueType::U16; }
     //   virtual unsigned SubCount() const override { return 0; }
     // };
 
@@ -739,7 +727,7 @@ namespace review
       virtual void Repr( std::ostream& sink ) const override
       {
         sink << "VmmIndirectRead<" << VR::SIZE << ",";
-        GetType()->GetName(sink);
+        GetType().Repr(sink);
         sink << ">(";
         for (unsigned idx = 0, end = elemcount; idx < end; ++idx)
           sink << sources[idx] << ", ";
@@ -747,7 +735,7 @@ namespace review
       }
       virtual unsigned SubCount() const { return elemcount+1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx < elemcount) return sources[idx]; if (idx == elemcount) return sub; return ExprNode::GetSub(idx); }
-      virtual ValueType const* GetType() const override { return ELEM::GetType(); }
+      virtual ValueType GetType() const override { return ELEM::GetType(); }
       virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
       int compare( this_type const& rhs ) const { return 0; }
       Expr sources[elemcount];

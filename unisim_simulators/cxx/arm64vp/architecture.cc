@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019-2021,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -1972,7 +1972,7 @@ void
 AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat)
 {
   // AArch64
-  bool wxn = unisim::component::cxx::processor::arm::RegisterField<19,1>().Get(el1.SCTLR); // Cacheable
+  bool wxn = unisim::util::arithmetic::BitField<19,1>().Get(el1.SCTLR); // Cacheable
 
   unsigned ap = trans.ap | 2*(el != 0);
 

@@ -25,13 +25,13 @@ The official branch for binsec stable decoders is binsec, so better stick to it.
 ## Installing a decoder
 
 Each decoder (currently) is a standalone C++/automake project.  You can obtain a distribution of each project using special distribution scripts.
-To setup a decoder project, choose a directory (here suppose $DECODER points to it). And use the distribution script of your choice (here we use dist_armsec.sh).
+To setup a decoder project, choose a directory (here suppose $DECODER points to it). And use the distribution script of your choice (here we use dist_aarch32dba.sh).
     
     $ mkdir "$DECODER"
     $ cd "$DECODER"
-    $ "$USIMDIR"/unisim/package/dist_armsec.sh "$PWD"
+    $ "$USIMDIR"/unisim/package/dist_aarch32dba.sh "$PWD"
     
-All decoders follow a standard configure-make-make-install process.
+All decoders follow a standard `configure && make && make install` process.
 In the following we perform a no-option and in-place build (suit yourself if you prefer something else).
 Moreover, we skip the `make install` which is not mandatory.
 
@@ -40,7 +40,7 @@ Moreover, we skip the `make install` which is not mandatory.
 
 That's it, the decoder is ready.
 
-    $ armsec/unisim-armsec-1.0.9 arm 0x4000 0xe2543210
+    $ ./unisim-aarch32dba-1.0.9 arm 0x4000 0xe2543210
     
     (address . 0x00004000)
     (opcode . 0xe2543210)
@@ -58,12 +58,12 @@ That's it, the decoder is ready.
     (0x00004000,9) v<1> := nxt_v<1>; goto 10
     (0x00004000,10) goto (0x00004004,0)
 
-# ARMSEC: the armv7 instruction decoder
+# AARCH32DBA: the armv7 instruction decoder
 
-ARMSEC is an ARMv7 instruction set decoder. It supports all the instruction set (including NEON, VFP and the variable-length THUMB2 encoding).
-The decoder is available through the `dist_armsec.sh` distribution script and the installation steps described above.
+AARCH32DBA is an ARMv7 instruction set decoder. It supports all the instruction set (including NEON, VFP and the variable-length THUMB2 encoding).
+The decoder is available through the `dist_aarch32dba.sh` distribution script and the installation steps described above.
 
-usage: `unisim-armsec-1.0.9 arm|thumb <address> <encoding>`
+usage: `unisim-aarch32dba-1.0.9 arm|thumb <address> <encoding>`
 
 # AARCH64DBA: the armv8 instruction decoder
 
@@ -107,7 +107,7 @@ The instruction encoding is given as an objdump-like byte sequence.
 # MIPSELSEC: the mips instrucrtion decoder
 
 MIPSELSEC is a mips (> isa32r2, 32 bits little-endian) instruction set decoder. It partially supports the instruction set.
-The decoder is available through the `dist_mipselsec.sh` distribution script and the installation steps described above.
+The decoder is available through the `dist_mipseldba.sh` distribution script and the installation steps described above.
 
 Note: because of DBA's notion of branches and MIPS delay slots, the decoder currently doesn't handle branches correctly.  The decoder is here to serve as feasability demo.
 

@@ -44,6 +44,7 @@
 #include <unisim/component/cxx/interconnect/xilinx/mci/config.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 #include <unisim/component/cxx/com/xilinx/xps_gpio/config.hh>
+#include <systemc>
 
 //=========================================================================
 //===                 Simulator config                                  ===
@@ -67,6 +68,7 @@ public:
 	struct DEBUGGER_CONFIG
 	{
 		typedef CPU_ADDRESS_TYPE ADDRESS;
+    typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = 1;
 		/* gdb_server, inline_debugger, profiler, user_interface */
 		static const unsigned int MAX_FRONT_ENDS = 4;

@@ -41,6 +41,7 @@
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/config.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh>
 #include <stdint.h>
+#include <systemc>
 
 struct Config
 {
@@ -55,6 +56,7 @@ struct Config
 	static const unsigned int MAX_FRONT_ENDS = NUM_PROCESSORS // for gdb-server
 	                                         + NUM_PROCESSORS // for inline-debugger
 	                                         + NUM_PROCESSORS // for profiler
+	                                         + 1              // for HLA federate
 	                                         ;
 	static const unsigned int NUM_DMA_CHANNELS  = 128;
 	static const unsigned int NUM_DMA_TRIGGERS  = 8;
@@ -70,8 +72,19 @@ struct Config
 	struct DEBUGGER_CONFIG
 	{
 		typedef CPU_ADDRESS_TYPE ADDRESS;
+		typedef sc_core::sc_time TIME_TYPE;
 		static const unsigned int NUM_PROCESSORS = Config::NUM_PROCESSORS;
 		static const unsigned int MAX_FRONT_ENDS = Config::MAX_FRONT_ENDS;
+	};
+	
+	struct HLA_FEDERATE_CONFIG
+	{
+		typedef uint32_t ADDRESS;
+		struct TIME_TRAIT
+		{
+			typedef sc_core::sc_time TIME_TYPE;
+			typedef uint64_t SCALAR_TYPE;
+		};
 	};
 
 	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::Config

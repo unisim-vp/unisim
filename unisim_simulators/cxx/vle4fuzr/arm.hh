@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2019,
+ *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -15,7 +15,7 @@
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>

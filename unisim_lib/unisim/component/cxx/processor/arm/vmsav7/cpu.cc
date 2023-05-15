@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2020,
+ *  Copyright (c) 2010-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -101,13 +101,13 @@ TLB::Iterator::MatchMVA( uint32_t mva ) const
 bool
 TLB::Iterator::IsGlobal() const
 {
-  return not tlb.vals[RegisterField<5,7>().Get( tlb.keys[idx] )].nG;
+  return not tlb.vals[unisim::util::arithmetic::BitField<5,7>().Get( tlb.keys[idx] )].nG;
 }
 
 bool
 TLB::Iterator::MatchASID( uint32_t asid ) const
 {
-  return tlb.vals[RegisterField<5,7>().Get( tlb.keys[idx] )].asid == RegisterField<0,8>().Get( asid );
+  return tlb.vals[unisim::util::arithmetic::BitField<5,7>().Get( tlb.keys[idx] )].asid == unisim::util::arithmetic::BitField<0,8>().Get( asid );
 }
 
 } // end of namespace vmsav7

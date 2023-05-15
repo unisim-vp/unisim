@@ -49,17 +49,15 @@ template <typename ADDRESS>
 class Breakpoint : public CustomEvent<ADDRESS, Breakpoint<ADDRESS> >
 {
 public:
-	Breakpoint(ADDRESS _addr) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >(), addr(_addr), ref(), id(-1) {}
-	Breakpoint(ADDRESS _addr, Event<ADDRESS> *_ref) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >() , addr(_addr), ref(_ref), id(-1) {}
+	Breakpoint(ADDRESS _addr) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >(), addr(_addr), id(-1) {}
+	Breakpoint(ADDRESS _addr, Event<ADDRESS> *_ref) : CustomEvent<ADDRESS, Breakpoint<ADDRESS> >(_ref) , addr(_addr), id(-1) {}
 	
 	inline int GetId() const { return id; }
 	inline ADDRESS GetAddress() const { return addr; }
-	inline Event<ADDRESS> *GetReference() const { return ref; }
 	inline void SetId(unsigned int _id) { id = _id; }
 	
 private:
 	ADDRESS addr;
-	Event<ADDRESS> *ref;
 	int id;
 };
 

@@ -13,3 +13,4 @@ std/vector
 unisim/kernel
 unisim/kernel/logger
 unisim/util/likely
+unisim/util/unicode

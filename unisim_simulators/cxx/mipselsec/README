@@ -1,4 +1,0 @@
-This package contains:
-- mipselsec: a Mips decoder for conversion of arm instruction to DBA
-  intermediate representation 
-See INSTALL for installation instructions.

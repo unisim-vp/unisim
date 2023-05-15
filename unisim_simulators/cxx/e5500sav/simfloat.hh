@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -72,23 +72,6 @@ namespace ut
   struct SoftFloat;
   struct SoftDouble;
 
-  template <class FP, class ARCH>
-  int FPCompare( ARCH& arch, FP const& lhs, FP const& rhs )
-  {
-    bool ge = arch.Choose( make_function( "GE", lhs.expr, rhs.expr ) );
-    bool le = arch.Choose( make_function( "LE", lhs.expr, rhs.expr ) );
-    return 2*int(ge) + int(le);
-  }
-
-  template <class FP>
-  int FPCompare( FP const& lhs, FP const& rhs )
-  {
-    Arch*         arch = ArchExprNode::SeekArch(lhs.expr);
-    if (not arch) arch = ArchExprNode::SeekArch(rhs.expr);
-    if (not arch) throw 0;
-    return FPCompare( *arch, lhs, rhs );
-  }
-
   struct SoftFloat
   {
     typedef unisim::util::symbolic::Expr Expr;
@@ -115,7 +98,7 @@ namespace ut
     void setQuiet() { expr = make_function("setQuiet",expr); }
     void setPositive() { expr = make_function("setPos",expr); }
     
-    ComparisonResult compare( SoftFloat const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
+    //    ComparisonResult compare( SoftFloat const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
 
     BOOL isNegative() const { return make_function("isNeg",expr); }
     BOOL isNaN() const { return make_function("isNaN", expr); }
@@ -186,7 +169,7 @@ namespace ut
     
     void sqrtAssign(Flags& flags) { expr = make_function("sqrt",expr,flags.rm); flags.from(expr); }
     
-    ComparisonResult compare( SoftDouble const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
+    //    ComparisonResult compare( SoftDouble const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
 
     BOOL isNegative() const { return make_function("isNeg",expr); }
     BOOL isNaN() const { return make_function("isNaN",expr); }
@@ -210,7 +193,6 @@ namespace ut
   template <typename T,typename D> void GenFPSCR_FR(U64& r, D const& d, Flags const& f) { r.expr = make_function("GenFPSCR_FR",r.expr,f.op); }
   template <typename T> void GenFPSCR_FI(U64& r, Flags const& f) { r.expr = make_function("GenFPSCR_FI",r.expr,f.op); }
   template <typename T,typename D> void GenFPSCR_FPRF(U64& r, D const& d) { r.expr = make_function("GenFPSCR_FI",r.expr,d.expr); }
-  template <typename T> void GenFPSCR_XX(U64& r) { r.expr = make_function("GenFPSCR_XX",r.expr); }
   template <typename T> void GenFPSCR_FX(U64& r, U64& ar) { r.expr = make_function("GenFPSCR_FX",r.expr,ar.expr); }
   template <typename T> void GenFPSCR_VX(U64& r) { r.expr = make_function("GenFPSCR_VX",r.expr); }
   template <typename T> void GenFPSCR_FEX(U64& r) { r.expr = make_function("GenFPSCR_FEX",r.expr); }

@@ -1,6 +1,7 @@
 std/fstream
 std/iostream
 std/stack
+std/stdexcept
 std/string
 unisim/kernel
 unisim/util/json

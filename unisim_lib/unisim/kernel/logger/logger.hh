@@ -38,6 +38,7 @@
 #define __UNISIM_KERNEL_LOGGER_LOGGER_HH__
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/util/unicode/unicode.hh>
 #include <string>
 #include <ios>
 #include <ostream>
@@ -63,7 +64,7 @@ public:
 	
 protected:
 	virtual int_type overflow(int_type c);
-	virtual std::streamsize xsputn(const char* s, std::streamsize n);
+	virtual std::streamsize xsputn(const char_type* s, std::streamsize n);
 	
 private:
 	void Append(char c);
@@ -85,6 +86,36 @@ private:
 	LoggerStreamBuffer logger_stream_buffer;
 };
 
+class LoggerWStreamBuffer : public std::wstreambuf
+{
+public:
+	LoggerWStreamBuffer(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
+	~LoggerWStreamBuffer();
+	
+protected:
+	virtual int_type overflow(int_type c);
+	virtual std::streamsize xsputn(const char_type* s, std::streamsize n);
+	
+private:
+	void Append(wchar_t c);
+	void Flush();
+	
+	Logger& owner;
+	LoggerServerOutputMethodPtr logger_server_output_method_ptr;
+	std::wstring buffer;
+	pthread_mutex_t mutex;
+};
+
+class LoggerWStream : public std::wostream
+{
+public:
+	LoggerWStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
+	~LoggerWStream();
+	
+private:
+	LoggerWStreamBuffer logger_stream_buffer;
+};
+
 struct Logger
 {
 	Logger(const std::string& name);
@@ -102,6 +133,11 @@ struct Logger
 		return *this;
 	}
 
+	Logger& operator << (const std::wstring& ws)
+	{
+		buffer << unisim::util::unicode::unicode_wstring_to_utf8_string(ws);
+		return *this;
+	}
 #if 0
 	template <typename T>
 	Logger& operator << (const std::vector<T>& bv)
@@ -134,10 +170,15 @@ struct Logger
 	LoggerStream& DebugInfoStream() { return info_stream; }
 	LoggerStream& DebugWarningStream() { return warning_stream; }
 	LoggerStream& DebugErrorStream() { return error_stream; }
+	LoggerWStream& DebugNullWStream() { return null_wstream; }
+	LoggerWStream& DebugInfoWStream() { return info_wstream; }
+	LoggerWStream& DebugWarningWStream() { return warning_wstream; }
+	LoggerWStream& DebugErrorWStream() { return error_wstream; }
 	
 	const char *GetName() const { return name.c_str(); }
 private:
 	friend class LoggerStreamBuffer;
+	friend class LoggerWStreamBuffer;
 	friend class unisim::kernel::Simulator;
 	
 	unisim::kernel::logger::LoggerServer* GetServerInstance();
@@ -155,6 +196,10 @@ private:
 	LoggerStream info_stream;
 	LoggerStream warning_stream;
 	LoggerStream error_stream;
+	LoggerWStream null_wstream;
+	LoggerWStream info_wstream;
+	LoggerWStream warning_wstream;
+	LoggerWStream error_wstream;
 	
 	static LoggerServer *static_server_instance;
 };

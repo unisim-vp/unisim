@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2017,
+ *  Copyright (c) 2015-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,9 +36,9 @@
 #include <runner.hh>
 #include <test.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/models.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
-#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/disasm.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
@@ -369,14 +369,32 @@ struct Checker
       uint32_t get_reloc(uint32_t const* ws) const
       {
         if (not relval.good()) return 0;
-        
-        uint32_t value;
-        if (auto v = relval.Eval(Scanner::RelocEval(&ws[data_index(1)], tif, uintptr_t(ws))))
-          { Expr dispose(v); value = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*v).value; }
-        else
-          throw "WTF";
 
-        return value;
+        struct GetReloc : public unisim::util::symbolic::Evaluator
+        {
+          GetReloc( uint32_t const* _regs, Interface const& _tif, uint32_t _address ) : regs(_regs), tif(_tif), address(_address) {}
+          using ConstNodeBase = unisim::util::symbolic::ConstNodeBase;
+
+          ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
+          {
+            if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
+              return new unisim::util::symbolic::ConstNode<uint32_t>( this->GetReg(reg->reg) );
+            if (dynamic_cast<ExpectedAddress const*>(expr.node))
+              return new unisim::util::symbolic::ConstNode<uint32_t>( address );
+            if (ConstNodeBase const* res = expr.Simplify(*this))
+              return res;
+            throw Failure();
+            return 0;
+          }
+
+          uint32_t GetReg(unsigned reg) const { return regs[tif.gindex(reg)]; }
+          uint32_t const* regs;
+          Interface const& tif;
+          uint32_t address;
+        } evaluator(&ws[data_index(1)], tif, uintptr_t(ws));
+
+        Expr scratch = relval;
+        return dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const&>(*evaluator.Simplify(0, scratch)).value;
       }
       void patch(uint32_t* ws, uint32_t reloc) const
       {

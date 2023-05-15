@@ -8,3 +8,4 @@ unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm2
 unisim/kernel/variable/sc_time
+unisim/service/interfaces/debug_timing
