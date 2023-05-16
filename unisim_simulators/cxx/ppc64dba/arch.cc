@@ -121,6 +121,9 @@ namespace ppc64 {
           }
       }
 
+    for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
+      path->sinks.insert( *itr );
+
     if (xer.value.expr != ref.xer.value.expr)
       throw 0;
 
