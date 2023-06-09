@@ -91,14 +91,14 @@ namespace ppc64 {
 
     struct Unimplemented {};
 
-    Arch(U64 const& insn_addr);
+    Arch(U64 const& insn_addr, ActionNode** path);
 
     bool  close( Arch const& ref, uint64_t linear_nia );
 
     bool choose( Expr const& cexp )
     {
-      bool predicate = path->proceed( cexp );
-      path = path->next( predicate );
+      bool predicate = (*path)->proceed( cexp );
+      *path = (*path)->next( predicate );
       return predicate;
     }
 
@@ -249,6 +249,9 @@ namespace ppc64 {
 
     U64& GetCTR() { return regvalues[IRegID::ctr]; }
     U64& GetLR() { return regvalues[IRegID::lr]; }
+
+    bool MoveFromSPR( unsigned idx, U64& value ) { throw Unimplemented(); }
+    bool MoveToSPR( unsigned idx, U64 value ) { throw Unimplemented(); }
 
     //   =====================================================================
     //   =                     Floating-point registers                      =
@@ -443,7 +446,7 @@ namespace ppc64 {
     };
     template <typename T>  void ThrowException() { throw Unimplemented(); }
 
-    ActionNode*      path;
+    ActionNode**     path;
     U64              current_instruction_address;
     U64              next_instruction_address;
     branch_type_t    branch_type;

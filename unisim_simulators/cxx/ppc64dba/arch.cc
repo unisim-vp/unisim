@@ -38,8 +38,8 @@
 
 namespace ppc64 {
 
-  Arch::Arch( U64 const& insn_addr )
-    : path(0)
+  Arch::Arch( U64 const& insn_addr, ActionNode** _path )
+    : path(_path)
     , current_instruction_address(insn_addr)
     , next_instruction_address(insn_addr + U64(4))
     , branch_type(B_JMP)
@@ -92,13 +92,13 @@ namespace ppc64 {
   bool
   Arch::close( Arch const& ref, uint64_t linear_nia )
   {
-    bool complete = path->close();
+    bool complete = (*path)->close();
     /* TODO: branch_type */
-    path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
+    (*path)->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
 
     for (IRegID reg; reg.next();)
       if (regvalues[reg.idx()].expr != ref.regvalues[reg.idx()].expr)
-        path->sinks.insert( newRegWrite( reg, regvalues[reg.idx()].expr ) );
+        (*path)->sinks.insert( newRegWrite( reg, regvalues[reg.idx()].expr ) );
 
     if (cr.value.expr != ref.cr.value.expr)
       {
@@ -115,14 +115,14 @@ namespace ppc64 {
             // unisim::util::symbolic::binsec::BitSimplify::Do(old_crbit);
             if (new_crbit == old_crbit)
               continue;
-            path->sinks.insert( newRegWrite( CRBIT(idx), new_crbit ) );
+            (*path)->sinks.insert( newRegWrite( CRBIT(idx), new_crbit ) );
             // new_crbit->Repr(std::cerr << "cr<" << idx << ">: ");
             // std::cerr << '\n';
           }
       }
 
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
-      path->sinks.insert( *itr );
+      (*path)->sinks.insert( *itr );
 
     if (xer.value.expr != ref.xer.value.expr)
       throw 0;
