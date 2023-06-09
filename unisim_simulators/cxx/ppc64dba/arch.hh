@@ -150,10 +150,10 @@ namespace ppc64 {
       {
         Read( Arch& arch ) : Source(arch), unisim::util::symbolic::binsec::RegRead<ID>(ID()) {}
         virtual Read* Mutate() const override { return new Read(*this); }
-        virtual unisim::util::symbolic::ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const override;
+        // virtual unisim::util::symbolic::ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const override;
       };
 
-      CR( Arch& arch ) : value( new Read(arch) ) {}
+      CR( Arch& arch ); // : value( new Read(arch) ) {}
 
       U32 value;
     };
@@ -433,7 +433,7 @@ namespace ppc64 {
     }
 
     void Branch(U64 const& npc) { Branch(npc, B_JMP); }
-    U64 GetCIA() const { return next_instruction_address; }
+    U64 GetCIA() const { return current_instruction_address; }
 
     struct ProgramInterrupt
     {
@@ -469,7 +469,12 @@ namespace ppc64 {
 
   inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ) { throw 0; return U64(); }
   inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { throw 0; return S64(); }
-  inline U64 RotL32( U64 const& src, U8 const& sh ) { throw 0; return U64(); }
+  inline U64 RotL32( U64 const& src, U8 const& sh ) {
+    U32 val = U32(src);
+    val = (val << (U32(31) & U32(sh)))
+        | (val >> (U32(31) & (U32(32) - U32(sh))));;
+    return U64(val << U32(32)) | U64(val);
+  }
 
 } // end of namespace ppc64
 
