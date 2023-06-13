@@ -190,7 +190,7 @@ struct ProcessorBase
   //   unsigned reg;
   // };
 
-  struct VmmIndirectReadBase : public ExprNode
+  struct VmmIndirectReadBase : public unisim::util::symbolic::binsec::ASExprNode
   {// Parent of VmmIndirectRead
     VmmIndirectReadBase(Expr const& _index) : index(_index) {}
     virtual void Repr( std::ostream& sink ) const override;
@@ -535,6 +535,33 @@ struct Processor : public ProcessorBase
       return ExprNode::GetSub(idx);
     }
     virtual ValueType GetType() const override { return ELEM::GetType(); }
+    virtual int GenCode(unisim::util::symbolic::binsec::Label& label, unisim::util::symbolic::binsec::Variables& vars, std::ostream& sink) const override {
+      for (int i = 0; i < elemcount - 1; i += 1) {
+	sink << "(if";
+	ASExprNode::GenerateCode( GetSub(elemcount), vars, label, sink );
+	sink << " = "
+	     << unisim::util::symbolic::binsec::dbx(traits::BITSIZE/8, i)
+	     << " then ";
+	ASExprNode::GenerateCode( GetSub(i), vars, label, sink );
+	sink << " else ";
+      }
+      ASExprNode::GenerateCode( GetSub(elemcount - 1), vars, label, sink );
+      for (int i = 0; i < elemcount - 1; i += 1) {
+	sink << ')';
+      }
+      // sink << "((";
+      // for (int i = elemcount - 1; 0 < i; i -= 1) {
+      // 	ASExprNode::GenerateCode( GetSub(i), vars, label, sink );
+      // 	sink << " :: ";
+      // }
+      // ASExprNode::GenerateCode( GetSub(0), vars, label, sink );
+      // sink << ") >>u (" << traits::BITSIZE
+      // 	   << '<' << GetVSize() << "> * (extu ";
+      // ASExprNode::GenerateCode( GetSub(elemcount), vars, label, sink );
+      // sink << ' ' << GetVSize() << "))){0," << traits::BITSIZE - 1 << '}';
+      return traits::BITSIZE;
+    }
+
     virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
     int compare( this_type const& rhs ) const { return 0; }
 

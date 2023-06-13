@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.1
+VERSION=0.0.5
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -217,6 +217,20 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.5 (2023-02-24)
+
+- enable macOS Homebrew distribution
+
+## 0.0.4 (2023-02-15)
+
+- better handling of x86 flags
+- various bug fixes and refactoring
+
+## 0.0.3 (2022-07-24)
+
+- handling some new VEX encoded instructions (x86)
+- various bug fixes and refactoring
+
 ## 0.0.2 (2022-04-15)
 
 - handling of SSE instructions for AMD64
@@ -288,7 +302,7 @@ semantics of several instruction set architectures, including ARM and x86.")
 EOF
 
 cat <<EOF > "${DEST_DIR}/unisim_archisec.opam.template"
-available: [ os = "linux" & (os-distribution != "ol" & os-distribution != "centos" | os-version >= 8) ]
+available: [ os = "linux" & (os-distribution != "ol" & os-distribution != "centos" | os-version >= 8) | os = "macos" & os-distribution = "homebrew" ]
 EOF
 
 echo -n > "${DEST_DIR}/dune"
@@ -297,7 +311,9 @@ UTIL_INCLUDES=$(includes ${DEST_DIR} unisim/util)
 
 cat <<EOF >> "${DEST_DIR}/dune"
 (env
-  (_ (c_flags :standard -g0) (cxx_flags :standard -g0)))
+  (_
+   (c_flags :standard -std=gnu11 -g0)
+   (cxx_flags :standard -std=gnu++11 -g0)))
 
 (subdir
  unisim/util
@@ -433,7 +449,8 @@ echo >> "${DEST_DIR}/dune"
 cat <<EOF >> "${DEST_DIR}/dune"
 (test
  (name unittest)
- (modes native)
+ (modes
+  (best exe))
  (modules unittest)
  (libraries arm32dba aarch64dba amd64dba))
 EOF
