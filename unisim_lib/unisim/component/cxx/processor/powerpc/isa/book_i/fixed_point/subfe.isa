@@ -38,19 +38,23 @@ op subfe(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:136[9]:rc[1]);
 subfe.execute = {
 	// Read the input operands
 	XER& xer = cpu->GetXER();
-	bool borrow = not evenly(xer.Get<XER::CA>());
+	UINT borrow = UINT(xer.Get<XER::CA>()) ^ UINT(1);
 	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(cpu->GetGPR(rb));
 	
 	// Compute the result
 	SINT result = b - a - SINT(borrow);
 	
 	// Generate XER[CA]
-	xer.Set<XER::CA>(borrow ? UINT(b) > UINT(a) : UINT(b) >= UINT(a));
+	xer.Set<XER::CA>((borrow == UINT(1) & (UINT(b) > UINT(a)))
+		       | (borrow == UINT(0) & (UINT(b) >= UINT(a))));
         
 	if(unlikely(oe))
 	{
 		// Overflow: expected result sign and actual result sign differs
-		UINT overflow = UINT((borrow ? b <= a : b < a) xor (SINT(result) < SINT(0)));
+		UINT overflow = UINT(
+		(((borrow == UINT(1)) & (b <= a))
+	       | ((borrow == UINT(0)) & (b < a)))
+	        xor (SINT(result) < SINT(0)));
 		
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
