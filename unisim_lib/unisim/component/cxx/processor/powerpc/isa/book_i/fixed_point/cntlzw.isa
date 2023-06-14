@@ -40,8 +40,10 @@ cntlzw.execute = {
 	U32 s = U32(cpu->GetGPR(rs));
 	
 	// Compute the result
-	U32 result = likely(s != U32(0)) ? U32(31) - BitScanReverse(s) : U32(32);
-	
+	U32 is_zero = U32(s == U32(0));
+	U32 result = (is_zero - U32(1)) & (U32(31) - BitScanReverse(s))
+	    	   | (is_zero << U32(5));
+		   
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));
 

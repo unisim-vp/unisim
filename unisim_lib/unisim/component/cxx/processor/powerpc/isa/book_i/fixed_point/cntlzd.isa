@@ -40,8 +40,10 @@ cntlzd.execute = {
 	U64 s = U64(cpu->GetGPR(rs));
 	
 	// Compute the result
-	U64 result = likely(s != U64(0)) ? U64(63) - BitScanReverse(s) : U64(64);
-	
+	U64 is_zero = U64(s == U64(0));
+	U64 result = (is_zero - U64(1)) & (U64(63) - BitScanReverse(s))
+	    	   | (is_zero << U64(6));
+		   
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));
 	
