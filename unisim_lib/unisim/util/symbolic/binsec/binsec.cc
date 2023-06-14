@@ -200,30 +200,40 @@ namespace binsec {
               case Op::BSF:
                 {
                   unsigned bitsize = node->GetType().bitsize;
-                  Label head(label);
-                  int exit = label.allocate(), loop;
+		  sink << "(";
+		  for (unsigned i = 0; i < bitsize - 1; i += 1) {
+		    sink << "if " << GetCode(node->GetSub(0), vars, label)
+			 << '{' << i << "} then "
+			 << i << '<' << bitsize << "> else (";
+		  }
+		  sink << bitsize - 1 << '<' << bitsize << '>';
+		  for (unsigned i = 0; i < bitsize; i += 1) {
+		    sink << ')';
+		  }
+                  // Label head(label);
+                  // int exit = label.allocate(), loop;
 
-                  std::ostringstream buffer;
-                  buffer << "bsf_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head) << " ; goto <next>";
-                  head.write( buffer.str() );
+                  // std::ostringstream buffer;
+                  // buffer << "bsf_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head) << " ; goto <next>";
+                  // head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "bsf_out<" << bitsize << "> := 0<" << bitsize << "> ; goto <next>";
-                  head.write( buffer.str() );
+                  // buffer = std::ostringstream();
+                  // buffer << "bsf_out<" << bitsize << "> := 0<" << bitsize << "> ; goto <next>";
+                  // head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "if (bsf_in<" << bitsize << "> = 0<" << bitsize << ">) goto " << exit << " else goto <next>";
-                  head.write( buffer.str() );
+                  // buffer = std::ostringstream();
+                  // buffer << "if (bsf_in<" << bitsize << "> = 0<" << bitsize << ">) goto " << exit << " else goto <next>";
+                  // head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "if ((bsf_in<" << bitsize << "> rshiftu bsf_out<" << bitsize << ">){0,0}) goto " << exit << " else goto <next>";
-                  loop = head.write( buffer.str() );
+                  // buffer = std::ostringstream();
+                  // buffer << "if ((bsf_in<" << bitsize << "> rshiftu bsf_out<" << bitsize << ">){0,0}) goto " << exit << " else goto <next>";
+                  // loop = head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "bsf_out<" << bitsize << "> := bsf_out<" << bitsize << "> + 1<" << bitsize << "> ; goto " << loop;
-                  head.write( buffer.str()  );
+                  // buffer = std::ostringstream();
+                  // buffer << "bsf_out<" << bitsize << "> := bsf_out<" << bitsize << "> + 1<" << bitsize << "> ; goto " << loop;
+                  // head.write( buffer.str()  );
 
-                  sink << "bsf_out<" << bitsize << ">";
+                  // sink << "bsf_out<" << bitsize << ">";
 
                   return bitsize;
                 }
@@ -231,30 +241,42 @@ namespace binsec {
               case Op::BSR:
                 {
                   unsigned bitsize = node->GetType().bitsize;
-                  Label head(label);
-                  int exit = label.allocate(), loop;
+		  sink << "(";
+		  for (unsigned i = bitsize - 1; i > 1; i -= 1) {
+		    sink << "if " << GetCode(node->GetSub(0), vars, label)
+			 << '{' << i << "} then "
+			 << i << '<' << bitsize << "> else (";
+		  }
+		  sink << "extu ("
+		       << GetCode(node->GetSub(0), vars, label)
+		       << "{1}) " << bitsize;
+		  for (unsigned i = bitsize; i > 1; i -= 1) {
+		    sink << ')';
+		  }
+                  // Label head(label);
+                  // int exit = label.allocate(), loop;
 
-                  std::ostringstream buffer;
-                  buffer << "bsr_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head) << " ; goto <next>";
-                  head.write( buffer.str() );
+                  // std::ostringstream buffer;
+                  // buffer << "bsr_in<" << bitsize << "> := " << GetCode(node->GetSub(0), vars, head) << " ; goto <next>";
+                  // head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "bsr_out<" << bitsize << "> := " << bitsize << "<" << bitsize << "> ; goto <next>";
-                  head.write( buffer.str() );
+                  // buffer = std::ostringstream();
+                  // buffer << "bsr_out<" << bitsize << "> := " << bitsize << "<" << bitsize << "> ; goto <next>";
+                  // head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "if (bsr_in<" << bitsize << "> = 0<" << bitsize << ">) goto " << exit << " else goto <next>";
-                  head.write( buffer.str() );
+                  // buffer = std::ostringstream();
+                  // buffer << "if (bsr_in<" << bitsize << "> = 0<" << bitsize << ">) goto " << exit << " else goto <next>";
+                  // head.write( buffer.str() );
 
-                  buffer = std::ostringstream();
-                  buffer << "bsr_out<" << bitsize << "> := bsr_out<" << bitsize << "> - 1<" << bitsize << "> ; goto <next>";
-                  loop = head.write( buffer.str()  );
+                  // buffer = std::ostringstream();
+                  // buffer << "bsr_out<" << bitsize << "> := bsr_out<" << bitsize << "> - 1<" << bitsize << "> ; goto <next>";
+                  // loop = head.write( buffer.str()  );
 
-                  buffer = std::ostringstream();
-                  buffer << "if ((bsr_in<" << bitsize << "> rshiftu bsr_out<" << bitsize << ">){0,0}) goto " << exit << " else goto " << loop;
-                  head.write( buffer.str() );
+                  // buffer = std::ostringstream();
+                  // buffer << "if ((bsr_in<" << bitsize << "> rshiftu bsr_out<" << bitsize << ">){0,0}) goto " << exit << " else goto " << loop;
+                  // head.write( buffer.str() );
 
-                  sink << "bsr_out<" << bitsize << ">";
+                  // sink << "bsr_out<" << bitsize << ">";
 
                   return bitsize;
                 }
