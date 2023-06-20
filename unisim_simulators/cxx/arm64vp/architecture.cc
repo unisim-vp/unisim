@@ -303,7 +303,15 @@ AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64
 void
 AArch64::UndefinedInstruction()
 {
-  struct Bad {}; raise( Bad() );
+  if (unlikely(trap_reporting_import))
+    trap_reporting_import->ReportTrap(*this,"Undefined instruction");
+  unsigned const target_el = 1;
+
+  get_el(target_el).ESR = U32(0)
+    | U32(pstate.GetEL() ? 0x21 : 0x20) << 26 // EC: instruction abort in EL0 or EL1
+    | U32(1) << 25; // IL Instruction Length == 32 bits
+
+  TakeException(target_el, 0x0, next_insn_addr);
 }
 
 void
@@ -1753,8 +1761,8 @@ AArch64::run( uint64_t suspend_at )
       catch (Exception const& exception)
         {
           /* Instruction aborted, proceed to next step */
-          if (unlikely(trap_reporting_import))
-            trap_reporting_import->ReportTrap( *this, exception.nature() );
+//           if (unlikely(trap_reporting_import))
+//             trap_reporting_import->ReportTrap( *this, exception.nature() );
           exception.proceed(*this);
         }
 
@@ -1817,6 +1825,7 @@ AArch64::wfi()
 
   /* advance to next event and notify back to check progress*/
   insn_timer = next_events.begin()->first;
+  usleep(0);
   notify( 0, &AArch64::wfi );
 }
 

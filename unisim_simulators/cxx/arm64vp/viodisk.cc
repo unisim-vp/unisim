@@ -253,7 +253,10 @@ void
 VIODisk::Delta::uread(uint64_t pos, uint64_t size, uint8_t* dst) const
 {
   if (not udat)
+  {
     std::fill(&dst[0], &dst[size], 0);
+    return;
+  }
   uint8_t const* src = &udat[pos % fullsize()];
   std::copy( &src[0], &src[size], dst );
 }
@@ -333,4 +336,21 @@ VIODisk::write(unisim::util::virtio::Access const& vioa, uint64_t addr, uint64_t
       std::copy(slice.data, slice.data + slice.size, &storage[diskpos]);
       diskpos += slice.size;
     }
+}
+
+void
+VIODisk::flush(unisim::util::virtio::Access const& vioa)
+{
+	::msync(storage, disksize, MS_SYNC);
+}
+
+void
+VIODisk::discard(unisim::util::virtio::Access const& vioa, uint64_t pos, uint64_t size)
+{
+}
+
+void
+VIODisk::write_zeroes(unisim::util::virtio::Access const& vioa, uint64_t pos, uint64_t size, uint32_t flags)
+{
+	::memset(storage + pos, 0, size);
 }

@@ -300,7 +300,10 @@ namespace virtio {
                 break;
               case Flush:
                 /* No data, all work should be done here. */
-                /* Nothing to do for now */
+                disk.flush(sys);
+                break;
+              case Discard:
+              case WriteZeroes:
                 break;
               case In: case Out:
                 disk.seek(BlockDevice::BLKSIZE*sys.read(buf + 8, 8));
@@ -317,20 +320,33 @@ namespace virtio {
                 status = UNSUPP;
                 break;
                 
-                struct TooLarge {};
+                struct UnexpectedBody {};
               case In:
-                if (not is_write or len >= 0x100000) throw TooLarge();
+                if (not is_write or (len % BlockDevice::BLKSIZE) != 0) throw UnexpectedBody();
                 disk.read(sys, buf, len);
                 wlen += len;
                 break;
               case Out:
-                if (is_write or len >= 0x100000) throw TooLarge();
+                if (is_write or (len % BlockDevice::BLKSIZE) != 0) throw UnexpectedBody();
                 disk.write(sys, buf, len);
                 break;
-
-              case Flush: { struct FlushTODO {}; throw FlushTODO (); }
-              case Discard: { struct DiscardTODO {}; throw DiscardTODO (); }
-              case WriteZeroes: { struct WriteZeroesTODO {}; throw WriteZeroesTODO (); }
+              case Flush:
+               throw UnexpectedBody();
+               break;
+              case Discard:
+              case WriteZeroes:
+                if (len)
+                {
+                  if (len % 16) { struct UnexpectedBody {}; throw UnexpectedBody (); }
+                  for(uint64_t end = buf + len; buf < end; buf += 16)
+                  {
+                    if (type == WriteZeroes)
+                      disk.write_zeroes(sys, BlockDevice::BLKSIZE*sys.read(buf, 8), BlockDevice::BLKSIZE*sys.read(buf + 8, 4), sys.read(buf + 12, 4));
+                    else
+                      disk.discard(sys, BlockDevice::BLKSIZE*sys.read(buf, 8), BlockDevice::BLKSIZE*sys.read(buf + 8, 4));
+                  }
+                }
+                break;
               }
             break;
 

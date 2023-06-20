@@ -8397,11 +8397,39 @@ swpb_w.disasm = {
   sink << "swp" << (&"a"[!a]) << (&"l"[!l]) << "b\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+swpb_w.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  
+  /*BEG ATOMIC*/
+  U32 data( cpu.MemRead8(addr) );
+  cpu.MemWrite8(addr, U8(cpu.GetGZR(rs)));
+  cpu.SetGZR(rt, data);
+  /*END ATOMIC*/
+}
+
 op swph_w( 0b01111000[8] : a[1] : l[1] : 1[1] : rs[5] : 0b100000[6] : rn[5] : rt[5] );
 
 swph_w.disasm = {
   sink << "swp" << (&"a"[!a]) << (&"l"[!l]) << "h\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+swph_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  
+  /*BEG ATOMIC*/
+  U32 data( cpu.MemRead16(addr) );
+  cpu.MemWrite16(addr, U16(cpu.GetGZR(rs)));
+  cpu.SetGZR(rt, data);
+  /*END ATOMIC*/
+}
 
 op ldstadd_w( 0b10111000[8] : a[1] : r[1] : 0b1[1] : rs[5] : 0b000000[6] : rn[5] : rt[5] );
 
