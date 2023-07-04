@@ -941,6 +941,8 @@ Processor<MODE>::close( Processor<MODE> const& ref )
 
   if (next_insn_mode == ipcall)
     path->add_sink( new unisim::util::symbolic::binsec::Call<nat_addr_t>( next_insn_addr.expr, return_address ) );
+  else if (next_insn_mode == ipret)
+    path->add_sink( new unisim::util::symbolic::binsec::Ret<nat_addr_t>( next_insn_addr.expr ) );
   else
     path->add_sink( new unisim::util::symbolic::binsec::Branch( next_insn_addr.expr ) );
 

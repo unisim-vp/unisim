@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.5
+VERSION=0.0.6
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -98,7 +98,8 @@ done
 
 for isa in ${AARCH32_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${DEST_DIR}/${AARCH32_DSTDIR}/${isa} \
+		       --prefix ${DEST_DIR} \
+		       -o ${AARCH32_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH32_SRCDIR}/${isa}.isa
 done
@@ -121,7 +122,8 @@ done
 
 for isa in ${AARCH64_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${DEST_DIR}/${AARCH64_DSTDIR}/${isa} \
+		       --prefix ${DEST_DIR} \
+		       -o ${AARCH64_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${isa}.isa
 done
@@ -147,7 +149,8 @@ done
 
 for isa in ${PPC64_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${DEST_DIR}/${PPC64_DSTDIR}/${isa} \
+		       --prefix ${DEST_DIR} \
+		       -o ${PPC64_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${PPC64_SRCDIR}/${isa}.isa
 done
@@ -238,6 +241,11 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.6 (2023-07-14)
+
+- add PowerPC 64 bit decoder
+- various bug fixes and code improvements
+
 ## 0.0.5 (2023-02-24)
 
 - enable macOS Homebrew distribution
