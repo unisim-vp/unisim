@@ -116,6 +116,43 @@ AArch64::AArch64(char const* name)
   };
 
   regmap["pc"] = new ProgramCounterRegister( *this );
+  
+  /** Specific Current Program Status Register Debugging Accessor */
+  struct CurrentProgramStatusRegister : public unisim::service::interfaces::Register
+  {
+    CurrentProgramStatusRegister( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "cpsr"; }
+    virtual void GetValue( void* buffer ) const { *((uint32_t *)buffer) = cpu.GetPSRFromPSTATE().value; }
+    virtual void SetValue( void const* buffer ) { cpu.SetPSTATEFromPSR(U32(*(uint32_t *)buffer)); }
+    virtual int  GetSize() const { return 4; }
+    virtual void Clear() { cpu.SetPSTATEFromPSR(U32()); }
+    AArch64&        cpu;
+  };
+
+  regmap["cpsr"] = new CurrentProgramStatusRegister( *this );
+
+  struct VectorRegister : unisim::service::interfaces::Register
+  {
+    VectorRegister( AArch64& _cpu, unsigned _reg, std::string const& _name ) : cpu(_cpu), reg(_reg), name(_name) {}
+    virtual const char *GetName() const { return name.c_str(); }
+    virtual void GetValue( void* buffer ) const { for(unsigned sub = 0; sub < 2; ++sub) *((uint64_t*)buffer + sub) = cpu.GetVU64(reg, sub).value; }
+    virtual void SetValue( void const* buffer ) { for(unsigned sub = 0; sub < 2; ++sub) cpu.SetVU64(reg, sub, typename AArch64Types::U64(*((uint64_t const*)buffer + sub))); }
+    virtual int  GetSize() const { return 16; }
+    virtual void Clear() { cpu.ClearHighV(reg, 0); }
+    AArch64&        cpu;
+    unsigned        reg;
+    std::string     name;
+  };
+
+  for (int idx = 0; idx < 32; ++idx)
+    {
+      std::ostringstream regname;
+      regname << "v" << idx;
+      regmap[regname.str()] = new VectorRegister( *this, idx, regname.str());
+    }
+
+  regmap["fpcr"] = new unisim::util::debug::SimpleRegister<uint32_t>("fpcr", &fpcr.value);
+  regmap["fpsr"] = new unisim::util::debug::SimpleRegister<uint32_t>("fpsr", &fpsr.value);
 }
 
 AArch64::~AArch64()
@@ -186,6 +223,9 @@ AArch64::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
     }
   scanner.Append( GetRegister("sp") );
   scanner.Append( GetRegister("pc") );
+  scanner.Append( GetRegister("cpsr") );
+  scanner.Append( GetRegister("fpcr") );
+  scanner.Append( GetRegister("fpsr") );
 }
 
 bool
@@ -391,7 +431,6 @@ AArch64::CallHypervisor( uint32_t imm )
           return;
         }
     }
-
   raise( Bad() );
 }
 

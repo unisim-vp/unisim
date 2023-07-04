@@ -38,6 +38,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <iosfwd>
+#include <memory>
 #include <inttypes.h>
 
 struct AArch64;
@@ -50,13 +51,13 @@ struct Debugger
     typedef uint64_t ADDRESS;
     typedef uint64_t TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
-    /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 1;
+    /* gdb_server or inline_debugger */
+    static const unsigned int MAX_FRONT_ENDS = 2;
   };
 
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
-  //typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
-  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
+  typedef unisim::service::debug::gdb_server::GDBServer<typename DEBUGGER_CONFIG::ADDRESS> GDBServer;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<typename DEBUGGER_CONFIG::ADDRESS> InlineDebugger;
 
 
   Debugger(char const* name, AArch64&, std::istream&);
@@ -65,8 +66,12 @@ struct Debugger
   virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const override { return blob; }
 
   DebugHub debug_hub;
-  //GDBServer gdb_server;
-  InlineDebugger inline_debugger;
+  std::unique_ptr<GDBServer> gdb_server;
+  std::unique_ptr<InlineDebugger> inline_debugger;
+  bool enable_gdb_server;
+  bool enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+  unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
   unisim::util::blob::Blob<uint64_t> const* blob;
 };
 

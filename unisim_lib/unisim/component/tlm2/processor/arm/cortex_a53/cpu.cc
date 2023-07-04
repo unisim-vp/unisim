@@ -562,7 +562,7 @@ CPU::ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
     // Using memory service interface instead
-    return PCPU::WriteMemory(addr, buffer, size);
+    return PCPU::ExternalWriteMemory(addr, buffer, size);
   }
 
   Transaction trans( payload_fabric );
