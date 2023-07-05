@@ -803,6 +803,16 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
 
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b000): // NZCV
+      {
+        static struct : public SysReg {
+          char const* Name() const { return "NZCV"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = value; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return cpu.nzcv; }
+        } x; return &x;
+      }
+
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
         static struct : public WOOpSysReg {
