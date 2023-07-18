@@ -583,7 +583,7 @@ namespace binsec {
                 always->nexts[idx] = 0;
               }
             cond = always->cond;
-            xsinks.insert(always->xsinks.begin(), always->xsinks.end());
+            sinks.insert(always->sinks.begin(), always->sinks.end());
             delete always;
           }
         else
@@ -598,7 +598,7 @@ namespace binsec {
           BitSimplify::Do(x);
           nsinks.insert( x );
         }
-      std::swap(nsinks, xsinks);
+      std::swap(nsinks, sinks);
     }
 
     if (not cond.good())
@@ -608,13 +608,13 @@ namespace binsec {
       if (ActionNode* next = nexts[choice])
         next->simplify();
 
-    factorize( xsinks, nexts[0]->xsinks, nexts[1]->xsinks, SinksMerger() );
+    factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger() );
 
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         {
-          if (next->cond.good() or next->xsinks.size()) leaf = false;
+          if (next->cond.good() or next->sinks.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
 
@@ -655,7 +655,7 @@ namespace binsec {
         : stats(node->sestats), up(_up)
       {
         // First level of expression is not functionnal (architectural side effect)
-        for (auto const& sink : node->xsinks)
+        for (auto const& sink : node->sinks)
           this->Flood( sink );
         for (unsigned choice = 0; choice < 2; ++choice)
           if (ActionNode* next = node->nexts[choice])

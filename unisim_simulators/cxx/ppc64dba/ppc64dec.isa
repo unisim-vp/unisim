@@ -85,13 +85,13 @@ namespace ppc64
 #undef unlikely
 #endif
 
-#define likely(x)       __builtin_expect(Arch::Test(x),1)
-#define evenly(x)       (Arch::Test(x))
-#define unlikely(x)     __builtin_expect(Arch::Test(x),0)
+#define likely(x)       __builtin_expect(Path::Test(x),1)
+#define evenly(x)       (Path::Test(x))
+#define unlikely(x)     __builtin_expect(Path::Test(x),0)
 #else
-#define likely(x)       (Arch::Test(x))
-#define evenly(x)       (Arch::Test(x))
-#define unlikely(x)     (Arch::Test(x))
+#define likely(x)       (Path::Test(x))
+#define evenly(x)       (Path::Test(x))
+#define unlikely(x)     (Path::Test(x))
 #endif
 
 }
