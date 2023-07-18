@@ -942,7 +942,7 @@ namespace binsec {
     struct FiltBitSimplify : public BitSimplify
     {
       FiltBitSimplify(Expr const& _mask, unsigned _filter) : mask(_mask), filter(_filter) {}
-      ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process((idx >> filter & 1) ? mask : Expr(), expr); }
+      ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process((filter >> idx & 1) ? mask : Expr(), expr); }
       Expr mask;
       unsigned filter;
     };
