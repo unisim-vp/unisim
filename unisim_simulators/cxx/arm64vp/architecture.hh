@@ -300,6 +300,49 @@ struct AArch64
   U8 GetNZCV() const { return nzcv; }
   U8 GetCarry() const { return (nzcv >> 1) & U8(1); }
 
+  /** Set FPCR */
+  void SetFPCR( U32 v ) { fpcr = v; }
+  
+  /** Get FPCR */
+  U32 GetFPCR() const { return fpcr; }
+
+  /* Get FPCR Floating-point control bits */
+  BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
+  BOOL FZ() const { return ((fpcr >> 24) & U32(1)) != U32(0); }
+  U32 RMode() const { return (fpcr >> 22) & U32(3); }
+  BOOL RoundToNearest() const { return RMode() == U32(0); }
+  BOOL RoundTowardPlusInfinity() const { return RMode() == U32(1); }
+  BOOL RoundTowardMinusInfinity() const { return RMode() == U32(2); }
+  BOOL RoundTowardZero() const { return RMode() == U32(3); }
+  BOOL IDE() const { return ((fpcr >> 15) & U32(1)) != U32(0); }
+  BOOL IXE() const { return ((fpcr >> 12) & U32(1)) != U32(0); }
+  BOOL UFE() const { return ((fpcr >> 11) & U32(1)) != U32(0); }
+  BOOL OFE() const { return ((fpcr >> 10) & U32(1)) != U32(0); }
+  BOOL DZE() const { return ((fpcr >> 9) & U32(1)) != U32(0); }
+  BOOL IOE() const { return ((fpcr >> 9) & U32(1)) != U32(0); }
+  
+  /** Set FPSR */
+  void SetFPSR( U32 v ) { fpsr = v; }
+  
+  /** Set FPSR cumulative bits
+   * 
+   * @param q Saturation flag
+   * @param id Input Denormal flag
+   * @param ix Inexact flag
+   * @param uf Underflow flag
+   * @param of Overflow flag
+   * @param dz Divide by Zero flag
+   * @param io Invalid Operation flag
+   */
+  template <typename Q, typename ID, typename IX, typename UF, typename OF, typename DZ, typename IO>
+  void SetFPSR( Q const& q, ID const& id, IX const& ix, UF const& uf, OF const& of, DZ const& dz, IO const& io )
+  {
+    fpsr |= (U32(q) << 27) | (U32(id) << 7) | (U32(ix) << 4) | (U32(uf) << 3) | (U32(of) << 2) | (U32(dz) << 1) | (U32(io) << 0);
+  }
+  
+  /** Get FPSR */
+  U32 GetFPSR() const { return fpsr; }
+  
   /** Get the current Program Counter */
   U64 GetPC() { return U64(current_insn_addr); }
 
