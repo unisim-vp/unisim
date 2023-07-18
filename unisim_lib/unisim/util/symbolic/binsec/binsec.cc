@@ -939,14 +939,6 @@ namespace binsec {
 
   namespace
   {
-    struct UniBitSimplify : public BitSimplify
-    {
-      UniBitSimplify(Expr const& _mask, unsigned _count) : mask(_mask), count(_count) {}
-      ConstNodeBase const* Simplify(unsigned idx, Expr& expr) const override { return Process(idx < count ? mask : Expr(), expr); }
-      Expr mask;
-      unsigned count;
-    };
-    
     struct FiltBitSimplify : public BitSimplify
     {
       FiltBitSimplify(Expr const& _mask, unsigned _filter) : mask(_mask), filter(_filter) {}
@@ -1066,7 +1058,7 @@ namespace binsec {
 
               case Op::Xor:
                 /* TODO: Simplify trivial cases (xor 0 and xor -1) */
-                if (auto cst = expr.Simplify(UniBitSimplify(mask, subcount)))
+                if (auto cst = expr.Simplify(FiltBitSimplify(mask, (1<<subcount)-1)))
                   return cst;
                 continue;
                 break;
@@ -1093,7 +1085,7 @@ namespace binsec {
                         Expr dmask = mask.good() ? mask : make_operation(Op::Not, make_zero(tp));
                         auto unsh = op == Op::Lsl ? Op::Lsr : Op::Lsl;
                         dmask = make_operation(unsh, dmask, cst);
-                        if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
+                        if (auto cst = expr.Simplify(FiltBitSimplify(dmask.ConstSimplify(), 1)))
                           return cst;
                         continue;
                       }
@@ -1105,13 +1097,13 @@ namespace binsec {
                             unsigned shift = dmask.ConstSimplify()->GetBits(0);
                             dmask = make_operation(Op::Not, make_operation(Op::Inc, make_zero(expr->GetType())));
                             dmask = make_operation(Op::Not, make_operation(Op::Lsl, dmask, make_const<shift_type>(shift)));
-                            if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
+                            if (auto cst = expr.Simplify(FiltBitSimplify(dmask.ConstSimplify(), 1)))
                               return cst;
                           }
                         else
                           {
                             Expr dmask = make_operation(Op::Or, mask, make_operation(Op::Neg, mask));
-                            if (auto cst = expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1)))
+                            if (auto cst = expr.Simplify(FiltBitSimplify(dmask.ConstSimplify(), 1)))
                               return cst;
                           }
                         continue;
@@ -1295,7 +1287,7 @@ namespace binsec {
     if (rshift)
       dmask = make_operation(Op::Lsl, dmask, make_const<shift_type>(rshift));
 
-    return expr.Simplify(UniBitSimplify(dmask.ConstSimplify(), 1));
+    return expr.Simplify(FiltBitSimplify(dmask.ConstSimplify(), 1));
   }
 
 } /* end of namespace binsec */

@@ -2373,41 +2373,78 @@ sha256su1_v4sv4sv4s.disasm = {
   sink << "sha256su1\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4, 2) << ", " << DisasmTV(rm, 4, 2);
 };
 
-op shll2_v2d4s( 0b0110111010100001001110[22] : rn[5] : rd[5] );
+/*******************************************************************
+ * SHLL
+ *
+ * Shift Left Long (by element size)
+ */
 
-shll2_v2d4s.disasm = {
-  sink << "shll2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 4, 2) << ", #32";
+op shll_v8h( 0b0[1] : q[1] : 0b10111000100001001110[20] : rn[5] : rd[5] );
+
+shll_v8h.disasm = {
+  sink << "shll" << (q ? "2" : "") << '\t' << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8<<q, 0) << ", #8";
 };
 
-op shll2_v4s8h( 0b0110111001100001001110[22] : rn[5] : rd[5] );
+shll_v8h.execute = {
+  typedef typename ARCH::U16 DST;
 
-shll2_v4s8h.disasm = {
-  sink << "shll2\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 8, 1) << ", #16";
+  unsigned const elements = 8, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU8(rn, srcidx + idx)) << 8;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, idx, res[idx]);
+    }
 };
 
-op shll2_v8h16b( 0b0110111000100001001110[22] : rn[5] : rd[5] );
+op shll_v4s( 0b0[1] : q[1] : 0b10111001100001001110[20] : rn[5] : rd[5] );
 
-shll2_v8h16b.disasm = {
-  sink << "shll2\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 16, 0) << ", #8";
+shll_v4s.disasm = {
+  sink << "shll" << (q ? "2" : "") << '\t' << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4<<q, 1) << ", #16";
 };
 
-op shll_v2d2s( 0b0010111010100001001110[22] : rn[5] : rd[5] );
+shll_v4s.execute = {
+  typedef typename ARCH::U32 DST;
 
-shll_v2d2s.disasm = {
-  sink << "shll\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 2) << ", #32";
+  unsigned const elements = 4, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU16(rn, srcidx + idx)) << 16;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, idx, res[idx]);
+    }
 };
 
-op shll_v4s4h( 0b0010111001100001001110[22] : rn[5] : rd[5] );
+op shll_v2d( 0b0[1] : q[1] : 0b10111010100001001110[20] : rn[5] : rd[5] );
 
-shll_v4s4h.disasm = {
-  sink << "shll\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4, 1) << ", #16";
+shll_v2d.disasm = {
+  sink << "shll" << (q ? "2" : "") << '\t' << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2<<q, 2) << ", #32";
 };
 
-op shll_v8h8b( 0b0010111000100001001110[22] : rn[5] : rd[5] );
+shll_v2d.execute = {
+  typedef typename ARCH::U64 DST;
 
-shll_v8h8b.disasm = {
-  sink << "shll\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8, 0) << ", #8";
+  unsigned const elements = 2, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU32(rn, srcidx + idx)) << 32;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU64(rd, idx, res[idx]);
+    }
 };
+
+/*
+ * end of SHLL
+ *******************************************************************/
 
 op shrn2_v16b8hi( 0b0100111100001[13] : lro[3] : 0b100001[6] : rn[5] : rd[5] );
 shrn2_v16b8hi.var shift : {unsigned} = {8 - lro};
@@ -3912,41 +3949,81 @@ sshl_v2dv2dv2d.disasm = {
   sink << "sshl\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
 };
 
-op sshll2_v2d4si( 0b01001111001[11] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
+/*******************************************************************
+ * SSHLL
+ *
+ * Signed Shift Left Long (immediate).
+ */
 
-sshll2_v2d4si.disasm = {
-  if (imm) { sink << "sshll2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 4, 2) << ", " << DisasmI(imm); } else { sink << "sxtl2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 4, 2); }
+op sshll_v8h( 0b0[1] : q[1] : 0b00111100001[11] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
+
+sshll_v8h.disasm = {
+  sink << (imm ? "sshll" : "sxtl") << (q ? "2" : "") << '\t' << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8<<q, 0);
+  if (imm) { sink << ", " << DisasmI(imm); }
 };
 
-op sshll2_v4s8hi( 0b010011110001[12] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
+sshll_v8h.execute = {
+  typedef typename ARCH::U16 DST;
 
-sshll2_v4s8hi.disasm = {
-  if (imm) { sink << "sshll2\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 8, 1) << ", " << DisasmI(imm); } else { sink << "sxtl2\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 8, 1); }
+  unsigned const elements = 8, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVS8(rn, srcidx + idx)) << imm;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, idx, res[idx]);
+    }
 };
 
-op sshll2_v8h16bi( 0b0100111100001[13] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
+op sshll_v4s( 0b0[1] : q[1] : 0b0011110001[10] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
 
-sshll2_v8h16bi.disasm = {
-  if (imm) { sink << "sshll2\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 16, 0) << ", " << DisasmI(imm); } else { sink << "sxtl2\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 16, 0); }
+sshll_v4s.disasm = {
+  sink << (imm ? "sshll" : "sxtl") << (q ? "2" : "") << '\t' << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4<<q, 1);
+  if (imm) { sink << ", " << DisasmI(imm); }
 };
 
-op sshll_v2d2si( 0b00001111001[11] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
+sshll_v4s.execute = {
+  typedef typename ARCH::U32 DST;
 
-sshll_v2d2si.disasm = {
-  if (imm) { sink << "sshll\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 2) << ", " << DisasmI(imm); } else { sink << "sxtl\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 2); }
+  unsigned const elements = 4, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVS16(rn, srcidx + idx)) << imm;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, idx, res[idx]);
+    }
 };
 
-op sshll_v4s4hi( 0b000011110001[12] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
+op sshll_v2d( 0b0[1] : q[1] : 0b001111001[9] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
 
-sshll_v4s4hi.disasm = {
-  if (imm) { sink << "sshll\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4, 1) << ", " << DisasmI(imm); } else { sink << "sxtl\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4, 1); }
+sshll_v2d.disasm = {
+  sink << (imm ? "sshll" : "sxtl") << (q ? "2" : "") << '\t' << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2<<q, 2);
+  if (imm) { sink << ", " << DisasmI(imm); }
 };
 
-op sshll_v8h8bi( 0b0000111100001[13] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
+sshll_v2d.execute = {
+  typedef typename ARCH::U64 DST;
 
-sshll_v8h8bi.disasm = {
-  if (imm) { sink << "sshll\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8, 0) << ", " << DisasmI(imm); } else { sink << "sxtl\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8, 0); }
+  unsigned const elements = 2, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVS32(rn, srcidx + idx)) << imm;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU64(rd, idx, res[idx]);
+    }
 };
+
+/*
+ * end of SSHLL
+ *******************************************************************/
 
 op sshr_ddi( 0b0101111101[10] : lro[6] : 0b000001[6] : rn[5] : rd[5] );
 sshr_ddi.var shift : {unsigned} = {64 - lro};
@@ -5455,42 +5532,6 @@ ursra_ddi.var shift : {unsigned} = {64 - lro};
 
 ursra_ddi.disasm = {
   sink << "ursra\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
-};
-
-op ushll2_v2d4si( 0b01101111001[11] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
-
-ushll2_v2d4si.disasm = {
-  if (imm) { sink << "ushll2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 4, 2) << ", " << DisasmI(imm); } else { sink << "uxtl2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 4, 2); }
-};
-
-op ushll2_v4s8hi( 0b011011110001[12] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
-
-ushll2_v4s8hi.disasm = {
-  if (imm) { sink << "ushll2\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 8, 1) << ", " << DisasmI(imm); } else { sink << "uxtl2\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 8, 1); }
-};
-
-op ushll2_v8h16bi( 0b0110111100001[13] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
-
-ushll2_v8h16bi.disasm = {
-  if (imm) { sink << "ushll2\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 16, 0) << ", " << DisasmI(imm); } else { sink << "uxtl2\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 16, 0); }
-};
-
-op ushll_v2d2si( 0b00101111001[11] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
-
-ushll_v2d2si.disasm = {
-  if (imm) { sink << "ushll\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 2) << ", " << DisasmI(imm); } else { sink << "uxtl\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 2); }
-};
-
-op ushll_v4s4hi( 0b001011110001[12] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
-
-ushll_v4s4hi.disasm = {
-  if (imm) { sink << "ushll\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4, 1) << ", " << DisasmI(imm); } else { sink << "uxtl\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4, 1); }
-};
-
-op ushll_v8h8bi( 0b0010111100001[13] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
-
-ushll_v8h8bi.disasm = {
-  if (imm) { sink << "ushll\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8, 0) << ", " << DisasmI(imm); } else { sink << "uxtl\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8, 0); }
 };
 
 op ushr_ddi( 0b0111111101[10] : lro[6] : 0b000001[6] : rn[5] : rd[5] );
@@ -8028,6 +8069,82 @@ ushl_v2d.execute = {
 
 /*
  * end of USHL
+ *******************************************************************/
+
+/*******************************************************************
+ * USHLL
+ *
+ * Unsigned Shift Left Long (immediate)
+ */
+
+op ushll_v8h( 0b0[1] : q[1] : 0b10111100001[11] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
+
+ushll_v8h.disasm = {
+  sink << (imm ? "ushll" : "uxtl2\t") << (q ? "2" : "") << '\t' << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8<<q, 0);
+  if (imm) { sink << ", " << DisasmI(imm); }
+};
+
+ushll_v8h.execute = {
+  typedef typename ARCH::U16 DST;
+
+  unsigned const elements = 8, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU8(rn, srcidx + idx)) << imm;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, idx, res[idx]);
+    }
+};
+
+op ushll_v4s( 0b0[1] : q[1] : 0b1011110001[10] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
+
+ushll_v4s.disasm = {
+  sink << (imm ? "ushll" : "uxtl2\t") << (q ? "2" : "") << '\t' << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4<<q, 1);
+  if (imm) { sink << ", " << DisasmI(imm); }
+};
+
+ushll_v4s.execute = {
+  typedef typename ARCH::U32 DST;
+
+  unsigned const elements = 4, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU16(rn, srcidx + idx)) << imm;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, idx, res[idx]);
+    }
+};
+
+op ushll_v2d( 0b0[1] : q[1] : 0b101111001[9] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
+
+ushll_v2d.disasm = {
+  sink << (imm ? "ushll" : "uxtl2\t") << (q ? "2" : "") << '\t' << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2<<q, 2);
+  if (imm) { sink << ", " << DisasmI(imm); }
+};
+
+ushll_v2d.execute = {
+  typedef typename ARCH::U64 DST;
+
+  unsigned const elements = 2, srcidx = elements*q;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU32(rn, srcidx + idx)) << imm;
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU64(rd, idx, res[idx]);
+    }
+};
+
+/*
+ * end of USHLL
  *******************************************************************/
 
 /*******************************************************************

@@ -143,7 +143,6 @@ namespace ppc64 {
 	path->add_sink( newRegWrite( XER::ID(), xer.value.expr ) );
     }
 
-
     if (fpscr.value.expr != ref.fpscr.value.expr)
       throw 0;
 

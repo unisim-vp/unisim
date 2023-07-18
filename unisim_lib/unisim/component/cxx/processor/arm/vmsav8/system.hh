@@ -56,30 +56,30 @@ namespace vmsav8 {
 
   namespace tcr
   {
-    BitField<38,1> const TBI1;   // Top Byte ignored
-    BitField<37,1> const TBI0;   // Top Byte ignored
-    BitField<36,1> const AS;     // ASID Size
-    BitField<32,3> const IPS;    // Intermediate Physical Address Size
-    
-    BitField<30,2> const TG1;    // TTBR1 Granule size
-    BitField<28,2> const SH1;    // Shareability attribute for memory associated with translation table walks using TTBR1
-    BitField<26,2> const ORGN1;  // Outer cacheability attribute for memory associated with translation table walks using TTBR1
-    BitField<24,2> const IRGN1;  // Inner cacheability attribute for memory associated with translation table walks using TTBR1
-    BitField<23,1> const EPD1;   // Translation table walk disable for translations using TTBR1
-    BitField<22,1> const A1;     // Selects whether TTBR0_EL1 or TTBR1_EL1 defines the ASID
-    BitField<16,6> const T1SZ;   // The size offset of the memory region addressed by TTBR1
-    
-    BitField<14,2> const TG0;    // TTBR0 Granule size
-    BitField<12,2> const SH0;    // Shareability attribute for memory associated with translation table walks using TTBR0
-    BitField<10,2> const ORGN0;  // Outer cacheability attribute for memory associated with translation table walks using TTBR0
-    BitField< 8,2> const IRGN0;  // Inner cacheability attribute for memory associated with translation table walks using TTBR0
-    BitField< 7,1> const EPD0;   // Translation table walk disable for translations using TTBR0
-    BitField< 0,6> const T0SZ;   // The size offset of the memory region addressed by TTBR0
+    unisim::util::arithmetic::BitField<38,1> const TBI1;   // Top Byte ignored
+    unisim::util::arithmetic::BitField<37,1> const TBI0;   // Top Byte ignored
+    unisim::util::arithmetic::BitField<36,1> const AS;     // ASID Size
+    unisim::util::arithmetic::BitField<32,3> const IPS;    // Intermediate Physical Address Size
+
+    unisim::util::arithmetic::BitField<30,2> const TG1;    // TTBR1 Granule size
+    unisim::util::arithmetic::BitField<28,2> const SH1;    // Shareability attribute for memory associated with translation table walks using TTBR1
+    unisim::util::arithmetic::BitField<26,2> const ORGN1;  // Outer cacheability attribute for memory associated with translation table walks using TTBR1
+    unisim::util::arithmetic::BitField<24,2> const IRGN1;  // Inner cacheability attribute for memory associated with translation table walks using TTBR1
+    unisim::util::arithmetic::BitField<23,1> const EPD1;   // Translation table walk disable for translations using TTBR1
+    unisim::util::arithmetic::BitField<22,1> const A1;     // Selects whether TTBR0_EL1 or TTBR1_EL1 defines the ASID
+    unisim::util::arithmetic::BitField<16,6> const T1SZ;   // The size offset of the memory region addressed by TTBR1
+
+    unisim::util::arithmetic::BitField<14,2> const TG0;    // TTBR0 Granule size
+    unisim::util::arithmetic::BitField<12,2> const SH0;    // Shareability attribute for memory associated with translation table walks using TTBR0
+    unisim::util::arithmetic::BitField<10,2> const ORGN0;  // Outer cacheability attribute for memory associated with translation table walks using TTBR0
+    unisim::util::arithmetic::BitField< 8,2> const IRGN0;  // Inner cacheability attribute for memory associated with translation table walks using TTBR0
+    unisim::util::arithmetic::BitField< 7,1> const EPD0;   // Translation table walk disable for translations using TTBR0
+    unisim::util::arithmetic::BitField< 0,6> const T0SZ;   // The size offset of the memory region addressed by TTBR0
   }
 
   namespace sctlr
   {
-    BitField<14,1> const DZE;    // Access to DC ZVA instruction at EL0.
+    unisim::util::arithmetic::BitField<14,1> const DZE;    // Access to DC ZVA instruction at EL0.
   }
   
 } // end of namespace vmsav8
