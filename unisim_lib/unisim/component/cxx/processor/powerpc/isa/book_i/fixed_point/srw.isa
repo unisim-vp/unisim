@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2018,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -41,7 +41,7 @@ srw.execute = {
 	U8  b = U8(cpu->GetGPR(rb)) & U8(0x3f);
 	
 	// Compute the result
-	U32 result = (U32(b > U8(0x1f)) - U32(1)) & (s >> b);
+	U32 result = ConditionalMove(b > U8(0x1f), U32(0), (s >> b));
 	
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));

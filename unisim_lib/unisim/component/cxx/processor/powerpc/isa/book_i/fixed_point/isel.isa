@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2018,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -40,9 +40,7 @@ isel.execute = {
 	UINT a = ra ? cpu->GetGPR(ra) : UINT(0), b = cpu->GetGPR(rb);
 	
 	// Compute the result
-	UINT mask =
-	     UINT(U32((U32(cpu->GetCR()) << bc) >> 31) == U32(0)) - UINT(1);
-	UINT result = (mask & a) | (~mask & b);
+	UINT result = ConditionalMove(BOOL((U32(cpu->GetCR()) << bc) >> 31), a, b);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);

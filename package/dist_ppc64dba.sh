@@ -154,7 +154,7 @@ CLEANFILES=\
 
 \$(top_builddir)/ppc64dec.cc: \$(top_builddir)/ppc64dec.hh
 \$(top_builddir)/ppc64dec.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_TOP_ISA}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/ppc64dec -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py --specialization off -o \$(top_builddir)/ppc64dec -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
 	 
 EOF
 )

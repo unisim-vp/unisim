@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2018,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -40,10 +40,8 @@ cntlzd.execute = {
 	U64 s = U64(cpu->GetGPR(rs));
 	
 	// Compute the result
-	U64 is_zero = U64(s == U64(0));
-	U64 result = (is_zero - U64(1)) & (U64(63) - BitScanReverse(s))
-	    	   | (is_zero << U64(6));
-		   
+	U64 result = ConditionalMove(s != U64(0), U64(63) - BitScanReverse(s), U64(64));
+	
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));
 	

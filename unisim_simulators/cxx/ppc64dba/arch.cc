@@ -104,11 +104,11 @@ namespace ppc64 {
   {
     bool complete = (*path)->close();
     /* TODO: branch_type */
-    (*path)->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
+    (*path)->add_sink( Expr( new unisim::util::symbolic::binsec::Branch( next_instruction_address.expr ) ) );
 
     for (IRegID reg; reg.next();)
       if (regvalues[reg.idx()].expr != ref.regvalues[reg.idx()].expr)
-        (*path)->sinks.insert( newRegWrite( reg, regvalues[reg.idx()].expr ) );
+        (*path)->add_sink( newRegWrite( reg, regvalues[reg.idx()].expr ) );
 
     if (cr.value.expr != ref.cr.value.expr)
       {
@@ -125,22 +125,22 @@ namespace ppc64 {
             // unisim::util::symbolic::binsec::BitSimplify::Do(old_crbit);
             if (new_crbit == old_crbit)
               continue;
-            (*path)->sinks.insert( newRegWrite( CRBIT(idx), new_crbit ) );
+            (*path)->add_sink( newRegWrite( CRBIT(idx), new_crbit ) );
             // new_crbit->Repr(std::cerr << "cr<" << idx << ">: ");
             // std::cerr << '\n';
           }
       }
 
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
-      (*path)->sinks.insert( *itr );
+      (*path)->add_sink( *itr );
 
     if (xer.value.expr != ref.xer.value.expr) {
       unisim::util::symbolic::Expr x(((xer.value ^ ref.xer.value) != U64(0)).expr);
       if (auto c = unisim::util::symbolic::binsec::BitSimplify::Do(x)) {
 	if (dynamic_cast<unisim::util::symbolic::ConstNode<bool> const&>(*c).value)
-	  (*path)->sinks.insert( newRegWrite( XER::ID(), xer.value.expr ) );
+	  (*path)->add_sink( newRegWrite( XER::ID(), xer.value.expr ) );
       } else
-	(*path)->sinks.insert( newRegWrite( XER::ID(), xer.value.expr ) );
+	(*path)->add_sink( newRegWrite( XER::ID(), xer.value.expr ) );
     }
 
 

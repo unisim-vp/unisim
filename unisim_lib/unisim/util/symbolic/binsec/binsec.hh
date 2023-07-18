@@ -146,13 +146,16 @@ namespace binsec {
   
   struct ActionNode : public Conditional<ActionNode>
   {
-    ActionNode() : Conditional<ActionNode>(), sinks(), sestats() {}
+    ActionNode() : Conditional<ActionNode>(), xsinks(), sestats() {}
 
-    void                    add_sink( Expr expr ) { expr.ConstSimplify(); sinks.insert( expr ); }
+    void                    add_sink( Expr expr ) { /*expr.ConstSimplify();*/ xsinks.insert( expr ); }
     void                    simplify();
     void                    commit_stats();
-    
-    std::set<Expr>          sinks;
+    std::map<Expr,unsigned> const& get_sestats() const { return sestats; }
+    std::set<Expr> const& get_sinks() const { return xsinks; }
+
+  private:
+    std::set<Expr>          xsinks;
     std::map<Expr,unsigned> sestats;
   };
 

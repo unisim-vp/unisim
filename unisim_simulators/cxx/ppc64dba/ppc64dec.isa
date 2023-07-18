@@ -316,5 +316,5 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsx.
 
 /* Book III: Power ISA User Instruction Set Architecture */
 /* Special Purpose Register */
-include "unisim_lib/unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa"
-include "unisim_lib/unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa"
