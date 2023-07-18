@@ -260,6 +260,12 @@ namespace symbolic {
   typedef uint8_t shift_type;
 
   template <typename VALUE_TYPE>
+  VALUE_TYPE EvalInc( VALUE_TYPE l ) { return l + VALUE_TYPE(1); }
+  inline bool EvalInc( bool l ) { return not l; }
+  template <typename VALUE_TYPE>
+  VALUE_TYPE EvalDec( VALUE_TYPE l ) { return l - VALUE_TYPE(1); }
+  inline bool EvalDec( bool l ) { return not l; }
+  template <typename VALUE_TYPE>
   VALUE_TYPE EvalMul( VALUE_TYPE l, VALUE_TYPE r ) { return l * r; }
   bool EvalMul( bool, bool );
   template <typename VALUE_TYPE>
@@ -501,8 +507,8 @@ namespace symbolic {
         case Op::Divu:   return new this_type( value / GetValue( args[1] ) );
         case Op::Mod:
         case Op::Modu:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
-	case Op::Inc:    return new this_type( value + VALUE_TYPE(1) );
-	case Op::Dec:    return new this_type( value - VALUE_TYPE(1) );
+	case Op::Inc:    return new this_type( EvalInc( value ) );
+	case Op::Dec:    return new this_type( EvalDec( value ) );
 
         case Op::Tnzero: return new ConstNode   <bool>   ( value != VALUE_TYPE() );
         case Op::Tzero:  return new ConstNode   <bool>   ( value == VALUE_TYPE() );

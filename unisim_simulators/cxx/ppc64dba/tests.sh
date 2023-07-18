@@ -1,6 +1,12 @@
-./unisim-ppc64dba-1.0.9 0x4000 0x38aaaaaa
 ./unisim-ppc64dba-0.1.0 0x4000 0x38aaaaaa
 ./unisim-ppc64dba-0.1.0 0x4000 0x3caaaaaa
 ./unisim-ppc64dba-0.1.0 0x4000 0x3caaa215
 ./unisim-ppc64dba-0.1.0 0x4000 0x7caaa215
 ./unisim-ppc64dba-0.1.0 0x4000 0x4c430982
+./unisim-ppc64dba-0.1.0 0x0400 0x7c010074
+./unisim-ppc64dba-0.1.0 0x0400 0x7c020034
+./unisim-ppc64dba-0.1.0 0x0400 0x7c01101e
+./unisim-ppc64dba-0.1.0 0x0400 0x7c011030
+./unisim-ppc64dba-0.1.0 0x0400 0x7c011430
+./unisim-ppc64dba-0.1.0 0x0400 0x7c011110
+./unisim-ppc64dba-0.1.0 0x4000 0x40e0ffc0

@@ -165,10 +165,10 @@ namespace ppc64 {
       {
         Read( Path& path ) : Source(path), unisim::util::symbolic::binsec::RegRead<ID>(ID()) {}
         virtual Read* Mutate() const override { return new Read(*this); }
-        // virtual unisim::util::symbolic::ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const override;
+        virtual unisim::util::symbolic::ConstNodeBase const* Simplify( Expr const& mask, Expr& expr ) const override;
       };
 
-      CR( Arch& arch ); // : value( new Read(path) ) {}
+      CR( Arch& arch ) : value( new Read(arch.path) ) {}
 
       U32 value;
     };
