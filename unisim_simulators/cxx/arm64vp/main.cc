@@ -111,7 +111,7 @@ load_snapshot(AArch64& arch, char const* shot_filename)
 }
 
 bool
-load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
+load_linux(AArch64& arch, char const* img_filename, char const* dt_filename, char const* initrd_filename = 0)
 {
   MMapped* linux_image  = new MMapped( img_filename );
 
@@ -145,7 +145,7 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
     lseek(linux_image->fd,8,SEEK_SET);
     uint64_t base = le64.read(linux_image->fd), kernel_size = le64.read(linux_image->fd);
     lseek(linux_image->fd,0,SEEK_SET);
-    if (base % 64) { std::cerr << "Bad size: " << std::hex << base << std::endl; return 1; }
+    if (base % 64) { std::cerr << "Bad base: " << std::hex << base << std::endl; return 1; }
     if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
     AArch64::Page page(base,base+size-1,0,0,linux_image);
     linux_image->dump_load( std::cerr, "linux image", page );
@@ -188,6 +188,23 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename)
       arch.SetGSR(idx, AArch64::U64(0/*0xdeadbeefbadfeed0 + idx,-1*/));
   }
 
+  if(initrd_filename)
+  {
+    MMapped* initrd = new MMapped( initrd_filename );
+
+    if (initrd->fd < 0) return false;
+
+    struct stat f_stat;
+    if (not initrd->get(f_stat))
+      return 1;
+    uint64_t initrd_start = 0x03000000, initrd_end = initrd_start+f_stat.st_size;
+    AArch64::Page page(initrd_start,initrd_end-1,0,0,initrd);
+    initrd->dump_load( std::cerr, "initrd", page );
+    if (not initrd->get(page))
+      return 1;
+    arch.mem_map(std::move(page));
+  }
+  
   return true;
 }
 // Docs & Notes:
@@ -331,13 +348,14 @@ main(int argc, char *argv[])
   // arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
-  // std::unique_ptr<Debugger> dbg;
-  // {
-  //   // if a vmlinux file is given, start the debugger
-  //   std::ifstream linux_elf ("linux.elf");
-  //   if (linux_elf)
-  //     dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
-  // }
+  std::unique_ptr<Debugger> dbg;
+  if ((argc >= 2) && (strcmp(argv[1],"-g") == 0))
+  {
+    // if a vmlinux file is given, start the debugger
+    std::ifstream linux_elf ("linux.elf");
+    if (linux_elf)
+      dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
+  }
   
   switch (simulator.Setup())
     {
@@ -366,7 +384,7 @@ main(int argc, char *argv[])
     }
 
   // Loading image
-  if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb"))
+  if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb", "initrd.img"))
     return 1;
 
   signal(SIGUSR1, usr_handler);

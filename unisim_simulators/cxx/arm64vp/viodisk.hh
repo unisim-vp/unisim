@@ -95,6 +95,9 @@ struct VIODisk : public unisim::util::virtio::BlockDevice
   void read(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
   void write(unisim::util::virtio::Access const& sys, uint64_t addr, uint64_t size) override;
   void seek(uint64_t pos) override { diskpos = pos; }
+  void flush(unisim::util::virtio::Access const& sys) override;
+  void discard(unisim::util::virtio::Access const& sys, uint64_t pos, uint64_t size) override;
+  void write_zeroes(unisim::util::virtio::Access const& sys, uint64_t pos, uint64_t size, uint32_t flags) override;
 
   // Configuration
   SyncQMgr*   sqmgr;

@@ -261,6 +261,9 @@ namespace virtio {
     virtual void seek(uint64_t pos) = 0;
     virtual void read(Access const&, uint64_t addr, uint64_t size) = 0;
     virtual void write(Access const&, uint64_t addr, uint64_t size) = 0;
+    virtual void flush(Access const&) = 0;
+    virtual void discard(Access const&, uint64_t pos, uint64_t size) = 0;
+    virtual void write_zeroes(Access const&, uint64_t pos, uint64_t size, uint32_t flags) = 0;
     
     bool ReadQueue(Access const& sys);
   };

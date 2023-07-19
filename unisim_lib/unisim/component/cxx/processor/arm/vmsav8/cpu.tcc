@@ -1222,6 +1222,14 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0000,0b0110,0b010): // 2.40: ID_AA64ISAR1_EL1, AArch64 Instruction Set Attribute Register 2
+      {
+        static struct : public SysReg {
+          char const* Name() const { return "ID_AA64ISAR2_EL1"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 2"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b000): // 2.41: ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0
       {
         static struct : public SysReg {
