@@ -74,7 +74,7 @@ namespace Mips
     {
       typedef unisim::util::symbolic::Expr Expr;
       
-      virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
+      virtual ValueType GetType() const override { return unisim::util::symbolic::NoValueType(); }
       virtual std::unique_ptr<SideEffect> InterpretForward(ComputationResult& res) const = 0;
     };
     
@@ -100,7 +100,7 @@ namespace Mips
     {
       Load( Expr const& _addr, unsigned _bytes ) : addr(_addr), bytes(_bytes) {}
       virtual Load* Mutate() const override { return new Load(*this); }
-      virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8*bytes); }
+      virtual ValueType GetType() const override { return unisim::util::symbolic::CValueType(unisim::util::symbolic::ValueType::UNSIGNED, 8*bytes); }
       virtual void Repr(std::ostream& sink) const override;
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
       int compare( Load const& rhs ) const { return int(bytes) - int(rhs.bytes); }
@@ -136,7 +136,7 @@ namespace Mips
       
       RegRead( RegisterIndex _reg ) : reg(_reg) {}
       virtual RegRead* Mutate() const override { return new RegRead( *this ); }
-      virtual ValueType const* GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
+      virtual ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint32_t()); }
       virtual void Repr(std::ostream& sink) const override;
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }

@@ -12,5 +12,11 @@ namespace vle::concrete
 
 var branch : {BranchInfo};
 
+impl
+{
+#include <unisim/util/arithmetic/arithmetic.hh>
+using unisim::util::arithmetic::ConditionalMove;
+}
+
 include "top_vle.isa"
 

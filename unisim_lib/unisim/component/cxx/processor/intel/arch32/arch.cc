@@ -39,6 +39,7 @@
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
 using unisim::util::arithmetic::BitScanForward;
 using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::arithmetic::ConditionalMove;
 using unisim::util::endian::ByteSwap;
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )    { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }

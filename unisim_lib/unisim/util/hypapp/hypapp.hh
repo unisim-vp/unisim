@@ -250,9 +250,9 @@ struct HttpRequestPart : std::istream
 {
 public:
   HttpRequestPart(const RequestPart& _part)
-    : part(_part)
+    : std::istream(&content_stream_buffer)
+    , part(_part)
     , content_stream_buffer(part.GetContent(), part.GetContentLength(), 0)
-    , std::istream(&content_stream_buffer)
   {
   }
 
