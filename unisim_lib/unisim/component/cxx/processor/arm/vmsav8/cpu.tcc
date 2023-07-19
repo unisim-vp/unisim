@@ -165,6 +165,51 @@ CPU<CPU_IMPL>::CPU(const char *name, Object *parent)
     registers_registry.AddRegisterInterface( dbg_reg );
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
     variable_register_pool.insert( var_reg );
+
+    /** Specific Current Program Status Register Debugging Accessor */
+    struct CurrentProgramStatusRegister : unisim::service::interfaces::Register
+    {
+      CurrentProgramStatusRegister( CPU& _cpu ) : cpu(_cpu) {}
+      virtual const char *GetName() const { return "cpsr"; }
+      virtual void GetValue( void* buffer ) const { *((uint32_t *)buffer) = cpu.nzcv << 28; }
+      virtual void SetValue( void const* buffer ) { cpu.nzcv = (*(uint32_t *)buffer >> 28) & 0xf; }
+      virtual int  GetSize() const { return 4; }
+      virtual void Clear() { cpu.nzcv = 0; }
+      CPU&        cpu;
+    };
+    dbg_reg = new CurrentProgramStatusRegister( *this );
+    registers_registry.AddRegisterInterface( dbg_reg );
+    
+    struct VectorRegister : unisim::service::interfaces::Register
+    {
+      VectorRegister( CPU& _cpu, unsigned _reg, std::string const& _name ) : cpu(_cpu), reg(_reg), name(_name) {}
+      virtual const char *GetName() const { return name.c_str(); }
+      virtual void GetValue( void* buffer ) const { for(unsigned sub = 0; sub < 2; ++sub) *((uint64_t*)buffer + sub) = cpu.GetVU64(reg, sub); }
+      virtual void SetValue( void const* buffer ) { for(unsigned sub = 0; sub < 2; ++sub) cpu.SetVU64(reg, sub, typename ArchTypes::U64(*((uint64_t const*)buffer + sub))); }
+      virtual int  GetSize() const { return 16; }
+      virtual void Clear() { cpu.ClearHighV(reg, 0); }
+      CPU&            cpu;
+      unsigned        reg;
+      std::string     name;
+    };
+
+    for (int idx = 0; idx < 32; ++idx)
+      {
+        std::ostringstream regname;
+        regname << "v" << idx;
+        dbg_reg = new VectorRegister( *this, idx, regname.str());
+        registers_registry.AddRegisterInterface( dbg_reg );
+      }
+    
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpcr", &this->fpcr );
+    registers_registry.AddRegisterInterface( dbg_reg );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "fpcr", this, this->fpcr, "Floating-point Control Register" );
+    variable_register_pool.insert( var_reg );
+    
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpsr", &this->fpsr );
+    registers_registry.AddRegisterInterface( dbg_reg );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "fpsr", this, this->fpsr, "Floating-point Status Register" );
+    variable_register_pool.insert( var_reg );
   }
 }
 
@@ -803,6 +848,36 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
 
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b000): // NZCV
+      {
+        static struct : public SysReg {
+          char const* Name() const { return "NZCV"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = U32(value >> 28); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.nzcv) << 28; }
+        } x; return &x;
+      }
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0100,0b000): // FPCR, Floating-point Control Register
+      {
+        static struct : public SysReg {
+          char const* Name() const { return "FPCR"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Control Register"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
+        } x; return &x;
+      }
+      
+    case SYSENCODE(0b11,0b011,0b0100,0b0100,0b001): // FPSR, Floating-point Status Register
+      {
+        static struct : public SysReg {
+          char const* Name() const { return "FPSR"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Status Register"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpsr = U32(value); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpsr); }
+        } x; return &x;
+      }
+      
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
         static struct : public WOOpSysReg {

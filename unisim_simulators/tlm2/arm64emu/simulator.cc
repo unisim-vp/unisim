@@ -307,12 +307,12 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("linux-os.envc",            0);
   sim->SetVariable("linux-os.utsname-sysname", "Linux");
   sim->SetVariable("linux-os.utsname-nodename","localhost");
-  sim->SetVariable("linux-os.utsname-release", "3.14.43-unisim");
-  sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
-  sim->SetVariable("linux-os.utsname-machine", "armv7");
+  sim->SetVariable("linux-os.utsname-release", "5.15.110-unisim");
+  sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Mon May 8 17:24:35 UTC 2023");
+  sim->SetVariable("linux-os.utsname-machine", "aarch64");
   sim->SetVariable("linux-os.utsname-domainname","localhost");
   sim->SetVariable("linux-os.apply-host-environment", false);
-  sim->SetVariable("linux-os.hwcap", "swp half fastmult");
+  sim->SetVariable("linux-os.hwcap", "");
 
   sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
   sim->SetVariable("debugger.parse-dwarf", false);

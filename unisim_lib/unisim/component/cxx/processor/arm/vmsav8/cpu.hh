@@ -226,7 +226,49 @@ struct CPU
 
   uint8_t GetNZCV() const { return nzcv; }
   uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
+  
+  /** Set FPCR */
+  void SetFPCR( U32 v ) { fpcr = v; }
+  
+  /** Get FPCR */
+  U32 GetFPCR() const { return fpcr; }
+  
+  /* Get FPCR Floating-point control bits */
+  BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
+  BOOL FZ() const { return ((fpcr >> 24) & U32(1)) != U32(0); }
+  U32 RMode() const { return (fpcr >> 22) & U32(3); }
+  BOOL RoundToNearest() const { return RMode() == U32(0); }
+  BOOL RoundTowardPlusInfinity() const { return RMode() == U32(1); }
+  BOOL RoundTowardMinusInfinity() const { return RMode() == U32(2); }
+  BOOL RoundTowardZero() const { return RMode() == U32(3); }
+  BOOL IDE() const { return ((fpcr >> 15) & U32(1)) != U32(0); }
+  BOOL IXE() const { return ((fpcr >> 12) & U32(1)) != U32(0); }
+  BOOL UFE() const { return ((fpcr >> 11) & U32(1)) != U32(0); }
+  BOOL OFE() const { return ((fpcr >> 10) & U32(1)) != U32(0); }
+  BOOL DZE() const { return ((fpcr >> 9) & U32(1)) != U32(0); }
+  BOOL IOE() const { return ((fpcr >> 9) & U32(1)) != U32(0); }
 
+  /** Set FPSR */
+  void SetFPSR( U32 v ) { fpsr = v; }
+  
+  /** Set FPSR cumulative bits
+   * 
+   * @param q Saturation flag
+   * @param id Input Denormal flag
+   * @param ix Inexact flag
+   * @param uf Underflow flag
+   * @param of Overflow flag
+   * @param dz Divide by Zero flag
+   * @param io Invalid Operation flag
+   */
+  void SetFPSR( U32 q, U32 id, U32 ix, U32 uf, U32 of, U32 dz, U32 io )
+  {
+    fpsr |= (q << 27) | (id << 7) | (ix << 4) | (uf << 3) | (of << 2) | (dz << 1) | (io << 0);
+  }
+  
+  /** Get FPSR */
+  U32 GetFPSR() const { return fpsr; }
+  
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
 
@@ -341,6 +383,8 @@ protected:
    **********************************************************************/
 
   uint32_t nzcv;
+  U32 fpcr;
+  U32 fpsr;
   uint64_t current_insn_addr, next_insn_addr;
 
   uint64_t TPIDRURW; //< User Read/Write Thread ID Register

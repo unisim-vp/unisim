@@ -55,8 +55,10 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
   : unisim::kernel::Object(name, 0)
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>(name, 0)
   , debug_hub("debug-hub", this)
-  //, gdb_server("gdb-server", this)
-  , inline_debugger("inline-debugger", this)
+  , enable_gdb_server()
+  , enable_inline_debugger()
+  , param_enable_gdb_server("enable-gdb-server", this, enable_gdb_server, "enable the gdb-server debug sessions")
+  , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "enable the inline-debugger debug sessions")
 {
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
@@ -69,37 +71,39 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
   
   unsigned front_end = 0;
   // inline-debugger <-> DebugHub connections
+  if(enable_inline_debugger)
   {
+    inline_debugger = std::make_unique<InlineDebugger>("inline-debugger",this);
     unsigned i = front_end++;
-    *debug_hub.debug_event_listener_import[i]     >> inline_debugger.debug_event_listener_export;
-    *debug_hub.debug_yielding_import      [i]     >> inline_debugger.debug_yielding_export;
-    inline_debugger.debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
-    inline_debugger.debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
-    inline_debugger.disasm_import                 >> *debug_hub.disasm_export                [i];
-    inline_debugger.memory_import                 >> *debug_hub.memory_export                [i];
-    inline_debugger.registers_import              >> *debug_hub.registers_export             [i];
-    inline_debugger.stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
-    inline_debugger.symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
-    inline_debugger.backtrace_import              >> *debug_hub.backtrace_export             [i];
-    inline_debugger.debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
-    inline_debugger.data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
-    inline_debugger.subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
-    inline_debugger.stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
+    *debug_hub.debug_event_listener_import[i]      >> inline_debugger->debug_event_listener_export;
+    *debug_hub.debug_yielding_import      [i]      >> inline_debugger->debug_yielding_export;
+    inline_debugger->debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
+    inline_debugger->debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
+    inline_debugger->disasm_import                 >> *debug_hub.disasm_export                [i];
+    inline_debugger->memory_import                 >> *debug_hub.memory_export                [i];
+    inline_debugger->registers_import              >> *debug_hub.registers_export             [i];
+    inline_debugger->stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
+    inline_debugger->symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
+    inline_debugger->backtrace_import              >> *debug_hub.backtrace_export             [i];
+    inline_debugger->debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
+    inline_debugger->data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
+    inline_debugger->subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
+    inline_debugger->stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
   }
 
   // GdbServer <-> DebugHub connections
-  // {
-  //   unisgned i = front_end++;
-  //   *debug_hub.debug_event_listener_import[i] >> gdb_server.debug_event_listener_export;
-  //   *debug_hub.debug_yielding_import      [i] >> gdb_server.debug_yielding_export;
-  //   gdb_server.debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
-  //   gdb_server.debug_selecting_import        >> *debug_hub.debug_selecting_export       [i];
-  //   gdb_server.debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
-  //   gdb_server.memory_import                 >> *debug_hub.memory_export                [i];
-  //   gdb_server.registers_import              >> *debug_hub.registers_export             [i];
-
-  //   gdb_server["verbose"] = true;
-  // }
+  if(enable_gdb_server)
+  {
+    gdb_server = std::make_unique<GDBServer>("gdb-server",this);
+    unsigned i = front_end++;
+    *debug_hub.debug_event_listener_import[i] >> gdb_server->debug_event_listener_export;
+    *debug_hub.debug_yielding_import      [i] >> gdb_server->debug_yielding_export;
+    gdb_server->debug_yielding_request_import >> *debug_hub.debug_yielding_request_export[i];
+    gdb_server->debug_selecting_import        >> *debug_hub.debug_selecting_export       [i];
+    gdb_server->debug_event_trigger_import    >> *debug_hub.debug_event_trigger_export   [i];
+    gdb_server->memory_import                 >> *debug_hub.memory_export                [i];
+    gdb_server->registers_import              >> *debug_hub.registers_export             [i];
+  }
   
   // DebugHub <-> Loader connections
   bool const verbose = false, debug_dwarf = false, parse_dwarf = false;

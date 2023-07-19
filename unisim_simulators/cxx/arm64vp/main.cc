@@ -349,7 +349,6 @@ main(int argc, char *argv[])
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
   std::unique_ptr<Debugger> dbg;
-  if ((argc >= 2) && (strcmp(argv[1],"-g") == 0))
   {
     // if a vmlinux file is given, start the debugger
     std::ifstream linux_elf ("linux.elf");

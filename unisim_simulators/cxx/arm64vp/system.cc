@@ -173,6 +173,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b000): // NZCV
+      {
+        static struct : public BaseSysReg {
+          char const* Name() const { return "NZCV"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.nzcv = U8(value >> 28); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override { return U64(cpu.nzcv) << 28; }
+        } x; return &x;
+      }
       /***  Architectural hints instructions ***/
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b001 ):
       {

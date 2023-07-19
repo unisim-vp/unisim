@@ -5689,10 +5689,17 @@ xtn2_v16b8h.disasm = {
 };
 
 xtn2_v16b8h.execute = {
-  typedef typename ARCH::U8 U8;
-  
-  for (unsigned idx = 0; idx < 8; ++idx)
-    cpu.SetVU8(rd, (2 * idx) + 1, U8(cpu.GetVU16(rn, idx)));
+  typedef typename ARCH::U8 DST;
+  unsigned const elements = 8;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU16(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU8(rd, elements + idx, res[idx]);
+    }
 }
 
 op xtn2_v8h4s( 0b0100111001100001001010[22] : rn[5] : rd[5] );
@@ -5702,10 +5709,17 @@ xtn2_v8h4s.disasm = {
 };
 
 xtn2_v8h4s.execute = {
-  typedef typename ARCH::U16 U16;
-  
-  for (unsigned idx = 0; idx < 4; ++idx)
-    cpu.SetVU16(rd, (2 * idx) + 1, U16(cpu.GetVU32(rn, idx)));
+  typedef typename ARCH::U16 DST;
+  unsigned const elements = 4;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU32(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, elements + idx, res[idx]);
+    }
 }
 
 op xtn2_v4s2d( 0b0100111010100001001010[22] : rn[5] : rd[5] );
@@ -5715,10 +5729,17 @@ xtn2_v4s2d.disasm = {
 };
 
 xtn2_v4s2d.execute = {
-  typedef typename ARCH::U32 U32;
-  
-  for (unsigned idx = 0; idx < 2; ++idx)
-    cpu.SetVU32(rd, (2 * idx) + 1, U32(cpu.GetVU64(rn, idx)));
+  typedef typename ARCH::U32 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = DST(cpu.GetVU64(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, elements + idx, res[idx]);
+    }
 }
 
 op xtn_v2s2d( 0b0000111010100001001010[22] : rn[5] : rd[5] );
@@ -5728,13 +5749,18 @@ xtn_v2s2d.disasm = {
 };
 
 xtn_v2s2d.execute = {
-  typedef typename ARCH::U32 U32;
-  
-  for (unsigned idx = 0; idx < 2; ++idx)
+  typedef typename ARCH::U32 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
     {
-      cpu.SetVU32(rd, 2 * idx, U32(cpu.GetVU64(rn, idx)));
-      cpu.SetVU32(rd, (2 * idx) + 1, U32());
+      res[idx] = DST(cpu.GetVU64(rn, idx));
     }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8);
 }
 
 op xtn_v4h4s( 0b0000111001100001001010[22] : rn[5] : rd[5] );
@@ -5744,13 +5770,18 @@ xtn_v4h4s.disasm = {
 };
 
 xtn_v4h4s.execute = {
-  typedef typename ARCH::U16 U16;
-  
-  for (unsigned idx = 0; idx < 4; ++idx)
+  typedef typename ARCH::U16 DST;
+  unsigned const elements = 4;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
     {
-      cpu.SetVU16(rd, 2 * idx, U16(cpu.GetVU32(rn, idx)));
-      cpu.SetVU16(rd, (2 * idx) + 1, U16());
+      res[idx] = DST(cpu.GetVU32(rn, idx));
     }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8);
 }
 
 op xtn_v8b8h( 0b0000111000100001001010[22] : rn[5] : rd[5] );
@@ -5760,13 +5791,18 @@ xtn_v8b8h.disasm = {
 };
 
 xtn_v8b8h.execute = {
-  typedef typename ARCH::U8 U8;
-  
-  for (unsigned idx = 0; idx < 8; ++idx)
+  typedef typename ARCH::U8 DST;
+  unsigned const elements = 8;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
     {
-      cpu.SetVU8(rd, 2 * idx, U8(cpu.GetVU16(rn, idx)));
-      cpu.SetVU8(rd, (2 * idx) + 1, U8());
+      res[idx] = DST(cpu.GetVU16(rn, idx));
     }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU8(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8);
 }
 
 op zip1_v2dv2dv2d( 0b01001110110[11] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
@@ -8193,7 +8229,7 @@ ushl_v2d.execute = {
 op ushll_v8h( 0b0[1] : q[1] : 0b10111100001[11] : imm[3] : 0b101001[6] : rn[5] : rd[5] );
 
 ushll_v8h.disasm = {
-  sink << (imm ? "ushll" : "uxtl2\t") << (q ? "2" : "") << '\t' << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8<<q, 0);
+  sink << (imm ? "ushll" : "uxtl") << (q ? "2" : "") << '\t' << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 8<<q, 0);
   if (imm) { sink << ", " << DisasmI(imm); }
 };
 
@@ -8215,7 +8251,7 @@ ushll_v8h.execute = {
 op ushll_v4s( 0b0[1] : q[1] : 0b1011110001[10] : imm[4] : 0b101001[6] : rn[5] : rd[5] );
 
 ushll_v4s.disasm = {
-  sink << (imm ? "ushll" : "uxtl2\t") << (q ? "2" : "") << '\t' << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4<<q, 1);
+  sink << (imm ? "ushll" : "uxtl") << (q ? "2" : "") << '\t' << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 4<<q, 1);
   if (imm) { sink << ", " << DisasmI(imm); }
 };
 
@@ -8237,7 +8273,7 @@ ushll_v4s.execute = {
 op ushll_v2d( 0b0[1] : q[1] : 0b101111001[9] : imm[5] : 0b101001[6] : rn[5] : rd[5] );
 
 ushll_v2d.disasm = {
-  sink << (imm ? "ushll" : "uxtl2\t") << (q ? "2" : "") << '\t' << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2<<q, 2);
+  sink << (imm ? "ushll" : "uxtl") << (q ? "2" : "") << '\t' << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2<<q, 2);
   if (imm) { sink << ", " << DisasmI(imm); }
 };
 

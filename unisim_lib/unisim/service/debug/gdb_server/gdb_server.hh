@@ -153,8 +153,8 @@ class GDBServerBase : public virtual unisim::kernel::Object
 {
 public:
 	static const uint64_t SERVER_ACCEPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
-	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
-	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
+	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 1    /* ms */;  // every 1 ms
+	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 1    /* ms */;  // every 1 ms
 
 	GDBServerBase(const char *_name, unisim::kernel::Object *_parent);
 	virtual ~GDBServerBase();
