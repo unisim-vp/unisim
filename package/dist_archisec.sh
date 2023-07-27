@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.1
+VERSION=0.0.6
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -96,15 +96,13 @@ for file in ${AARCH32_SRC_FILES}; do
               "${DEST_DIR}/${AARCH32_DSTDIR}/${file}"
 done
 
-#mkdir -p ${AARCH32_DSTDIR}
 for isa in ${AARCH32_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
-		       -o ${DEST_DIR}/${AARCH32_DSTDIR}/${isa} \
+		       --prefix ${DEST_DIR} \
+		       -o ${AARCH32_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH32_SRCDIR}/${isa}.isa
 done
-#rsync --remove-source-files -a ${AARCH32_DSTDIR}/* ${DEST_DIR}/${AARCH32_DSTDIR}
-#rm -r ${AARCH32_DSTDIR}
 
 AARCH64_SRCDIR=cxx/aarch64dba
 AARCH64_DSTDIR=aarch64
@@ -122,15 +120,40 @@ for file in ${AARCH64_SRC_FILES}; do
     "${DEST_DIR}/${AARCH64_DSTDIR}/${file}"
 done
 
-#mkdir -p ${AARCH64_DSTDIR}
 for isa in ${AARCH64_ISA_FILES}; do
     ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
+		       --prefix ${DEST_DIR} \
 		       -o ${AARCH64_DSTDIR}/${isa} \
 		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
 		       ${UNISIM_SIMULATOR_DIR}/${AARCH64_SRCDIR}/${isa}.isa
 done
-#rsync --remove-source-files -a ${AARCH64_DSTDIR}/* ${DEST_DIR}/${AARCH64_DSTDIR}
-#rm -r ${AARCH64_DSTDIR}
+
+PPC64_SRCDIR=cxx/ppc64dba
+PPC64_DSTDIR=ppc64
+PPC64_SRC_FILES="\
+types.hh \
+arch.hh \
+arch.cc \
+decoder.hh \
+decoder.cc \
+"
+
+PPC64_ISA_FILES="\
+ppc64dec \
+"
+
+for file in ${PPC64_SRC_FILES}; do
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${PPC64_SRCDIR}/${file}" \
+    "${DEST_DIR}/${PPC64_DSTDIR}/${file}"
+done
+
+for isa in ${PPC64_ISA_FILES}; do
+    ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
+		       --prefix ${DEST_DIR} \
+		       -o ${PPC64_DSTDIR}/${isa} \
+		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
+		       ${UNISIM_SIMULATOR_DIR}/${PPC64_SRCDIR}/${isa}.isa
+done
 
 
 AMD64_SRCDIR=cxx/amd64dba
@@ -151,6 +174,7 @@ done
 UNISIM_SIMULATOR_SOURCE_FILES="\
 arm32dba.cc arm32dba.ml \
 aarch64dba.cc aarch64dba.ml \
+ppc64dba.cc ppc64dba.ml \
 amd64dba.cc amd64dba.ml \
 unittest.ml \
 unittest.expected \
@@ -217,6 +241,25 @@ See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.6 (2023-07-14)
+
+- add PowerPC 64 bit decoder
+- various bug fixes and code improvements
+
+## 0.0.5 (2023-02-24)
+
+- enable macOS Homebrew distribution
+
+## 0.0.4 (2023-02-15)
+
+- better handling of x86 flags
+- various bug fixes and refactoring
+
+## 0.0.3 (2022-07-24)
+
+- handling some new VEX encoded instructions (x86)
+- various bug fixes and refactoring
+
 ## 0.0.2 (2022-04-15)
 
 - handling of SSE instructions for AMD64
@@ -288,7 +331,7 @@ semantics of several instruction set architectures, including ARM and x86.")
 EOF
 
 cat <<EOF > "${DEST_DIR}/unisim_archisec.opam.template"
-available: [ os = "linux" & (os-distribution != "ol" & os-distribution != "centos" | os-version >= 8) ]
+available: [ os = "linux" & (os-distribution != "ol" & os-distribution != "centos" | os-version >= 8) | os = "macos" & os-distribution = "homebrew" ]
 EOF
 
 echo -n > "${DEST_DIR}/dune"
@@ -297,7 +340,9 @@ UTIL_INCLUDES=$(includes ${DEST_DIR} unisim/util)
 
 cat <<EOF >> "${DEST_DIR}/dune"
 (env
-  (_ (c_flags :standard -g0) (cxx_flags :standard -g0)))
+  (_
+   (c_flags :standard -std=gnu11 -g0)
+   (cxx_flags :standard -std=gnu++11 -g0)))
 
 (subdir
  unisim/util
@@ -314,17 +359,17 @@ EOF
 
 echo >> "${DEST_DIR}/dune"
 
-ARM_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/arm)
+ARM_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/arm/isa)
 AARCH32_INCLUDES=$(includes ${DEST_DIR} aarch32)
 
 cat <<EOF >> "${DEST_DIR}/dune"
 (subdir
- unisim/component/cxx/processor/arm
+ unisim/component/cxx/processor/arm/isa
  (foreign_library
   (archive_name arm)
   (language cxx)
   (names (:standard \ simfloat))
-  (flags (:standard -I../../../../..))
+  (flags (:standard -I../../../../../..))
   (extra_deps ${ARM_INCLUDES})))
 
 (subdir
@@ -342,7 +387,7 @@ cat <<EOF >> "${DEST_DIR}/dune"
  (modules arm32dba)
  (foreign_archives
   aarch32/aarch32
-  unisim/component/cxx/processor/arm/arm)
+  unisim/component/cxx/processor/arm/isa/arm)
  (foreign_stubs
   (language cxx)
   (names arm32dba)
@@ -391,6 +436,44 @@ EOF
 
 echo >> "${DEST_DIR}/dune"
 
+PPC_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/powerpc/isa)
+PPC64_INCLUDES=$(includes ${DEST_DIR} ppc64)
+
+cat <<EOF >> "${DEST_DIR}/dune"
+(subdir
+ unisim/component/cxx/processor/powerpc/isa
+ (foreign_library
+  (archive_name ppc)
+  (language cxx)
+  (names (:standard))
+  (flags (:standard -I../../../../../..))
+  (extra_deps ${PPC_INCLUDES})))
+
+(subdir
+ ppc64
+ (foreign_library
+  (archive_name ppc64)
+  (language cxx)
+  (names (:standard))
+  (flags :standard -I. -I..)
+  (extra_deps ${PPC64_INCLUDES})))
+
+(library
+ (public_name unisim_archisec.ppc64dba)
+ (name ppc64dba)
+ (modules ppc64dba)
+ (foreign_archives
+  ppc64/ppc64
+  unisim/component/cxx/processor/powerpc/isa/ppc)
+ (foreign_stubs
+  (language cxx)
+  (names ppc64dba)
+  (flags :standard -I.))
+ (libraries util))
+EOF
+
+echo >> "${DEST_DIR}/dune"
+
 INTEL_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/intel)
 AMD64_INCLUDES=$(includes ${DEST_DIR} amd64)
 
@@ -433,9 +516,10 @@ echo >> "${DEST_DIR}/dune"
 cat <<EOF >> "${DEST_DIR}/dune"
 (test
  (name unittest)
- (modes native)
+ (modes
+  (best exe))
  (modules unittest)
- (libraries arm32dba aarch64dba amd64dba))
+ (libraries arm32dba aarch64dba ppc64dba amd64dba))
 EOF
 
 dune format-dune-file ${DEST_DIR}/dune > ${DEST_DIR}/dune.formatted

@@ -97,8 +97,11 @@ namespace x
   template <typename UTP, typename STP>
   UTP RotateLeft( UTP const& v, STP const& _s ) { XValue<uint8_t> s(_s); return UTP( unisim::util::arithmetic::RotateLeft( v.value, s.value ), v.determined and s.determined ); }
 
-  // template <typename UTP>
-  // UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( make_operation( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
+  template <typename TP>
+  TP ConditionalMove( XValue<bool> const& cond, TP const& tval, TP const& fval )
+  {
+    return TP(cond.value ? tval.value : fval.value, cond.determined and ((cond.value and tval.determined) or (not cond.value and fval.determined)));
+  }
 
   template <class OP> XValue<OP> NeonSHL( XValue<OP> op, XValue<int8_t> sh )
   {

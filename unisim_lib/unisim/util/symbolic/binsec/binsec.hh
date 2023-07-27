@@ -148,10 +148,13 @@ namespace binsec {
   {
     ActionNode() : Conditional<ActionNode>(), sinks(), sestats() {}
 
-    void                    add_sink( Expr expr ) { expr.ConstSimplify(); sinks.insert( expr ); }
+    void                    add_sink( Expr expr ) { /*expr.ConstSimplify();*/ sinks.insert( expr ); }
     void                    simplify();
     void                    commit_stats();
-    
+    std::map<Expr,unsigned> const& get_sestats() const { return sestats; }
+    std::set<Expr> const& get_sinks() const { return sinks; }
+
+  private:
     std::set<Expr>          sinks;
     std::map<Expr,unsigned> sestats;
   };
@@ -406,6 +409,24 @@ namespace binsec {
     }
 
     T return_address;
+  };
+
+  template <typename T>
+  struct Ret : public Branch
+  {
+    typedef Ret<T> this_type;
+    Ret( Expr const& target ) : Branch(target) {}
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual void annotate(std::ostream& sink) const override
+    {
+      sink << " // ret";
+    }
+    virtual void Repr( std::ostream& sink ) const
+    {
+      sink << "Ret(";
+      Branch::Repr(sink);
+      sink << ")";
+    }
   };
   
   struct AssertFalse : public ASExprNode

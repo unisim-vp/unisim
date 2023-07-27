@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2018,
+ *  Copyright (c) 2007-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -40,7 +40,7 @@ cntlzw.execute = {
 	U32 s = U32(cpu->GetGPR(rs));
 	
 	// Compute the result
-	U32 result = likely(s != U32(0)) ? U32(31) - BitScanReverse(s) : U32(32);
+	U32 result = ConditionalMove(s != U32(0), U32(31) - BitScanReverse(s), U32(32));
 	
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));

@@ -249,7 +249,8 @@ std::ostream& operator << (std::ostream& os, const Request& req)
 }
 
 HttpRequest::HttpRequest(const Request& _req, std::ostream& _log, std::ostream& _warn_log, std::ostream& _err_log)
-  : valid(false)
+  : std::istream(&content_stream_buffer)
+  , valid(false)
   , has_query(false)
   , has_fragment(false)
   , req(_req)
@@ -267,8 +268,6 @@ HttpRequest::HttpRequest(const Request& _req, std::ostream& _log, std::ostream& 
   , warn_log(_warn_log)
   , err_log(_err_log)
 {
-  rdbuf(&content_stream_buffer);
-  
   unsigned int part_count = req.GetPartCount();
   parts.reserve(part_count);
   for(unsigned int part_num = 0; part_num < part_count; part_num++)
@@ -326,7 +325,8 @@ HttpRequest::HttpRequest(const Request& _req, std::ostream& _log, std::ostream& 
 }
 
 HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _path, const HttpRequest& http_request)
-  : valid(http_request.valid)
+  : std::istream(&content_stream_buffer)
+  , valid(http_request.valid)
   , has_query(http_request.has_query)
   , has_fragment(http_request.has_fragment)
   , req(http_request.req)
@@ -344,8 +344,6 @@ HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _pa
   , warn_log(http_request.warn_log)
   , err_log(http_request.err_log)
 {
-  rdbuf(&content_stream_buffer);
-  
   unsigned int part_count = req.GetPartCount();
   for(unsigned int part_num = 0; part_num < part_count; part_num++)
   {

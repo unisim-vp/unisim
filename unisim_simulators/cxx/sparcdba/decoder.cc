@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2022,
+ *  Copyright (c) 2009-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -192,30 +192,30 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     if (branch_addr.expr.node)
       {
         if (branch_type == B_CALL)
-          path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Call<uint32_t>( branch_addr.expr, linear_nia ) ) );
+          path->add_sink( Expr( new unisim::util::symbolic::binsec::Call<uint32_t>( branch_addr.expr, linear_nia ) ) );
         else
-          path->sinks.insert( Expr( new unisim::util::symbolic::binsec::Branch( branch_addr.expr ) ) );
+          path->add_sink( Expr( new unisim::util::symbolic::binsec::Branch( branch_addr.expr ) ) );
       }
 
     if (unpredictable)
       {
-        path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
+        path->add_sink( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
         return complete;
       }
     
     for (GPR reg; reg.next();)
       if (gpr[reg.idx()].expr != ref.gpr[reg.idx()].expr)
-        path->sinks.insert( newRegWrite( reg, gpr[reg.idx()].expr ) );
+        path->add_sink( newRegWrite( reg, gpr[reg.idx()].expr ) );
 
     if (yreg.expr != ref.yreg.expr)
-      path->sinks.insert( newRegWrite( YREG(), yreg.expr ) );
+      path->add_sink( newRegWrite( YREG(), yreg.expr ) );
       
     for (Flag flag; flag.next();)
       if (flags[flag.idx()].expr != ref.flags[flag.idx()].expr)
-        path->sinks.insert( newRegWrite( flag, flags[flag.idx()].expr ) );
+        path->add_sink( newRegWrite( flag, flags[flag.idx()].expr ) );
 
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
-      path->sinks.insert( *itr );
+      path->add_sink( *itr );
     
     return complete;
   }

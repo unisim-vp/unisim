@@ -47,6 +47,7 @@ struct Debugger
   struct DEBUGGER_CONFIG
   {
     typedef uint64_t ADDRESS;
+    typedef uint64_t TIME_TYPE;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
     static const unsigned int MAX_FRONT_ENDS = 1;

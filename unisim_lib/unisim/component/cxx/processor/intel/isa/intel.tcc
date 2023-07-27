@@ -55,7 +55,7 @@ namespace intel {
    * be prefered if multiple match. */
   enum operation_t { CALL = 0, JCC, LOOP, JMP, RETURN, INTRETURN, INTERRUPT, SYSCALL, ENTER_LEAVE,
                      ADD, OR, ADC, SBB, AND, SUB, XOR, CMP, ROL, ROR, RCL, RCR, SHL, SHR, SAR,
-                     TEST, NOT, NEG, DIV, IDIV, MUL, IMUL, LEA, INCDEC, SETCC, SHD, ZCNT, POPCNT,
+                     TEST, NOT, NEG, DIV, IDIV, MUL, IMUL, LEA, INCDEC, SETCC, SHD, ZCNT, POPCNT, BZHI,
                      CMC, AHF, CSX, XLAT, ADJUST, BOUND, ADF,
                      FWAIT, F2XM1, FABS, FADD, FBLD, FBSTP, FCHS, FCLEX, FCMOV, FCOM, FCOMI,
                      FINCDECSTP, FDIV, FDIVR, FFREE, FICOM, FILD, FINIT, FIST, FISTTP,
@@ -66,7 +66,7 @@ namespace intel {
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT, HLT, FENCE,
                      PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VBINARY, VFPUNARY,
                      PMOVMSKB, VMOVSD, VMOVZX, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, PMULUDQ,
-                     VSHIMM, MOVQ, BROADCAST, EXTRACT, INSERT, PACK_S, PSHUFD, PSHUFB, PSHIFT,
+                     VSHIMM, MOVQ, BROADCAST, EXTRACT, INSERT, PACK_S, VPERMQ, PSHUFD, PSHUFB, PSHIFT,
                      PSHDQ, PTEST, PINSR, PCMPSTR, VFPCMP, SHUFP, VZEROUPPER, XSAVE,
                      operation_count };
 

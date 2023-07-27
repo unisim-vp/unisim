@@ -1968,11 +1968,14 @@ struct PCmpStr : public Operation<ARCH>
             gnv_b = gnv[idx] = gnv_b and (arch.vmm_read( VR(), gn, idx, null_char ) != null_char);
             rmv_b = rmv[idx] = rmv_b and (arch.vmm_read( VR(), rm, idx, null_char ) != null_char);
           }
+	arch.flagwrite( ARCH::FLAG::ZF, not rmv_b );
+	arch.flagwrite( ARCH::FLAG::SF, not gnv_b );
       }
     else
       {
         PCmpStrUtil::explicit_validity( gnv, arch, 0 );
         PCmpStrUtil::explicit_validity( rmv, arch, 2 );
+	// TODO set flags!
       }
 
     switch (comparison())
@@ -2044,16 +2047,39 @@ struct PCmpStr : public Operation<ARCH>
           arch.vmm_write( VR(), 0, idx, TYPE(TYPE(not intres[idx]) - TYPE(1)) );
         break;
       case MaskLSB:
-        for (unsigned idx = 0; idx < count; ++idx)
-          if (arch.Test( intres[idx] ))
-            arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
+	{
+	  typedef typename ARCH::gr_type res_t;
+	  res_t res(0);
+	  bit_t mask( true );
+	  for (unsigned idx = 0; idx < count; ++idx) {
+	    mask = mask and (not intres[idx]);
+	    res += res_t(mask);
+	  }
+	  arch.regwrite( typename ARCH::GR(), 1, res );
+	}
         break;
       case MaskMSB:
-        for (int idx = count; --idx >= 0;)
-          if (arch.Test( intres[idx] ))
-            arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
+	{
+	  typedef typename ARCH::gr_type res_t;
+	  res_t res(0);
+	  bit_t mask( false );
+	  for (int idx = count; --idx >= 0;) {
+	    mask = mask or intres[idx];
+	    res += res_t(mask);
+	  }
+	  res = (res_t(count) & (res_t(res != res_t(0)) - res_t(1))) | res;
+	  arch.regwrite( typename ARCH::GR(), 1, res );
+	}
         break;
       }
+    bit_t cf( false );
+    for (unsigned idx = 0; idx < count; ++idx) {
+      cf = cf or intres[idx];
+    }
+    arch.flagwrite( ARCH::FLAG::CF, cf );
+    arch.flagwrite( ARCH::FLAG::OF, intres[0] );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t( false ) );
   }
 };
 
@@ -2638,6 +2664,50 @@ Operation<ARCH>* newPMovMsk( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 //
 
 template <class ARCH, class VR>
+struct Vpermq : public Operation<ARCH>
+{
+  Vpermq( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn, oo;
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << "permq " << DisasmI(oo) << ',' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::u64_t u64_t;
+
+    for (unsigned chunk = 0, cend = VR::size() / 256; chunk < cend; ++ chunk)
+      {
+	u64_t res[256 / 64];
+
+        for (unsigned idx = 0, end = 256 / 64; idx < end; ++idx)
+          {
+            unsigned part = (oo >> 2*idx) % 4;
+            res[idx] = arch.vmm_read( VR(), rm, part + chunk*end, u64_t() );
+          }
+	for (unsigned idx = 0, end = 256 / 64; idx < end; ++idx)
+          {
+            arch.vmm_write( VR(), gn, idx + chunk*end, res[idx] );
+          }
+      }
+  }
+};
+
+/* VPERMQ -- Qwords Element Permutation */
+template <class ARCH> struct DC<ARCH,VPERMQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x00" ) & RM() & Imm<8>() ))
+    {
+      if (ic.vreg() || ic.w() == 0) return 0;
+      if (ic.vlen() == 256) return new Vpermq<ARCH,YMM>( _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+    }
+
+  return 0;
+}};
+
+
+template <class ARCH, class VR>
 struct Pshufd : public Operation<ARCH>
 {
   Pshufd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn, oo;
@@ -2652,10 +2722,17 @@ struct Pshufd : public Operation<ARCH>
 
     for (unsigned chunk = 0, cend = VR::size() / 128; chunk < cend; ++ chunk)
       {
+	u32_t res[128 / 32];
+
         for (unsigned idx = 0, end = 128 / 32; idx < end; ++idx)
           {
             unsigned part = (oo >> 2*idx) % 4;
-            arch.vmm_write( VR(), gn, idx + chunk*end, arch.vmm_read( VR(), rm, part + chunk*end, u32_t() ) );
+            res[idx] = arch.vmm_read( VR(), rm, part + chunk*end, u32_t() );
+          }
+
+	for (unsigned idx = 0, end = 128 / 32; idx < end; ++idx)
+          {
+            arch.vmm_write( VR(), gn, idx + chunk*end, res[idx] );
           }
       }
   }
@@ -2684,7 +2761,7 @@ struct Pshufb : public Op3V<ARCH, VR>
 
   using Op3V<ARCH,VR>::rm; using Op3V<ARCH,VR>::vn; using Op3V<ARCH,VR>::gn; using Op3V<ARCH,VR>::vprefix; using Op3V<ARCH,VR>::disasmVVW;
 
-  void disasm( std::ostream& sink ) const { sink << vprefix() << "pshufd "; disasmVVW(sink); }
+  void disasm( std::ostream& sink ) const { sink << vprefix() << "pshufb "; disasmVVW(sink); }
 
   void execute( ARCH& arch ) const
   {

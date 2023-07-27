@@ -61,6 +61,7 @@ impl {
   typedef unisim::component::cxx::processor::powerpc::CRPrint CRPrint;
   typedef unisim::component::cxx::processor::powerpc::EAPrint EAPrint;
   using unisim::component::cxx::processor::powerpc::Mask64;
+  typedef ppc64::U64 LR;
 
 namespace ppc64
 {
@@ -84,13 +85,13 @@ namespace ppc64
 #undef unlikely
 #endif
 
-#define likely(x)       __builtin_expect(Arch::Test(x),1)
-#define evenly(x)       (Arch::Test(x))
-#define unlikely(x)     __builtin_expect(Arch::Test(x),0)
+#define likely(x)       __builtin_expect(Path::Test(x),1)
+#define evenly(x)       (Path::Test(x))
+#define unlikely(x)     __builtin_expect(Path::Test(x),0)
 #else
-#define likely(x)       (Arch::Test(x))
-#define evenly(x)       (Arch::Test(x))
-#define unlikely(x)     (Arch::Test(x))
+#define likely(x)       (Path::Test(x))
+#define evenly(x)       (Path::Test(x))
+#define unlikely(x)     (Path::Test(x))
 #endif
 
 }
@@ -312,3 +313,8 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfs.i
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsu.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsux.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsx.isa"
+
+/* Book III: Power ISA User Instruction Set Architecture */
+/* Special Purpose Register */
+include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa"

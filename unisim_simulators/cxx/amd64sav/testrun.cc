@@ -40,6 +40,7 @@
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
           using unisim::util::arithmetic::BitScanForward;
           using unisim::util::arithmetic::BitScanReverse;
+          using unisim::util::arithmetic::ConditionalMove;
           using unisim::util::endian::ByteSwap;
           using test::sine;
           using test::cosine;

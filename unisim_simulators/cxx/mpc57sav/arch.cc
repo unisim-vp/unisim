@@ -48,6 +48,8 @@ namespace ut
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
   void SPEFSCR::SPEFSCRNode::Repr( std::ostream& sink ) const { sink << "SPEFSCR"; }
+  void UnknownBase::Repr( std::ostream& sink ) const { sink << "?"; }
+  void CPU::CIA::Repr( std::ostream& sink ) const { sink << "CIA"; }
 
   void CPU::Interrupt::SetELEV(unsigned x) {}
   
