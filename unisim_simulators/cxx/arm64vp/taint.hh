@@ -267,8 +267,11 @@ TaintedValue<double> fmin( TaintedValue<double> const&, TaintedValue<double> con
 TaintedValue<float> fmax( TaintedValue<float> const&, TaintedValue<float> const& );
 TaintedValue<double> fmax( TaintedValue<double> const&, TaintedValue<double> const& );
 
-// TaintedValue<bool> isnan( TaintedValue<float> const& _value );
-// TaintedValue<bool> isnan( TaintedValue<double> const& _value );
+TaintedValue<bool> isnan( TaintedValue<float> const& _value );
+TaintedValue<bool> isnan( TaintedValue<double> const& _value );
+
+TaintedValue<bool> is_signaling( TaintedValue<float> const& _value );
+TaintedValue<bool> is_signaling( TaintedValue<double> const& _value );
 
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(TVCtor(), unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }

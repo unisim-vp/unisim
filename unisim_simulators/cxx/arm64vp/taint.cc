@@ -90,3 +90,8 @@ TaintedValue<double> fmin(TaintedValue<double> const& l, TaintedValue<double> co
 TaintedValue<float>  fmax(TaintedValue<float> const& l, TaintedValue<float> const& r) { return MakeTaintedValue(fmaxf(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
 TaintedValue<double> fmax(TaintedValue<double> const& l, TaintedValue<double> const& r)  { return MakeTaintedValue(fmax(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0); }
 
+TaintedValue<bool> isnan( TaintedValue<float> const& _value ) { return MakeTaintedValue(std::isnan(_value.value), _value.ubits); }
+TaintedValue<bool> isnan( TaintedValue<double> const& _value ) { return MakeTaintedValue(std::isnan(_value.value), _value.ubits); }
+
+TaintedValue<bool> is_signaling( TaintedValue<float> const& _value ) { return MakeTaintedValue(bool(issignaling(_value.value)), _value.ubits); }
+TaintedValue<bool> is_signaling( TaintedValue<double> const& _value ) { return MakeTaintedValue(bool(issignaling(_value.value)), _value.ubits); }

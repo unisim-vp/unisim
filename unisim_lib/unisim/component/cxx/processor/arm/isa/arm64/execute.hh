@@ -102,10 +102,22 @@ OUT PolyMod2(IN value, uint32_t _poly)
   return OUT(value);
 }
 
+  template <typename FLOAT>
+  FLOAT defaultnan( FLOAT value )
+  {
+    return FLOAT(NAN);
+  }
+
+  template <typename FLOAT>
+  FLOAT clearsignaling( FLOAT value )
+  {
+    return value;
+  }
+  
   template <class ARCH, typename FLOAT>
   FLOAT FPNaN( ARCH& arch, FLOAT value )
   {
-    if (arch.Test( arch.GetFPSR( DN )))
+    if (arch.Test( typename ARCH::BOOL(arch.GetFPSR( DN ).value) ))
       return defaultnan( value );
     return clearsignaling( value );
   }
@@ -140,7 +152,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
         if (not arch.Test( isnan( val )) )
           continue;
 
-        if (arch.Test( issignaling( val ) ))
+        if (arch.Test( is_signaling( val ) ))
           {
             FPProcessException( arch, IOC );
             return {FPNaN( arch, val ), true};
@@ -153,6 +165,23 @@ OUT PolyMod2(IN value, uint32_t _poly)
     return nan;
   }
 
+  template <typename ARCH, typename operT>
+  OutNaN<operT> FPProcessSNaNs(ARCH& arch, std::initializer_list<operT> l)
+  {
+    OutNaN<operT> nan = {operT(), false};
+    
+    for (auto val : l)
+      {
+        if (arch.Test( is_signaling( val ) ))
+          {
+            FPProcessException( arch, IOC );
+            return {FPNaN( arch, val ), true};
+          }
+      }
+    
+    return nan;
+  }
+  
   struct FPRounding
   {
     enum Code {TIEEVEN, POSINF, NEGINF, ZERO, TIEAWAY, ODD} code;
@@ -236,6 +265,15 @@ OUT PolyMod2(IN value, uint32_t _poly)
   }
 
   template <typename operT, typename ARCH>
+  operT FPDiv( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+      return nan;
+
+    return FPRound(arch, op1 / op2);
+  }
+  
+  template <typename operT, typename ARCH>
   operT FPMin( ARCH& arch, operT op1, operT op2 )
   {
     if (auto nan = FPProcessNaNs(arch, {op1, op2}))
@@ -250,6 +288,20 @@ OUT PolyMod2(IN value, uint32_t _poly)
   }
 
   template <typename operT, typename ARCH>
+  operT FPMinNumber( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessSNaNs(arch, {op1, op2}))
+      return nan;
+
+    operT res  = fmin(op1, op2);
+
+    // TODO: The use of FPRound() covers the case where there is a trapped
+    // underflow// for a denormalized number even though the result is
+    // exact.
+    return res;
+  }
+  
+  template <typename operT, typename ARCH>
   operT FPMax( ARCH& arch, operT op1, operT op2 )
   {
     if (auto nan = FPProcessNaNs(arch, {op1, op2}))
@@ -262,7 +314,21 @@ OUT PolyMod2(IN value, uint32_t _poly)
     // exact.
     return res;
   }
+  
+  template <typename operT, typename ARCH>
+  operT FPMaxNumber( ARCH& arch, operT op1, operT op2 )
+  {
+    if (auto nan = FPProcessSNaNs(arch, {op1, op2}))
+      return nan;
 
+    operT res = fmax(op1, op2);
+
+    // TODO: The use of FPRound() covers the case where there is a trapped
+    // underflow// for a denormalized number even though the result is
+    // exact.
+    return res;
+  }
+  
 } // end of namespace arm64
 } // end of namespace isa
 } // end of namespace arm

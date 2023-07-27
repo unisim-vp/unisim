@@ -305,6 +305,9 @@ struct AArch64
   
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
+  
+  template <typename T>
+  U32 GetFPCR( T const& rf ) const { return rf.Get(fpcr); }
 
   /* Get FPCR Floating-point control bits */
   BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
@@ -342,6 +345,9 @@ struct AArch64
   
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
+  
+  template <typename T>
+  U32 GetFPSR( T const& rf ) const { return rf.Get(fpsr); }
   
   /** Get the current Program Counter */
   U64 GetPC() { return U64(current_insn_addr); }
@@ -526,6 +532,11 @@ struct AArch64
   U16 MemRead16(U64 addr) { return memory_read<U16>(pstate.GetEL(), addr); }
   U8  MemRead8 (U64 addr) { return memory_read<U8> (pstate.GetEL(), addr); }
 
+  U64 MemReadUnprivileged64(U64 addr) { return memory_read<U64>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  U32 MemReadUnprivileged32(U64 addr) { return memory_read<U32>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  U16 MemReadUnprivileged16(U64 addr) { return memory_read<U16>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  U8  MemReadUnprivileged8 (U64 addr) { return memory_read<U8> ((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  
   void MemRead( U8* buffer, U64 addr, unsigned size );
 
   template <typename T>
@@ -571,6 +582,11 @@ struct AArch64
   void MemWrite16(U64 addr, U16 val) { memory_write(pstate.GetEL(), addr, val); }
   void MemWrite8 (U64 addr, U8  val) { memory_write(pstate.GetEL(), addr, val); }
 
+  void MemWriteUnprivileged64(U64 addr, U64 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  void MemWriteUnprivileged32(U64 addr, U32 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  void MemWriteUnprivileged16(U64 addr, U16 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  void MemWriteUnprivileged8 (U64 addr, U8  val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  
   void MemWrite( U64 addr, U8 const* buffer, unsigned size );
 
   void PrefetchMemory(unsigned op, U64 addr)

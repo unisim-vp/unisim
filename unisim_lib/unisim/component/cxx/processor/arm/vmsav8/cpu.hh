@@ -59,6 +59,8 @@
 #include <iosfwd>
 #include <inttypes.h>
 
+template <typename FLOAT> bool is_signaling( FLOAT value ) { return issignaling(value); }
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -327,6 +329,11 @@ struct CPU
   uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
   uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
 
+  uint64_t MemReadUnprivileged64(uint64_t addr) { return MemRead64(addr); }
+  uint32_t MemReadUnprivileged32(uint64_t addr) { return MemRead32(addr); }
+  uint16_t MemReadUnprivileged16(uint64_t addr) { return MemRead16(addr); }
+  uint8_t  MemReadUnprivileged8 (uint64_t addr) { return MemRead8 (addr); }
+  
   void MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
 
   template <typename T>
@@ -345,6 +352,11 @@ struct CPU
   void MemWrite16(uint64_t addr, uint16_t val) { MemWriteT(addr, val); }
   void MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
 
+  void MemWriteUnprivileged64(uint64_t addr, uint64_t val) { MemWrite64(addr, val); }
+  void MemWriteUnprivileged32(uint64_t addr, uint32_t val) { MemWrite32(addr, val); }
+  void MemWriteUnprivileged16(uint64_t addr, uint16_t val) { MemWrite16(addr, val); }
+  void MemWriteUnprivileged8 (uint64_t addr, uint8_t  val) { MemWrite8 (addr, val); }
+  
   void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
 
   void     SetExclusiveMonitors( uint64_t addr, unsigned size ) { /*TODO: MP support*/ }

@@ -1101,7 +1101,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           {
             return
               U64(0b0001)                           << 60 | // Indicates support for Random Number instructions
-              U64(0b0010)                           << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
+              U64(/*0b0010*/0b0000)                           << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
               U64(0b0010)                           << 52 | // Indicates support for flag manipulation instructions
               U64(0b0000)                           << 48 | // Indicates support for FMLAL and FMLSL instructions
               U64(0b0000)                           << 44 | // Indicates support for Dot Product instructions

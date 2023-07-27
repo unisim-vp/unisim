@@ -2215,7 +2215,7 @@ fdiv_s.disasm = {
 };
 
 fdiv_s.execute = {
-  cpu.SetVF32(rd, cpu.GetVF32(rn,0) / cpu.GetVF32(rm,0));
+  cpu.SetVF32(rd, FPDiv(cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0)));
 };
 
 op fdiv_d( 0b00011110011[11] : rm[5] : 0b000110[6] : rn[5] : rd[5] );
@@ -2225,7 +2225,7 @@ fdiv_d.disasm = {
 };
 
 fdiv_d.execute = {
-  cpu.SetVF64(rd, cpu.GetVF64(rn,0) / cpu.GetVF64(rm,0));
+  cpu.SetVF64(rd, FPDiv(cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0)));
 };
 
 op fdiv_vs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
@@ -2234,11 +2234,22 @@ fdiv_vs.disasm = {
   sink << "fdiv\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fdiv_vs.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVF32(rd, idx, FPDiv(cpu, cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx)));
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op fdiv_v2d( 0b01101110011[11] : rm[5] : 0b111111[6] : rn[5] : rd[5] );
 
 fdiv_v2d.disasm = {
   sink << "fdiv\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
+
+fdiv_v2d.execute = {
+  for (unsigned idx = 0; idx < 2; ++idx)
+    cpu.SetVF64(rd, idx, FPDiv(cpu, cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx)));
+}
 
 /*
  * end of FDIV
@@ -2333,11 +2344,19 @@ fmaxnm_s.disasm = {
   sink << "fmaxnm\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
 
+fmaxnm_s.execute = {
+  cpu.SetVF32(rd, FPMaxNumber(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+}
+
 op fmaxnm_d( 0b00011110011[11] : rm[5] : 0b011010[6] : rn[5] : rd[5] );
 
 fmaxnm_d.disasm = {
   sink << "fmaxnm\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
 };
+
+fmaxnm_d.execute = {
+  cpu.SetVF64(rd, FPMaxNumber(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
+}
 
 op fmaxnm_vs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
 
@@ -2345,11 +2364,22 @@ fmaxnm_vs.disasm = {
   sink << "fmaxnm\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fmaxnm_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPMaxNumber(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rm, e)));
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op fmaxnm_v2d( 0b01001110011[11] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
 
 fmaxnm_v2d.disasm = {
   sink << "fmaxnm\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
+
+fmaxnm_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPMaxNumber(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rm, e)));
+}
 
 op fmaxnmp_dv2d( 0b0111111001110000110010[22] : rn[5] : rd[5] );
 
@@ -2470,10 +2500,18 @@ fminnm_s.disasm = {
   sink << "fminnm\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
 
+fminnm_s.execute = {
+  cpu.SetVF32(rd, FPMinNumber(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+};
+
 op fminnm_d( 0b00011110011[11] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
 
 fminnm_d.disasm = {
   sink << "fminnm\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+fminnm_d.execute = {
+  cpu.SetVF64(rd, FPMinNumber(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 op fminnm_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
@@ -2482,11 +2520,22 @@ fminnm_vs.disasm = {
   sink << "fminnm\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fminnm_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPMinNumber(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rm, e)));
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op fminnm_v2d( 0b01001110111[11] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
 
 fminnm_v2d.disasm = {
   sink << "fminnm\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
+
+fminnm_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPMinNumber(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rm, e)));
+}
 
 op fminnmp_sv2s( 0b0111111010110000110010[22] : rn[5] : rd[5] );
 
