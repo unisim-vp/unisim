@@ -101,6 +101,11 @@ OUT PolyMod2(IN value, uint32_t _poly)
   
   return OUT(value);
 }
+  template <class ARCH, typename T>
+  T Abs( ARCH& arch, T value)
+  {
+    return arch.Test(value >= T()) ? value : -value;
+  }
 
   template <typename FLOAT>
   FLOAT defaultnan( FLOAT value )

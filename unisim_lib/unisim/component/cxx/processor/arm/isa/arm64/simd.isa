@@ -38,11 +38,26 @@ abs_dd.disasm = {
   sink << "abs\t" << DisasmD(rd) << ", " << DisasmD(rn);
 };
 
+abs_dd.execute = {
+  cpu.SetVS64(rd, Abs(cpu, cpu.GetVS64(rn, 0)));
+}
+
 op abs_vbb( 0b0[1] : q[1] : 0b00111000100000101110[20] : rn[5] : rd[5] );
 
 abs_vbb.disasm = {
   sink << "abs\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0);
 };
+
+abs_vbb.execute = {
+  unsigned const elements = 8<<q;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS8(rd, e, Abs(cpu, cpu.GetVS8(rn, e)));
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op abs_vhh( 0b0[1] : q[1] : 0b00111001100000101110[20] : rn[5] : rd[5] );
 
@@ -50,17 +65,48 @@ abs_vhh.disasm = {
   sink << "abs\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1);
 };
 
+abs_vhh.execute = {
+  unsigned const elements = 4<<q;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS16(rd, e, Abs(cpu, cpu.GetVS16(rn, e)));
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op abs_vss( 0b0[1] : q[1] : 0b00111010100000101110[20] : rn[5] : rd[5] );
 
 abs_vss.disasm = {
   sink << "abs\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+abs_vss.execute = {
+  unsigned const elements = 2<<q;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS32(rd, e, Abs(cpu, cpu.GetVS32(rn, e)));
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op abs_v2d2d( 0b0100111011100000101110[22] : rn[5] : rd[5] );
 
 abs_v2d2d.disasm = {
   sink << "abs\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3);
 };
+
+abs_v2d2d.execute = {
+  unsigned const elements = 2;
+
+  for (unsigned e = 0; e < elements; ++e)
+    {
+      cpu.SetVS64(rd, e, Abs(cpu, cpu.GetVS64(rn, e)));
+    }
+}
 
 /*******************************************************************
  * ADD
@@ -135,11 +181,27 @@ addhn2_v16bv8hv8h.disasm = {
   sink << "addhn2\t" << DisasmTV(rd, 16, 0) << ", " << DisasmTV(rn, 8, 1) << ", " << DisasmTV(rm, 8, 1);
 };
 
+addhn2_v16bv8hv8h.execute = {
+  typedef typename ARCH::U8 DST;
+  for (unsigned idx = 0, end = 8; idx < end; ++idx)
+    {
+      cpu.SetVU8(rd, idx + end, DST((cpu.GetVU16(rn, idx) + cpu.GetVU16(rm, idx)) >> 8));
+    }
+}
+
 op addhn2_v4sv2dv2d( 0b01001110101[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 
 addhn2_v4sv2dv2d.disasm = {
   sink << "addhn2\t" << DisasmTV(rd, 4, 2) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
 };
+
+addhn2_v4sv2dv2d.execute = {
+  typedef typename ARCH::U32 DST;
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      cpu.SetVU32(rd, idx + end, DST((cpu.GetVU64(rn, idx) + cpu.GetVU64(rm, idx)) >> 32));
+    }
+}
 
 op addhn2_v8hv4sv4s( 0b01001110011[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 
@@ -147,11 +209,28 @@ addhn2_v8hv4sv4s.disasm = {
   sink << "addhn2\t" << DisasmTV(rd, 8, 1) << ", " << DisasmTV(rn, 4, 2) << ", " << DisasmTV(rm, 4, 2);
 };
 
+addhn2_v8hv4sv4s.execute = {
+  typedef typename ARCH::U16 DST;
+  for (unsigned idx = 0, end = 4; idx < end; ++idx)
+    {
+      cpu.SetVU16(rd, idx + end, DST((cpu.GetVU32(rn, idx) + cpu.GetVU32(rm, idx)) >> 16));
+    }
+}
+
 op addhn_v2sv2dv2d( 0b00001110101[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 
 addhn_v2sv2dv2d.disasm = {
   sink << "addhn\t" << DisasmTV(rd, 2, 2) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
 };
+
+addhn_v2sv2dv2d.execute = {
+  typedef typename ARCH::U32 DST;
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      cpu.SetVU32(rd, idx, DST((cpu.GetVU64(rn, idx) + cpu.GetVU64(rm, idx)) >> 32));
+    }
+  cpu.ClearHighV(rd, 8);
+}
 
 op addhn_v4hv4sv4s( 0b00001110011[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 
@@ -159,11 +238,29 @@ addhn_v4hv4sv4s.disasm = {
   sink << "addhn\t" << DisasmTV(rd, 4, 1) << ", " << DisasmTV(rn, 4, 2) << ", " << DisasmTV(rm, 4, 2);
 };
 
+addhn_v4hv4sv4s.execute = {
+  typedef typename ARCH::U16 DST;
+  for (unsigned idx = 0, end = 4; idx < end; ++idx)
+    {
+      cpu.SetVU16(rd, idx, DST((cpu.GetVU32(rn, idx) + cpu.GetVU32(rm, idx)) >> 16));
+    }
+  cpu.ClearHighV(rd, 8);
+}
+
 op addhn_v8bv8hv8h( 0b00001110001[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 
 addhn_v8bv8hv8h.disasm = {
   sink << "addhn\t" << DisasmTV(rd, 8, 0) << ", " << DisasmTV(rn, 8, 1) << ", " << DisasmTV(rm, 8, 1);
 };
+
+addhn_v8bv8hv8h.execute = {
+  typedef typename ARCH::U8 DST;
+  for (unsigned idx = 0, end = 8; idx < end; ++idx)
+    {
+      cpu.SetVU8(rd, idx, DST((cpu.GetVU16(rn, idx) + cpu.GetVU16(rm, idx)) >> 8));
+    }
+  cpu.ClearHighV(rd, 8);
+}
 
 /*******************************************************************
  * ADDP
@@ -1268,11 +1365,28 @@ cmtst_ddd.disasm = {
   sink << "cmtst\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
 };
 
+cmtst_ddd.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 val( cpu.GetVU64(rn, 0) & cpu.GetVU64(rm, 0) );
+  cpu.SetVU64(rd, cpu.Test(val != U64(0)) ? ~U64(0) : U64(0));
+}
+
 op cmtst_v2dv2dv2d( 0b01001110111[11] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
 
 cmtst_v2dv2dv2d.disasm = {
   sink << "cmtst\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
 };
+
+cmtst_v2dv2dv2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      U64 val( cpu.GetVU64(rn, idx) & cpu.GetVU64(rm, idx) );
+      cpu.SetVU64(rd, idx, cpu.Test(val != U64(0)) ? ~U64(0) : U64(0));
+    }
+}
 
 /*******************************************************************
  * LDP (SIMD&FP)
@@ -5886,11 +6000,43 @@ zip1_v2dv2dv2d.disasm = {
   sink << "zip1\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
 };
 
+zip1_v2dv2dv2d.execute = {
+  typedef typename ARCH::U64 DST;
+
+  unsigned const elements = 2;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = idx / 2;
+      res[idx] = cpu.GetVU64((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU64(rd, idx, res[idx]);
+    }
+}
+
 op zip2_v2dv2dv2d( 0b01001110110[11] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
 
 zip2_v2dv2dv2d.disasm = {
   sink << "zip2\t" << DisasmTV(rd, 2, 3) << ", " << DisasmTV(rn, 2, 3) << ", " << DisasmTV(rm, 2, 3);
 };
+
+zip2_v2dv2dv2d.execute = {
+  typedef typename ARCH::U64 DST;
+
+  unsigned const elements = 2;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = (idx / 2) + (elements / 2);
+      res[idx] = cpu.GetVU64((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU64(rd, idx, res[idx]);
+    }
+}
 
 op orr_vbvbvb( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 
@@ -6043,11 +6189,51 @@ cls_vbb.disasm = {
   sink << "cls\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0);
 };
 
+cls_vbb.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 val( cpu.GetVU8(rn, idx) );
+      val = val ^ U8(S8(val) >> 1);
+
+      if (cpu.Test( val == U8(0) ))
+        val = U8(7);
+      else
+        val = U8(6) - BitScanReverse( val );
+
+      cpu.SetVU8(rd, idx, val);
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op cls_vhh( 0b0[1] : q[1] : 0b00111001100000010010[20] : rn[5] : rd[5] );
 
 cls_vhh.disasm = {
   sink << "cls\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1);
 };
+
+cls_vhh.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 val( cpu.GetVU16(rn, idx) );
+      val = val ^ U16(S16(val) >> 1);
+
+      if (cpu.Test( val == U16(0) ))
+        val = U16(15);
+      else
+        val = U16(14) - BitScanReverse( val );
+
+      cpu.SetVU16(rd, idx, val);
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op cls_vss( 0b0[1] : q[1] : 0b00111010100000010010[20] : rn[5] : rd[5] );
 
@@ -6055,11 +6241,48 @@ cls_vss.disasm = {
   sink << "cls\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+cls_vss.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 val( cpu.GetVU32(rn, idx) );
+      val = val ^ U32(S32(val) >> 1);
+
+      if (cpu.Test( val == U32(0) ))
+        val = U32(31);
+      else
+        val = U32(30) - BitScanReverse( val );
+
+      cpu.SetVU32(rd, idx, val);
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op clz_vbb( 0b0[1] : q[1] : 0b10111000100000010010[20] : rn[5] : rd[5] );
 
 clz_vbb.disasm = {
   sink << "clz\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0);
 };
+
+clz_vbb.execute = {
+  typedef typename ARCH::U8 U8;
+
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 val( cpu.GetVU8(rn, idx) );
+      if (cpu.Test( val == U8(0) ))
+        val = U8(8);
+      else
+        val = U8(7) - BitScanReverse( val );
+
+      cpu.SetVU8(rd, idx, val);
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op clz_vhh( 0b0[1] : q[1] : 0b10111001100000010010[20] : rn[5] : rd[5] );
 
@@ -6067,11 +6290,45 @@ clz_vhh.disasm = {
   sink << "clz\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1);
 };
 
+clz_vhh.execute = {
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 val( cpu.GetVU16(rn, idx) );
+      if (cpu.Test( val == U16(0) ))
+        val = U16(16);
+      else
+        val = U16(15) - BitScanReverse( val );
+
+      cpu.SetVU16(rd, idx, val);
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op clz_vss( 0b0[1] : q[1] : 0b10111010100000010010[20] : rn[5] : rd[5] );
 
 clz_vss.disasm = {
   sink << "clz\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
+
+clz_vss.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 val( cpu.GetVU32(rn, idx) );
+      if (cpu.Test( val == U32(0) ))
+        val = U32(32);
+      else
+        val = U32(31) - BitScanReverse( val );
+
+      cpu.SetVU32(rd, idx, val);
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op cmtst_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
 
@@ -6079,17 +6336,53 @@ cmtst_vbvbvb.disasm = {
   sink << "cmtst\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
+cmtst_vbvbvb.execute = {
+  typedef typename ARCH::U8 U8;
+
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 val( cpu.GetVU8(rn, idx) & cpu.GetVU8(rm, idx) );
+      cpu.SetVU8(rd, idx, cpu.Test(val != U8(0)) ? ~U8(0) : U8(0));
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op cmtst_vhvhvh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
 
 cmtst_vhvhvh.disasm = {
   sink << "cmtst\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
 
+cmtst_vhvhvh.execute = {
+  typedef typename ARCH::U16 U16;
+
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 val( cpu.GetVU16(rn, idx) & cpu.GetVU16(rm, idx) );
+      cpu.SetVU16(rd, idx, cpu.Test(val != U16(0)) ? ~U16(0) : U16(0));
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op cmtst_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
 
 cmtst_vsvsvs.disasm = {
   sink << "cmtst\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+cmtst_vsvsvs.execute = {
+  typedef typename ARCH::U32 U32;
+
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 val( cpu.GetVU32(rn, idx) & cpu.GetVU32(rm, idx) );
+      cpu.SetVU32(rd, idx, cpu.Test(val != U32(0)) ? ~U32(0) : U32(0));
+    }
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op cnt_vbb( 0b0[1] : q[1] : 0b00111000100000010110[20] : rn[5] : rd[5] );
 
@@ -6308,6 +6601,16 @@ mla_vbvbvb.disasm = {
   sink << "mla\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
+mla_vbvbvb.execute = {
+  typedef typename ARCH::U8 U8;
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 res( cpu.GetVU8(rd, idx) + (cpu.GetVU8(rn, idx) * cpu.GetVU8(rm, idx)) );
+      cpu.SetVU8(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mla_vhvhvhi( 0b0[1] : q[1] : 0b10111101[8] : index0[2] : rm[4] : 0b0000[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
 mla_vhvhvhi.var index : {unsigned} = {index1|index0};
 
@@ -6315,11 +6618,32 @@ mla_vhvhvhi.disasm = {
   sink << "mla\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 0, 1) << DisasmSubscript(index);
 };
 
+mla_vhvhvhi.execute = {
+  typedef typename ARCH::U16 U16;
+  U16 element( cpu.GetVU16(rm, index) );
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 res( cpu.GetVU16(rd, idx) + (cpu.GetVU16(rn, idx) * element) );
+      cpu.SetVU16(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mla_vhvhvh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
 
 mla_vhvhvh.disasm = {
   sink << "mla\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
+
+mla_vhvhvh.execute = {
+  typedef typename ARCH::U16 U16;
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 res( cpu.GetVU16(rd, idx) + (cpu.GetVU16(rn, idx) * cpu.GetVU16(rm, idx)) );
+      cpu.SetVU16(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op mla_vsvsvsi( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b0000[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
 mla_vsvsvsi.var index : {unsigned} = {index1|index0};
@@ -6328,17 +6652,48 @@ mla_vsvsvsi.disasm = {
   sink << "mla\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
 };
 
+mla_vsvsvsi.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 element( cpu.GetVU32(rm, index) );
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 res( cpu.GetVU32(rd, idx) + (cpu.GetVU32(rn, idx) * element) );
+      cpu.SetVU32(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mla_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
 
 mla_vsvsvs.disasm = {
   sink << "mla\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+mla_vsvsvs.execute = {
+  typedef typename ARCH::U32 U32;
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 res( cpu.GetVU32(rd, idx) + (cpu.GetVU32(rn, idx) * cpu.GetVU32(rm, idx)) );
+      cpu.SetVU32(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mls_vbvbvb( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
 
 mls_vbvbvb.disasm = {
   sink << "mls\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
+
+mls_vbvbvb.execute = {
+  typedef typename ARCH::U8 U8;
+  for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
+    {
+      U8 res( cpu.GetVU8(rd, idx) - (cpu.GetVU8(rn, idx) * cpu.GetVU8(rm, idx)) );
+      cpu.SetVU8(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op mls_vhvhvhi( 0b0[1] : q[1] : 0b10111101[8] : index0[2] : rm[4] : 0b0100[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
 mls_vhvhvhi.var index : {unsigned} = {index1|index0};
@@ -6347,11 +6702,32 @@ mls_vhvhvhi.disasm = {
   sink << "mls\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 0, 1) << DisasmSubscript(index);
 };
 
+mls_vhvhvhi.execute = {
+  typedef typename ARCH::U16 U16;
+  U16 element( cpu.GetVU16(rm, index) );
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 res( cpu.GetVU16(rd, idx) - (cpu.GetVU16(rn, idx) * element) );
+      cpu.SetVU16(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mls_vhvhvh( 0b0[1] : q[1] : 0b101110011[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
 
 mls_vhvhvh.disasm = {
   sink << "mls\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
+
+mls_vhvhvh.execute = {
+  typedef typename ARCH::U16 U16;
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    {
+      U16 res( cpu.GetVU16(rd, idx) - (cpu.GetVU16(rn, idx) * cpu.GetVU16(rm, idx)) );
+      cpu.SetVU16(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op mls_vsvsvsi( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b0100[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
 mls_vsvsvsi.var index : {unsigned} = {index1|index0};
@@ -6360,11 +6736,32 @@ mls_vsvsvsi.disasm = {
   sink << "mls\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
 };
 
+mls_vsvsvsi.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 element( cpu.GetVU32(rm, index) );
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 res( cpu.GetVU32(rd, idx) - (cpu.GetVU32(rn, idx) * element) );
+      cpu.SetVU32(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mls_vsvsvs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b100101[6] : rn[5] : rd[5] );
 
 mls_vsvsvs.disasm = {
   sink << "mls\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+mls_vsvsvs.execute = {
+  typedef typename ARCH::U32 U32;
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      U32 res( cpu.GetVU32(rd, idx) - (cpu.GetVU32(rn, idx) * cpu.GetVU32(rm, idx)) );
+      cpu.SetVU32(rd, idx, res);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 /*******************************************************************
  * MOVI
@@ -6508,12 +6905,28 @@ mul_vhvhvhi.disasm = {
   sink << "mul\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 0, 1) << DisasmSubscript(index);
 };
 
+mul_vhvhvhi.execute = {
+  typedef typename ARCH::U16 U16;
+  U16 element( cpu.GetVU16(rm, index) );
+  for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
+    cpu.SetVU16(rd, idx, cpu.GetVU16(rn, idx) * element);
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op mul_vsvsvsi( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b1000[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
 mul_vsvsvsi.var index : {unsigned} = {index1|index0};
 
 mul_vsvsvsi.disasm = {
   sink << "mul\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
 };
+
+mul_vsvsvsi.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 element( cpu.GetVU32(rm, index) );
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVU32(rd, idx, cpu.GetVU32(rn, idx) * element);
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 /*******************************************************************
  * MVN
@@ -7111,14 +7524,11 @@ smax_vbvbvb.disasm = {
 };
 
 smax_vbvbvb.execute = {
-  typedef typename ARCH::S8 S8;
-
   for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
-  {
-    S8 n = cpu.GetVS8(rn, idx);
-    S8 m = cpu.GetVS8(rm, idx);
-    cpu.SetVS8(rd, idx, cpu.Test(n > m) ? n : m);
-  }
+    {
+      cpu.SetVS8(rd, idx, Maximum(cpu.GetVS8(rn, idx), cpu.GetVS8(rm, idx)));
+    }
+
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -7129,14 +7539,11 @@ smax_vhvhvh.disasm = {
 };
 
 smax_vhvhvh.execute = {
-  typedef typename ARCH::S16 S16;
-
   for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
-  {
-    S16 n = cpu.GetVS16(rn, idx);
-    S16 m = cpu.GetVS16(rm, idx);
-    cpu.SetVS16(rd, idx, cpu.Test(n > m) ? n : m);
-  }
+    {
+      cpu.SetVS16(rd, idx, Maximum(cpu.GetVS16(rn, idx), cpu.GetVS16(rm, idx)));
+    }
+
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -7147,14 +7554,11 @@ smax_vsvsvs.disasm = {
 };
 
 smax_vsvsvs.execute = {
-  typedef typename ARCH::S32 S32;
-
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-  {
-    S32 n = cpu.GetVS32(rn, idx);
-    S32 m = cpu.GetVS32(rm, idx);
-    cpu.SetVS32(rd, idx, cpu.Test(n > m) ? n : m);
-  }
+    {
+      cpu.SetVS32(rd, idx, Maximum(cpu.GetVS32(rn, idx), cpu.GetVS32(rm, idx)));
+    }
+
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -7164,17 +7568,65 @@ smaxp_vbvbvb.disasm = {
   sink << "smaxp\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
+smaxp_vbvbvb.execute = {
+  unsigned const elements = 8<<q;
+  typename ARCH::S8 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = Maximum(cpu.GetVS8(rn, e), cpu.GetVS8(rn, e+1));
+      res[(elements+e)/2] = Maximum(cpu.GetVS8(rm, e), cpu.GetVS8(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVS8(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op smaxp_vhvhvh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
 
 smaxp_vhvhvh.disasm = {
   sink << "smaxp\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
 
+smaxp_vhvhvh.execute = {
+  unsigned const elements = 4<<q;
+  typename ARCH::S16 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = Maximum(cpu.GetVS16(rn, e), cpu.GetVS16(rn, e+1));
+      res[(elements+e)/2] = Maximum(cpu.GetVS16(rm, e), cpu.GetVS16(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVS16(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op smaxp_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101001[6] : rn[5] : rd[5] );
 
 smaxp_vsvsvs.disasm = {
   sink << "smaxp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+smaxp_vsvsvs.execute = {
+  unsigned const elements = 2<<q;
+  typename ARCH::S32 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = Maximum(cpu.GetVS32(rn, e), cpu.GetVS32(rn, e+1));
+      res[(elements+e)/2] = Maximum(cpu.GetVS32(rm, e), cpu.GetVS32(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVS32(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op smin_vbvbvb( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b011011[6] : rn[5] : rd[5] );
 
@@ -7183,14 +7635,11 @@ smin_vbvbvb.disasm = {
 };
 
 smin_vbvbvb.execute = {
-  typedef typename ARCH::S8 S8;
-
   for (unsigned idx = 0, end = 8<<q; idx < end; ++idx)
-  {
-    S8 n = cpu.GetVS8(rn, idx);
-    S8 m = cpu.GetVS8(rm, idx);
-    cpu.SetVS8(rd, idx, cpu.Test(n < m) ? n : m);
-  }
+    {
+      cpu.SetVS8(rd, idx, Minimum(cpu.GetVS8(rn, idx), cpu.GetVS8(rm, idx)));
+    }
+
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -7201,14 +7650,11 @@ smin_vhvhvh.disasm = {
 };
 
 smin_vhvhvh.execute = {
-  typedef typename ARCH::S16 S16;
-
   for (unsigned idx = 0, end = 4<<q; idx < end; ++idx)
-  {
-    S16 n = cpu.GetVS16(rn, idx);
-    S16 m = cpu.GetVS16(rm, idx);
-    cpu.SetVS16(rd, idx, cpu.Test(n < m) ? n : m);
-  }
+    {
+      cpu.SetVS16(rd, idx, Minimum(cpu.GetVS16(rn, idx), cpu.GetVS16(rm, idx)));
+    }
+
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -7219,14 +7665,11 @@ smin_vsvsvs.disasm = {
 };
 
 smin_vsvsvs.execute = {
-  typedef typename ARCH::S32 S32;
-
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-  {
-    S32 n = cpu.GetVS32(rn, idx);
-    S32 m = cpu.GetVS32(rm, idx);
-    cpu.SetVS32(rd, idx, cpu.Test(n < m) ? n : m);
-  }
+    {
+      cpu.SetVS32(rd, idx, Minimum(cpu.GetVS32(rn, idx), cpu.GetVS32(rm, idx)));
+    }
+
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -7236,7 +7679,40 @@ sminp_vbvbvb.disasm = {
   sink << "sminp\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
+sminp_vbvbvb.execute = {
+  unsigned const elements = 8<<q;
+  typename ARCH::S8 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = Minimum(cpu.GetVS8(rn, e), cpu.GetVS8(rn, e+1));
+      res[(elements+e)/2] = Minimum(cpu.GetVS8(rm, e), cpu.GetVS8(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVS8(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op sminp_vhvhvh( 0b0[1] : q[1] : 0b001110011[9] : rm[5] : 0b101011[6] : rn[5] : rd[5] );
+
+sminp_vhvhvh.execute =
+{
+  unsigned const elements = 4<<q;
+  typename ARCH::S16 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = Minimum(cpu.GetVS16(rn, e), cpu.GetVS16(rn, e+1));
+      res[(elements+e)/2] = Minimum(cpu.GetVS16(rm, e), cpu.GetVS16(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVS16(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 sminp_vhvhvh.disasm = {
   sink << "sminp\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
@@ -7247,6 +7723,22 @@ op sminp_vsvsvs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b101011[6] : rn[5] : 
 sminp_vsvsvs.disasm = {
   sink << "sminp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+sminp_vsvsvs.execute = {
+  unsigned const elements = 2<<q;
+  typename ARCH::S32 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = Minimum(cpu.GetVS32(rn, e), cpu.GetVS32(rn, e+1));
+      res[(elements+e)/2] = Minimum(cpu.GetVS32(rm, e), cpu.GetVS32(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVS32(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op sqabs_vbb( 0b0[1] : q[1] : 0b00111000100000011110[20] : rn[5] : rd[5] );
 
@@ -8708,11 +9200,45 @@ zip1_vbvbvb.disasm = {
   sink << "zip1\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
 
+zip1_vbvbvb.execute = {
+  typedef typename ARCH::U8 DST;
+
+  unsigned const elements = 8<<q;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = idx / 2;
+      res[idx] = cpu.GetVU8((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU8(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op zip1_vhvhvh( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
 
 zip1_vhvhvh.disasm = {
   sink << "zip1\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
+
+zip1_vhvhvh.execute = {
+  typedef typename ARCH::U16 DST;
+
+  unsigned const elements = 4<<q;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = idx / 2;
+      res[idx] = cpu.GetVU16((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op zip1_vsvsvs( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b001110[6] : rn[5] : rd[5] );
 
@@ -8720,11 +9246,45 @@ zip1_vsvsvs.disasm = {
   sink << "zip1\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+zip1_vsvsvs.execute = {
+  typedef typename ARCH::U32 DST;
+
+  unsigned const elements = 2<<q;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = idx / 2;
+      res[idx] = cpu.GetVU32((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op zip2_vbvbvb( 0b0[1] : q[1] : 0b001110000[9] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
 
 zip2_vbvbvb.disasm = {
   sink << "zip2\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmTV(rn, 8<<q, 0) << ", " << DisasmTV(rm, 8<<q, 0);
 };
+
+zip2_vbvbvb.execute = {
+  typedef typename ARCH::U8 DST;
+
+  unsigned const elements = 8<<q;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = (idx / 2) + (elements / 2);
+      res[idx] = cpu.GetVU8((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU8(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 op zip2_vhvhvh( 0b0[1] : q[1] : 0b001110010[9] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
 
@@ -8732,11 +9292,45 @@ zip2_vhvhvh.disasm = {
   sink << "zip2\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmTV(rn, 4<<q, 1) << ", " << DisasmTV(rm, 4<<q, 1);
 };
 
+zip2_vhvhvh.execute = {
+  typedef typename ARCH::U16 DST;
+
+  unsigned const elements = 4<<q;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = (idx / 2) + (elements / 2);
+      res[idx] = cpu.GetVU16((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU16(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op zip2_vsvsvs( 0b0[1] : q[1] : 0b001110100[9] : rm[5] : 0b011110[6] : rn[5] : rd[5] );
 
 zip2_vsvsvs.disasm = {
   sink << "zip2\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
+
+zip2_vsvsvs.execute = {
+  typedef typename ARCH::U32 DST;
+
+  unsigned const elements = 2<<q;
+  DST res[elements];
+  for( unsigned idx = 0; idx < elements; ++idx)
+    {
+      unsigned srcidx = (idx / 2) + (elements / 2);
+      res[idx] = cpu.GetVU32((idx & 1) ? rm : rn, srcidx);
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVU32(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8<<q);
+}
 
 /*** Load/Store multiple structures ***/
 

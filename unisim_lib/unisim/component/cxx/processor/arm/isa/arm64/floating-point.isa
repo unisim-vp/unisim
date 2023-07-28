@@ -64,11 +64,22 @@ fabd_vs.disasm = {
   sink << "fabd\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fabd_vs.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVF32(rd, idx, fabs(FPSub(cpu, cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx))));
+  cpu.ClearHighV(rd, 8<<q);
+}
+
 op fabd_v2d( 0b01101110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
 
 fabd_v2d.disasm = {
   sink << "fabd\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
+
+fabd_v2d.execute = {
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    cpu.SetVF64(rd, idx, fabs(FPSub(cpu, cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx))));
+}
 
 /*
  * end of FABS
