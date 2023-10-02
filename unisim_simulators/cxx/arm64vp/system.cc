@@ -1235,7 +1235,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b100): // 2.44: ID_AA64ZFR0_EL1, 
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b100): // 2.44: ID_AA64ZFR0_EL1, SVE Feature ID register 0
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ZFR0_EL1"; }
@@ -1244,6 +1244,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b101): // ID_AA64SMFR0_EL1, SME Feature ID register 0
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64SMFR0_EL1"; }
+          void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 SME Feature ID register 0"; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu) const override { return U64(0); }
+        } x; return &x;
+      } break;
+      
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b011): // 2.45: ID_AFR0_EL1, AArch32 Auxiliary Feature Register 0
       {
         static struct : public BaseSysReg {

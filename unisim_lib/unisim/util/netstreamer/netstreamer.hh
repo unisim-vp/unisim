@@ -57,7 +57,7 @@ class NetStreamer
 {
 public:
 	static const unsigned int AUTO_FLUSH_OUTPUT_SIZE = 256;
-	static const uint64_t CONNECTION_POLL_PERIOD_MS = 1000  /* ms */;  // every 1000 ms
+	static const uint64_t CONNECTION_POLL_PERIOD_MS = 100  /* ms */;  // every 100 ms
 	
 	bool verbose;
 	bool debug;

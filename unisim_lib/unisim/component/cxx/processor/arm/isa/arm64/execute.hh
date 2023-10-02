@@ -101,12 +101,120 @@ OUT PolyMod2(IN value, uint32_t _poly)
   
   return OUT(value);
 }
+  
   template <class ARCH, typename T>
-  T Abs( ARCH& arch, T value)
+  T Abs( ARCH& arch, T value, bool sat = false)
   {
-    return arch.Test(value >= T()) ? value : -value;
+    T res(arch.Test(value >= T()) ? value : -value);
+    if (sat && arch.Test(res < T()))
+      {
+        arch.SetQC();
+        return std::numeric_limits<T>::max();
+      }
+    
+    return res;
   }
 
+  template <class ARCH, typename T>
+  T Neg( ARCH& arch, T value, bool sat = false)
+  {
+    if (std::numeric_limits<T>::is_signed && sat)
+      {
+        T res((std::numeric_limits<T>::is_signed && arch.Test(value < T(0))) ? std::numeric_limits<T>::max() : std::numeric_limits<T>::min());
+        if (arch.Test(value == std::numeric_limits<T>::min())) arch.SetQC(); else res = -value;
+        return res;
+      }
+    else
+      {
+        return -value;
+      }
+  }
+
+  template <class ARCH, typename OP, typename OP2>
+  OP SatAdd( ARCH& arch, OP op1, OP2 op2)
+  {
+    if ( std::numeric_limits<OP>::is_signed )
+      {
+        if ( std::numeric_limits<OP2>::is_signed )
+          {
+            OP res( arch.Test(op1 <= OP(0)) ? std::numeric_limits<OP>::min() : std::numeric_limits<OP>::max() ), comp(res - op1);
+            
+            if (arch.Test(op1 <= OP(0)))
+              {
+                if (arch.Test(OP(op2) < comp)) arch.SetQC(); else res = op1 + OP(op2);
+              }
+            else
+              {
+                if (arch.Test(OP(op2) > comp)) arch.SetQC(); else res = op1 + OP(op2);
+              }
+            
+            return res;
+          }
+        else
+          {
+            OP res( std::numeric_limits<OP>::max() ), comp(res - op1);
+            
+            if (arch.Test(op2 > OP2(comp))) arch.SetQC(); else res = op1 + OP(op2);
+            
+            return res;
+          }
+      }
+    else
+      {
+        if( std::numeric_limits<OP2>::is_signed )
+          {
+            OP res( arch.Test(op2 < OP2(0)) ? std::numeric_limits<OP>::min() : std::numeric_limits<OP>::max() );
+            
+            if (arch.Test(op2 < OP2(0)))
+              {
+                if (arch.Test(OP(-op2) > op1)) arch.SetQC(); else res = op1 - OP(-op2);
+              }
+            else
+              {
+                if (arch.Test(OP(op2) > (res - op1))) arch.SetQC(); else res = op1 + OP(op2);
+              }
+              
+            return res;
+          }
+        else
+          {
+            OP res( std::numeric_limits<OP>::max() ), comp(res - op1);
+            
+            if (arch.Test(OP(op2) > comp)) arch.SetQC(); else res = op1 + OP(op2);
+            
+            return res;
+          }
+      }
+  }
+
+  template <class ARCH, typename OP>
+  OP SatSub( ARCH& arch, OP op1, OP op2)
+  {
+    if ( std::numeric_limits<OP>::is_signed )
+      {
+        OP res( arch.Test(op2 < OP(0)) ? std::numeric_limits<OP>::max() : std::numeric_limits<OP>::min() ), comp(res + op2);
+        
+        if (arch.Test(op2 < OP(0)))
+          {
+            if (arch.Test(op1 > comp)) arch.SetQC(); else res = op1 - op2;
+          }
+        else
+          {
+            if (arch.Test(op1 < comp)) arch.SetQC(); else res = op1 - op2;
+          }
+        
+        return res;
+      }
+    else
+      {
+        OP res( 0 );
+        
+        if (arch.Test(op2 > op1)) arch.SetQC(); else res = op1 - op2;
+        
+        return res;
+      }
+  }
+   
   template <typename FLOAT>
   FLOAT defaultnan( FLOAT value )
   {
@@ -197,19 +305,32 @@ OUT PolyMod2(IN value, uint32_t _poly)
   struct TowardNegInf   { template <typename T> static T roundint(T op) { return floor(op); } };
   struct TowardZero     { template <typename T> static T roundint(T op) { return trunc(op); } };
   struct NearestTieAway { template <typename T> static T roundint(T op) { return round(op); } };
+  struct NearestTieOdd  { template <typename T> static T roundint(T op) { return (T(2.0) * NearestTieEven::roundint(op / T(2.0))) + T(1.0); } };
   
   struct RoundingMode
   {
+    template <typename ARCH> RoundingMode( ARCH& arch )
+    {
+      typedef typename ARCH::U32 U32;
+      struct Bad {};
+      if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::TIEEVEN) ) ) rmode = FPRounding::TIEEVEN;
+      else if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::POSINF) ) ) rmode = FPRounding::POSINF;
+      else if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::NEGINF) ) ) rmode = FPRounding::NEGINF;
+      else if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::ZERO) ) ) rmode = FPRounding::ZERO;
+      else throw Bad();
+    }
     RoundingMode( FPRounding::Code _mode ) : rmode(_mode) {} FPRounding::Code rmode;
+
     template <typename T> T roundint(T op)
     {
       switch (rmode)
         {
-        case FPRounding::TIEEVEN: return nearbyint(op);
-        case FPRounding::POSINF:  return ceil(op);
-        case FPRounding::NEGINF:  return floor(op);
-        case FPRounding::ZERO:    return trunc(op);
-        case FPRounding::TIEAWAY: return round(op);
+        case FPRounding::TIEEVEN: return NearestTieEven::roundint(op);
+        case FPRounding::POSINF:  return TowardPosInf::roundint(op);
+        case FPRounding::NEGINF:  return TowardNegInf::roundint(op);
+        case FPRounding::ZERO:    return TowardZero::roundint(op);
+        case FPRounding::TIEAWAY: return NearestTieAway::roundint(op);
+        case FPRounding::ODD:     return NearestTieOdd::roundint(op);
         }
       return op;
     }

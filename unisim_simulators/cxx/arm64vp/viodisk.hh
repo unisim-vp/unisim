@@ -84,7 +84,7 @@ struct VIODisk : public unisim::util::virtio::BlockDevice
 
   typedef std::set<Delta> Deltas;
 
-  void open(char const* filename);
+  void open(char const* filename, bool persistent = false);
   void sync(SnapShot& snapshot);
 
   static uint32_t Vendor() { return 0x70767375; /*usvp*/ }
@@ -102,6 +102,7 @@ struct VIODisk : public unisim::util::virtio::BlockDevice
   // Configuration
   SyncQMgr*   sqmgr;
   uint8_t     WriteBack;
+  bool        persistent;
 
   // Storage state
   std::string diskfilename;

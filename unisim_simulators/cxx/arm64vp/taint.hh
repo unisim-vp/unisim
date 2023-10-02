@@ -36,6 +36,7 @@
 #define __ARM64VP_TAINT_HH__
 
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <algorithm>
 #include <limits>
@@ -124,6 +125,9 @@ struct TaintedValue
   { return this_type(TVCtor(), value << sh.value, sh.ubits ? -1 : (ubits << sh.value) ); }
   template <typename SHT> this_type operator >> (TaintedValue<SHT> const& sh) const
   { return this_type(TVCtor(), value >> sh.value, sh.ubits ? -1 : (value_type(ubits) >> sh.value) ); }
+
+  template <typename SHT> this_type& operator <<= (TaintedValue<SHT> const& sh) { value <<= sh.value; ubits = sh.ubits ? -1 : (ubits << sh.value); return *this; }
+  template <typename SHT> this_type& operator >>= (TaintedValue<SHT> const& sh) { value >>= sh.value; ubits = sh.ubits ? -1 : (value_type(ubits) >> sh.value); return *this; }
 
   this_type operator - () const { return this_type( TVCtor(), -value, ubits ? -1 : 0 ); }
   this_type operator ~ () const { return this_type( TVCtor(), ~value, ubits ); }
@@ -284,8 +288,56 @@ template <typename T>
 TaintedValue<T> Maximum(TaintedValue<T> const& l, TaintedValue<T> const& r)
 { return TaintedValue<T>(TVCtor(), std::max(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
 
+#if 0
+template <class ARCH, typename T>
+TaintedValue<T> NeonSHL(ARCH& core, TaintedValue<T> const& op, TaintedValue<int8_t> const& sh, bool round = false, bool sat = false)
+{ return TaintedValue<T>(TVCtor(), unisim::component::cxx::processor::arm::NeonSHL( core, op.value, sh.value, round, sat ), (op.ubits or sh.ubits) ? -1 : 0); }
+
+template <class ARCH, typename T, typename T2>
+TaintedValue<T> SatAdd(ARCH& core, TaintedValue<T> const& op1, TaintedValue<T2> const& op2)
+{ return TaintedValue<T>(TVCtor(), unisim::component::cxx::processor::arm::isa::arm64::SatAdd( core, op1.value, op2.value ), (op1.ubits or op2.ubits) ? -1 : 0); }
+#endif
+
 template <typename T>
-TaintedValue<T> NeonSHL(TaintedValue<T> const& op, TaintedValue<int8_t> const& sh)
-{ return TaintedValue<T>(TVCtor(), unisim::component::cxx::processor::arm::NeonSHL( op.value, sh.value ), (op.ubits or sh.ubits) ? -1 : 0); }
+class TaintedValueNumericLimits : public std::numeric_limits<T>
+{
+public:
+#if __cplusplus >= 201103L
+  static constexpr TaintedValue<T> min() noexcept { return TaintedValue<T>(std::numeric_limits<T>::min()); }
+  static constexpr TaintedValue<T> lowest() noexcept { return TaintedValue<T>(std::numeric_limits<T>::lowest()); }
+  static constexpr TaintedValue<T> max() noexcept { return TaintedValue<T>(std::numeric_limits<T>::max()); }
+  static constexpr TaintedValue<T> epsilon() noexcept { return TaintedValue<T>(std::numeric_limits<T>::epsilon()); }
+  static constexpr TaintedValue<T> round_error() noexcept { return TaintedValue<T>(std::numeric_limits<T>::round_error()); }
+  static constexpr TaintedValue<T> infinity() noexcept { return TaintedValue<T>(std::numeric_limits<T>::infinity()); }
+  static constexpr TaintedValue<T> quiet_NaN() noexcept { return TaintedValue<T>(std::numeric_limits<T>::quiet_NaN()); }
+  static constexpr TaintedValue<T> signaling_NaN() noexcept { return TaintedValue<T>(std::numeric_limits<T>::signaling_NaN()); }
+  static constexpr TaintedValue<T> denorm_min() noexcept { return TaintedValue<T>(std::numeric_limits<T>::denorm_min()); }
+#else
+  static TaintedValue<T> min() throw { return TaintedValue<T>(std::numeric_limits<T>::min()); }
+  static TaintedValue<T> max() throw { return TaintedValue<T>(std::numeric_limits<T>::max()); }
+  static TaintedValue<T> epsilon() throw { return TaintedValue<T>(std::numeric_limits<T>::epsilon()); }
+  static TaintedValue<T> round_error() throw { return TaintedValue<T>(std::numeric_limits<T>::round_error()); }
+  static TaintedValue<T> infinity() throw { return TaintedValue<T>(std::numeric_limits<T>::infinity()); }
+  static TaintedValue<T> quiet_NaN() throw { return TaintedValue<T>(std::numeric_limits<T>::quiet_NaN()); }
+  static TaintedValue<T> signaling_NaN() throw { return TaintedValue<T>(std::numeric_limits<T>::signaling_NaN()); }
+  static TaintedValue<T> denorm_min() throw { return TaintedValue<T>(std::numeric_limits<T>::denorm_min()); }
+#endif
+};
+
+template <> class std::numeric_limits<TaintedValue<bool> > : public TaintedValueNumericLimits<bool> {};
+template <> class std::numeric_limits<TaintedValue<char> > : public TaintedValueNumericLimits<char> {};
+template <> class std::numeric_limits<TaintedValue<signed char> > : public TaintedValueNumericLimits<signed char> {};
+template <> class std::numeric_limits<TaintedValue<unsigned char> > : public TaintedValueNumericLimits<unsigned char> {};
+template <> class std::numeric_limits<TaintedValue<short> > : public TaintedValueNumericLimits<short> {};
+template <> class std::numeric_limits<TaintedValue<unsigned short> > : public TaintedValueNumericLimits<unsigned short> {};
+template <> class std::numeric_limits<TaintedValue<int> > : public TaintedValueNumericLimits<int> {};
+template <> class std::numeric_limits<TaintedValue<unsigned int> > : public TaintedValueNumericLimits<unsigned int> {};
+template <> class std::numeric_limits<TaintedValue<long> > : public TaintedValueNumericLimits<long> {};
+template <> class std::numeric_limits<TaintedValue<unsigned long> > : public TaintedValueNumericLimits<unsigned long> {};
+template <> class std::numeric_limits<TaintedValue<long long> > : public TaintedValueNumericLimits<long long> {};
+template <> class std::numeric_limits<TaintedValue<unsigned long long> > : public TaintedValueNumericLimits<unsigned long long> {};
+template <> class std::numeric_limits<TaintedValue<float> > : public TaintedValueNumericLimits<float> {};
+template <> class std::numeric_limits<TaintedValue<double> > : public TaintedValueNumericLimits<double> {};
+template <> class std::numeric_limits<TaintedValue<long double> > : public TaintedValueNumericLimits<long double> {};
 
 #endif /* __ARM64VP_TAINT_HH__ */

@@ -306,6 +306,10 @@ struct AArch64
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
   
+  U32& FPCR() { return fpcr; }
+  
+  void SetQC() { fpsr |= U32(1) << 27; }
+  
   template <typename T>
   U32 GetFPCR( T const& rf ) const { return rf.Get(fpcr); }
 
@@ -345,6 +349,8 @@ struct AArch64
   
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
+  
+  U32& FPSR() { return fpsr; }
   
   template <typename T>
   U32 GetFPSR( T const& rf ) const { return rf.Get(fpsr); }
@@ -1029,6 +1035,8 @@ public:
   Timer    vt;
   RTC      rtc;
 
+  bool persistent_disk;
+  unisim::kernel::variable::Parameter<bool> param_persistent_disk;
   VIODisk  disk;
   Transfer transfer;
   //VIOConsole  vioconsole;

@@ -41,6 +41,7 @@
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
+#include <array>
 
 AArch64::AArch64(char const* name)
   : unisim::kernel::Object(name, 0)
@@ -59,6 +60,8 @@ AArch64::AArch64(char const* name)
   , gic()
   , uart("uart", 0)
   , vt()
+  , persistent_disk(false)
+  , param_persistent_disk("persistent-disk", this, persistent_disk, "enable/disable disk persistency")
   , pages()
   , excmon()
   , mmu()
@@ -1309,7 +1312,7 @@ namespace {
 void
 AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
 {
-  disk.open(filename);
+  disk.open(filename, persistent_disk);
 
   static struct : public Device::Effect
   {

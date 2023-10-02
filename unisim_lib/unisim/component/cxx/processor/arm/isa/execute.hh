@@ -40,7 +40,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <inttypes.h>
 #include <stdexcept>
-
+#include <cmath>
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -357,32 +357,128 @@ namespace arm {
     int32_t  m_dir, m_reg;
   };
 
-  template <typename T> struct OverShift {};
-  template <> struct OverShift<int8_t>   { static int8_t const size = 8; };
-  template <> struct OverShift<int16_t>  { static int8_t const size = 16; };
-  template <> struct OverShift<int32_t>  { static int8_t const size = 32; };
-  template <> struct OverShift<int64_t>  { static int8_t const size = 64; };
-  template <> struct OverShift<uint8_t>  { static int8_t const size = 8; };
-  template <> struct OverShift<uint16_t> { static int8_t const size = 16; };
-  template <> struct OverShift<uint32_t> { static int8_t const size = 32; };
-  template <> struct OverShift<uint64_t> { static int8_t const size = 64; };
-  
-  template <class OP>
-  OP NeonSHL( OP op, int8_t sh )
+  template <typename T> struct OverShift { static int8_t const size = std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed; };
+
+  template <class ARCH, class DST, class SRC>
+  DST SatNarrow( ARCH& core, SRC src, DST const& )
   {
-    if (sh >= OverShift<OP>::size)
-      return OP(0);
-
-    if (sh >= 0)
-      return op << sh;
-
-    if (sh <= -OverShift<OP>::size)
+    if (std::numeric_limits<SRC>::is_signed)
       {
-        if (std::numeric_limits<OP>::is_signed)
-          return op >> (OverShift<OP>::size-1);
+        if (std::numeric_limits<DST>::is_signed)
+          {
+            if (OverShift<DST>::size < OverShift<SRC>::size)
+              {
+                if (core.Test(src < SRC(std::numeric_limits<DST>::min())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::min();
+                  }
+                else if(core.Test(src > SRC(std::numeric_limits<DST>::max())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::max();
+                  }
+              }
+          }
         else
-          return OP(0);
+          {
+            if (core.Test(src < SRC(0)))
+              {
+                core.SetQC();
+                return std::numeric_limits<DST>::min();
+              }
+            else if(OverShift<DST>::size < (OverShift<SRC>::size - 1) )
+              {
+                if(core.Test(src > SRC(std::numeric_limits<DST>::max())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::max();
+                  }
+              }
+          }
       }
+    else
+      {
+        if (std::numeric_limits<DST>::is_signed)
+          {
+            if (OverShift<DST>::size < (OverShift<SRC>::size - 1))
+              {
+                core.SetQC();
+                return std::numeric_limits<DST>::max();
+              }
+          }
+        else
+          {
+            if (OverShift<DST>::size < OverShift<SRC>::size )
+              {
+                if(core.Test(src > SRC(std::numeric_limits<DST>::max())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::max();
+                  }
+              }
+          }
+      }
+      
+    return DST(src);
+  }
+  
+  template <class ARCH, class OP, class SH>
+  OP NeonSHL( ARCH& core, OP op, SH sh, bool round = false, bool sat = false)
+  {
+    if (core.Test(sh >= SH(OverShift<OP>::size)))
+      {
+        if (sat && core.Test(op != OP(0)))
+          {
+            core.SetQC();
+            return (std::numeric_limits<OP>::is_signed && core.Test(op < OP(0))) ? std::numeric_limits<OP>::min() : std::numeric_limits<OP>::max();
+          }
+          
+        return OP(0);
+      }
+
+    if (core.Test(sh >= SH(0)))
+      {
+        OP res = op << sh;
+        if (sat && core.Test((res >> sh) != op))
+          {
+            core.SetQC();
+            return (std::numeric_limits<OP>::is_signed && core.Test(op < OP(0))) ? std::numeric_limits<OP>::min() : std::numeric_limits<OP>::max();
+          }
+          
+        return res;
+      }
+
+    if (std::numeric_limits<OP>::is_signed)
+      {
+        if (core.Test(sh <= SH(-OverShift<OP>::size)))
+          {
+            if (round)
+              return OP(0);
+            else
+              return op >> (OverShift<OP>::size-1);
+          }
+      }
+    else
+      {
+        if (round)
+          {
+            if (core.Test(sh <= SH(-OverShift<OP>::size - 1)))
+              return OP(0);
+          }
+        else
+          {
+            if (core.Test(sh <= SH(-OverShift<OP>::size)))
+              return OP(0);
+          }
+      }
+      
+    if ( round )
+      {
+        op >>= -sh - SH(1);
+        return (op >> 1) + (op & OP(1));
+      }
+    
     return op >> -sh;
   }
   

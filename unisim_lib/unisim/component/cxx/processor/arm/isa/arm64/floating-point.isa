@@ -3379,11 +3379,19 @@ frinti_d.disasm = {
   sink << "frinti\t" << DisasmD(rd) << ", " << DisasmD(rn);
 };
 
+frinti_d.execute = {
+  cpu.SetVF64(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF64(rn,0), false));
+}
+
 op frinti_s( 0b0001111000100111110000[22] : rn[5] : rd[5] );
 
 frinti_s.disasm = {
   sink << "frinti\t" << DisasmS(rd) << ", " << DisasmS(rn);
 };
+
+frinti_s.execute = {
+  cpu.SetVF32(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF32(rn,0), false));
+}
 
 op frinti_vs( 0b0[1] : q[1] : 0b10111010100001100110[20] : rn[5] : rd[5] );
 

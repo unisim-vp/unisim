@@ -235,6 +235,8 @@ struct CPU
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
   
+  U32& FPCR() { return fpsr; }
+  
   /* Get FPCR Floating-point control bits */
   BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
   BOOL FZ() const { return ((fpcr >> 24) & U32(1)) != U32(0); }
@@ -270,6 +272,10 @@ struct CPU
   
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
+  
+  U32& FPSR() { return fpsr; }
+  
+  void SetQC() { fpsr |= U32(1) << 27; }
   
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
@@ -362,7 +368,7 @@ struct CPU
   void     SetExclusiveMonitors( uint64_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint64_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
-
+  
 protected:
 
   /**********************************************************************

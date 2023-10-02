@@ -94,7 +94,7 @@ VIODisk::SetupQueues(bool is_packed)
 }
 
 VIODisk::VIODisk()
-  : unisim::util::virtio::BlockDevice(), sqmgr(), WriteBack(1), diskfilename(), Capacity(0), diskpos(), disksize(), storage(), deltas()
+  : unisim::util::virtio::BlockDevice(), sqmgr(), WriteBack(1), persistent(false), diskfilename(), Capacity(0), diskpos(), disksize(), storage(), deltas()
 {}
 
 template <unsigned POS>
@@ -211,15 +211,18 @@ VIODisk::sync(SnapShot& snapshot)
 
   if (snapshot.is_save())
     {
-      std::cerr << "Saving VirtIO storage " << diskfilename << "\n";
-      int fd = ::open(diskfilename.c_str(), O_WRONLY);
+      if(!persistent) std::cerr << "Saving VirtIO storage " << diskfilename << "\n";
+      int fd = persistent ? ::open(diskfilename.c_str(), O_WRONLY) : 0;
       bool uloss = false;
       for (auto const& delta : deltas)
         {
-          uint64_t base = delta.index, size = delta.fullsize();
-          lseek(fd, base, SEEK_SET);
-          if (::write(fd, (void const*)&storage[base], size) != int64_t(size))
-            { struct Bad {}; raise(Bad()); }
+          if(persistent)
+            {
+              uint64_t base = delta.index, size = delta.fullsize();
+              lseek(fd, base, SEEK_SET);
+              if (::write(fd, (void const*)&storage[base], size) != int64_t(size))
+                { struct Bad {}; raise(Bad()); }
+            }
           uloss |= bool(delta.udat);
         }
       if (uloss)
@@ -228,20 +231,21 @@ VIODisk::sync(SnapShot& snapshot)
 }
 
 void
-VIODisk::open(char const* filename)
+VIODisk::open(char const* filename, bool _persistent)
 {
   struct Error {};
-  int fd = ::open(filename,O_RDONLY);
+  int fd = ::open(filename,_persistent ? O_RDWR : O_RDONLY);
   struct stat info;
   if (fstat(fd, &info) < 0)
     throw Error();
   Capacity = (info.st_size + BLKSIZE - 1) / BLKSIZE;
   disksize = Capacity * BLKSIZE;
-  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  storage = (uint8_t*)mmap(0, disksize, PROT_READ | PROT_WRITE, _persistent ? MAP_SHARED : MAP_PRIVATE, fd, 0);
   ::close(fd);
   if (storage == (uint8_t*)-1)
     throw Error();
   diskfilename = filename;
+  persistent = _persistent;
 }
 
 VIODisk::~VIODisk()

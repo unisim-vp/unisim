@@ -197,7 +197,7 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename, cha
     struct stat f_stat;
     if (not initrd->get(f_stat))
       return 1;
-    uint64_t initrd_start = 0x03000000, initrd_end = initrd_start+f_stat.st_size;
+    uint64_t initrd_start = 0x04000000, initrd_end = initrd_start+f_stat.st_size;
     AArch64::Page page(initrd_start,initrd_end-1,0,0,initrd);
     initrd->dump_load( std::cerr, "initrd", page );
     if (not initrd->get(page))
