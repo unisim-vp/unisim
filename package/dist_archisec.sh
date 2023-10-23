@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.6
+VERSION=0.0.7
 
 source "$(dirname $0)/dist_common.sh"
 
@@ -236,11 +236,16 @@ semantics of several instruction set architectures:
 - \`Arm32dba\` an ARM/Thumb (ARMv7) DBA decoder
 - \`Aarch64dba\` an AARCH64 (ARMv8) DBA decoder
 - \`Amd64dba\` an AMD64 (x86-64) DBA decoder
+- \`Ppc64dba\` and PowerPC 64 DBA decoder
 
 See [INSTALL](INSTALL.md) for installation instructions.
 EOF
 
 cat << EOF > "${DEST_DIR}/CHANGES.md"
+## 0.0.7 (2023-10-32)
+
+- various bug fixes and code improvements
+
 ## 0.0.6 (2023-07-14)
 
 - add PowerPC 64 bit decoder
