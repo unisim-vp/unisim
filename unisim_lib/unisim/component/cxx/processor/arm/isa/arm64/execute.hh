@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__
@@ -38,6 +39,8 @@
 #include <inttypes.h>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
+
+#define DEBUG_FP 0
 
 namespace unisim {
 namespace component {
@@ -215,34 +218,35 @@ OUT PolyMod2(IN value, uint32_t _poly)
       }
   }
    
-  template <typename FLOAT>
-  FLOAT defaultnan( FLOAT value )
-  {
-    return FLOAT(NAN);
-  }
-
-  template <typename FLOAT>
-  FLOAT clearsignaling( FLOAT value )
-  {
-    return value;
-  }
-  
   template <class ARCH, typename FLOAT>
   FLOAT FPNaN( ARCH& arch, FLOAT value )
   {
-    if (arch.Test( typename ARCH::BOOL(arch.GetFPSR( DN ).value) ))
-      return defaultnan( value );
-    return clearsignaling( value );
+    typedef typename ARCH::U32 U32;
+    if ( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) )
+    {
+      FLOAT res = DefaultNaN<FLOAT>();
+#if DEBUG_FP
+      std::cerr << "default NaN: " << value << " (0x" << std::hex << ToPacked( value ) << std::dec << ") -> " << res << " (0x" << std::hex << ToPacked( res ) << std::dec << ")" << std::endl;
+#endif
+      return res;
+    }
+    FLOAT res = ClearSignaling( value );
+#if DEBUG_FP
+    std::cerr << "quiet NaN: " << value << " (0x" << std::hex << ToPacked( value ) << std::dec << ") -> " << res << " (0x" << std::hex << ToPacked( res ) << std::dec << ")" << std::endl;
+#endif
+    
+    return res;
   }
   
   template <class ARCH, unsigned posT>
   void FPProcessException( ARCH& arch, unisim::util::arithmetic::BitField<posT,1> const& rf )
   {
     unisim::util::arithmetic::BitField<posT+8,1> const enable;
-    if (arch.Test(arch.GetFPSR( enable )))
-      arch.FPTrap( posT );
+    if (arch.Test( enable.Get( arch.FPCR() ) ) )
+      /*arch.FPTrap( posT )*/; /* FIXME */
     else
-      arch.SetFPCR( rf, 1 );
+      rf.Set( arch.FPSR(), 1 );
+    
   }
     
   template <typename operT>
@@ -256,22 +260,24 @@ OUT PolyMod2(IN value, uint32_t _poly)
   };
   
   template <typename ARCH, typename operT>
-  OutNaN<operT> FPProcessNaNs(ARCH& arch, std::initializer_list<operT> l)
+  OutNaN<operT> FPProcessNaNs(ARCH& arch, std::initializer_list<operT> l, bool fpexc)
   {
     OutNaN<operT> nan = {operT(), false};
     
     for (auto val : l)
       {
-        if (not arch.Test( isnan( val )) )
+        if ( not arch.Test( IsNaN( val )) )
           continue;
 
-        if (arch.Test( is_signaling( val ) ))
+        if ( arch.Test( IsSignaling( val ) ))
           {
-            FPProcessException( arch, IOC );
+            if ( fpexc )
+                FPProcessException( arch, IOC );
+              
             return {FPNaN( arch, val ), true};
           }
 
-        if (not nan.invalid)
+        if (not nan)
           nan = {FPNaN( arch, val ), true};
       }
     
@@ -279,15 +285,36 @@ OUT PolyMod2(IN value, uint32_t _poly)
   }
 
   template <typename ARCH, typename operT>
-  OutNaN<operT> FPProcessSNaNs(ARCH& arch, std::initializer_list<operT> l)
+  OutNaN<operT> FPProcessSNaNs(ARCH& arch, std::initializer_list<operT> l, bool fpexc)
   {
     OutNaN<operT> nan = {operT(), false};
     
     for (auto val : l)
       {
-        if (arch.Test( is_signaling( val ) ))
+        if (arch.Test( IsSignaling( val ) ))
           {
-            FPProcessException( arch, IOC );
+            if ( fpexc )
+              FPProcessException( arch, IOC );
+            
+            return {FPNaN( arch, val ), true};
+          }
+      }
+    
+    return nan;
+  }
+
+  template <typename ARCH, typename operT>
+  OutNaN<operT> FPProcessNaNsSignaling(ARCH& arch, std::initializer_list<operT> l, bool fpexc)
+  {
+    OutNaN<operT> nan = {operT(), false};
+    
+    for (auto val : l)
+      {
+        if ( arch.Test( IsNaN( val )) )
+          {
+            if ( fpexc )
+              FPProcessException( arch, IOC );
+            
             return {FPNaN( arch, val ), true};
           }
       }
@@ -300,159 +327,726 @@ OUT PolyMod2(IN value, uint32_t _poly)
     enum Code {TIEEVEN, POSINF, NEGINF, ZERO, TIEAWAY, ODD} code;
   };
   
-  struct NearestTieEven { template <typename T> static T roundint(T op) { return nearbyint(op); } };
-  struct TowardPosInf   { template <typename T> static T roundint(T op) { return ceil(op); } };
-  struct TowardNegInf   { template <typename T> static T roundint(T op) { return floor(op); } };
-  struct TowardZero     { template <typename T> static T roundint(T op) { return trunc(op); } };
-  struct NearestTieAway { template <typename T> static T roundint(T op) { return round(op); } };
-  struct NearestTieOdd  { template <typename T> static T roundint(T op) { return (T(2.0) * NearestTieEven::roundint(op / T(2.0))) + T(1.0); } };
+  struct NearestTieEven
+  {
+    template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_near_even, exact); }
+    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_near_even, exact); }
+  };
+  struct TowardPosInf
+  {
+    template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_max, exact); }
+    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_max, exact); }
+  };
+  struct TowardNegInf
+  {
+    template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_min, exact); }
+    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_min, exact); }
+  };
+  struct TowardZero
+  {
+    template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_minMag, exact); }
+    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_minMag, exact); }
+  };
+  struct NearestTieAway
+  {
+    template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_near_maxMag, exact); }
+    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_near_maxMag, exact); }
+  };
+  struct NearestTieOdd
+  {
+    template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_odd, exact); }
+    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_odd, exact); }
+  };
   
   struct RoundingMode
   {
+    FPRounding::Code rmode;
+    
     template <typename ARCH> RoundingMode( ARCH& arch )
     {
       typedef typename ARCH::U32 U32;
       struct Bad {};
-      if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::TIEEVEN) ) ) rmode = FPRounding::TIEEVEN;
-      else if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::POSINF) ) ) rmode = FPRounding::POSINF;
-      else if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::NEGINF) ) ) rmode = FPRounding::NEGINF;
-      else if ( arch.Test( RMode.Get( arch.FPCR() ) == U32(FPRounding::ZERO) ) ) rmode = FPRounding::ZERO;
+      U32 raw_rmode = RMode.Get( arch.FPCR() );
+      if ( arch.Test( raw_rmode == U32(FPRounding::TIEEVEN) ) ) rmode = FPRounding::TIEEVEN;
+      else if ( arch.Test( raw_rmode == U32(FPRounding::POSINF) ) ) rmode = FPRounding::POSINF;
+      else if ( arch.Test( raw_rmode == U32(FPRounding::NEGINF) ) ) rmode = FPRounding::NEGINF;
+      else if ( arch.Test( raw_rmode == U32(FPRounding::ZERO) ) ) rmode = FPRounding::ZERO;
       else throw Bad();
     }
-    RoundingMode( FPRounding::Code _mode ) : rmode(_mode) {} FPRounding::Code rmode;
+    
+    // RoundingMode( FPRounding::Code _mode ) : rmode(_mode) {}
 
-    template <typename T> T roundint(T op)
+    template <typename T> T roundint(T op, bool exact)
     {
+#if DEBUG_FP
+      std::cerr << "rmode: " << +rmode << std::endl;
+#endif
       switch (rmode)
         {
-        case FPRounding::TIEEVEN: return NearestTieEven::roundint(op);
-        case FPRounding::POSINF:  return TowardPosInf::roundint(op);
-        case FPRounding::NEGINF:  return TowardNegInf::roundint(op);
-        case FPRounding::ZERO:    return TowardZero::roundint(op);
-        case FPRounding::TIEAWAY: return NearestTieAway::roundint(op);
-        case FPRounding::ODD:     return NearestTieOdd::roundint(op);
+        case FPRounding::TIEEVEN: return NearestTieEven::roundint(op, exact);
+        case FPRounding::POSINF:  return TowardPosInf::roundint(op, exact);
+        case FPRounding::NEGINF:  return TowardNegInf::roundint(op, exact);
+        case FPRounding::ZERO:    return TowardZero::roundint(op, exact);
+        case FPRounding::TIEAWAY: return NearestTieAway::roundint(op, exact);
+        case FPRounding::ODD:     return NearestTieOdd::roundint(op, exact);
         }
       return op;
     }
+    
+    template <typename T, typename INTEGER> INTEGER toint(T op, bool exact, INTEGER const& dummy)
+    {
+      switch (rmode)
+        {
+        case FPRounding::TIEEVEN: return NearestTieEven::toint(op, exact, dummy);
+        case FPRounding::POSINF:  return TowardPosInf::toint(op, exact, dummy);
+        case FPRounding::NEGINF:  return TowardNegInf::toint(op, exact, dummy);
+        case FPRounding::ZERO:    return TowardZero::toint(op, exact, dummy);
+        case FPRounding::TIEAWAY: return NearestTieAway::toint(op, exact, dummy);
+        case FPRounding::ODD:     return NearestTieOdd::toint(op, exact, dummy);
+        }
+      return INTEGER();
+    }
+    
+    unsigned roundingMode()
+    {
+      switch (rmode)
+        {
+        case FPRounding::TIEEVEN: return round_near_even;
+        case FPRounding::POSINF:  return round_max;
+        case FPRounding::NEGINF:  return round_min;
+        case FPRounding::ZERO:    return round_minMag;
+        case FPRounding::TIEAWAY: return round_near_maxMag;
+        case FPRounding::ODD:     return round_odd;
+        }
+      return round_near_even;
+    }
   };
 
-  // template <class ARCH> void FPRoundingMode( ARCH& arch )
-
+  template <typename ARCH>
+  void FPProcessExceptionFlags( ARCH& arch, unsigned eflags )
+  {
+    if( eflags & flag_inexact )
+      FPProcessException( arch, IXC );
+    if( eflags & flag_underflow )
+      FPProcessException( arch, UFC );
+    if( eflags & flag_overflow )
+      FPProcessException( arch, OFC );
+    if( eflags & flag_infinite )
+      FPProcessException( arch, DZC );
+    if( eflags & flag_invalid )
+      FPProcessException( arch, IOC );
+  }
+  
+  template <typename ARCH, typename FLOAT>
+  FLOAT FPProcessDenormalInput(ARCH& arch, FLOAT op)
+  {
+    if ( !std::is_same<FLOAT, typename ARCH::F16>::value )
+    {
+      typedef typename ARCH::U32 U32;
+      if ( arch.Test( IsDenormal( op ) ) && 
+           ( arch.Test( FIZ.Get( arch.FPCR() ) != U32(0) ) ||
+             ( arch.Test( AH.Get( arch.FPCR() ) == U32(0) ) &&
+               arch.Test( FZ.Get( arch.FPCR() ) != U32(0) )
+             )
+           )
+         )
+        {
+          FLOAT res = Zeroes( op );
+#if DEBUG_FP
+          std::cerr << "flush-to-zero (input): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ") -> " << res << " (0x" << std::hex << ToPacked( res ) << std::dec << ")" << std::endl;
+#endif
+          FPProcessException( arch, IDC );
+          return res;
+        }
+    }
+      
+    return op;
+  }
+  
+  template <typename ARCH, typename FLOAT>
+  FLOAT FPProcessDenormalOutput(ARCH& arch, FLOAT op)
+  {
+    typedef typename ARCH::BOOL BOOL;
+    typedef typename ARCH::U32 U32;
+    BOOL is_zero = op == FLOAT();
+    if ( arch.Test( ( is_zero ) || IsDenormal( op ) ) &&
+          (
+            (  std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ16.Get( arch.FPCR() ) != U32(0) ) ) ||
+            ( !std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ.Get  ( arch.FPCR() ) != U32(0) ) )
+          )
+        )
+      {
+        FloatingPointStatusAndControl<FLOAT>::exceptionFlags( (FloatingPointStatusAndControl<FLOAT>::exceptionFlags() & ~flag_inexact) | (arch.Test(is_zero) ? 0 : flag_underflow ) );
+        
+        FLOAT res = Zeroes( op );
+#if DEBUG_FP
+        std::cerr << "flush-to-zero (output): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ") -> " << res << " (0x" << std::hex << ToPacked( res ) << std::dec << ")" << std::endl;
+#endif
+        return res;
+      }
+      
+    return op;
+  }
+  
   template <typename ARCH, typename RMODE, typename FLOAT>
   FLOAT FPRoundInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact)
   {
-    if (auto nan = FPProcessNaNs(arch, {op}))
+#if DEBUG_FP
+    std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
+    FLOAT _op = FPProcessDenormalInput( arch, op );
+    
+    if (auto nan = FPProcessNaNs(arch, {op}, /* fpexc */ true))
       return nan;
 
-    FLOAT res = rmode.roundint(op);
+    FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
+    FLOAT res = rmode.roundint(_op, exact);
+#if DEBUG_FP
+    std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
+#endif
 
-    if (exact and arch.Test(res != op))
-      FPProcessException( arch, IXC );
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
 
     return res;
   }
 
-  template <typename ARCH, typename operT> operT FPRound( ARCH& arch, operT op ) { return op; }
+  template <typename ARCH, typename RMODE, typename FLOAT, typename INTEGER>
+  INTEGER FPToInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact, INTEGER const&)
+  {
+    FLOAT _op = FPProcessDenormalInput( arch, op );
 
+    FPProcessNaNsSignaling(arch, {op}, /* fpexc */ true);
+    
+    FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
+    INTEGER res = rmode.toint(_op, exact, INTEGER());
+
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
+
+    return res;
+  }
+  
+  template <typename ARCH, typename FLOAT, typename INTEGER>
+  INTEGER FPToFixedRoundTowardZero(ARCH& arch, FLOAT op, unsigned fbits, bool exact, INTEGER const&)
+  {
+#if DEBUG_FP
+    std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    std::cerr << "fbits: " << fbits << std::endl;
+#endif
+     FLOAT _op = FPProcessDenormalInput( arch, op );
+
+    FPProcessNaNsSignaling(arch, {op}, /* fpexc */ true);
+    
+    FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<FLOAT>::roundingMode(round_minMag);
+    
+    INTEGER res;
+    if ( arch.Test( IsNaN( op ) ) )
+      {
+        res = INTEGER();
+      }
+    else
+      {
+        FLOAT scale(uint64_t(1) << (fbits - 1));
+        scale *= FLOAT(2);
+#if DEBUG_FP
+        std::cerr << "scale: " << scale << " (0x" << std::hex << ToPacked(scale) << std::dec << ")" << std::endl;
+#endif
+        FLOAT scaled(_op * scale);
+#if DEBUG_FP
+    std::cerr << "scaled: " << scaled << " (0x" << std::hex << ToPacked(scaled) << std::dec << ")" << std::endl;
+#endif
+        FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
+        res = ToIntRoundMinMag<INTEGER>(scaled, exact);
+      }
+#if DEBUG_FP
+    std::cerr << "output: " << res << std::endl;
+#endif
+
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
+
+    return res;
+  }
+  
+  template <typename ARCH, typename FLOAT, typename INTEGER>
+  FLOAT IntToFP(ARCH& arch, INTEGER op, FLOAT const&)
+  {
+#if DEBUG_FP
+    std::cerr << "input: " << op << std::endl;
+#endif
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<FLOAT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<FLOAT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<FLOAT>::detectTininess( tininess_beforeRounding );
+    FLOAT res = FLOAT(op);
+#if DEBUG_FP
+    std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
+#endif
+
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
+
+    return res;
+  }
+  
+  template <typename ARCH, typename FLOAT, typename INTEGER>
+  FLOAT FixedToFP(ARCH& arch, INTEGER op, unsigned fbits, FLOAT const&)
+  {
+#if DEBUG_FP
+    std::cerr << "input: " << op << std::endl;
+#endif
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<FLOAT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<FLOAT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<FLOAT>::detectTininess( tininess_beforeRounding );
+    FLOAT scale(uint64_t(1) << (fbits - 1));
+    scale *= FLOAT(2);
+#if DEBUG_FP
+    std::cerr << "scale: " << scale << " (0x" << std::hex << ToPacked(scale) << std::dec << ")" << std::endl;
+#endif
+    FLOAT res = FLOAT(op) / scale;
+#if DEBUG_FP
+    std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
+#endif
+
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
+
+    return res;
+  }
+  
+  template <typename ARCH, typename operT> operT FPRound( ARCH& arch, operT op )
+  {
+#if DEBUG_FP
+    std::cerr << "output: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
+    operT res = FPProcessDenormalOutput( arch, op );
+    FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<operT>::exceptionFlags() );
+    
+    return arch.Test( IsNaN( res ) ) ? FAbs( FPNaN( arch, res ) ) : res;
+  }
+  
   template <typename DST, typename ARCH, typename SRC>
   DST FPConvert( ARCH& arch, SRC op )
   {
-    if (FPProcessNaNs(arch, {op}))
-      return DST(op);
-
-    return FPRound(arch, DST(op));
+    typedef typename ARCH::U32 U32;
+    if ( ( std::is_same<SRC, typename ARCH::F16>::value || std::is_same<DST, typename ARCH::F16>::value ) && arch.Test( AHP.Get( arch.FPCR() ) != U32(0) ) )
+      {
+        struct AlternativeHalfPrecisionFormatUnsupported : std::runtime_error
+        {
+          AlternativeHalfPrecisionFormatUnsupported() : std::runtime_error("Alternative half-precision format is unsupported") {}
+        };
+        
+        throw AlternativeHalfPrecisionFormatUnsupported();
+      }
+#if DEBUG_FP
+    std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
+    SRC _op = FPProcessDenormalInput( arch, op );
+    
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<DST>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<DST>::exceptionFlags(0);
+    FloatingPointStatusAndControl<DST>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<DST>::detectTininess( tininess_beforeRounding );
+    
+    if (FPProcessNaNs(arch, {op}, /* fpexc */ true))
+    {
+      return FPNaN(arch, FConvert<DST>(op));
+    }
+    
+    return FPRound(arch, FConvert<DST>(_op));
   }
 
+  template <typename DST, typename ARCH, typename SRC>
+  DST FPConvertRoundOdd( ARCH& arch, SRC op )
+  {
+    typedef typename ARCH::U32 U32;
+    if ( ( std::is_same<SRC, typename ARCH::F16>::value || std::is_same<DST, typename ARCH::F16>::value ) && arch.Test( AHP.Get( arch.FPCR() ) != U32(0) ) )
+      {
+        struct AlternativeHalfPrecisionFormatUnsupported : std::runtime_error
+        {
+          AlternativeHalfPrecisionFormatUnsupported() : std::runtime_error("Alternative half-precision format is unsupported") {}
+        };
+        
+        throw AlternativeHalfPrecisionFormatUnsupported();
+      }
+#if DEBUG_FP
+    std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
+    SRC _op = FPProcessDenormalInput( arch, op );
+    
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<DST>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<DST>::exceptionFlags(0);
+    FloatingPointStatusAndControl<DST>::roundingMode( round_odd );
+    FloatingPointStatusAndControl<DST>::detectTininess( tininess_beforeRounding );
+    
+    if (FPProcessNaNs(arch, {op}, /* fpexc */ true))
+    {
+      return FPNaN(arch, FConvert<DST>(op));
+    }
+    
+    return FPRound(arch, FConvert<DST>(_op));
+  }
+  
   template <typename operT, typename ARCH>
   operT FPSub( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    return FPRound(arch, op1 - op2);
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    return FPRound(arch, _op1 - _op2 );
   }
 
   template <typename operT, typename ARCH>
   operT FPAdd( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    return FPRound(arch, op1 + op2);
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    return FPRound(arch, _op1 + _op2 );
   }
 
   template <typename operT, typename ARCH>
   operT FPMul( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    return FPRound(arch, op1 * op2);
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    return FPRound(arch, _op1 * _op2 );
   }
 
   template <typename operT, typename ARCH>
-  operT FPDiv( ARCH& arch, operT op1, operT op2 )
+  operT FPMulX( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    return FPRound(arch, op1 / op2);
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    
+    operT res;
+    
+    if ( arch.Test( ( IsInf( _op1 ) && IsZero( _op2 ) ) || ( IsZero( _op1 ) && IsInf( _op2 ) ) ) )
+      {
+        res = FromUnpacked<operT>( { /* sign */ arch.Test(IsNeg(_op1) ^ IsNeg(_op2)), /* exp */ 1, /* frac */ 0 } );
+      }
+    else
+      {
+        res = _op1 * _op2;
+      }
+      
+    return FPRound(arch, res );
+  }
+  
+  template <typename operT, typename ARCH>
+  operT FPDiv( ARCH& arch, operT op1, operT op2 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
+      return nan;
+
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    return FPRound(arch, _op1 / _op2 );
+  }
+  
+  template <typename operT, typename ARCH>
+  operT FPMulAdd( ARCH& arch, operT op1, operT op2, operT op3 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+    std::cerr << "input3: " << op3 << " (0x" << std::hex << ToPacked(op3) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    operT _op3 = FPProcessDenormalInput( arch, op3 );
+    auto nan = FPProcessNaNs(arch, {op1,op2,op3}, /* fpexc */ true);
+      
+    if ( arch.Test( IsNaN( op1 ) && !IsSignaling( op1 ) && // is quiet NaN
+         ( ( IsInf( _op2 ) && IsZero( _op3 ) ) || ( IsZero( _op2 ) && IsInf( _op3 ) ) ) ) )
+    {
+      FPProcessException( arch, IOC );
+      return DefaultNaN<operT>();
+    }
+    else if ( nan )
+    {
+      return nan;
+    }
+
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    return FPRound(arch, FMulAdd(_op2, _op3, _op1 ) ); // (op2 * op3) + op1
   }
   
   template <typename operT, typename ARCH>
   operT FPMin( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    operT res  = fmin(op1, op2);
-
-    // TODO: The use of FPRound() covers the case where there is a trapped
-    // underflow// for a denormalized number even though the result is
-    // exact.
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    operT res  = FPRound( arch, FMin(_op1, _op2) );
     return res;
   }
 
   template <typename operT, typename ARCH>
   operT FPMinNumber( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessSNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    operT res  = fmin(op1, op2);
-
-    // TODO: The use of FPRound() covers the case where there is a trapped
-    // underflow// for a denormalized number even though the result is
-    // exact.
-    return res;
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    operT res = FMinNumber(_op1, _op2);
+    return arch.Test( IsNaN( res ) ) ? FPNaN( arch, res ) : res;
   }
   
   template <typename operT, typename ARCH>
   operT FPMax( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    operT res = fmax(op1, op2);
-
-    // TODO: The use of FPRound() covers the case where there is a trapped
-    // underflow// for a denormalized number even though the result is
-    // exact.
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    operT res  = FPRound( arch, FMax(_op1, _op2) );
     return res;
   }
   
   template <typename operT, typename ARCH>
   operT FPMaxNumber( ARCH& arch, operT op1, operT op2 )
   {
-    if (auto nan = FPProcessSNaNs(arch, {op1, op2}))
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    if (auto nan = FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true))
       return nan;
 
-    operT res = fmax(op1, op2);
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    operT res = FMaxNumber(_op1, _op2);
+    return arch.Test( IsNaN( res ) ) ? FPNaN( arch, res ) : res;
+  }
+  
+  template <typename operT, typename ARCH>
+  void FPQuietCompare( ARCH& arch, operT op1, operT op2 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    
+    if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 ) ) )
+      {
+        arch.SetNZCV( 0, 0, 1, 1 );
+        
+        FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true);
+      }
+    else
+      {
+        typedef typename ARCH::BOOL BOOL;
+        BOOL le = _op1 <= _op2, ge = _op1 >= _op2;
+        arch.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+      }
+  }
+  
+  template <typename operT, typename ARCH>
+  void FPSignalingCompare( ARCH& arch, operT op1, operT op2 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    
+    if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 ) ) )
+      {
+        arch.SetNZCV( 0, 0, 1, 1 );
+        
+        FPProcessNaNsSignaling(arch, {op1, op2}, /* fpexc */ true);
+      }
+    else
+      {
+        typedef typename ARCH::BOOL BOOL;
+        BOOL le = _op1 <= _op2, ge = _op1 >= _op2;
+        arch.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+      }
+  }
 
-    // TODO: The use of FPRound() covers the case where there is a trapped
-    // underflow// for a denormalized number even though the result is
-    // exact.
-    return res;
+  template <typename operT, typename ARCH>
+  typename ARCH::BOOL FPCompareEq( ARCH& arch, operT op1, operT op2 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    
+    if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 ) ) )
+      {
+        FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true);
+        
+        return typename ARCH::BOOL();
+      }
+    else
+      {
+        return _op1 == _op2;
+      }
+  }
+
+  template <typename operT, typename ARCH>
+  typename ARCH::BOOL FPCompareGe( ARCH& arch, operT op1, operT op2 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    
+    if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 )  ) )
+      {
+        FPProcessNaNsSignaling(arch, {op1, op2}, /* fpexc */ true);
+        
+        return typename ARCH::BOOL();
+      }
+    else
+      {
+        return _op1 >= _op2;
+      }
+  }
+
+  template <typename operT, typename ARCH>
+  typename ARCH::BOOL FPCompareGt( ARCH& arch, operT op1, operT op2 )
+  {
+#if DEBUG_FP
+    std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
+    std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
+#endif
+    operT _op1 = FPProcessDenormalInput( arch, op1 );
+    operT _op2 = FPProcessDenormalInput( arch, op2 );
+    
+    if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 ) ) )
+      {
+        FPProcessNaNsSignaling(arch, {op1, op2}, /* fpexc */ true);
+        
+        return typename ARCH::BOOL();
+      }
+    else
+      {
+        return _op1 > _op2;
+      }
+  }
+  
+  template <typename operT, typename ARCH>
+  operT FPSqrt( ARCH& arch, operT op )
+  {
+#if DEBUG_FP
+    std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
+    operT _op = FPProcessDenormalInput( arch, op );
+    if (auto nan = FPProcessNaNs(arch, {op}, /* fpexc */ true))
+      return nan;
+
+    typedef typename ARCH::U32 U32;
+    FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
+    FloatingPointStatusAndControl<operT>::exceptionFlags(0);
+    FloatingPointStatusAndControl<operT>::roundingMode( RoundingMode( arch ).roundingMode() );
+    FloatingPointStatusAndControl<operT>::detectTininess( tininess_beforeRounding );
+    return FPRound(arch, FSqrt(_op) );
   }
   
 } // end of namespace arm64

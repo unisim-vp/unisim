@@ -75,6 +75,9 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<RTI/.*\.h>' "${FILEPATH}"; then
 				echo "m4/hla_rti1516e" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<softfloat_emu/.*\.h>' "${FILEPATH}"; then
+				echo "m4/softfloat_emu" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<editline/.*\.h>' "${FILEPATH}"; then
 				echo "m4/libedit" >> "${PKG_DEPS_TXT}"
 			fi
@@ -236,6 +239,15 @@ function discover_file_deps
 			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<climits>' "${FILEPATH}"; then
 				echo "std/climits" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cfenv>' "${FILEPATH}"; then
+				echo "std/cfenv" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstdint>' "${FILEPATH}"; then
+				echo "std/cstdint" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<limits>' "${FILEPATH}"; then
+				echo "std/limits" >> "${PKG_DEPS_TXT}"
 			fi
 		fi
 		
@@ -455,6 +467,14 @@ mkdir -p "${PACKAGE_DIR}/m4/cacti"
 echo "m4/cacti.m4" > "${PACKAGE_DIR}/m4/cacti/m4_list.txt"
 echo "UNISIM_CHECK_CACTI" > "${PACKAGE_DIR}/m4/cacti/ac_list.txt"
 
+mkdir -p "${PACKAGE_DIR}/m4/softfloat_emu"
+echo "m4/softfloat_emu.m4" > "${PACKAGE_DIR}/m4/softfloat_emu/m4_list.txt"
+echo "UNISIM_CHECK_SOFTFLOAT_EMU" > "${PACKAGE_DIR}/m4/softfloat_emu/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/float16"
+echo "m4/float16.m4" > "${PACKAGE_DIR}/m4/float16/m4_list.txt"
+echo "UNISIM_CHECK_FLOAT16" > "${PACKAGE_DIR}/m4/float16/ac_list.txt"
+
 rm -rf "${PACKAGE_DIR}/unisim"
 crawl_directory "unisim"
 
@@ -474,3 +494,5 @@ sed -i '/unisim\/component\/cxx\/processor\/hcs12x\/s12xgate\.isa/d' "${PACKAGE_
 
 echo "unisim/component/cxx/processor/hcs12x/xb.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_xb_list.txt"
 echo "unisim/component/cxx/processor/hcs12x/s12xgate.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_s12xgate_list.txt"
+
+echo "m4/float16" >> "${PACKAGE_DIR}/unisim/util/floating_point/pkg_deps.txt"

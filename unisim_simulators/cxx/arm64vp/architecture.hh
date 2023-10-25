@@ -30,10 +30,15 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __ARM64VP_ARCHITECTURE_HH__
 #define __ARM64VP_ARCHITECTURE_HH__
+
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "taint.hh"
 #include "viodisk.hh"
@@ -56,6 +61,11 @@
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/char_io.hh>
+#if HAVE_SOFTFLOAT_EMU
+#include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
+#else
+#include <unisim/util/floating_point/floating_point.hh>
+#endif
 #include <serial.hh>
 #include <iosfwd>
 #include <set>
@@ -76,8 +86,17 @@ struct AArch64Types
   typedef TaintedValue< int32_t> S32;
   typedef TaintedValue< int64_t> S64;
 
+#if HAVE_SOFTFLOAT_EMU
+  typedef TaintedValue<  unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Half> F16;
+  typedef TaintedValue<unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Single> F32;
+  typedef TaintedValue<unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Double> F64;
+#elif HAVE_FLOAT16
+  typedef TaintedValue<_Float16> F16;
   typedef TaintedValue<   float> F32;
   typedef TaintedValue<  double> F64;
+#else
+#error "Support _Float16 type must be available"
+#endif
 
   typedef TaintedValue<  bool  > BOOL;
 

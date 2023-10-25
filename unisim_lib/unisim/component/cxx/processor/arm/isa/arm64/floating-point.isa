@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 /*******************************************************************
@@ -45,7 +46,7 @@ fabd_s.disasm = {
 };
 
 fabd_s.execute = {
-  cpu.SetVF32(rd, fabs(FPSub(cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0))));
+  cpu.SetVF32(rd, FAbs(FPSub(cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0))));
 };
 
 op fabd_d( 0b01111110111[11] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
@@ -55,7 +56,7 @@ fabd_d.disasm = {
 };
 
 fabd_d.execute = {
-  cpu.SetVF64(rd, fabs(FPSub(cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0))));
+  cpu.SetVF64(rd, FAbs(FPSub(cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0))));
 };
 
 op fabd_vs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110101[6] : rn[5] : rd[5] );
@@ -66,7 +67,7 @@ fabd_vs.disasm = {
 
 fabd_vs.execute = {
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, fabs(FPSub(cpu, cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx))));
+    cpu.SetVF32(rd, idx, FAbs(FPSub(cpu, cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx))));
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -78,7 +79,7 @@ fabd_v2d.disasm = {
 
 fabd_v2d.execute = {
   for (unsigned idx = 0, end = 2; idx < end; ++idx)
-    cpu.SetVF64(rd, idx, fabs(FPSub(cpu, cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx))));
+    cpu.SetVF64(rd, idx, FAbs(FPSub(cpu, cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx))));
 }
 
 /*
@@ -98,7 +99,7 @@ fabs_s.disasm = {
 };
 
 fabs_s.execute = {
-  cpu.SetVF32(rd, fabs(cpu.GetVF32(rn,0)));
+  cpu.SetVF32(rd, FAbs(cpu.GetVF32(rn,0)));
 };
 
 op fabs_d( 0b0001111001100000110000[22] : rn[5] : rd[5] );
@@ -108,7 +109,7 @@ fabs_d.disasm = {
 };
 
 fabs_d.execute = {
-  cpu.SetVF64(rd, fabs(cpu.GetVF64(rn,0)));
+  cpu.SetVF64(rd, FAbs(cpu.GetVF64(rn,0)));
 };
 
 op fabs_vs( 0b0[1] : q[1] : 0b00111010100000111110[20] : rn[5] : rd[5] );
@@ -119,7 +120,7 @@ fabs_vs.disasm = {
 
 fabs_vs.execute = {
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, fabs(cpu.GetVF32(rn, idx)));
+    cpu.SetVF32(rd, idx, FAbs(cpu.GetVF32(rn, idx)));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -131,7 +132,7 @@ fabs_v2d.disasm = {
 
 fabs_v2d.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
-    cpu.SetVF64(rd, idx, fabs(cpu.GetVF64(rn, idx)));
+    cpu.SetVF64(rd, idx, FAbs(cpu.GetVF64(rn, idx)));
 };
 
 /*
@@ -144,10 +145,26 @@ facge_s.disasm = {
   sink << "facge\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
 
+facge_s.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S32 S32;
+
+  F32 op1 = cpu.GetVF32(rn, 0), op2 = cpu.GetVF32(rm, 0);
+  cpu.SetVS32(rd, -S32( FPCompareGe( cpu, FAbs(op1), FAbs(op2) ) ) );
+};
+
 op facge_d( 0b01111110011[11] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
 
 facge_d.disasm = {
   sink << "facge\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+facge_d.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S64 S64;
+
+  F64 op1 = cpu.GetVF64(rn, 0), op2 = cpu.GetVF64(rm, 0);
+  cpu.SetVS64(rd, -S64( FPCompareGe( cpu, FAbs(op1), FAbs(op2) ) ) );
 };
 
 op facge_vs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
@@ -156,10 +173,33 @@ facge_vs.disasm = {
   sink << "facge\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+facge_vs.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      F32 op1 = cpu.GetVF32(rn, e), op2 = cpu.GetVF32(rm, e);
+      cpu.SetVS32(rd, e, -S32( FPCompareGe( cpu, FAbs(op1), FAbs(op2) ) ) );
+    }
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op facge_v2d( 0b01101110011[11] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
 
 facge_v2d.disasm = {
   sink << "facge\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+facge_v2d.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S64 S64;
+
+  for (unsigned e=0; e < 2; e += 1)
+    {
+      F64 op1 = cpu.GetVF64(rn, e), op2 = cpu.GetVF64(rm, e);
+      cpu.SetVS64(rd, e, -S64( FPCompareGe( cpu, FAbs(op1), FAbs(op2) ) ) );
+    }
 };
 
 op facgt_s( 0b01111110101[11] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
@@ -168,10 +208,26 @@ facgt_s.disasm = {
   sink << "facgt\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
 
+facgt_s.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S32 S32;
+
+  F32 op1 = cpu.GetVF32(rn, 0), op2 = cpu.GetVF32(rm, 0);
+  cpu.SetVS32(rd, -S32( FPCompareGt( cpu, FAbs(op1), FAbs(op2) ) ) );
+};
+
 op facgt_d( 0b01111110111[11] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
 
 facgt_d.disasm = {
   sink << "facgt\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+facgt_d.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S64 S64;
+
+  F64 op1 = cpu.GetVF64(rn, 0), op2 = cpu.GetVF64(rm, 0);
+  cpu.SetVS64(rd, -S64( FPCompareGt( cpu, FAbs(op1), FAbs(op2) ) ) );
 };
 
 op facgt_vs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
@@ -180,10 +236,33 @@ facgt_vs.disasm = {
   sink << "facgt\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+facgt_vs.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0, end=2<<q; e < end; e += 1)
+    {
+      F32 op1 = cpu.GetVF32(rn, e), op2 = cpu.GetVF32(rm, e);
+      cpu.SetVS32(rd, e, -S32( FPCompareGt( cpu, FAbs(op1), FAbs(op2) ) ) );
+    }
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op facgt_v2d( 0b01101110111[11] : rm[5] : 0b111011[6] : rn[5] : rd[5] );
 
 facgt_v2d.disasm = {
   sink << "facgt\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+facgt_v2d.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S64 S64;
+
+  for (unsigned e=0; e < 2; e += 1)
+    {
+      F64 op1 = cpu.GetVF64(rn, e), op2 = cpu.GetVF64(rm, e);
+      cpu.SetVS64(rd, e, -S64( FPCompareGt( cpu, FAbs(op1), FAbs(op2) ) ) );
+    }
 };
 
 /*******************************************************************
@@ -340,11 +419,7 @@ fccmp_s.execute = {
 
   if (CheckCondition(cpu, cond))
     {
-      typedef typename ARCH::F32 F32;
-
-      F32 a = cpu.GetVF32(rn,0), b = cpu.GetVF32(rm,0);
-      BOOL le = a <= b, ge = a >= b;
-      cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+      FPQuietCompare( cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0) );
     }
   else
     cpu.SetNZCV( BOOL(n==1), BOOL(z==1), BOOL(c==1), BOOL(v==1) );
@@ -361,11 +436,7 @@ fccmp_d.execute = {
 
   if (CheckCondition(cpu, cond))
     {
-      typedef typename ARCH::F64 F64;
-
-      F64 a = cpu.GetVF64(rn,0), b = cpu.GetVF64(rm,0);
-      BOOL le = a <= b, ge = a >= b;
-      cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+      FPQuietCompare( cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0) );
     }
   else
     cpu.SetNZCV( BOOL(n==1), BOOL(z==1), BOOL(c==1), BOOL(v==1) );
@@ -381,10 +452,32 @@ fccmpe_d.disasm = {
   sink << "fccmpe\t" << DisasmD(rn) << ", " << DisasmD(rm) << ", " << DisasmI((n<<3)|(z<<2)|(c<<1)|(v<<0),16) << ", " << DisasmCond(cond);
 };
 
+fccmpe_d.execute = {
+  typedef typename ARCH::BOOL BOOL;
+
+  if (CheckCondition(cpu, cond))
+    {
+      FPSignalingCompare( cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0) );
+    }
+  else
+    cpu.SetNZCV( BOOL(n==1), BOOL(z==1), BOOL(c==1), BOOL(v==1) );
+};
+
 op fccmpe_s( 0b00011110001[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : 0b1[1] : n[1] : z[1] : c[1] : v[1] );
 
 fccmpe_s.disasm = {
   sink << "fccmpe\t" << DisasmS(rn) << ", " << DisasmS(rm) << ", " << DisasmI((n<<3)|(z<<2)|(c<<1)|(v<<0),16) << ", " << DisasmCond(cond);
+};
+
+fccmpe_s.execute = {
+  typedef typename ARCH::BOOL BOOL;
+
+  if (CheckCondition(cpu, cond))
+    {
+      FPSignalingCompare( cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0) );
+    }
+  else
+    cpu.SetNZCV( BOOL(n==1), BOOL(z==1), BOOL(c==1), BOOL(v==1) );
 };
 
 /*******************************************************************
@@ -404,7 +497,7 @@ fcmeq_s.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2 = cpu.GetVF32(rm, 0);
-  cpu.SetVS32(rd, -S32(op1 == op2));
+  cpu.SetVS32(rd, -S32( FPCompareEq( cpu, op1, op2 ) ) );
 };
 
 op fcmeq_d( 0b01011110011[11] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -418,7 +511,7 @@ fcmeq_d.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2 = cpu.GetVF64(rm, 0);
-  cpu.SetVS64(rd, -S64(op1 == op2));
+  cpu.SetVS64(rd, -S64( FPCompareEq( cpu, op1, op2 ) ) );
 };
 
 op fcmeq_vs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -434,7 +527,7 @@ fcmeq_vs.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2 = cpu.GetVF32(rm, e);
-      cpu.SetVS32(rd, e, -S32(op1 == op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareEq( cpu, op1, op2 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -452,7 +545,7 @@ fcmeq_v2d.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2 = cpu.GetVF64(rm, e);
-      cpu.SetVS64(rd, e, -S64(op1 == op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareEq( cpu, op1, op2 ) ) );
     }
 };
 
@@ -467,7 +560,7 @@ fcmeq_sz.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2( 0 );
-  cpu.SetVS32(rd, -S32(op1 == op2));
+  cpu.SetVS32(rd, -S32( FPCompareEq( cpu, op1, op2 ) ) );
 };
 
 op fcmeq_dz( 0b0101111011100000110110[22] : rn[5] : rd[5] );
@@ -481,7 +574,7 @@ fcmeq_dz.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2( 0 );
-  cpu.SetVS64(rd, -S64(op1 == op2));
+  cpu.SetVS64(rd, -S64( FPCompareEq( cpu, op1, op2 ) ) );
 };
 
 op fcmeq_vsz( 0b0[1] : q[1] : 0b00111010100000110110[20] : rn[5] : rd[5] );
@@ -497,7 +590,7 @@ fcmeq_vsz.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2( 0 );
-      cpu.SetVS32(rd, e, -S32(op1 == op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareEq( cpu, op1, op2 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -515,7 +608,7 @@ fcmeq_v2dz.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2( 0 );
-      cpu.SetVS64(rd, e, -S64(op1 == op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareEq( cpu, op1, op2 ) ) );
     }
 };
 
@@ -540,7 +633,7 @@ fcmge_s.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2 = cpu.GetVF32(rm, 0);
-  cpu.SetVS32(rd, -S32(op1 >= op2));
+  cpu.SetVS32(rd, -S32( FPCompareGe( cpu, op1, op2 ) ) );
 };
 
 op fcmge_d( 0b01111110011[11] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -554,7 +647,7 @@ fcmge_d.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2 = cpu.GetVF64(rm, 0);
-  cpu.SetVS64(rd, -S64(op1 >= op2));
+  cpu.SetVS64(rd, -S64( FPCompareGe( cpu, op1, op2 ) ) );
 };
 
 op fcmge_vs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -570,7 +663,7 @@ fcmge_vs.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2 = cpu.GetVF32(rm, e);
-      cpu.SetVS32(rd, e, -S32(op1 >= op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareGe( cpu, op1, op2 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -588,7 +681,7 @@ fcmge_v2d.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2 = cpu.GetVF64(rm, e);
-      cpu.SetVS64(rd, e, -S64(op1 >= op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareGe( cpu, op1, op2 ) ) );
     }
 };
 
@@ -603,7 +696,7 @@ fcmge_sz.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2( 0 );
-  cpu.SetVS32(rd, -S32(op1 >= op2));
+  cpu.SetVS32(rd, -S32( FPCompareGe( cpu, op1, op2 ) ) );
 };
 
 op fcmge_dz( 0b0111111011100000110010[22] : rn[5] : rd[5] );
@@ -617,7 +710,7 @@ fcmge_dz.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2( 0 );
-  cpu.SetVS64(rd, -S64(op1 >= op2));
+  cpu.SetVS64(rd, -S64( FPCompareGe( cpu, op1, op2 ) ) );
 };
 
 op fcmge_vsz( 0b0[1] : q[1] : 0b10111010100000110010[20] : rn[5] : rd[5] );
@@ -633,7 +726,7 @@ fcmge_vsz.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2( 0 );
-      cpu.SetVS32(rd, e, -S32(op1 >= op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareGe( cpu, op1, op2 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -651,7 +744,7 @@ fcmge_v2dz.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2( 0 );
-      cpu.SetVS64(rd, e, -S64(op1 >= op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareGe( cpu, op1, op2 ) ) );
     }
 };
 
@@ -676,7 +769,7 @@ fcmgt_s.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2 = cpu.GetVF32(rm, 0);
-  cpu.SetVS32(rd, -S32(op1 > op2));
+  cpu.SetVS32(rd, -S32( FPCompareGt( cpu, op1, op2 ) ) );
 };
 
 op fcmgt_d( 0b01111110111[11] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -690,7 +783,7 @@ fcmgt_d.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2 = cpu.GetVF64(rm, 0);
-  cpu.SetVS64(rd, -S64(op1 > op2));
+  cpu.SetVS64(rd, -S64( FPCompareGt( cpu, op1, op2 ) ) );
 };
 
 op fcmgt_vs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b111001[6] : rn[5] : rd[5] );
@@ -706,7 +799,7 @@ fcmgt_vs.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2 = cpu.GetVF32(rm, e);
-      cpu.SetVS32(rd, e, -S32(op1 > op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareGt( cpu, op1, op2 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -724,7 +817,7 @@ fcmgt_v2d.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2 = cpu.GetVF64(rm, e);
-      cpu.SetVS64(rd, e, -S64(op1 > op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareGt( cpu, op1, op2 ) ) );
     }
 };
 
@@ -739,7 +832,7 @@ fcmgt_sz.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2( 0 );
-  cpu.SetVS32(rd, -S32(op1 > op2));
+  cpu.SetVS32(rd, -S32( FPCompareGt( cpu, op1, op2 ) ) );
 };
 
 op fcmgt_dz( 0b0101111011100000110010[22] : rn[5] : rd[5] );
@@ -753,7 +846,7 @@ fcmgt_dz.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2( 0 );
-  cpu.SetVS64(rd, -S64(op1 > op2));
+  cpu.SetVS64(rd, -S64( FPCompareGt( cpu, op1, op2 ) ) );
 };
 
 op fcmgt_vsz( 0b0[1] : q[1] : 0b00111010100000110010[20] : rn[5] : rd[5] );
@@ -769,7 +862,7 @@ fcmgt_vsz.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2( 0 );
-      cpu.SetVS32(rd, e, -S32(op1 > op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareGt( cpu, op1, op2 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -787,7 +880,7 @@ fcmgt_v2dz.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2( 0 );
-      cpu.SetVS64(rd, e, -S64(op1 > op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareGt( cpu, op1, op2 ) ) );
     }
 };
 
@@ -812,7 +905,7 @@ fcmle_sz.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2( 0 );
-  cpu.SetVS32(rd, -S32(op1 <= op2));
+  cpu.SetVS32(rd, -S32( FPCompareGe( cpu, op2, op1 ) ) );
 };
 
 op fcmle_dz( 0b0111111011100000110110[22] : rn[5] : rd[5] );
@@ -826,7 +919,7 @@ fcmle_dz.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2( 0 );
-  cpu.SetVS64(rd, -S64(op1 <= op2));
+  cpu.SetVS64(rd, -S64( FPCompareGe( cpu, op2, op1 ) ) );
 };
 
 op fcmle_vsz( 0b0[1] : q[1] : 0b10111010100000110110[20] : rn[5] : rd[5] );
@@ -842,7 +935,7 @@ fcmle_vsz.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2( 0 );
-      cpu.SetVS32(rd, e, -S32(op1 <= op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareGe( cpu, op2, op1 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -860,7 +953,7 @@ fcmle_v2dz.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2( 0 );
-      cpu.SetVS64(rd, e, -S64(op1 <= op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareGe( cpu, op2, op1 ) ) );
     }
 };
 
@@ -885,7 +978,7 @@ fcmlt_sz.execute = {
   typedef typename ARCH::S32 S32;
 
   F32 op1 = cpu.GetVF32(rn, 0), op2( 0 );
-  cpu.SetVS32(rd, -S32(op1 < op2));
+  cpu.SetVS32(rd, -S32( FPCompareGt( cpu, op2, op1 ) ) );
 };
 
 op fcmlt_dz( 0b0101111011100000111010[22] : rn[5] : rd[5] );
@@ -899,7 +992,7 @@ fcmlt_dz.execute = {
   typedef typename ARCH::S64 S64;
 
   F64 op1 = cpu.GetVF64(rn, 0), op2( 0 );
-  cpu.SetVS64(rd, -S64(op1 < op2));
+  cpu.SetVS64(rd, -S64( FPCompareGt( cpu, op2, op1 ) ) );
 };
 
 op fcmlt_vsz( 0b0[1] : q[1] : 0b00111010100000111010[20] : rn[5] : rd[5] );
@@ -915,7 +1008,7 @@ fcmlt_vsz.execute = {
   for (unsigned e=0, end=2<<q; e < end; e += 1)
     {
       F32 op1 = cpu.GetVF32(rn, e), op2( 0 );
-      cpu.SetVS32(rd, e, -S32(op1 < op2));
+      cpu.SetVS32(rd, e, -S32( FPCompareGt( cpu, op2, op1 ) ) );
     }
   cpu.ClearHighV(rd, 8<<q);
 };
@@ -933,7 +1026,7 @@ fcmlt_v2dz.execute = {
   for (unsigned e=0; e < 2; e += 1)
     {
       F64 op1 = cpu.GetVF64(rn, e), op2( 0 );
-      cpu.SetVS64(rd, e, -S64(op1 < op2));
+      cpu.SetVS64(rd, e, -S64( FPCompareGt( cpu, op2, op1 ) ) );
     }
 };
 
@@ -955,12 +1048,7 @@ fcmp_s.disasm = {
 
 fcmp_s.execute =
 {
-  typedef typename ARCH::F32 F32;
-  typedef typename ARCH::BOOL BOOL;
-
-  F32 a = cpu.GetVF32(rn,0), b = cpu.GetVF32(rm,0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPQuietCompare( cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0) );
 };
 
 op fcmp_d( 0b00011110011[11] : rm[5] : 0b001000[6] : rn[5] : 0b00000[5] );
@@ -971,12 +1059,7 @@ fcmp_d.disasm = {
 
 fcmp_d.execute =
 {
-  typedef typename ARCH::F64 F64;
-  typedef typename ARCH::BOOL BOOL;
-
-  F64 a = cpu.GetVF64(rn,0), b = cpu.GetVF64(rm,0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPQuietCompare( cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0) );
 };
 
 op fcmp_sz( 0b00011110001[11] : rm[5] : 0b001000[6] : rn[5] : 0b01000[5] );
@@ -988,12 +1071,7 @@ fcmp_sz.disasm = {
 
 fcmp_sz.execute =
 {
-  typedef typename ARCH::F32 F32;
-  typedef typename ARCH::BOOL BOOL;
-
-  F32 a = cpu.GetVF32(rn,0), b = F32(0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPQuietCompare( cpu, cpu.GetVF32(rn,0), typename ARCH::F32(0) );
 };
 
 op fcmp_dz( 0b00011110011[11] : rm[5] : 0b001000[6] : rn[5] : 0b01000[5] );
@@ -1005,12 +1083,7 @@ fcmp_dz.disasm = {
 
 fcmp_dz.execute =
 {
-  typedef typename ARCH::F64 F64;
-  typedef typename ARCH::BOOL BOOL;
-
-  F64 a = cpu.GetVF64(rn,0), b = F64(0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPQuietCompare( cpu, cpu.GetVF64(rn,0), typename ARCH::F64(0) );
 };
 
 /*
@@ -1031,12 +1104,7 @@ fcmpe_s.disasm = {
 
 fcmpe_s.execute =
 {
-  typedef typename ARCH::F32 F32;
-  typedef typename ARCH::BOOL BOOL;
-
-  F32 a = cpu.GetVF32(rn,0), b = cpu.GetVF32(rm,0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPSignalingCompare( cpu, cpu.GetVF32(rn,0), cpu.GetVF32(rm,0) );
 };
 
 op fcmpe_d( 0b00011110011[11] : rm[5] : 0b001000[6] : rn[5] : 0b10000[5] );
@@ -1047,12 +1115,7 @@ fcmpe_d.disasm = {
 
 fcmpe_d.execute =
 {
-  typedef typename ARCH::F64 F64;
-  typedef typename ARCH::BOOL BOOL;
-
-  F64 a = cpu.GetVF64(rn,0), b = cpu.GetVF64(rm,0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPSignalingCompare( cpu, cpu.GetVF64(rn,0), cpu.GetVF64(rm,0) );
 };
 
 op fcmpe_sz( 0b00011110001[11] : rm[5] : 0b001000[6] : rn[5] : 0b11000[5] );
@@ -1064,12 +1127,7 @@ fcmpe_sz.disasm = {
 
 fcmpe_sz.execute =
 {
-  typedef typename ARCH::F32 F32;
-  typedef typename ARCH::BOOL BOOL;
-
-  F32 a = cpu.GetVF32(rn,0), b = F32(0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPSignalingCompare( cpu, cpu.GetVF32(rn,0), typename ARCH::F32(0) );
 };
 
 op fcmpe_dz( 0b00011110011[11] : rm[5] : 0b001000[6] : rn[5] : 0b11000[5] );
@@ -1081,12 +1139,7 @@ fcmpe_dz.disasm = {
 
 fcmpe_dz.execute =
 {
-  typedef typename ARCH::F64 F64;
-  typedef typename ARCH::BOOL BOOL;
-
-  F64 a = cpu.GetVF64(rn,0), b = F64(0);
-  BOOL le = a <= b, ge = a >= b;
-  cpu.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+  FPSignalingCompare( cpu, cpu.GetVF64(rn,0), typename ARCH::F64(0) );
 };
 
 /*
@@ -1129,16 +1182,28 @@ fcvt_hs.disasm = {
   sink << "fcvt\t" << DisasmH(rd) << ", " << DisasmS(rn);
 };
 
+fcvt_hs.execute = {
+  cpu.SetVF16(rd, FPConvert<typename ARCH::F16>(cpu, cpu.GetVF32(rn,0)));
+};
+
 op fcvt_hd( 0b0001111001100011110000[22] : rn[5] : rd[5] );
 
 fcvt_hd.disasm = {
   sink << "fcvt\t" << DisasmH(rd) << ", " << DisasmD(rn);
 };
 
+fcvt_hd.execute = {
+  cpu.SetVF16(rd, FPConvert<typename ARCH::F16>(cpu, cpu.GetVF64(rn,0)));
+};
+
 op fcvt_sh( 0b0001111011100010010000[22] : rn[5] : rd[5] );
 
 fcvt_sh.disasm = {
   sink << "fcvt\t" << DisasmS(rd) << ", " << DisasmH(rn);
+};
+
+fcvt_sh.execute = {
+  cpu.SetVF32(rd, FPConvert<typename ARCH::F32>(cpu, cpu.GetVF16(rn,0)));
 };
 
 op fcvt_sd( 0b0001111001100010010000[22] : rn[5] : rd[5] );
@@ -1155,6 +1220,10 @@ op fcvt_dh( 0b0001111011100010110000[22] : rn[5] : rd[5] );
 
 fcvt_dh.disasm = {
   sink << "fcvt\t" << DisasmD(rd) << ", " << DisasmH(rn);
+};
+
+fcvt_dh.execute = {
+  cpu.SetVF64(rd, FPConvert<typename ARCH::F64>(cpu, cpu.GetVF16(rn,0)));
 };
 
 op fcvt_ds( 0b0001111000100010110000[22] : rn[5] : rd[5] );
@@ -1180,7 +1249,7 @@ fcvtas_ss.disasm = {
 };
 
 fcvtas_ss.execute = {
-  cpu.SetVS32(rd, typename ARCH::S32(round(cpu.GetVF32(rn,0))));
+  cpu.SetVS32(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32()));
 };
 
 op fcvtas_dd( 0b0101111001100001110010[22] : rn[5] : rd[5] );
@@ -1190,7 +1259,7 @@ fcvtas_dd.disasm = {
 };
 
 fcvtas_dd.execute = {
-  cpu.SetVS64(rd, typename ARCH::S64(round(cpu.GetVF64(rn,0))));
+  cpu.SetVS64(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64()));
 };
 
 op fcvtas_ws( 0b0001111000100100000000[22] : rn[5] : rd[5] );
@@ -1200,7 +1269,7 @@ fcvtas_ws.disasm = {
 };
 
 fcvtas_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(round(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtas_wd( 0b0001111001100100000000[22] : rn[5] : rd[5] );
@@ -1210,7 +1279,7 @@ fcvtas_wd.disasm = {
 };
 
 fcvtas_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(round(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtas_xs( 0b1001111000100100000000[22] : rn[5] : rd[5] );
@@ -1220,7 +1289,7 @@ fcvtas_xs.disasm = {
 };
 
 fcvtas_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(round(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtas_xd( 0b1001111001100100000000[22] : rn[5] : rd[5] );
@@ -1230,7 +1299,7 @@ fcvtas_xd.disasm = {
 };
 
 fcvtas_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(round(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtas_vss( 0b0[1] : q[1] : 0b00111000100001110010[20] : rn[5] : rd[5] );
@@ -1239,10 +1308,21 @@ fcvtas_vss.disasm = {
   sink << "fcvtas\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtas_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVS32(rd, e, FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::S32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtas_v2d2d( 0b0100111001100001110010[22] : rn[5] : rd[5] );
 
 fcvtas_v2d2d.disasm = {
   sink << "fcvtas\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtas_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVS64(rd, e, FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::S64()));
 };
 
 /*
@@ -1262,7 +1342,7 @@ fcvtau_ss.disasm = {
 };
 
 fcvtau_ss.execute = {
-  cpu.SetVU32(rd, typename ARCH::U32(round(cpu.GetVF32(rn,0))));
+  cpu.SetVU32(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtau_dd( 0b0111111001100001110010[22] : rn[5] : rd[5] );
@@ -1272,7 +1352,7 @@ fcvtau_dd.disasm = {
 };
 
 fcvtau_dd.execute = {
-  cpu.SetVU64(rd, typename ARCH::U64(round(cpu.GetVF64(rn,0))));
+  cpu.SetVU64(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtau_ws( 0b0001111000100101000000[22] : rn[5] : rd[5] );
@@ -1282,7 +1362,7 @@ fcvtau_ws.disasm = {
 };
 
 fcvtau_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(round(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtau_wd( 0b0001111001100101000000[22] : rn[5] : rd[5] );
@@ -1292,7 +1372,7 @@ fcvtau_wd.disasm = {
 };
 
 fcvtau_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(round(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtau_xs( 0b1001111000100101000000[22] : rn[5] : rd[5] );
@@ -1302,7 +1382,7 @@ fcvtau_xs.disasm = {
 };
 
 fcvtau_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(round(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtau_xd( 0b1001111001100101000000[22] : rn[5] : rd[5] );
@@ -1312,7 +1392,7 @@ fcvtau_xd.disasm = {
 };
 
 fcvtau_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(round(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtau_vss( 0b0[1] : q[1] : 0b10111000100001110010[20] : rn[5] : rd[5] );
@@ -1321,10 +1401,21 @@ fcvtau_vss.disasm = {
   sink << "fcvtau\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtau_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd, e, FPToInt(cpu, NearestTieAway(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::U32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtau_v2d2d( 0b0110111001100001110010[22] : rn[5] : rd[5] );
 
 fcvtau_v2d2d.disasm = {
   sink << "fcvtau\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtau_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVU64(rd, e, FPToInt(cpu, NearestTieAway(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::U64()));
 };
 
 /*
@@ -1337,11 +1428,39 @@ fcvtl2_v2d4s.disasm = {
   sink << "fcvtl2\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,4,2);
 };
 
+fcvtl2_v2d4s.execute = {
+  typedef typename ARCH::F64 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF32(rn, elements + idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF64(rd, idx, res[idx]);
+    }
+}
+
 op fcvtl2_v4s8h( 0b0100111000100001011110[22] : rn[5] : rd[5] );
 
 fcvtl2_v4s8h.disasm = {
   sink << "fcvtl2\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,8,1);
 };
+
+fcvtl2_v4s8h.execute = {
+  typedef typename ARCH::F32 DST;
+  unsigned const elements = 4;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF16(rn, elements + idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF32(rd, idx, res[idx]);
+    }
+}
 
 op fcvtl_v2d2s( 0b0000111001100001011110[22] : rn[5] : rd[5] );
 
@@ -1349,11 +1468,39 @@ fcvtl_v2d2s.disasm = {
   sink << "fcvtl\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,2);
 };
 
+fcvtl_v2d2s.execute = {
+  typedef typename ARCH::F64 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF32(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF64(rd, idx, res[idx]);
+    }
+}
+
 op fcvtl_v4s4h( 0b0000111000100001011110[22] : rn[5] : rd[5] );
 
 fcvtl_v4s4h.disasm = {
   sink << "fcvtl\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,4,1);
 };
+
+fcvtl_v4s4h.execute = {
+  typedef typename ARCH::F32 DST;
+  unsigned const elements = 4;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF16(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF32(rd, idx, res[idx]);
+    }
+}
 
 /*******************************************************************
  * FCVTMS (scalar)
@@ -1368,7 +1515,7 @@ fcvtms_ss.disasm = {
 };
 
 fcvtms_ss.execute = {
-  cpu.SetVS32(rd, typename ARCH::S32(floor(cpu.GetVF32(rn,0))));
+  cpu.SetVS32(rd, FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32()));
 };
 
 op fcvtms_dd( 0b0101111001100001101110[22] : rn[5] : rd[5] );
@@ -1378,7 +1525,7 @@ fcvtms_dd.disasm = {
 };
 
 fcvtms_dd.execute = {
-  cpu.SetVS64(rd, typename ARCH::S64(floor(cpu.GetVF64(rn,0))));
+  cpu.SetVS64(rd, FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64()));
 };
 
 op fcvtms_ws( 0b0001111000110000000000[22] : rn[5] : rd[5] );
@@ -1388,7 +1535,7 @@ fcvtms_ws.disasm = {
 };
 
 fcvtms_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(floor(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtms_wd( 0b0001111001110000000000[22] : rn[5] : rd[5] );
@@ -1398,7 +1545,7 @@ fcvtms_wd.disasm = {
 };
 
 fcvtms_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(floor(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtms_xs( 0b1001111000110000000000[22] : rn[5] : rd[5] );
@@ -1408,7 +1555,7 @@ fcvtms_xs.disasm = {
 };
 
 fcvtms_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(floor(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtms_xd( 0b1001111001110000000000[22] : rn[5] : rd[5] );
@@ -1418,7 +1565,7 @@ fcvtms_xd.disasm = {
 };
 
 fcvtms_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(floor(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtms_vss( 0b0[1] : q[1] : 0b00111000100001101110[20] : rn[5] : rd[5] );
@@ -1427,10 +1574,21 @@ fcvtms_vss.disasm = {
   sink << "fcvtms\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtms_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVS32(rd, e, FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::S32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtms_v2d2d( 0b0100111001100001101110[22] : rn[5] : rd[5] );
 
 fcvtms_v2d2d.disasm = {
   sink << "fcvtms\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtms_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVS64(rd, e, FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::S64()));
 };
 
 /*
@@ -1450,7 +1608,7 @@ fcvtmu_ss.disasm = {
 };
 
 fcvtmu_ss.execute = {
-  cpu.SetVU32(rd, typename ARCH::U32(floor(cpu.GetVF32(rn,0))));
+  cpu.SetVU32(rd, typename ARCH::U32(FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32())));
 };
 
 op fcvtmu_dd( 0b0111111001100001101110[22] : rn[5] : rd[5] );
@@ -1460,7 +1618,7 @@ fcvtmu_dd.disasm = {
 };
 
 fcvtmu_dd.execute = {
-  cpu.SetVU64(rd, typename ARCH::U64(floor(cpu.GetVF64(rn,0))));
+  cpu.SetVU64(rd, typename ARCH::U64(FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64())));
 };
 
 op fcvtmu_ws( 0b0001111000110001000000[22] : rn[5] : rd[5] );
@@ -1470,7 +1628,7 @@ fcvtmu_ws.disasm = {
 };
 
 fcvtmu_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(floor(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtmu_wd( 0b0001111001110001000000[22] : rn[5] : rd[5] );
@@ -1480,7 +1638,7 @@ fcvtmu_wd.disasm = {
 };
 
 fcvtmu_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(floor(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtmu_xs( 0b1001111000110001000000[22] : rn[5] : rd[5] );
@@ -1490,7 +1648,7 @@ fcvtmu_xs.disasm = {
 };
 
 fcvtmu_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(floor(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtmu_xd( 0b1001111001110001000000[22] : rn[5] : rd[5] );
@@ -1500,7 +1658,7 @@ fcvtmu_xd.disasm = {
 };
 
 fcvtmu_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(floor(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtmu_vss( 0b0[1] : q[1] : 0b10111000100001101110[20] : rn[5] : rd[5] );
@@ -1509,10 +1667,21 @@ fcvtmu_vss.disasm = {
   sink << "fcvtmu\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtmu_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd, e, FPToInt(cpu, TowardNegInf(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::U32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtmu_v2d2d( 0b0110111001100001101110[22] : rn[5] : rd[5] );
 
 fcvtmu_v2d2d.disasm = {
   sink << "fcvtmu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtmu_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVU64(rd, e, FPToInt(cpu, TowardNegInf(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::U64()));
 };
 
 /*
@@ -1525,11 +1694,39 @@ fcvtn2_v4s2d.disasm = {
   sink << "fcvtn2\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,2,3);
 };
 
+fcvtn2_v4s2d.execute = {
+  typedef typename ARCH::F32 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF64(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF32(rd, elements + idx, res[idx]);
+    }
+}
+
 op fcvtn2_v8h4s( 0b0100111000100001011010[22] : rn[5] : rd[5] );
 
 fcvtn2_v8h4s.disasm = {
   sink << "fcvtn2\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,4,2);
 };
+
+fcvtn2_v8h4s.execute = {
+  typedef typename ARCH::F16 DST;
+  unsigned const elements = 4;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF32(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF16(rd, elements + idx, res[idx]);
+    }
+}
 
 op fcvtn_v2s2d( 0b0000111001100001011010[22] : rn[5] : rd[5] );
 
@@ -1537,11 +1734,41 @@ fcvtn_v2s2d.disasm = {
   sink << "fcvtn\t" << DisasmTV(rd,2,2) << ", " << DisasmTV(rn,2,3);
 };
 
+fcvtn_v2s2d.execute = {
+  typedef typename ARCH::F32 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF64(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF32(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8);
+}
+
 op fcvtn_v4h4s( 0b0000111000100001011010[22] : rn[5] : rd[5] );
 
 fcvtn_v4h4s.disasm = {
   sink << "fcvtn\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,2);
 };
+
+fcvtn_v4h4s.execute = {
+  typedef typename ARCH::F16 DST;
+  unsigned const elements = 4;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvert<DST>(cpu, cpu.GetVF32(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF16(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8);
+}
 
 /*******************************************************************
  * FCVTNS
@@ -1556,7 +1783,7 @@ fcvtns_ss.disasm = {
 };
 
 fcvtns_ss.execute = {
-  cpu.SetVS32(rd, typename ARCH::S32(nearbyint(cpu.GetVF32(rn,0))));
+  cpu.SetVS32(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32()));
 };
 
 op fcvtns_dd( 0b0101111001100001101010[22] : rn[5] : rd[5] );
@@ -1566,7 +1793,7 @@ fcvtns_dd.disasm = {
 };
 
 fcvtns_dd.execute = {
-  cpu.SetVS64(rd, typename ARCH::S64(nearbyint(cpu.GetVF64(rn,0))));
+  cpu.SetVS64(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64()));
 };
 
 op fcvtns_ws( 0b0001111000100000000000[22] : rn[5] : rd[5] );
@@ -1576,7 +1803,7 @@ fcvtns_ws.disasm = {
 };
 
 fcvtns_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(nearbyint(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtns_wd( 0b0001111001100000000000[22] : rn[5] : rd[5] );
@@ -1586,7 +1813,7 @@ fcvtns_wd.disasm = {
 };
 
 fcvtns_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(nearbyint(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtns_xs( 0b1001111000100000000000[22] : rn[5] : rd[5] );
@@ -1596,7 +1823,7 @@ fcvtns_xs.disasm = {
 };
 
 fcvtns_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(nearbyint(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtns_xd( 0b1001111001100000000000[22] : rn[5] : rd[5] );
@@ -1606,7 +1833,7 @@ fcvtns_xd.disasm = {
 };
 
 fcvtns_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(nearbyint(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtns_vss( 0b0[1] : q[1] : 0b00111000100001101010[20] : rn[5] : rd[5] );
@@ -1615,10 +1842,21 @@ fcvtns_vss.disasm = {
   sink << "fcvtns\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtns_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVS32(rd, e, FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::S32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtns_v2d2d( 0b0100111001100001101010[22] : rn[5] : rd[5] );
 
 fcvtns_v2d2d.disasm = {
   sink << "fcvtns\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtns_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVS64(rd, e, FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::S64()));
 };
 
 /*
@@ -1638,7 +1876,7 @@ fcvtnu_ss.disasm = {
 };
 
 fcvtnu_ss.execute = {
-  cpu.SetVU32(rd, typename ARCH::U32(nearbyint(cpu.GetVF32(rn,0))));
+  cpu.SetVU32(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtnu_dd( 0b0111111001100001101010[22] : rn[5] : rd[5] );
@@ -1648,7 +1886,7 @@ fcvtnu_dd.disasm = {
 };
 
 fcvtnu_dd.execute = {
-  cpu.SetVU64(rd, typename ARCH::U64(nearbyint(cpu.GetVF64(rn,0))));
+  cpu.SetVU64(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtnu_ws( 0b0001111000100001000000[22] : rn[5] : rd[5] );
@@ -1658,7 +1896,7 @@ fcvtnu_ws.disasm = {
 };
 
 fcvtnu_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(nearbyint(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtnu_wd( 0b0001111001100001000000[22] : rn[5] : rd[5] );
@@ -1668,7 +1906,7 @@ fcvtnu_wd.disasm = {
 };
 
 fcvtnu_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(nearbyint(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtnu_xs( 0b1001111000100001000000[22] : rn[5] : rd[5] );
@@ -1678,7 +1916,7 @@ fcvtnu_xs.disasm = {
 };
 
 fcvtnu_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(nearbyint(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtnu_xd( 0b1001111001100001000000[22] : rn[5] : rd[5] );
@@ -1688,7 +1926,7 @@ fcvtnu_xd.disasm = {
 };
 
 fcvtnu_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(nearbyint(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtnu_vss( 0b0[1] : q[1] : 0b10111000100001101010[20] : rn[5] : rd[5] );
@@ -1697,10 +1935,21 @@ fcvtnu_vss.disasm = {
   sink << "fcvtnu\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtnu_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd, e, FPToInt(cpu, NearestTieEven(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::U32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtnu_v2d2d( 0b0110111001100001101010[22] : rn[5] : rd[5] );
 
 fcvtnu_v2d2d.disasm = {
   sink << "fcvtnu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtnu_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVU64(rd, e, FPToInt(cpu, NearestTieEven(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::U64()));
 };
 
 /*
@@ -1720,7 +1969,7 @@ fcvtps_ss.disasm = {
 };
 
 fcvtps_ss.execute = {
-  cpu.SetVS32(rd, typename ARCH::S32(ceil(cpu.GetVF32(rn,0))));
+  cpu.SetVS32(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32()));
 };
 
 op fcvtps_dd( 0b0101111011100001101010[22] : rn[5] : rd[5] );
@@ -1730,7 +1979,7 @@ fcvtps_dd.disasm = {
 };
 
 fcvtps_dd.execute = {
-  cpu.SetVS64(rd, typename ARCH::S64(ceil(cpu.GetVF64(rn,0))));
+  cpu.SetVS64(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64()));
 };
 
 op fcvtps_ws( 0b0001111000101000000000[22] : rn[5] : rd[5] );
@@ -1740,7 +1989,7 @@ fcvtps_ws.disasm = {
 };
 
 fcvtps_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(ceil(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtps_wd( 0b0001111001101000000000[22] : rn[5] : rd[5] );
@@ -1750,7 +1999,7 @@ fcvtps_wd.disasm = {
 };
 
 fcvtps_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(ceil(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtps_xs( 0b1001111000101000000000[22] : rn[5] : rd[5] );
@@ -1760,7 +2009,7 @@ fcvtps_xs.disasm = {
 };
 
 fcvtps_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(ceil(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtps_xd( 0b1001111001101000000000[22] : rn[5] : rd[5] );
@@ -1770,7 +2019,7 @@ fcvtps_xd.disasm = {
 };
 
 fcvtps_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(ceil(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtps_vss( 0b0[1] : q[1] : 0b00111010100001101010[20] : rn[5] : rd[5] );
@@ -1779,10 +2028,21 @@ fcvtps_vss.disasm = {
   sink << "fcvtps\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtps_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVS32(rd, e, FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::S32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtps_v2d2d( 0b0100111011100001101010[22] : rn[5] : rd[5] );
 
 fcvtps_v2d2d.disasm = {
   sink << "fcvtps\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtps_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVS64(rd, e, FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::S64()));
 };
 
 /*
@@ -1802,7 +2062,7 @@ fcvtpu_ss.disasm = {
 };
 
 fcvtpu_ss.execute = {
-  cpu.SetVU32(rd, typename ARCH::U32(ceil(cpu.GetVF32(rn,0))));
+  cpu.SetVU32(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtpu_dd( 0b0111111011100001101010[22] : rn[5] : rd[5] );
@@ -1812,7 +2072,7 @@ fcvtpu_dd.disasm = {
 };
 
 fcvtpu_dd.execute = {
-  cpu.SetVU64(rd, typename ARCH::U64(ceil(cpu.GetVF64(rn,0))));
+  cpu.SetVU64(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtpu_ws( 0b0001111000101001000000[22] : rn[5] : rd[5] );
@@ -1822,7 +2082,7 @@ fcvtpu_ws.disasm = {
 };
 
 fcvtpu_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(ceil(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtpu_wd( 0b0001111001101001000000[22] : rn[5] : rd[5] );
@@ -1832,7 +2092,7 @@ fcvtpu_wd.disasm = {
 };
 
 fcvtpu_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(ceil(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtpu_xs( 0b1001111000101001000000[22] : rn[5] : rd[5] );
@@ -1842,7 +2102,7 @@ fcvtpu_xs.disasm = {
 };
 
 fcvtpu_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(ceil(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtpu_xd( 0b1001111001101001000000[22] : rn[5] : rd[5] );
@@ -1852,7 +2112,7 @@ fcvtpu_xd.disasm = {
 };
 
 fcvtpu_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(ceil(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtpu_vss( 0b0[1] : q[1] : 0b10111010100001101010[20] : rn[5] : rd[5] );
@@ -1861,10 +2121,21 @@ fcvtpu_vss.disasm = {
   sink << "fcvtpu\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fcvtpu_vss.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd, e, FPToInt(cpu, TowardPosInf(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::U32()));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fcvtpu_v2d2d( 0b0110111011100001101010[22] : rn[5] : rd[5] );
 
 fcvtpu_v2d2d.disasm = {
   sink << "fcvtpu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fcvtpu_v2d2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVU64(rd, e, FPToInt(cpu, TowardPosInf(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::U64()));
 };
 
 /*
@@ -1877,17 +2148,50 @@ fcvtxn2_v4s2d.disasm = {
   sink << "fcvtxn2\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,2,3);
 };
 
+fcvtxn2_v4s2d.execute = {
+  typedef typename ARCH::F32 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvertRoundOdd<DST>(cpu, cpu.GetVF64(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF32(rd, elements + idx, res[idx]);
+    }
+}
+
 op fcvtxn_sd( 0b0111111001100001011010[22] : rn[5] : rd[5] );
 
 fcvtxn_sd.disasm = {
   sink << "fcvtxn\t" << DisasmS(rd) << ", " << DisasmD(rn);
 };
 
+fcvtxn_sd.execute = {
+  cpu.SetVF32(rd, FPConvertRoundOdd<typename ARCH::F32>(cpu, cpu.GetVF64(rn, 0)));
+}
+
 op fcvtxn_v2s2d( 0b0010111001100001011010[22] : rn[5] : rd[5] );
 
 fcvtxn_v2s2d.disasm = {
   sink << "fcvtxn\t" << DisasmTV(rd,2,2) << ", " << DisasmTV(rn,2,3);
 };
+
+fcvtxn_v2s2d.execute = {
+  typedef typename ARCH::F32 DST;
+  unsigned const elements = 2;
+  DST res[elements];
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      res[idx] = FPConvertRoundOdd<DST>(cpu, cpu.GetVF64(rn, idx));
+    }
+  for (unsigned idx = 0; idx < elements; ++idx)
+    {
+      cpu.SetVF32(rd, idx, res[idx]);
+    }
+  cpu.ClearHighV(rd, 8);
+}
 
 /*******************************************************************
  * FCVTZS (integer)
@@ -1902,7 +2206,7 @@ fcvtzs_ss.disasm = {
 };
 
 fcvtzs_ss.execute = {
-  cpu.SetVS32(rd, typename ARCH::S32(trunc(cpu.GetVF32(rn,0))));
+  cpu.SetVS32(rd, typename ARCH::S32(FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtzs_dd( 0b0101111011100001101110[22] : rn[5] : rd[5] );
@@ -1912,7 +2216,7 @@ fcvtzs_dd.disasm = {
 };
 
 fcvtzs_dd.execute = {
-  cpu.SetVS64(rd, typename ARCH::S64(trunc(cpu.GetVF64(rn,0))));
+  cpu.SetVS64(rd, typename ARCH::S64(FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtzs_ws( 0b0001111000111000000000[22] : rn[5] : rd[5] );
@@ -1922,7 +2226,7 @@ fcvtzs_ws.disasm = {
 };
 
 fcvtzs_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(trunc(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtzs_wd( 0b0001111001111000000000[22] : rn[5] : rd[5] );
@@ -1932,7 +2236,7 @@ fcvtzs_wd.disasm = {
 };
 
 fcvtzs_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(typename ARCH::S32(trunc(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U32(FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S32())));
 };
 
 op fcvtzs_xs( 0b1001111000111000000000[22] : rn[5] : rd[5] );
@@ -1942,7 +2246,7 @@ fcvtzs_xs.disasm = {
 };
 
 fcvtzs_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(trunc(cpu.GetVF32(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtzs_xd( 0b1001111001111000000000[22] : rn[5] : rd[5] );
@@ -1952,7 +2256,7 @@ fcvtzs_xd.disasm = {
 };
 
 fcvtzs_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(typename ARCH::S64(trunc(cpu.GetVF64(rn,0)))));
+  cpu.SetGZR(rd, typename ARCH::U64(FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::S64())));
 };
 
 op fcvtzs_vss( 0b0[1] : q[1] : 0b00111010100001101110[20] : rn[5] : rd[5] );
@@ -1962,11 +2266,9 @@ fcvtzs_vss.disasm = {
 };
 
 fcvtzs_vss.execute = {
-  typedef typename ARCH::S32 S32;
-
-  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
-    cpu.SetVS32(rd, idx, S32(trunc(cpu.GetVF32(rn,idx))));
-  cpu.ClearHighV(rd,8<<q);
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVS32(rd, e, FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::S32()));
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op fcvtzs_v2d2d( 0b0100111011100001101110[22] : rn[5] : rd[5] );
@@ -1976,11 +2278,8 @@ fcvtzs_v2d2d.disasm = {
 };
 
 fcvtzs_v2d2d.execute = {
-  typedef typename ARCH::S64 S64;
-
-  for (unsigned idx = 0, end=1<<1; idx < end; ++idx)
-    cpu.SetVS64(rd, idx, S64(trunc(cpu.GetVF64(rn,idx))));
-  cpu.ClearHighV(rd,8<<1);
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVS64(rd, e, FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::S64()));
 };
 
 /*
@@ -2001,11 +2300,23 @@ fcvtzs_wsi.disasm = {
   sink << "fcvtzs\t" << DisasmGZWR(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
 };
 
+fcvtzs_wsi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  cpu.SetGZR(rd, U32(FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,0), fbits, /* exact */ true, S32())));
+};
+
 op fcvtzs_wdi( 0b00011110010110001[17] : scale[5] : rn[5] : rd[5] );
 fcvtzs_wdi.var fbits : {unsigned} = {32-scale};
 
 fcvtzs_wdi.disasm = {
   sink << "fcvtzs\t" << DisasmGZWR(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
+};
+
+fcvtzs_wdi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  cpu.SetGZR(rd, U32(FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,0), fbits, /* exact */ true, S32())));
 };
 
 op fcvtzs_xsi( 0b1001111000011000[16] : scale[6] : rn[5] : rd[5] );
@@ -2015,6 +2326,12 @@ fcvtzs_xsi.disasm = {
   sink << "fcvtzs\t" << DisasmGZXR(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
 };
 
+fcvtzs_xsi.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  cpu.SetGZR(rd, U64(FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,0), fbits, /* exact */ true, S64())));
+};
+
 op fcvtzs_xdi( 0b1001111001011000[16] : scale[6] : rn[5] : rd[5] );
 fcvtzs_xdi.var fbits : {unsigned} = {64-scale};
 
@@ -2022,32 +2339,63 @@ fcvtzs_xdi.disasm = {
   sink << "fcvtzs\t" << DisasmGZXR(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
 };
 
+fcvtzs_xdi.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  cpu.SetGZR(rd, U64(FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,0), fbits, /* exact */ true, S64())));
+};
+
 op fcvtzs_ssi( 0b01011111001[11] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzs_ssi.var shift : {unsigned} = {32 - lro};
+fcvtzs_ssi.var fbits : {unsigned} = {32 - lro};
 
 fcvtzs_ssi.disasm = {
-  sink << "fcvtzs\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(shift);
+  sink << "fcvtzs\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
+};
+
+fcvtzs_ssi.execute = {
+  typedef typename ARCH::S32 S32;
+  cpu.SetVS32(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,0), fbits, /* exact */ true, S32()));
 };
 
 op fcvtzs_ddi( 0b0101111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzs_ddi.var shift : {unsigned} = {64 - lro};
+fcvtzs_ddi.var fbits : {unsigned} = {64 - lro};
 
 fcvtzs_ddi.disasm = {
-  sink << "fcvtzs\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+  sink << "fcvtzs\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
+};
+
+fcvtzs_ddi.execute = {
+  typedef typename ARCH::S64 S64;
+  cpu.SetVS64(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,0), fbits, /* exact */ true, S64()));
 };
 
 op fcvtzs_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzs_vssi.var shift : {unsigned} = {32 - lro};
+fcvtzs_vssi.var fbits : {unsigned} = {32 - lro};
 
 fcvtzs_vssi.disasm = {
-  sink << "fcvtzs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+  sink << "fcvtzs\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(fbits);
+};
+
+fcvtzs_vssi.execute = {
+  typedef typename ARCH::S32 S32;
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      cpu.SetVS32(rd, idx, FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,idx), fbits, /* exact */ true, S32()));
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op fcvtzs_v2d2di( 0b0100111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzs_v2d2di.var shift : {unsigned} = {64 - lro};
+fcvtzs_v2d2di.var fbits : {unsigned} = {64 - lro};
 
 fcvtzs_v2d2di.disasm = {
-  sink << "fcvtzs\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
+  sink << "fcvtzs\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(fbits);
+};
+
+fcvtzs_v2d2di.execute = {
+  typedef typename ARCH::S64 S64;
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    cpu.SetVS64(rd, idx, FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,idx), fbits, /* exact */ true, S64()));
 };
 
 /*
@@ -2067,7 +2415,7 @@ fcvtzu_ss.disasm = {
 };
 
 fcvtzu_ss.execute = {
-  cpu.SetVU32(rd, typename ARCH::U32(trunc(cpu.GetVF32(rn,0))));
+  cpu.SetVU32(rd, FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtzu_dd( 0b0111111011100001101110[22] : rn[5] : rd[5] );
@@ -2077,7 +2425,7 @@ fcvtzu_dd.disasm = {
 };
 
 fcvtzu_dd.execute = {
-  cpu.SetVU64(rd, typename ARCH::U64(trunc(cpu.GetVF64(rn,0))));
+  cpu.SetVU64(rd, FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtzu_ws( 0b0001111000111001000000[22] : rn[5] : rd[5] );
@@ -2087,7 +2435,7 @@ fcvtzu_ws.disasm = {
 };
 
 fcvtzu_ws.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(trunc(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtzu_wd( 0b0001111001111001000000[22] : rn[5] : rd[5] );
@@ -2097,7 +2445,7 @@ fcvtzu_wd.disasm = {
 };
 
 fcvtzu_wd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U32(trunc(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U32()));
 };
 
 op fcvtzu_xs( 0b1001111000111001000000[22] : rn[5] : rd[5] );
@@ -2107,7 +2455,7 @@ fcvtzu_xs.disasm = {
 };
 
 fcvtzu_xs.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(trunc(cpu.GetVF32(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtzu_xd( 0b1001111001111001000000[22] : rn[5] : rd[5] );
@@ -2117,7 +2465,7 @@ fcvtzu_xd.disasm = {
 };
 
 fcvtzu_xd.execute = {
-  cpu.SetGZR(rd, typename ARCH::U64(trunc(cpu.GetVF64(rn,0))));
+  cpu.SetGZR(rd, FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ true, typename ARCH::U64()));
 };
 
 op fcvtzu_vss( 0b0[1] : q[1] : 0b10111010100001101110[20] : rn[5] : rd[5] );
@@ -2127,9 +2475,9 @@ fcvtzu_vss.disasm = {
 };
 
 fcvtzu_vss.execute = {
-  for (unsigned idx = 0, end=2<<q; idx < end; ++idx)
-    cpu.SetVU32(rd, idx, typename ARCH::U32(trunc(cpu.GetVF32(rn,idx))));
-  cpu.ClearHighV(rd,8<<q);
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVU32(rd, e, FPToInt(cpu, TowardZero(), cpu.GetVF32(rn,e), /* exact */ true, typename ARCH::U32()));
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op fcvtzu_v2d2d( 0b0110111011100001101110[22] : rn[5] : rd[5] );
@@ -2139,9 +2487,8 @@ fcvtzu_v2d2d.disasm = {
 };
 
 fcvtzu_v2d2d.execute = {
-  for (unsigned idx = 0, end=1<<1; idx < end; ++idx)
-    cpu.SetVU64(rd, idx, typename ARCH::U64(trunc(cpu.GetVF64(rn,idx))));
-  cpu.ClearHighV(rd,8<<1);
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVU64(rd, e, FPToInt(cpu, TowardZero(), cpu.GetVF64(rn,e), /* exact */ true, typename ARCH::U64()));
 };
 
 /*
@@ -2161,11 +2508,21 @@ fcvtzu_wsi.disasm = {
   sink << "fcvtzu\t" << DisasmGZWR(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
 };
 
+fcvtzu_wsi.execute = {
+  typedef typename ARCH::U32 U32;
+  cpu.SetGZR(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,0), fbits, /* exact */ true, U32()));
+};
+
 op fcvtzu_xsi( 0b1001111000011001[16] : scale[6] : rn[5] : rd[5] );
 fcvtzu_xsi.var fbits : {unsigned} = {64-scale};
 
 fcvtzu_xsi.disasm = {
   sink << "fcvtzu\t" << DisasmGZXR(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
+};
+
+fcvtzu_xsi.execute = {
+  typedef typename ARCH::U64 U64;
+  cpu.SetGZR(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,0), fbits, /* exact */ true, U64()));
 };
 
 op fcvtzu_wdi( 0b00011110010110011[17] : scale[5] : rn[5] : rd[5] );
@@ -2175,6 +2532,11 @@ fcvtzu_wdi.disasm = {
   sink << "fcvtzu\t" << DisasmGZWR(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
 };
 
+fcvtzu_wdi.execute = {
+  typedef typename ARCH::U32 U32;
+  cpu.SetGZR(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,0), fbits, /* exact */ true, U32()));
+};
+
 op fcvtzu_xdi( 0b1001111001011001[16] : scale[6] : rn[5] : rd[5] );
 fcvtzu_xdi.var fbits : {unsigned} = {64-scale};
 
@@ -2182,32 +2544,62 @@ fcvtzu_xdi.disasm = {
   sink << "fcvtzu\t" << DisasmGZXR(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
 };
 
+fcvtzu_xdi.execute = {
+  typedef typename ARCH::U64 U64;
+  cpu.SetGZR(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,0), fbits, /* exact */ true, U64()));
+};
+
 op fcvtzu_ssi( 0b01111111001[11] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzu_ssi.var shift : {unsigned} = {32 - lro};
+fcvtzu_ssi.var fbits : {unsigned} = {32 - lro};
 
 fcvtzu_ssi.disasm = {
-  sink << "fcvtzu\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(shift);
+  sink << "fcvtzu\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
+};
+
+fcvtzu_ssi.execute = {
+  typedef typename ARCH::U32 U32;
+  cpu.SetVU32(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,0), fbits, /* exact */ true, U32()));
 };
 
 op fcvtzu_ddi( 0b0111111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzu_ddi.var shift : {unsigned} = {64 - lro};
+fcvtzu_ddi.var fbits : {unsigned} = {64 - lro};
 
 fcvtzu_ddi.disasm = {
-  sink << "fcvtzu\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+  sink << "fcvtzu\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
+};
+
+fcvtzu_ddi.execute = {
+  typedef typename ARCH::U64 U64;
+  cpu.SetVU64(rd, FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,0), fbits, /* exact */ true, U64()));
 };
 
 op fcvtzu_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzu_vssi.var shift : {unsigned} = {32 - lro};
+fcvtzu_vssi.var fbits : {unsigned} = {32 - lro};
 
 fcvtzu_vssi.disasm = {
-  sink << "fcvtzu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+  sink << "fcvtzu\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(fbits);
+};
+
+fcvtzu_vssi.execute = {
+  typedef typename ARCH::U32 U32;
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      cpu.SetVU32(rd, idx, FPToFixedRoundTowardZero(cpu, cpu.GetVF32(rn,idx), fbits, /* exact */ true, U32()));
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op fcvtzu_v2d2di( 0b0110111101[10] : lro[6] : 0b111111[6] : rn[5] : rd[5] );
-fcvtzu_v2d2di.var shift : {unsigned} = {64 - lro};
+fcvtzu_v2d2di.var fbits : {unsigned} = {64 - lro};
 
 fcvtzu_v2d2di.disasm = {
-  sink << "fcvtzu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
+  sink << "fcvtzu\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(fbits);
+};
+
+fcvtzu_v2d2di.execute = {
+  typedef typename ARCH::U64 U64;
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    cpu.SetVU64(rd, idx, FPToFixedRoundTowardZero(cpu, cpu.GetVF64(rn,idx), fbits, /* exact */ true, U64()));
 };
 
 /*
@@ -2398,10 +2790,18 @@ fmaxnmp_dv2d.disasm = {
   sink << "fmaxnmp\t" << DisasmD(rd) << ", " << DisasmTV(rn,2,3);
 };
 
+fmaxnmp_dv2d.execute = {
+  cpu.SetVF64(rd, FPMaxNumber(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rn, 1)));
+};
+
 op fmaxnmp_sv2s( 0b0111111000110000110010[22] : rn[5] : rd[5] );
 
 fmaxnmp_sv2s.disasm = {
   sink << "fmaxnmp\t" << DisasmS(rd) << ", " << DisasmTV(rn,2,2);
+};
+
+fmaxnmp_sv2s.execute = {
+  cpu.SetVF32(rd, FPMaxNumber(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1)));
 };
 
 op fmaxnmp_vsvsvs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
@@ -2410,10 +2810,40 @@ fmaxnmp_vsvsvs.disasm = {
   sink << "fmaxnmp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fmaxnmp_vsvsvs.execute = {
+  unsigned const elements = 2<<q;
+  typename ARCH::F32 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMaxNumber(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rn, e+1));
+      res[(elements+e)/2] = FPMaxNumber(cpu, cpu.GetVF32(rm, e), cpu.GetVF32(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF32(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fmaxnmp_v2dv2dv2d( 0b01101110011[11] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
 
 fmaxnmp_v2dv2dv2d.disasm = {
   sink << "fmaxnmp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+fmaxnmp_v2dv2dv2d.execute = {
+  unsigned const elements = 2;
+  typename ARCH::F64 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMaxNumber(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rn, e+1));
+      res[(elements+e)/2] = FPMaxNumber(cpu, cpu.GetVF64(rm, e), cpu.GetVF64(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF64(rd, e, res[e]);
 };
 
 op fmaxnmv_sv4s( 0b0110111000110000110010[22] : rn[5] : rd[5] );
@@ -2422,10 +2852,23 @@ fmaxnmv_sv4s.disasm = {
   sink << "fmaxnmv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
 };
 
+fmaxnmv_sv4s.execute = {
+  typedef typename ARCH::F32 F32;
+
+  F32 lo = FPMaxNumber(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1));
+  F32 hi = FPMaxNumber(cpu, cpu.GetVF32(rn, 2), cpu.GetVF32(rn, 3));
+  F32 res = FPMaxNumber(cpu, lo, hi);
+  cpu.SetVF32(rd, res);
+};
+
 op fmaxp_dv2d( 0b0111111001110000111110[22] : rn[5] : rd[5] );
 
 fmaxp_dv2d.disasm = {
   sink << "fmaxp\t" << DisasmD(rd) << ", " << DisasmTV(rn,2,3);
+};
+
+fmaxp_dv2d.execute = {
+  cpu.SetVF64(rd, FPMax(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rn, 1)));
 };
 
 op fmaxp_sv2s( 0b0111111000110000111110[22] : rn[5] : rd[5] );
@@ -2434,10 +2877,30 @@ fmaxp_sv2s.disasm = {
   sink << "fmaxp\t" << DisasmS(rd) << ", " << DisasmTV(rn,2,2);
 };
 
+fmaxp_sv2s.execute = {
+  cpu.SetVF32(rd, FPMax(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1)));
+};
+
 op fmaxp_vsvsvs( 0b0[1] : q[1] : 0b101110001[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
 
 fmaxp_vsvsvs.disasm = {
   sink << "fmaxp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+};
+
+fmaxp_vsvsvs.execute = {
+  unsigned const elements = 2<<q;
+  typename ARCH::F32 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMax(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rn, e+1));
+      res[(elements+e)/2] = FPMax(cpu, cpu.GetVF32(rm, e), cpu.GetVF32(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF32(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op fmaxp_v2dv2dv2d( 0b01101110011[11] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
@@ -2446,10 +2909,33 @@ fmaxp_v2dv2dv2d.disasm = {
   sink << "fmaxp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
+fmaxp_v2dv2dv2d.execute = {
+  unsigned const elements = 2;
+  typename ARCH::F64 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMax(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rn, e+1));
+      res[(elements+e)/2] = FPMax(cpu, cpu.GetVF64(rm, e), cpu.GetVF64(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF64(rd, e, res[e]);
+};
+
 op fmaxv_sv4s( 0b0110111000110000111110[22] : rn[5] : rd[5] );
 
 fmaxv_sv4s.disasm = {
   sink << "fmaxv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
+};
+
+fmaxv_sv4s.execute = {
+  typedef typename ARCH::F32 F32;
+
+  F32 lo = FPMax(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1));
+  F32 hi = FPMax(cpu, cpu.GetVF32(rn, 2), cpu.GetVF32(rn, 3));
+  F32 res = FPMax(cpu, lo, hi);
+  cpu.SetVF32(rd, res);
 };
 
 /*******************************************************************
@@ -2554,10 +3040,18 @@ fminnmp_sv2s.disasm = {
   sink << "fminnmp\t" << DisasmS(rd) << ", " << DisasmTV(rn,2,2);
 };
 
+fminnmp_sv2s.execute = {
+  cpu.SetVF32(rd, FPMinNumber(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1)));
+};
+
 op fminnmp_dv2d( 0b0111111011110000110010[22] : rn[5] : rd[5] );
 
 fminnmp_dv2d.disasm = {
   sink << "fminnmp\t" << DisasmD(rd) << ", " << DisasmTV(rn,2,3);
+};
+
+fminnmp_dv2d.execute = {
+  cpu.SetVF64(rd, FPMinNumber(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rn, 1)));
 };
 
 op fminnmp_vsvsvs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
@@ -2566,10 +3060,40 @@ fminnmp_vsvsvs.disasm = {
   sink << "fminnmp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fminnmp_vsvsvs.execute = {
+  unsigned const elements = 2<<q;
+  typename ARCH::F32 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMinNumber(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rn, e+1));
+      res[(elements+e)/2] = FPMinNumber(cpu, cpu.GetVF32(rm, e), cpu.GetVF32(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF32(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fminnmp_v2dv2dv2d( 0b01101110111[11] : rm[5] : 0b110001[6] : rn[5] : rd[5] );
 
 fminnmp_v2dv2dv2d.disasm = {
   sink << "fminnmp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+fminnmp_v2dv2dv2d.execute = {
+  unsigned const elements = 2;
+  typename ARCH::F64 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMinNumber(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rn, e+1));
+      res[(elements+e)/2] = FPMinNumber(cpu, cpu.GetVF64(rm, e), cpu.GetVF64(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF64(rd, e, res[e]);
 };
 
 op fminnmv_sv4s( 0b0110111010110000110010[22] : rn[5] : rd[5] );
@@ -2578,10 +3102,23 @@ fminnmv_sv4s.disasm = {
   sink << "fminnmv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
 };
 
+fminnmv_sv4s.execute = {
+  typedef typename ARCH::F32 F32;
+
+  F32 lo = FPMinNumber(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1));
+  F32 hi = FPMinNumber(cpu, cpu.GetVF32(rn, 2), cpu.GetVF32(rn, 3));
+  F32 res = FPMinNumber(cpu, lo, hi);
+  cpu.SetVF32(rd, res);
+};
+
 op fminp_sv2s( 0b0111111010110000111110[22] : rn[5] : rd[5] );
 
 fminp_sv2s.disasm = {
   sink << "fminp\t" << DisasmS(rd) << ", " << DisasmTV(rn,2,2);
+};
+
+fminp_sv2s.execute = {
+  cpu.SetVF32(rd, FPMin(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1)));
 };
 
 op fminp_dv2d( 0b0111111011110000111110[22] : rn[5] : rd[5] );
@@ -2590,10 +3127,30 @@ fminp_dv2d.disasm = {
   sink << "fminp\t" << DisasmD(rd) << ", " << DisasmTV(rn,2,3);
 };
 
+fminp_dv2d.execute = {
+  cpu.SetVF64(rd, FPMin(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rn, 1)));
+};
+
 op fminp_vsvsvs( 0b0[1] : q[1] : 0b101110101[9] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
 
 fminp_vsvsvs.disasm = {
   sink << "fminp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
+};
+
+fminp_vsvsvs.execute = {
+  unsigned const elements = 2<<q;
+  typename ARCH::F32 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMin(cpu, cpu.GetVF32(rn, e), cpu.GetVF32(rn, e+1));
+      res[(elements+e)/2] = FPMin(cpu, cpu.GetVF32(rm, e), cpu.GetVF32(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF32(rd, e, res[e]);
+
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op fminp_v2dv2dv2d( 0b01101110111[11] : rm[5] : 0b111101[6] : rn[5] : rd[5] );
@@ -2602,10 +3159,33 @@ fminp_v2dv2dv2d.disasm = {
   sink << "fminp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
+fminp_v2dv2dv2d.execute = {
+  unsigned const elements = 2;
+  typename ARCH::F64 res[elements];
+
+  for (unsigned e=0; e < elements; e += 2)
+    {
+      res[       (0+e)/2] = FPMin(cpu, cpu.GetVF64(rn, e), cpu.GetVF64(rn, e+1));
+      res[(elements+e)/2] = FPMin(cpu, cpu.GetVF64(rm, e), cpu.GetVF64(rm, e+1));
+    }
+
+  for (unsigned e=0; e < elements; e += 1)
+    cpu.SetVF64(rd, e, res[e]);
+};
+
 op fminv_sv4s( 0b0110111010110000111110[22] : rn[5] : rd[5] );
 
 fminv_sv4s.disasm = {
   sink << "fminv\t" << DisasmS(rd) << ", " << DisasmTV(rn,4,2);
+};
+
+fminv_sv4s.execute = {
+  typedef typename ARCH::F32 F32;
+
+  F32 lo = FPMin(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rn, 1));
+  F32 hi = FPMin(cpu, cpu.GetVF32(rn, 2), cpu.GetVF32(rn, 3));
+  F32 res = FPMin(cpu, lo, hi);
+  cpu.SetVF32(rd, res);
 };
 
 /*******************************************************************
@@ -2705,7 +3285,7 @@ fmls_si.disasm = {
 
 fmls_si.execute = {
   typename ARCH::F32 element = cpu.GetVF32(rm, index);
-  cpu.SetVF32(rd, FPMulSub(cpu, cpu.GetVF32(rd, 0), cpu.GetVF32(rn, 0), element));
+  cpu.SetVF32(rd, FPMulAdd(cpu, cpu.GetVF32(rd, 0), -cpu.GetVF32(rn, 0), element));
 };
 
 op fmls_di( 0b01011111110[11] : rm[5] : 0b0101[4] : index[1] : 0b0[1] : rn[5] : rd[5] );
@@ -2716,7 +3296,7 @@ fmls_di.disasm = {
 
 fmls_di.execute = {
   typename ARCH::F64 element = cpu.GetVF64(rm, index);
-  cpu.SetVF64(rd, FPMulSub(cpu, cpu.GetVF64(rd, 0), cpu.GetVF64(rn, 0), element));
+  cpu.SetVF64(rd, FPMulAdd(cpu, cpu.GetVF64(rd, 0), -cpu.GetVF64(rn, 0), element));
 };
 
 op fmls_vsi( 0b0[1] : q[1] : 0b00111110[8] : index0[1] : rm[5] : 0b0101[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -2729,7 +3309,7 @@ fmls_vsi.disasm = {
 fmls_vsi.execute = {
   typename ARCH::F32 element = cpu.GetVF32(rm, index);
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, FPMulSub(cpu, cpu.GetVF32(rd, idx), cpu.GetVF32(rn, idx), element));
+    cpu.SetVF32(rd, idx, FPMulAdd(cpu, cpu.GetVF32(rd, idx), -cpu.GetVF32(rn, idx), element));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -2742,7 +3322,7 @@ fmls_v2di.disasm = {
 fmls_v2di.execute = {
   typename ARCH::F64 element = cpu.GetVF64(rm, index);
   for (unsigned idx = 0, end = 2; idx < end; ++idx)
-    cpu.SetVF64(rd, idx, FPMulSub(cpu, cpu.GetVF64(rd, idx), cpu.GetVF64(rn, idx), element));
+    cpu.SetVF64(rd, idx, FPMulAdd(cpu, cpu.GetVF64(rd, idx), -cpu.GetVF64(rn, idx), element));
 };
 
 op fmls_vs( 0b0[1] : q[1] : 0b001110101[9] : rm[5] : 0b110011[6] : rn[5] : rd[5] );
@@ -2753,7 +3333,7 @@ fmls_vs.disasm = {
 
 fmls_vs.execute = {
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, FPMulSub(cpu, cpu.GetVF32(rd, idx), cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx)));
+    cpu.SetVF32(rd, idx, FPMulAdd(cpu, cpu.GetVF32(rd, idx), -cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx)));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -2765,7 +3345,7 @@ fmls_v2d.disasm = {
 
 fmls_v2d.execute = {
   for (unsigned idx = 0, end = 2; idx < end; ++idx)
-    cpu.SetVF64(rd, idx, FPMulSub(cpu, cpu.GetVF64(rd, idx), cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx)));
+    cpu.SetVF64(rd, idx, FPMulAdd(cpu, cpu.GetVF64(rd, idx), -cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx)));
 };
 
 /*
@@ -2883,12 +3463,6 @@ fmov_sw.execute = {
   cpu.SetVU32(rd,data);
 };
 
-op fmov_dw( 0b0001111001100111000000[22] : rn[5] : rd[5] );
-
-fmov_dw.disasm = {
-  sink << "fmov\t" << DisasmD(rd) << ", " << DisasmGZWR(rn);
-};
-
 op fmov_ws( 0b0001111000100110000000[22] : rn[5] : rd[5] );
 
 fmov_ws.disasm = {
@@ -2899,18 +3473,6 @@ fmov_ws.execute = {
   typedef typename ARCH::U32 U32;
   U32 data = cpu.GetVU32(rn,0);
   cpu.SetGZR(rd,data);
-};
-
-op fmov_wd( 0b0001111001100110000000[22] : rn[5] : rd[5] );
-
-fmov_wd.disasm = {
-  sink << "fmov\t" << DisasmGZWR(rd) << ", " << DisasmD(rn);
-};
-
-op fmov_sx( 0b1001111000100111000000[22] : rn[5] : rd[5] );
-
-fmov_sx.disasm = {
-  sink << "fmov\t" << DisasmS(rd) << ", " << DisasmGZXR(rn);
 };
 
 op fmov_dx( 0b1001111001100111000000[22] : rn[5] : rd[5] );
@@ -2935,12 +3497,6 @@ fmov_dix.execute = {
   typedef typename ARCH::U64 U64;
   U64 data = cpu.GetGZR(rn);
   cpu.SetVU64(rd,1,data);
-};
-
-op fmov_xs( 0b1001111000100110000000[22] : rn[5] : rd[5] );
-
-fmov_xs.disasm = {
-  sink << "fmov\t" << DisasmGZXR(rd) << ", " << DisasmS(rn);
 };
 
 op fmov_xd( 0b1001111001100110000000[22] : rn[5] : rd[5] );
@@ -2984,7 +3540,7 @@ fmsub_s.disasm = {
 };
 
 fmsub_s.execute = {
-  cpu.SetVF32(rd, FPMulSub(cpu, cpu.GetVF32(ra, 0), cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+  cpu.SetVF32(rd, FPMulAdd(cpu, cpu.GetVF32(ra, 0), -cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
 };
 
 op fmsub_d( 0b00011111010[11] : rm[5] : 0b1[1] : ra[5] : rn[5] : rd[5] );
@@ -2994,7 +3550,7 @@ fmsub_d.disasm = {
 };
 
 fmsub_d.execute = {
-  cpu.SetVF64(rd, FPMulSub(cpu, cpu.GetVF64(ra, 0), cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
+  cpu.SetVF64(rd, FPMulAdd(cpu, cpu.GetVF64(ra, 0), -cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 /*
@@ -3107,10 +3663,18 @@ fmulx_s.disasm = {
   sink << "fmulx\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
 
+fmulx_s.execute = {
+  cpu.SetVF32(rd, FPMulX(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+};
+
 op fmulx_d( 0b01011110011[11] : rm[5] : 0b110111[6] : rn[5] : rd[5] );
 
 fmulx_d.disasm = {
   sink << "fmulx\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+fmulx_d.execute = {
+  cpu.SetVF64(rd, FPMulX(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 op fmulx_vs( 0b0[1] : q[1] : 0b001110001[9] : rm[5] : 0b110111[6] : rn[5] : rd[5] );
@@ -3119,10 +3683,21 @@ fmulx_vs.disasm = {
   sink << "fmulx\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 2<<q, 2);
 };
 
+fmulx_vs.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVF32(rd, idx, FPMulX(cpu, cpu.GetVF32(rn, idx), cpu.GetVF32(rm, idx)));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fmulx_v2d( 0b01001110011[11] : rm[5] : 0b110111[6] : rn[5] : rd[5] );
 
 fmulx_v2d.disasm = {
   sink << "fmulx\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+fmulx_v2d.execute = {
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    cpu.SetVF64(rd, idx, FPMulX(cpu, cpu.GetVF64(rn, idx), cpu.GetVF64(rm, idx)));
 };
 
 op fmulx_si( 0b0111111110[10] : index0[1] : rm[5] : 0b1001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -3132,10 +3707,18 @@ fmulx_si.disasm = {
   sink << "fmulx\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmTV(rm,0,2) << DisasmSubscript(index);
 };
 
+fmulx_si.execute = {
+  cpu.SetVF32(rd, FPMulX(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, index)));
+};
+
 op fmulx_di( 0b01111111110[11] : rm[5] : 0b1001[4] : index[1] : 0b0[1] : rn[5] : rd[5] );
 
 fmulx_di.disasm = {
   sink << "fmulx\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmTV(rm,0,3) << DisasmSubscript(index);
+};
+
+fmulx_di.execute = {
+  cpu.SetVF64(rd, FPMulX(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, index)));
 };
 
 op fmulx_vsi( 0b0[1] : q[1] : 0b10111110[8] : index0[1] : rm[5] : 0b1001[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -3145,10 +3728,23 @@ fmulx_vsi.disasm = {
   sink << "fmulx\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmTV(rm, 0, 2) << DisasmSubscript(index);
 };
 
+fmulx_vsi.execute = {
+  typename ARCH::F32 element = cpu.GetVF32(rm, index);
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVF32(rd, idx, FPMulX(cpu, cpu.GetVF32(rn, idx), element));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fmulx_v2di( 0b01101111110[11] : rm[5] : 0b1001[4] : index[1] : 0b0[1] : rn[5] : rd[5] );
 
 fmulx_v2di.disasm = {
   sink << "fmulx\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,0,3) << DisasmSubscript(index);
+};
+
+fmulx_v2di.execute = {
+  typename ARCH::F64 element = cpu.GetVF64(rm, index);
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    cpu.SetVF64(rd, idx, FPMulX(cpu, cpu.GetVF64(rn, idx), element));
 };
 
 /*******************************************************************
@@ -3183,10 +3779,21 @@ fneg_vss.disasm = {
   sink << "fneg\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+fneg_vss.execute = {
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    cpu.SetVF32(rd, idx, -cpu.GetVF32(rn, idx));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op fneg_v2d2d( 0b0110111011100000111110[22] : rn[5] : rd[5] );
 
 fneg_v2d2d.disasm = {
   sink << "fneg\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+fneg_v2d2d.execute = {
+  for (unsigned idx = 0; idx < 2; ++idx)
+    cpu.SetVF64(rd, idx, -cpu.GetVF64(rn, idx));
 };
 
 /*
@@ -3236,7 +3843,7 @@ fnmsub_s.disasm = {
 };
 
 fnmsub_s.execute = {
-  cpu.SetVF32(rd, FPMulSub(cpu, -cpu.GetVF32(ra, 0), -cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+  cpu.SetVF32(rd, FPMulAdd(cpu, -cpu.GetVF32(ra, 0), cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
 };
 
 op fnmsub_d( 0b00011111011[11] : rm[5] : 0b1[1] : ra[5] : rn[5] : rd[5] );
@@ -3246,7 +3853,7 @@ fnmsub_d.disasm = {
 };
 
 fnmsub_d.execute = {
-  cpu.SetVF64(rd, FPMulSub(cpu, -cpu.GetVF64(ra, 0), -cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
+  cpu.SetVF64(rd, FPMulAdd(cpu, -cpu.GetVF64(ra, 0), cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 /*
@@ -3259,10 +3866,18 @@ fnmul_sss.disasm = {
   sink << "fnmul\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmS(rm);
 };
 
+fnmul_sss.execute = {
+  cpu.SetVF32(rd, -FPMul(cpu, cpu.GetVF32(rn, 0), cpu.GetVF32(rm, 0)));
+};
+
 op fnmul_ddd( 0b00011110011[11] : rm[5] : 0b100010[6] : rn[5] : rd[5] );
 
 fnmul_ddd.disasm = {
   sink << "fnmul\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmD(rm);
+};
+
+fnmul_ddd.execute = {
+  cpu.SetVF64(rd, -FPMul(cpu, cpu.GetVF64(rn, 0), cpu.GetVF64(rm, 0)));
 };
 
 op frecpe_s( 0b0101111010100001110110[22] : rn[5] : rd[5] );
@@ -3338,7 +3953,7 @@ frinta_s.disasm = {
 };
 
 frinta_s.execute = {
-  cpu.SetVF32(rd, FPRoundInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), false));
+  cpu.SetVF32(rd, FPRoundInt(cpu, NearestTieAway(), cpu.GetVF32(rn,0), /* exact */ false));
 };
 
 op frinta_d( 0b0001111001100110010000[22] : rn[5] : rd[5] );
@@ -3348,7 +3963,7 @@ frinta_d.disasm = {
 };
 
 frinta_d.execute = {
-  cpu.SetVF64(rd, FPRoundInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), false));
+  cpu.SetVF64(rd, FPRoundInt(cpu, NearestTieAway(), cpu.GetVF64(rn,0), /* exact */ false));
 };
 
 op frinta_vs( 0b0[1] : q[1] : 0b10111000100001100010[20] : rn[5] : rd[5] );
@@ -3357,10 +3972,21 @@ frinta_vs.disasm = {
   sink << "frinta\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frinta_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, NearestTieAway(), cpu.GetVF32(rn,e), /* exact */ false));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frinta_v2d( 0b0110111001100001100010[22] : rn[5] : rd[5] );
 
 frinta_v2d.disasm = {
   sink << "frinta\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frinta_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, NearestTieAway(), cpu.GetVF64(rn,e), /* exact */ false));
 };
 
 /*
@@ -3380,7 +4006,7 @@ frinti_d.disasm = {
 };
 
 frinti_d.execute = {
-  cpu.SetVF64(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF64(rn,0), false));
+  cpu.SetVF64(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF64(rn,0), /* exact */ false));
 }
 
 op frinti_s( 0b0001111000100111110000[22] : rn[5] : rd[5] );
@@ -3390,7 +4016,7 @@ frinti_s.disasm = {
 };
 
 frinti_s.execute = {
-  cpu.SetVF32(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF32(rn,0), false));
+  cpu.SetVF32(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF32(rn,0), /* exact */ false));
 }
 
 op frinti_vs( 0b0[1] : q[1] : 0b10111010100001100110[20] : rn[5] : rd[5] );
@@ -3399,10 +4025,21 @@ frinti_vs.disasm = {
   sink << "frinti\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frinti_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF32(rn,e), /* exact */ false));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frinti_v2d( 0b0110111011100001100110[22] : rn[5] : rd[5] );
 
 frinti_v2d.disasm = {
   sink << "frinti\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frinti_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF64(rn,e), /* exact */ false));
 };
 
 /*
@@ -3422,7 +4059,7 @@ frintm_s.disasm = {
 };
 
 frintm_s.execute = {
-  cpu.SetVF32(rd, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), false));
+  cpu.SetVF32(rd, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF32(rn,0), /* exact */ false));
 };
 
 op frintm_d( 0b0001111001100101010000[22] : rn[5] : rd[5] );
@@ -3432,7 +4069,7 @@ frintm_d.disasm = {
 };
 
 frintm_d.execute = {
-  cpu.SetVF64(rd, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), false));
+  cpu.SetVF64(rd, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF64(rn,0), /* exact */ false));
 };
 
 op frintm_vs( 0b0[1] : q[1] : 0b00111000100001100110[20] : rn[5] : rd[5] );
@@ -3441,10 +4078,21 @@ frintm_vs.disasm = {
   sink << "frintm\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frintm_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF32(rn,e), /* exact */ false));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frintm_v2d( 0b0100111001100001100110[22] : rn[5] : rd[5] );
 
 frintm_v2d.disasm = {
   sink << "frintm\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frintm_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, TowardNegInf(), cpu.GetVF64(rn,e), /* exact */ false));
 };
 
 /*
@@ -3464,7 +4112,7 @@ frintn_s.disasm = {
 };
 
 frintn_s.execute = {
-  cpu.SetVF32(rd, FPRoundInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), false));
+  cpu.SetVF32(rd, FPRoundInt(cpu, NearestTieEven(), cpu.GetVF32(rn,0), /* exact */ false));
 };
 
 op frintn_d( 0b0001111001100100010000[22] : rn[5] : rd[5] );
@@ -3474,7 +4122,7 @@ frintn_d.disasm = {
 };
 
 frintn_d.execute = {
-  cpu.SetVF64(rd, FPRoundInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), false));
+  cpu.SetVF64(rd, FPRoundInt(cpu, NearestTieEven(), cpu.GetVF64(rn,0), /* exact */ false));
 };
 
 op frintn_vs( 0b0[1] : q[1] : 0b00111000100001100010[20] : rn[5] : rd[5] );
@@ -3483,10 +4131,21 @@ frintn_vs.disasm = {
   sink << "frintn\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frintn_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, NearestTieEven(), cpu.GetVF32(rn,e), /* exact */ false));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frintn_v2d( 0b0100111001100001100010[22] : rn[5] : rd[5] );
 
 frintn_v2d.disasm = {
   sink << "frintn\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frintn_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, NearestTieEven(), cpu.GetVF64(rn,e), /* exact */ false));
 };
 
 /*
@@ -3506,7 +4165,7 @@ frintp_s.disasm = {
 };
 
 frintp_s.execute = {
-  cpu.SetVF32(rd, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), false));
+  cpu.SetVF32(rd, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF32(rn,0), /* exact */ false));
 };
 
 op frintp_d( 0b0001111001100100110000[22] : rn[5] : rd[5] );
@@ -3516,7 +4175,7 @@ frintp_d.disasm = {
 };
 
 frintp_d.execute = {
-  cpu.SetVF64(rd, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), false));
+  cpu.SetVF64(rd, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF64(rn,0), /* exact */ false));
 };
 
 op frintp_vs( 0b0[1] : q[1] : 0b00111010100001100010[20] : rn[5] : rd[5] );
@@ -3525,10 +4184,21 @@ frintp_vs.disasm = {
   sink << "frintp\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frintp_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF32(rn,e), /* exact */ false));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frintp_v2d( 0b0100111011100001100010[22] : rn[5] : rd[5] );
 
 frintp_v2d.disasm = {
   sink << "frintp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frintp_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, TowardPosInf(), cpu.GetVF64(rn,e), /* exact */ false));
 };
 
 /*
@@ -3547,11 +4217,19 @@ frintx_s.disasm = {
   sink << "frintx\t" << DisasmS(rd) << ", " << DisasmS(rn);
 };
 
+frintx_s.execute = {
+  cpu.SetVF32(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF32(rn,0), /* exact */ true));
+}
+
 op frintx_d( 0b0001111001100111010000[22] : rn[5] : rd[5] );
 
 frintx_d.disasm = {
   sink << "frintx\t" << DisasmD(rd) << ", " << DisasmD(rn);
 };
+
+frintx_d.execute = {
+  cpu.SetVF64(rd, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF64(rn,0), /* exact */ true));
+}
 
 op frintx_vs( 0b0[1] : q[1] : 0b10111000100001100110[20] : rn[5] : rd[5] );
 
@@ -3559,10 +4237,21 @@ frintx_vs.disasm = {
   sink << "frintx\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frintx_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF32(rn,e), /* exact */ true));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frintx_v2d( 0b0110111001100001100110[22] : rn[5] : rd[5] );
 
 frintx_v2d.disasm = {
   sink << "frintx\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frintx_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, RoundingMode(cpu), cpu.GetVF64(rn,e), /* exact */ true));
 };
 
 /*
@@ -3582,7 +4271,7 @@ frintz_s.disasm = {
 };
 
 frintz_s.execute = {
-  cpu.SetVF32(rd, FPRoundInt(cpu, TowardZero(), cpu.GetVF32(rn,0), false));
+  cpu.SetVF32(rd, FPRoundInt(cpu, TowardZero(), cpu.GetVF32(rn,0), /* exact */ false));
 };
 
 op frintz_d( 0b0001111001100101110000[22] : rn[5] : rd[5] );
@@ -3592,7 +4281,7 @@ frintz_d.disasm = {
 };
 
 frintz_d.execute = {
-  cpu.SetVF64(rd, FPRoundInt(cpu, TowardZero(), cpu.GetVF64(rn,0), false));
+  cpu.SetVF64(rd, FPRoundInt(cpu, TowardZero(), cpu.GetVF64(rn,0), /* exact */ false));
 };
 
 op frintz_vs( 0b0[1] : q[1] : 0b00111010100001100110[20] : rn[5] : rd[5] );
@@ -3601,10 +4290,21 @@ frintz_vs.disasm = {
   sink << "frintz\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2);
 };
 
+frintz_vs.execute = {
+  for (unsigned e=0, end=2<<q; e < end; ++e)
+    cpu.SetVF32(rd, e, FPRoundInt(cpu, TowardZero(), cpu.GetVF32(rn,e), /* exact */ false));
+  cpu.ClearHighV(rd, 8<<q);
+};
+
 op frintz_v2d( 0b0100111011100001100110[22] : rn[5] : rd[5] );
 
 frintz_v2d.disasm = {
   sink << "frintz\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3);
+};
+
+frintz_v2d.execute = {
+  for (unsigned e=0, end=2; e < end; ++e)
+    cpu.SetVF64(rd, e, FPRoundInt(cpu, TowardZero(), cpu.GetVF64(rn,e), /* exact */ false));
 };
 
 /*
@@ -3672,7 +4372,7 @@ fsqrt_s.disasm = {
 };
 
 fsqrt_s.execute = {
-  cpu.SetVF32(rd, sqrt(cpu.GetVF32(rn, 0)));
+  cpu.SetVF32(rd, FPSqrt(cpu, cpu.GetVF32(rn, 0)));
 };
 
 op fsqrt_d( 0b0001111001100001110000[22] : rn[5] : rd[5] );
@@ -3682,7 +4382,7 @@ fsqrt_d.disasm = {
 };
 
 fsqrt_d.execute = {
-  cpu.SetVF64(rd, sqrt(cpu.GetVF64(rn, 0)));
+  cpu.SetVF64(rd, FPSqrt(cpu, cpu.GetVF64(rn, 0)));
 };
 
 op fsqrt_vs( 0b0[1] : q[1] : 0b10111010100001111110[20] : rn[5] : rd[5] );
@@ -3693,7 +4393,7 @@ fsqrt_vs.disasm = {
 
 fsqrt_vs.execute = {
   for (unsigned e=0, end=2<<q; e < end; ++e)
-    cpu.SetVF32(rd, e, sqrt(cpu.GetVF32(rn, e)));
+    cpu.SetVF32(rd, e, FPSqrt(cpu, cpu.GetVF32(rn, e)));
   cpu.ClearHighV(rd, 8<<q);
 };
 
@@ -3705,7 +4405,7 @@ fsqrt_v2d.disasm = {
 
 fsqrt_v2d.execute = {
   for (unsigned e=0, end=2; e < end; ++e)
-    cpu.SetVF64(rd, e, sqrt(cpu.GetVF64(rn, e)));
+    cpu.SetVF64(rd, e, FPSqrt(cpu, cpu.GetVF64(rn, e)));
 };
 
 /*
@@ -3781,7 +4481,7 @@ scvtf_sw.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::F32 F32;
 
-  F32 res = F32(S32(cpu.GetGZR(rn)));
+  F32 res = IntToFP(cpu, S32(cpu.GetGZR(rn)), F32());
 
   cpu.SetVF32( rd, res );
 };
@@ -3796,7 +4496,7 @@ scvtf_sx.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::F32 F32;
 
-  F32 res = F32(S64(cpu.GetGZR(rn)));
+  F32 res = IntToFP(cpu, S64(cpu.GetGZR(rn)), F32());
 
   cpu.SetVF32( rd, res );
 };
@@ -3811,7 +4511,7 @@ scvtf_dw.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::F64 F64;
 
-  F64 res = F64(S32(cpu.GetGZR(rn)));
+  F64 res = IntToFP(cpu, S32(cpu.GetGZR(rn)), F64());
 
   cpu.SetVF64( rd, res );
 };
@@ -3826,7 +4526,7 @@ scvtf_dx.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::F64 F64;
 
-  F64 res = F64(S64(cpu.GetGZR(rn)));
+  F64 res = IntToFP(cpu, S64(cpu.GetGZR(rn)), F64());
 
   cpu.SetVF64( rd, res );
 };
@@ -3838,7 +4538,7 @@ scvtf_s.disasm = {
 };
 
 scvtf_s.execute = {
-  cpu.SetVF32( rd, typename ARCH::F32(cpu.GetVS32(rn,0)) );
+  cpu.SetVF32( rd, IntToFP(cpu, cpu.GetVS32(rn,0), typename ARCH::F32()) );
 };
 
 op scvtf_d( 0b0101111001100001110110[22] : rn[5] : rd[5] );
@@ -3848,7 +4548,7 @@ scvtf_d.disasm = {
 };
 
 scvtf_d.execute = {
-  cpu.SetVF64( rd, typename ARCH::F64(cpu.GetVS64(rn,0)) );
+  cpu.SetVF64( rd, IntToFP(cpu, cpu.GetVS64(rn,0), typename ARCH::F64()) );
 };
 
 op scvtf_vs( 0b0[1] : q[1] : 0b00111000100001110110[20] : rn[5] : rd[5] );
@@ -3859,7 +4559,7 @@ scvtf_vs.disasm = {
 
 scvtf_vs.execute = {
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, typename ARCH::F32(cpu.GetVS32(rn, idx)));
+    cpu.SetVF32(rd, idx, IntToFP(cpu, cpu.GetVS32(rn, idx), typename ARCH::F32()));
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -3871,7 +4571,7 @@ scvtf_v2d.disasm = {
 
 scvtf_v2d.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
-    cpu.SetVF64(rd, idx, typename ARCH::F64(cpu.GetVS64(rn, idx)));
+    cpu.SetVF64(rd, idx, IntToFP(cpu, cpu.GetVS64(rn, idx), typename ARCH::F64()));
 };
 
 /*
@@ -3885,17 +4585,27 @@ scvtf_v2d.execute = {
  */
 
 op scvtf_ssi( 0b01011111001[11] : lro[5] : 0b111001[6] : rn[5] : rd[5] );
-scvtf_ssi.var shift : {unsigned} = {32 - lro};
+scvtf_ssi.var fbits : {unsigned} = {32 - lro};
 
 scvtf_ssi.disasm = {
-  sink << "scvtf\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(shift);
+  sink << "scvtf\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
+};
+
+scvtf_ssi.execute = {
+  typedef typename ARCH::F32 F32;
+  cpu.SetVF32(rd, FixedToFP(cpu, cpu.GetVS32(rn,0), fbits, F32()));
 };
 
 op scvtf_ddi( 0b0101111101[10] : lro[6] : 0b111001[6] : rn[5] : rd[5] );
-scvtf_ddi.var shift : {unsigned} = {64 - lro};
+scvtf_ddi.var fbits : {unsigned} = {64 - lro};
 
 scvtf_ddi.disasm = {
-  sink << "scvtf\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+  sink << "scvtf\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
+};
+
+scvtf_ddi.execute = {
+  typedef typename ARCH::F64 F64;
+  cpu.SetVF64(rd, FixedToFP(cpu, cpu.GetVS64(rn,0), fbits, F64()));
 };
 
 op scvtf_swi( 0b00011110000000101[17] : scale[5] : rn[5] : rd[5] );
@@ -3905,11 +4615,24 @@ scvtf_swi.disasm = {
   sink << "scvtf\t" << DisasmS(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(fbits);
 };
 
+scvtf_swi.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  cpu.SetVF32(rd, FixedToFP(cpu, S32(U32(cpu.GetGZR(rn))), fbits, F32()));
+};
+
 op scvtf_sxi( 0b1001111000000010[16] : scale[6] : rn[5] : rd[5] );
 scvtf_sxi.var fbits : {unsigned} = {64-scale};
 
 scvtf_sxi.disasm = {
   sink << "scvtf\t" << DisasmS(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(fbits);
+};
+
+scvtf_sxi.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::S64 S64;
+  cpu.SetVF32(rd, FixedToFP(cpu, S64(cpu.GetGZR(rn)), fbits, F32()));
 };
 
 op scvtf_dwi( 0b00011110010000101[17] : scale[5] : rn[5] : rd[5] );
@@ -3919,6 +4642,13 @@ scvtf_dwi.disasm = {
   sink << "scvtf\t" << DisasmD(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(fbits);
 };
 
+scvtf_dwi.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  cpu.SetVF64(rd, FixedToFP(cpu, S32(U32(cpu.GetGZR(rn))), fbits, F64()));
+};
+
 op scvtf_dxi( 0b1001111001000010[16] : scale[6] : rn[5] : rd[5] );
 scvtf_dxi.var fbits : {unsigned} = {64-scale};
 
@@ -3926,18 +4656,41 @@ scvtf_dxi.disasm = {
   sink << "scvtf\t" << DisasmD(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(fbits);
 };
 
+scvtf_dxi.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::S64 S64;
+  cpu.SetVF64(rd, FixedToFP(cpu, S64(cpu.GetGZR(rn)), fbits, F64()));
+};
+
 op scvtf_vssi( 0b0[1] : q[1] : 0b001111001[9] : lro[5] : 0b111001[6] : rn[5] : rd[5] );
-scvtf_vssi.var shift : {unsigned} = {32 - lro};
+scvtf_vssi.var fbits : {unsigned} = {32 - lro};
 
 scvtf_vssi.disasm = {
-  sink << "scvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(shift);
+  sink << "scvtf\t" << DisasmTV(rd,2<<q,2) << ", " << DisasmTV(rn,2<<q,2) << ", " << DisasmI(fbits);
+};
+
+scvtf_vssi.execute = {
+  typedef typename ARCH::F32 F32;
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      cpu.SetVF32(rd, idx, FixedToFP(cpu, cpu.GetVS32(rn,idx), fbits, F32()));
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op scvtf_v2d2di( 0b0100111101[10] : lro[6] : 0b111001[6] : rn[5] : rd[5] );
-scvtf_v2d2di.var shift : {unsigned} = {64 - lro};
+scvtf_v2d2di.var fbits : {unsigned} = {64 - lro};
 
 scvtf_v2d2di.disasm = {
-  sink << "scvtf\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
+  sink << "scvtf\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(fbits);
+};
+
+scvtf_v2d2di.execute = {
+  typedef typename ARCH::F64 F64;
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      cpu.SetVF64(rd, idx, FixedToFP(cpu, cpu.GetVS64(rn,idx), fbits, F64()));
+    }
 };
 
 /*
@@ -3960,7 +4713,7 @@ ucvtf_sw.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::F32 F32;
 
-  F32 res = F32(U32(cpu.GetGZR(rn)));
+  F32 res = IntToFP(cpu, U32(cpu.GetGZR(rn)), F32());
 
   cpu.SetVF32( rd, res );
 };
@@ -3975,7 +4728,7 @@ ucvtf_sx.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::F32 F32;
 
-  F32 res = F32(U64(cpu.GetGZR(rn)));
+  F32 res = IntToFP(cpu, U64(cpu.GetGZR(rn)), F32());
 
   cpu.SetVF32( rd, res );
 };
@@ -3990,7 +4743,7 @@ ucvtf_dw.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::F64 F64;
 
-  F64 res = F64(U32(cpu.GetGZR(rn)));
+  F64 res = IntToFP(cpu, U32(cpu.GetGZR(rn)), F64());
 
   cpu.SetVF64( rd, res );
 };
@@ -4005,7 +4758,7 @@ ucvtf_dx.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::F64 F64;
 
-  F64 res = F64(U64(cpu.GetGZR(rn)));
+  F64 res = IntToFP(cpu, U64(cpu.GetGZR(rn)), F64());
 
   cpu.SetVF64( rd, res );
 };
@@ -4017,7 +4770,7 @@ ucvtf_s.disasm = {
 };
 
 ucvtf_s.execute = {
-  cpu.SetVF32( rd, typename ARCH::F32(cpu.GetVU32(rn,0)) );
+  cpu.SetVF32( rd, IntToFP(cpu, cpu.GetVU32(rn,0), typename ARCH::F32()) );
 };
 
 op ucvtf_d( 0b0111111001100001110110[22] : rn[5] : rd[5] );
@@ -4027,7 +4780,7 @@ ucvtf_d.disasm = {
 };
 
 ucvtf_d.execute = {
-  cpu.SetVF64( rd, typename ARCH::F64(cpu.GetVU64(rn,0)) );
+  cpu.SetVF64( rd, IntToFP(cpu, cpu.GetVU64(rn,0), typename ARCH::F64()) );
 };
 
 op ucvtf_vs( 0b0[1] : q[1] : 0b10111000100001110110[20] : rn[5] : rd[5] );
@@ -4038,7 +4791,7 @@ ucvtf_vs.disasm = {
 
 ucvtf_vs.execute = {
   for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
-    cpu.SetVF32(rd, idx, typename ARCH::F32(cpu.GetVU32(rn, idx)));
+    cpu.SetVF32(rd, idx, IntToFP(cpu, cpu.GetVU32(rn, idx), typename ARCH::F32()));
   cpu.ClearHighV(rd, 8<<q);
 }
 
@@ -4050,7 +4803,7 @@ ucvtf_v2d.disasm = {
 
 ucvtf_v2d.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
-    cpu.SetVF64(rd, idx, typename ARCH::F64(cpu.GetVU64(rn, idx)));
+    cpu.SetVF64(rd, idx, IntToFP(cpu, cpu.GetVU64(rn, idx), typename ARCH::F64()));
 };
 
 /*
@@ -4064,17 +4817,27 @@ ucvtf_v2d.execute = {
  */
 
 op ucvtf_ssi( 0b01111111001[11] : lro[5] : 0b111001[6] : rn[5] : rd[5] );
-ucvtf_ssi.var shift : {unsigned} = {32 - lro};
+ucvtf_ssi.var fbits : {unsigned} = {32 - lro};
 
 ucvtf_ssi.disasm = {
-  sink << "ucvtf\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(shift);
+  sink << "ucvtf\t" << DisasmS(rd) << ", " << DisasmS(rn) << ", " << DisasmI(fbits);
+};
+
+ucvtf_ssi.execute = {
+  typedef typename ARCH::F32 F32;
+  cpu.SetVF32(rd, FixedToFP(cpu, cpu.GetVU32(rn,0), fbits, F32()));
 };
 
 op ucvtf_ddi( 0b0111111101[10] : lro[6] : 0b111001[6] : rn[5] : rd[5] );
-ucvtf_ddi.var shift : {unsigned} = {64 - lro};
+ucvtf_ddi.var fbits : {unsigned} = {64 - lro};
 
 ucvtf_ddi.disasm = {
-  sink << "ucvtf\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(shift);
+  sink << "ucvtf\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", " << DisasmI(fbits);
+};
+
+ucvtf_ddi.execute = {
+  typedef typename ARCH::F64 F64;
+  cpu.SetVF64(rd, FixedToFP(cpu, cpu.GetVU64(rn,0), fbits, F64()));
 };
 
 op ucvtf_swi( 0b00011110000000111[17] : scale[5] : rn[5] : rd[5] );
@@ -4084,11 +4847,22 @@ ucvtf_swi.disasm = {
   sink << "ucvtf\t" << DisasmS(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(fbits);
 };
 
+ucvtf_swi.execute = {
+  typedef typename ARCH::F32 F32;
+  typedef typename ARCH::U32 U32;
+  cpu.SetVF32(rd, FixedToFP(cpu, U32(cpu.GetGZR(rn)), fbits, F32()));
+};
+
 op ucvtf_sxi( 0b1001111000000011[16] : scale[6] : rn[5] : rd[5] );
 ucvtf_sxi.var fbits : {unsigned} = {64-scale};
 
 ucvtf_sxi.disasm = {
   sink << "ucvtf\t" << DisasmS(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(fbits);
+};
+
+ucvtf_sxi.execute = {
+  typedef typename ARCH::F32 F32;
+  cpu.SetVF32(rd, FixedToFP(cpu, cpu.GetGZR(rn), fbits, F32()));
 };
 
 op ucvtf_dwi( 0b00011110010000111[17] : scale[5] : rn[5] : rd[5] );
@@ -4098,6 +4872,12 @@ ucvtf_dwi.disasm = {
   sink << "ucvtf\t" << DisasmD(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(fbits);
 };
 
+ucvtf_dwi.execute = {
+  typedef typename ARCH::F64 F64;
+  typedef typename ARCH::U32 U32;
+  cpu.SetVF64(rd, FixedToFP(cpu, U32(cpu.GetGZR(rn)), fbits, F64()));
+};
+
 op ucvtf_dxi( 0b1001111001000011[16] : scale[6] : rn[5] : rd[5] );
 ucvtf_dxi.var fbits : {unsigned} = {64-scale};
 
@@ -4105,18 +4885,40 @@ ucvtf_dxi.disasm = {
   sink << "ucvtf\t" << DisasmD(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(fbits);
 };
 
+ucvtf_dxi.execute = {
+  typedef typename ARCH::F64 F64;
+  cpu.SetVF64(rd, FixedToFP(cpu, cpu.GetGZR(rn), fbits, F64()));
+};
+
 op ucvtf_vssi( 0b0[1] : q[1] : 0b101111001[9] : lro[5] : 0b111001[6] : rn[5] : rd[5] );
-ucvtf_vssi.var shift : {unsigned} = {32 - lro};
+ucvtf_vssi.var fbits : {unsigned} = {32 - lro};
 
 ucvtf_vssi.disasm = {
-  sink << "ucvtf\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmI(shift);
+  sink << "ucvtf\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmTV(rn, 2<<q, 2) << ", " << DisasmI(fbits);
+};
+
+ucvtf_vssi.execute = {
+  typedef typename ARCH::F32 F32;
+  for (unsigned idx = 0, end = 2<<q; idx < end; ++idx)
+    {
+      cpu.SetVF32(rd, idx, FixedToFP(cpu, cpu.GetVU32(rn,idx), fbits, F32()));
+    }
+  cpu.ClearHighV(rd, 8<<q);
 };
 
 op ucvtf_v2d2di( 0b0110111101[10] : lro[6] : 0b111001[6] : rn[5] : rd[5] );
-ucvtf_v2d2di.var shift : {unsigned} = {64 - lro};
+ucvtf_v2d2di.var fbits : {unsigned} = {64 - lro};
 
 ucvtf_v2d2di.disasm = {
-  sink << "ucvtf\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(shift);
+  sink << "ucvtf\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmI(fbits);
+};
+
+ucvtf_v2d2di.execute = {
+  typedef typename ARCH::F64 F64;
+  for (unsigned idx = 0, end = 2; idx < end; ++idx)
+    {
+      cpu.SetVF64(rd, idx, FixedToFP(cpu, cpu.GetVU64(rn,idx), fbits, F64()));
+    }
 };
 
 /*

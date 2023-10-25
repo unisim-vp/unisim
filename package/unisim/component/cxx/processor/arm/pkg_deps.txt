@@ -3,6 +3,7 @@ libc/stdlib
 std/cmath
 std/cstring
 std/iosfwd
+std/limits
 std/map
 std/set
 std/sstream

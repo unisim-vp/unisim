@@ -3,7 +3,9 @@ libc/inttypes
 libc/stdint
 std/algorithm
 std/cmath
+std/cstdint
 std/iosfwd
 std/iostream
+std/limits
 std/stdexcept
 unisim/util/identifier

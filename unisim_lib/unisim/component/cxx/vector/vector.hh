@@ -29,11 +29,16 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_VECTOR_VECTOR_HH__
 #define __UNISIM_COMPONENT_CXX_VECTOR_VECTOR_HH__
+
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <inttypes.h>
 
@@ -178,6 +183,17 @@ namespace vector {
     static void Allocate( int8_t& obj ) { /* No need for specific constructor */ }
   };
 
+#if HAVE_FLOAT16
+  template <unsigned E> struct VectorTypeInfo<_Float16,E>
+  {
+    enum bytecount_t { bytecount = 2 };
+    static void ToBytes( uint8_t* dst, _Float16 const& src ) { VectorTypeInfo<uint16_t,E>::ToBytes( dst, reinterpret_cast<uint16_t const&>( src ) ); }
+    static void FromBytes( _Float16& dst, uint8_t const* src ) { VectorTypeInfo<uint16_t,E>::FromBytes( reinterpret_cast<uint16_t&>( dst ), src ); }
+    static void Destroy( _Float16& obj ) { /* No need for specific destructor */ }
+    static void Allocate( _Float16& obj ) { /* No need for specific constructor */ }
+  };
+#endif
+  
   template <unsigned E> struct VectorTypeInfo<float,E>
   {
     enum bytecount_t { bytecount = 4 };

@@ -19,6 +19,7 @@ import unisim/kernel/logger/http || exit
 import unisim/kernel/logger/xml_file || exit
 import unisim/kernel/logger/netstream || exit
 import unisim/util/likely || exit
+import unisim/util/floating_point/softfloat_emu || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/time/host_time || exit
 import unisim/service/os/linux_os || exit
@@ -108,6 +109,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+test "x\$unisim_cv_softfloat_emu" = "xyes" || test "x\$unisim_cv_have_float16" = "xyes" || AC_MSG_ERROR([Support for type _Float16 or the softfloat-emu library is required])
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

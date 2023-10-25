@@ -31,6 +31,7 @@
  *  SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 
@@ -863,7 +864,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "FPCR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Control Register"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(0x7C00000); /* FIXME: this is for cortex-a53 */ }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
         } x; return &x;
       }

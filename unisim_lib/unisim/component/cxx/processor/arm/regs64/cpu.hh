@@ -30,6 +30,7 @@
  *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_REGS64_CPU_HH__
@@ -137,6 +138,7 @@ struct CPU
   typename TYPES::S16 GetVS16( unsigned reg, unsigned sub ) { return vector_read<typename TYPES::S16>(reg, sub); }
   typename TYPES::S32 GetVS32( unsigned reg, unsigned sub ) { return vector_read<typename TYPES::S32>(reg, sub); }
   typename TYPES::S64 GetVS64( unsigned reg, unsigned sub ) { return vector_read<typename TYPES::S64>(reg, sub); }
+  typename TYPES::F16 GetVF16( unsigned reg, unsigned sub ) { return vector_read<typename TYPES::F16>(reg, sub); }
   typename TYPES::F32 GetVF32( unsigned reg, unsigned sub ) { return vector_read<typename TYPES::F32>(reg, sub); }
   typename TYPES::F64 GetVF64( unsigned reg, unsigned sub ) { return vector_read<typename TYPES::F64>(reg, sub); }
 
@@ -155,6 +157,7 @@ struct CPU
   void SetVS16( unsigned reg, unsigned sub, typename TYPES::S16 value ) { vector_write( reg, sub, value ); }
   void SetVS32( unsigned reg, unsigned sub, typename TYPES::S32 value ) { vector_write( reg, sub, value ); }
   void SetVS64( unsigned reg, unsigned sub, typename TYPES::S64 value ) { vector_write( reg, sub, value ); }
+  void SetVF16( unsigned reg, unsigned sub, typename TYPES::F16 value ) { vector_write( reg, sub, value ); }
   void SetVF32( unsigned reg, unsigned sub, typename TYPES::F32 value ) { vector_write( reg, sub, value ); }
   void SetVF64( unsigned reg, unsigned sub, typename TYPES::F64 value ) { vector_write( reg, sub, value ); }
 
@@ -173,6 +176,7 @@ struct CPU
   void SetVS16( unsigned reg, typename TYPES::S16 value ) { vector_write(reg, value); }
   void SetVS32( unsigned reg, typename TYPES::S32 value ) { vector_write(reg, value); }
   void SetVS64( unsigned reg, typename TYPES::S64 value ) { vector_write(reg, value); }
+  void SetVF16( unsigned reg, typename TYPES::F16 value ) { vector_write(reg, value); }
   void SetVF32( unsigned reg, typename TYPES::F32 value ) { vector_write(reg, value); }
   void SetVF64( unsigned reg, typename TYPES::F64 value ) { vector_write(reg, value); }
 

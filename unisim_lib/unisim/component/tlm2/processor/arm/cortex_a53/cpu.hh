@@ -30,6 +30,7 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A53_CPU_HH__
@@ -149,9 +150,6 @@ public:
 
   void PrefetchMemory(unsigned op, uint64_t addr);
 };
-
-template <unsigned posT> void FPProcessException( CPU&, unisim::util::arithmetic::BitField<posT,1> const& ) {}
-template <typename FLOAT> FLOAT FPNaN( CPU&, FLOAT value ) { return value; }
 
 } // end of namespace cortex_a53
 } // end of namespace arm

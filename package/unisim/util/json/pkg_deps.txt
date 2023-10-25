@@ -1,6 +1,7 @@
 libc/ctype
 libc/stdlib
 std/cassert
+std/cstdint
 std/iostream
 std/map
 std/sstream

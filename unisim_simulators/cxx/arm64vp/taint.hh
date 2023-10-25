@@ -30,11 +30,21 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __ARM64VP_TAINT_HH__
 #define __ARM64VP_TAINT_HH__
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if HAVE_SOFTFLOAT_EMU
+#include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
+#else
+#include <unisim/util/floating_point/floating_point.hh>
+#endif
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -81,6 +91,16 @@ template <> struct CastUBits<bool,bool> { static bool process( bool mask, bool b
 template <typename SRC> bool EqUBits( typename TX<SRC>::as_mask ubits, SRC lhs, SRC rhs ) { return ubits and not (~ubits & (lhs ^ rhs)); }
 inline bool EqUBits( uint32_t ubits, float lhs, float rhs ) { return ubits; }
 inline bool EqUBits( uint64_t ubits, double lhs, double rhs ) { return ubits; }
+
+#if HAVE_FLOAT16
+template <> struct TX<_Float16> { typedef uint16_t as_mask; };
+template <> struct CastUBits<_Float16,double> { static uint16_t process( uint16_t mask, uint16_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<float,_Float16> { static uint64_t process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<double,_Float16> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<_Float16,float> { static uint16_t process( uint16_t mask, uint16_t bits ) { return mask ? -1 : 0; } };
+template <> struct CastUBits<_Float16,_Float16> { static uint16_t process( uint16_t mask, uint16_t bits ) { return mask; } };
+inline bool EqUBits( uint16_t ubits, _Float16 lhs, _Float16 rhs ) { return ubits; }
+#endif
 
 template <typename DST, typename SRC>
 DST TypePunning( SRC value )
@@ -244,38 +264,70 @@ void PrintHex( std::ostream& sink, unsigned ml, TaintedValue<T> const& tv )
   PrintHex(sink, ml, value, tv.ubits);
 }
 
-TaintedValue<float> fabs( TaintedValue<float> const& _value );
-TaintedValue<double> fabs( TaintedValue<double> const& _value );
+#if HAVE_FLOAT16
+// functions for _Float16
+TaintedValue<uint16_t> ToPacked( TaintedValue<_Float16> a );
+void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<_Float16> a );
+TaintedValue<_Float16> RoundToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact );
+TaintedValue<_Float16> FMulAdd( TaintedValue<_Float16> a, TaintedValue<_Float16> const& b, TaintedValue<_Float16> const& c);
+TaintedValue<_Float16> FRem( TaintedValue<_Float16> a, TaintedValue<_Float16> b );
+TaintedValue<_Float16> FSqrt( TaintedValue<_Float16> a );
+TaintedValue<_Float16> FAbs( TaintedValue<_Float16> a );
+TaintedValue<_Float16> FMin( TaintedValue<_Float16> a, TaintedValue<_Float16> b );
+TaintedValue<_Float16> FMinNumber( TaintedValue<_Float16> a, TaintedValue<_Float16> b );
+TaintedValue<_Float16> FMax( TaintedValue<_Float16> a, TaintedValue<_Float16> b );
+TaintedValue<_Float16> FMaxNumber( TaintedValue<_Float16> a, TaintedValue<_Float16> b );
+TaintedValue<bool> IsNaN( TaintedValue<_Float16> a );
+TaintedValue<bool> IsDenormal( TaintedValue<_Float16> a );
+TaintedValue<bool> IsSignaling( TaintedValue<_Float16> a );
+TaintedValue<_Float16> ClearSignaling( TaintedValue<_Float16> a );
+TaintedValue<_Float16> Zeroes( TaintedValue<_Float16> a );
+TaintedValue<bool> IsZero( TaintedValue<_Float16> a );
+TaintedValue<bool> IsNeg( TaintedValue<_Float16> a );
+TaintedValue<bool> IsInf( TaintedValue<_Float16> a );
+#endif
 
-TaintedValue<float> ceil( TaintedValue<float> const& _value );
-TaintedValue<double> ceil( TaintedValue<double> const& _value );
+// functions for float
+TaintedValue<uint32_t> ToPacked( TaintedValue<float> a );
+void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<float> a );
+TaintedValue<float> RoundToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact );
+TaintedValue<float> FMulAdd( TaintedValue<float> a, TaintedValue<float> const& b, TaintedValue<float> const& c);
+TaintedValue<float> FRem( TaintedValue<float> a, TaintedValue<float> b );
+TaintedValue<float> FSqrt( TaintedValue<float> a );
+TaintedValue<float> FAbs( TaintedValue<float> a );
+TaintedValue<float> FMin( TaintedValue<float> a, TaintedValue<float> b );
+TaintedValue<float> FMinNumber( TaintedValue<float> a, TaintedValue<float> b );
+TaintedValue<float> FMax( TaintedValue<float> a, TaintedValue<float> b );
+TaintedValue<float> FMaxNumber( TaintedValue<float> a, TaintedValue<float> b );
+TaintedValue<bool> IsNaN( TaintedValue<float> a );
+TaintedValue<bool> IsDenormal( TaintedValue<float> a );
+TaintedValue<bool> IsSignaling( TaintedValue<float> a );
+TaintedValue<float> ClearSignaling( TaintedValue<float> a );
+TaintedValue<float> Zeroes( TaintedValue<float> a );
+TaintedValue<bool> IsZero( TaintedValue<float> a );
+TaintedValue<bool> IsNeg( TaintedValue<float> a );
+TaintedValue<bool> IsInf( TaintedValue<float> a );
 
-TaintedValue<float> floor( TaintedValue<float> const& _value );
-TaintedValue<double> floor( TaintedValue<double> const& _value );
-
-TaintedValue<float> trunc( TaintedValue<float> const& _value );
-TaintedValue<double> trunc( TaintedValue<double> const& _value );
-
-TaintedValue<float> round( TaintedValue<float> const& _value );
-TaintedValue<double> round( TaintedValue<double> const& _value );
-
-TaintedValue<float> nearbyint( TaintedValue<float> const& _value );
-TaintedValue<double> nearbyint( TaintedValue<double> const& _value );
-
-TaintedValue<float> sqrt( TaintedValue<float> const& _value );
-TaintedValue<double> sqrt( TaintedValue<double> const& _value );
-
-TaintedValue<float> fmin( TaintedValue<float> const&, TaintedValue<float> const& );
-TaintedValue<double> fmin( TaintedValue<double> const&, TaintedValue<double> const& );
-
-TaintedValue<float> fmax( TaintedValue<float> const&, TaintedValue<float> const& );
-TaintedValue<double> fmax( TaintedValue<double> const&, TaintedValue<double> const& );
-
-TaintedValue<bool> isnan( TaintedValue<float> const& _value );
-TaintedValue<bool> isnan( TaintedValue<double> const& _value );
-
-TaintedValue<bool> is_signaling( TaintedValue<float> const& _value );
-TaintedValue<bool> is_signaling( TaintedValue<double> const& _value );
+// functions for double
+TaintedValue<uint64_t> ToPacked( TaintedValue<double> a );
+void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<double> a );
+TaintedValue<double> RoundToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact );
+TaintedValue<double> FMulAdd( TaintedValue<double> a, TaintedValue<double> b, TaintedValue<double> c);
+TaintedValue<double> FRem( TaintedValue<double> a, TaintedValue<double> b );
+TaintedValue<double> FSqrt( TaintedValue<double> a );
+TaintedValue<double> FAbs( TaintedValue<double> a );
+TaintedValue<double> FMin( TaintedValue<double> a, TaintedValue<double> b );
+TaintedValue<double> FMinNumber( TaintedValue<double> a, TaintedValue<double> b );
+TaintedValue<double> FMax( TaintedValue<double> a, TaintedValue<double> b );
+TaintedValue<double> FMaxNumber( TaintedValue<double> a, TaintedValue<double> b );
+TaintedValue<bool> IsNaN( TaintedValue<double> a );
+TaintedValue<bool> IsDenormal( TaintedValue<double> a );
+TaintedValue<bool> IsSignaling( TaintedValue<double> a );
+TaintedValue<double> ClearSignaling( TaintedValue<double> a );
+TaintedValue<double> Zeroes( TaintedValue<double> a );
+TaintedValue<bool> IsZero( TaintedValue<double> a );
+TaintedValue<bool> IsNeg( TaintedValue<double> a );
+TaintedValue<bool> IsInf( TaintedValue<double> a );
 
 template <typename T>
 TaintedValue<T> PopCount(TaintedValue<T> const& v) { return TaintedValue<T>(TVCtor(), unisim::util::arithmetic::PopCount(v.value), v.ubits ? -1 : 0); }
@@ -287,16 +339,6 @@ TaintedValue<T> Minimum(TaintedValue<T> const& l, TaintedValue<T> const& r)
 template <typename T>
 TaintedValue<T> Maximum(TaintedValue<T> const& l, TaintedValue<T> const& r)
 { return TaintedValue<T>(TVCtor(), std::max(l.value, r.value), (l.ubits or r.ubits) ? -1 : 0 ); }
-
-#if 0
-template <class ARCH, typename T>
-TaintedValue<T> NeonSHL(ARCH& core, TaintedValue<T> const& op, TaintedValue<int8_t> const& sh, bool round = false, bool sat = false)
-{ return TaintedValue<T>(TVCtor(), unisim::component::cxx::processor::arm::NeonSHL( core, op.value, sh.value, round, sat ), (op.ubits or sh.ubits) ? -1 : 0); }
-
-template <class ARCH, typename T, typename T2>
-TaintedValue<T> SatAdd(ARCH& core, TaintedValue<T> const& op1, TaintedValue<T2> const& op2)
-{ return TaintedValue<T>(TVCtor(), unisim::component::cxx::processor::arm::isa::arm64::SatAdd( core, op1.value, op2.value ), (op1.ubits or op2.ubits) ? -1 : 0); }
-#endif
 
 template <typename T>
 class TaintedValueNumericLimits : public std::numeric_limits<T>
@@ -339,5 +381,108 @@ template <> class std::numeric_limits<TaintedValue<unsigned long long> > : publi
 template <> class std::numeric_limits<TaintedValue<float> > : public TaintedValueNumericLimits<float> {};
 template <> class std::numeric_limits<TaintedValue<double> > : public TaintedValueNumericLimits<double> {};
 template <> class std::numeric_limits<TaintedValue<long double> > : public TaintedValueNumericLimits<long double> {};
+
+#if HAVE_FLOAT16
+template <> class std::numeric_limits<TaintedValue<_Float16> > : public TaintedValueNumericLimits<_Float16> {};
+#endif
+
+template <typename FLOAT>
+struct TaintedValueFloatingPointStatusAndControl
+{
+	typedef unisim::util::floating_point::Context<FloatingPointStatusAndControl<FLOAT> > Context;
+  
+	static void defaultNaN( bool dn ) { FloatingPointStatusAndControl<FLOAT>::defaultNaN( dn ); }
+	static bool defaultNaN() { return FloatingPointStatusAndControl<FLOAT>::defaultNaN(); }
+	static void detectTininess( uint_fast8_t dt ) { FloatingPointStatusAndControl<FLOAT>::detectTininess( dt ); }
+	static uint_fast8_t detectTininess() { return FloatingPointStatusAndControl<FLOAT>::detectTininess(); }
+	static void roundingMode( uint_fast8_t rmode ) { FloatingPointStatusAndControl<FLOAT>::roundingMode( rmode ); }
+	static uint_fast8_t roundingMode() { return FloatingPointStatusAndControl<FLOAT>::roundingMode(); }
+	static void exceptionFlags( uint_fast8_t eflags ) { FloatingPointStatusAndControl<FLOAT>::exceptionFlags( eflags ); }
+	static uint_fast8_t exceptionFlags() { return FloatingPointStatusAndControl<FLOAT>::exceptionFlags(); }
+	static void extF80_roundingPrecision( uint_fast8_t rp ) { FloatingPointStatusAndControl<FLOAT>::extF80_roundingPrecision( rp ); }
+	static uint_fast8_t extF80_roundingPrecision() { return FloatingPointStatusAndControl<FLOAT>::extF80_roundingPrecision(); }
+};
+
+#if HAVE_FLOAT16
+template <> struct FloatingPointStatusAndControl<TaintedValue<_Float16> > : TaintedValueFloatingPointStatusAndControl<_Float16> {};
+#endif
+
+template <> struct FloatingPointStatusAndControl<TaintedValue<float> > : TaintedValueFloatingPointStatusAndControl<float> {};
+template <> struct FloatingPointStatusAndControl<TaintedValue<double> > : TaintedValueFloatingPointStatusAndControl<double> {};
+
+#if HAVE_SOFTFLOAT_EMU
+
+#undef DECL_TAINTED_SOFTFLOAT_EMU_FUNCTIONS
+#define DECL_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(FLOAT, PACKED)                                                      \
+TaintedValue<PACKED> ToPacked( TaintedValue<FLOAT> a );                                                          \
+void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<FLOAT> a );                                               \
+TaintedValue<FLOAT> RoundToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact );                         \
+TaintedValue<FLOAT> FMulAdd( TaintedValue<FLOAT> a, TaintedValue<FLOAT> const& b, TaintedValue<FLOAT> const& c); \
+TaintedValue<FLOAT> FRem( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b );                                        \
+TaintedValue<FLOAT> FSqrt( TaintedValue<FLOAT> a );                                                              \
+TaintedValue<FLOAT> FAbs( TaintedValue<FLOAT> a );                                                               \
+TaintedValue<FLOAT> FMin( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b );                                        \
+TaintedValue<FLOAT> FMinNumber( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b );                                  \
+TaintedValue<FLOAT> FMax( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b );                                        \
+TaintedValue<FLOAT> FMaxNumber( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b );                                  \
+TaintedValue<bool> IsNaN( TaintedValue<FLOAT> a );                                                               \
+TaintedValue<bool> IsDenormal( TaintedValue<FLOAT> a );                                                          \
+TaintedValue<bool> IsSignaling( TaintedValue<FLOAT> a );                                                         \
+TaintedValue<FLOAT> ClearSignaling( TaintedValue<FLOAT> a );                                                     \
+TaintedValue<FLOAT> Zeroes( TaintedValue<FLOAT> a );                                                             \
+TaintedValue<bool> IsZero( TaintedValue<FLOAT> a );                                                              \
+TaintedValue<bool> IsNeg( TaintedValue<FLOAT> a );                                                               \
+TaintedValue<bool> IsInf( TaintedValue<FLOAT> a );
+
+#undef DECL_TAINTED_SOFTFLOAT_EMU
+#define DECL_TAINTED_SOFTFLOAT_EMU(NAMESPACE)                                                                                                                                                \
+template <> struct TX<  NAMESPACE::Half> { typedef uint16_t as_mask; };                                                                                                                      \
+template <> struct TX<NAMESPACE::Single> { typedef uint32_t as_mask; };                                                                                                                      \
+template <> struct TX<NAMESPACE::Double> { typedef uint64_t as_mask; };                                                                                                                      \
+template <typename SRC> struct CastUBits<NAMESPACE::Half,SRC> { typedef typename TX<SRC>::as_mask mask_t; static uint16_t process( mask_t mask, mask_t bits ) { return mask ? -1 : 0; } };   \
+template <typename SRC> struct CastUBits<NAMESPACE::Single,SRC> { typedef typename TX<SRC>::as_mask mask_t; static uint32_t process( mask_t mask, mask_t bits ) { return mask ? -1 : 0; } }; \
+template <typename SRC> struct CastUBits<NAMESPACE::Double,SRC> { typedef typename TX<SRC>::as_mask mask_t; static uint64_t process( mask_t mask, mask_t bits ) { return mask ? -1 : 0; } }; \
+template <typename DST> struct CastUBits<DST,NAMESPACE::Half> { static typename TX<DST>::as_mask process( uint16_t mask, uint16_t bits ) { return mask ? -1 : 0; } };                        \
+template <typename DST> struct CastUBits<DST,NAMESPACE::Single> { static typename TX<DST>::as_mask process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };                      \
+template <typename DST> struct CastUBits<DST,NAMESPACE::Double> { static typename TX<DST>::as_mask process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };                      \
+template <> struct CastUBits<NAMESPACE::Half,NAMESPACE::Double> { static uint16_t process( uint16_t mask, uint16_t bits ) { return mask ? -1 : 0; } };                                       \
+template <> struct CastUBits<NAMESPACE::Single,NAMESPACE::Double> { static uint32_t process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };                                     \
+template <> struct CastUBits<NAMESPACE::Single,NAMESPACE::Half> { static uint64_t process( uint32_t mask, uint32_t bits ) { return mask ? -1 : 0; } };                                       \
+template <> struct CastUBits<NAMESPACE::Double,NAMESPACE::Half> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };                                       \
+template <> struct CastUBits<NAMESPACE::Half,NAMESPACE::Single> { static uint16_t process( uint16_t mask, uint16_t bits ) { return mask ? -1 : 0; } };                                       \
+template <> struct CastUBits<NAMESPACE::Double,NAMESPACE::Single> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask ? -1 : 0; } };                                     \
+template <> struct CastUBits<NAMESPACE::Half,NAMESPACE::Half> { static uint16_t process( uint16_t mask, uint16_t bits ) { return mask; } };                                                  \
+template <> struct CastUBits<NAMESPACE::Single,NAMESPACE::Single> { static uint32_t process( uint32_t mask, uint32_t bits ) { return mask; } };                                              \
+template <> struct CastUBits<NAMESPACE::Double,NAMESPACE::Double> { static uint64_t process( uint64_t mask, uint64_t bits ) { return mask; } };                                              \
+inline bool EqUBits( uint16_t ubits, NAMESPACE::Half lhs, NAMESPACE::Half rhs ) { return ubits; }                                                                                            \
+inline bool EqUBits( uint32_t ubits, NAMESPACE::Single lhs, NAMESPACE::Single rhs ) { return ubits; }                                                                                        \
+inline bool EqUBits( uint64_t ubits, NAMESPACE::Double lhs, NAMESPACE::Double rhs ) { return ubits; }                                                                                        \
+template <> inline uint16_t TypePunning<uint16_t, NAMESPACE::Half>( NAMESPACE::Half value ) { return ToPacked( value ); }                                                                    \
+template <> inline uint32_t TypePunning<uint32_t, NAMESPACE::Single>( NAMESPACE::Single value ) { return ToPacked( value ); }                                                                \
+template <> inline uint64_t TypePunning<uint64_t, NAMESPACE::Double>( NAMESPACE::Double value ) { return ToPacked( value ); }                                                                \
+template <> inline NAMESPACE::Half TypePunning<NAMESPACE::Half, uint16_t>( uint16_t value ) { return FromPacked<NAMESPACE::Half>( value ); }                                                 \
+template <> inline NAMESPACE::Single TypePunning<NAMESPACE::Single, uint32_t>( uint32_t value ) { return FromPacked<NAMESPACE::Single>( value ); }                                           \
+template <> inline NAMESPACE::Double TypePunning<NAMESPACE::Double, uint64_t>( uint64_t value ) { return FromPacked<NAMESPACE::Double>( value ); }                                           \
+DECL_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(  NAMESPACE::Half, uint16_t)                                                                                                                            \
+DECL_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(NAMESPACE::Single, uint32_t)                                                                                                                            \
+DECL_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(NAMESPACE::Double, uint64_t)                                                                                                                            \
+template <> class std::numeric_limits<TaintedValue<NAMESPACE::Half> > : public TaintedValueNumericLimits<NAMESPACE::Half> {};                                                                \
+template <> class std::numeric_limits<TaintedValue<NAMESPACE::Single> > : public TaintedValueNumericLimits<NAMESPACE::Single> {};                                                            \
+template <> class std::numeric_limits<TaintedValue<NAMESPACE::Double> > : public TaintedValueNumericLimits<NAMESPACE::Double> {};                                                            \
+template <> struct FloatingPointStatusAndControl<TaintedValue<NAMESPACE::Half> > : TaintedValueFloatingPointStatusAndControl<NAMESPACE::Half> {};                                            \
+template <> struct FloatingPointStatusAndControl<TaintedValue<NAMESPACE::Single> > : TaintedValueFloatingPointStatusAndControl<NAMESPACE::Single> {};                                        \
+template <> struct FloatingPointStatusAndControl<TaintedValue<NAMESPACE::Double> > : TaintedValueFloatingPointStatusAndControl<NAMESPACE::Double> {};
+
+DECL_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::x86          )
+DECL_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::x86_sse      )
+DECL_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::arm_vfpv2    )
+DECL_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::arm_vfpv2_dn )
+DECL_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::riscv        )
+DECL_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn)
+
+#undef DECL_TAINTED_SOFTFLOAT_EMU
+#undef DECL_TAINTED_SOFTFLOAT_EMU_FUNCTIONS
+
+#endif // HAVE_SOFTFLOAT_EMU
 
 #endif /* __ARM64VP_TAINT_HH__ */

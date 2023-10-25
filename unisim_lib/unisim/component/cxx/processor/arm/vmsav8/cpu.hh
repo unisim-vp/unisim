@@ -30,11 +30,15 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
@@ -45,6 +49,11 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
+#if HAVE_SOFTFLOAT_EMU
+#include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
+#else
+#include <unisim/util/floating_point/floating_point.hh>
+#endif
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
@@ -58,8 +67,6 @@
 #include <stdexcept>
 #include <iosfwd>
 #include <inttypes.h>
-
-template <typename FLOAT> bool is_signaling( FLOAT value ) { return issignaling(value); }
 
 namespace unisim {
 namespace component {
@@ -82,8 +89,17 @@ struct ArchTypes
   typedef int32_t      S32;
   typedef int64_t      S64;
   typedef bool         BOOL;
-  typedef float        F32;
-  typedef double       F64;
+#if HAVE_SOFTFLOAT_EMU
+  typedef unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Half F16;
+  typedef unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Single F32;
+  typedef unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Double F64;
+#elif HAVE_FLOAT16
+  typedef _Float16 F16;
+  typedef float F32;
+  typedef double F64;
+#else
+#error "Support _Float16 type must be available"
+#endif
 
   template <typename T>
   using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
@@ -235,7 +251,7 @@ struct CPU
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
   
-  U32& FPCR() { return fpsr; }
+  U32& FPCR() { return fpcr; }
   
   /* Get FPCR Floating-point control bits */
   BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
@@ -448,18 +464,6 @@ protected:
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
 };
-
-template <typename CPU, typename T>
-T FPMulAdd(CPU& cpu, T acc, T op1, T op2)
-{
-  return acc + (op1 * op2);
-}
-
-template <typename CPU, typename T>
-T FPMulSub(CPU& cpu, T acc, T op1, T op2)
-{
-  return acc - (op1 * op2);
-}
 
 } // end of namespace vmsav8
 } // end of namespace arm
