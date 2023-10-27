@@ -4725,7 +4725,7 @@ sqdmulh_hhh.disasm = {
 sqdmulh_hhh.execute = {
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
-  cpu.SetVS16(rd, SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, 0)) * S32(cpu.GetVS16(rn, 0)), -15, /* round */ false, /* sat */ false), S16()));
+  cpu.SetVS16(rd, SatNarrow<S16>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, 0)) * S32(cpu.GetVS16(rn, 0)), -15, /* round */ false, /* sat */ false)));
 }
 
 op sqdmulh_hhvhi( 0b0101111101[10] : index0[2] : rm[4] : 0b1100[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -4738,7 +4738,7 @@ sqdmulh_hhvhi.disasm = {
 sqdmulh_hhvhi.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  cpu.SetVS16(rd, SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, 0)) * S32(cpu.GetVS16(rm, index)), -15, /* round */ false, /* sat */ false), S16()));
+  cpu.SetVS16(rd, SatNarrow<S16>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, 0)) * S32(cpu.GetVS16(rm, index)), -15, /* round */ false, /* sat */ false)));
 }
 
 op sqdmulh_sss( 0b01011110101[11] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
@@ -4750,7 +4750,7 @@ sqdmulh_sss.disasm = {
 sqdmulh_sss.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
-  cpu.SetVS32(rd, SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, 0)) * S64(cpu.GetVS32(rn, 0)), -31, /* round */ false, /* sat */ false), S32()));
+  cpu.SetVS32(rd, SatNarrow<S32>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, 0)) * S64(cpu.GetVS32(rn, 0)), -31, /* round */ false, /* sat */ false)));
 }
 
 op sqdmulh_ssvsi( 0b0101111110[10] : index0[1] : rm[5] : 0b1100[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -4763,7 +4763,7 @@ sqdmulh_ssvsi.disasm = {
 sqdmulh_ssvsi.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::S32 S32;
-  cpu.SetVS32(rd, SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, 0)) * S64(cpu.GetVS32(rm, index)), -31, /* round */ false, /* sat */ false), S32()));
+  cpu.SetVS32(rd, SatNarrow<S32>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, 0)) * S64(cpu.GetVS32(rm, index)), -31, /* round */ false, /* sat */ false)));
 }
 
 op sqdmull2_v2dv4sv4s( 0b01001110101[11] : rm[5] : 0b110100[6] : rn[5] : rd[5] );
@@ -5044,7 +5044,7 @@ sqrdmulh_hhh.disasm = {
 sqrdmulh_hhh.execute = {
   typedef typename ARCH::S16 S16;
   typedef typename ARCH::S32 S32;
-  cpu.SetVS16(rd, SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, 0)) * S32(cpu.GetVS16(rn, 0)), -15, /* round */ true, /* sat */ false), S16()));
+  cpu.SetVS16(rd, SatNarrow<S16>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, 0)) * S32(cpu.GetVS16(rn, 0)), -15, /* round */ true, /* sat */ false)));
 }
 
 op sqrdmulh_hhvhi( 0b0101111101[10] : index0[2] : rm[4] : 0b1101[4] : shl<2> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -5057,7 +5057,7 @@ sqrdmulh_hhvhi.disasm = {
 sqrdmulh_hhvhi.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  cpu.SetVS16(rd, SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, 0)) * S32(cpu.GetVS16(rm, index)), -15, /* round */ true, /* sat */ false), S16()));
+  cpu.SetVS16(rd, SatNarrow<S16>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, 0)) * S32(cpu.GetVS16(rm, index)), -15, /* round */ true, /* sat */ false)));
 }
 
 op sqrdmulh_sss( 0b01111110101[11] : rm[5] : 0b101101[6] : rn[5] : rd[5] );
@@ -5069,7 +5069,7 @@ sqrdmulh_sss.disasm = {
 sqrdmulh_sss.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S64 S64;
-  cpu.SetVS32(rd, SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, 0)) * S64(cpu.GetVS32(rn, 0)), -31, /* round */ true, /* sat */ false), S32()));
+  cpu.SetVS32(rd, SatNarrow<S32>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, 0)) * S64(cpu.GetVS32(rn, 0)), -31, /* round */ true, /* sat */ false)));
 }
 
 op sqrdmulh_ssvsi( 0b0101111110[10] : index0[1] : rm[5] : 0b1101[4] : shl<1> index1[1] : 0b0[1] : rn[5] : rd[5] );
@@ -5082,7 +5082,7 @@ sqrdmulh_ssvsi.disasm = {
 sqrdmulh_ssvsi.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::S32 S32;
-  cpu.SetVS32(rd, SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, 0)) * S64(cpu.GetVS32(rm, index)), -31, /* round */ true, /* sat */ false), S32()));
+  cpu.SetVS32(rd, SatNarrow<S32>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, 0)) * S64(cpu.GetVS32(rm, index)), -31, /* round */ true, /* sat */ false)));
 }
 
 op sqrshl_bbb( 0b01011110001[11] : rm[5] : 0b010111[6] : rn[5] : rd[5] );
@@ -5156,7 +5156,7 @@ sqrshrn2_v16b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5177,7 +5177,7 @@ sqrshrn2_v4s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5198,7 +5198,7 @@ sqrshrn2_v8h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5214,7 +5214,7 @@ sqrshrn_bhi.disasm = {
 };
 
 sqrshrn_bhi.execute = {
-  cpu.SetVS8(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::S8()));
+  cpu.SetVS8(rd, SatNarrow<typename ARCH::S8>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op sqrshrn_hsi( 0b010111110001[12] : lro[4] : 0b100111[6] : rn[5] : rd[5] );
@@ -5225,7 +5225,7 @@ sqrshrn_hsi.disasm = {
 };
 
 sqrshrn_hsi.execute = {
-  cpu.SetVS16(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::S16()));
+  cpu.SetVS16(rd, SatNarrow<typename ARCH::S16>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op sqrshrn_sdi( 0b01011111001[11] : lro[5] : 0b100111[6] : rn[5] : rd[5] );
@@ -5236,7 +5236,7 @@ sqrshrn_sdi.disasm = {
 };
 
 sqrshrn_sdi.execute = {
-  cpu.SetVS32(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::S32()));
+  cpu.SetVS32(rd, SatNarrow<typename ARCH::S32>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op sqrshrn_v2s2di( 0b00001111001[11] : lro[5] : 0b100111[6] : rn[5] : rd[5] );
@@ -5252,7 +5252,7 @@ sqrshrn_v2s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5274,7 +5274,7 @@ sqrshrn_v4h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5296,7 +5296,7 @@ sqrshrn_v8b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5318,7 +5318,7 @@ sqrshrun2_v16b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5339,7 +5339,7 @@ sqrshrun2_v4s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5360,7 +5360,7 @@ sqrshrun2_v8h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5376,7 +5376,7 @@ sqrshrun_bhi.disasm = {
 };
 
 sqrshrun_bhi.execute = {
-  cpu.SetVU8(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::U8()));
+  cpu.SetVU8(rd, SatNarrow<typename ARCH::U8>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op sqrshrun_hsi( 0b011111110001[12] : lro[4] : 0b100011[6] : rn[5] : rd[5] );
@@ -5387,7 +5387,7 @@ sqrshrun_hsi.disasm = {
 };
 
 sqrshrun_hsi.execute = {
-  cpu.SetVU16(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::U16()));
+  cpu.SetVU16(rd, SatNarrow<typename ARCH::U16>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op sqrshrun_sdi( 0b01111111001[11] : lro[5] : 0b100011[6] : rn[5] : rd[5] );
@@ -5398,7 +5398,7 @@ sqrshrun_sdi.disasm = {
 };
 
 sqrshrun_sdi.execute = {
-  cpu.SetVU32(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::U32()));
+  cpu.SetVU32(rd, SatNarrow<typename ARCH::U32>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op sqrshrun_v2s2di( 0b00101111001[11] : lro[5] : 0b100011[6] : rn[5] : rd[5] );
@@ -5414,7 +5414,7 @@ sqrshrun_v2s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5436,7 +5436,7 @@ sqrshrun_v4h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5458,7 +5458,7 @@ sqrshrun_v8b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5715,7 +5715,7 @@ sqshrn2_v16b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5736,7 +5736,7 @@ sqshrn2_v4s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5757,7 +5757,7 @@ sqshrn2_v8h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5773,7 +5773,7 @@ sqshrn_bhi.disasm = {
 };
 
 sqshrn_bhi.execute = {
-  cpu.SetVS8(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::S8()));
+  cpu.SetVS8(rd, SatNarrow<typename ARCH::S8>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op sqshrn_hsi( 0b010111110001[12] : lro[4] : 0b100101[6] : rn[5] : rd[5] );
@@ -5784,7 +5784,7 @@ sqshrn_hsi.disasm = {
 };
 
 sqshrn_hsi.execute = {
-  cpu.SetVS16(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::S16()));
+  cpu.SetVS16(rd, SatNarrow<typename ARCH::S16>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op sqshrn_sdi( 0b01011111001[11] : lro[5] : 0b100101[6] : rn[5] : rd[5] );
@@ -5795,7 +5795,7 @@ sqshrn_sdi.disasm = {
 };
 
 sqshrn_sdi.execute = {
-  cpu.SetVS32(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::S32()));
+  cpu.SetVS32(rd, SatNarrow<typename ARCH::S32>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op sqshrn_v2s2di( 0b00001111001[11] : lro[5] : 0b100101[6] : rn[5] : rd[5] );
@@ -5811,7 +5811,7 @@ sqshrn_v2s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5833,7 +5833,7 @@ sqshrn_v4h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5855,7 +5855,7 @@ sqshrn_v8b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5877,7 +5877,7 @@ sqshrun2_v16b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5898,7 +5898,7 @@ sqshrun2_v4s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5919,7 +5919,7 @@ sqshrun2_v8h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5935,7 +5935,7 @@ sqshrun_bhi.disasm = {
 };
 
 sqshrun_bhi.execute = {
-  cpu.SetVU8(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::U8()));
+  cpu.SetVU8(rd, SatNarrow<typename ARCH::U8>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op sqshrun_hsi( 0b011111110001[12] : lro[4] : 0b100001[6] : rn[5] : rd[5] );
@@ -5946,7 +5946,7 @@ sqshrun_hsi.disasm = {
 };
 
 sqshrun_hsi.execute = {
-  cpu.SetVU16(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::U16()));
+  cpu.SetVU16(rd, SatNarrow<typename ARCH::U16>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op sqshrun_sdi( 0b01111111001[11] : lro[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -5957,7 +5957,7 @@ sqshrun_sdi.disasm = {
 };
 
 sqshrun_sdi.execute = {
-  cpu.SetVU32(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::U32()));
+  cpu.SetVU32(rd, SatNarrow<typename ARCH::U32>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op sqshrun_v2s2di( 0b00101111001[11] : lro[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -5973,7 +5973,7 @@ sqshrun_v2s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -5995,7 +5995,7 @@ sqshrun_v4h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6017,7 +6017,7 @@ sqshrun_v8b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVS16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6091,7 +6091,7 @@ sqxtn2_v16b8h.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS16(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS16(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6111,7 +6111,7 @@ sqxtn2_v4s2d.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu , cpu.GetVS64(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu , cpu.GetVS64(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6131,7 +6131,7 @@ sqxtn2_v8h4s.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS32(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS32(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6146,7 +6146,7 @@ sqxtn_bh.disasm = {
 };
 
 sqxtn_bh.execute = {
-  cpu.SetVS8(rd, SatNarrow(cpu, cpu.GetVS16(rn, 0), typename ARCH::S8()));
+  cpu.SetVS8(rd, SatNarrow<typename ARCH::S8>(cpu, cpu.GetVS16(rn, 0)));
 }
 
 op sqxtn_hs( 0b0101111001100001010010[22] : rn[5] : rd[5] );
@@ -6156,7 +6156,7 @@ sqxtn_hs.disasm = {
 };
 
 sqxtn_hs.execute = {
-  cpu.SetVS16(rd, SatNarrow(cpu, cpu.GetVS32(rn, 0), typename ARCH::S16()));
+  cpu.SetVS16(rd, SatNarrow<typename ARCH::S16>(cpu, cpu.GetVS32(rn, 0)));
 }
 
 op sqxtn_sd( 0b0101111010100001010010[22] : rn[5] : rd[5] );
@@ -6166,7 +6166,7 @@ sqxtn_sd.disasm = {
 };
 
 sqxtn_sd.execute = {
-  cpu.SetVS32(rd, SatNarrow(cpu, cpu.GetVS64(rn, 0), typename ARCH::S32()));
+  cpu.SetVS32(rd, SatNarrow<typename ARCH::S32>(cpu, cpu.GetVS64(rn, 0)));
 }
 
 op sqxtn_v2s2d( 0b0000111010100001010010[22] : rn[5] : rd[5] );
@@ -6181,7 +6181,7 @@ sqxtn_v2s2d.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS64(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS64(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6202,7 +6202,7 @@ sqxtn_v4h4s.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS32(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS32(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6223,7 +6223,7 @@ sqxtn_v8b8h.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS16(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS16(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6244,7 +6244,7 @@ sqxtun2_v16b8h.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS16(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS16(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6264,7 +6264,7 @@ sqxtun2_v4s2d.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu , cpu.GetVS64(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu , cpu.GetVS64(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6284,7 +6284,7 @@ sqxtun2_v8h4s.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS32(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS32(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6299,7 +6299,7 @@ sqxtun_bh.disasm = {
 };
 
 sqxtun_bh.execute = {
-  cpu.SetVU8(rd, SatNarrow(cpu, cpu.GetVS16(rn, 0), typename ARCH::U8()));
+  cpu.SetVU8(rd, SatNarrow<typename ARCH::U8>(cpu, cpu.GetVS16(rn, 0)));
 }
 
 op sqxtun_hs( 0b0111111001100001001010[22] : rn[5] : rd[5] );
@@ -6309,7 +6309,7 @@ sqxtun_hs.disasm = {
 };
 
 sqxtun_hs.execute = {
-  cpu.SetVU16(rd, SatNarrow(cpu, cpu.GetVS32(rn, 0), typename ARCH::U16()));
+  cpu.SetVU16(rd, SatNarrow<typename ARCH::U16>(cpu, cpu.GetVS32(rn, 0)));
 }
 
 op sqxtun_sd( 0b0111111010100001001010[22] : rn[5] : rd[5] );
@@ -6319,7 +6319,7 @@ sqxtun_sd.disasm = {
 };
 
 sqxtun_sd.execute = {
-  cpu.SetVU32(rd, SatNarrow(cpu, cpu.GetVS64(rn, 0), typename ARCH::U32()));
+  cpu.SetVU32(rd, SatNarrow<typename ARCH::U32>(cpu, cpu.GetVS64(rn, 0)));
 }
 
 op sqxtun_v2s2d( 0b0010111010100001001010[22] : rn[5] : rd[5] );
@@ -6334,7 +6334,7 @@ sqxtun_v2s2d.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS64(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS64(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6355,7 +6355,7 @@ sqxtun_v4h4s.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS32(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS32(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -6376,7 +6376,7 @@ sqxtun_v8b8h.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVS16(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVS16(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -8836,7 +8836,7 @@ uqrshrn2_v16b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -8857,7 +8857,7 @@ uqrshrn2_v4s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -8878,7 +8878,7 @@ uqrshrn2_v8h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -8894,7 +8894,7 @@ uqrshrn_bhi.disasm = {
 };
 
 uqrshrn_bhi.execute = {
-  cpu.SetVU8(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU16(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::U8()));
+  cpu.SetVU8(rd, SatNarrow<typename ARCH::U8>(cpu, NeonSHL(cpu, cpu.GetVU16(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op uqrshrn_hsi( 0b011111110001[12] : lro[4] : 0b100111[6] : rn[5] : rd[5] );
@@ -8905,7 +8905,7 @@ uqrshrn_hsi.disasm = {
 };
 
 uqrshrn_hsi.execute = {
-  cpu.SetVU16(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU32(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::U16()));
+  cpu.SetVU16(rd, SatNarrow<typename ARCH::U16>(cpu, NeonSHL(cpu, cpu.GetVU32(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op uqrshrn_sdi( 0b01111111001[11] : lro[5] : 0b100111[6] : rn[5] : rd[5] );
@@ -8916,7 +8916,7 @@ uqrshrn_sdi.disasm = {
 };
 
 uqrshrn_sdi.execute = {
-  cpu.SetVU32(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU64(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), typename ARCH::U32()));
+  cpu.SetVU32(rd, SatNarrow<typename ARCH::U32>(cpu, NeonSHL(cpu, cpu.GetVU64(rn, 0), typename ARCH::S8(-shift), /* round */ true, /* sat */ true)));
 }
 
 op uqrshrn_v2s2di( 0b00101111001[11] : lro[5] : 0b100111[6] : rn[5] : rd[5] );
@@ -8932,7 +8932,7 @@ uqrshrn_v2s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -8954,7 +8954,7 @@ uqrshrn_v4h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -8976,7 +8976,7 @@ uqrshrn_v8b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ true, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9106,7 +9106,7 @@ uqshrn2_v16b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9127,7 +9127,7 @@ uqshrn2_v4s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9148,7 +9148,7 @@ uqshrn2_v8h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9164,7 +9164,7 @@ uqshrn_bhi.disasm = {
 };
 
 uqshrn_bhi.execute = {
-  cpu.SetVU8(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU16(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::U8()));
+  cpu.SetVU8(rd, SatNarrow<typename ARCH::U8>(cpu, NeonSHL(cpu, cpu.GetVU16(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op uqshrn_hsi( 0b011111110001[12] : lro[4] : 0b100101[6] : rn[5] : rd[5] );
@@ -9175,7 +9175,7 @@ uqshrn_hsi.disasm = {
 };
 
 uqshrn_hsi.execute = {
-  cpu.SetVU16(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU32(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::U16()));
+  cpu.SetVU16(rd, SatNarrow<typename ARCH::U16>(cpu, NeonSHL(cpu, cpu.GetVU32(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op uqshrn_sdi( 0b01111111001[11] : lro[5] : 0b100101[6] : rn[5] : rd[5] );
@@ -9186,7 +9186,7 @@ uqshrn_sdi.disasm = {
 };
 
 uqshrn_sdi.execute = {
-  cpu.SetVU32(rd, SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU64(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), typename ARCH::U32()));
+  cpu.SetVU32(rd, SatNarrow<typename ARCH::U32>(cpu, NeonSHL(cpu, cpu.GetVU64(rn, 0), typename ARCH::S8(-shift), /* round */ false, /* sat */ true)));
 }
 
 op uqshrn_v2s2di( 0b00101111001[11] : lro[5] : 0b100101[6] : rn[5] : rd[5] );
@@ -9202,7 +9202,7 @@ uqshrn_v2s2di.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU64(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9224,7 +9224,7 @@ uqshrn_v4h4si.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU32(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9246,7 +9246,7 @@ uqshrn_v8b8hi.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, cpu.GetVU16(rn, idx), typename ARCH::S8(-shift), /* round */ false, /* sat */ true));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9320,7 +9320,7 @@ uqxtn2_v16b8h.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVU16(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVU16(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9340,7 +9340,7 @@ uqxtn2_v4s2d.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu , cpu.GetVU64(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu , cpu.GetVU64(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9360,7 +9360,7 @@ uqxtn2_v8h4s.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVU32(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVU32(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9375,7 +9375,7 @@ uqxtn_bh.disasm = {
 };
 
 uqxtn_bh.execute = {
-  cpu.SetVU8(rd, SatNarrow(cpu, cpu.GetVU16(rn, 0), typename ARCH::U8()));
+  cpu.SetVU8(rd, SatNarrow<typename ARCH::U8>(cpu, cpu.GetVU16(rn, 0)));
 }
 
 op uqxtn_hs( 0b0111111001100001010010[22] : rn[5] : rd[5] );
@@ -9385,7 +9385,7 @@ uqxtn_hs.disasm = {
 };
 
 uqxtn_hs.execute = {
-  cpu.SetVU16(rd, SatNarrow(cpu, cpu.GetVU32(rn, 0), typename ARCH::U16()));
+  cpu.SetVU16(rd, SatNarrow<typename ARCH::U16>(cpu, cpu.GetVU32(rn, 0)));
 }
 
 op uqxtn_sd( 0b0111111010100001010010[22] : rn[5] : rd[5] );
@@ -9395,7 +9395,7 @@ uqxtn_sd.disasm = {
 };
 
 uqxtn_sd.execute = {
-  cpu.SetVU32(rd, SatNarrow(cpu, cpu.GetVU64(rn, 0), typename ARCH::U32()));
+  cpu.SetVU32(rd, SatNarrow<typename ARCH::U32>(cpu, cpu.GetVU64(rn, 0)));
 }
 
 op uqxtn_v2s2d( 0b0010111010100001010010[22] : rn[5] : rd[5] );
@@ -9410,7 +9410,7 @@ uqxtn_v2s2d.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVU64(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVU64(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9431,7 +9431,7 @@ uqxtn_v4h4s.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVU32(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVU32(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -9452,7 +9452,7 @@ uqxtn_v8b8h.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, cpu.GetVU16(rn, idx), DST());
+      res[idx] = SatNarrow<DST>(cpu, cpu.GetVU16(rn, idx));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12125,7 +12125,7 @@ sqdmulh_vhvhvhi.execute = {
   S32 element(cpu.GetVS16(rm, index));
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, idx)) * element, -15, /* round */ false, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, idx)) * element, -15, /* round */ false, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12147,7 +12147,7 @@ sqdmulh_vhvhvh.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, idx)) * S32(cpu.GetVS16(rn, idx)), -15, /* round */ false, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, idx)) * S32(cpu.GetVS16(rn, idx)), -15, /* round */ false, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12171,7 +12171,7 @@ sqdmulh_vsvsvsi.execute = {
   S64 element(cpu.GetVS32(rm, index));
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, idx)) * element, -31, /* round */ false, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, idx)) * element, -31, /* round */ false, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12193,7 +12193,7 @@ sqdmulh_vsvsvs.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, idx)) * S64(cpu.GetVS32(rn, idx)), -31, /* round */ false, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, idx)) * S64(cpu.GetVS32(rn, idx)), -31, /* round */ false, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12268,7 +12268,7 @@ sqrdmulh_vhvhvhi.execute = {
   S32 element(cpu.GetVS16(rm, index));
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, idx)) * element, -15, /* round */ true, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rn, idx)) * element, -15, /* round */ true, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12290,7 +12290,7 @@ sqrdmulh_vhvhvh.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, idx)) * S32(cpu.GetVS16(rn, idx)), -15, /* round */ true, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S32(cpu.GetVS16(rm, idx)) * S32(cpu.GetVS16(rn, idx)), -15, /* round */ true, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12314,7 +12314,7 @@ sqrdmulh_vsvsvsi.execute = {
   S64 element(cpu.GetVS32(rm, index));
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, idx)) * element, -31, /* round */ true, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rn, idx)) * element, -31, /* round */ true, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {
@@ -12336,7 +12336,7 @@ sqrdmulh_vsvsvs.execute = {
   DST res[elements];
   for (unsigned idx = 0; idx < elements; ++idx)
     {
-      res[idx] = SatNarrow(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, idx)) * S64(cpu.GetVS32(rn, idx)), -31, /* round */ true, /* sat */ false), DST());
+      res[idx] = SatNarrow<DST>(cpu, NeonSHL(cpu, S64(cpu.GetVS32(rm, idx)) * S64(cpu.GetVS32(rn, idx)), -31, /* round */ true, /* sat */ false));
     }
   for (unsigned idx = 0; idx < elements; ++idx)
     {

@@ -133,6 +133,70 @@ OUT PolyMod2(IN value, uint32_t _poly)
       }
   }
 
+  template <typename DST, class ARCH, typename SRC>
+  DST SatNarrow( ARCH& core, SRC src )
+  {
+    if (std::numeric_limits<SRC>::is_signed)
+      {
+        if (std::numeric_limits<DST>::is_signed)
+          {
+            if (OverShift<DST>::size < OverShift<SRC>::size)
+              {
+                if (core.Test(src < SRC(std::numeric_limits<DST>::min())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::min();
+                  }
+                else if(core.Test(src > SRC(std::numeric_limits<DST>::max())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::max();
+                  }
+              }
+          }
+        else
+          {
+            if (core.Test(src < SRC(0)))
+              {
+                core.SetQC();
+                return std::numeric_limits<DST>::min();
+              }
+            else if(OverShift<DST>::size < (OverShift<SRC>::size - 1) )
+              {
+                if(core.Test(src > SRC(std::numeric_limits<DST>::max())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::max();
+                  }
+              }
+          }
+      }
+    else
+      {
+        if (std::numeric_limits<DST>::is_signed)
+          {
+            if (OverShift<DST>::size < (OverShift<SRC>::size - 1))
+              {
+                core.SetQC();
+                return std::numeric_limits<DST>::max();
+              }
+          }
+        else
+          {
+            if (OverShift<DST>::size < OverShift<SRC>::size )
+              {
+                if(core.Test(src > SRC(std::numeric_limits<DST>::max())))
+                  {
+                    core.SetQC();
+                    return std::numeric_limits<DST>::max();
+                  }
+              }
+          }
+      }
+      
+    return DST(src);
+  }
+  
   template <class ARCH, typename OP, typename OP2>
   OP SatAdd( ARCH& arch, OP op1, OP2 op2)
   {
