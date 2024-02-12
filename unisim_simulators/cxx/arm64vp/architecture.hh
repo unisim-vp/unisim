@@ -644,6 +644,7 @@ struct AArch64
     virtual ~Exception() {}
     virtual void proceed( AArch64& cpu ) const {}
     virtual char const* nature() const = 0;
+    virtual void print(std::ostream& sink) const { sink << nature(); }
   };
 
   struct DataAbort : public Exception
@@ -656,6 +657,7 @@ struct AArch64
     {}
     virtual void proceed( AArch64& cpu ) const override;
     virtual char const* nature() const override { return "Data Abort"; }
+    virtual void print(std::ostream& sink) const override { std::ostringstream va_sstr; va_sstr << "0x" << std::hex << va; sink << nature() << " (" << type << ", level " << level << ") accessing to " << va_sstr.str(); }
     unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
     bool ipavalid, secondstage, s2fs1walk;
   };
@@ -957,7 +959,7 @@ struct AArch64
     RTC() : LR(0), MR(), load_insn_time(0), started(false), masked(true) {}
     void     sync(SnapShot&);
     uint32_t get_counter(AArch64& cpu) const { return LR + get_gap(cpu); }
-    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / (cpu.get_freq() / get_cntfrq()); }
+    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / ((cpu.get_freq() * cpu.get_ipc()) / get_cntfrq()); }
     uint64_t get_cntfrq() const { return 1; }
     void     flush_lr(AArch64& cpu) { load_insn_time = cpu.insn_timer; }
     void     program(AArch64& cpu);
@@ -1004,7 +1006,7 @@ struct AArch64
     bool activated() const;
     void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
-    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / (cpu.get_freq() / get_cntfrq()); }
+    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / ((cpu.get_freq() * cpu.get_ipc())/ get_cntfrq()); }
     uint64_t read_ctl(AArch64& cpu) const { return ctl | ((read_tval(cpu) <= 0) << 2); }
     void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; program(cpu); }
     void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; program(cpu); }
@@ -1017,6 +1019,7 @@ struct AArch64
   };
   void handle_vtimer();
   uint64_t get_freq() const { return 1075200000; }
+  uint64_t get_ipc() const { return 1; }
 
   void map_virtio_placeholder(unsigned id, uint64_t base_addr);
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
@@ -1096,6 +1099,12 @@ public:
   unsigned tfp32loss, tfp64loss;
   unisim::kernel::variable::Parameter<unsigned> param_tfp32loss, param_tfp64loss;
   std::map<char const*, uint64_t> tfpinsncount;
+  bool enable_sleep;
+  unisim::kernel::variable::Parameter<bool> param_enable_sleep;
+  bool enable_exception_trap;
+  unisim::kernel::variable::Parameter<bool> param_enable_exception_trap;
+  bool enable_strace;
+  unisim::kernel::variable::Parameter<bool> param_enable_strace;
   // /*QESCAPTURE*/
   // bool QESCapture();
   // struct QES { uint16_t desc; uint16_t flags; } qes[2];

@@ -50,6 +50,16 @@
 #include <unistd.h>
 #include <signal.h>
 
+struct MemoryMapping
+{
+  static const uint64_t memory_base_addr = 0x40000000;
+  static const uint64_t initrd_start     = 0x44000000;
+  static const uint64_t gic_base_addr    = 0x08000000;
+  static const uint64_t uart_base_addr   = 0x09000000;
+  static const uint64_t rtc_base_addr    = 0x09010000;
+  static const uint64_t virtio_base_addr = 0x0a000000;
+};
+
 struct MMapped : AArch64::Page::Free
 {
   MMapped(char const* _filename)
@@ -144,7 +154,7 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename, cha
       }
     } le64;
     lseek(linux_image->fd,8,SEEK_SET);
-    uint64_t base = le64.read(linux_image->fd), kernel_size = le64.read(linux_image->fd);
+    uint64_t base = MemoryMapping::memory_base_addr + le64.read(linux_image->fd), kernel_size = le64.read(linux_image->fd);
     lseek(linux_image->fd,0,SEEK_SET);
     if (base % 64) { std::cerr << "Bad base: " << std::hex << base << std::endl; return 1; }
     if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
@@ -198,8 +208,8 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename, cha
     struct stat f_stat;
     if (not initrd->get(f_stat))
       return 1;
-    uint64_t initrd_start = 0x04000000, initrd_end = initrd_start+f_stat.st_size;
-    AArch64::Page page(initrd_start,initrd_end-1,0,0,initrd);
+    uint64_t initrd_end = MemoryMapping::initrd_start+f_stat.st_size;
+    AArch64::Page page(MemoryMapping::initrd_start,initrd_end-1,0,0,initrd);
     initrd->dump_load( std::cerr, "initrd", page );
     if (not initrd->get(page))
       return 1;
@@ -219,7 +229,7 @@ AArch64* core_instance(AArch64* new_arch)
   return instance;
 }
 
-void usr_handler(int signum)
+void signal_handler(int signum)
 {
   struct Bad {};
   switch (signum)
@@ -229,6 +239,7 @@ void usr_handler(int signum)
       core_instance(0)->suspend = true;
       break;
     case SIGUSR2:
+    case SIGINT:
       core_instance(0)->terminate = true;
       break;
     }
@@ -327,7 +338,6 @@ struct StreamSpy
 
   AArch64& arch;
 };
-  
 
 int
 main(int argc, char *argv[])
@@ -349,13 +359,8 @@ main(int argc, char *argv[])
   // arch.uart.char_io_import >> netstreamer.char_io_export;
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
-  std::unique_ptr<Debugger> dbg;
-  {
-    // if a vmlinux file is given, start the debugger
-    std::ifstream linux_elf ("linux.elf");
-    if (linux_elf)
-      dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
-  }
+  std::ifstream linux_elf ("linux.elf");
+  std::unique_ptr<Debugger> dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf);
   
   switch (simulator.Setup())
     {
@@ -366,14 +371,14 @@ main(int argc, char *argv[])
 
   /* Start asynchronous reception loop */
   // host_term.Start();
-  
-  arch.map_gic(0x48000000);
-  arch.map_uart(0x49000000);
-  arch.map_rtc(0x49010000);
+
+  arch.map_gic(MemoryMapping::gic_base_addr);
+  arch.map_uart(MemoryMapping::uart_base_addr);
+  arch.map_rtc(MemoryMapping::rtc_base_addr);
 
   for (unsigned int idx = 0; idx < 32; ++idx)
     {
-      uint64_t base_addr = 0x4a000000 + 0x200*idx;
+      uint64_t base_addr = MemoryMapping::virtio_base_addr + 0x200*idx;
       unsigned irq = 32 + 16 + idx;
       switch (idx)
         {
@@ -387,8 +392,11 @@ main(int argc, char *argv[])
   if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb", "initrd.img"))
     return 1;
 
-  signal(SIGUSR1, usr_handler);
-  signal(SIGUSR2, usr_handler);
+  signal(SIGUSR1, signal_handler);
+  signal(SIGUSR2, signal_handler);
+  if (not dbg->enable_inline_debugger)
+    signal(SIGINT, signal_handler);
+
   core_instance(&arch);
   arch.silence( &AArch64::handle_suspend );
   arch.notify( 0, &AArch64::handle_suspend );

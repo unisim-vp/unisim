@@ -96,6 +96,12 @@ AArch64::AArch64(char const* name)
   , param_tfp32loss("tfp32loss", this, tfp32loss, "tainted fp32 bit loss count")
   , param_tfp64loss("tfp64loss", this, tfp64loss, "tainted fp64 bit loss count")
   , tfpinsncount()
+  , enable_sleep(false)
+  , param_enable_sleep("enable-sleep", this, enable_sleep, "enable sleeping")
+  , enable_exception_trap(false)
+  , param_enable_exception_trap("enable-exception-trap", this, enable_exception_trap, "enable exception trap in debugger")
+  , enable_strace(false)
+  , param_enable_strace("enable-strace", this, enable_strace, "enable strace")
 {
   param_tfp32loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   param_tfp64loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -347,7 +353,7 @@ AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64
 void
 AArch64::UndefinedInstruction()
 {
-  if (unlikely(trap_reporting_import))
+  if (unlikely(enable_exception_trap and trap_reporting_import))
     trap_reporting_import->ReportTrap(*this,"Undefined instruction");
   unsigned const target_el = 1;
 
@@ -373,23 +379,26 @@ AArch64::TODO()
 void
 AArch64::CallSupervisor( uint32_t imm )
 {
-  //  static std::ofstream strace("strace.log");
-  // static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
-  // {
-  //   typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
-  //   typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
+  if (unlikely(enable_strace))
+    {
+      static std::ofstream strace("strace.log");
+      static struct Arm64LinuxOS : public unisim::util::os::linux_os::Linux<uint64_t, uint64_t>
+      {
+        typedef unisim::util::os::linux_os::Linux<uint64_t, uint64_t> ThisLinux;
+        typedef unisim::util::os::linux_os::AARCH64TS<ThisLinux> Arm64Target;
 
-  //   Arm64LinuxOS( AArch64* cpu )
-  //     : ThisLinux( AArch64::ptlog(), AArch64::ptlog(), AArch64::ptlog(), cpu, cpu, cpu )
-  //   {
-  //     SetTargetSystem(new Arm64Target(*this));
-  //   }
-  //   ~Arm64LinuxOS() { delete GetTargetSystem(); }
-  // } arm64_linux_os( this );
+        Arm64LinuxOS( AArch64* cpu, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream)
+          : ThisLinux( debug_info_stream, debug_warning_stream, debug_error_stream, cpu, cpu, cpu )
+        {
+          SetTargetSystem(new Arm64Target(*this));
+        }
+        ~Arm64LinuxOS() { delete GetTargetSystem(); }
+      } arm64_linux_os( this, strace, std::cerr, std::cerr );
 
-  // AArch64::ptlog() << last_insn(0) << "\n\t";
-  // //  strace << "SVC@" << std::hex << current_insn_addr;
-  // arm64_linux_os.LogSystemCall( imm );
+      // AArch64::ptlog() << last_insn(0) << "\n\t";
+      strace << "SVC@" << std::hex << current_insn_addr << "\n\t";
+      arm64_linux_os.LogSystemCall( imm );
+    }
 
   //  if UsingAArch32() then AArch32.ITAdvance();
   // SSAdvance();
@@ -1804,8 +1813,12 @@ AArch64::run( uint64_t suspend_at )
       catch (Exception const& exception)
         {
           /* Instruction aborted, proceed to next step */
-//           if (unlikely(trap_reporting_import))
-//             trap_reporting_import->ReportTrap( *this, exception.nature() );
+          if (unlikely(enable_exception_trap and trap_reporting_import)) {
+            std::ostringstream sstr;
+            exception.print(sstr);
+            sstr << " at PC=0x" << std::hex << current_insn_addr << ", instruction #" << insn_counter;
+            trap_reporting_import->ReportTrap( *this, sstr.str() );
+          }
           exception.proceed(*this);
         }
 
@@ -1868,7 +1881,7 @@ AArch64::wfi()
 
   /* advance to next event and notify back to check progress*/
   insn_timer = next_events.begin()->first;
-  usleep(0);
+  if (enable_sleep) usleep(0);
   notify( 0, &AArch64::wfi );
 }
 

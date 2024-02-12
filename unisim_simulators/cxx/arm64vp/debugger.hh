@@ -60,7 +60,7 @@ struct Debugger
   typedef unisim::service::debug::inline_debugger::InlineDebugger<typename DEBUGGER_CONFIG::ADDRESS> InlineDebugger;
 
 
-  Debugger(char const* name, AArch64&, std::istream&);
+  Debugger(char const* name, AArch64&, std::ifstream&);
   ~Debugger();
 
   virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const override { return blob; }
