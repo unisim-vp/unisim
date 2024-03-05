@@ -1862,6 +1862,30 @@ struct MulE8 : public Operation<ARCH>
   }
 };
 
+template <class ARCH, class OP>
+struct Mulx : public Operation<ARCH>
+{
+  Mulx( OpBase<ARCH> const& opbase, uint8_t _gn, MOp<ARCH> const* _rmop, uint8_t _vn ) : Operation<ARCH>( opbase ), rmop( _rmop ), vn( _vn ), gn( _gn ) {}
+  RMOp<ARCH> rmop;
+  uint8_t vn, gn;
+
+  void disasm( std::ostream& sink ) const { sink << "mulx " << DisasmE( OP(), rmop ) << ',' << DisasmG( OP(), vn ) << ',' << DisasmG( OP(), gn ); }
+
+  void execute( ARCH& arch ) const {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u val_t;
+    typedef typename atpinfo<ARCH,val_t>::twice dval_t;
+
+    val_t src1 = arch.regread( OP(), 2 /* EDX */ );
+    val_t src2 = arch.rmread( OP(), rmop );
+    dval_t result = dval_t( src1 ) * dval_t( src2 );
+    val_t dst2 = val_t( result );
+    val_t dst1 = val_t( result >> int(atpinfo<ARCH,val_t>::bitsize) );
+    arch.regwrite( OP(), vn, dst2 );
+    arch.regwrite( OP(), gn, dst1 );
+  }
+};
+
+
 template <class ARCH> struct DC<ARCH,MUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xf6" ) /4 & RM() ))
@@ -1878,6 +1902,16 @@ template <class ARCH> struct DC<ARCH,MUL> { Operation<ARCH>* get( InputCode<ARCH
       else if (ic.opsize() == 32) return new MulE<ARCH,GOd>( _.opbase(), _.rmop() );
       else if (ic.opsize() == 64) return new MulE<ARCH,GOq>( _.opbase(), _.rmop() );
       return 0;
+    }
+
+  if (auto _ = match( ic, vex( "\xf2\x0f\x38\xf6" ) & RM() ))
+
+    {
+      if ((not ic.vex()) || (ic.vlen() != 128)) return 0;
+      if (ic.mode64() && ic.w())
+	return new Mulx<ARCH,GOq>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
+      else
+	return new Mulx<ARCH,GOd>( _.opbase(), _.greg(), _.rmop(), ic.vreg() );
     }
 
   return 0;
