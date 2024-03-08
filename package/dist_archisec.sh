@@ -4,7 +4,7 @@ SIMPKG=archisec
 SIMPKG_SRCDIR=.
 SIMPKG_DSTDIR=.
 ARCHISEC_SRCDIR=cxx/archisec
-VERSION=0.0.7
+VERSION=0.0.8
 
 source "$(dirname $0)/dist_common.sh"
 
