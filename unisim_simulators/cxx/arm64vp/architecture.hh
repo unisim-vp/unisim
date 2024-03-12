@@ -61,6 +61,8 @@
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/char_io.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/os/linux_os/arm_linux64.hh>
 #if HAVE_SOFTFLOAT_EMU
 #include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
 #else
@@ -72,6 +74,8 @@
 #include <map>
 #include <algorithm>
 #include <inttypes.h>
+
+#define INSN_PROFILE 0
 
 void force_throw();
 
@@ -146,6 +150,9 @@ struct AArch64
   struct DisasmState {};
 
   enum { ZID=4 };
+  // enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
+  enum { FPCR_MASK=0x7C80000 }; /* FIXME: this is for cortex-a53 + fp16 */
+  enum { FPSR_MASK=0xf800009f };
 
   enum ReportAccess { report_simd_access = 0, report_gsr_access = 0, report_gzr_access = 0 };
   void report( ReportAccess, unsigned, bool ) const {}
@@ -173,17 +180,17 @@ struct AArch64
   virtual void ResetMemory() override {}
   virtual bool ReadMemory(uint64_t addr, void* buffer, unsigned size) override;
   virtual bool WriteMemory(uint64_t addr, void const* buffer, unsigned size) override;
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
 
   // unisim::service::interfaces::Registers
   virtual unisim::service::interfaces::Register* GetRegister(char const* name) override;
   virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) override;
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
   // unisim::service::interfaces::MemoryInjection<uint64_t>
   virtual bool InjectReadMemory(uint64_t addr, void* buffer, unsigned size) override;
   virtual bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size) override;
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
 
   // unisim::service::interfaces::Disassembly<uint64_t>
   virtual std::string Disasm(uint64_t addr, uint64_t& next_addr) override;
@@ -205,6 +212,9 @@ struct AArch64
 
   // unisim::service::interfaces::TrapReporting
   unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+
+  // unisim::service::interfaces::LinuxOS
+  unisim::kernel::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
 
   void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
   void UndefinedInstruction();
@@ -625,13 +635,14 @@ struct AArch64
 
   struct ExcMon
   {
-    ExcMon() : addr(), size(), valid(false) {}
-    void set(uint64_t _addr, unsigned _size) { valid = true; addr = _addr; size = _size; }
-    bool pass(uint64_t _addr, unsigned _size) { return valid and size >= _size and (_addr & -size) == addr; }
+    enum { ERG=4 }; // Exclusives Reservation Granule.
+    enum { ERG_ADDR_MASK=~uint64_t(0)<<(ERG+2) };
+    ExcMon() : addr(), valid(false) {}
+    void set(uint64_t _addr) { valid = true; addr = _addr & ERG_ADDR_MASK; }
+    bool pass(uint64_t _addr) { return valid and ((_addr & ERG_ADDR_MASK) == addr); }
     void clear() { valid = false; }
 
     uint64_t addr;
-    uint8_t size;
     bool    valid;
   };
 
@@ -1112,33 +1123,9 @@ public:
   // void checkvio(uint64_t base, unsigned size);
   // std::set<Zone, Zone::Above> diskpages;
   // static std::ofstream& ptlog();
+#if INSN_PROFILE
+  std::map<std::string, uint64_t> insn_profile;
+#endif
 };
-
-struct OutNaN
-{
-  operator bool () const { return false; }
-  template <typename T>
-  operator TaintedValue<T> () const { return TaintedValue<T>(T(0)); }
-};
-
-template <typename operT>
-OutNaN FPProcessNaNs(AArch64& arch, std::initializer_list<operT> l)
-{
-  return OutNaN();
-}
-
-template <typename T>
-T FPMulAdd(AArch64& cpu, T const& acc, T const& op1, T const& op2)
-{
-  return acc + (op1 * op2);
-}
-
-template <typename T>
-T FPMulSub(AArch64& cpu, T const& acc, T const& op1, T const& op2)
-{
-  return acc - (op1 * op2);
-}
-
-template <unsigned posT> void FPProcessException( AArch64&, unisim::util::arithmetic::BitField<posT,1> const& ) {}
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

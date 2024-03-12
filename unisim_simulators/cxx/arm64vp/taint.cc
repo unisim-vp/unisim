@@ -60,34 +60,12 @@ void Print( std::ostream& sink, unsigned minlength, unsigned logradix, uint64_t 
   _.recurse(sink, minlength, logradix, vbits, ubits);
 }
 
-template <typename T>
-TaintedValue<T>
-MakeTaintedValue(T value, typename TaintedValue<T>::ubits_type ubits ) { return TaintedValue<T>(TVCtor(), value, ubits); }
-
 #if HAVE_FLOAT16
 // functions for _Float16
-template <> TaintedValue<_Float16> FromUnpacked<TaintedValue<_Float16> >( UnpackedFloat const& unpacked ) { return MakeTaintedValue(FromUnpacked<_Float16>(unpacked), 0); }
-template <> TaintedValue<_Float16> FromPacked<TaintedValue<_Float16>, TaintedValue<uint16_t> >( TaintedValue<uint16_t> a ) { return MakeTaintedValue(FromPacked<_Float16>(a.value), a.ubits ? -1 : 0); }
 TaintedValue<uint16_t> ToPacked( TaintedValue<_Float16> a ) { return MakeTaintedValue(ToPacked(a.value), a.ubits ? -1 : 0); }
 void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<_Float16> a ) { ToUnpacked(unpacked, a.value); }
-template <> TaintedValue<_Float16> FConvert<TaintedValue<_Float16>, TaintedValue<_Float16> >( TaintedValue<_Float16> a ) { return a; }
-template <> TaintedValue<_Float16> FConvert<TaintedValue<_Float16>, TaintedValue<float> >( TaintedValue<float> a ) { return MakeTaintedValue(FConvert<_Float16, float>(a.value), a.ubits ? -1 : 0); }
-template <> TaintedValue<_Float16> FConvert<TaintedValue<_Float16>, TaintedValue<double> >( TaintedValue<double> a ) { return MakeTaintedValue(FConvert<_Float16, double>(a.value), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint16_t> ToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint32_t> ToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint64_t> ToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int16_t> ToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int32_t> ToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int64_t> ToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint16_t> ToIntRoundMinMag( TaintedValue<_Float16> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint16_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint32_t> ToIntRoundMinMag( TaintedValue<_Float16> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint32_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint64_t> ToIntRoundMinMag( TaintedValue<_Float16> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint64_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int16_t> ToIntRoundMinMag( TaintedValue<_Float16> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int16_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int32_t> ToIntRoundMinMag( TaintedValue<_Float16> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int32_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int64_t> ToIntRoundMinMag( TaintedValue<_Float16> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int64_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<_Float16> DefaultNaN() { return TaintedValue<_Float16>(DefaultNaN<_Float16>()); }
 TaintedValue<_Float16> RoundToInt( TaintedValue<_Float16> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(RoundToInt(a.value, rmode, exact), a.ubits ? -1 : 0); }
-TaintedValue<_Float16> FMulAdd( TaintedValue<_Float16> a, TaintedValue<_Float16> const& b, TaintedValue<_Float16> const& c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); }
+TaintedValue<_Float16> FMulAdd( TaintedValue<_Float16> a, TaintedValue<_Float16> b, TaintedValue<_Float16> c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); }
 TaintedValue<_Float16> FRem( TaintedValue<_Float16> a, TaintedValue<_Float16> b ) { return MakeTaintedValue(FRem(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }
 TaintedValue<_Float16> FSqrt( TaintedValue<_Float16> a ) { return MakeTaintedValue(FSqrt(a.value), a.ubits ? -1 : 0); }
 TaintedValue<_Float16> FAbs( TaintedValue<_Float16> a ) { return MakeTaintedValue(FAbs(a.value), a.ubits ? -1 : 0); }
@@ -106,30 +84,10 @@ TaintedValue<bool> IsInf( TaintedValue<_Float16> a ) { return MakeTaintedValue(I
 #endif
 
 // functions for float
-template <> TaintedValue<float> FromUnpacked<TaintedValue<float> >( UnpackedFloat const& unpacked ) { return MakeTaintedValue(FromUnpacked<float>(unpacked), 0); }
-template <> TaintedValue<float> FromPacked<TaintedValue<float>, TaintedValue<uint32_t> >( TaintedValue<uint32_t> a ) { return MakeTaintedValue(FromPacked<float>(a.value), a.ubits ? -1 : 0); }
 TaintedValue<uint32_t> ToPacked( TaintedValue<float> a ) { return MakeTaintedValue(ToPacked(a.value), a.ubits ? -1 : 0); }
 void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<float> a ) { ToUnpacked(unpacked, a.value); }
-#if HAVE_FLOAT16
-template <> TaintedValue<float> FConvert<TaintedValue<float>, TaintedValue<_Float16> >( TaintedValue<_Float16> a ) { return MakeTaintedValue(FConvert<float, _Float16>(a.value), a.ubits ? -1 : 0); }
-#endif
-template <> TaintedValue<float> FConvert<TaintedValue<float>, TaintedValue<float> >( TaintedValue<float> a ) { return a; }
-template <> TaintedValue<float> FConvert<TaintedValue<float>, TaintedValue<double> >( TaintedValue<double> a ) { return MakeTaintedValue(FConvert<float, double>(a.value), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint16_t> ToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint32_t> ToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint64_t> ToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int16_t> ToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int32_t> ToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int64_t> ToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint16_t> ToIntRoundMinMag( TaintedValue<float> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint16_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint32_t> ToIntRoundMinMag( TaintedValue<float> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint32_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint64_t> ToIntRoundMinMag( TaintedValue<float> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint64_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int16_t> ToIntRoundMinMag( TaintedValue<float> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int16_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int32_t> ToIntRoundMinMag( TaintedValue<float> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int32_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int64_t> ToIntRoundMinMag( TaintedValue<float> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int64_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<float> DefaultNaN() { return TaintedValue<float>(DefaultNaN<float>()); }
 TaintedValue<float> RoundToInt( TaintedValue<float> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(RoundToInt(a.value, rmode, exact), a.ubits ? -1 : 0); }
-TaintedValue<float> FMulAdd( TaintedValue<float> a, TaintedValue<float> const& b, TaintedValue<float> const& c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); }
+TaintedValue<float> FMulAdd( TaintedValue<float> a, TaintedValue<float> b, TaintedValue<float> c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); }
 TaintedValue<float> FRem( TaintedValue<float> a, TaintedValue<float> b ) { return MakeTaintedValue(FRem(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }
 TaintedValue<float> FSqrt( TaintedValue<float> a ) { return MakeTaintedValue(FSqrt(a.value), a.ubits ? -1 : 0); }
 TaintedValue<float> FAbs( TaintedValue<float> a ) { return MakeTaintedValue(FAbs(a.value), a.ubits ? -1 : 0); }
@@ -147,30 +105,10 @@ TaintedValue<bool> IsNeg( TaintedValue<float> a ) { return MakeTaintedValue(IsNe
 TaintedValue<bool> IsInf( TaintedValue<float> a ) { return MakeTaintedValue(IsInf(a.value), a.ubits); }
 
 // functions for double
-template <> TaintedValue<double> FromUnpacked<TaintedValue<double> >( UnpackedFloat const& unpacked ) { return MakeTaintedValue(FromUnpacked<double>(unpacked), 0); }
-template <> TaintedValue<double> FromPacked<TaintedValue<double>, TaintedValue<uint64_t> >( TaintedValue<uint64_t> a ) { return MakeTaintedValue(FromPacked<double>(a.value), a.ubits ? -1 : 0); }
 TaintedValue<uint64_t> ToPacked( TaintedValue<double> a ) { return MakeTaintedValue(ToPacked(a.value), a.ubits ? -1 : 0); }
 void ToUnpacked( UnpackedFloat& unpacked, TaintedValue<double> a ) { ToUnpacked(unpacked, a.value); }
-#if HAVE_FLOAT16
-template <> TaintedValue<double> FConvert<TaintedValue<double>, TaintedValue<_Float16> >( TaintedValue<_Float16> a ) { return MakeTaintedValue(FConvert<double, _Float16>(a.value), a.ubits ? -1 : 0); }
-#endif
-template <> TaintedValue<double> FConvert<TaintedValue<double>, TaintedValue<float> >( TaintedValue<float> a ) { return MakeTaintedValue(FConvert<double, float>(a.value), a.ubits ? -1 : 0); }
-template <> TaintedValue<double> FConvert<TaintedValue<double>, TaintedValue<double> >( TaintedValue<double> a ) { return a; }
-template <> TaintedValue<uint16_t> ToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint32_t> ToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint64_t> ToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int16_t> ToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int32_t> ToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int64_t> ToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint16_t> ToIntRoundMinMag( TaintedValue<double> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint16_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint32_t> ToIntRoundMinMag( TaintedValue<double> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint32_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<uint64_t> ToIntRoundMinMag( TaintedValue<double> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint64_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int16_t> ToIntRoundMinMag( TaintedValue<double> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int16_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int32_t> ToIntRoundMinMag( TaintedValue<double> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int32_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<int64_t> ToIntRoundMinMag( TaintedValue<double> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int64_t>(a.value, exact), a.ubits ? -1 : 0); }
-template <> TaintedValue<double> DefaultNaN() { return TaintedValue<double>(DefaultNaN<double>()); }
 TaintedValue<double> RoundToInt( TaintedValue<double> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(RoundToInt(a.value, rmode, exact), a.ubits ? -1 : 0); }
-TaintedValue<double> FMulAdd( TaintedValue<double> a, TaintedValue<double> const& b, TaintedValue<double> const& c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); }
+TaintedValue<double> FMulAdd( TaintedValue<double> a, TaintedValue<double> b, TaintedValue<double> c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); }
 TaintedValue<double> FRem( TaintedValue<double> a, TaintedValue<double> b ) { return MakeTaintedValue(FRem(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }
 TaintedValue<double> FSqrt( TaintedValue<double> a ) { return MakeTaintedValue(FSqrt(a.value), a.ubits ? -1 : 0); }
 TaintedValue<double> FAbs( TaintedValue<double> a ) { return MakeTaintedValue(FAbs(a.value), a.ubits ? -1 : 0); }
@@ -192,57 +130,30 @@ TaintedValue<bool> IsInf( TaintedValue<double> a ) { return MakeTaintedValue(IsI
 #undef DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS
 #undef DEF_TAINTED_SOFTFLOAT_EMU
 
-#define DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(FLOAT, PACKED)                                                                                                                                                                 \
-template <> TaintedValue<FLOAT> FromUnpacked( UnpackedFloat const& unpacked ) { return TaintedValue<FLOAT>(FromUnpacked<FLOAT>( unpacked )); }                                                                             \
-template <> TaintedValue<FLOAT> FromPacked( TaintedValue<PACKED> packed ) { return MakeTaintedValue(FromPacked<FLOAT>(packed.value), packed.ubits ? -1 : 0); }                                                             \
-template <> TaintedValue<uint16_t> ToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }                                   \
-template <> TaintedValue<uint32_t> ToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }                                   \
-template <> TaintedValue<uint64_t> ToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<uint64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }                                   \
-template <> TaintedValue<int16_t> ToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int16_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }                                     \
-template <> TaintedValue<int32_t> ToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int32_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }                                     \
-template <> TaintedValue<int64_t> ToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(ToInt<int64_t>(a.value, rmode, exact), a.ubits ? -1 : 0); }                                     \
-template <> TaintedValue<uint16_t> ToIntRoundMinMag( TaintedValue<FLOAT> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint16_t>(a.value, exact), a.ubits ? -1 : 0); }                                        \
-template <> TaintedValue<uint32_t> ToIntRoundMinMag( TaintedValue<FLOAT> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint32_t>(a.value, exact), a.ubits ? -1 : 0); }                                        \
-template <> TaintedValue<uint64_t> ToIntRoundMinMag( TaintedValue<FLOAT> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<uint64_t>(a.value, exact), a.ubits ? -1 : 0); }                                        \
-template <> TaintedValue<int16_t> ToIntRoundMinMag( TaintedValue<FLOAT> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int16_t>(a.value, exact), a.ubits ? -1 : 0); }                                          \
-template <> TaintedValue<int32_t> ToIntRoundMinMag( TaintedValue<FLOAT> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int32_t>(a.value, exact), a.ubits ? -1 : 0); }                                          \
-template <> TaintedValue<int64_t> ToIntRoundMinMag( TaintedValue<FLOAT> a, bool exact ) { return MakeTaintedValue(ToIntRoundMinMag<int64_t>(a.value, exact), a.ubits ? -1 : 0); }                                          \
-template <> TaintedValue<FLOAT> DefaultNaN() { return TaintedValue<FLOAT>(DefaultNaN<FLOAT>()); }                                                                                                                          \
-TaintedValue<PACKED> ToPacked( TaintedValue<FLOAT> a ) { return MakeTaintedValue(ToPacked(a.value), a.ubits ? -1 : 0); }                                                                                                   \
-TaintedValue<FLOAT> RoundToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(RoundToInt(a.value, rmode, exact), a.ubits ? -1 : 0); }                                                  \
-TaintedValue<FLOAT> FMulAdd( TaintedValue<FLOAT> a, TaintedValue<FLOAT> const& b, TaintedValue<FLOAT> const& c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); } \
-TaintedValue<FLOAT> FRem( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FRem(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                               \
-TaintedValue<FLOAT> FSqrt( TaintedValue<FLOAT> a ) { return MakeTaintedValue(FSqrt(a.value), a.ubits ? -1 : 0); }                                                                                                          \
-TaintedValue<FLOAT> FAbs( TaintedValue<FLOAT> a ) { return MakeTaintedValue(FAbs(a.value), a.ubits ? -1 : 0); }                                                                                                            \
-TaintedValue<FLOAT> FMin( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMin(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                               \
-TaintedValue<FLOAT> FMinNumber( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMinNumber(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                   \
-TaintedValue<FLOAT> FMax( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMax(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                               \
-TaintedValue<FLOAT> FMaxNumber( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMaxNumber(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                   \
-TaintedValue<bool> IsNaN( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsNaN(a.value), a.ubits); }                                                                                                                    \
-TaintedValue<bool> IsDenormal( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsDenormal(a.value), a.ubits); }                                                                                                          \
-TaintedValue<bool> IsSignaling( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsSignaling(a.value), a.ubits); }                                                                                                        \
-TaintedValue<FLOAT> ClearSignaling( TaintedValue<FLOAT> a ) { return MakeTaintedValue(ClearSignaling(a.value), a.ubits ? -1 : 0); }                                                                                        \
-TaintedValue<FLOAT> Zeroes( TaintedValue<FLOAT> a ) { return MakeTaintedValue(Zeroes(a.value), a.ubits ? -1 : 0); }                                                                                                        \
-TaintedValue<bool> IsZero( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsZero(a.value), a.ubits); }                                                                                                                  \
-TaintedValue<bool> IsNeg( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsNeg(a.value), a.ubits); }                                                                                                                    \
+#define DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(FLOAT, PACKED)                                                                                                                                                   \
+TaintedValue<PACKED> ToPacked( TaintedValue<FLOAT> a ) { return MakeTaintedValue(ToPacked(a.value), a.ubits ? -1 : 0); }                                                                                     \
+TaintedValue<FLOAT> RoundToInt( TaintedValue<FLOAT> a, uint_fast8_t rmode, bool exact ) { return MakeTaintedValue(RoundToInt(a.value, rmode, exact), a.ubits ? -1 : 0); }                                    \
+TaintedValue<FLOAT> FMulAdd( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b, TaintedValue<FLOAT> c) { return MakeTaintedValue(FMulAdd(a.value, b.value, c.value), (a.ubits or b.ubits or c.ubits) ? -1 : 0); } \
+TaintedValue<FLOAT> FRem( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FRem(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                 \
+TaintedValue<FLOAT> FSqrt( TaintedValue<FLOAT> a ) { return MakeTaintedValue(FSqrt(a.value), a.ubits ? -1 : 0); }                                                                                            \
+TaintedValue<FLOAT> FAbs( TaintedValue<FLOAT> a ) { return MakeTaintedValue(FAbs(a.value), a.ubits ? -1 : 0); }                                                                                              \
+TaintedValue<FLOAT> FMin( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMin(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                 \
+TaintedValue<FLOAT> FMinNumber( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMinNumber(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                     \
+TaintedValue<FLOAT> FMax( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMax(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                                 \
+TaintedValue<FLOAT> FMaxNumber( TaintedValue<FLOAT> a, TaintedValue<FLOAT> b ) { return MakeTaintedValue(FMaxNumber(a.value, b.value), (a.ubits or b.ubits) ? -1 : 0); }                                     \
+TaintedValue<bool> IsNaN( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsNaN(a.value), a.ubits); }                                                                                                      \
+TaintedValue<bool> IsDenormal( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsDenormal(a.value), a.ubits); }                                                                                            \
+TaintedValue<bool> IsSignaling( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsSignaling(a.value), a.ubits); }                                                                                          \
+TaintedValue<FLOAT> ClearSignaling( TaintedValue<FLOAT> a ) { return MakeTaintedValue(ClearSignaling(a.value), a.ubits ? -1 : 0); }                                                                          \
+TaintedValue<FLOAT> Zeroes( TaintedValue<FLOAT> a ) { return MakeTaintedValue(Zeroes(a.value), a.ubits ? -1 : 0); }                                                                                          \
+TaintedValue<bool> IsZero( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsZero(a.value), a.ubits); }                                                                                                    \
+TaintedValue<bool> IsNeg( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsNeg(a.value), a.ubits); }                                                                                                      \
 TaintedValue<bool> IsInf( TaintedValue<FLOAT> a ) { return MakeTaintedValue(IsInf(a.value), a.ubits); }
-
-#define DEF_TAINTED_SOFTFLOAT_EMU_CONVERSION_FUNCTIONS( HALF, SINGLE, DOUBLE )                                                                                                                      \
-template <> TaintedValue<HALF  > FConvert<TaintedValue<HALF  >, TaintedValue<HALF  > >(TaintedValue<HALF  > a ) { return a; }                                                                       \
-template <> TaintedValue<HALF  > FConvert<TaintedValue<HALF  >, TaintedValue<SINGLE> >(TaintedValue<SINGLE> a ) { return MakeTaintedValue(FConvert<HALF  , SINGLE>( a.value ), a.ubits ? -1 : 0); } \
-template <> TaintedValue<HALF  > FConvert<TaintedValue<HALF  >, TaintedValue<DOUBLE> >(TaintedValue<DOUBLE> a ) { return MakeTaintedValue(FConvert<HALF  , DOUBLE>( a.value ), a.ubits ? -1 : 0); } \
-template <> TaintedValue<SINGLE> FConvert<TaintedValue<SINGLE>, TaintedValue<HALF  > >(TaintedValue<HALF  > a ) { return MakeTaintedValue(FConvert<SINGLE, HALF  >( a.value ), a.ubits ? -1 : 0); } \
-template <> TaintedValue<SINGLE> FConvert<TaintedValue<SINGLE>, TaintedValue<SINGLE> >(TaintedValue<SINGLE> a ) { return a; }                                                                       \
-template <> TaintedValue<SINGLE> FConvert<TaintedValue<SINGLE>, TaintedValue<DOUBLE> >(TaintedValue<DOUBLE> a ) { return MakeTaintedValue(FConvert<SINGLE, DOUBLE>( a.value ), a.ubits ? -1 : 0); } \
-template <> TaintedValue<DOUBLE> FConvert<TaintedValue<DOUBLE>, TaintedValue<HALF  > >(TaintedValue<HALF  > a ) { return MakeTaintedValue(FConvert<DOUBLE, HALF  >( a.value ), a.ubits ? -1 : 0); } \
-template <> TaintedValue<DOUBLE> FConvert<TaintedValue<DOUBLE>, TaintedValue<SINGLE> >(TaintedValue<SINGLE> a ) { return MakeTaintedValue(FConvert<DOUBLE, SINGLE>( a.value ), a.ubits ? -1 : 0); } \
-template <> TaintedValue<DOUBLE> FConvert<TaintedValue<DOUBLE>, TaintedValue<DOUBLE> >(TaintedValue<DOUBLE> a ) { return a; }
 
 #define DEF_TAINTED_SOFTFLOAT_EMU(NAMESPACE) \
 DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(  NAMESPACE::Half, uint16_t) \
 DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(NAMESPACE::Single, uint32_t) \
-DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(NAMESPACE::Double, uint64_t) \
-DEF_TAINTED_SOFTFLOAT_EMU_CONVERSION_FUNCTIONS(NAMESPACE::Half, NAMESPACE::Single, NAMESPACE::Double)
+DEF_TAINTED_SOFTFLOAT_EMU_FUNCTIONS(NAMESPACE::Double, uint64_t)
 
 DEF_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::x86          )
 DEF_TAINTED_SOFTFLOAT_EMU(unisim::util::floating_point::softfloat_emu::x86_sse      )

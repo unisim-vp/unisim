@@ -179,7 +179,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           char const* Name() const { return "NZCV"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.nzcv = U8(value >> 28); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const override { cpu.nzcv = U8(value >> 28) & U8(0xf); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const override { return U64(cpu.nzcv) << 28; }
         } x; return &x;
       }
@@ -742,7 +742,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "FPCR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Control Register"; }
           U64  Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.fpcr); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpcr = U32(value); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(AArch64::FPCR_MASK); }
         } x; return &x;
       } break;
 
@@ -752,7 +752,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "FPSR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Status Register"; }
           U64  Read(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu) const override { return U64(cpu.fpsr); }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpsr = U32(value); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, AArch64& cpu, U64 value) const override { cpu.fpsr = U32(value) & U32(AArch64::FPSR_MASK); }
         } x; return &x;
       } break;
 
@@ -965,7 +965,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(1)              << 29 | // DIC, Instruction cache invalidation requirements for data to instruction coherence (0 == required).
               U64(1)              << 28 | // IDC, Data cache clean requirements for instruction to data coherence (0 == required).
               U64(4)              << 24 | // CWG, Cache Writeback Granule.
-              U64(4)              << 20 | // ERG, Exclusives Reservation Granule.
+              U64(ExcMon::ERG)    << 20 | // ERG, Exclusives Reservation Granule.
               U64(0b0100)         << 16 | // DminLine (16 words)
               U64(0b11)           << 14 | // L1Ip, Level 1 instruction cache policy (PIPT).
               U64(0b0000000000)   <<  4 | // RES0, Reserved.

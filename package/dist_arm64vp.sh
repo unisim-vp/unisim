@@ -22,6 +22,8 @@ import unisim/util/virtio || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/likely || exit
 import unisim/util/random || exit
+import unisim/util/host_time || exit
+import unisim/service/os/linux_os || exit
 import unisim/service/trap_handler || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit

@@ -13107,7 +13107,7 @@ uaba_vbvbvb.disasm = {
 
 uaba_vbvbvb.execute = {
   typedef typename ARCH::U8 U8;
-  typedef typename ARCH::S16 U16;
+  typedef typename ARCH::U16 U16;
   typedef typename ARCH::S16 S16;
   unsigned const elements = 8<<q;
   for (unsigned idx = 0; idx < elements; ++idx)
@@ -13125,7 +13125,7 @@ uaba_vhvhvh.disasm = {
 
 uaba_vhvhvh.execute = {
   typedef typename ARCH::U16 U16;
-  typedef typename ARCH::S32 U32;
+  typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   unsigned const elements = 4<<q;
   for (unsigned idx = 0; idx < elements; ++idx)
@@ -13143,7 +13143,7 @@ uaba_vsvsvs.disasm = {
 
 uaba_vsvsvs.execute = {
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S64 U64;
+  typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   unsigned const elements = 2<<q;
   for (unsigned idx = 0; idx < elements; ++idx)
@@ -13162,7 +13162,7 @@ uabd_vbvbvb.disasm = {
 uabd_vbvbvb.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U16 U16;
-  typedef typename ARCH::U16 S16;
+  typedef typename ARCH::S16 S16;
   unsigned const elements = 8<<q;
   for (unsigned idx = 0; idx < elements; ++idx)
     {

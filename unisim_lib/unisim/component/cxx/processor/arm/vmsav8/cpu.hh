@@ -131,6 +131,9 @@ struct CPU
 {
   typedef CPU<CPU_IMPL> this_type;
   
+  enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
+  enum { FPSR_MASK=0xf800009f };
+  
   typedef isa::arm64::Operation<CPU_IMPL> Operation;
   typedef isa::arm64::Decoder<CPU_IMPL> A64Decoder;
   typedef opcache::OpCache<A64Decoder>  Decoder;

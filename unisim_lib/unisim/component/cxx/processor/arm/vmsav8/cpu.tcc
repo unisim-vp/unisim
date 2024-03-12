@@ -673,8 +673,8 @@ CPU<CPU_IMPL>::CallSupervisor( uint32_t imm )
       try
         {
           linux_os_import->ExecuteSystemCall(imm);
-          if (trap_reporting_import)
-            trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+          // if (trap_reporting_import)
+          //   trap_reporting_import->ReportTrap(*this, "CallSupervisor");
         }
       catch (std::exception const& e)
         {
@@ -854,7 +854,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "NZCV"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = U32(value >> 28); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = U32(value >> 28) & U32(0xf); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.nzcv) << 28; }
         } x; return &x;
       }
@@ -864,7 +864,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "FPCR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Control Register"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(0x7C00000); /* FIXME: this is for cortex-a53 */ }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(CPU_IMPL::FPCR_MASK); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
         } x; return &x;
       }
@@ -874,7 +874,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "FPSR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Status Register"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpsr = U32(value); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpsr = U32(value) & U32(CPU_IMPL::FPSR_MASK); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpsr); }
         } x; return &x;
       }

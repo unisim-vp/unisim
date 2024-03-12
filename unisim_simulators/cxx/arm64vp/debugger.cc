@@ -60,6 +60,7 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   , enable_inline_debugger()
   , param_enable_gdb_server("enable-gdb-server", this, enable_gdb_server, "enable the gdb-server debug sessions")
   , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "enable the inline-debugger debug sessions")
+  , blob(0)
 {
   if(!enable_inline_debugger && !enable_gdb_server) return;
 

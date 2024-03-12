@@ -39,6 +39,7 @@
 #include <inttypes.h>
 #include <unisim/component/cxx/processor/arm/isa/constants.hh>
 #include <unisim/component/cxx/processor/arm/isa/execute.hh>
+#include <sstream>
 
 #define DEBUG_FP 0
 
@@ -108,14 +109,15 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <class ARCH, typename T>
   T Abs( ARCH& arch, T value, bool sat = false)
   {
-    T res(arch.Test(value >= T()) ? value : -value);
-    if (sat && arch.Test(res < T()))
+    if (sat && arch.Test(value == std::numeric_limits<T>::min()))
       {
         arch.SetQC();
         return std::numeric_limits<T>::max();
       }
-    
-    return res;
+    else
+      {
+        return arch.Test(value >= T()) ? value : -value;
+      }
   }
 
   template <class ARCH, typename T>
@@ -197,6 +199,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
     return DST(src);
   }
   
+  template <class ARCH, typename OP>
+  OP Div( ARCH& arch, OP op1, OP op2)
+  {
+    OP const zero(0);
+    OP res(
+      arch.Test( op2 == zero ) ? zero
+                               : ( ( std::numeric_limits<OP>::is_signed and arch.Test( ( op1 == std::numeric_limits<OP>::min() ) and ( op2 == OP(-1) ) ) ) ? std::numeric_limits<OP>::min()
+                                                                                                                                                           : (op1 / op2 ) )
+    );
+
+    return res;
+  }
+
   template <class ARCH, typename OP, typename OP2>
   OP SatAdd( ARCH& arch, OP op1, OP2 op2)
   {
@@ -305,12 +320,20 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <class ARCH, unsigned posT>
   void FPProcessException( ARCH& arch, unisim::util::arithmetic::BitField<posT,1> const& rf )
   {
+    typedef typename ARCH::U32 U32;
     unisim::util::arithmetic::BitField<posT+8,1> const enable;
-    if (arch.Test( enable.Get( arch.FPCR() ) ) )
+    if (arch.Test( enable.Get( arch.FPCR() ) != U32(0) ) )
       /*arch.FPTrap( posT )*/; /* FIXME */
     else
-      rf.Set( arch.FPSR(), 1 );
-    
+      rf.Set( arch.FPSR(), U32(1) );
+
+#if DEBUG_FP
+    {
+      std::stringstream sstr;
+      sstr << "FPSR=0x" << std::hex << arch.FPSR();
+      std::cerr << sstr.str() << std::endl;
+    }
+#endif
   }
     
   template <typename operT>
@@ -336,7 +359,12 @@ OUT PolyMod2(IN value, uint32_t _poly)
         if ( arch.Test( IsSignaling( val ) ))
           {
             if ( fpexc )
+              {
+#if DEBUG_FP
+                std::cerr << "IOC" << std::endl;
+#endif
                 FPProcessException( arch, IOC );
+              }
               
             return {FPNaN( arch, val ), true};
           }
@@ -358,7 +386,12 @@ OUT PolyMod2(IN value, uint32_t _poly)
         if (arch.Test( IsSignaling( val ) ))
           {
             if ( fpexc )
-              FPProcessException( arch, IOC );
+              {
+#if DEBUG_FP
+                std::cerr << "IOC" << std::endl;
+#endif
+                FPProcessException( arch, IOC );
+              }
             
             return {FPNaN( arch, val ), true};
           }
@@ -377,7 +410,12 @@ OUT PolyMod2(IN value, uint32_t _poly)
         if ( arch.Test( IsNaN( val )) )
           {
             if ( fpexc )
-              FPProcessException( arch, IOC );
+              {
+#if DEBUG_FP
+                std::cerr << "IOC" << std::endl;
+#endif
+                FPProcessException( arch, IOC );
+              }
             
             return {FPNaN( arch, val ), true};
           }
@@ -394,32 +432,32 @@ OUT PolyMod2(IN value, uint32_t _poly)
   struct NearestTieEven
   {
     template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_near_even, exact); }
-    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_near_even, exact); }
+    template <typename INTEGER, typename T> static INTEGER toint(T op, bool exact) { return ToInt<INTEGER>(op, round_near_even, exact); }
   };
   struct TowardPosInf
   {
     template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_max, exact); }
-    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_max, exact); }
+    template <typename INTEGER, typename T> static INTEGER toint(T op, bool exact) { return ToInt<INTEGER>(op, round_max, exact); }
   };
   struct TowardNegInf
   {
     template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_min, exact); }
-    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_min, exact); }
+    template <typename INTEGER, typename T> static INTEGER toint(T op, bool exact) { return ToInt<INTEGER>(op, round_min, exact); }
   };
   struct TowardZero
   {
     template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_minMag, exact); }
-    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_minMag, exact); }
+    template <typename INTEGER, typename T> static INTEGER toint(T op, bool exact) { return ToInt<INTEGER>(op, round_minMag, exact); }
   };
   struct NearestTieAway
   {
     template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_near_maxMag, exact); }
-    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_near_maxMag, exact); }
+    template <typename INTEGER, typename T> static INTEGER toint(T op, bool exact) { return ToInt<INTEGER>(op, round_near_maxMag, exact); }
   };
   struct NearestTieOdd
   {
     template <typename T> static T roundint(T op, bool exact) { return RoundToInt(op, round_odd, exact); }
-    template <typename T, typename INTEGER> static INTEGER toint(T op, bool exact, INTEGER const& dummy) { return ToInt<INTEGER>(op, round_odd, exact); }
+    template <typename INTEGER, typename T> static INTEGER toint(T op, bool exact) { return ToInt<INTEGER>(op, round_odd, exact); }
   };
   
   struct RoundingMode
@@ -457,16 +495,16 @@ OUT PolyMod2(IN value, uint32_t _poly)
       return op;
     }
     
-    template <typename T, typename INTEGER> INTEGER toint(T op, bool exact, INTEGER const& dummy)
+    template <typename INTEGER, typename T> INTEGER toint(T op, bool exact)
     {
       switch (rmode)
         {
-        case FPRounding::TIEEVEN: return NearestTieEven::toint(op, exact, dummy);
-        case FPRounding::POSINF:  return TowardPosInf::toint(op, exact, dummy);
-        case FPRounding::NEGINF:  return TowardNegInf::toint(op, exact, dummy);
-        case FPRounding::ZERO:    return TowardZero::toint(op, exact, dummy);
-        case FPRounding::TIEAWAY: return NearestTieAway::toint(op, exact, dummy);
-        case FPRounding::ODD:     return NearestTieOdd::toint(op, exact, dummy);
+        case FPRounding::TIEEVEN: return NearestTieEven::toint<INTEGER>(op, exact);
+        case FPRounding::POSINF:  return TowardPosInf::toint<INTEGER>(op, exact);
+        case FPRounding::NEGINF:  return TowardNegInf::toint<INTEGER>(op, exact);
+        case FPRounding::ZERO:    return TowardZero::toint<INTEGER>(op, exact);
+        case FPRounding::TIEAWAY: return NearestTieAway::toint<INTEGER>(op, exact);
+        case FPRounding::ODD:     return NearestTieOdd::toint<INTEGER>(op, exact);
         }
       return INTEGER();
     }
@@ -490,39 +528,82 @@ OUT PolyMod2(IN value, uint32_t _poly)
   void FPProcessExceptionFlags( ARCH& arch, unsigned eflags )
   {
     if( eflags & flag_inexact )
-      FPProcessException( arch, IXC );
+      {
+#if DEBUG_FP
+        std::cerr << "IXC" << std::endl;
+#endif
+        FPProcessException( arch, IXC );
+      }
+
     if( eflags & flag_underflow )
-      FPProcessException( arch, UFC );
+      {
+#if DEBUG_FP
+        std::cerr << "UFC" << std::endl;
+#endif
+        FPProcessException( arch, UFC );
+      }
+
     if( eflags & flag_overflow )
-      FPProcessException( arch, OFC );
+      {
+#if DEBUG_FP
+        std::cerr << "OFC" << std::endl;
+#endif
+        FPProcessException( arch, OFC );
+      }
+
     if( eflags & flag_infinite )
-      FPProcessException( arch, DZC );
+      {
+#if DEBUG_FP
+      std::cerr << "DZC" << std::endl;
+#endif
+        FPProcessException( arch, DZC );
+      }
+
     if( eflags & flag_invalid )
-      FPProcessException( arch, IOC );
+      {
+#if DEBUG_FP
+        std::cerr << "IOC" << std::endl;
+#endif
+        FPProcessException( arch, IOC );
+      }
   }
   
   template <typename ARCH, typename FLOAT>
   FLOAT FPProcessDenormalInput(ARCH& arch, FLOAT op)
   {
-    if ( !std::is_same<FLOAT, typename ARCH::F16>::value )
+    typedef typename ARCH::BOOL BOOL;
+    typedef typename ARCH::U32 U32;
+    BOOL is_denormal = IsDenormal( op );
+#if DEBUG_FP
+    if ( arch.Test( is_denormal ) )
     {
-      typedef typename ARCH::U32 U32;
-      if ( arch.Test( IsDenormal( op ) ) && 
-           ( arch.Test( FIZ.Get( arch.FPCR() ) != U32(0) ) ||
-             ( arch.Test( AH.Get( arch.FPCR() ) == U32(0) ) &&
-               arch.Test( FZ.Get( arch.FPCR() ) != U32(0) )
+      std::cerr << "denormal (input): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    }
+#endif
+    if ( arch.Test( is_denormal ) &&
+         ( ( std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ16.Get( arch.FPCR() ) != U32(0) ) ) ||
+           ( !std::is_same<FLOAT, typename ARCH::F16>::value &&
+             ( arch.Test( FIZ.Get( arch.FPCR() ) != U32(0) ) ||
+               ( arch.Test( AH.Get( arch.FPCR() ) == U32(0) ) &&
+                 arch.Test( FZ.Get( arch.FPCR() ) != U32(0) )
+               )
              )
            )
          )
-        {
-          FLOAT res = Zeroes( op );
+       )
+      {
+        FLOAT res = Zeroes( op );
 #if DEBUG_FP
-          std::cerr << "flush-to-zero (input): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ") -> " << res << " (0x" << std::hex << ToPacked( res ) << std::dec << ")" << std::endl;
+        std::cerr << "flush-to-zero (input): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ") -> " << res << " (0x" << std::hex << ToPacked( res ) << std::dec << ")" << std::endl;
 #endif
+#if DEBUG_FP
+        std::cerr << "IDC" << std::endl;
+#endif
+        if ( !std::is_same<FLOAT, typename ARCH::F16>::value )
           FPProcessException( arch, IDC );
-          return res;
-        }
-    }
+
+        return res;
+      }
       
     return op;
   }
@@ -533,7 +614,18 @@ OUT PolyMod2(IN value, uint32_t _poly)
     typedef typename ARCH::BOOL BOOL;
     typedef typename ARCH::U32 U32;
     BOOL is_zero = op == FLOAT();
-    if ( arch.Test( ( is_zero ) || IsDenormal( op ) ) &&
+    BOOL is_denormal = IsDenormal( op );
+#if DEBUG_FP
+    if( arch.Test( is_zero ) )
+    {
+      std::cerr << "zero (output): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    }
+    if( arch.Test( is_denormal ) )
+    {
+      std::cerr << "denormal (output): " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+    }
+#endif
+    if ( arch.Test( is_zero || is_denormal ) &&
           (
             (  std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ16.Get( arch.FPCR() ) != U32(0) ) ) ||
             ( !std::is_same<FLOAT, typename ARCH::F16>::value && arch.Test( FZ.Get  ( arch.FPCR() ) != U32(0) ) )
@@ -556,6 +648,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
   FLOAT FPRoundInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact)
   {
 #if DEBUG_FP
+    std::cerr << "FPRoundInt" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
 #endif
     FLOAT _op = FPProcessDenormalInput( arch, op );
@@ -574,25 +667,33 @@ OUT PolyMod2(IN value, uint32_t _poly)
     return res;
   }
 
-  template <typename ARCH, typename RMODE, typename FLOAT, typename INTEGER>
-  INTEGER FPToInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact, INTEGER const&)
+  template <typename INTEGER, typename ARCH, typename RMODE, typename FLOAT>
+  INTEGER FPToInt(ARCH& arch, RMODE&& rmode, FLOAT op, bool exact)
   {
+#if DEBUG_FP
+    std::cerr << "FPToInt" << std::endl;
+    std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
+#endif
     FLOAT _op = FPProcessDenormalInput( arch, op );
 
     FPProcessNaNsSignaling(arch, {op}, /* fpexc */ true);
     
     FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
-    INTEGER res = rmode.toint(_op, exact, INTEGER());
+    INTEGER res = rmode.template toint<INTEGER>(_op, exact);
+#if DEBUG_FP
+    std::cerr << "output: " << res << std::endl;
+#endif
 
     FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<FLOAT>::exceptionFlags() );
 
     return res;
   }
   
-  template <typename ARCH, typename FLOAT, typename INTEGER>
-  INTEGER FPToFixedRoundTowardZero(ARCH& arch, FLOAT op, unsigned fbits, bool exact, INTEGER const&)
+  template <typename INTEGER, typename ARCH, typename FLOAT>
+  INTEGER FPToFixedRoundTowardZero(ARCH& arch, FLOAT op, unsigned fbits, bool exact)
   {
 #if DEBUG_FP
+    std::cerr << "FPToFixedRoundTowardZero" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
     std::cerr << "fbits: " << fbits << std::endl;
 #endif
@@ -610,12 +711,13 @@ OUT PolyMod2(IN value, uint32_t _poly)
       }
     else
       {
-        FLOAT scale(uint64_t(1) << (fbits - 1));
-        scale *= FLOAT(2);
+        typedef typename ARCH::F64 F64;
+        F64 scale(uint64_t(1) << (fbits - 1));
+        scale *= F64(2);
 #if DEBUG_FP
         std::cerr << "scale: " << scale << " (0x" << std::hex << ToPacked(scale) << std::dec << ")" << std::endl;
 #endif
-        FLOAT scaled(_op * scale);
+        F64 scaled(F64(_op) * scale);
 #if DEBUG_FP
     std::cerr << "scaled: " << scaled << " (0x" << std::hex << ToPacked(scaled) << std::dec << ")" << std::endl;
 #endif
@@ -631,10 +733,11 @@ OUT PolyMod2(IN value, uint32_t _poly)
     return res;
   }
   
-  template <typename ARCH, typename FLOAT, typename INTEGER>
-  FLOAT IntToFP(ARCH& arch, INTEGER op, FLOAT const&)
+  template <typename FLOAT, typename ARCH, typename INTEGER>
+  FLOAT IntToFP(ARCH& arch, INTEGER op)
   {
 #if DEBUG_FP
+    std::cerr << "IntToFP" << std::endl;
     std::cerr << "input: " << op << std::endl;
 #endif
     typedef typename ARCH::U32 U32;
@@ -652,23 +755,26 @@ OUT PolyMod2(IN value, uint32_t _poly)
     return res;
   }
   
-  template <typename ARCH, typename FLOAT, typename INTEGER>
-  FLOAT FixedToFP(ARCH& arch, INTEGER op, unsigned fbits, FLOAT const&)
+  template <typename FLOAT, typename ARCH, typename INTEGER>
+  FLOAT FixedToFP(ARCH& arch, INTEGER op, unsigned fbits)
   {
 #if DEBUG_FP
+    std::cerr << "FixedToFP" << std::endl;
     std::cerr << "input: " << op << std::endl;
+    std::cerr << "fbits:" << fbits << std::endl;
 #endif
+    typedef typename ARCH::F64 F64;
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<FLOAT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
     FloatingPointStatusAndControl<FLOAT>::exceptionFlags(0);
     FloatingPointStatusAndControl<FLOAT>::roundingMode( RoundingMode( arch ).roundingMode() );
     FloatingPointStatusAndControl<FLOAT>::detectTininess( tininess_beforeRounding );
-    FLOAT scale(uint64_t(1) << (fbits - 1));
-    scale *= FLOAT(2);
+    F64 scale(uint64_t(1) << (fbits - 1));
+    scale *= F64(2);
 #if DEBUG_FP
     std::cerr << "scale: " << scale << " (0x" << std::hex << ToPacked(scale) << std::dec << ")" << std::endl;
 #endif
-    FLOAT res = FLOAT(op) / scale;
+    FLOAT res( F64(op) / scale );
 #if DEBUG_FP
     std::cerr << "output: " << res << " (0x" << std::hex << ToPacked(res) << std::dec << ")" << std::endl;
 #endif
@@ -684,6 +790,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     std::cerr << "output: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
 #endif
     operT res = FPProcessDenormalOutput( arch, op );
+
     FPProcessExceptionFlags( arch, FloatingPointStatusAndControl<operT>::exceptionFlags() );
     
     return arch.Test( IsNaN( res ) ) ? FAbs( FPNaN( arch, res ) ) : res;
@@ -703,6 +810,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
         throw AlternativeHalfPrecisionFormatUnsupported();
       }
 #if DEBUG_FP
+    std::cerr << "FPConvert" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
 #endif
     SRC _op = FPProcessDenormalInput( arch, op );
@@ -735,6 +843,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
         throw AlternativeHalfPrecisionFormatUnsupported();
       }
 #if DEBUG_FP
+    std::cerr << "FPConvertRoundOdd" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
 #endif
     SRC _op = FPProcessDenormalInput( arch, op );
@@ -757,13 +866,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPSub( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPSub" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -777,13 +892,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPAdd( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPAdd" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -797,13 +918,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMul( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMul" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -817,13 +944,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMulX( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMulX" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -849,13 +982,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPDiv( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPDiv" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -869,6 +1008,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMulAdd( ARCH& arch, operT op1, operT op2, operT op3 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMulAdd" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
     std::cerr << "input3: " << op3 << " (0x" << std::hex << ToPacked(op3) << std::dec << ")" << std::endl;
@@ -880,14 +1020,24 @@ OUT PolyMod2(IN value, uint32_t _poly)
       
     if ( arch.Test( IsNaN( op1 ) && !IsSignaling( op1 ) && // is quiet NaN
          ( ( IsInf( _op2 ) && IsZero( _op3 ) ) || ( IsZero( _op2 ) && IsInf( _op3 ) ) ) ) )
-    {
-      FPProcessException( arch, IOC );
-      return DefaultNaN<operT>();
-    }
+      {
+#if DEBUG_FP
+        std::cerr << "IOC" << std::endl;
+#endif
+        FPProcessException( arch, IOC );
+        operT nan = DefaultNaN<operT>();
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
     else if ( nan )
-    {
-      return nan;
-    }
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -901,13 +1051,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMin( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMin" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -922,13 +1078,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMinNumber( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMinNumber" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -943,13 +1105,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMax( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMax" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -964,13 +1132,19 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPMaxNumber( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPMaxNumber" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     if (auto nan = FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );
@@ -984,55 +1158,68 @@ OUT PolyMod2(IN value, uint32_t _poly)
   template <typename operT, typename ARCH>
   void FPQuietCompare( ARCH& arch, operT op1, operT op2 )
   {
+    typedef typename ARCH::BOOL BOOL;
 #if DEBUG_FP
+    std::cerr << "FPQuietCompare" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     
+    BOOL n, z, c, v;
     if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 ) ) )
       {
-        arch.SetNZCV( 0, 0, 1, 1 );
+        n = BOOL(0); z = BOOL(0); c = BOOL(1); v = BOOL(1);
         
         FPProcessSNaNs(arch, {op1, op2}, /* fpexc */ true);
       }
     else
       {
-        typedef typename ARCH::BOOL BOOL;
-        BOOL le = _op1 <= _op2, ge = _op1 >= _op2;
-        arch.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+        BOOL le(_op1 <= _op2), ge(_op1 >= _op2);
+        n = not ge and le; z = ge and le; c = ge or not le; v = not le and not ge;
       }
+#if DEBUG_FP
+    std::cerr << "output: NZCV=" << n << z << c << v << std::endl;
+#endif
+    arch.SetNZCV( n, z, c, v );
   }
   
   template <typename operT, typename ARCH>
   void FPSignalingCompare( ARCH& arch, operT op1, operT op2 )
   {
+    typedef typename ARCH::BOOL BOOL;
 #if DEBUG_FP
+    std::cerr << "FPSignalingCompare" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
     operT _op1 = FPProcessDenormalInput( arch, op1 );
     operT _op2 = FPProcessDenormalInput( arch, op2 );
     
+    BOOL n, z, c, v;
     if ( arch.Test( IsNaN( op1 ) || IsNaN( op2 ) ) )
       {
-        arch.SetNZCV( 0, 0, 1, 1 );
+        n = BOOL(0); z = BOOL(0); c = BOOL(1); v = BOOL(1);
         
         FPProcessNaNsSignaling(arch, {op1, op2}, /* fpexc */ true);
       }
     else
       {
-        typedef typename ARCH::BOOL BOOL;
-        BOOL le = _op1 <= _op2, ge = _op1 >= _op2;
-        arch.SetNZCV(not ge and le, ge and le, ge or not le, not le and not ge);
+        BOOL le(_op1 <= _op2), ge(_op1 >= _op2);
+        n = not ge and le; z = ge and le; c = ge or not le; v = not le and not ge;
       }
-  }
+#if DEBUG_FP
+    std::cerr << "output: NZCV=" << n << z << c << v << std::endl;
+#endif
+    arch.SetNZCV( n, z, c, v );
+   }
 
   template <typename operT, typename ARCH>
   typename ARCH::BOOL FPCompareEq( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPCompareEq" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
@@ -1055,6 +1242,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
   typename ARCH::BOOL FPCompareGe( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPCompareGe" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
@@ -1077,6 +1265,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
   typename ARCH::BOOL FPCompareGt( ARCH& arch, operT op1, operT op2 )
   {
 #if DEBUG_FP
+    std::cerr << "FPCompareGt" << std::endl;
     std::cerr << "input1: " << op1 << " (0x" << std::hex << ToPacked(op1) << std::dec << ")" << std::endl;
     std::cerr << "input2: " << op2 << " (0x" << std::hex << ToPacked(op2) << std::dec << ")" << std::endl;
 #endif
@@ -1099,11 +1288,17 @@ OUT PolyMod2(IN value, uint32_t _poly)
   operT FPSqrt( ARCH& arch, operT op )
   {
 #if DEBUG_FP
+    std::cerr << "FPSqrt" << std::endl;
     std::cerr << "input: " << op << " (0x" << std::hex << ToPacked(op) << std::dec << ")" << std::endl;
 #endif
     operT _op = FPProcessDenormalInput( arch, op );
     if (auto nan = FPProcessNaNs(arch, {op}, /* fpexc */ true))
-      return nan;
+      {
+#if DEBUG_FP
+        std::cerr << "output: " << operT(nan) << " (0x" << std::hex << ToPacked(operT(nan)) << std::dec << ")" << std::endl;
+#endif
+        return nan;
+      }
 
     typedef typename ARCH::U32 U32;
     FloatingPointStatusAndControl<operT>::defaultNaN( arch.Test( DN.Get( arch.FPCR() ) != U32(0) ) );

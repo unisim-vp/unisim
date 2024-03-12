@@ -43,6 +43,9 @@
 #include <iostream>
 #include <iomanip>
 #include <array>
+#include <cassert>
+
+#define MMU_PERM_CHECKER 0
 
 AArch64::AArch64(char const* name)
   : unisim::kernel::Object(name, 0)
@@ -53,9 +56,16 @@ AArch64::AArch64(char const* name)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
   , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, 0)
   , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, 0)
+  , memory_export("memory-export", this)
+  , registers_export("registers-export", this)
+  , memory_injection_export("memory-injection-export", this)
+  , requires_memory_access_reporting(false)
+  , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
+  , linux_os_import("linux-os-import", this)
   , regmap()
   , devices()
   , gic()
@@ -102,6 +112,9 @@ AArch64::AArch64(char const* name)
   , param_enable_exception_trap("enable-exception-trap", this, enable_exception_trap, "enable exception trap in debugger")
   , enable_strace(false)
   , param_enable_strace("enable-strace", this, enable_strace, "enable strace")
+#if INSN_PROFILE
+  , insn_profile()
+#endif
 {
   param_tfp32loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   param_tfp64loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -167,6 +180,24 @@ AArch64::AArch64(char const* name)
 
 AArch64::~AArch64()
 {
+#if INSN_PROFILE
+  std::map<uint64_t, std::string> sorted_insn_profile;
+  for (auto insn_prof : insn_profile)
+    sorted_insn_profile[insn_prof.second] = insn_prof.first;
+
+  std::ofstream file("insn_prof.json");
+  file << "[" << std::endl;
+  const char *sep = 0;
+  for (auto insn_prof : sorted_insn_profile)
+  {
+    file << (sep ? sep : "");
+    if(!sep) sep = ",\n";
+
+    file << "\t{ \"name\": \"" << insn_prof.second << "\", \"count\": " << insn_prof.first << " }";
+  }
+  file << std::endl << "]" << std::endl;
+#endif
+
   for (auto reg : regmap)
     delete reg.second;
 
@@ -185,7 +216,7 @@ AArch64::ReadMemory(uint64_t addr, void* buffer, unsigned size)
     {
       for (SliceIterator slice(addr, size, mem_acc_type::debug); slice.vnext(*this);)
         {
-          if (std::any_of(slice.udat, slice.udat + slice.size, [](uint8_t b) { return b != 0; } )) raise( Bad() );
+          // if (std::any_of(slice.udat, slice.udat + slice.size, [](uint8_t b) { return b != 0; } )) raise( Bad() );
           std::copy( slice.data, slice.data + slice.size, ptr );
           ptr += slice.size;
         }
@@ -310,7 +341,9 @@ AArch64::Page::Page(uint64_t base, uint64_t last)
   static struct : Page::Free { void free(Page& page) const override { delete [] page.data; delete [] page.udat; } } lefree;
   free = &lefree;
   data = new uint8_t[size];
+  ::memset(data, 0, size);
   udat = new uint8_t[size];
+  ::memset(udat, 0, size);
 }
 
 AArch64::Page::Free AArch64::Page::Free::nop;
@@ -355,13 +388,18 @@ AArch64::UndefinedInstruction()
 {
   if (unlikely(enable_exception_trap and trap_reporting_import))
     trap_reporting_import->ReportTrap(*this,"Undefined instruction");
-  unsigned const target_el = 1;
+  else if(unlikely(linux_os_import))
+    terminate = true;
+  else
+    {
+      unsigned const target_el = 1;
 
-  get_el(target_el).ESR = U32(0)
-    | U32(pstate.GetEL() ? 0x21 : 0x20) << 26 // EC: instruction abort in EL0 or EL1
-    | U32(1) << 25; // IL Instruction Length == 32 bits
+      get_el(target_el).ESR = U32(0)
+        | U32(pstate.GetEL() ? 0x21 : 0x20) << 26 // EC: instruction abort in EL0 or EL1
+        | U32(1) << 25; // IL Instruction Length == 32 bits
 
-  TakeException(target_el, 0x0, next_insn_addr);
+      TakeException(target_el, 0x0, next_insn_addr);
+    }
 }
 
 void
@@ -400,22 +438,30 @@ AArch64::CallSupervisor( uint32_t imm )
       arm64_linux_os.LogSystemCall( imm );
     }
 
-  //  if UsingAArch32() then AArch32.ITAdvance();
-  // SSAdvance();
-  pstate.SS = 0;
+  if (unlikely(linux_os_import))
+    {
+      // we are executing on linux emulation mode, use linux_os_import
+      linux_os_import->ExecuteSystemCall(imm);
+    }
+  else
+    {
+      //  if UsingAArch32() then AArch32.ITAdvance();
+      // SSAdvance();
+      pstate.SS = 0;
 
-  // route_to_el2 = AArch64.GeneralExceptionsToEL2();
+      // route_to_el2 = AArch64.GeneralExceptionsToEL2();
 
-  unsigned const target_el = 1;
+      unsigned const target_el = 1;
 
-  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
-  get_el(target_el).ESR = U32(0)
-    | U32(0x15) << 26 // exception class AArch64.SVC
-    | U32(1) << 25 // IL Instruction Length == 32 bits
-    | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
-    | U32(imm);
+      // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+      get_el(target_el).ESR = U32(0)
+        | U32(0x15) << 26 // exception class AArch64.SVC
+        | U32(1) << 25 // IL Instruction Length == 32 bits
+        | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
+        | U32(imm);
 
-  TakeException(1, 0x0, next_insn_addr);
+      TakeException(1, 0x0, next_insn_addr);
+    }
 }
 
 /** CallHypervisor
@@ -745,6 +791,19 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
   /* attr_table is NS[1] : ap_table[2] : UX[1] (=!UXN) : PX[1] (=!PXN) */
   unsigned attr_table = 0b11111; // should be 0b11010 for non EL0&1 regimes and 0b10000 should depend on `lookupsecure`
 
+#if MMU_PERM_CHECKER
+  // APTable[1:0]     Effect at subsequent lookup levels
+  //   00               No effect on permissions.
+  //   01            Unprivileged access not permitted.
+  //   10             Write access not permitted.
+  //   11             Write access not permitted.
+  //               Unprivileged read access not permitted.
+
+  unsigned xn = 0;
+  unsigned pxn = 0;
+  unsigned ap_table = 0b00;
+#endif
+
   {
     uint64_t walkidx = (vaddr << tsz) >> tsz, walkmask = (1 << stride)-1;
     for (level = 3 - walkdepth; true; ++level, direct_bits -= stride)
@@ -768,6 +827,11 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         /* a table */
         tbladdr = ((desc >> grainsize) << (grainsize+16)) >> 16;
         attr_table &= ((desc >> 59) ^ 0b00011);
+#if MMU_PERM_CHECKER
+        ap_table |= (desc >> 61) & 3;
+        xn |= (desc >> 60) & 1;
+        pxn |= (desc >> 59) & 1;
+#endif
       }
   }
   if (direct_bits > 32) raise( Bad() );
@@ -779,6 +843,15 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
   unsigned xperms = ((desc >> 53) | (attr_table ^ 3)) & 3;
   entry.xn = (xperms >> 1) & 1;
   entry.pxn = (xperms >> 0) & 1;
+#if MMU_PERM_CHECKER
+  // Note: The Armv8 Block descriptor and Page descriptor format defines the data Access Permissions bits, AP[2:1], and does not define an AP[0] bit.
+  unsigned ap = ((desc >> 5) | 1) & ~(ap_table << 1) & 7;
+  xn |= (desc >> 54) & 1;
+  pxn |= (desc >> 53) & 1;
+  assert(ap == entry.ap);
+  assert(xn == entry.xn);
+  assert(pxn == entry.pxn);
+#endif
   entry.level = level;
   entry.nG = (desc >> 11) & 1;
   entry.NS = 1;
@@ -1166,7 +1239,7 @@ AArch64::handle_rtc()
 void
 AArch64::RTC::program(AArch64& cpu)
 {
-  uint64_t delay = (MR - LR)*cpu.get_freq()/get_cntfrq() - (cpu.insn_timer - load_insn_time) + 1;
+  uint64_t delay = (MR - LR)*(cpu.get_freq() * cpu.get_ipc())/get_cntfrq() - (cpu.insn_timer - load_insn_time) + 1;
 
   cpu.notify( delay, &AArch64::handle_rtc );
 }
@@ -1674,7 +1747,7 @@ AArch64::Timer::program(AArch64& cpu)
   int32_t delay = read_tval(cpu);
   if (delay < 1) delay = 1;
 
-  cpu.notify( delay * cpu.get_freq() / get_cntfrq(), &AArch64::handle_vtimer );
+  cpu.notify( delay * (cpu.get_freq() * cpu.get_ipc()) / get_cntfrq(), &AArch64::handle_vtimer );
 }
 
 bool
@@ -1775,6 +1848,9 @@ AArch64::run( uint64_t suspend_at )
 
           /*** Decode instruction ***/
           Operation* op = decode(tlb_entry.pa, insn);
+#if INSN_PROFILE
+          ++insn_profile[op->GetName()];
+#endif
           last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
 
           this->next_insn_addr += 4;
@@ -1787,7 +1863,8 @@ AArch64::run( uint64_t suspend_at )
 
           if (terminate)
             {
-              force_throw();
+              // force_throw();
+              throw Stop();
             }
 
           if (disasm)
@@ -1962,7 +2039,7 @@ AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::read);
   // By design, access cannot cross mmu page boundaries
-  excmon.set(entry.pa, size);
+  excmon.set(entry.pa);
 }
 
 bool
@@ -1975,7 +2052,7 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::write);
   // By design, access cannot cross mmu page boundaries
-  bool passed = excmon.pass( entry.pa, size );
+  bool passed = excmon.pass( entry.pa );
   excmon.clear();
   return passed;
 }
@@ -2037,6 +2114,7 @@ void
 AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat)
 {
   // AArch64
+
   bool wxn = unisim::util::arithmetic::BitField<19,1>().Get(el1.SCTLR); // Cacheable
 
   unsigned ap = trans.ap | 2*(el != 0);
@@ -2044,6 +2122,28 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
   bool perm_r = (ap & 2) == 2;
   bool perm_w = (ap & 6) == 2;
   bool perm_x = not ((perm_w and wxn) or (el ? trans.pxn or (trans.ap & 6) == 2 : trans.xn));
+
+#if MMU_PERM_CHECKER
+  {
+    // AP[2:1]   Access from higher Exception level    Access from EL0
+    //   00                    Read/write                     None
+    //   01                    Read/write                  Read/write
+    //   10                    Read-only                      None
+    //   11                    Read-only                   Read-only
+
+    unsigned ap = trans.ap;
+
+    // R = (el != 0) or AP[1]
+    bool r = (el != 0) or (ap & 2);
+    // W = !AP[2] and ((el != 0) or AP[1])
+    bool w = !(ap & 4) and ((el != 0) or (ap & 2));
+    // !X = (W and WXN) or (PXN or ((AP[2:1]==0b01) if (el != 0) else XN))
+    bool xn = (w and wxn) or (el ? (trans.pxn or ((ap & 6) == 2)) : trans.xn);
+    assert(perm_r == r);
+    assert(perm_w == w);
+    assert(perm_x == !xn);
+  }
+#endif
 
   bool fail = true;
   switch (mat)
@@ -2340,7 +2440,6 @@ AArch64::sync(SnapShot& snapshot)
     }
 
   snapshot.sync(excmon.addr);
-  snapshot.sync(excmon.size);
   snapshot.sync(excmon.valid);
 
   mmu.sync(snapshot);

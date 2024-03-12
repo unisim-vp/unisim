@@ -300,8 +300,8 @@ static inline uint_fast8_t ToExceptionFlags( uint_fast8_t eflags )
 	static float16_t f16_rem( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_rem( a, b ); }                                                                                                    \
 	static float16_t f16_sqrt( float16_t a ) { return ARCH_NAME ## _f16_sqrt( a ); }                                                                                                                  \
 	static bool f16_eq( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_eq( a, b ); }                                                                                                           \
-	static bool f16_le( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_eq( a, b ); }                                                                                                           \
-	static bool f16_lt( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_eq( a, b ); }                                                                                                           \
+	static bool f16_le( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_le( a, b ); }                                                                                                           \
+	static bool f16_lt( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_lt( a, b ); }                                                                                                           \
 	static bool f16_eq_signaling( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_eq_signaling( a, b ); }                                                                                       \
 	static bool f16_le_quiet( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_le_quiet( a, b ); }                                                                                               \
 	static bool f16_lt_quiet( float16_t a, float16_t b ) { return ARCH_NAME ## _f16_lt_quiet( a, b ); }                                                                                               \
@@ -600,13 +600,13 @@ struct IF_NAME                                                                  
 	static uint64_t f_toInt( float64_t a, uint_fast8_t rmode, bool exact, uint64_t const * ) { return f64_to_ui64( a, FromRoundingMode( rmode ), exact ); }                                           \
 	static int16_t f_toInt( float16_t a, uint_fast8_t rmode, bool exact, int16_t const * ) { int32_t i = f16_to_i32( a, FromRoundingMode( rmode ), exact );                                           \
 		{ if( i > std::numeric_limits<int16_t>::max() ) { i = std::numeric_limits<int16_t>::max(); raiseFlags(flag_invalid); }                                                                          \
-		else if( i < std::numeric_limits<uint16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
+		else if( i < std::numeric_limits<int16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
 	static int16_t f_toInt( float32_t a, uint_fast8_t rmode, bool exact, int16_t const * ) { int32_t i = f32_to_i32( a, FromRoundingMode( rmode ), exact );                                           \
 		{ if( i > std::numeric_limits<int16_t>::max() ) { i = std::numeric_limits<int16_t>::max(); raiseFlags(flag_invalid); }                                                                          \
-		else if( i < std::numeric_limits<uint16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
+		else if( i < std::numeric_limits<int16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
 	static int16_t f_toInt( float64_t a, uint_fast8_t rmode, bool exact, int16_t const * ) { int32_t i = f64_to_i32( a, FromRoundingMode( rmode ), exact );                                           \
 		{ if( i > std::numeric_limits<int16_t>::max() ) { i = std::numeric_limits<int16_t>::max(); raiseFlags(flag_invalid); }                                                                          \
-		else if( i < std::numeric_limits<uint16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
+		else if( i < std::numeric_limits<int16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
 	static int32_t f_toInt( float16_t a, uint_fast8_t rmode, bool exact, int32_t const * ) { return f16_to_i32( a, FromRoundingMode( rmode ), exact ); }                                              \
 	static int32_t f_toInt( float32_t a, uint_fast8_t rmode, bool exact, int32_t const * ) { return f32_to_i32( a, FromRoundingMode( rmode ), exact ); }                                              \
 	static int32_t f_toInt( float64_t a, uint_fast8_t rmode, bool exact, int32_t const * ) { return f64_to_i32( a, FromRoundingMode( rmode ), exact ); }                                              \
@@ -627,13 +627,13 @@ struct IF_NAME                                                                  
 	static uint64_t f_toInt_r_minMag( float64_t a, bool exact, uint64_t const * ) { return f64_to_ui64_r_minMag( a, exact ); }                                                                        \
 	static int16_t f_toInt_r_minMag( float16_t a, bool exact, int16_t const * ) { int32_t i = f16_to_i32_r_minMag( a, exact );                                                                        \
 		{ if( i > std::numeric_limits<int16_t>::max() ) { i = std::numeric_limits<int16_t>::max(); raiseFlags(flag_invalid); }                                                                          \
-		else if( i < std::numeric_limits<uint16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
+		else if( i < std::numeric_limits<int16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
 	static int16_t f_toInt_r_minMag( float32_t a, bool exact, int16_t const * ) { int32_t i = f32_to_i32_r_minMag( a, exact );                                                                        \
 		{ if( i > std::numeric_limits<int16_t>::max() ) { i = std::numeric_limits<int16_t>::max(); raiseFlags(flag_invalid); }                                                                          \
-		else if( i < std::numeric_limits<uint16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
+		else if( i < std::numeric_limits<int16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
 	static int16_t f_toInt_r_minMag( float64_t a, bool exact, int16_t const * ) { int32_t i = f64_to_i32_r_minMag( a, exact );                                                                        \
 		{ if( i > std::numeric_limits<int16_t>::max() ) { i = std::numeric_limits<int16_t>::max(); raiseFlags(flag_invalid); }                                                                          \
-		else if( i < std::numeric_limits<uint16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
+		else if( i < std::numeric_limits<int16_t>::min() ) { i = std::numeric_limits<int16_t>::min(); raiseFlags(flag_invalid); } } return i; }                                                        \
 	static int32_t f_toInt_r_minMag( float16_t a, bool exact, int32_t const * ) { return f16_to_i32_r_minMag( a, exact ); }                                                                           \
 	static int32_t f_toInt_r_minMag( float32_t a, bool exact, int32_t const * ) { return f32_to_i32_r_minMag( a, exact ); }                                                                           \
 	static int32_t f_toInt_r_minMag( float64_t a, bool exact, int32_t const * ) { return f64_to_i32_r_minMag( a, exact ); }                                                                           \
@@ -1181,7 +1181,7 @@ namespace arm_vfpv2_ddn {
 // Functions and traits for all emulated floating-point types
 
 #undef SOFTFLOAT_EMU_DEF_FUNCTIONS
-#define SOFTFLOAT_EMU_DEF_FUNCTIONS( NAMESPACE, FLOAT, PACKED )                                                                                                                        \
+#define SOFTFLOAT_EMU_DEF_FUNCTIONS( NAMESPACE, FLOAT, PACKED )                                                                                                                     \
 template <> inline FLOAT FromUnpacked<FLOAT>( UnpackedFloat const& unpacked )                 { return NAMESPACE::_FromUnpacked<FLOAT>( unpacked ); }                               \
 template <> inline __UNISIM_FP_CONSTEXPR FLOAT FromPacked<FLOAT, PACKED>( PACKED a )          { return NAMESPACE::_FromPacked<FLOAT, PACKED>( a ); }                                \
 inline PACKED ToPacked( FLOAT a )                                                             { return NAMESPACE::_ToPacked<PACKED, FLOAT>( a ); }                                  \

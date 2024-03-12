@@ -317,6 +317,7 @@ Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
   sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_aarch64.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
   sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.architecture[0]", "aarch64");
 
   sim->SetVariable("inline-debugger.num-loaders", 1);
   sim->SetVariable("inline-debugger.search-path", "");
