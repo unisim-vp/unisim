@@ -482,7 +482,31 @@ main(int argc, char *argv[])
       std::ofstream tail("tail");
       for (unsigned idx = 1; idx <= arch.histsize; ++idx)
         if (arch.last_insn(idx).op)
-          tail << arch.last_insn(idx) << std::endl;
+          {
+            AArch64::InstructionInfo const& last_insn = arch.last_insn(idx);
+            unisim::util::debug::Statement<uint64_t> const* stmt = dbg->debug_hub.FindStatement(
+              last_insn.addr,
+              /* any filename */ 0,
+              unisim::service::interfaces::StatementLookup<uint64_t>::OPT_FIND_EXACT_STMT
+            );
+            if (stmt)
+              {
+                char const* source_filename = stmt->GetSourceFilename();
+                if (source_filename)
+                  {
+                    tail << "-> ";
+                    unsigned lineno = stmt->GetLineNo();
+                    char const* source_dirname = stmt->GetSourceDirname();
+                    if (source_dirname)
+                      {
+                        tail << source_dirname << "/";
+                      }
+                    tail << source_filename << "#" << std::dec << lineno << ":" << std::endl;
+                  }
+              }
+
+            tail << last_insn << std::endl;
+          }
       throw;
     }
   double time_stop = unisim::util::host_time::GetHostTime();

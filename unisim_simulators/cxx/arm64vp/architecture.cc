@@ -154,6 +154,90 @@ AArch64::AArch64(char const* name)
 
   regmap["cpsr"] = new CurrentProgramStatusRegister( *this );
 
+  /** Exception Link Register Debugging Accessor */
+  struct ExceptionLinkRegister : public unisim::service::interfaces::Register
+  {
+    ExceptionLinkRegister( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "elr"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t *)buffer) = cpu.get_el(1).ELR.value; }
+    virtual void SetValue( void const* buffer ) { cpu.get_el(1).ELR = U64(*(uint32_t *)buffer); }
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() { cpu.get_el(1).ELR = U64(0); }
+    AArch64&        cpu;
+  };
+
+  regmap["elr"] = new ExceptionLinkRegister( *this );
+
+  /** EL0 Read-Only Software Thread ID register Debugging Accessor */
+  struct TPIDRRO_EL0 : public unisim::service::interfaces::Register
+  {
+    TPIDRRO_EL0( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "tpidrro_el0"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t *)buffer) = cpu.TPIDRRO.value; }
+    virtual void SetValue( void const* buffer ) {}
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() {}
+    AArch64&        cpu;
+  };
+
+  regmap["tpidrro_el0"] = new TPIDRRO_EL0( *this );
+
+  /** EL0 Software Thread ID register Debugging Accessor */
+  struct TPIDR_EL0 : public unisim::service::interfaces::Register
+  {
+    TPIDR_EL0( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "tpidr_el0"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t *)buffer) = cpu.TPIDR[0].value; }
+    virtual void SetValue( void const* buffer ) { cpu.TPIDR[0] = U64(*(uint32_t *)buffer); }
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() { cpu.TPIDR[0] = U64(0); }
+    AArch64&        cpu;
+  };
+
+  regmap["tpidr_el0"] = new TPIDR_EL0( *this );
+
+  /** EL1 Software Thread ID register Debugging Accessor */
+  struct TPIDR_EL1 : public unisim::service::interfaces::Register
+  {
+    TPIDR_EL1( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "tpidr_el1"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t *)buffer) = cpu.TPIDR[1].value; }
+    virtual void SetValue( void const* buffer ) { cpu.TPIDR[1] = U64(*(uint32_t *)buffer); }
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() { cpu.TPIDR[1] = U64(0); }
+    AArch64&        cpu;
+  };
+
+  regmap["tpidr_el1"] = new TPIDR_EL1( *this );
+
+  /** EL2 Software Thread ID register Debugging Accessor */
+  struct TPIDR_EL2 : public unisim::service::interfaces::Register
+  {
+    TPIDR_EL2( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "tpidr_el2"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t *)buffer) = cpu.TPIDR[2].value; }
+    virtual void SetValue( void const* buffer ) { cpu.TPIDR[2] = U64(*(uint32_t *)buffer); }
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() { cpu.TPIDR[2] = U64(0); }
+    AArch64&        cpu;
+  };
+
+  regmap["tpidr_el2"] = new TPIDR_EL2( *this );
+
+  /** EL3 Software Thread ID register Debugging Accessor */
+  struct TPIDR_EL3 : public unisim::service::interfaces::Register
+  {
+    TPIDR_EL3( AArch64& _cpu ) : cpu(_cpu) {}
+    virtual const char *GetName() const { return "tpidr_el3"; }
+    virtual void GetValue( void* buffer ) const { *((uint64_t *)buffer) = cpu.TPIDR[3].value; }
+    virtual void SetValue( void const* buffer ) { cpu.TPIDR[3] = U64(*(uint32_t *)buffer); }
+    virtual int  GetSize() const { return 8; }
+    virtual void Clear() { cpu.TPIDR[3] = U64(0); }
+    AArch64&        cpu;
+  };
+
+  regmap["tpidr_el3"] = new TPIDR_EL3( *this );
+
   struct VectorRegister : unisim::service::interfaces::Register
   {
     VectorRegister( AArch64& _cpu, unsigned _reg, std::string const& _name ) : cpu(_cpu), reg(_reg), name(_name) {}
@@ -267,6 +351,18 @@ AArch64::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
   scanner.Append( GetRegister("cpsr") );
   scanner.Append( GetRegister("fpcr") );
   scanner.Append( GetRegister("fpsr") );
+  scanner.Append( GetRegister("elr") );
+  scanner.Append( GetRegister("tpidrro_el0") );
+  scanner.Append( GetRegister("tpidr_el0") );
+  scanner.Append( GetRegister("tpidr_el1") );
+  scanner.Append( GetRegister("tpidr_el2") );
+  scanner.Append( GetRegister("tpidr_el3") );
+  for (unsigned reg = 0; reg < 31; ++reg)
+    {
+      std::ostringstream buf;
+      buf << 'v' << std::dec << reg;
+      scanner.Append( GetRegister( buf.str().c_str() ) );
+    }
 }
 
 bool
@@ -329,7 +425,6 @@ AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
   Page res(base, last);
   // Initialize taint
   // std::fill(res.udat_beg(), res.udat_end(), -1);
-  std::fill(res.udat_beg(), res.udat_end(), 0);
   return *pages.insert(pi, std::move(res));
 }
 
@@ -372,6 +467,10 @@ AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
   return last_insns[(insn_counter + histsize + idx) % histsize];
 }
 
+void AArch64::UndefinedInstructionException::proceed( AArch64& cpu ) const
+{
+  cpu.UndefinedInstruction();
+}
 
 void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
@@ -509,6 +608,33 @@ AArch64::SoftwareBreakpoint( uint32_t imm )
     | U32(1) << 25 // IL Instruction Length == 32 bits
     | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
     | U32(imm);
+
+  TakeException(1, 0x0, current_insn_addr);
+}
+
+void
+AArch64::SystemAccessTrapException::proceed( AArch64& cpu ) const
+{
+    cpu.SystemAccessTrap(op0, op1, crn, crm, op2, rt, direction);
+}
+
+void
+AArch64::SystemAccessTrap( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, uint8_t direction )
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32(0x18) << 26 // exception class AArch64.SystemAccessTrap (i.e. Trapped MSR, MRS or System instruction execution) !from_32
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | PartlyDefined<uint32_t>(0,0b11) << 22 // Res0
+    | U32(op0) << 20
+    | U32(op2) << 17
+    | U32(op1) << 14
+    | U32(crn) << 10
+    | U32(rt) << 5
+    | U32(crm) << 1
+    | U32(direction);
 
   TakeException(1, 0x0, current_insn_addr);
 }

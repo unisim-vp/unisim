@@ -62,7 +62,7 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "enable the inline-debugger debug sessions")
   , blob(0)
 {
-  if(!enable_inline_debugger && !enable_gdb_server) return;
+  if(!enable_inline_debugger && !enable_gdb_server && !sink.is_open()) return;
 
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];

@@ -4995,7 +4995,7 @@ mrs.disasm = {
 mrs.execute = {
   cpu.CheckSystemAccess(op1);
   
-  cpu.SetGZR(rt, sysreg->Read(op0, op1, crn, crm, op2, cpu));
+  cpu.SetGZR(rt, sysreg->Read(op0, op1, crn, crm, op2, rt, cpu));
 };
 
 /*
@@ -5018,7 +5018,7 @@ msr.disasm = {
 msr.execute = {
   cpu.CheckSystemAccess(op1);
 
-  sysreg->Write(op0, op1, crn, crm, op2, cpu, cpu.GetGZR(rt));
+  sysreg->Write(op0, op1, crn, crm, op2, rt, cpu, cpu.GetGZR(rt));
 };
 
 /*

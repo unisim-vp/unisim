@@ -394,8 +394,8 @@ struct AArch64
   struct SysReg
   {
     static unsigned GetExceptionLevel( uint8_t op1 ) { switch (op1) { case 0: case 1: case 2: return 1; case 4: return 2; case 6: return 3; } return 0; }
-    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const = 0;
-    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const = 0;
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const = 0;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const = 0;
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
     virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
   };
@@ -418,6 +418,7 @@ struct AArch64
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
   void SoftwareBreakpoint( uint32_t imm );
+  void SystemAccessTrap( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, uint8_t direction );
 
   //=====================================================================
   //=                       Memory access methods                       =
@@ -679,6 +680,25 @@ struct AArch64
     virtual char const* nature() const override { return "Physical IRQ"; }
   };
 
+  struct UndefinedInstructionException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Undefined Instruction"; }
+  };
+
+  struct SystemAccessTrapException : Exception
+  {
+    SystemAccessTrapException(uint8_t _op0, uint8_t _op1, uint8_t _crn, uint8_t _crm,
+                              uint8_t _op2, uint8_t _rt, uint8_t _direction)
+      : op0(_op0), op1(_op1), crn(_crn), crm(_crm),
+        op2(_op2), rt(_rt), direction(_direction)
+    {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "System Access Trap"; }
+    uint8_t op0; uint8_t op1; uint8_t crn; uint8_t crm;
+    uint8_t op2; uint8_t rt; uint8_t direction;
+  };
+
   /* AArch32 obsolete arguments
    * - bool taketohypmode
    * - LDFSRformat
@@ -862,7 +882,7 @@ struct AArch64
 
   struct IPB
   {
-    static unsigned const LINE_SIZE = 32; //< IPB size
+    static unsigned const LINE_SIZE = 64;//32; //< IPB size
     uint8_t  bytes[LINE_SIZE];            //< The IPB content
     uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
     IPB() : bytes(), base_address( -1 ) {}
@@ -1092,7 +1112,7 @@ public:
   static unsigned const histsize = 1024;
   InstructionInfo last_insns[histsize];
 
-  U64      TPIDR[2]; //<  Thread Pointer / ID Register
+  U64      TPIDR[4]; //<  Thread Pointer / ID Register
   U64      TPIDRRO;
   uint32_t CPACR;
 
