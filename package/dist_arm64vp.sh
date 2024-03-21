@@ -69,6 +69,7 @@ system.cc \
 instruction.cc \
 main.cc \
 debugger.cc \
+dbgmon.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\

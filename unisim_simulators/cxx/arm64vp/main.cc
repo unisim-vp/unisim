@@ -323,7 +323,7 @@ struct StreamSpy
   virtual void PutChar(char ch) override
   {
     char_io_import->PutChar(ch);
-    if (not ch) return;
+    if (not ch or !expect) return;
     if (incoming and *expect != ch) { expect = incoming; return; }
     if (*++expect) return;
     (this->*step)();

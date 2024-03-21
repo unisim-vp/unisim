@@ -40,6 +40,7 @@
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/aarch64.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/endian/endian.hh>
 #include <iostream>
 #include <iomanip>
 #include <array>
@@ -74,7 +75,9 @@ AArch64::AArch64(char const* name)
   , persistent_disk(false)
   , param_persistent_disk("persistent-disk", this, persistent_disk, "enable/disable disk persistency")
   , pages()
+  , mru_pi(pages.end())
   , excmon()
+  , dbgmon()
   , mmu()
   , ipb()
   , decoder()
@@ -116,6 +119,8 @@ AArch64::AArch64(char const* name)
   , insn_profile()
 #endif
 {
+  last_insns = new InstructionInfo[histsize];
+
   param_tfp32loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   param_tfp64loss.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
@@ -287,6 +292,8 @@ AArch64::~AArch64()
 
   for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
     vector_views[reg].Clear(&vectors[reg]);
+
+  delete last_insns;
 }
 
 bool
@@ -415,12 +422,20 @@ AArch64::mem_map(Page&& page)
 AArch64::Page const&
 AArch64::alloc_page(Pages::iterator pi, uint64_t addr)
 {
-  uint64_t const page_size = 0x10000;
+  uint64_t const page_size = 0x1000000; // 16 MiB
   uint64_t base = addr & -page_size, last = base + page_size - 1;
   if (pi != pages.end() and pi->last >= base)
     base = pi->last + 1;
   if (pages.size() and pi != pages.begin() and (--pi)->base <= last)
     { last = pi->base - 1; }
+
+  for (auto di = devices.begin(); di != devices.end(); ++di)
+    if ( ((di->last < last) ? di->last : last) >= ((di->base < base) ? base : di->base) )
+    {
+      // Page and device overlap
+      struct PageDeviceOverlap {};
+      throw PageDeviceOverlap();
+    }
 
   Page res(base, last);
   // Initialize taint
@@ -444,19 +459,31 @@ AArch64::Page::Page(uint64_t base, uint64_t last)
 AArch64::Page::Free AArch64::Page::Free::nop;
 
 uint8_t*
-AArch64::IPB::access(AArch64& core, uint64_t paddr)
+AArch64::IPB::access(AArch64& core, uint64_t vaddr)
 {
   // LINE_SIZE should be so MMU page boundaries cannot be crossed
-  uint64_t req_base_address = paddr & -uint64_t(LINE_SIZE);
-  unsigned idx = paddr % LINE_SIZE;
-  if (base_address != req_base_address)
+  uint64_t req_base_vaddress = vaddr & -uint64_t(LINE_SIZE);
+  unsigned idx = vaddr % LINE_SIZE;
+  if (unlikely(base_vaddress != req_base_vaddress))
     {
+      uint64_t himask = uint64_t(-1) << tlb_entry.blocksize;
+      uint64_t base_paddress;
+      if (unlikely((tlb_entry.pa == uint64_t(-1)) or ((req_base_vaddress ^ base_vaddress) & himask) != 0))
+        {
+          tlb_entry.pa = req_base_vaddress;
+          core.translate_address(tlb_entry, core.pstate.GetEL(), AArch64::mem_acc_type::exec);
+          base_paddress = tlb_entry.pa & -uint64_t(LINE_SIZE);
+        }
+      else
+        {
+          base_paddress = (tlb_entry.pa & himask) | (req_base_vaddress & ~himask);
+        }
       uint8_t ubuf[LINE_SIZE];
-      if (core.get_page(req_base_address).read(req_base_address, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
+      if (core.get_page(base_paddress).read(base_paddress, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
         { struct Bad {}; raise( Bad() ); }
-      if (not std::all_of( &ubuf[0], &ubuf[LINE_SIZE], [](unsigned char const byte) { return byte == 0; } ))
+      if (::memcmp(&ubuf[0], &zeroes[0], LINE_SIZE) != 0)
         { struct Bad {}; raise( Bad() ); }
-      base_address = req_base_address;
+      base_vaddress = req_base_vaddress;
     }
 
   return &bytes[idx];
@@ -592,6 +619,50 @@ AArch64::CallHypervisor( uint32_t imm )
   raise( Bad() );
 }
 
+void
+AArch64::IllegalStateException::proceed( AArch64& cpu ) const
+{
+    cpu.IllegalState();
+}
+
+void
+AArch64::IllegalState()
+{
+    Fault();
+}
+
+void
+AArch64::PCAlignmentFault()
+{
+    Fault();
+}
+
+void
+AArch64::SPAlignmentException::proceed( AArch64& cpu ) const
+{
+    cpu.SPAlignmentFault();
+}
+
+void
+AArch64::SPAlignmentFault()
+{
+    Fault();
+}
+
+void
+AArch64::Fault()
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32(0x22) << 26 // exception class Illegal State/AArch64.PCAlignmentFault/AArch64.SPAlignmentFault
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | PartlyDefined<uint32_t>(0,0b111111111111111111111111); // Res0
+
+  TakeException(1, 0x0, current_insn_addr);
+}
+
 /** SoftwareBreakpoint
  *
  *  This method is called by BRK instructions to handle software breakpoints.
@@ -608,6 +679,83 @@ AArch64::SoftwareBreakpoint( uint32_t imm )
     | U32(1) << 25 // IL Instruction Length == 32 bits
     | PartlyDefined<uint32_t>(0,0b111111111) << 16 // Res0
     | U32(imm);
+
+  TakeException(1, 0x0, current_insn_addr);
+}
+
+void AArch64::BreakpointException::proceed( AArch64& cpu ) const
+{
+  cpu.Breakpoint();
+}
+
+void
+AArch64::Breakpoint()
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32((pstate.GetEL() < target_el) ? 0x30 : 0x31) << 26 // exception class AArch64.BreakpointException !from_32
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | PartlyDefined<uint32_t>(0,0b1111111111111111111) << 6 // Res0
+    | U32(0x22); // Instruction Fault Status Code for debug exception
+
+  TakeException(1, 0x0, current_insn_addr);
+}
+
+
+void AArch64::SoftwareStepException::proceed( AArch64& cpu ) const
+{
+  cpu.SoftwareStep(ldex);
+}
+
+void
+AArch64::SoftwareStep(bool ldex)
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32((pstate.GetEL() < target_el) ? 0x32 : 0x33) << 26 // exception class AArch64.SoftwareStepException !from_32
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | U32(1) << 24 // ISV (EX is valid)
+    | PartlyDefined<uint32_t>(0,0b11111111111111111) << 7 // Res0
+    | U32(ldex) << 6 // EX
+    | U32(0x22); // Instruction Fault Status Code for debug exception
+
+  TakeException(1, 0x0, current_insn_addr);
+}
+
+void AArch64::WatchpointException::proceed( AArch64& cpu ) const
+{
+  cpu.Watchpoint(addr, wpt, cache_maintenance, write);
+}
+
+void
+AArch64::Watchpoint(uint64_t addr, unsigned wpt, bool cache_maintenance, bool write)
+{
+  unsigned const target_el = 1;
+
+  // ReportException (ESR[target_el] = ec<5:0>:il:syndrome)
+  get_el(target_el).ESR = U32(0)
+    | U32((pstate.GetEL() < target_el) ? 0x34 : 0x35) << 26 // exception class AArch64.WatchpointException !from_32
+    | U32(1) << 25 // IL Instruction Length == 32 bits
+    | PartlyDefined<uint32_t>(0,0b1) << 24 // Res0
+    | U32(wpt) << 18 // Watchpoint number
+    | U32(1) << 17   // WPT valid
+    | U32(0) << 16   // False positive (no)
+    | U32(0) << 15   // FAR not Precise (no)
+    | PartlyDefined<uint32_t>(0,0b1) << 14 // Res0
+    | U32(0) << 13   // not from use of of VNCR_EL2 register by EL1 code
+    | PartlyDefined<uint32_t>(0,0b11) << 11 // Res0
+    | U32(1) << 10   // FAR is valid
+    | PartlyDefined<uint32_t>(0,0b1) << 9 // Res0
+    | U32(cache_maintenance) << 8  // cache maintenance
+    | PartlyDefined<uint32_t>(0,0b1) << 7 // Res0
+    | U32(write) << 6 // Write not Read
+    | U32(0x22); // Data Fault Status Code for debug exception
+
+  get_el(target_el).FAR = addr;
 
   TakeException(1, 0x0, current_insn_addr);
 }
@@ -651,11 +799,13 @@ AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_
 {
   // LRU Replacement
   unsigned lru_idx = indices[kcount-1];
-  for (unsigned idx = kcount; --idx > 0;)
-    {
-      keys[idx] = keys[idx-1];
-      indices[idx] = indices[idx-1];
-    }
+  // for (unsigned idx = kcount; --idx > 0;)
+  //   {
+  //     keys[idx] = keys[idx-1];
+  //     indices[idx] = indices[idx-1];
+  //   }
+  ::memmove(&keys[1], &keys[0], (kcount - 1) * sizeof(keys[0]));
+  ::memmove(&indices[1], &indices[0], (kcount - 1) * sizeof(indices[0]));
 
   unsigned significant = tlbe.blocksize - 1, global = not tlbe.nG;
   keys[0] = (((vaddr >> 12) << 27) >> 16) | (uint64_t(asid) << 48) | (global << 6) | significant;
@@ -723,24 +873,26 @@ AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t va
     {
       key = keys[hit];
       rsh = key & 63;
-      if (not (((vakey ^ key) >> rsh) << (rsh + ((key >> 2) & 16))))
+      if (likely(not (((vakey ^ key) >> rsh) << (rsh + ((key >> 2) & 16)))))
         break;
     }
-  if (hit >= kcount)
+  if (unlikely(hit >= kcount))
     return false; // TLB miss
 
   // TLB hit
   unsigned idx = indices[hit];
   Entry& entry = entries[idx];
 
-  if (update)
+  if (unlikely(update && hit))
     {
       // MRU sort
-      for (unsigned idx = hit; idx > 0; idx -= 1)
-        {
-          keys[idx] = keys[idx-1];
-          indices[idx] = indices[idx-1];
-        }
+      // for (unsigned idx = hit; idx > 0; idx -= 1)
+      //   {
+      //     keys[idx] = keys[idx-1];
+      //     indices[idx] = indices[idx-1];
+      //   }
+      ::memmove(&keys[1], &keys[0], hit * sizeof(keys[0]));
+      ::memmove(&indices[1], &indices[0], hit * sizeof(indices[0]));
       keys[0] = key;
       indices[0] = idx;
     }
@@ -760,7 +912,7 @@ struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE 
 void
 AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, unsigned el, mem_acc_type::Code mat)
 {
-  if (not unisim::component::cxx::processor::arm::sctlr::M.Get(el1.SCTLR))
+  if (unlikely(not unisim::component::cxx::processor::arm::sctlr::M.Get(el1.SCTLR)))
     return;
 
   uint64_t vaddr = entry.pa;
@@ -768,10 +920,10 @@ AArch64::translate_address(AArch64::MMU::TLB::Entry& entry, unsigned el, mem_acc
   // Stage 1 MMU enabled
   bool update = mat != mem_acc_type::debug;
   unsigned asid = mmu.GetASID();
-  if (unlikely(not mmu.tlb.GetTranslation( entry, vaddr, asid, update )))
+  if (likely(not mmu.tlb.GetTranslation( entry, vaddr, asid, update )))
     {
       translation_table_walk( entry, vaddr, mat );
-      if (update)
+      if (likely(update))
         mmu.tlb.AddTranslation( entry, vaddr, asid );
     }
   // else {
@@ -1017,6 +1169,7 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
   U64 target = (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset);
   BranchTo( target, B_EXC );
   //  std::cerr << "EXC: " << std::hex << target.value << std::endl;
+  dbgmon.NotifyException(*this);
 }
 
 void
@@ -1034,8 +1187,8 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
   if (psr & 2) raise( Bad() );
 
   // Return an SPSR value which represents thebits(32) spsr = Zeros();
-  pstate.IL = psr >> 21;
-  pstate.SS = psr >> 20;
+  pstate.SS = psr >> 21;
+  pstate.IL = psr >> 20;
   /* AArch64*/
   pstate.D = psr >> 9;
   pstate.A = psr >> 8;
@@ -1049,6 +1202,9 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
 void
 AArch64::ExceptionReturn()
 {
+  if (pstate.GetEL() == 0)
+    throw UndefinedInstructionException();
+
   U32 spsr = get_el(pstate.GetEL()).SPSR;
   U64 elr = get_el(pstate.GetEL()).ELR;
   SetPSTATEFromPSR(spsr);
@@ -1058,6 +1214,8 @@ AArch64::ExceptionReturn()
   // SendEventLocal();
 
   BranchTo(elr, B_ERET);
+
+  dbgmon.NotifyExceptionReturn();
 }
 
 uint32_t
@@ -1211,7 +1369,14 @@ AArch64::InstructionInfo::dump(std::ostream& sink) const
 }
 
 AArch64::GIC::GIC()
-  : D_CTLR()
+  : C_CTLR()
+  , C_PMR()
+  , D_CTLR()
+  , D_IENABLE()
+  , D_IPENDING()
+  , D_IACTIVE()
+  , D_IPRIORITYR()
+  , D_ICFGR()
 {}
 
 unsigned
@@ -1944,14 +2109,14 @@ AArch64::run( uint64_t suspend_at )
       try
         {
           /*** Handle asynchronous events ***/
-          while (next_event <= insn_timer)
+          while (unlikely(next_event <= insn_timer))
             {
               event_handler_t method = pop_next_event();
               if (not method) break;
               (this->*method)();
             }
 
-          if (insn_counter == suspend_at)
+          if (unlikely(insn_counter == suspend_at))
             throw Suspend();
 
           /*** Handle debugging interface ***/
@@ -1961,19 +2126,22 @@ AArch64::run( uint64_t suspend_at )
           // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
           //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
 
-          if (debug_yielding_import)
+          if (unlikely(debug_yielding_import))
             debug_yielding_import->DebugYield();
 
-          /*** Fetch instruction ***/
-          MMU::TLB::Entry tlb_entry(insn_addr);
-          translate_address(tlb_entry, pstate.GetEL(), AArch64::mem_acc_type::exec);
+          dbgmon.BeforeStep(*this);
 
-          uint32_t insn = 0;
-          for (uint8_t *beg = ipb.access(*this, tlb_entry.pa), *itr = &beg[4]; --itr >= beg;)
-            insn = insn << 8 | *itr;
+          if (unlikely(insn_addr & 3))
+            {
+              PCAlignmentFault();
+              continue;
+            }
+
+          /*** Fetch instruction ***/
+          uint32_t insn = unisim::util::endian::LittleEndian2Host(*(uint32_t *) ipb.access(*this, insn_addr));
 
           /*** Decode instruction ***/
-          Operation* op = decode(tlb_entry.pa, insn);
+          Operation* op = decode(insn_addr, insn);
 #if INSN_PROFILE
           ++insn_profile[op->GetName()];
 #endif
@@ -1981,19 +2149,19 @@ AArch64::run( uint64_t suspend_at )
 
           this->next_insn_addr += 4;
 
-          if (current_insn_addr == bdaddr)
+          if (unlikely(current_insn_addr == bdaddr))
             {
               breakdance();
               // disasm = true;
             }
 
-          if (terminate)
+          if (unlikely(terminate))
             {
               // force_throw();
               throw Stop();
             }
 
-          if (disasm)
+          if (unlikely(disasm))
             {
               // static std::ofstream dbgtrace("dbgtrace");
               std::ostream& sink( std::cerr );
@@ -2003,6 +2171,8 @@ AArch64::run( uint64_t suspend_at )
               sink << std::endl;
             }
 
+          dbgmon.Fetch(*this, current_insn_addr);
+
           /* Execute instruction */
           asm volatile( "arm64_operation_execute:" );
           op->execute( *this );
@@ -2011,6 +2181,8 @@ AArch64::run( uint64_t suspend_at )
             memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 
           insn_counter++; /* Instruction regularly finished */
+
+          dbgmon.AfterStep(*this);
         }
 
       catch (Exception const& exception)
@@ -2160,12 +2332,14 @@ AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
   struct Bad {};
 
   uint64_t va = untaint(AddrTV(), addr);
-  if ((size | va) & (size - 1)) raise( Bad() );
-  /* TODO: should be an Alignment-related DataAbort */
+  if (unlikely((size | va) & (size - 1)))
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Alignment,
+                    va, 0, mem_acc_type::read, /*level (don't care)*/ 0, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::read);
   // By design, access cannot cross mmu page boundaries
   excmon.set(entry.pa);
+  dbgmon.NotifyLoadExclusive();
 }
 
 bool
@@ -2174,7 +2348,9 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
   struct Bad {};
 
   uint64_t va = untaint(AddrTV(), addr);
-  if ((size | va) & (size - 1)) raise( Bad() ); /* TODO: should be an Alignment-related DataAbort */
+  if (unlikely((size | va) & (size - 1)))
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Alignment,
+                    va, 0, mem_acc_type::write, /*level (don't care)*/ 0, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::write);
   // By design, access cannot cross mmu page boundaries
@@ -2217,6 +2393,8 @@ AArch64::mem_unmap(uint64_t base, uint64_t last)
 
   while (pi->base >= base)
     {
+      if (pi == mru_pi)
+        mru_pi = pages.end();
       pi = pages.erase(pi);
       if (pi == pages.end())
         { insert.if_not_empty(pages, std::move(above)); return; }
@@ -2229,6 +2407,8 @@ AArch64::mem_unmap(uint64_t base, uint64_t last)
   std::copy(pi->data_beg(), pi->data_abs(base), below.data_beg());
   std::copy(pi->udat_beg(), pi->udat_abs(base), below.udat_beg());
 
+  if (pi == mru_pi)
+    mru_pi = pages.end();
   pi = pages.erase(pi);
 
   insert.if_not_empty(pages, std::move(above));
@@ -2282,9 +2462,20 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     default: { struct Bad {}; raise( Bad() ); }
     }
 
-  if (fail)
+  if (unlikely(fail))
     throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Permission,
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
+}
+
+void AArch64::CheckSPAlignment(U64 const& addr)
+{
+  if (unlikely(untaint(AddrTV(), addr) & 0xf))
+    {
+      bool stack_align_check = (pstate.GetEL() == 0) ? unisim::util::arithmetic::BitField<4,1>().Get(el1.SCTLR)  // SCTLR.SA0
+                                                     : unisim::util::arithmetic::BitField<3,1>().Get(el1.SCTLR); // SCTLR.SA
+      if (stack_align_check)
+        throw SPAlignmentException();
+    }
 }
 
 AArch64::UART::UART(char const* name, unisim::kernel::Object* parent)
@@ -2600,6 +2791,8 @@ AArch64::sync(SnapShot& snapshot)
   tvsync(snapshot, TPIDRRO);
   snapshot.sync(CPACR);
   snapshot.sync(random);
+
+  dbgmon.sync(snapshot);
 }
 
 // std::ofstream&

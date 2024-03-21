@@ -68,6 +68,7 @@
 #else
 #include <unisim/util/floating_point/floating_point.hh>
 #endif
+#include <unisim/util/likely/likely.hh>
 #include <serial.hh>
 #include <iosfwd>
 #include <set>
@@ -153,6 +154,10 @@ struct AArch64
   // enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
   enum { FPCR_MASK=0x7C80000 }; /* FIXME: this is for cortex-a53 + fp16 */
   enum { FPSR_MASK=0xf800009f };
+  enum { IminLine = 4 }; // Log2 of the number of words in the smallest cache line
+                         // of all the instruction caches and unified caches that are controlled by the PE.
+  enum { DminLine = 4 }; // Log2 of the number of words in the smallest cache line
+                         // of all the data caches and unified caches that are controlled by the PE.
 
   enum ReportAccess { report_simd_access = 0, report_gsr_access = 0, report_gzr_access = 0 };
   void report( ReportAccess, unsigned, bool ) const {}
@@ -404,6 +409,99 @@ struct AArch64
   void                 CheckSystemAccess( uint8_t op1 );
 
   //=====================================================================
+  //=                           Debug Monitor                           =
+  //=====================================================================
+
+  struct DebugMonitor
+  {
+    // Architectural configuration
+    enum { BRPS = 6 }; // Number of hardware breakpoints. FIXME: this is for Cortex-A57
+    enum { WRPS = 4 }; // Number of hardware watchpoints. FIXME: this is for Cortex-A57
+    enum { CTX_CMPS = 2 }; // Number of hardware breakpoints that (the last ones) can be used for context matching. FIXME: this is for Cortex-A57
+
+    // Debugging flag
+    enum { DEBUG = 0 };
+
+    DebugMonitor();
+
+    // Notifications
+    void NotifyExceptionReturn() { ss_eret = true; }
+    void NotifyException(AArch64& cpu);
+    void NotifyLoadExclusive() { ss_ldex = true; }
+
+    // Instrumentation for main loop
+    void BeforeStep(AArch64& cpu) { if (unlikely(ss)) IntBeforeStep(cpu); }
+    void AfterStep(AArch64& cpu)  { if (unlikely(ss)) IntAfterStep(cpu);  }
+    void Fetch(AArch64& cpu, uint64_t vaddr)    { if (unlikely(bpe)) IntFetch(cpu, vaddr);   }
+
+    // Instrumentation for data memory access
+    void CacheMaintenance(unsigned el, uint64_t addr)        { if (unlikely(wpe)) IntMemAccess(el, addr & -(4 << DminLine), addr, 4 << DminLine, true, true); }
+    void MemRead(unsigned el, uint64_t addr, unsigned size)  { if (unlikely(wpe)) IntMemAccess(el, addr, addr, size, false, false); }
+    void MemWrite(unsigned el, uint64_t addr, unsigned size) { if (unlikely(wpe)) IntMemAccess(el, addr, addr, size, false, true); }
+
+    // Getters
+    uint64_t const& DBGBCR_EL1(unsigned idx) const { return regs.DBGBCR_EL1[idx]; }
+    uint64_t const& DBGBVR_EL1(unsigned idx) const { return regs.DBGBVR_EL1[idx]; }
+    uint64_t const& DBGWCR_EL1(unsigned idx) const { return regs.DBGWCR_EL1[idx]; }
+    uint64_t const& DBGWVR_EL1(unsigned idx) const { return regs.DBGWVR_EL1[idx]; }
+    uint64_t const& MDSCR_EL1() const              { return regs.MDSCR_EL1; }
+    uint64_t const& CONTEXTIDR_EL1() const         { return regs.CONTEXTIDR_EL1; }
+
+    bool SoftwareStepEnabled() const     { return regs.MDSCR_EL1 & 1; }         // MDSCR_EL1.SS
+    bool LocalKernelDebugEnabled() const { return (regs.MDSCR_EL1 >> 13) & 1; } // MDSCR_EL1.KDE
+    bool MonitorDebugEvents() const      { return (regs.MDSCR_EL1 >> 15) & 1; } // MDSCR_EL1.MDE
+
+    // Setters
+    void SetDBGBCR_EL1(unsigned idx, uint64_t value);
+    void SetDBGBVR_EL1(unsigned idx, uint64_t value) { regs.DBGBVR_EL1[idx] = value; }
+    void SetDBGWCR_EL1(unsigned idx, uint64_t value);
+    void SetDBGWVR_EL1(unsigned idx, uint64_t value) { regs.DBGWVR_EL1[idx] = value; }
+    void SetMDSCR_EL1(uint64_t value);
+    void SetCONTEXTIDR_EL1(uint64_t value) { regs.CONTEXTIDR_EL1 = uint32_t(value); }
+
+    // snapshot
+    void sync(SnapShot& snapshot);
+
+  private:
+    void IntBeforeStep(AArch64& cpu);
+    void IntAfterStep(AArch64& cpu);
+    bool CheckBreakpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pmc, unsigned sec_state);
+    void IntFetch(AArch64& cpu, uint64_t vaddr);
+    bool CheckWatchpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pac, unsigned sec_state);
+    void IntMemAccess(unsigned el, uint64_t vaddr, uint64_t syndrome_vaddr, unsigned size, bool cache_maintenance, bool write);
+    void Status(std::ostream& sink);
+    // for optimization
+    bool ss;       //< software step (mirror of MDSCR_EL1.SS)
+    uint64_t bpe;  //< breakpoint enables (mirror of DBGBCR_EL1[n].E)
+    uint64_t wpe;  //< watchpoint enables (mirror of DBGWCR_EL1[n].E)
+
+    // software step "machine" state
+    bool ss_active;
+    bool ss_pending;
+
+    // software step events
+    bool ss_eret;     //< eret event
+    bool ss_ldex;     //< ldex event
+
+    // for internal use
+    unsigned ss_el;               //< exception level of current instruction when software step is enabled
+    uint64_t linked_ctx_bp_conds; //< linked context-aware breakpoint conditions
+
+    struct
+    {
+      uint64_t MDSCR_EL1;        //< Monitor Debug System Control Register
+      uint64_t CONTEXTIDR_EL1;   //< Context ID Register
+
+      uint64_t DBGBCR_EL1[BRPS]; //< Debug Breakpoint Control Registers
+      uint64_t DBGBVR_EL1[BRPS]; //< Debug Breakpoint Value Registers
+
+      uint64_t DBGWCR_EL1[WRPS]; //< Debug Watchpoint Control Registers
+      uint64_t DBGWVR_EL1[WRPS]; //< Debug Watchpoint Value Registers
+    }
+    regs;
+  };
+
+  //=====================================================================
   //=                      Control Transfer methods                     =
   //=====================================================================
 
@@ -417,8 +515,15 @@ struct AArch64
   bool Test( BOOL const& cond ) { return untaint(CondTV(), cond); }
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
+  void IllegalState();
+  void PCAlignmentFault();
+  void SPAlignmentFault();
+  void Fault();
   void SoftwareBreakpoint( uint32_t imm );
   void SystemAccessTrap( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, uint8_t direction );
+  void Breakpoint();
+  void SoftwareStep(bool ldex);
+  void Watchpoint(uint64_t addr, unsigned wpt, bool cache_maintenance, bool write);
 
   //=====================================================================
   //=                       Memory access methods                       =
@@ -510,6 +615,8 @@ struct AArch64
 
   void CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat);
 
+  void CheckSPAlignment(U64 const& addr);
+
   struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
   void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
 
@@ -523,11 +630,13 @@ struct AArch64
     MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
     translate_address(entry, el, mem_acc_type::read);
 
+    dbgmon.MemRead(el, addr.value, size);
+
     uint8_t dbuf[size], ubuf[size];
 
     try
       {
-        if (entry.size_after() < size or get_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        if (unlikely(entry.size_after() < size or get_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size))
           {
             for (unsigned byte = 0; byte < size; ++byte)
               {
@@ -549,11 +658,15 @@ struct AArch64
     typedef typename TX<value_type>::as_mask bits_type;
 
     bits_type value = 0, ubits = 0;
-    for (unsigned idx = size; idx-- > 0;)
-      {
-        value <<= 8; value |= bits_type( dbuf[idx] );
-        ubits <<= 8; ubits |= bits_type( ubuf[idx] );
-      }
+    // for (unsigned idx = size; idx-- > 0;)
+    //   {
+    //     value <<= 8; value |= bits_type( dbuf[idx] );
+    //     ubits <<= 8; ubits |= bits_type( ubuf[idx] );
+    //   }
+    ::memcpy(&value, &dbuf[0], size);
+    value = unisim::util::endian::LittleEndian2Host(value);
+    ::memcpy(&ubits, &ubuf[0], size);
+    ubits = unisim::util::endian::LittleEndian2Host(ubits);
 
     T res(*reinterpret_cast<value_type const*>(&value));
     res.ubits = ubits;
@@ -584,19 +697,25 @@ struct AArch64
     MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
     translate_address(entry, el, mem_acc_type::write);
 
+    dbgmon.MemWrite(el, addr.value, size);
+
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
     bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
     uint8_t dbuf[size], ubuf[size];
-    for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
-      {
-        dbuf[idx] = value & 0xff; value >>= 8;
-        ubuf[idx] = ubits & 0xff; ubits >>= 8;
-      }
+    // for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
+    //   {
+    //     dbuf[idx] = value & 0xff; value >>= 8;
+    //     ubuf[idx] = ubits & 0xff; ubits >>= 8;
+    //   }
+    value = unisim::util::endian::Host2LittleEndian(value);
+    ::memcpy(&dbuf[0], &value, sizeof(bits_type));
+    ubits = unisim::util::endian::Host2LittleEndian(ubits);
+    ::memcpy(&ubuf[0], &ubits, sizeof(bits_type));
 
     try
       {
-        if (entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        if (unlikely(entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size))
           {
             for (unsigned byte = 0; byte < size; ++byte)
               {
@@ -686,6 +805,18 @@ struct AArch64
     virtual char const* nature() const override { return "Undefined Instruction"; }
   };
 
+  struct IllegalStateException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Illegal State"; }
+  };
+
+  struct SPAlignmentException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "SP Alignment Fault"; }
+  };
+
   struct SystemAccessTrapException : Exception
   {
     SystemAccessTrapException(uint8_t _op0, uint8_t _op1, uint8_t _crn, uint8_t _crm,
@@ -697,6 +828,30 @@ struct AArch64
     virtual char const* nature() const override { return "System Access Trap"; }
     uint8_t op0; uint8_t op1; uint8_t crn; uint8_t crm;
     uint8_t op2; uint8_t rt; uint8_t direction;
+  };
+
+  struct BreakpointException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Breakpoint"; }
+  };
+
+  struct SoftwareStepException : Exception
+  {
+    SoftwareStepException(bool _ldex) : ldex(_ldex) {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Software Step"; }
+    bool ldex;
+  };
+
+  struct WatchpointException : Exception
+  {
+    WatchpointException(uint64_t _addr, unsigned _wpt, bool _cache_maintenance, bool _write)
+      : addr(_addr), wpt(_wpt), cache_maintenance(_cache_maintenance), write(_write)
+    {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Watchpoint"; }
+    uint64_t addr; unsigned wpt; bool cache_maintenance, write;
   };
 
   /* AArch32 obsolete arguments
@@ -841,6 +996,7 @@ struct AArch64
 
   typedef std::set<Page, Page::Above> Pages;
   typedef std::set<Device, Device::Above> Devices;
+  Pages::iterator pi;
 
   // Page const& access_page( uint64_t addr )
   // {
@@ -857,15 +1013,18 @@ struct AArch64
   // Page const& modify_page(uint64_t addr)
   Page const& get_page( uint64_t addr )
   {
+    if (mru_pi != pages.end() and addr >= mru_pi->base and addr <= mru_pi->last) return *mru_pi;
+
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->last < addr)
       {
         auto di = devices.lower_bound(addr);
         if (di != devices.end() and addr <= di->last)
           throw *di;
-        return alloc_page(pi, addr);
+        return mru_pi = pi, alloc_page(pi, addr);
       }
-    return *pi;
+
+    return *(mru_pi = pi);
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
@@ -882,11 +1041,14 @@ struct AArch64
 
   struct IPB
   {
-    static unsigned const LINE_SIZE = 64;//32; //< IPB size
+    enum { LINE_SIZE = 4 << IminLine }; //< IPB size
+    uint64_t base_vaddress;                //< base address of IPB content (cache line size aligned if valid)
+    MMU::TLB::Entry tlb_entry;
     uint8_t  bytes[LINE_SIZE];            //< The IPB content
-    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
-    IPB() : bytes(), base_address( -1 ) {}
-    uint8_t* access(AArch64& core, uint64_t address);
+    uint8_t const zeroes[LINE_SIZE];
+    IPB() : base_vaddress( -1 ), bytes(), zeroes() { tlb_entry.pa = -1; }
+    uint8_t* access(AArch64& core, uint64_t vaddr);
+    void invalidate() { base_vaddress = -1; tlb_entry.pa = -1; }
   };
 
   struct PState
@@ -920,6 +1082,7 @@ struct AArch64
       selsp(cpu) = cpu.gpr[31];
       EL = el;
       cpu.gpr[31] = selsp(cpu);
+      cpu.ipb.invalidate();
     }
     unsigned GetEL() const { return EL; }
     void sync(SnapShot&);
@@ -948,6 +1111,7 @@ struct AArch64
     void SetSCTLR(AArch64& cpu, uint32_t value)
     {
       SCTLR = value;
+      cpu.ipb.invalidate();
     }
   };
 
@@ -1095,8 +1259,10 @@ public:
   //VIOConsole  vioconsole;
 
   Pages    pages;
+  Pages::iterator mru_pi;
   ExcMon   excmon;
 
+  DebugMonitor dbgmon;
   MMU      mmu;
   IPB      ipb;
   Decoder  decoder;
@@ -1110,7 +1276,7 @@ public:
   uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer;
 
   static unsigned const histsize = 1024;
-  InstructionInfo last_insns[histsize];
+  InstructionInfo *last_insns;
 
   U64      TPIDR[4]; //<  Thread Pointer / ID Register
   U64      TPIDRRO;

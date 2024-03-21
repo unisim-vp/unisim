@@ -276,7 +276,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            cpu.ipb.base_address = -1;
+            cpu.ipb.invalidate();
           }
         } x; return &x;
       } break;
@@ -291,7 +291,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            cpu.ipb.base_address = -1;
+            cpu.ipb.invalidate();
           }
         } x; return &x;
       } break;
@@ -304,7 +304,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 addr) const override
           {
             cpu.untaint(AddrTV(), addr);
-            cpu.ipb.base_address = -1; /* systematic invalidation is cheaper than va translation ;-) */
+            cpu.ipb.invalidate(); /* systematic invalidation is cheaper than va translation ;-) */
           }
         } x; return &x;
       } break;
@@ -318,13 +318,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 addr) const override
           {
             uint64_t const zsize = 4 << cpu.ZID;
+            uint64_t const vaddr = cpu.untaint(AddrTV(), addr & U64(-zsize));
             // ZID value should be so MMU page bounds are not crossed
-            MMU::TLB::Entry entry(cpu.untaint(AddrTV(), addr & U64(-zsize)));
+            MMU::TLB::Entry entry(vaddr);
             cpu.translate_address(entry, cpu.pstate.GetEL(), mem_acc_type::write);
             uint8_t buffer[zsize];
             std::fill(&buffer[0], &buffer[zsize], uint8_t(0));
             if (cpu.get_page(entry.pa).write(entry.pa, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
+            cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr);
           }
         } x; return &x;
       } break;
@@ -348,7 +350,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "cvac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 addr) const override
-          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
+          { uint64_t vaddr = cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr); }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b011,0b0111,0b1011,0b001):
@@ -357,7 +359,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "cvau"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by address to Point of Unification"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 addr) const override
-          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
+          { uint64_t vaddr = cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr); }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b000,0b0111,0b0110,0b010):
@@ -373,7 +375,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "ivac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 addr) const override
-          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
+          { uint64_t vaddr = cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr); }
         } x; return &x;
       } break;
 
@@ -383,7 +385,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Name(Encoding, std::ostream& sink) const override { sink << "civac"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean and Invalidate data cache by address to Point of Coherency"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 addr) const override
-          { cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ }
+          { uint64_t vaddr = cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr); }
         } x; return &x;
       } break;
 
@@ -586,6 +588,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               throw AArch64::UndefinedInstructionException();
 
             cpu.mmu.tlb.Invalidate(cpu, crm&4, op2&4, op2&3, arg);
+            cpu.ipb.invalidate();
           }
         } x; return &x;
       } break;
@@ -930,7 +933,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return
                U64(0b000) << 30| // ICB, Inner cache boundary
@@ -953,6 +956,20 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CONTEXTIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Context ID Register"; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            struct Bad {}; cpu.dbgmon.SetCONTEXTIDR_EL1(cpu.untaint(Bad(), value));
+          }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return U64(cpu.dbgmon.CONTEXTIDR_EL1());
+          }
         } x; return &x;
       } break;
 
@@ -1016,10 +1033,10 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(1)              << 28 | // IDC, Data cache clean requirements for instruction to data coherence (0 == required).
               U64(4)              << 24 | // CWG, Cache Writeback Granule.
               U64(ExcMon::ERG)    << 20 | // ERG, Exclusives Reservation Granule.
-              U64(0b0100)         << 16 | // DminLine (16 words)
+              U64(DminLine)       << 16 | // DminLine (16 words)
               U64(0b11)           << 14 | // L1Ip, Level 1 instruction cache policy (PIPT).
               U64(0b0000000000)   <<  4 | // RES0, Reserved.
-              U64(0b0100)         <<  0;  // IminLine, (16 words)
+              U64(IminLine)       <<  0;  // IminLine, (16 words)
           }
         } x; return &x;
       } break;
@@ -1153,7 +1170,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64DFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Debug Feature Register 0"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { cpu.TODO(); return U64(0); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+
+            return
+              U64(DebugMonitor::CTX_CMPS - 1) << 28 | // Number of hardware breakpoints - 1 that (the last ones) can be used for context matching
+              U64(DebugMonitor::WRPS - 1)     << 20 | // Number of hardware watchpoints - 1
+              U64(DebugMonitor::BRPS - 1)     << 12 | // Number of hardware breakpoints - 1
+              U64(0x6);                               // The processor implements ARMv8 Debug architecture.
+          }
         } x; return &x;
       } break;
 
@@ -1174,7 +1201,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return
               U64(0b0001)                           << 60 | // Indicates support for Random Number instructions
@@ -1205,7 +1232,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return U64(0);
           }
@@ -1220,7 +1247,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return U64(0);
           }
@@ -1235,7 +1262,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return
               U64(0)                << 32 | // RES0
@@ -1259,7 +1286,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             /* RES0, Reserved for future expansion of the information
              * about the implemented memory model and memory
@@ -1277,7 +1304,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             /* RES0, Reserved for future expansion of the information
              * about the implemented memory model and memory
@@ -1295,7 +1322,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return
               U64(0b0000)                          << 60 | // Speculative use of faulting data
@@ -1326,7 +1353,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return
               cpu.PartlyDefined<uint64_t>(0,-1) << 20 | // Reserved, RES0
@@ -1347,7 +1374,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return U64(0);
           }
@@ -1362,7 +1389,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
+              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
 
             return U64(0);
           }
@@ -1797,9 +1824,6 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { return cpu.TPIDRRO; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::UndefinedInstructionException();
-
             cpu.TPIDRRO = value;
           }
         } x; return &x;
@@ -2107,14 +2131,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            struct Bad {}; cpu.untaint(Bad (), value); cpu.TODO();
+            struct Bad {}; cpu.dbgmon.SetMDSCR_EL1(cpu.untaint(Bad(), value));
           }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            return U64();
+            return U64(cpu.dbgmon.MDSCR_EL1());
           }
         } x; return &x;
       } break;
@@ -2979,89 +3003,173 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
       
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b101): // 3.2: DBGBCR<n>_EL1, Debug Breakpoint Control Registers, n = 0 - 15
+    case SYSENCODE(0b10,0b000,0b0000,0b0001,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b0010,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b0011,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b0100,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b0101,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b0110,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b0111,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1000,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1001,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1010,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1011,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1100,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1101,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1110,0b101):
+    case SYSENCODE(0b10,0b000,0b0000,0b1111,0b101):
       {
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGBCR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Breakpoint Control Register #" << std::dec << int(e.crm); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
           {
+            if (crm >= DebugMonitor::BRPS)
+              BaseSysReg::Write(op0, op1, crn, crm, op2, rt, cpu, value);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            cpu.untaint(SBZTV(), value);
+            struct Bad {}; cpu.dbgmon.SetDBGBCR_EL1(crm, cpu.untaint(Bad(), value));
           }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
+            if (crm >= DebugMonitor::BRPS)
+              return BaseSysReg::Read(op0, op1, crn, crm, op2, rt, cpu);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            return U64(0);
+            return U64(cpu.dbgmon.DBGBCR_EL1(crm));
           }
         } x; return &x;
       } break;
 
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b100): // 3.3: DBGBVR<n>_EL1, Debug Breakpoint Value Registers, n = 0 - 15
+    case SYSENCODE(0b10,0b000,0b0000,0b0001,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b0010,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b0011,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b0100,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b0101,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b0110,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b0111,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1000,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1001,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1010,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1011,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1100,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1101,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1110,0b100):
+    case SYSENCODE(0b10,0b000,0b0000,0b1111,0b100):
       {
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGBVR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Breakpoint Value Register #" << std::dec << int(e.crm); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
           {
+            if (crm >= DebugMonitor::BRPS)
+              BaseSysReg::Write(op0, op1, crn, crm, op2, rt, cpu, value);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            cpu.untaint(SBZTV(), value);
+            struct Bad {}; cpu.dbgmon.SetDBGBVR_EL1(crm, cpu.untaint(Bad(), value));
           }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
+            if (crm >= DebugMonitor::BRPS)
+              return BaseSysReg::Read(op0, op1, crn, crm, op2, rt, cpu);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            return U64(0);
+            return U64(cpu.dbgmon.DBGBVR_EL1(crm));
           }
         } x; return &x;
       } break;
 
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b111): // 3.11: DBGWCR<n>_EL1, Debug Watchpoint Control Registers, n = 0 - 15
+    case SYSENCODE(0b10,0b000,0b0000,0b0001,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b0010,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b0011,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b0100,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b0101,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b0110,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b0111,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1000,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1001,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1010,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1011,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1100,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1101,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1110,0b111):
+    case SYSENCODE(0b10,0b000,0b0000,0b1111,0b111):
       {
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGWCR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Watchpoint Control Register#" << std::dec << int(e.crm); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
           {
+            if (crm >= DebugMonitor::WRPS)
+              BaseSysReg::Write(op0, op1, crn, crm, op2, rt, cpu, value);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            cpu.untaint(SBZTV(), value);
+            struct Bad {}; cpu.dbgmon.SetDBGWCR_EL1(crm, cpu.untaint(Bad(), value));
           }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
+            if (crm >= DebugMonitor::WRPS)
+              return BaseSysReg::Read(op0, op1, crn, crm, op2, rt, cpu);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            return U64(0);
+            return U64(cpu.dbgmon.DBGWCR_EL1(crm));
           }
         } x; return &x;
       } break;
 
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b110): // 3.12: DBGWVR<n>_EL1, Debug Watchpoint Value Registers, n = 0 - 15
+    case SYSENCODE(0b10,0b000,0b0000,0b0001,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b0010,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b0011,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b0100,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b0101,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b0110,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b0111,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1000,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1001,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1010,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1011,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1100,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1101,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1110,0b110):
+    case SYSENCODE(0b10,0b000,0b0000,0b1111,0b110):
       {
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DBGWVR" << std::dec << int(e.crm) << "_EL1"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Watchpoint Value Register#" << std::dec << int(e.crm); }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
           {
+            if (crm >= DebugMonitor::WRPS)
+              BaseSysReg::Write(op0, op1, crn, crm, op2, rt, cpu, value);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            cpu.untaint(SBZTV(), value);
+            struct Bad {}; cpu.dbgmon.SetDBGWVR_EL1(crm, cpu.untaint(Bad(), value));
           }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
+            if (crm >= DebugMonitor::WRPS)
+              return BaseSysReg::Read(op0, op1, crn, crm, op2, rt, cpu);
+
             if (cpu.pstate.GetEL() == 0)
               throw AArch64::UndefinedInstructionException();
 
-            return U64(0);
+            return U64(cpu.dbgmon.DBGWVR_EL1(crm));
           }
         } x; return &x;
       } break;
