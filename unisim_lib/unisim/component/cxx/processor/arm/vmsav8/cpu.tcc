@@ -778,19 +778,19 @@ CPU<CPU_IMPL>::SysReg::DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_
 
 template <class CPU_IMPL>
 void
-CPU<CPU_IMPL>::SysReg::Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const
+CPU<CPU_IMPL>::SysReg::Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const
 {
   std::cerr << "Write error for system register.\n";
-  DisasmWrite(op0, op1, crn, crm, op2, 0b11111, std::cerr); std::cerr << std::endl;
+  DisasmWrite(op0, op1, crn, crm, op2, rt, std::cerr); std::cerr << std::endl;
   cpu.UndefinedInstruction();
 }
 
 template <class CPU_IMPL>
 typename CPU<CPU_IMPL>::U64
-CPU<CPU_IMPL>::SysReg::Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu) const
+CPU<CPU_IMPL>::SysReg::Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu) const
 {
   std::cerr << "Read error for system register.\n";
-  DisasmRead(op0, op1, crn, crm, op2, 0b11111, std::cerr); std::cerr << std::endl;
+  DisasmRead(op0, op1, crn, crm, op2, rt, std::cerr); std::cerr << std::endl;
   cpu.UndefinedInstruction();
   return U64();
 }
@@ -843,7 +843,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
     { Encoding e{op0, op1, crn, crm, op2}; Disasm(e, sink << "<illegal read>"); }
     /* TODO: most of this instructions (if not all), doesn't accept rt != 31, and we cannot test that for now */
-    virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, CPU_IMPL& cpu, U64) const override
+    virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, uint8_t, CPU_IMPL& cpu, U64) const override
     { /* Most of this operations have no side effect on instruction-level simulations. Thus, we provide a default empty implementation. */ }
   };
 
@@ -854,8 +854,8 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "NZCV"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = U32(value >> 28) & U32(0xf); }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.nzcv) << 28; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = U32(value >> 28) & U32(0xf); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.nzcv) << 28; }
         } x; return &x;
       }
 
@@ -864,8 +864,8 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "FPCR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Control Register"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(CPU_IMPL::FPCR_MASK); }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(CPU_IMPL::FPCR_MASK); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
         } x; return &x;
       }
       
@@ -874,8 +874,8 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "FPSR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Status Register"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.fpsr = U32(value) & U32(CPU_IMPL::FPSR_MASK); }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return U64(cpu.fpsr); }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.fpsr = U32(value) & U32(CPU_IMPL::FPSR_MASK); }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.fpsr); }
         } x; return &x;
       }
       
@@ -931,7 +931,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public DCSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "zva"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Zero data cache by address"; }
-          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, U64 addr) const override { cpu.dc_zva(addr); }
+          void Write(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, CPU_IMPL& cpu, U64 addr) const override { cpu.dc_zva(addr); }
         } x; return &x;
       } break;
     case SYSENCODE(0b01,0b000,0b0111,0b1110,0b010):
@@ -1671,8 +1671,8 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
         static struct : public SysReg {
           char const* Name() const { return "TPIDR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Thread Pointer / ID Register (EL0)"; }
-          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override { cpu.TPIDRURW = value; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override { return cpu.TPIDRURW; }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.TPIDRURW = value; }
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return cpu.TPIDRURW; }
         } x; return &x;
       } break;
 
@@ -2709,7 +2709,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
       {
         static struct : public PStateSysReg {
           virtual void Name(Encoding, std::ostream& sink) const override { sink << "PSTATEField_SP"; }
-          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, CPU_IMPL& cpu, U64) const override { throw 0; }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, uint8_t, CPU_IMPL& cpu, U64) const override { throw 0; }
         } x; return &x;
       } break;
 
@@ -2717,7 +2717,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
       {
         static struct : public PStateSysReg {
           virtual void Name(Encoding, std::ostream& sink) const override { sink << "PSTATEField_DAIFSet"; }
-          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, CPU_IMPL& cpu, U64) const override { throw 0; }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, uint8_t, CPU_IMPL& cpu, U64) const override { throw 0; }
         } x; return &x;
       } break;
 
@@ -2725,7 +2725,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
       {
         static struct : public PStateSysReg {
           virtual void Name(Encoding, std::ostream& sink) const override { sink << "PSTATEField_DAIFClr"; }
-          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, CPU_IMPL& cpu, U64) const override { throw 0; }
+          virtual void Write(uint8_t, uint8_t, uint8_t, uint8_t crm, uint8_t, uint8_t, CPU_IMPL& cpu, U64) const override { throw 0; }
         } x; return &x;
       } break;
     }
@@ -2746,13 +2746,13 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
       sink << "sys|msr\t<unknown>, " << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << "\t; ";
       fields(op0, op1, crn, crm, op2, sink);
     }
-    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const override
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override
     {
       fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_insn_addr << ": unimplemented, cannot write " << std::dec);
       std::cerr << std::endl;
       cpu.UndefinedInstruction();
     }
-    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const override
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override
     {
       fields(op0, op1, crn, crm, op2, std::cerr << std::hex << cpu.current_insn_addr << ": unimplemented, cannot read " << std::dec);
       std::cerr << std::endl;

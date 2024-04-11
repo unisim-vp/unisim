@@ -224,7 +224,7 @@ struct CPU
   //=                    Registers access methods
   //====================================================================
 
-  enum AccessReport { report_simd_access=0, report_gsr_access=0, report_gzr_access=0 };
+  enum AccessReport { report_simd_access=0, report_gsr_access=0, report_gzr_access=0, report_nzcv_access=0 };
   void report(AccessReport, unsigned, bool) const {}
 
   U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? this->GetVU8((r0 + r) % 32, idx % elts) : oob; }
@@ -311,8 +311,8 @@ struct CPU
     virtual void Describe(Encoding, char const* prefix, std::ostream&) const;
     virtual char const* ReadOperation() const { return "mrs"; }
     virtual char const* WriteOperation() const { return "msr"; };
-    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const;
-    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const;
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const;
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
     virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
   };
@@ -335,6 +335,8 @@ struct CPU
   //=====================================================================
   //=                       Memory access methods                       =
   //=====================================================================
+
+  void CheckSPAlignment(uint64_t addr) {}
 
   template <typename T>
   T

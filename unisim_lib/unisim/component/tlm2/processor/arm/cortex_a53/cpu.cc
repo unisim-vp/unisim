@@ -645,7 +645,7 @@ CPU::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint
         static struct : public SysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DCZID_EL0"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Data Cache Zero ID register"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU& cpu) const override
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU& cpu) const override
           { return 4; /* TODO: DZP should depend on SCTLR_EL1 and HCR_EL2 */ }
         } x; return &x;
       } break;
