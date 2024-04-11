@@ -71,6 +71,7 @@ namespace arm {
   bool
   CheckCondition( coreT& core, uint32_t cond )
   {
+    if (int(coreT::report_nzcv_access) != 0) core.report(coreT::report_nzcv_access, 0, false);
     util::truth_table::InBit<uint16_t,3> const N;
     util::truth_table::InBit<uint16_t,2> const Z;
     util::truth_table::InBit<uint16_t,1> const C;

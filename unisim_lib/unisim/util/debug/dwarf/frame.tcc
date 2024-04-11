@@ -359,7 +359,8 @@ DWARF_SpilledRegister<MEMORY_ADDR>::DWARF_SpilledRegister(unisim::service::inter
 template <class MEMORY_ADDR>
 bool DWARF_SpilledRegister<MEMORY_ADDR>::GetValue(void *buffer) const
 {
-	uint8_t buf[size] = {};
+	uint8_t buf[size];
+  ::memset(&buf[0], 0, sizeof(buf));
 	if(!mem_if->ReadMemory(addr, &buf[0], size)) return false;
 	unsigned int reg_size = this->GetSize();
 	unisim::util::endian::endian_type host_endianness = unisim::util::endian::GetHostEndian();
@@ -378,7 +379,8 @@ bool DWARF_SpilledRegister<MEMORY_ADDR>::GetValue(void *buffer) const
 template <class MEMORY_ADDR>
 bool DWARF_SpilledRegister<MEMORY_ADDR>::SetValue(const void *buffer)
 {
-	uint8_t buf[size] = {};
+	uint8_t buf[size];
+  ::memset(&buf[0], 0, sizeof(buf));
 	unsigned int reg_size = this->GetSize();
 	unisim::util::endian::endian_type host_endianness = unisim::util::endian::GetHostEndian();
 	unsigned int i, j;

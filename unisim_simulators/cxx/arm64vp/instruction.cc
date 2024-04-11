@@ -46,7 +46,7 @@ AArch64::Operation*
 AArch64::decode(uint64_t insn_addr, CodeType insn)
 {
   /* Decode current PC. */
-  Operation* op = decoder.Decode(insn_addr, insn);
+  Operation* op = decoder.Decode<unisim::component::cxx::processor::arm::isa::Reject>(insn_addr, insn);
 
   return op;
 }

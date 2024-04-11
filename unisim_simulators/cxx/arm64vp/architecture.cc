@@ -57,6 +57,7 @@ AArch64::AArch64(char const* name)
   , unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, 0)
   , unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t>>(name, 0)
   , unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, 0)
+  , recorder("recorder", this)
   , memory_export("memory-export", this)
   , registers_export("registers-export", this)
   , memory_injection_export("memory-injection-export", this)
@@ -67,6 +68,8 @@ AArch64::AArch64(char const* name)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
+  , next_events()
+  , next_event(~uint64_t(0))
   , regmap()
   , devices()
   , gic()
@@ -91,6 +94,8 @@ AArch64::AArch64(char const* name)
   , next_insn_addr()
   , insn_counter()
   , insn_timer()
+  , suspend_at(-1)
+  , param_suspend_at("suspend-at", this, suspend_at, "Instruction counter when to suspend execution")
   , last_insns()
   , TPIDR()
   , CPACR()
@@ -115,9 +120,6 @@ AArch64::AArch64(char const* name)
   , param_enable_exception_trap("enable-exception-trap", this, enable_exception_trap, "enable exception trap in debugger")
   , enable_strace(false)
   , param_enable_strace("enable-strace", this, enable_strace, "enable strace")
-#if INSN_PROFILE
-  , insn_profile()
-#endif
 {
   last_insns = new InstructionInfo[histsize];
 
@@ -269,31 +271,13 @@ AArch64::AArch64(char const* name)
 
 AArch64::~AArch64()
 {
-#if INSN_PROFILE
-  std::map<uint64_t, std::string> sorted_insn_profile;
-  for (auto insn_prof : insn_profile)
-    sorted_insn_profile[insn_prof.second] = insn_prof.first;
-
-  std::ofstream file("insn_prof.json");
-  file << "[" << std::endl;
-  const char *sep = 0;
-  for (auto insn_prof : sorted_insn_profile)
-  {
-    file << (sep ? sep : "");
-    if(!sep) sep = ",\n";
-
-    file << "\t{ \"name\": \"" << insn_prof.second << "\", \"count\": " << insn_prof.first << " }";
-  }
-  file << std::endl << "]" << std::endl;
-#endif
-
   for (auto reg : regmap)
     delete reg.second;
 
   for (unsigned reg = 0; reg < VECTORCOUNT; ++reg)
     vector_views[reg].Clear(&vectors[reg]);
 
-  delete last_insns;
+  delete[] last_insns;
 }
 
 bool
@@ -458,35 +442,172 @@ AArch64::Page::Page(uint64_t base, uint64_t last)
 
 AArch64::Page::Free AArch64::Page::Free::nop;
 
-uint8_t*
+AArch64::IPB::IPB()
+  : current_block(0)
+  , blocks()
+  , free_blocks()
+  , zeroes()
+{
+  blocks.rehash(BUCKETS);
+}
+
+AArch64::IPB::~IPB()
+{
+  invalidate();
+  for (auto free_block : free_blocks) delete free_block;
+}
+
+AArch64::IPB::Block::Block()
+  : base_vaddress( -1 )
+  , exec_perm(0)
+  , ops()
+  , next(0)
+  , remote(0)
+  , bytes()
+{
+}
+
+AArch64::IPB::Block::Block(uint64_t _base_vaddress, unsigned _exec_perm)
+  : base_vaddress( _base_vaddress )
+  , exec_perm(_exec_perm)
+  , ops()
+  , next(0)
+  , remote(0)
+  , bytes()
+{
+}
+
+AArch64::Operation*
 AArch64::IPB::access(AArch64& core, uint64_t vaddr)
 {
   // LINE_SIZE should be so MMU page boundaries cannot be crossed
-  uint64_t req_base_vaddress = vaddr & -uint64_t(LINE_SIZE);
+  uint64_t base_vaddress = vaddr & -uint64_t(LINE_SIZE);
+  unsigned el = core.pstate.GetEL();
+  unsigned exec_perm = 1 << el;
   unsigned idx = vaddr % LINE_SIZE;
-  if (unlikely(base_vaddress != req_base_vaddress))
+  Block *block = current_block;
+  if (unlikely(not block or (block->base_vaddress != base_vaddress)))
     {
-      uint64_t himask = uint64_t(-1) << tlb_entry.blocksize;
-      uint64_t base_paddress;
-      if (unlikely((tlb_entry.pa == uint64_t(-1)) or ((req_base_vaddress ^ base_vaddress) & himask) != 0))
+      // Current block mismatch
+      if (unlikely(not block or not block->next or (base_vaddress != (block->base_vaddress + LINE_SIZE))))
         {
-          tlb_entry.pa = req_base_vaddress;
-          core.translate_address(tlb_entry, core.pstate.GetEL(), AArch64::mem_acc_type::exec);
-          base_paddress = tlb_entry.pa & -uint64_t(LINE_SIZE);
+          // Next block mismatch
+          if (unlikely(not block or not block->remote or (base_vaddress != block->remote->base_vaddress)))
+            {
+              // Remote block mismatch
+
+              // Retrieve block from cache
+              Blocks::iterator itr = blocks.find(base_vaddress);
+
+              if (unlikely(itr == blocks.end()))
+                {
+                  // Block was never encountered
+
+                  // Translate address and check permission for current EL
+                  uint64_t base_paddress;
+                  MMU::TLB::Entry tlb_entry;
+                  tlb_entry.pa = base_vaddress;
+                  core.translate_address(tlb_entry, el, AArch64::mem_acc_type::exec);
+                  base_paddress = tlb_entry.pa & -uint64_t(LINE_SIZE);
+
+                  // Allocate a new block
+                  block = allocate_block(base_vaddress, exec_perm);
+
+                  // Fetch block
+                  uint8_t ubuf[LINE_SIZE];
+                  if (core.get_page(base_paddress).read(base_paddress, &block->bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
+                    { struct Bad {}; raise( Bad() ); }
+
+                  // Check block taints
+                  if (::memcmp(&ubuf[0], &zeroes[0], LINE_SIZE) != 0)
+                    { struct Bad {}; raise( Bad() ); }
+
+                  // Add block into cache
+                  blocks.emplace(base_vaddress, block);
+                }
+              else
+                {
+                  // Block was already encountered
+                  block = (*itr).second;
+                }
+
+              // Chain current block to the retrieved block or newly allocated block
+              if (likely(current_block))
+                {
+                  if (likely(base_vaddress == (current_block->base_vaddress + LINE_SIZE)))
+                    {
+                      // blocks are contiguous
+                      if (unlikely(not current_block->next))
+                        current_block->next = block;
+                    }
+                  else
+                    {
+                      // blocks are far from each other
+                      if (unlikely(not current_block->remote))
+                        current_block->remote = block;
+                    }
+                }
+            }
+          else
+            {
+              // Remote block address match: go to the remote block
+              block = block->remote;
+            }
         }
       else
         {
-          base_paddress = (tlb_entry.pa & himask) | (req_base_vaddress & ~himask);
+          // Next block address match: go to the next block
+          block = block->next;
         }
-      uint8_t ubuf[LINE_SIZE];
-      if (core.get_page(base_paddress).read(base_paddress, &bytes[0], &ubuf[0], LINE_SIZE) != LINE_SIZE)
-        { struct Bad {}; raise( Bad() ); }
-      if (::memcmp(&ubuf[0], &zeroes[0], LINE_SIZE) != 0)
-        { struct Bad {}; raise( Bad() ); }
-      base_vaddress = req_base_vaddress;
+
+      // Update the current block
+      current_block = block;
     }
 
-  return &bytes[idx];
+  if (unlikely(not (block->exec_perm & exec_perm)))
+    {
+      // Block permission for current EL mismatch: retranslate address to check execution permission for current EL
+      MMU::TLB::Entry tlb_entry;
+      tlb_entry.pa = base_vaddress;
+      core.translate_address(tlb_entry, el, AArch64::mem_acc_type::exec);
+      block->exec_perm |= exec_perm;
+    }
+
+  Operation *& op = block->ops[idx / 4];
+  return op ? op : (op = core.decode( vaddr, unisim::util::endian::LittleEndian2Host(*(uint32_t *) &block->bytes[idx]) ));
+}
+
+AArch64::IPB::Block *
+AArch64::IPB::allocate_block( uint64_t base_vaddress, unsigned exec_perm )
+{
+  Block *block;
+  if (likely(free_blocks.size()))
+    {
+      // There are some free blocks
+      block = free_blocks.back();
+      free_blocks.pop_back();
+      block->base_vaddress = base_vaddress;
+      block->exec_perm = exec_perm;
+      block->next = block->remote = 0;
+      ::memset(block->ops, 0, sizeof(block->ops));
+    }
+  else
+    {
+      // There are no free block: allocate a new one
+      block = new Block(base_vaddress, exec_perm);
+    }
+  return block;
+}
+
+void AArch64::IPB::invalidate()
+{
+  current_block = 0;
+  for (Blocks::iterator itr = blocks.begin(); itr != blocks.end(); ++itr)
+    {
+      Block *block = (*itr).second;
+      free_blocks.push_back(block);
+    }
+  blocks.clear();
 }
 
 AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
@@ -496,21 +617,36 @@ AArch64::InstructionInfo const& AArch64::last_insn( int idx ) const
 
 void AArch64::UndefinedInstructionException::proceed( AArch64& cpu ) const
 {
-  cpu.UndefinedInstruction();
+  if (op)
+    cpu.TakeUndefinedInstruction(op);
+  else
+    cpu.TakeUndefinedInstruction();
 }
 
 void
 AArch64::UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
 {
-  DisasmState ds;
-  op->disasm(ds, std::cerr << "Undefined instruction : `");
-  std::cerr << "` (" << op->GetName() << ", " << std::hex << op->GetEncoding()
-            << "@" << std::hex << op->GetAddr() << ").\n";
-  UndefinedInstruction();
+  throw UndefinedInstructionException(op);
 }
 
 void
 AArch64::UndefinedInstruction()
+{
+  throw UndefinedInstructionException();
+}
+
+void
+AArch64::TakeUndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const* op)
+{
+  DisasmState ds;
+  op->disasm(ds, std::cerr << "Undefined instruction : `");
+  std::cerr << "` (" << op->GetName() << ", " << std::hex << op->GetEncoding()
+            << "@" << std::hex << op->GetAddr() << ").\n";
+  TakeUndefinedInstruction();
+}
+
+void
+AArch64::TakeUndefinedInstruction()
 {
   if (unlikely(enable_exception_trap and trap_reporting_import))
     trap_reporting_import->ReportTrap(*this,"Undefined instruction");
@@ -629,6 +765,12 @@ void
 AArch64::IllegalState()
 {
     Fault();
+}
+
+void
+AArch64::PCAlignmentException::proceed( AArch64& cpu ) const
+{
+    cpu.PCAlignmentFault();
 }
 
 void
@@ -790,27 +932,35 @@ AArch64::SystemAccessTrap( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, u
 AArch64::MMU::TLB::TLB()
   : keys()
 {
-  for (unsigned idx = 0; idx < kcount; ++idx)
-    indices[idx] = idx;
+  for (unsigned set = 0; set < sets; ++set)
+    for (unsigned idx = 0; idx < assoc; ++idx)
+      indices[set][idx] = idx;
 }
 
 void
 AArch64::MMU::TLB::AddTranslation( AArch64::MMU::TLB::Entry const& tlbe, uint64_t vaddr, unsigned asid )
 {
   // LRU Replacement
-  unsigned lru_idx = indices[kcount-1];
-  // for (unsigned idx = kcount; --idx > 0;)
-  //   {
-  //     keys[idx] = keys[idx-1];
-  //     indices[idx] = indices[idx-1];
-  //   }
-  ::memmove(&keys[1], &keys[0], (kcount - 1) * sizeof(keys[0]));
-  ::memmove(&indices[1], &indices[0], (kcount - 1) * sizeof(indices[0]));
+  unsigned set = (vaddr >> 12) % sets;
+  unsigned lru_idx = indices[set][assoc - 1];
+  if (assoc <= 8)
+    {
+      for (unsigned idx = assoc; --idx > 0;)
+        {
+          keys[set][idx] = keys[set][idx-1];
+          indices[set][idx] = indices[set][idx-1];
+        }
+    }
+  else
+    {
+      ::memmove(&keys[set][1], &keys[set][0], (assoc - 1) * sizeof(keys[set][0]));
+      ::memmove(&indices[set][1], &indices[set][0], (assoc - 1) * sizeof(indices[set][0]));
+    }
 
   unsigned significant = tlbe.blocksize - 1, global = not tlbe.nG;
-  keys[0] = (((vaddr >> 12) << 27) >> 16) | (uint64_t(asid) << 48) | (global << 6) | significant;
-  indices[0] = lru_idx;
-  entries[lru_idx] = tlbe;
+  keys[set][0] = (((vaddr >> 12) << 27) >> 16) | (uint64_t(asid) << 48) | (global << 6) | significant;
+  indices[set][0] = lru_idx;
+  entries[set][lru_idx] = tlbe;
 }
 
 void
@@ -838,23 +988,24 @@ AArch64::MMU::TLB::Invalidate(AArch64& cpu, bool nis, bool ll, unsigned type, AA
 
   uint64_t vakey = (((argval << 12) << 15 ) >> 16) | ((argval >> 48) << 48) | 1;
 
-  for (unsigned idx = 0; idx < kcount; ++idx)
-    {
-      uint64_t key = keys[idx];
-      unsigned rsh = key & 63;
+  for (unsigned set = 0; set < sets; ++set)
+    for (unsigned idx = 0; idx < assoc; ++idx)
+      {
+        uint64_t key = keys[set][idx];
+        unsigned rsh = key & 63;
 
-      if (ll and rsh > 15) /* rsh = blocksize - 1; last level in {12,14,16} (see TTBR.TG) */
-        continue;
+        if (ll and rsh > 15) /* rsh = blocksize - 1; last level in {12,14,16} (see TTBR.TG) */
+          continue;
 
-      if (type == 2 and ((vakey ^ key) >> 48)) // by asid
-        continue;
+        if (type == 2 and ((vakey ^ key) >> 48)) // by asid
+          continue;
 
-      if ((type & 1) and (((vakey ^ key) >> rsh) << (rsh + (((key >> 2) | (2 << type)) & 16)))) // by va
-        continue;
+        if ((type & 1) and (((vakey ^ key) >> rsh) << (rsh + (((key >> 2) | (2 << type)) & 16)))) // by va
+          continue;
 
-      // key matches -> invalidate
-      keys[idx] = 0;
-    }
+        // key matches -> invalidate
+        keys[set][idx] = 0;
+      }
 }
 
 bool
@@ -867,34 +1018,42 @@ AArch64::MMU::TLB::GetTranslation( AArch64::MMU::TLB::Entry& result, uint64_t va
    *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
    */
 
+  unsigned set = (vaddr >> 12) % sets;
   uint64_t vakey = ((vaddr << 15) >> 16) | (uint64_t(asid) << 48) | 1;
 
-  for (hit = 0; hit < kcount; ++hit)
+  for (hit = 0; hit < assoc; ++hit)
     {
-      key = keys[hit];
+      key = keys[set][hit];
       rsh = key & 63;
       if (likely(not (((vakey ^ key) >> rsh) << (rsh + ((key >> 2) & 16)))))
         break;
     }
-  if (unlikely(hit >= kcount))
+  if (unlikely(hit >= assoc))
     return false; // TLB miss
 
   // TLB hit
-  unsigned idx = indices[hit];
-  Entry& entry = entries[idx];
+  unsigned idx = indices[set][hit];
+  Entry& entry = entries[set][idx];
 
   if (unlikely(update && hit))
     {
       // MRU sort
-      // for (unsigned idx = hit; idx > 0; idx -= 1)
-      //   {
-      //     keys[idx] = keys[idx-1];
-      //     indices[idx] = indices[idx-1];
-      //   }
-      ::memmove(&keys[1], &keys[0], hit * sizeof(keys[0]));
-      ::memmove(&indices[1], &indices[0], hit * sizeof(indices[0]));
-      keys[0] = key;
-      indices[0] = idx;
+      if (assoc <= 8)
+        {
+          for (unsigned idx = hit; idx > 0; idx -= 1)
+            {
+              keys[set][idx] = keys[set][idx-1];
+              indices[set][idx] = indices[set][idx-1];
+            }
+        }
+      else
+        {
+          ::memmove(&keys[set][1], &keys[set][0], hit * sizeof(keys[set][0]));
+          ::memmove(&indices[set][1], &indices[set][0], hit * sizeof(indices[set][0]));
+        }
+
+      keys[set][0] = key;
+      indices[set][0] = idx;
     }
 
   // Address translation and attributes
@@ -1149,6 +1308,8 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
   else if (pstate.GetSP())
     vect_offset += 0x200;
 
+  dbgmon.SetExceptionTakenPSTATE_SS(*this, preferred_exception_return); // This may set PSTATE.SS to 0 or 1 before saving PSTATE into SPSR_ELx.SS
+
   U32 spsr = GetPSRFromPSTATE();
 
   pstate.SetEL(*this, target_el);
@@ -1169,7 +1330,8 @@ AArch64::TakeException(unsigned target_el, unsigned vect_offset, uint64_t prefer
   U64 target = (get_el(target_el).VBAR & U64(-0x800)) | U64(vect_offset);
   BranchTo( target, B_EXC );
   //  std::cerr << "EXC: " << std::hex << target.value << std::endl;
-  dbgmon.NotifyException(*this);
+
+  dbgmon.DebugSoftwareStepStateMachine(*this, std::cerr);
 }
 
 void
@@ -1179,7 +1341,7 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
   nzcv = U8(spsr >> 28);
 
   struct PSRTV {};
-  uint32_t psr = untaint(PSRTV(), (spsr << 4) >> 4);
+  uint32_t psr = dbgmon.ExceptionReturnSPSR(pstate.GetEL(), pstate.D, untaint(PSRTV(), (spsr << 4) >> 4) ); // This may return an SPSR value with SPSR.SS cleared
 
   if (psr & 0x10) raise( Bad() ); /* No AArch32 */
   /* spsr checks causing an "Illegal return" */
@@ -1196,6 +1358,8 @@ AArch64::SetPSTATEFromPSR(U32 spsr)
   pstate.F = psr >> 6;
   pstate.SetEL(*this, psr >> 2);
   pstate.SetSP(*this, psr >> 0);
+
+  dbgmon.DebugSoftwareStepStateMachine(*this, std::cerr);
 }
 
 
@@ -1214,8 +1378,6 @@ AArch64::ExceptionReturn()
   // SendEventLocal();
 
   BranchTo(elr, B_ERET);
-
-  dbgmon.NotifyExceptionReturn();
 }
 
 uint32_t
@@ -1223,8 +1385,8 @@ AArch64::PState::AsSPSR() const
 {
   // Return an SPSR value which represents thebits(32) spsr = Zeros();
   uint32_t spsr = 0
-    | IL << 21
-    | SS << 20
+    | SS << 21
+    | IL << 20
     /* AArch64*/
     | D << 9
     | A << 8
@@ -2094,17 +2256,87 @@ AArch64::RNDR()
 }
 
 void
-AArch64::run( uint64_t suspend_at )
+AArch64::update_random()
+{
+  random = random * 22695477 + 1;
+}
+
+void
+AArch64::before_fetch()
+{
+  if (unlikely(insn_counter == suspend_at))
+    throw Suspend();
+
+  /*** Handle debugging interface ***/
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
+
+  // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+  //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+
+  if (unlikely(debug_yielding_import))
+    debug_yielding_import->DebugYield();
+}
+
+void
+AArch64::before_execute(Operation *op)
+{
+  last_insns[insn_counter % histsize].assign(this->current_insn_addr, this->insn_counter, op);
+
+  if (unlikely(this->current_insn_addr == bdaddr))
+    {
+      breakdance();
+      // disasm = true;
+    }
+
+  if (unlikely(disasm))
+    {
+      // static std::ofstream dbgtrace("dbgtrace");
+      std::ostream& sink( std::cerr );
+      sink << "@" << std::hex << this->current_insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
+      DisasmState ds;
+      op->disasm( ds, sink );
+      sink << std::endl;
+    }
+
+  if (RECORDER)
+    recorder.Begin(op);
+}
+
+void
+AArch64::after_execute()
+{
+  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
+}
+
+void
+AArch64::before_except(Exception const& exception)
+{
+  if (RECORDER)
+    recorder.Cancel();
+
+  if (unlikely(enable_exception_trap and trap_reporting_import)) {
+    std::ostringstream sstr;
+    exception.print(sstr);
+    sstr << " at PC=0x" << std::hex << current_insn_addr << ", instruction #" << insn_counter;
+    trap_reporting_import->ReportTrap( *this, sstr.str() );
+  }
+}
+
+template <bool HEAVY_EXEC_LOOP>
+void
+AArch64::exec_loop()
 {
   for (;;)
     {
-      random = random * 22695477 + 1;
+      update_random();
       insn_timer += 1;// + ((random >> 16 & 3) == 3);
 
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
-      uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+      this->current_insn_addr = this->next_insn_addr;
 
-      //  if (insn_addr == halt_on_addr) { Stop(0); return; }
+      //  if (this->current_insn_addr == halt_on_addr) { Stop(0); return; }
 
       try
         {
@@ -2116,44 +2348,21 @@ AArch64::run( uint64_t suspend_at )
               (this->*method)();
             }
 
-          if (unlikely(insn_counter == suspend_at))
-            throw Suspend();
-
-          /*** Handle debugging interface ***/
-          if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
-            memory_access_reporting_import->ReportFetchInstruction(insn_addr);
-
-          // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-          //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
-
-          if (unlikely(debug_yielding_import))
-            debug_yielding_import->DebugYield();
+          if (HEAVY_EXEC_LOOP)
+            before_fetch();
 
           dbgmon.BeforeStep(*this);
 
-          if (unlikely(insn_addr & 3))
-            {
-              PCAlignmentFault();
-              continue;
-            }
+          if (unlikely(this->current_insn_addr & 3))
+              throw PCAlignmentException();
 
-          /*** Fetch instruction ***/
-          uint32_t insn = unisim::util::endian::LittleEndian2Host(*(uint32_t *) ipb.access(*this, insn_addr));
-
-          /*** Decode instruction ***/
-          Operation* op = decode(insn_addr, insn);
-#if INSN_PROFILE
-          ++insn_profile[op->GetName()];
-#endif
-          last_insns[insn_counter % histsize].assign(insn_addr, insn_counter, op);
+          /*** Fetch and decode instruction ***/
+          Operation* op = ipb.access(*this, this->current_insn_addr);
 
           this->next_insn_addr += 4;
 
-          if (unlikely(current_insn_addr == bdaddr))
-            {
-              breakdance();
-              // disasm = true;
-            }
+          if (HEAVY_EXEC_LOOP)
+            before_execute(op);
 
           if (unlikely(terminate))
             {
@@ -2161,39 +2370,30 @@ AArch64::run( uint64_t suspend_at )
               throw Stop();
             }
 
-          if (unlikely(disasm))
-            {
-              // static std::ofstream dbgtrace("dbgtrace");
-              std::ostream& sink( std::cerr );
-              sink << "@" << std::hex << insn_addr << ": " << std::setfill('0') << std::setw(8) << op->GetEncoding() << "; ";
-              DisasmState ds;
-              op->disasm( ds, sink );
-              sink << std::endl;
-            }
+          dbgmon.BeforeExecute(*this, this->current_insn_addr);
 
-          dbgmon.Fetch(*this, current_insn_addr);
+          if (HEAVY_EXEC_LOOP)
+            asm volatile( "arm64_heavy_exec_loop_operation_execute:" );
+          else
+            asm volatile( "arm64_operation_execute:" );
 
-          /* Execute instruction */
-          asm volatile( "arm64_operation_execute:" );
+          /*** Execution instruction ***/
           op->execute( *this );
 
-          if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-            memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
-
-          insn_counter++; /* Instruction regularly finished */
+          this->insn_counter++; /* Instruction regularly finished */
 
           dbgmon.AfterStep(*this);
+
+          if(HEAVY_EXEC_LOOP) after_execute();
         }
 
       catch (Exception const& exception)
         {
           /* Instruction aborted, proceed to next step */
-          if (unlikely(enable_exception_trap and trap_reporting_import)) {
-            std::ostringstream sstr;
-            exception.print(sstr);
-            sstr << " at PC=0x" << std::hex << current_insn_addr << ", instruction #" << insn_counter;
-            trap_reporting_import->ReportTrap( *this, sstr.str() );
-          }
+
+          if (HEAVY_EXEC_LOOP)
+            before_except(exception);
+
           exception.proceed(*this);
         }
 
@@ -2209,6 +2409,25 @@ AArch64::run( uint64_t suspend_at )
           std::cerr << "Stopping...\n";
           return;
         }
+    }
+}
+
+void
+AArch64::run()
+{
+  if((suspend_at != uint64_t(-1)) or
+     (memory_access_reporting_import) or
+     (debug_yielding_import) or
+     (bdaddr != 0) or
+     RECORDER)
+    {
+      // heavy execution loop
+      exec_loop<true>();
+    }
+  else
+    {
+      // light execution loop
+      exec_loop<false>();
     }
 }
 

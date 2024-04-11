@@ -39,70 +39,72 @@ AArch64::DebugMonitor::DebugMonitor()
   : ss(false)
   , bpe(0)
   , wpe(0)
-  , ss_active(false)
-  , ss_pending(false)
-  , ss_eret(false)
   , ss_ldex(false)
-  , ss_el(0)
+  , stepping(false)
   , linked_ctx_bp_conds(0)
   , regs()
 {
 }
 
-void AArch64::DebugMonitor::NotifyException(AArch64& cpu)
+// Software-step machine states (see Table D2-17)
+//   - inactive           = PSTATE.D or not MDSCR_EL1.SS
+//   - active-not-pending = not PSTATE.D and MDSCR_EL1.SS and PSTATE.SS
+//   - active-pending     = not PSTATE.D and MDSCR_EL1.SS and not PSTATE.SS
+
+uint32_t AArch64::DebugMonitor::ExceptionReturnSPSR(unsigned from_el, bool pstate_d, uint32_t spsr)
 {
-  if (unlikely(ss and ss_active and cpu.pstate.D)) // cancel?
-  {
-    if (DEBUG)
-      std::cerr << "DebugMonitor: " << (ss_pending ? "ACTIVE_PENDING" : "ACTIVE_NOT_PENDING") << "--[Exception w/PSTATE.D=1]-->INACTIVE" << std::endl;
-    ss_active = ss_pending = false;
-  }
+  if (unlikely(ss))
+    {
+      // see table D2-19
+      unsigned target_el = (spsr >> 2) & 3;
+      bool spsr_d = (spsr >> 9) & 1;
+      uint32_t const spsr_ss_mask = uint32_t(1) << 21;
+      bool kde = LocalKernelDebugEnabled();
+      bool clear_spsr_ss = false;
+      if (from_el == 1)
+        {
+          clear_spsr_ss = ((target_el == 1) and (not kde or not pstate_d or (pstate_d and spsr_d))) or
+                           ((target_el == 0) and kde and not pstate_d);
+          stepping = (target_el == 1) and kde and not pstate_d; // conditionally step eret (see table D2-19, footnote a)
+        }
+      else if (from_el == 2)
+        {
+          clear_spsr_ss = (target_el == 2) or
+                          ((target_el == 1) and (not kde or spsr_d));
+          stepping = false; // do not step eret
+        }
+      else if (from_el == 3)
+        {
+          clear_spsr_ss = (target_el == 3) or
+                          (target_el == 2) or
+                          ((target_el == 1) and (not kde or spsr_d));
+          stepping = false; // do not step eret
+        }
+      if (clear_spsr_ss)
+        {
+          if (DEBUG) std::cerr << "DebugMonitor: On exception return, SPSR_ELx.SS <- 0 before restoring PSTATE from SPSR_ELx" << std::endl;
+          spsr &= ~spsr_ss_mask;
+        }
+      else if (DEBUG) std::cerr << "DebugMonitor: On exception return, SPSR_ELx.SS = " << ((spsr & spsr_ss_mask) != 0) << " before restoring PSTATE from SPSR_ELx" << std::endl;
+
+      if (DEBUG and not stepping) std::cerr << "DebugMonitor: not stepping eret" << std::endl;
+    }
+  return spsr;
 }
 
-void AArch64::DebugMonitor::IntBeforeStep(AArch64& cpu)
+void AArch64::DebugMonitor::SetExceptionTakenPSTATE_SS(AArch64& cpu, uint64_t preferred_exception_return)
 {
-  if (ss_active)
+  // In active-not-pending state, set PSTATE.SS to 0 or 1 depending on the preferred exception return address (shall occur before PSTATE is saved into SPSR_ELx.SS)
+  // Always leave PSTATE.SS as-is when in active-pending state.
+  // Also do not alter PSTATE.SS if we're taking an asynchronous exception.
+  if (unlikely(ss))
     {
-      if (ss_pending)
+      if (not cpu.pstate.D and cpu.pstate.SS and stepping) // active-not-pending state? stepping? (i.e. not an asynchronous exception)
         {
-          if (DEBUG)
-            std::cerr << "DebugMonitor: " << (ss_pending ? "ACTIVE_PENDING" : "ACTIVE_NOT_PENDING") << "--[Software Step exception at 0x" << std::hex << cpu.current_insn_addr << std::dec << " (EL" << cpu.pstate.GetEL() << ")]--> INACTIVE" << std::endl;
-          ss_active = ss_pending = false;
-          throw SoftwareStepException(ss_ldex);
+          if (DEBUG) std::cerr << "DebugMonitor: On taken exception, PSTATE.SS <- " << (cpu.current_insn_addr == preferred_exception_return) << " before saving PSTATE into SPSR_ELx" << std::endl;
+          cpu.pstate.SS = (cpu.current_insn_addr == preferred_exception_return); // see table D2-21
         }
-    }
-  else
-    {
-      ss_el = cpu.pstate.GetEL();
-    }
-  
-  ss_eret = ss_ldex = false;
-}
-
-void AArch64::DebugMonitor::IntAfterStep(AArch64& cpu)
-{
-  if (ss_active)
-    {
-      if (not ss_pending)
-        {
-          ss_pending = true;
-          cpu.pstate.SS = 0;
-
-          if (DEBUG)
-            std::cerr << "DebugMonitor: ACTIVE_NOT_PENDING--[Step completed]--> ACTIVE_PENDING" << std::endl;
-        }
-    }
-  else
-    {
-      ss_active = ss_eret and not cpu.pstate.D and ((cpu.pstate.GetEL() < ss_el) or ((cpu.pstate.GetEL() == ss_el) and LocalKernelDebugEnabled()));
-      
-      if (ss_active)
-        {
-          ss_pending = not cpu.pstate.SS;
-          
-          if (DEBUG)
-            std::cerr << "DebugMonitor: INACTIVE--[Exception Return at 0x" << std::hex << cpu.current_insn_addr << std::dec << " (EL" << ss_el << ") to 0x" << std::hex << cpu.next_insn_addr << std::dec << " (EL" << cpu.pstate.GetEL() << ") setting PSTATE.SS to " << cpu.pstate.SS << "]-->" << (ss_pending ? "ACTIVE_PENDING" : "ACTIVE_NOT_PENDING") << std::endl;
-        }
+      else if (DEBUG) std::cerr << "DebugMonitor: On taken exception, PSTATE.SS = " << cpu.pstate.SS << " before saving PSTATE into SPSR_ELx" << std::endl;
     }
 }
 
@@ -123,7 +125,7 @@ bool AArch64::DebugMonitor::CheckBreakpointExecutionCondition(unsigned el, unsig
   return not ssce and hmc and (ssc != 2) and ((pmc == 3) or ((el == 1) and (pmc == 1)));
 }
 
-void AArch64::DebugMonitor::IntFetch(AArch64& cpu, uint64_t vaddr)
+void AArch64::DebugMonitor::IntBeforeExecute(AArch64& cpu, uint64_t vaddr)
 {
   // Scan breakpoints in reverse order to visit linked context-aware breakpoints
   // before address match breakpoints that are linked to context-aware breakpoints
@@ -391,7 +393,7 @@ void AArch64::DebugMonitor::SetMDSCR_EL1(uint64_t value)
 
   if ((ss = SoftwareStepEnabled()))
     {
-      ss_eret = ss_ldex = false;
+      ss_ldex = false;
     }
 
   if (MonitorDebugEvents()) // Monitor debug events?
@@ -425,11 +427,8 @@ AArch64::DebugMonitor::sync(SnapShot& snapshot)
   snapshot.sync(ss);
   snapshot.sync(bpe);
   snapshot.sync(wpe);
-  snapshot.sync(ss_active);
-  snapshot.sync(ss_pending);
-  snapshot.sync(ss_eret);
   snapshot.sync(ss_ldex);
-  snapshot.sync(ss_el);
+  snapshot.sync(stepping);
   snapshot.sync(linked_ctx_bp_conds);
   snapshot.sync(regs.MDSCR_EL1);
   snapshot.sync(regs.CONTEXTIDR_EL1);
@@ -445,19 +444,23 @@ AArch64::DebugMonitor::sync(SnapShot& snapshot)
     }
 }
 
+const char *AArch64::DebugMonitor::SoftwareStepStateName(AArch64 const& cpu) const
+{
+  return (cpu.pstate.D or not ss) ? "inactive"
+                                  : ( cpu.pstate.SS ? "active-not-pending"
+                                                    : "active-pending"     );
+}
+
 void AArch64::DebugMonitor::Status(std::ostream& sink)
 {
   sink << "DebugMonitor: "
-       << "ss=" << ss
-       << ",ss_active=" << ss_active
-       << ",ss_pending=" << ss_pending
-       << ",ss_eret=" << ss_eret
-       << ",ss_ldex=" << ss_ldex
-       << ",ss_el=" << ss_el
+       << "ss_ldex=" << ss_ldex
        << ",bpe=" << bpe
        << ",wpe=" << wpe
        << ",linked_ctx_bp_conds=" << linked_ctx_bp_conds
        << std::endl;
+  sink << "DebugMonitor: MDSCR_EL1=0x" << std::hex << regs.MDSCR_EL1 << std::dec << std::endl;
+  sink << "DebugMonitor: CONTEXTIDR_EL1=0x" << std::hex << regs.CONTEXTIDR_EL1 << std::dec << std::endl;
   for (unsigned idx = 0; idx < BRPS; ++idx)
     {
       if ((bpe >> idx) & 1)

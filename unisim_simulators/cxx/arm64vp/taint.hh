@@ -214,8 +214,8 @@ struct TaintedTypeInfo
     
     for (unsigned idx = 0; idx < sizeof (ubits_type); ++idx)
       {
-        dst[idx].value = value & 0xff; value >>= 8;
-        dst[idx].ubits = ubits & 0xff; ubits >>= 8;
+        dst[idx].value = value & 0xff; value = (sizeof (ubits_type) > 1) ? (value >> 8) : 0;
+        dst[idx].ubits = ubits & 0xff; ubits = (sizeof (ubits_type) > 1) ? (ubits >> 8) : 0;
       }
   }
   static void FromBytes( T& dst, TaintedValue<uint8_t> const* src )
@@ -227,8 +227,8 @@ struct TaintedTypeInfo
     ubits_type value = 0, ubits = 0;
     for (unsigned idx = sizeof (ubits_type); idx-- > 0;)
       {
-        value <<= 8; value |= ubits_type( src[idx].value );
-        ubits <<= 8; ubits |= ubits_type( src[idx].ubits );
+        value = ((sizeof (ubits_type) > 1) ? (value << 8) : 0); value |= ubits_type( src[idx].value );
+        ubits = ((sizeof (ubits_type) > 1) ? (ubits << 8) : 0); ubits |= ubits_type( src[idx].ubits );
       }
     dst.value = TypePunning<value_type>(value);
     dst.ubits = ubits;

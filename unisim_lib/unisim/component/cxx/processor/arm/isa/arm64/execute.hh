@@ -968,7 +968,7 @@ OUT PolyMod2(IN value, uint32_t _poly)
     
     if ( arch.Test( ( IsInf( _op1 ) && IsZero( _op2 ) ) || ( IsZero( _op1 ) && IsInf( _op2 ) ) ) )
       {
-        res = FromUnpacked<operT>( { /* sign */ arch.Test(IsNeg(_op1) ^ IsNeg(_op2)), /* exp */ 1, /* frac */ 0 } );
+        res = FromUnpacked<operT>( { /* sign */ arch.Test(IsNeg(_op1) ^ IsNeg(_op2)), /* exp */ 1, /* frac */ { 0, 0 } } );
       }
     else
       {

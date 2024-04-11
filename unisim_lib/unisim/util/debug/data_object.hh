@@ -294,8 +294,8 @@ private:
 	
 	unsigned int ref_count;
 	
-	template <typename T> int CompareBaseType(T value) const { return this->template operator T() - value; }
-	template <typename T> T Sum(T value) const { return this->template operator T() + value; }
+	template <typename T> int CompareBaseType(T value) const { return this->operator T() - value; }
+	template <typename T> T Sum(T value) const { return this->operator T() + value; }
 	void Acquire() { ++ref_count; }
 	void Release() { if(ref_count && (--ref_count == 0)) delete this; }
 };

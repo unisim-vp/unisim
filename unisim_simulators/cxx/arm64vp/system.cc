@@ -150,7 +150,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
   struct PStateSysReg : public BaseSysReg
   {
-    char const* ReadOperation() const { return "mrs<bad-read>"; }
+    char const* ReadOperation() const override { return "mrs<bad-read>"; }
     void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
     {
       Encoding e{op0, op1, crn, crm, op2};
@@ -177,7 +177,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE(0b11,0b011,0b0100,0b0010,0b000): // NZCV
       {
         static struct : public BaseSysReg {
-          char const* Name() const { return "NZCV"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "NZCV"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override { cpu.nzcv = U8(value >> 28) & U8(0xf); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { return U64(cpu.nzcv) << 28; }
@@ -330,6 +330,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
+
     case SYSENCODE(0b01,0b000,0b0111,0b1110,0b010):
       {
         static struct : public DCSysReg {
@@ -337,6 +338,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean and Invalidate data cache by set/way"; }
         } x; return &x;
       } break;
+
     case SYSENCODE(0b01,0b000,0b0111,0b1010,0b010):
       {
         static struct : public DCSysReg {
@@ -344,6 +346,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Clean data cache by set/way"; }
         } x; return &x;
       } break;
+
     case SYSENCODE(0b01,0b011,0b0111,0b1010,0b001):
       {
         static struct : public DCSysReg {
@@ -353,6 +356,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           { uint64_t vaddr = cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr); }
         } x; return &x;
       } break;
+
     case SYSENCODE(0b01,0b011,0b0111,0b1011,0b001):
       {
         static struct : public DCSysReg {
@@ -362,6 +366,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           { uint64_t vaddr = cpu.untaint(AddrTV(), addr); /* No caches, so normally nothing to do... */ cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr); }
         } x; return &x;
       } break;
+
     case SYSENCODE(0b01,0b000,0b0111,0b0110,0b010):
       {
         static struct : public DCSysReg {
@@ -369,6 +374,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           void Describe(Encoding, std::ostream& sink) const override { sink << "Invalidate data cache by set/way"; }
         } x; return &x;
       } break;
+
     case SYSENCODE(0b01,0b000,0b0111,0b0110,0b001):
       {
         static struct : public DCSysReg {
@@ -624,7 +630,63 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-      
+
+    case SYSENCODE(0b11,0b000,0b0100,0b0010,0b011): // PAN
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PAN"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Privileged Access Never"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0100,0b0010,0b100): // UAO
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "UAO"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "User Access Override"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0100,0b0011,0b000): // ALLINT
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ALLINT"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "All Interrupt Mask Bit"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1101,0b0000,0b101): // ACCDATA_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ACCDATA_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Accelerator Data"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1101,0b0000,0b111): // SCXTNUM_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b1101,0b0000,0b111): // SCXTNUM_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCXTNUM_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "EL1 Read/Write Software Context Number"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1101,0b0000,0b111): // SCXTNUM_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCXTNUM_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "EL2 Read/Write Software Context Number"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b1101,0b0000,0b111): // SCXTNUM_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCXTNUM_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "EL3 Read/Write Software Context Number"; }
+        } x; return &x;
+      } break;
       /*** Adress translations ***/
       
     case SYSENCODE(0b01,0b100,0b0111,0b1000,0b110):
@@ -774,6 +836,38 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b010): // SVCR
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SVCR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SMCR_EL1, or SMCR_EL2 System registers to EL2, when EL2 is enabled in the current"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b101): // DIT
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DIT"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Data Independent Timing"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b110): // SSBS
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SSBS"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Speculative Store Bypass Safe"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b0100,0b0010,0b111): // TCO
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TCO"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Tag Check Override"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b011,0b0100,0b0100,0b000): // FPCR, Floating-point Control Register
       {
         static struct : public BaseSysReg {
@@ -813,6 +907,27 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0100,0b0010,0b000): // SPSel
+      {
+        static struct : public PStateSysReg {
+          void Name(Encoding, std::ostream& sink) const override { sink << "SPSel"; }
+          virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return U64(cpu.pstate.GetSP());
+          }
+          virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            struct Bad {}; cpu.pstate.SetSP(cpu, cpu.untaint(Bad(), value & U64(1)));
+          }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b001): // 2.1: ACTLR_EL1, Auxiliary Control Register (EL1)
       {
         static struct : public BaseSysReg {
@@ -829,6 +944,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0001,0b0000,0b011): // SCTLR2_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCTLR2_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "System Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0001,0b0000,0b011): // SCTLR2_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCTLR2_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "System Control Register (EL3)"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b110,0b0001,0b0000,0b001): // 2.3: ACTLR_EL3, Auxiliary Control Register (EL3)
       {
         static struct : public BaseSysReg {
@@ -838,6 +969,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b0101,0b0001,0b000): // 2.4: AFSR0_EL1, Auxiliary Fault Status Register 0 (EL1)
+    case SYSENCODE(0b11,0b101,0b0101,0b0001,0b000): // AFSR0_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "AFSR0_EL1"; }
@@ -862,6 +994,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b0101,0b0001,0b001): // 2.7: AFSR1_EL1, Auxiliary Fault Status Register 1 (EL1)
+    case SYSENCODE(0b11,0b101,0b0101,0b0001,0b001): // AFSR1_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "AFSR1_EL1"; }
@@ -894,6 +1027,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b1010,0b0011,0b000): // 2.11: AMAIR_EL1, Auxiliary Memory Attribute Indirection Register (EL1)
+    case SYSENCODE(0b11,0b101,0b1010,0b0011,0b000): // AMAIR_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "AMAIR_EL1"; }
@@ -914,6 +1048,71 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "AMAIR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Memory Attribute Indirection Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0100,0b000): // LORSA_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "LORSA_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "LORegion Start Address (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0100,0b001): // LOREA_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "LOREA_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "LORegion End Address (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0100,0b010): // LORN_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "LORN_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "LORegion Number (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0100,0b011): // LORC_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "LORC_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "LORegion Control (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0100,0b100): // MPAMIDR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMIDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMIDR_EL1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0100,0b111): // LORID_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "LORID_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "LORegionID (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0101,0b000): // MPAM1_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b1010,0b0101,0b000): // MPAM1_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAM1_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAM1_EL1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1010,0b0101,0b001): // MPAM0_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAM0_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAM0_EL1"; }
         } x; return &x;
       } break;
 
@@ -951,7 +1150,32 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b001,0b0000,0b0000,0b010): // CCSIDR2_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CCSIDR2_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Current Cache Size ID Register 2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b001,0b0000,0b0000,0b100): // GMID_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "GMID_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Multiple tag transfer ID register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b001,0b0000,0b0000,0b110): // SMIDR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SMIDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Streaming Mode Identification Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b1101,0b0000,0b001): // 2.16: CONTEXTIDR_EL1, Context ID Register
+    case SYSENCODE(0b11,0b101,0b1101,0b0000,0b001): // CONTEXTIDR_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CONTEXTIDR_EL1"; }
@@ -973,7 +1197,16 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b1101,0b0000,0b001): // CONTEXTIDR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CONTEXTIDR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Context ID Register (EL2)"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b010): // 2.17: CPACR_EL1, Architectural Feature Access Control Register
+    case SYSENCODE(0b11,0b101,0b0001,0b0000,0b010): // CPACR_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CPACR_EL1"; }
@@ -992,6 +1225,66 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
             return U64(cpu.CPACR);
           }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0000,0b011): // SCTLR2_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b0001,0b0000,0b011): // SCTLR2_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCTLR2_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SCTLR2_EL1, System Control Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0000,0b101): // RGSR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "RGSR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Random Allocation Tag Seed Register."; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0000,0b110): // GCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "GCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Tag Control Register."; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0010,0b000): // ZCR_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b0001,0b0010,0b000): // ZCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ZCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SVE Control Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0010,0b001): // TRFCR_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b0001,0b0010,0b001): // TRFCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRFCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Filter Control Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0010,0b100): // SMPRI_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SMPRI_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Streaming Mode Priority Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0001,0b0010,0b110): // SMCR_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b0001,0b0010,0b110): // SMCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SMCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SME Control Register (EL1)"; }
         } x; return &x;
       } break;
 
@@ -1049,6 +1342,30 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0011,0b0001,0b100): // HDFGRTR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HDFGRTR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Hypervisor Debug Fine-Grained Read Trap Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0011,0b0001,0b101): // HDFGWTR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HDFGWTR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Hypervisor Debug Fine-Grained Write Trap Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0011,0b0001,0b110): // HAFGRTR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HAFGRTR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Hypervisor Activity Monitors Fine-Grained Read Trap Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b011,0b0000,0b0000,0b111): // 2.23: DCZID_EL0, Data Cache Zero ID register
       {
         static struct : public BaseSysReg {
@@ -1057,6 +1374,28 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
             return U64((not unisim::component::cxx::processor::arm::vmsav8::sctlr::DZE.Get(cpu.el1.SCTLR)) << 4 | cpu.ZID);
+          }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b101,0b0101,0b0010,0b000): // ESR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ESR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL1)"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return U64(cpu.get_el(1).ESR);
+          }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            cpu.get_el(1).ESR = U32(value);
           }
         } x; return &x;
       } break;
@@ -1085,6 +1424,44 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0101,0b0010,0b011): // VSESR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VSESR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtual SError Exception Syndrome Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1100,0b0001,0b001): // VDISR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VDISR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtual Deferred Interrupt Status Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b101,0b0110,0b0000,0b000): // FAR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "FAR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Fault Address Register (EL1)"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return U64(cpu.get_el(1).FAR);
+          }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            struct Bad {}; cpu.get_el(1).FAR = cpu.untaint(Bad(), value);
+          }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0110,0b0000,0b000): // 2.27: FAR_EL1, Fault Address Register (EL1)
     case SYSENCODE(0b11,0b100,0b0110,0b0000,0b000): // 2.28: FAR_EL2, Fault Address Register (EL2)
     case SYSENCODE(0b11,0b110,0b0110,0b0000,0b000): // 2.29: FAR_EL3, Fault Address Register (EL3)
@@ -1106,6 +1483,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
             struct Bad {}; cpu.get_el(GetExceptionLevel(op1)).FAR = cpu.untaint(Bad(), value);
           }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0110,0b0000,0b101): // MFAR_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MFAR_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Physical Fault Address Register (EL3)"; }
         } x; return &x;
       } break;
 
@@ -1149,6 +1534,94 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0001,0b0001,0b100): // HFGRTR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HFGRTR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Hypervisor Fine-Grained Read Trap Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0001,0b101): // HFGWTR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HFGWTR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Hypervisor Fine-Grained Write Trap Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0001,0b110): // HFGITR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HFGITR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Hypervisor Fine-Grained Instruction Trap Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0010,0b000): // ZCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ZCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SVE Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0001,0b0010,0b000): // ZCR_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ZCR_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SVE Control Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0010,0b001): // TRFCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRFCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Filter Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0010,0b010): // HCRX_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "HCRX_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Extended Hypervisor Configuration Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0010,0b101): // SMPRIMAP_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SMPRIMAP_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Streaming Mode Priority Mapping Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0010,0b110): // SMCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SMCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SME Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0001,0b0010,0b110): // SMCR_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SMCR_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "SME Control Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0001,0b0011,0b001): // SDER32_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SDER32_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch32 Secure Debug Enable Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0000,0b0101,0b100): // 2.35: ID_AA64AFR0_EL1, AArch64 Auxiliary Feature Register 0
       {
         static struct : public BaseSysReg {
@@ -1162,6 +1635,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64AFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Auxiliary Feature Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0101,0b010): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0101,0b011): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0101,0b110): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0101,0b111): // Reserved, RAZ (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "-"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Reserved, RAZ"; }
         } x; return &x;
       } break;
 
@@ -1205,14 +1689,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
             return
               U64(0b0001)                           << 60 | // Indicates support for Random Number instructions
-              U64(/*0b0010*/0b0000)                           << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
-              U64(0b0010)                           << 52 | // Indicates support for flag manipulation instructions
+              U64(0b0000)                           << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
+              U64(0b0000)                           << 52 | // Indicates support for flag manipulation instructions
               U64(0b0000)                           << 48 | // Indicates support for FMLAL and FMLSL instructions
               U64(0b0000)                           << 44 | // Indicates support for Dot Product instructions
               U64(0b0000)                           << 40 | // Indicates support for SM4 instructions
               U64(0b0000)                           << 36 | // Indicates support for SM3 instructions
               U64(0b0000)                           << 32 | // Indicates support for SHA3 instructions
-              U64(0b0001)                           << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
+              U64(0b0000)                           << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
               cpu.PartlyDefined<uint64_t>(0,0b1111) << 24 | // Reserved, RES0.
               U64(0b0010)                           << 20 | // Indicates support for Atomic instructions
               U64(0b0001)                           << 16 | // Indicates support for CRC32 instructions
@@ -1251,6 +1735,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
             return U64(0);
           }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0110,0b011): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0110,0b100): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0110,0b101): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0110,0b110): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0110,0b111): // Reserved, RAZ (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "-"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Reserved, RAZ"; }
         } x; return &x;
       } break;
 
@@ -1314,6 +1810,32 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0000,0b0111,0b011): // ID_AA64MMFR3_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_AA64MMFR3_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0111,0b100): // ID_AA64MMFR4_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_AA64MMFR4_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 4"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0111,0b101): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0111,0b110): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0111,0b111): // Reserved, RAZ (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "-"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Reserved, RAZ"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b000): // 2.43: ID_AA64PFR0_EL1, AArch64 Processor Feature Register 0
       {
         static struct : public BaseSysReg {
@@ -1335,8 +1857,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(0b0000)                          << 32 | // Scalable Vector Extension
               U64(0b0000)                          << 28 | // RAS Extension version
               U64(0b0000)                          << 24 | // System register GIC CPU interface
-              U64(0b0000)                          << 20 | // Advanced SIMD (implemented)
-              U64(0b0000)                          << 16 | // Floating-point (implemented)
+              U64(0b0001)                          << 20 | // Advanced SIMD (implemented and also includes support for half-precision floating-point arithmetic)
+              U64(0b0001)                          << 16 | // Floating-point (implemented and also includes support for half-precision floating-point arithmetic)
               U64(0b0000)                          << 12 | // EL3 Exception level handling (not implemented)
               U64(0b0001)                          <<  8 | // EL2 Exception level handling (executed in AArch64 state only)
               U64(0b0001)                          <<  4 | // EL1 Exception level handling (executed in AArch64 state only) 
@@ -1363,6 +1885,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(0b0000)                      <<  4 | // Speculative Store Bypassing controls in AArch64 state
               U64(0b0000)                      <<  0;  // Branch Target Identification mechanism support
           }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b010): // ID_AA64PFR2_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_AA64PFR2_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch64 Processor Feature Register 2"; }
         } x; return &x;
       } break;
 
@@ -1395,7 +1925,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-      
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b011): // Reserved, RAZ. (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b110): // Reserved, RAZ. (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0100,0b111): // Reserved, RAZ. (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "-"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Reserved, RAZ"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b011): // 2.45: ID_AFR0_EL1, AArch32 Auxiliary Feature Register 0
       {
         static struct : public BaseSysReg {
@@ -1457,6 +1997,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR5_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 5"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0010,0b110): // ID_MMFR4_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_MMFR4_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch32 Memory Model Feature Register 4"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0010,0b111): // ID_ISAR6_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_ISAR6_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 6"; }
         } x; return &x;
       } break;
 
@@ -1524,7 +2080,16 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b1100,0b0001,0b001): // DISR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "DISR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Deferred Interrupt Status Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b1010,0b0010,0b000): // 2.61: MAIR_EL1, Memory Attribute Indirection Register (EL1)
+    case SYSENCODE(0b11,0b101,0b1010,0b0010,0b000): // MAIR_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL1"; }
@@ -1628,6 +2193,39 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b0000,0b0011,0b100): // ID_PFR2_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_PFR2_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch32 Processor Feature Register 2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0011,0b101): // ID_DFR1_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_DFR1_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Debug Feature Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0011,0b110): // ID_MMFR5_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ID_MMFR5_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "AArch32 Memory Model Feature Register 5"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0000,0b0011,0b011): // Reserved, RAZ (RO)
+    case SYSENCODE(0b11,0b000,0b0000,0b0011,0b111): // Reserved, RAZ (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "-"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Reserved, RAZ"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0111,0b0100,0b000): // 2.69: PAR_EL1, Physical Address Register
       {
         static struct : public BaseSysReg {
@@ -1703,6 +2301,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b000): // 2.79: SCTLR_EL1, System Control Register (EL1)
+    case SYSENCODE(0b11,0b101,0b0001,0b0000,0b000): // SCTLR_EL1 (RW)
     case SYSENCODE(0b11,0b100,0b0001,0b0000,0b000): // 2.80: SCTLR_EL2, System Control Register (EL2)
     case SYSENCODE(0b11,0b110,0b0001,0b0000,0b000): // 2.81: SCTLR_EL3, System Control Register (EL3)
       {
@@ -1728,6 +2327,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b0010,0b0000,0b010): // 2.82: TCR_EL1, Translation Control Register (EL1)
+    case SYSENCODE(0b11,0b101,0b0010,0b0000,0b010): // TCR_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL1"; }
@@ -1745,7 +2345,97 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               throw AArch64::UndefinedInstructionException();
 
             cpu.mmu.SetTCR(cpu, value);
+            cpu.ipb.invalidate();
           }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0000,0b011): // TCR2_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b0010,0b0000,0b011): // TCR2_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TCR2_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Extended Translation Control Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0001,0b000): // APIAKeyLo_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APIAKeyLo_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key A for Instruction (bits[63:0])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0001,0b001): // APIAKeyHi_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APIAKeyHi_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key A for Instruction (bits[127:64])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0001,0b010): // APIBKeyLo_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APIBKeyLo_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key B for Instruction (bits[63:0])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0001,0b011): // APIBKeyHi_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APIBKeyHi_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key B for Instruction (bits[127:64])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0010,0b000): // APDAKeyLo_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APDAKeyLo_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key A for Data (bits[63:0])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0010,0b001): // APDAKeyHi_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APDAKeyHi_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key A for Data (bits[127:64])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0010,0b010): // APDBKeyLo_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APDBKeyLo_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key B for Data (bits[63:0])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0010,0b011): // APDBKeyHi_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APDBKeyHi_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key B for Data (bits[127:64])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0011,0b000): // APGAKeyLo_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APGAKeyLo_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key A for Code (bits[63:0])"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0010,0b0011,0b001): // APGAKeyHi_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "APGAKeyHi_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Pointer Authentication Key A for Code (bits[127:64])"; }
         } x; return &x;
       } break;
 
@@ -1757,11 +2447,35 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0010,0b0000,0b011): // TCR2_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TCR2_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Extended Translation Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b110,0b0010,0b0000,0b010): // 2.84: TCR_EL3, Translation Control Register (EL3)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Control Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0010,0b0001,0b100): // GPTBR_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "GPTBR_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Granule Protection Table Base Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0010,0b0001,0b110): // GPCCR_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "GPCCR_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Granule Protection Check Control Register (EL3)"; }
         } x; return &x;
       } break;
 
@@ -1786,7 +2500,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       {
         static struct : public BaseSysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 0 ? "rndr" : e.op2 == 0 ? "rndrrs" : "?"); }
-          void Describe(Encoding e, std::ostream& sink) const { sink << (e.op2 == 1 ? "Reseeded " : "") << "Random Number"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 1 ? "Reseeded " : "") << "Random Number"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { return cpu.RNDR(); }
         } x; return &x;
       }
@@ -1829,7 +2543,240 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b011,0b1101,0b0000,0b101): // TPIDR2_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TPIDR2_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "EL0 Read/Write Software Thread ID Register 2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0000,0b111): // SCXTNUM_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SCXTNUM_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "EL0 Read/Write Software Context Number"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b000): // AMCR_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCR_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b001): // AMCFGR_EL0 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCFGR_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Configuration Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b010): // AMCGCR_EL0 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCGCR_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Counter Group Configuration Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b011): // AMUSERENR_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMUSERENR_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors User Enable Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b100): // AMCNTENCLR0_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCNTENCLR0_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Count Enable Clear Register 0"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b101): // AMCNTENSET0_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCNTENSET0_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Count Enable Set Register 0"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0010,0b110): // AMCG1IDR_EL0 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCG1IDR_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Counter Group 1 Identification Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0011,0b000): // AMCNTENCLR1_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCNTENCLR1_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Count Enable Clear Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0011,0b001): // AMCNTENSET1_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMCNTENSET1_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Count Enable Set Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b000): // AMEVCNTR00_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b001): // AMEVCNTR01_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b010): // AMEVCNTR02_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b011): // AMEVCNTR03_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b100): // AMEVCNTR04_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b101): // AMEVCNTR05_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b110): // AMEVCNTR06_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0100,0b111): // AMEVCNTR07_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b000): // AMEVCNTR08_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b001): // AMEVCNTR09_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b010): // AMEVCNTR010_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b011): // AMEVCNTR011_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b100): // AMEVCNTR012_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b101): // AMEVCNTR013_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b110): // AMEVCNTR014_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0101,0b111): // AMEVCNTR015_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm & 1) << 3) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMEVCNTR0" << GetIdx(e) <<  "_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Event Counter Registers 0, " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b000): // AMEVTYPER00_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b001): // AMEVTYPER01_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b010): // AMEVTYPER02_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b011): // AMEVTYPER03_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b100): // AMEVTYPER04_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b101): // AMEVTYPER05_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b110): // AMEVTYPER06_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0110,0b111): // AMEVTYPER07_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b000): // AMEVTYPER08_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b001): // AMEVTYPER09_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b010): // AMEVTYPER010_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b011): // AMEVTYPER011_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b100): // AMEVTYPER012_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b101): // AMEVTYPER013_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b110): // AMEVTYPER014_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b0111,0b111): // AMEVTYPER015_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm & 1) << 3) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMEVTYPER0" << GetIdx(e) <<  "_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Event Type Registers 0, " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b000): // AMEVCNTR10_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b001): // AMEVCNTR11_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b010): // AMEVCNTR12_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b011): // AMEVCNTR13_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b100): // AMEVCNTR14_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b101): // AMEVCNTR15_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b110): // AMEVCNTR16_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1100,0b111): // AMEVCNTR17_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b000): // AMEVCNTR18_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b001): // AMEVCNTR19_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b010): // AMEVCNTR110_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b011): // AMEVCNTR111_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b100): // AMEVCNTR112_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b101): // AMEVCNTR113_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b110): // AMEVCNTR114_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1101,0b111): // AMEVCNTR115_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm & 1) << 3) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMEVCNTR1" << GetIdx(e) <<  "_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Event Counter Registers 1, " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b000): // AMEVTYPER10_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b001): // AMEVTYPER11_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b010): // AMEVTYPER12_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b011): // AMEVTYPER13_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b100): // AMEVTYPER14_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b101): // AMEVTYPER15_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b110): // AMEVTYPER16_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1110,0b111): // AMEVTYPER17_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b000): // AMEVTYPER18_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b001): // AMEVTYPER19_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b010): // AMEVTYPER110_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b011): // AMEVTYPER111_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b100): // AMEVTYPER112_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b101): // AMEVTYPER113_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b110): // AMEVTYPER114_EL0 (RW)
+    case SYSENCODE(0b11,0b011,0b1101,0b1111,0b111): // AMEVTYPER115_EL0 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm & 1) << 3) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMEVTYPER1" << GetIdx(e) <<  "_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Event Type Registers 1, " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b000): // AMEVCNTVOFF00_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b001): // AMEVCNTVOFF01_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b010): // AMEVCNTVOFF02_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b011): // AMEVCNTVOFF03_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b100): // AMEVCNTVOFF04_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b101): // AMEVCNTVOFF05_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b110): // AMEVCNTVOFF06_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1000,0b111): // AMEVCNTVOFF07_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b000): // AMEVCNTVOFF08_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b001): // AMEVCNTVOFF09_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b010): // AMEVCNTVOFF010_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b011): // AMEVCNTVOFF011_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b100): // AMEVCNTVOFF012_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b101): // AMEVCNTVOFF013_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b110): // AMEVCNTVOFF014_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1001,0b111): // AMEVCNTVOFF015_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm & 1) << 3) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMEVCNTVOFF0" << GetIdx(e) <<  "_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Event Counter Virtual Offset Registers 0, " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b000): // AMEVCNTVOFF10_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b001): // AMEVCNTVOFF11_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b010): // AMEVCNTVOFF12_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b011): // AMEVCNTVOFF13_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b100): // AMEVCNTVOFF14_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b101): // AMEVCNTVOFF15_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b110): // AMEVCNTVOFF16_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1010,0b111): // AMEVCNTVOFF17_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b000): // AMEVCNTVOFF18_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b001): // AMEVCNTVOFF19_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b010): // AMEVCNTVOFF110_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b011): // AMEVCNTVOFF111_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b100): // AMEVCNTVOFF112_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b101): // AMEVCNTVOFF113_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b110): // AMEVCNTVOFF114_EL2 (RW)
+    case SYSENCODE(0b11,0b100,0b1101,0b1011,0b111): // AMEVCNTVOFF115_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm & 1) << 3) | e.op2; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "AMEVCNTVOFF1" << GetIdx(e) <<  "_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Activity Monitors Event Counter Virtual Offset Registers 1, " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0010,0b0000,0b000): // 2.92: TTBR0_EL1, Translation Table Base Register 0 (EL1)
+    case SYSENCODE(0b11,0b101,0b0010,0b0000,0b000): // TTBR0_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL1"; }
@@ -1847,6 +2794,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               throw AArch64::UndefinedInstructionException();
 
             cpu.mmu.SetTTBR0(cpu, value);
+            cpu.ipb.invalidate();
           }
         } x; return &x;
       } break;
@@ -1859,6 +2807,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0010,0b0000,0b001): // TTBR1_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TTBR1_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Translation Table Base Register 1 (EL2)"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b110,0b0010,0b0000,0b000): // 2.94: TTBR0_EL3, Translation Table Base Register 0 (EL3)
       {
         static struct : public BaseSysReg {
@@ -1868,6 +2824,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b000,0b0010,0b0000,0b001): // 2.95: TTBR1_EL1, Translation Table Base Register 1
+    case SYSENCODE(0b11,0b101,0b0010,0b0000,0b001): // TTBR1_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "TTBR1_EL1"; }
@@ -1885,6 +2842,29 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               throw AArch64::UndefinedInstructionException();
 
             cpu.mmu.SetTTBR1(cpu, value);
+            cpu.ipb.invalidate();
+          }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b101,0b0100,0b0000,0b000): // SPSR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SPSR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Vector Base Address Register (EL1)"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return U64(cpu.get_el(1).SPSR);
+          }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            cpu.get_el(1).SPSR = U32(value);
           }
         } x; return &x;
       } break;
@@ -1912,7 +2892,61 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-      
+
+    case SYSENCODE(0b11,0b100,0b0100,0b0011,0b000): // SPSR_irq (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SPSR_irq"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Saved Program Status Register (IRQ mode)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0100,0b0011,0b001): // SPSR_abt (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SPSR_abt"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Saved Program Status Register (Abort mode)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0100,0b0011,0b010): // SPSR_und (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SPSR_und"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Saved Program Status Register (Undefined mode)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0100,0b0011,0b011): // SPSR_fiq (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "SPSR_fiq"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Saved Program Status Register (FIQ mode)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b101,0b0100,0b0000,0b001): // ELR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ELR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Vector Base Address Register (EL1)"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return cpu.get_el(1).ELR;
+          }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            cpu.get_el(1).ELR = value;
+          }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b0100,0b0000,0b001): // ELR_EL1
     case SYSENCODE(0b11,0b100,0b0100,0b0000,0b001): // ELR_EL2
     case SYSENCODE(0b11,0b110,0b0100,0b0000,0b001): // ELR_EL3
@@ -1937,6 +2971,28 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
     
+    case SYSENCODE(0b11,0b101,0b1100,0b0000,0b000): // VBAR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VBAR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Vector Base Address Register (EL1)"; }
+          U64  Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            return cpu.get_el(1).VBAR;
+          }
+          void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
+          {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
+            cpu.get_el(1).VBAR = value;
+          }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b1100,0b0000,0b000): // 2.96: VBAR_EL1, Vector Base Address Register (EL1)
     case SYSENCODE(0b11,0b100,0b1100,0b0000,0b000): // 2.97: VBAR_EL2, Vector Base Address Register (EL2)
     case SYSENCODE(0b11,0b110,0b1100,0b0000,0b000): // 2.98: VBAR_EL3, Vector Base Address Register (EL3)
@@ -1993,11 +3049,927 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b0010,0b0010,0b000): // VNCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VNCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtual Nested Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0010,0b0110,0b000): // VSTTBR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VSTTBR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtualization Secure Translation Table Base Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b0010,0b0110,0b010): // VSTCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VSTCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtualization Secure Translation Control Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b10,0b000,0b0111,0b1110,0b110): // 3.1: DBGAUTHSTATUS_EL1, Debug Authentication Status register
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "DBGAUTHSTATUS_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Authentication Status register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0011,0b000): // ERRIDR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERRIDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Error Record ID Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0011,0b001): // ERRSELR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERRSELR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Error Record Select Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b000): // ERXFR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXFR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Feature Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b001): // ERXCTLR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXCTLR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b010): // ERXSTATUS_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXSTATUS_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Primary Status Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b011): // ERXADDR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXADDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Address Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b100): // ERXPFGF_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXPFGF_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Pseudo-fault Generation Feature register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b101): // ERXPFGCTL_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXPFGCTL_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Pseudo-fault Generation Control register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0100,0b110): // ERXPFGCDN_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXPFGCDN_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Pseudo-fault Generation Countdown register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0101,0b000): // ERXMISC0_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXMISC0_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Miscellaneous Register 0"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0101,0b001): // ERXMISC1_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXMISC1_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Miscellaneous Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0101,0b010): // ERXMISC2_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXMISC2_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Miscellaneous Register 2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0101,0b011): // ERXMISC3_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ERXMISC3_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Selected Error Record Miscellaneous Register 3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0110,0b000): // TFSR_EL1 (RW)
+    case SYSENCODE(0b11,0b100,0b0101,0b0110,0b000): // TFSR_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b0101,0b0110,0b000): // TFSR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TFSR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Tag Fault Status Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b0101,0b0110,0b001): // TFSRE0_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TFSRE0_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Tag Fault Status Register (EL0)."; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b0101,0b0110,0b000): // TFSR_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TFSR_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Tag Fault Status Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0000,0b001): // TRCTRACEIDR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCTRACEIDR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace ID Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0000,0b010): // TRCVICTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVICTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ViewInst Main Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0000,0b110): // TRCIDR8 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR8"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 8"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b000): // TRCPRGCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCPRGCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Programming Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b001): // TRCQCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCQCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Q Element Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b010): // TRCVIIECTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVIIECTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ViewInst Include/Exclude Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b110): // TRCIDR9 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR9"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 9"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0010,0b010): // TRCVISSCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVISSCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ViewInst Start/Stop Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0010,0b110): // TRCIDR10 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR10"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 10"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0011,0b000): // TRCSTATR (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSTATR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Status Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0011,0b010): // TRCVIPCSSCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVIPCSSCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ViewInst Start/Stop PE Comparator Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0011,0b110): // TRCIDR11 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR11"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 11"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0000,0b100): // TRCSEQEVR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b100): // TRCSEQEVR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0010,0b100): // TRCSEQEVR2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSEQEVR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sequencer State Transition Control Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0000,0b101): // TRCCNTRLDVR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b101): // TRCCNTRLDVR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0010,0b101): // TRCCNTRLDVR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0011,0b101): // TRCCNTRLDVR3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCNTRLDVR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter Reload Value Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0100,0b000): // TRCCONFIGR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCONFIGR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Configuration Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0100,0b110): // TRCIDR12 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR12"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 12"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0101,0b110): // TRCIDR13 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR13"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 13"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0110,0b000): // TRCAUXCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCAUXCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Auxiliary Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0110,0b100): // TRCSEQRSTEVR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSEQRSTEVR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sequencer Reset Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0111,0b100): // TRCSEQSTR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSEQSTR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sequencer State Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0100,0b101): // TRCCNTCTLR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0101,0b101): // TRCCNTCTLR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0110,0b101): // TRCCNTCTLR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0111,0b101): // TRCCNTCTLR3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCNTCTLR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter Control Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b0000,0b111): // TRCIMSPEC0 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0001,0b111): // TRCIMSPEC1 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0010,0b111): // TRCIMSPEC2 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0011,0b111): // TRCIMSPEC3 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0100,0b111): // TRCIMSPEC4 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0101,0b111): // TRCIMSPEC5 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0110,0b111): // TRCIMSPEC6 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b0111,0b111): // TRCIMSPEC7 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIMSPEC" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "IMP DEF Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1000,0b000): // TRCEVENTCTL0R (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCEVENTCTL0R"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Event Control 0 Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1000,0b111): // TRCIDR0 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 0"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1001,0b000): // TRCEVENTCTL1R (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCEVENTCTL1R"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Event Control 1 Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1001,0b111): // TRCIDR1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1010,0b000): // TRCRSR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCRSR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Resources Status Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1010,0b111): // TRCIDR2 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1011,0b000): // TRCSTALLCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSTALLCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Stall Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1011,0b111): // TRCIDR3 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1000,0b100): // TRCEXTINSELR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b1001,0b100): // TRCEXTINSELR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b1010,0b100): // TRCEXTINSELR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b1011,0b100): // TRCEXTINSELR3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCEXTINSELR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "External Input Select Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1000,0b101): // TRCCNTVR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b1001,0b101): // TRCCNTVR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b1010,0b101): // TRCCNTVR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0000,0b1011,0b101): // TRCCNTVR3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCNTVR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter Value Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1100,0b000): // TRCTSCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCTSCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Timestamp Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1100,0b111): // TRCIDR4 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR4"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 4"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1101,0b000): // TRCSYNCPR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSYNCPR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Synchronization Period Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1101,0b111): // TRCIDR5 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR5"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 5"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1110,0b000): // TRCCCCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCCCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Cycle Count Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1110,0b111): // TRCIDR6 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR6"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 6"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1111,0b000): // TRCBBCTLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCBBCTLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Broadcast Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0000,0b1111,0b111): // TRCIDR7 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCIDR7"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "ID Register 7"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0001,0b0001,0b100): // TRCOSLSR (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCOSLSR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace OS Lock Status Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0001,0b0000,0b010): // TRCSSCCR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0001,0b010): // TRCSSCCR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0010,0b010): // TRCSSCCR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0011,0b010): // TRCSSCCR3 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0100,0b010): // TRCSSCCR4 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0101,0b010): // TRCSSCCR5 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0110,0b010): // TRCSSCCR6 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0111,0b010): // TRCSSCCR7 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSSCCR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Single-shot Comparator Control Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0001,0b0000,0b011): // TRCSSPCICR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0001,0b011): // TRCSSPCICR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0010,0b011): // TRCSSPCICR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0011,0b011): // TRCSSPCICR3 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0100,0b011): // TRCSSPCICR4 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0101,0b011): // TRCSSPCICR5 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0110,0b011): // TRCSSPCICR6 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0111,0b011): // TRCSSPCICR7 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSSPCICR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Single-shot Processing Element Comparator Input Control Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0001,0b1000,0b010): // TRCSSCSR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1001,0b010): // TRCSSCSR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1010,0b010): // TRCSSCSR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1011,0b010): // TRCSSCSR3 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1100,0b010): // TRCSSCSR4 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1101,0b010): // TRCSSCSR5 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1110,0b010): // TRCSSCSR6 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1111,0b010): // TRCSSCSR7 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCSSCSR" << std::dec << int(e.crm); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Single-shot Comparator Control Status Register " << std::dec << int(e.crm); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0001,0b0000,0b000): // TRCRSCTLR0  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0001,0b000): // TRCRSCTLR1  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0010,0b000): // TRCRSCTLR2  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0011,0b000): // TRCRSCTLR3  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0100,0b000): // TRCRSCTLR4  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0101,0b000): // TRCRSCTLR5  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0110,0b000): // TRCRSCTLR6  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0111,0b000): // TRCRSCTLR7  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1000,0b000): // TRCRSCTLR8  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1001,0b000): // TRCRSCTLR9  (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1010,0b000): // TRCRSCTLR10 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1011,0b000): // TRCRSCTLR11 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1100,0b000): // TRCRSCTLR12 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1101,0b000): // TRCRSCTLR13 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1110,0b000): // TRCRSCTLR14 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1111,0b000): // TRCRSCTLR15 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0000,0b001): // TRCRSCTLR16 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0001,0b001): // TRCRSCTLR17 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0010,0b001): // TRCRSCTLR18 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0011,0b001): // TRCRSCTLR19 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0100,0b001): // TRCRSCTLR20 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0101,0b001): // TRCRSCTLR21 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0110,0b001): // TRCRSCTLR22 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b0111,0b001): // TRCRSCTLR23 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1000,0b001): // TRCRSCTLR24 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1001,0b001): // TRCRSCTLR25 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1010,0b001): // TRCRSCTLR26 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1011,0b001): // TRCRSCTLR27 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1100,0b001): // TRCRSCTLR28 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1101,0b001): // TRCRSCTLR29 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1110,0b001): // TRCRSCTLR30 (RW)
+    case SYSENCODE(0b10,0b001,0b0001,0b1111,0b001): // TRCRSCTLR31 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return e.crm | ((e.op2 & 1) << 4); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCRSCTLR" << std::dec << GetIdx(e); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Resource Selection Control Register " << std::dec << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0010,0b0000,0b000): // TRCACVR0  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0010,0b000): // TRCACVR1  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0100,0b000): // TRCACVR2  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0110,0b000): // TRCACVR3  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1000,0b000): // TRCACVR4  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1010,0b000): // TRCACVR5  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1100,0b000): // TRCACVR6  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1110,0b000): // TRCACVR7  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0000,0b001): // TRCACVR8  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0010,0b001): // TRCACVR9  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0100,0b001): // TRCACVR10 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0110,0b001): // TRCACVR11 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1000,0b001): // TRCACVR12 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1010,0b001): // TRCACVR13 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1100,0b001): // TRCACVR14 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1110,0b001): // TRCACVR15 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm >> 1) & 7) | ((e.op2 & 1) << 3); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCACVR" << std::dec << GetIdx(e); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Address Comparator Value Register " << std::dec << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0010,0b0000,0b010): // TRCACATR0  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0010,0b010): // TRCACATR1  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0100,0b010): // TRCACATR2  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0110,0b010): // TRCACATR3  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1000,0b010): // TRCACATR4  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1010,0b010): // TRCACATR5  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1100,0b010): // TRCACATR6  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1110,0b010): // TRCACATR7  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0000,0b011): // TRCACATR8  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0010,0b011): // TRCACATR9  (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0100,0b011): // TRCACATR10 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b0110,0b011): // TRCACATR11 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1000,0b011): // TRCACATR12 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1010,0b011): // TRCACATR13 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1100,0b011): // TRCACATR14 (RW)
+    case SYSENCODE(0b10,0b001,0b0010,0b1110,0b011): // TRCACATR15 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return ((e.crm >> 1) & 7) | ((e.op2 & 1) << 3); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCACATR" << std::dec << GetIdx(e); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Address Comparator Access Type Register " << std::dec << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0011,0b0000,0b010): // TRCCIDCCTLR0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCIDCCTLR0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Context Identifier Comparator Control Register 0"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0011,0b0001,0b010): // TRCCIDCCTLR1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCIDCCTLR1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Context Identifier Comparator Control Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0011,0b0010,0b010): // TRCVMIDCCTLR0 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVMIDCCTLR0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtual Context Identifier Comparator Control Register 0"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0011,0b0011,0b010): // TRCVMIDCCTLR1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVMIDCCTLR1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtual Context Identifier Comparator Control Register 1"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0011,0b0000,0b000): // TRCCIDCVR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b0010,0b000): // TRCCIDCVR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b0100,0b000): // TRCCIDCVR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b0110,0b000): // TRCCIDCVR3 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1000,0b000): // TRCCIDCVR4 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1010,0b000): // TRCCIDCVR5 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1100,0b000): // TRCCIDCVR6 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1110,0b000): // TRCCIDCVR7 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return (e.crm >> 1) & 7; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCIDCVR" << std::dec << GetIdx(e); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Context Identifier Comparator Value Registers " << std::dec << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0011,0b0000,0b001): // TRCVMIDCVR0 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b0010,0b001): // TRCVMIDCVR1 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b0100,0b001): // TRCVMIDCVR2 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b0110,0b001): // TRCVMIDCVR3 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1000,0b001): // TRCVMIDCVR4 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1010,0b001): // TRCVMIDCVR5 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1100,0b001): // TRCVMIDCVR6 (RW)
+    case SYSENCODE(0b10,0b001,0b0011,0b1110,0b001): // TRCVMIDCVR7 (RW)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return (e.crm >> 1) & 7; }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCVMIDCVR" << std::dec << GetIdx(e); }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Virtual Context Identifier Comparator Value Register " << std::dec << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0111,0b0010,0b111): // TRCDEVID (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCDEVID"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Device Configuration Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0111,0b1000,0b110): // TRCCLAIMSET (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCLAIMSET"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Claim Tag Set Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0111,0b1001,0b110): // TRCCLAIMCLR (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCCLAIMCLR"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Claim Tag Clear Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0111,0b1110,0b110): // TRCAUTHSTATUS (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCAUTHSTATUS"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Authentication Status Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b0111,0b1111,0b110): // TRCDEVARCH (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRCDEVARCH"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Device Architecture Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1000,0b0000,0b000): // BRBINF0_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0001,0b000): // BRBINF1_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0010,0b000): // BRBINF2_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0011,0b000): // BRBINF3_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0100,0b000): // BRBINF4_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0101,0b000): // BRBINF5_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0110,0b000): // BRBINF6_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0111,0b000): // BRBINF7_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1000,0b000): // BRBINF8_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1001,0b000): // BRBINF9_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1010,0b000): // BRBINF10_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1011,0b000): // BRBINF11_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1100,0b000): // BRBINF12_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1101,0b000): // BRBINF13_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1110,0b000): // BRBINF14_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1111,0b000): // BRBINF15_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0000,0b100): // BRBINF16_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0001,0b100): // BRBINF17_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0010,0b100): // BRBINF18_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0011,0b100): // BRBINF19_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0100,0b100): // BRBINF20_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0101,0b100): // BRBINF21_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0110,0b100): // BRBINF22_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0111,0b100): // BRBINF23_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1000,0b100): // BRBINF24_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1001,0b100): // BRBINF25_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1010,0b100): // BRBINF26_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1011,0b100): // BRBINF27_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1100,0b100): // BRBINF28_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1101,0b100): // BRBINF29_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1110,0b100): // BRBINF30_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1111,0b100): // BRBINF31_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return e.crm | ((e.op2 & 0b100) << 2); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBINF" << GetIdx(e) << "_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Information Register " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1000,0b0000,0b001): // BRBSRC0_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0001,0b001): // BRBSRC1_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0010,0b001): // BRBSRC2_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0011,0b001): // BRBSRC3_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0100,0b001): // BRBSRC4_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0101,0b001): // BRBSRC5_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0110,0b001): // BRBSRC6_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0111,0b001): // BRBSRC7_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1000,0b001): // BRBSRC8_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1001,0b001): // BRBSRC9_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1010,0b001): // BRBSRC10_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1011,0b001): // BRBSRC11_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1100,0b001): // BRBSRC12_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1101,0b001): // BRBSRC13_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1110,0b001): // BRBSRC14_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1111,0b001): // BRBSRC15_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0000,0b101): // BRBSRC16_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0001,0b101): // BRBSRC17_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0010,0b101): // BRBSRC18_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0011,0b101): // BRBSRC19_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0100,0b101): // BRBSRC20_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0101,0b101): // BRBSRC21_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0110,0b101): // BRBSRC22_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0111,0b101): // BRBSRC23_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1000,0b101): // BRBSRC24_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1001,0b101): // BRBSRC25_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1010,0b101): // BRBSRC26_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1011,0b101): // BRBSRC27_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1100,0b101): // BRBSRC28_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1101,0b101): // BRBSRC29_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1110,0b101): // BRBSRC30_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1111,0b101): // BRBSRC31_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return e.crm | ((e.op2 & 0b100) << 2); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBSRC" << GetIdx(e) << "_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Source Address Register " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1000,0b0000,0b010): // BRBTGT0_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0001,0b010): // BRBTGT1_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0010,0b010): // BRBTGT2_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0011,0b010): // BRBTGT3_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0100,0b010): // BRBTGT4_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0101,0b010): // BRBTGT5_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0110,0b010): // BRBTGT6_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0111,0b010): // BRBTGT7_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1000,0b010): // BRBTGT8_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1001,0b010): // BRBTGT9_EL1  (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1010,0b010): // BRBTGT10_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1011,0b010): // BRBTGT11_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1100,0b010): // BRBTGT12_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1101,0b010): // BRBTGT13_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1110,0b010): // BRBTGT14_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1111,0b010): // BRBTGT15_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0000,0b110): // BRBTGT16_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0001,0b110): // BRBTGT17_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0010,0b110): // BRBTGT18_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0011,0b110): // BRBTGT19_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0100,0b110): // BRBTGT20_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0101,0b110): // BRBTGT21_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0110,0b110): // BRBTGT22_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b0111,0b110): // BRBTGT23_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1000,0b110): // BRBTGT24_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1001,0b110): // BRBTGT25_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1010,0b110): // BRBTGT26_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1011,0b110): // BRBTGT27_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1100,0b110): // BRBTGT28_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1101,0b110): // BRBTGT29_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1110,0b110): // BRBTGT30_EL1 (RO)
+    case SYSENCODE(0b10,0b001,0b1000,0b1111,0b110): // BRBTGT31_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          unsigned GetIdx(Encoding e) const { return e.crm | ((e.op2 & 0b100) << 2); }
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBTGT" << GetIdx(e) << "_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Target Address Register " << GetIdx(e); }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0000,0b000): // BRBCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Control Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0000,0b001): // BRBFCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBFCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Function Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0000,0b010): // BRBTS_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBTS_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Timestamp Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0001,0b000): // BRBINFINJ_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBINFINJ_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Information Injection Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0001,0b001): // BRBSRCINJ_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBSRCINJ_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Source Address Injection Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0001,0b010): // BRBTGTINJ_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBTGTINJ_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Target Address Injection Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b001,0b1001,0b0010,0b000): // BRBIDR0_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBIDR0_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer ID0 Register"; }
         } x; return &x;
       } break;
 
@@ -2062,6 +4034,22 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "DBGVCR32_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Vector Catch Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b100,0b1001,0b0000,0b000): // BRBCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b10,0b101,0b1001,0b0000,0b000): // BRBCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "BRBCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Branch Record Buffer Control Register (EL1)"; }
         } x; return &x;
       } break;
 
@@ -2203,6 +4191,167 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b000): // PMSCR_EL1 (RW)
+    case SYSENCODE(0b11,0b101,0b1001,0b1001,0b000): // PMSCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Statistical Profiling Control Register (EL1)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1001,0b1001,0b000): // PMSCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Statistical Profiling Control Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b001): // PMSNEVFR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSNEVFR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Inverted Event Filter Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b010): // PMSICR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSICR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Interval Counter Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b011): // PMSIRR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSIRR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Interval Reload Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b100): // PMSFCR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSFCR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Filter Control Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b101): // PMSEVFR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSEVFR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Event Filter Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b110): // PMSLATFR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSLATFR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Latency Filter Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1001,0b111): // PMSIDR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMSIDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Sampling Profiling ID Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1010,0b000): // PMBLIMITR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMBLIMITR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Profiling Buffer Limit Address Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1010,0b001): // PMBPTR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMBPTR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Profiling Buffer Write Pointer Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1010,0b011): // PMBSR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMBSR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Profiling Buffer Status/syndrome Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1010,0b111): // PMBIDR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMBIDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Profiling Buffer ID Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b000): // TRBLIMITR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBLIMITR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Buffer Limit Address Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b001): // TRBPTR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBPTR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "TRBSR_EL1, and TRBTRG_EL1."; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b010): // TRBBASER_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBBASER_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Buffer Base Address Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b011): // TRBSR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBSR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Buffer Status/syndrome Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b100): // TRBMAR_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBMAR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Buffer Memory Attribute Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b110): // TRBTRG_EL1 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBTRG_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Buffer Trigger Counter Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1001,0b1011,0b111): // TRBIDR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "TRBIDR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Trace Buffer ID Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b011,0b1110,0b1111,0b111): // 4.1: PMCCFILTR_EL0, Performance Monitors Cycle Count Filter Register
       {
         static struct : public BaseSysReg {
@@ -2331,6 +4480,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b000,0b1001,0b1110,0b110): // PMMIR_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "PMMIR_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Performance Monitors Machine Identification Register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b011,0b1110,0b0000,0b000): // 5.1: CNTFRQ_EL0, Counter-timer Frequency register
       {
         static struct : public BaseSysReg {
@@ -2372,7 +4529,80 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b1110,0b0011,0b000): // CNTHV_TVAL_EL2
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHV_TVAL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer TimerValue Register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0011,0b001): // CNTHV_CTL_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHV_CTL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer Control register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0011,0b010): // CNTHV_CVAL_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHV_CVAL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer CompareValue register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0100,0b000): // CNTHVS_TVAL_EL2
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHVS_TVAL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Secure Virtual Timer TimerValue register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0100,0b001): // CNTHVS_CTL_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHVS_CTL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Secure Virtual Timer Control register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0100,0b010): // CNTHVS_CVAL_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHVS_CVAL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Secure Virtual Timer CompareValue register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0101,0b000): // CNTHPS_TVAL_EL2
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHPS_TVAL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Secure Physical Timer TimerValue register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0101,0b001): // CNTHPS_CTL_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHPS_CTL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Secure Physical Timer Control register (EL2)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0101,0b010): // CNTHPS_CVAL_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTHPS_CVAL_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Secure Physical Timer CompareValue register (EL2)"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b000,0b1110,0b0001,0b000): // 5.6: CNTKCTL_EL1, Counter-timer Kernel Control register
+    case SYSENCODE(0b11,0b101,0b1110,0b0001,0b000): // CNTKCTL_EL1 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTKCTL_EL1"; }
@@ -2395,6 +4625,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1110,0b0010,0b001): // 5.7: CNTP_CTL_EL0, Counter-timer Physical Timer Control register
+    case SYSENCODE(0b11,0b101,0b1110,0b0010,0b001): // CNTP_CTL_EL0 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTP_CTL_EL0"; }
@@ -2403,6 +4634,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1110,0b0010,0b010): // 5.8: CNTP_CVAL_EL0, Counter-timer Physical Timer CompareValue register
+    case SYSENCODE(0b11,0b101,0b1110,0b0010,0b010): // CNTP_CVAL_EL0 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTP_CVAL_EL0"; }
@@ -2411,6 +4643,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1110,0b0010,0b000): // 5.9: CNTP_TVAL_EL0, Counter-timer Physical Timer TimerValue register
+    case SYSENCODE(0b11,0b101,0b1110,0b0010,0b000): // CNTP_TVAL_EL0
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTP_TVAL_EL0"; }
@@ -2451,6 +4684,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1110,0b0011,0b001): // 5.14: CNTV_CTL_EL0, Counter-timer Virtual Timer Control register
+    case SYSENCODE(0b11,0b101,0b1110,0b0011,0b001): // CNTV_CTL_EL0 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CTL_EL0"; }
@@ -2461,6 +4695,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1110,0b0011,0b010): // 5.15: CNTV_CVAL_EL0, Counter-timer Virtual Timer CompareValue register
+    case SYSENCODE(0b11,0b101,0b1110,0b0011,0b010): // CNTV_CVAL_EL0 (RW)
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CVAL_EL0"; }
@@ -2471,6 +4706,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
       } break;
 
     case SYSENCODE(0b11,0b011,0b1110,0b0011,0b000): // 5.16: CNTV_TVAL_EL0, Counter-timer Virtual Timer TimerValue register
+    case SYSENCODE(0b11,0b101,0b1110,0b0011,0b000): // CNTV_TVAL_EL0
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_TVAL_EL0"; }
@@ -2496,11 +4732,35 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b011,0b1110,0b0000,0b101): // CNTPCTSS_EL0
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTPCTSS_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Self-Synchronized Physical Count register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b011,0b1110,0b0000,0b110): // CNTVCTSS_EL0
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTVCTSS_EL0"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Self-Synchronized Virtual Count register"; }
+        } x; return &x;
+      } break;
+
     case SYSENCODE(0b11,0b100,0b1110,0b0000,0b011): // 5.18: CNTVOFF_EL2, Counter-timer Virtual Offset register
       {
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CNTVOFF_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Offset register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1110,0b0000,0b110): // CNTPOFF_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "CNTPOFF_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Counter-timer Physical Offset register"; }
         } x; return &x;
       } break;
 
@@ -2605,6 +4865,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         static struct : public BaseSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ICC_CTLR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Control Register (EL3)"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b000,0b1100,0b1001,0b101): // ICC_NMIAR1_EL1 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "ICC_NMIAR1_EL1"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Interrupt Controller Non-maskable Interrupt Acknowledge Register 1"; }
         } x; return &x;
       } break;
 
@@ -3174,9 +5442,168 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
+    case SYSENCODE(0b11,0b100,0b1010,0b0100,0b000): // MPAMHCR_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMHCR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMHCR_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0100,0b001): // MPAMVPMV_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPMV_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPMV_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0101,0b000): // MPAM2_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAM2_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAM2_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b1010,0b0101,0b000): // MPAM3_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAM3_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAM3_EL3"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b000): // MPAMVPM0_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM0_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM0_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b001): // MPAMVPM1_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM1_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM1_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b010): // MPAMVPM2_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM2_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM2_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b011): // MPAMVPM3_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM3_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM3_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b100): // MPAMVPM4_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM4_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM4_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b101): // MPAMVPM5_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM5_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM5_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b110): // MPAMVPM6_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM6_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM6_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b0110,0b111): // MPAMVPM7_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM7_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MPAMVPM7_EL2"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1000,0b000): // MECID_P0_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MECID_P0_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MECID_P1_EL2, MECIDR_EL2, VMECID_A_EL2,"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1000,0b001): // MECID_A0_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MECID_A0_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Alternate MECID for EL2 and EL2&0 translation regimes"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1000,0b010): // MECID_P1_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MECID_P1_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Primary MECID for EL2&0 translation regimes"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1000,0b011): // MECID_A1_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MECID_A1_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Alternate MECID for EL2&0 translation regimes."; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1000,0b111): // MECIDR_EL2 (RO)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MECIDR_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "MEC Identification Register"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1001,0b000): // VMECID_P_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VMECID_P_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Primary MECID for EL1&0 stage 2 translation regime"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b100,0b1010,0b1001,0b001): // VMECID_A_EL2 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "VMECID_A_EL2"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Alternate MECID for EL1&0 stage 2 translation regime"; }
+        } x; return &x;
+      } break;
+
+    case SYSENCODE(0b11,0b110,0b1010,0b1010,0b001): // MECID_RL_A_EL3 (RW)
+      {
+        static struct : public BaseSysReg {
+          void Name(Encoding e, std::ostream& sink) const override { sink << "MECID_RL_A_EL3"; }
+          void Describe(Encoding e, std::ostream& sink) const override { sink << "Realm PA space Alternate MECID for EL3 stage 1 translation regime"; }
+        } x; return &x;
+      } break;
     }
 
-  if (SYSENCODE(op0, op1, crn, crm&-2, 0) == SYSENCODE(0b11,0b100,0b1100,0b1100,0b000))
+  if (SYSENCODE(op0, op1, crn, unsigned(crm&-2), 0) == SYSENCODE(0b11,0b100,0b1100,0b1100,0b000))
     { // 6.43: ICH_LR<n>_EL2, Interrupt Controller List Registers, n = 0 - 15
       {
         static struct : public BaseSysReg {

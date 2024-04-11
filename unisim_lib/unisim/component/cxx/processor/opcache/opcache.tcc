@@ -140,6 +140,7 @@ OpCache<DECODER, CONFIG>::FindPage(address_type page_key)
 }
 
 template <typename DECODER, class CONFIG>
+template <typename EXCEPTION>
 typename DECODER::operation_type*
 OpCache<DECODER, CONFIG>::Decode(address_type addr, code_type insn)
 {
@@ -166,7 +167,14 @@ OpCache<DECODER, CONFIG>::Decode(address_type addr, code_type insn)
       delete operation;
     }
 
-  operation = this->NCDecode(addr, insn);
+  try
+  {
+    operation = this->NCDecode(addr, insn);
+  }
+  catch(EXCEPTION& e)
+  {
+    operation = new operation_type(insn, addr, "???");
+  }
   page->operation[word_addr % operations_per_page] = operation;
 
   return operation;

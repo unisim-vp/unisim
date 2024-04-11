@@ -70,6 +70,7 @@ instruction.cc \
 main.cc \
 debugger.cc \
 dbgmon.cc \
+recorder.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\

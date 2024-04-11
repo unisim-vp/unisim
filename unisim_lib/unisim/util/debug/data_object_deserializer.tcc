@@ -87,7 +87,7 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 {
 	if(status != OK) return false;
 	std::string data_object_name = DataObjectName();
-	DataObjectRef<ADDRESS> data_object = data_object_lookup_if->FindDataObject(data_object_name);
+	DataObjectRef<ADDRESS> data_object = data_object_deserializer.data_object_lookup_if->FindDataObject(data_object_name);
 	
 	if(data_object != DataObject<ADDRESS>::Undefined)
 	{
@@ -98,7 +98,6 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 		else
 		{
 			const unisim::util::debug::Type *data_object_type = data_object.GetType();
-			unisim::util::json::JSON_ValueType json_value_type = json_value.GetType();
 			
 			if(unisim::util::debug::TypeIsFloat::Test(data_object_type))
 			{
@@ -108,7 +107,6 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 				{
 					case unisim::util::json::JSON_INT: value = json_value.AsInteger(); break;
 					case unisim::util::json::JSON_FLOAT: value = json_value.AsFloat(); break;
-					case unisim::util::json::JSON_BOOLEAN: value = json_value.AsBoolean(); break;
 					case unisim::util::json::JSON_BOOLEAN: value = json_value.AsBoolean(); break;
 					default: break;
 				}
@@ -185,7 +183,7 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 {
 	if(status != OK) return false;
 	std::string data_object_name = DataObjectName();
-	DataObjectRef<ADDRESS> data_object = data_object_lookup_if->FindDataObject(data_object_name);
+	DataObjectRef<ADDRESS> data_object = data_object_deserializer.data_object_lookup_if->FindDataObject(data_object_name);
 	
 	if(data_object != DataObject<ADDRESS>::Undefined)
 	{

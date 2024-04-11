@@ -10292,7 +10292,7 @@ op bic_vhi( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<3
 bic_vhi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh};
 
 bic_vhi.disasm = {
-  sink << "bic\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmI(imm, 16);
+  sink << "bic\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmI(int16_t(imm >> sh)) << ", lsl #" << +sh;
 };
 
 bic_vhi.execute = {
@@ -10306,7 +10306,7 @@ op bic_vsi( 0b0[1] : q[1] : 0b10111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3>
 bic_vsi.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh};
 
 bic_vsi.disasm = {
-  sink << "bic\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
+  sink << "bic\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(int32_t(imm >> sh)) << ", lsl #" << +sh;
 };
 
 bic_vsi.execute = {
@@ -10967,7 +10967,7 @@ op movi_vbi( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b111001[6] : 
 movi_vbi.var imm : {uint8_t} = {imm1|imm0};
 
 movi_vbi.disasm = {
-  sink << "movi\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmI(imm, 16);
+  sink << "movi\t" << DisasmTV(rd, 8<<q, 0) << ", " << DisasmI(int8_t(imm));
 };
 
 movi_vbi.execute = {
@@ -10982,7 +10982,7 @@ op movi_vhi( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b10[2] : shl<
 movi_vhi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh};
 
 movi_vhi.disasm = {
-  sink << "movi\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmI(imm, 16);
+  sink << "movi\t" << DisasmTV(rd, 4<<q, 1) << ", " << DisasmI(int16_t(imm >> sh)) << ", lsl #" << +sh;
 };
 
 movi_vhi.execute = {
@@ -10997,7 +10997,7 @@ op movi_vsi( 0b0[1] : q[1] : 0b00111100000[11] : shl<5> imm1[3] : 0b0[1] : shl<3
 movi_vsi.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh};
 
 movi_vsi.disasm = {
-  sink << "movi\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
+  sink << "movi\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(int32_t(imm >> sh)) << ", lsl #" << +sh;
 };
 
 movi_vsi.execute = {
@@ -11012,7 +11012,7 @@ op movi_di( 0b0010111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[1]
 movi_di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff};
 
 movi_di.disasm = {
-  sink << "movi\t" << DisasmD(rd) << ", " << DisasmI(imm, 16);
+  sink << "movi\t" << DisasmD(rd) << ", " << DisasmI(imm);
 };
 
 movi_di.execute = {
@@ -11025,7 +11025,7 @@ op movi_v2di( 0b0110111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[
 movi_v2di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff};
 
 movi_v2di.disasm = {
-  sink << "movi\t" << DisasmTV(rd, 2, 3) << ", " << DisasmI(imm, 16);
+  sink << "movi\t" << DisasmTV(rd, 2, 3) << ", " << DisasmI(imm);
 };
 
 movi_v2di.execute = {
@@ -11039,7 +11039,7 @@ op movi_vsmsl( 0b0[1] : q[1] : 0b00111100000[11] : shl<21> imm1[3] : 0b110[3] : 
 movi_vsmsl.var imm : {uint32_t} = {(imm1|imm0|0xffff) >> (sh ? 0 : 8)};
 
 movi_vsmsl.disasm = {
-  sink << "movi\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(imm, 16);
+  sink << "movi\t" << DisasmTV(rd, 2<<q, 2) << ", " << DisasmI(int32_t(uint32_t(imm1|imm0) >> 16)) << ", msl #" << (sh ? "16" : "8");
 };
 
 movi_vsmsl.execute = {

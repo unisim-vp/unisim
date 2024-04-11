@@ -1091,8 +1091,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 					response << "\t\t\t</thead>" << std::endl;
 					response << "\t\t\t<tbody>" << std::endl;
 					std::list<unisim::kernel::VariableBase *>::const_iterator var_iter;
-					unsigned int var_id;
-					for(var_id = 0, var_iter = var_lst.begin(); var_iter != var_lst.end(); var_id++, var_iter++)
+					for(var_iter = var_lst.begin(); var_iter != var_lst.end(); var_iter++)
 					{
 						unisim::kernel::VariableBase *var = *var_iter;
 						

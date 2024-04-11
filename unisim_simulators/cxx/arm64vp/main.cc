@@ -468,11 +468,9 @@ main(int argc, char *argv[])
   double time_start = unisim::util::host_time::GetHostTime();
   try
     {
-      uint64_t suspend_at;
-      if (char const* arg = getenv("SUSPEND_AT")) suspend_at = strtoull(arg,0,0);
-      else                                        suspend_at = uint64_t(-1);
+      if (char const* arg = getenv("SUSPEND_AT")) arch.suspend_at = strtoull(arg,0,0);
       //else                                        suspend_at = arch.insn_counter + 0x1000000000ull;
-      arch.run( suspend_at );
+      arch.run();
       arch.show_exec_stats(std::cerr);
       arch.write_tfpstats();
     }
@@ -511,7 +509,7 @@ main(int argc, char *argv[])
     }
   double time_stop = unisim::util::host_time::GetHostTime();
   double spent_time = time_stop - time_start;
-  double run_time = (double) arch.insn_counter / (arch.get_freq() * arch.get_ipc());
+  double run_time = (double) arch.insn_timer / (arch.get_freq() * arch.get_ipc());
 
   std::cerr << "Run time: " << run_time << " seconds" << std::endl;
   std::cerr << "Host simulation speed: " << ((double) arch.insn_counter / spent_time / 1e6) << " MIPS" << std::endl;
