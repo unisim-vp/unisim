@@ -786,7 +786,7 @@ CPU<CPU_IMPL>::SysReg::Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm,
 }
 
 template <class CPU_IMPL>
-typename CPU<CPU_IMPL>::U64
+typename ArchTypes::U64
 CPU<CPU_IMPL>::SysReg::Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu) const
 {
   std::cerr << "Read error for system register.\n";
@@ -825,7 +825,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
 
   struct PStateSysReg : public SysReg
   {
-    char const* ReadOperation() const { return "mrs<bad-read>"; }
+    char const* ReadOperation() const override { return "mrs<bad-read>"; }
     void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const override
     {
       Encoding e{op0, op1, crn, crm, op2};
@@ -852,7 +852,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b0100,0b0010,0b000): // NZCV
       {
         static struct : public SysReg {
-          char const* Name() const { return "NZCV"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "NZCV"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "NZCV Condition flags"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.nzcv = U32(value >> 28) & U32(0xf); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.nzcv) << 28; }
@@ -862,7 +862,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b0100,0b0100,0b000): // FPCR, Floating-point Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "FPCR"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPCR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Control Register"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.fpcr = U32(value) & U32(CPU_IMPL::FPCR_MASK); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.fpcr); }
@@ -872,7 +872,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b0100,0b0100,0b001): // FPSR, Floating-point Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "FPSR"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPSR"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Status Register"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.fpsr = U32(value) & U32(CPU_IMPL::FPSR_MASK); }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return U64(cpu.fpsr); }
@@ -989,7 +989,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b001): // 2.1: ACTLR_EL1, Auxiliary Control Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ACTLR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ACTLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Control Register (EL1)"; }
         } x; return &x;
       } break;
@@ -997,7 +997,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0000,0b001): // 2.2: ACTLR_EL2, Auxiliary Control Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ACTLR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ACTLR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Control Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1005,7 +1005,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0001,0b0000,0b001): // 2.3: ACTLR_EL3, Auxiliary Control Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ACTLR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ACTLR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Control Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1013,7 +1013,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0101,0b0001,0b000): // 2.4: AFSR0_EL1, Auxiliary Fault Status Register 0 (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AFSR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AFSR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Fault Status Register 0 (EL1)"; }
         } x; return &x;
       } break;
@@ -1021,7 +1021,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0101,0b0001,0b000): // 2.5: AFSR0_EL2, Auxiliary Fault Status Register 0 (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AFSR0_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AFSR0_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Fault Status Register 0 (EL2)"; }
         } x; return &x;
       } break;
@@ -1029,7 +1029,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0101,0b0001,0b000): // 2.6: AFSR0_EL3, Auxiliary Fault Status Register 0 (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AFSR0_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AFSR0_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Fault Status Register 0 (EL3)"; }
         } x; return &x;
       } break;
@@ -1037,7 +1037,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0101,0b0001,0b001): // 2.7: AFSR1_EL1, Auxiliary Fault Status Register 1 (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AFSR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AFSR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Fault Status Register 1 (EL1)"; }
         } x; return &x;
       } break;
@@ -1045,7 +1045,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0101,0b0001,0b001): // 2.8: AFSR1_EL2, Auxiliary Fault Status Register 1 (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AFSR1_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AFSR1_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Fault Status Register 1 (EL2)"; }
         } x; return &x;
       } break;
@@ -1053,7 +1053,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0101,0b0001,0b001): // 2.9: AFSR1_EL3, Auxiliary Fault Status Register 1 (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AFSR1_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AFSR1_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Fault Status Register 1 (EL3)"; }
         } x; return &x;
       } break;
@@ -1061,7 +1061,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b001,0b0000,0b0000,0b111): // 2.10: AIDR_EL1, Auxiliary ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "AIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary ID Register"; }
         } x; return &x;
       } break;
@@ -1069,7 +1069,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1010,0b0011,0b000): // 2.11: AMAIR_EL1, Auxiliary Memory Attribute Indirection Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AMAIR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AMAIR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Memory Attribute Indirection Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1077,7 +1077,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1010,0b0011,0b000): // 2.12: AMAIR_EL2, Auxiliary Memory Attribute Indirection Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AMAIR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AMAIR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Memory Attribute Indirection Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1085,7 +1085,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1010,0b0011,0b000): // 2.13: AMAIR_EL3, Auxiliary Memory Attribute Indirection Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "AMAIR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "AMAIR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Auxiliary Memory Attribute Indirection Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1093,7 +1093,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b001,0b0000,0b0000,0b000): // 2.14: CCSIDR_EL1, Current Cache Size ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CCSIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CCSIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Current Cache Size ID Register"; }
         } x; return &x;
       } break;
@@ -1101,7 +1101,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b001,0b0000,0b0000,0b001): // 2.15: CLIDR_EL1, Cache Level ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CLIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CLIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Cache Level ID Register"; }
         } x; return &x;
       } break;
@@ -1109,7 +1109,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1101,0b0000,0b001): // 2.16: CONTEXTIDR_EL1, Context ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CONTEXTIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CONTEXTIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Context ID Register"; }
         } x; return &x;
       } break;
@@ -1117,7 +1117,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b010): // 2.17: CPACR_EL1, Architectural Feature Access Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CPACR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CPACR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Architectural Feature Access Control Register"; }
         } x; return &x;
       } break;
@@ -1125,7 +1125,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0001,0b010): // 2.18: CPTR_EL2, Architectural Feature Trap Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "CPTR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CPTR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Architectural Feature Trap Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1133,7 +1133,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0001,0b0001,0b010): // 2.19: CPTR_EL3, Architectural Feature Trap Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "CPTR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CPTR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Architectural Feature Trap Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1141,7 +1141,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b010,0b0000,0b0000,0b000): // 2.20: CSSELR_EL1, Cache Size Selection Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CSSELR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CSSELR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Cache Size Selection Register"; }
         } x; return &x;
       } break;
@@ -1149,7 +1149,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b0000,0b0000,0b001): // 2.21: CTR_EL0, Cache Type Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CTR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CTR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Cache Type Register"; }
         } x; return &x;
       } break;
@@ -1157,7 +1157,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0011,0b0000,0b000): // 2.22: DACR32_EL2, Domain Access Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DACR32_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DACR32_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Domain Access Control Register"; }
         } x; return &x;
       } break;
@@ -1165,7 +1165,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0101,0b0010,0b000): // 2.24: ESR_EL1, Exception Syndrome Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ESR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ESR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1173,7 +1173,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0101,0b0010,0b000): // 2.25: ESR_EL2, Exception Syndrome Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ESR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ESR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1181,7 +1181,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0101,0b0010,0b000): // 2.26: ESR_EL3, Exception Syndrome Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ESR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ESR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Exception Syndrome Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1189,7 +1189,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0110,0b0000,0b000): // 2.27: FAR_EL1, Fault Address Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "FAR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "FAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Fault Address Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1197,7 +1197,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0110,0b0000,0b000): // 2.28: FAR_EL2, Fault Address Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "FAR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "FAR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Fault Address Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1205,7 +1205,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0110,0b0000,0b000): // 2.29: FAR_EL3, Fault Address Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "FAR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "FAR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Fault Address Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1213,7 +1213,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0101,0b0011,0b000): // 2.30: FPEXC32_EL2, Floating-point Exception Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "FPEXC32_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "FPEXC32_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Floating-point Exception Control register"; }
         } x; return &x;
       } break;
@@ -1221,7 +1221,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0001,0b111): // 2.31: HACR_EL2, Hypervisor Auxiliary Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "HACR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "HACR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Hypervisor Auxiliary Control Register"; }
         } x; return &x;
       } break;
@@ -1229,7 +1229,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0001,0b000): // 2.32: HCR_EL2, Hypervisor Configuration Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "HCR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "HCR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Hypervisor Configuration Register"; }
         } x; return &x;
       } break;
@@ -1237,7 +1237,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0110,0b0000,0b100): // 2.33: HPFAR_EL2, Hypervisor IPA Fault Address Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "HPFAR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "HPFAR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Hypervisor IPA Fault Address Register"; }
         } x; return &x;
       } break;
@@ -1245,7 +1245,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0001,0b011): // 2.34: HSTR_EL2, Hypervisor System Trap Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "HSTR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "HSTR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Hypervisor System Trap Register"; }
         } x; return &x;
       } break;
@@ -1253,7 +1253,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0101,0b100): // 2.35: ID_AA64AFR0_EL1, AArch64 Auxiliary Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64AFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64AFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Auxiliary Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1261,7 +1261,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0101,0b101): // 2.36: ID_AA64AFR1_EL1, AArch64 Auxiliary Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64AFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64AFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Auxiliary Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1269,7 +1269,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0101,0b000): // 2.37: ID_AA64DFR0_EL1, AArch64 Debug Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64DFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64DFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Debug Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1277,7 +1277,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0101,0b001): // 2.38: ID_AA64DFR1_EL1, AArch64 Debug Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64DFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64DFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Debug Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1285,7 +1285,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0110,0b000): // 2.39: ID_AA64ISAR0_EL1, AArch64 Instruction Set Attribute Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64ISAR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ISAR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 0"; }
         } x; return &x;
       } break;
@@ -1293,7 +1293,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0110,0b001): // 2.40: ID_AA64ISAR1_EL1, AArch64 Instruction Set Attribute Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64ISAR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ISAR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 1"; }
         } x; return &x;
       } break;
@@ -1301,7 +1301,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0110,0b010): // 2.40: ID_AA64ISAR1_EL1, AArch64 Instruction Set Attribute Register 2
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64ISAR2_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ISAR2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 2"; }
         } x; return &x;
       } break;
@@ -1309,7 +1309,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b000): // 2.41: ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64MMFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1317,7 +1317,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b001): // 2.42: ID_AA64MMFR1_EL1, AArch64 Memory Model Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64MMFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1325,7 +1325,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b000): // 2.43: ID_AA64PFR0_EL1, AArch64 Processor Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64PFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64PFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Processor Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1333,7 +1333,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b001): // 2.44: ID_AA64PFR1_EL1, AArch64 Processor Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AA64PFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64PFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Processor Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1341,7 +1341,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b011): // 2.45: ID_AFR0_EL1, AArch32 Auxiliary Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_AFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_AFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Auxiliary Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1349,7 +1349,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b010): // 2.46: ID_DFR0_EL1, AArch32 Debug Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_DFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_DFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Debug Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1357,7 +1357,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0010,0b000): // 2.47: ID_ISAR0_EL1, AArch32 Instruction Set Attribute Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_ISAR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 0"; }
         } x; return &x;
       } break;
@@ -1365,7 +1365,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0010,0b001): // 2.48: ID_ISAR1_EL1, AArch32 Instruction Set Attribute Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_ISAR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 1"; }
         } x; return &x;
       } break;
@@ -1373,7 +1373,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0010,0b010): // 2.49: ID_ISAR2_EL1, AArch32 Instruction Set Attribute Register 2
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_ISAR2_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 2"; }
         } x; return &x;
       } break;
@@ -1381,7 +1381,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0010,0b011): // 2.50: ID_ISAR3_EL1, AArch32 Instruction Set Attribute Register 3
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_ISAR3_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR3_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 3"; }
         } x; return &x;
       } break;
@@ -1389,7 +1389,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0010,0b100): // 2.51: ID_ISAR4_EL1, AArch32 Instruction Set Attribute Register 4
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_ISAR4_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR4_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 4"; }
         } x; return &x;
       } break;
@@ -1397,7 +1397,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0010,0b101): // 2.52: ID_ISAR5_EL1, AArch32 Instruction Set Attribute Register 5
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_ISAR5_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_ISAR5_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Instruction Set Attribute Register 5"; }
         } x; return &x;
       } break;
@@ -1405,7 +1405,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b100): // 2.53: ID_MMFR0_EL1, AArch32 Memory Model Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_MMFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_MMFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Memory Model Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1413,7 +1413,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b101): // 2.54: ID_MMFR1_EL1, AArch32 Memory Model Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_MMFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_MMFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Memory Model Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1421,7 +1421,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b110): // 2.55: ID_MMFR2_EL1, AArch32 Memory Model Feature Register 2
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_MMFR2_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_MMFR2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Memory Model Feature Register 2"; }
         } x; return &x;
       } break;
@@ -1429,7 +1429,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b111): // 2.56: ID_MMFR3_EL1, AArch32 Memory Model Feature Register 3
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_MMFR3_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_MMFR3_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Memory Model Feature Register 3"; }
         } x; return &x;
       } break;
@@ -1437,7 +1437,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b000): // 2.57: ID_PFR0_EL1, AArch32 Processor Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_PFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_PFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Processor Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1445,7 +1445,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0001,0b001): // 2.58: ID_PFR1_EL1, AArch32 Processor Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ID_PFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ID_PFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Processor Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1453,7 +1453,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0101,0b0000,0b001): // 2.59: IFSR32_EL2, Instruction Fault Status Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "IFSR32_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "IFSR32_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Instruction Fault Status Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1461,7 +1461,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b0001,0b000): // 2.60: ISR_EL1, Interrupt Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ISR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ISR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Status Register"; }
         } x; return &x;
       } break;
@@ -1469,7 +1469,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1010,0b0010,0b000): // 2.61: MAIR_EL1, Memory Attribute Indirection Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "MAIR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Memory Attribute Indirection Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1477,7 +1477,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1010,0b0010,0b000): // 2.62: MAIR_EL2, Memory Attribute Indirection Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "MAIR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Memory Attribute Indirection Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1485,7 +1485,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1010,0b0010,0b000): // 2.63: MAIR_EL3, Memory Attribute Indirection Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "MAIR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MAIR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Memory Attribute Indirection Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1493,7 +1493,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0000,0b000): // 2.64: MIDR_EL1, Main ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "MIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Main ID Register"; }
         } x; return &x;
       } break;
@@ -1501,7 +1501,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0000,0b101): // 2.65: MPIDR_EL1, Multiprocessor A0nity Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "MPIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MPIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Multiprocessor A0nity Register"; }
         } x; return &x;
       } break;
@@ -1509,7 +1509,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0011,0b000): // 2.66: MVFR0_EL1, Media and VFP Feature Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "MVFR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MVFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Media and VFP Feature Register 0"; }
         } x; return &x;
       } break;
@@ -1517,7 +1517,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0011,0b001): // 2.67: MVFR1_EL1, Media and VFP Feature Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "MVFR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MVFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Media and VFP Feature Register 1"; }
         } x; return &x;
       } break;
@@ -1525,7 +1525,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0011,0b010): // 2.68: MVFR2_EL1, Media and VFP Feature Register 2
       {
         static struct : public SysReg {
-          char const* Name() const { return "MVFR2_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MVFR2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Media and VFP Feature Register 2"; }
         } x; return &x;
       } break;
@@ -1533,7 +1533,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0111,0b0100,0b000): // 2.69: PAR_EL1, Physical Address Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PAR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Physical Address Register"; }
         } x; return &x;
       } break;
@@ -1541,7 +1541,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0000,0b0000,0b110): // 2.70: REVIDR_EL1, Revision ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "REVIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "REVIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Revision ID Register"; }
         } x; return &x;
       } break;
@@ -1549,7 +1549,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b0000,0b010): // 2.71: RMR_EL1, Reset Management Register (if EL2 and EL3 not implemented)
       {
         static struct : public SysReg {
-          char const* Name() const { return "RMR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "RMR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Reset Management Register (if EL2 and EL3 not implemented)"; }
         } x; return &x;
       } break;
@@ -1557,7 +1557,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b0000,0b010): // 2.72: RMR_EL2, Reset Management Register (if EL3 not implemented)
       {
         static struct : public SysReg {
-          char const* Name() const { return "RMR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "RMR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Reset Management Register (if EL3 not implemented)"; }
         } x; return &x;
       } break;
@@ -1565,7 +1565,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1100,0b0000,0b010): // 2.73: RMR_EL3, Reset Management Register (if EL3 implemented)
       {
         static struct : public SysReg {
-          char const* Name() const { return "RMR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "RMR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Reset Management Register (if EL3 implemented)"; }
         } x; return &x;
       } break;
@@ -1573,7 +1573,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b0000,0b001): // 2.74: RVBAR_EL1, Reset Vector Base Address Register (if EL2 and EL3 not implemented)
       {
         static struct : public SysReg {
-          char const* Name() const { return "RVBAR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "RVBAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Reset Vector Base Address Register (if EL2 and EL3 not implemented)"; }
         } x; return &x;
       } break;
@@ -1581,7 +1581,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b0000,0b001): // 2.75: RVBAR_EL2, Reset Vector Base Address Register (if EL3 not implemented)
       {
         static struct : public SysReg {
-          char const* Name() const { return "RVBAR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "RVBAR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Reset Vector Base Address Register (if EL3 not implemented)"; }
         } x; return &x;
       } break;
@@ -1589,7 +1589,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1100,0b0000,0b001): // 2.76: RVBAR_EL3, Reset Vector Base Address Register (if EL3 implemented)
       {
         static struct : public SysReg {
-          char const* Name() const { return "RVBAR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "RVBAR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Reset Vector Base Address Register (if EL3 implemented)"; }
         } x; return &x;
       } break;
@@ -1597,7 +1597,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0001,0b0001,0b000): // 2.78: SCR_EL3, Secure Configuration Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "SCR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "SCR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Secure Configuration Register"; }
         } x; return &x;
       } break;
@@ -1605,7 +1605,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0001,0b0000,0b000): // 2.79: SCTLR_EL1, System Control Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "SCTLR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "SCTLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "System Control Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1613,7 +1613,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0000,0b000): // 2.80: SCTLR_EL2, System Control Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "SCTLR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "SCTLR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "System Control Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1621,7 +1621,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0001,0b0000,0b000): // 2.81: SCTLR_EL3, System Control Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "SCTLR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "SCTLR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "System Control Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1629,7 +1629,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0010,0b0000,0b010): // 2.82: TCR_EL1, Translation Control Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TCR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Control Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1637,7 +1637,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0010,0b0000,0b010): // 2.83: TCR_EL2, Translation Control Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TCR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Control Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1645,7 +1645,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0010,0b0000,0b010): // 2.84: TCR_EL3, Translation Control Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TCR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TCR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Control Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1653,7 +1653,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b010,0b0000,0b0000,0b000): // 2.85: TEECR32_EL1, T32EE Configuration Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "TEECR32_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TEECR32_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "T32EE Configuration Register"; }
         } x; return &x;
       } break;
@@ -1661,7 +1661,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b010,0b0001,0b0000,0b000): // 2.86: TEEHBR32_EL1, T32EE Handler Base Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "TEEHBR32_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TEEHBR32_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "T32EE Handler Base Register"; }
         } x; return &x;
       } break;
@@ -1669,7 +1669,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1101,0b0000,0b010): // 2.87: TPIDR_EL0, Thread Pointer / ID Register (EL0)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TPIDR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Thread Pointer / ID Register (EL0)"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const override { cpu.TPIDRURW = value; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const override { return cpu.TPIDRURW; }
@@ -1679,7 +1679,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1101,0b0000,0b100): // 2.88: TPIDR_EL1, Thread Pointer / ID Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TPIDR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Thread Pointer / ID Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1687,7 +1687,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1101,0b0000,0b010): // 2.89: TPIDR_EL2, Thread Pointer / ID Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TPIDR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Thread Pointer / ID Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1695,7 +1695,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1101,0b0000,0b010): // 2.90: TPIDR_EL3, Thread Pointer / ID Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TPIDR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Thread Pointer / ID Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1703,7 +1703,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1101,0b0000,0b011): // 2.91: TPIDRRO_EL0, Thread Pointer / ID Register, Read-Only (EL0)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TPIDRRO_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TPIDRRO_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Thread Pointer / ID Register, Read-Only (EL0)"; }
         } x; return &x;
       } break;
@@ -1711,7 +1711,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0010,0b0000,0b000): // 2.92: TTBR0_EL1, Translation Table Base Register 0 (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TTBR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 0 (EL1)"; }
         } x; return &x;
       } break;
@@ -1719,7 +1719,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0010,0b0000,0b000): // 2.93: TTBR0_EL2, Translation Table Base Register 0 (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TTBR0_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 0 (EL2)"; }
         } x; return &x;
       } break;
@@ -1727,7 +1727,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0010,0b0000,0b000): // 2.94: TTBR0_EL3, Translation Table Base Register 0 (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "TTBR0_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TTBR0_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 0 (EL3)"; }
         } x; return &x;
       } break;
@@ -1735,7 +1735,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0010,0b0000,0b001): // 2.95: TTBR1_EL1, Translation Table Base Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "TTBR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "TTBR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Translation Table Base Register 1"; }
         } x; return &x;
       } break;
@@ -1743,7 +1743,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b0000,0b000): // 2.96: VBAR_EL1, Vector Base Address Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "VBAR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VBAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Vector Base Address Register (EL1)"; }
         } x; return &x;
       } break;
@@ -1751,7 +1751,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b0000,0b000): // 2.97: VBAR_EL2, Vector Base Address Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "VBAR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VBAR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Vector Base Address Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1759,7 +1759,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1100,0b0000,0b000): // 2.98: VBAR_EL3, Vector Base Address Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "VBAR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VBAR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Vector Base Address Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1767,7 +1767,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0000,0b0000,0b101): // 2.99: VMPIDR_EL2, Virtualization Multiprocessor ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "VMPIDR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VMPIDR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Virtualization Multiprocessor ID Register"; }
         } x; return &x;
       } break;
@@ -1775,7 +1775,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0000,0b0000,0b000): // 2.100: VPIDR_EL2, Virtualization Processor ID Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "VPIDR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VPIDR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Virtualization Processor ID Register"; }
         } x; return &x;
       } break;
@@ -1783,7 +1783,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0010,0b0001,0b010): // 2.101: VTCR_EL2, Virtualization Translation Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "VTCR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VTCR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Virtualization Translation Control Register"; }
         } x; return &x;
       } break;
@@ -1791,7 +1791,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0010,0b0001,0b000): // 2.102: VTTBR_EL2, Virtualization Translation Table Base Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "VTTBR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "VTTBR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Virtualization Translation Table Base Register"; }
         } x; return &x;
       } break;
@@ -1799,7 +1799,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0111,0b1110,0b110): // 3.1: DBGAUTHSTATUS_EL1, Debug Authentication Status register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGAUTHSTATUS_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGAUTHSTATUS_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Authentication Status register"; }
         } x; return &x;
       } break;
@@ -1807,7 +1807,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b101): // 3.2: DBGBCR<n>_EL1, Debug Breakpoint Control Registers, n = 0 - 15
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGBCR<n>_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGBCR<n>_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Breakpoint Control Registers, n = 0 - 15"; }
         } x; return &x;
       } break;
@@ -1815,7 +1815,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b100): // 3.3: DBGBVR<n>_EL1, Debug Breakpoint Value Registers, n = 0 - 15
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGBVR<n>_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGBVR<n>_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Breakpoint Value Registers, n = 0 - 15"; }
         } x; return &x;
       } break;
@@ -1823,7 +1823,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0111,0b1001,0b110): // 3.4: DBGCLAIMCLR_EL1, Debug Claim Tag Clear register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGCLAIMCLR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGCLAIMCLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Claim Tag Clear register"; }
         } x; return &x;
       } break;
@@ -1831,7 +1831,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0111,0b1000,0b110): // 3.5: DBGCLAIMSET_EL1, Debug Claim Tag Set register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGCLAIMSET_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGCLAIMSET_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Claim Tag Set register"; }
         } x; return &x;
       } break;
@@ -1839,7 +1839,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b011,0b0000,0b0100,0b000): // 3.6: DBGDTR_EL0, Debug Data Transfer Register, half-duplex
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGDTR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGDTR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Data Transfer Register, half-duplex"; }
         } x; return &x;
       } break;
@@ -1847,7 +1847,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     // case SYSENCODE(0b10,0b011,0b0000,0b0101,0b000): 3.7: DBGDTRRX_EL0, Debug Data Transfer Register, Receive
     //   {
     //     static struct : public SysReg {
-    //       char const* Name() const { return "DBGDTRRX_EL0"; }
+    //       void Name(Encoding, std::ostream& sink) const override { sink << "DBGDTRRX_EL0"; }
     //       void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Data Transfer Register, Receive"; }
     //     } x; return &x;
     //   } break;
@@ -1855,7 +1855,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     // case SYSENCODE(0b10,0b011,0b0000,0b0101,0b000): 3.8: DBGDTRTX_EL0, Debug Data Transfer Register, Transmit
     //   {
     //     static struct : public SysReg {
-    //       char const* Name() const { return "DBGDTRTX_EL0"; }
+    //       void Name(Encoding, std::ostream& sink) const override { sink << "DBGDTRTX_EL0"; }
     //       void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Data Transfer Register, Transmit"; }
     //     } x; return &x;
     //   } break;
@@ -1863,7 +1863,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b011,0b0000,0b0101,0b000): // 3.8: DBGDTR_EL0, Debug Data Transfer Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGDTR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGDTR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Data Transfer Register"; }
         } x; return &x;
       } break;
@@ -1871,7 +1871,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0001,0b0100,0b100): // 3.9: DBGPRCR_EL1, Debug Power Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGPRCR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGPRCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Power Control Register"; }
         } x; return &x;
       } break;
@@ -1879,7 +1879,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b100,0b0000,0b0111,0b000): // 3.10: DBGVCR32_EL2, Debug Vector Catch Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGVCR32_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGVCR32_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Vector Catch Register"; }
         } x; return &x;
       } break;
@@ -1887,7 +1887,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b111): // 3.11: DBGWCR<n>_EL1, Debug Watchpoint Control Registers, n = 0 - 15
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGWCR<n>_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGWCR<n>_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Watchpoint Control Registers, n = 0 - 15"; }
         } x; return &x;
       } break;
@@ -1895,7 +1895,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b110): // 3.12: DBGWVR<n>_EL1, Debug Watchpoint Value Registers, n = 0 - 15
       {
         static struct : public SysReg {
-          char const* Name() const { return "DBGWVR<n>_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DBGWVR<n>_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Watchpoint Value Registers, n = 0 - 15"; }
         } x; return &x;
       } break;
@@ -1903,7 +1903,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b0100,0b0101,0b001): // 3.13: DLR_EL0, Debug Link Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DLR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DLR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Link Register"; }
         } x; return &x;
       } break;
@@ -1911,7 +1911,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b0100,0b0101,0b000): // 3.14: DSPSR_EL0, Debug Saved Program Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "DSPSR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "DSPSR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Debug Saved Program Status Register"; }
         } x; return &x;
       } break;
@@ -1919,7 +1919,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0010,0b000): // 3.15: MDCCINT_EL1, Monitor DCC Interrupt Enable Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "MDCCINT_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MDCCINT_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor DCC Interrupt Enable Register"; }
         } x; return &x;
       } break;
@@ -1927,7 +1927,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b011,0b0000,0b0001,0b000): // 3.16: MDCCSR_EL0, Monitor DCC Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "MDCCSR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MDCCSR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor DCC Status Register"; }
         } x; return &x;
       } break;
@@ -1935,7 +1935,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b0001,0b0001,0b001): // 3.17: MDCR_EL2, Monitor Debug Configuration Register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "MDCR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MDCR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor Debug Configuration Register (EL2)"; }
         } x; return &x;
       } break;
@@ -1943,7 +1943,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0001,0b0011,0b001): // 3.18: MDCR_EL3, Monitor Debug Configuration Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "MDCR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MDCR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor Debug Configuration Register (EL3)"; }
         } x; return &x;
       } break;
@@ -1951,7 +1951,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0001,0b0000,0b000): // 3.19: MDRAR_EL1, Monitor Debug ROM Address Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "MDRAR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MDRAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor Debug ROM Address Register"; }
         } x; return &x;
       } break;
@@ -1959,7 +1959,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0010,0b010): // 3.20: MDSCR_EL1, Monitor Debug System Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "MDSCR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "MDSCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Monitor Debug System Control Register"; }
         } x; return &x;
       } break;
@@ -1967,7 +1967,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0001,0b0011,0b100): // 3.21: OSDLR_EL1, OS Double Lock Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "OSDLR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "OSDLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Double Lock Register"; }
         } x; return &x;
       } break;
@@ -1975,7 +1975,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b010): // 3.22: OSDTRRX_EL1, OS Lock Data Transfer Register, Receive
       {
         static struct : public SysReg {
-          char const* Name() const { return "OSDTRRX_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "OSDTRRX_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Lock Data Transfer Register, Receive"; }
         } x; return &x;
       } break;
@@ -1983,7 +1983,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0011,0b010): // 3.23: OSDTRTX_EL1, OS Lock Data Transfer Register, Transmit
       {
         static struct : public SysReg {
-          char const* Name() const { return "OSDTRTX_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "OSDTRTX_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Lock Data Transfer Register, Transmit"; }
         } x; return &x;
       } break;
@@ -1991,7 +1991,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0000,0b0110,0b010): // 3.24: OSECCR_EL1, OS Lock Exception Catch Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "OSECCR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "OSECCR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Lock Exception Catch Control Register"; }
         } x; return &x;
       } break;
@@ -1999,7 +1999,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0001,0b0000,0b100): // 3.25: OSLAR_EL1, OS Lock Access Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "OSLAR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "OSLAR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Lock Access Register"; }
         } x; return &x;
       } break;
@@ -2007,7 +2007,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b10,0b000,0b0001,0b0001,0b100): // 3.26: OSLSR_EL1, OS Lock Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "OSLSR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "OSLSR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "OS Lock Status Register"; }
         } x; return &x;
       } break;
@@ -2015,7 +2015,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b0001,0b0001,0b001): // 3.27: SDER32_EL3, AArch32 Secure Debug Enable Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "SDER32_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "SDER32_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch32 Secure Debug Enable Register"; }
         } x; return &x;
       } break;
@@ -2023,7 +2023,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b1111,0b111): // 4.1: PMCCFILTR_EL0, Performance Monitors Cycle Count Filter Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCCFILTR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCCFILTR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Cycle Count Filter Register"; }
         } x; return &x;
       } break;
@@ -2031,7 +2031,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1101,0b000): // 4.2: PMCCNTR_EL0, Performance Monitors Cycle Count Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCCNTR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCCNTR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Cycle Count Register"; }
         } x; return &x;
       } break;
@@ -2039,7 +2039,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b110): // 4.3: PMCEID0_EL0, Performance Monitors Common Event Identification register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCEID0_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCEID0_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Common Event Identification register 0"; }
         } x; return &x;
       } break;
@@ -2047,7 +2047,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b111): // 4.4: PMCEID1_EL0, Performance Monitors Common Event Identification register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCEID1_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCEID1_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Common Event Identification register 1"; }
         } x; return &x;
       } break;
@@ -2055,7 +2055,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b010): // 4.5: PMCNTENCLR_EL0, Performance Monitors Count Enable Clear register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCNTENCLR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCNTENCLR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Count Enable Clear register"; }
         } x; return &x;
       } break;
@@ -2063,7 +2063,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b001): // 4.6: PMCNTENSET_EL0, Performance Monitors Count Enable Set register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCNTENSET_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCNTENSET_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Count Enable Set register"; }
         } x; return &x;
       } break;
@@ -2071,7 +2071,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b000): // 4.7: PMCR_EL0, Performance Monitors Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMCR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMCR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Control Register"; }
         } x; return &x;
       } break;
@@ -2079,7 +2079,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b1000,0b000): // 4.8: PMEVCNTR<n>_EL0, Performance Monitors Event Count Registers, n = 0 - 30
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMEVCNTR<n>_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMEVCNTR<n>_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Event Count Registers, n = 0 - 30"; }
         } x; return &x;
       } break;
@@ -2087,7 +2087,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b1100,0b000): // 4.9: PMEVTYPER<n>_EL0, Performance Monitors Event Type Registers, n = 0 - 30
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMEVTYPER<n>_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMEVTYPER<n>_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Event Type Registers, n = 0 - 30"; }
         } x; return &x;
       } break;
@@ -2095,7 +2095,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1001,0b1110,0b010): // 4.10: PMINTENCLR_EL1, Performance Monitors Interrupt Enable Clear register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMINTENCLR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMINTENCLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Interrupt Enable Clear register"; }
         } x; return &x;
       } break;
@@ -2103,7 +2103,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1001,0b1110,0b001): // 4.11: PMINTENSET_EL1, Performance Monitors Interrupt Enable Set register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMINTENSET_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMINTENSET_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Interrupt Enable Set register"; }
         } x; return &x;
       } break;
@@ -2111,7 +2111,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b011): // 4.12: PMOVSCLR_EL0, Performance Monitors Overflow Flag Status Clear Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMOVSCLR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMOVSCLR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Overflow Flag Status Clear Register"; }
         } x; return &x;
       } break;
@@ -2119,7 +2119,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1110,0b011): // 4.13: PMOVSSET_EL0, Performance Monitors Overflow Flag Status Set register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMOVSSET_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMOVSSET_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Overflow Flag Status Set register"; }
         } x; return &x;
       } break;
@@ -2127,7 +2127,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b101): // 4.14: PMSELR_EL0, Performance Monitors Event Counter Selection Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMSELR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMSELR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Event Counter Selection Register"; }
         } x; return &x;
       } break;
@@ -2135,7 +2135,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1100,0b100): // 4.15: PMSWINC_EL0, Performance Monitors Software Increment register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMSWINC_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMSWINC_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Software Increment register"; }
         } x; return &x;
       } break;
@@ -2143,7 +2143,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1110,0b000): // 4.16: PMUSERENR_EL0, Performance Monitors User Enable Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMUSERENR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMUSERENR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors User Enable Register"; }
         } x; return &x;
       } break;
@@ -2151,7 +2151,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1101,0b010): // 4.17: PMXEVCNTR_EL0, Performance Monitors Selected Event Count Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMXEVCNTR_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMXEVCNTR_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Selected Event Count Register"; }
         } x; return &x;
       } break;
@@ -2159,7 +2159,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1001,0b1101,0b001): // 4.18: PMXEVTYPER_EL0, Performance Monitors Selected Event Type Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "PMXEVTYPER_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "PMXEVTYPER_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Performance Monitors Selected Event Type Register"; }
         } x; return &x;
       } break;
@@ -2167,7 +2167,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0000,0b000): // 5.1: CNTFRQ_EL0, Counter-timer Frequency register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTFRQ_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTFRQ_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Frequency register"; }
         } x; return &x;
       } break;
@@ -2175,7 +2175,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1110,0b0001,0b000): // 5.2: CNTHCTL_EL2, Counter-timer Hypervisor Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTHCTL_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTHCTL_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Hypervisor Control register"; }
         } x; return &x;
       } break;
@@ -2183,7 +2183,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1110,0b0010,0b001): // 5.3: CNTHP_CTL_EL2, Counter-timer Hypervisor Physical Timer Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTHP_CTL_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTHP_CTL_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Hypervisor Physical Timer Control register"; }
         } x; return &x;
       } break;
@@ -2191,7 +2191,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1110,0b0010,0b010): // 5.4: CNTHP_CVAL_EL2, Counter-timer Hypervisor Physical Timer CompareValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTHP_CVAL_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTHP_CVAL_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Hypervisor Physical Timer CompareValue register"; }
         } x; return &x;
       } break;
@@ -2199,7 +2199,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1110,0b0010,0b000): // 5.5: CNTHP_TVAL_EL2, Counter-timer Hypervisor Physical Timer TimerValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTHP_TVAL_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTHP_TVAL_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Hypervisor Physical Timer TimerValue register"; }
         } x; return &x;
       } break;
@@ -2207,7 +2207,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1110,0b0001,0b000): // 5.6: CNTKCTL_EL1, Counter-timer Kernel Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTKCTL_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTKCTL_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Kernel Control register"; }
         } x; return &x;
       } break;
@@ -2215,7 +2215,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0010,0b001): // 5.7: CNTP_CTL_EL0, Counter-timer Physical Timer Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTP_CTL_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTP_CTL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Timer Control register"; }
         } x; return &x;
       } break;
@@ -2223,7 +2223,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0010,0b010): // 5.8: CNTP_CVAL_EL0, Counter-timer Physical Timer CompareValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTP_CVAL_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTP_CVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Timer CompareValue register"; }
         } x; return &x;
       } break;
@@ -2231,7 +2231,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0010,0b000): // 5.9: CNTP_TVAL_EL0, Counter-timer Physical Timer TimerValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTP_TVAL_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTP_TVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Timer TimerValue register"; }
         } x; return &x;
       } break;
@@ -2239,7 +2239,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0000,0b001): // 5.10: CNTPCT_EL0, Counter-timer Physical Count register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTPCT_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTPCT_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Count register"; }
         } x; return &x;
       } break;
@@ -2247,7 +2247,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b111,0b1110,0b0010,0b001): // 5.11: CNTPS_CTL_EL1, Counter-timer Physical Secure Timer Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTPS_CTL_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTPS_CTL_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Secure Timer Control register"; }
         } x; return &x;
       } break;
@@ -2255,7 +2255,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b111,0b1110,0b0010,0b010): // 5.12: CNTPS_CVAL_EL1, Counter-timer Physical Secure Timer CompareValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTPS_CVAL_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTPS_CVAL_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Secure Timer CompareValue register"; }
         } x; return &x;
       } break;
@@ -2263,7 +2263,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b111,0b1110,0b0010,0b000): // 5.13: CNTPS_TVAL_EL1, Counter-timer Physical Secure Timer TimerValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTPS_TVAL_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTPS_TVAL_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Physical Secure Timer TimerValue register"; }
         } x; return &x;
       } break;
@@ -2271,7 +2271,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0011,0b001): // 5.14: CNTV_CTL_EL0, Counter-timer Virtual Timer Control register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTV_CTL_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CTL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer Control register"; }
         } x; return &x;
       } break;
@@ -2279,7 +2279,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0011,0b010): // 5.15: CNTV_CVAL_EL0, Counter-timer Virtual Timer CompareValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTV_CVAL_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_CVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer CompareValue register"; }
         } x; return &x;
       } break;
@@ -2287,7 +2287,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0011,0b000): // 5.16: CNTV_TVAL_EL0, Counter-timer Virtual Timer TimerValue register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTV_TVAL_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTV_TVAL_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Timer TimerValue register"; }
         } x; return &x;
       } break;
@@ -2295,7 +2295,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b011,0b1110,0b0000,0b010): // 5.17: CNTVCT_EL0, Counter-timer Virtual Count register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTVCT_EL0"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTVCT_EL0"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Count register"; }
         } x; return &x;
       } break;
@@ -2303,7 +2303,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1110,0b0000,0b011): // 5.18: CNTVOFF_EL2, Counter-timer Virtual Offset register
       {
         static struct : public SysReg {
-          char const* Name() const { return "CNTVOFF_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "CNTVOFF_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Counter-timer Virtual Offset register"; }
         } x; return &x;
       } break;
@@ -2311,7 +2311,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b100): // 6.1: ICC_AP0R0_EL1, Interrupt Controller Active Priorities Register (0,0)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP0R0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP0R0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (0,0)"; }
         } x; return &x;
       } break;
@@ -2319,7 +2319,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b101): // 6.2: ICC_AP0R1_EL1, Interrupt Controller Active Priorities Register (0,1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP0R1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP0R1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (0,1)"; }
         } x; return &x;
       } break;
@@ -2327,7 +2327,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b110): // 6.3: ICC_AP0R2_EL1, Interrupt Controller Active Priorities Register (0,2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP0R2_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP0R2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (0,2)"; }
         } x; return &x;
       } break;
@@ -2335,7 +2335,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b111): // 6.4: ICC_AP0R3_EL1, Interrupt Controller Active Priorities Register (0,3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP0R3_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP0R3_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (0,3)"; }
         } x; return &x;
       } break;
@@ -2343,7 +2343,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1001,0b000): // 6.5: ICC_AP1R0_EL1, Interrupt Controller Active Priorities Register (1,0)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP1R0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP1R0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (1,0)"; }
         } x; return &x;
       } break;
@@ -2351,7 +2351,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1001,0b001): // 6.6: ICC_AP1R1_EL1, Interrupt Controller Active Priorities Register (1,1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP1R1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP1R1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (1,1)"; }
         } x; return &x;
       } break;
@@ -2359,7 +2359,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1001,0b010): // 6.7: ICC_AP1R2_EL1, Interrupt Controller Active Priorities Register (1,2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP1R2_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP1R2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (1,2)"; }
         } x; return &x;
       } break;
@@ -2367,7 +2367,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1001,0b011): // 6.8: ICC_AP1R3_EL1, Interrupt Controller Active Priorities Register (1,3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_AP1R3_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_AP1R3_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Active Priorities Register (1,3)"; }
         } x; return &x;
       } break;
@@ -2375,7 +2375,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1011,0b110): // 6.9: ICC_ASGI1R_EL1, Interrupt Controller Alias Software Generated Interrupt group 1 Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_ASGI1R_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_ASGI1R_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Alias Software Generated Interrupt group 1 Register"; }
         } x; return &x;
       } break;
@@ -2383,7 +2383,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b011): // 6.10: ICC_BPR0_EL1, Interrupt Controller Binary Point Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_BPR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_BPR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Binary Point Register 0"; }
         } x; return &x;
       } break;
@@ -2391,7 +2391,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b011): // 6.11: ICC_BPR1_EL1, Interrupt Controller Binary Point Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_BPR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_BPR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Binary Point Register 1"; }
         } x; return &x;
       } break;
@@ -2399,7 +2399,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b100): // 6.12: ICC_CTLR_EL1, Interrupt Controller Control Register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_CTLR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_CTLR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Control Register (EL1)"; }
         } x; return &x;
       } break;
@@ -2407,7 +2407,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1100,0b1100,0b100): // 6.13: ICC_CTLR_EL3, Interrupt Controller Control Register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_CTLR_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_CTLR_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Control Register (EL3)"; }
         } x; return &x;
       } break;
@@ -2415,7 +2415,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1011,0b001): // 6.14: ICC_DIR_EL1, Interrupt Controller Deactivate Interrupt Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_DIR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_DIR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Deactivate Interrupt Register"; }
         } x; return &x;
       } break;
@@ -2423,7 +2423,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b001): // 6.15: ICC_EOIR0_EL1, Interrupt Controller End Of Interrupt Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_EOIR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_EOIR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller End Of Interrupt Register 0"; }
         } x; return &x;
       } break;
@@ -2431,7 +2431,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b001): // 6.16: ICC_EOIR1_EL1, Interrupt Controller End Of Interrupt Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_EOIR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_EOIR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller End Of Interrupt Register 1"; }
         } x; return &x;
       } break;
@@ -2439,7 +2439,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b010): // 6.17: ICC_HPPIR0_EL1, Interrupt Controller Highest Priority Pending Interrupt Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_HPPIR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_HPPIR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Highest Priority Pending Interrupt Register 0"; }
         } x; return &x;
       } break;
@@ -2447,7 +2447,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b010): // 6.18: ICC_HPPIR1_EL1, Interrupt Controller Highest Priority Pending Interrupt Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_HPPIR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_HPPIR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Highest Priority Pending Interrupt Register 1"; }
         } x; return &x;
       } break;
@@ -2455,7 +2455,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1000,0b000): // 6.19: ICC_IAR0_EL1, Interrupt Controller Interrupt Acknowledge Register 0
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_IAR0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_IAR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Interrupt Acknowledge Register 0"; }
         } x; return &x;
       } break;
@@ -2463,7 +2463,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b000): // 6.20: ICC_IAR1_EL1, Interrupt Controller Interrupt Acknowledge Register 1
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_IAR1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_IAR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Interrupt Acknowledge Register 1"; }
         } x; return &x;
       } break;
@@ -2471,7 +2471,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b110): // 6.21: ICC_IGRPEN0_EL1, Interrupt Controller Interrupt Group 0 Enable register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_IGRPEN0_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_IGRPEN0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Interrupt Group 0 Enable register"; }
         } x; return &x;
       } break;
@@ -2479,7 +2479,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b111): // 6.22: ICC_IGRPEN1_EL1, Interrupt Controller Interrupt Group 1 Enable register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_IGRPEN1_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_IGRPEN1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Interrupt Group 1 Enable register"; }
         } x; return &x;
       } break;
@@ -2487,7 +2487,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1100,0b1100,0b111): // 6.23: ICC_IGRPEN1_EL3, Interrupt Controller Interrupt Group 1 Enable register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_IGRPEN1_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_IGRPEN1_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Interrupt Group 1 Enable register (EL3)"; }
         } x; return &x;
       } break;
@@ -2495,7 +2495,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b0100,0b0110,0b000): // 6.24: ICC_PMR_EL1, Interrupt Controller Interrupt Priority Mask Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_PMR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_PMR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Interrupt Priority Mask Register"; }
         } x; return &x;
       } break;
@@ -2503,7 +2503,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1011,0b011): // 6.25: ICC_RPR_EL1, Interrupt Controller Running Priority Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_RPR_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_RPR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Running Priority Register"; }
         } x; return &x;
       } break;
@@ -2511,7 +2511,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1101,0b000): // 6.26: ICC_SEIEN_EL1, Interrupt Controller System Error Interrupt Enable register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_SEIEN_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_SEIEN_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller System Error Interrupt Enable register"; }
         } x; return &x;
       } break;
@@ -2519,7 +2519,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1011,0b111): // 6.27: ICC_SGI0R_EL1, Interrupt Controller Software Generated Interrupt group 0 Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_SGI0R_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_SGI0R_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Software Generated Interrupt group 0 Register"; }
         } x; return &x;
       } break;
@@ -2527,7 +2527,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1011,0b101): // 6.28: ICC_SGI1R_EL1, Interrupt Controller Software Generated Interrupt group 1 Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_SGI1R_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_SGI1R_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Software Generated Interrupt group 1 Register"; }
         } x; return &x;
       } break;
@@ -2535,7 +2535,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b000,0b1100,0b1100,0b101): // 6.29: ICC_SRE_EL1, Interrupt Controller System Register Enable register (EL1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_SRE_EL1"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_SRE_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller System Register Enable register (EL1)"; }
         } x; return &x;
       } break;
@@ -2543,7 +2543,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1001,0b101): // 6.30: ICC_SRE_EL2, Interrupt Controller System Register Enable register (EL2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_SRE_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_SRE_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller System Register Enable register (EL2)"; }
         } x; return &x;
       } break;
@@ -2551,7 +2551,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b110,0b1100,0b1100,0b101): // 6.31: ICC_SRE_EL3, Interrupt Controller System Register Enable register (EL3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICC_SRE_EL3"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICC_SRE_EL3"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller System Register Enable register (EL3)"; }
         } x; return &x;
       } break;
@@ -2559,7 +2559,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1000,0b000): // 6.32: ICH_AP0R0_EL2, Interrupt Controller Hyp Active Priorities Register (0,0)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP0R0_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP0R0_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (0,0)"; }
         } x; return &x;
       } break;
@@ -2567,7 +2567,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1000,0b001): // 6.33: ICH_AP0R1_EL2, Interrupt Controller Hyp Active Priorities Register (0,1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP0R1_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP0R1_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (0,1)"; }
         } x; return &x;
       } break;
@@ -2575,7 +2575,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1000,0b010): // 6.34: ICH_AP0R2_EL2, Interrupt Controller Hyp Active Priorities Register (0,2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP0R2_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP0R2_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (0,2)"; }
         } x; return &x;
       } break;
@@ -2583,7 +2583,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1000,0b011): // 6.35: ICH_AP0R3_EL2, Interrupt Controller Hyp Active Priorities Register (0,3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP0R3_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP0R3_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (0,3)"; }
         } x; return &x;
       } break;
@@ -2591,7 +2591,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1001,0b000): // 6.36: ICH_AP1R0_EL2, Interrupt Controller Hyp Active Priorities Register (1,0)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP1R0_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP1R0_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (1,0)"; }
         } x; return &x;
       } break;
@@ -2599,7 +2599,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1001,0b001): // 6.37: ICH_AP1R1_EL2, Interrupt Controller Hyp Active Priorities Register (1,1)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP1R1_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP1R1_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (1,1)"; }
         } x; return &x;
       } break;
@@ -2607,7 +2607,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1001,0b010): // 6.38: ICH_AP1R2_EL2, Interrupt Controller Hyp Active Priorities Register (1,2)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP1R2_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP1R2_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (1,2)"; }
         } x; return &x;
       } break;
@@ -2615,7 +2615,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1001,0b011): // 6.39: ICH_AP1R3_EL2, Interrupt Controller Hyp Active Priorities Register (1,3)
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_AP1R3_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_AP1R3_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Active Priorities Register (1,3)"; }
         } x; return &x;
       } break;
@@ -2623,7 +2623,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b011): // 6.40: ICH_EISR_EL2, Interrupt Controller End of Interrupt Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_EISR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_EISR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller End of Interrupt Status Register"; }
         } x; return &x;
       } break;
@@ -2631,7 +2631,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b101): // 6.41: ICH_ELSR_EL2, Interrupt Controller Empty List Register Status Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_ELSR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_ELSR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Empty List Register Status Register"; }
         } x; return &x;
       } break;
@@ -2639,7 +2639,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b000): // 6.42: ICH_HCR_EL2, Interrupt Controller Hyp Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_HCR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_HCR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Hyp Control Register"; }
         } x; return &x;
       } break;
@@ -2647,7 +2647,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1100,0b000): // 6.43: ICH_LR<n>_EL2, Interrupt Controller List Registers, n = 0 - 15
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_LR<n>_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_LR<n>_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller List Registers, n = 0 - 15"; }
         } x; return &x;
       } break;
@@ -2655,7 +2655,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b010): // 6.44: ICH_MISR_EL2, Interrupt Controller Maintenance Interrupt State Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_MISR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_MISR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Maintenance Interrupt State Register"; }
         } x; return &x;
       } break;
@@ -2663,7 +2663,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b111): // 6.45: ICH_VMCR_EL2, Interrupt Controller Virtual Machine Control Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_VMCR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_VMCR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Virtual Machine Control Register"; }
         } x; return &x;
       } break;
@@ -2671,7 +2671,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1001,0b100): // 6.46: ICH_VSEIR_EL2, Interrupt Controller Virtual System Error Interrupt Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_VSEIR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_VSEIR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller Virtual System Error Interrupt Register"; }
         } x; return &x;
       } break;
@@ -2679,7 +2679,7 @@ CPU<CPU_IMPL>::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t
     case SYSENCODE(0b11,0b100,0b1100,0b1011,0b001): // 6.47: ICH_VTR_EL2, Interrupt Controller VGIC Type Register
       {
         static struct : public SysReg {
-          char const* Name() const { return "ICH_VTR_EL2"; }
+          void Name(Encoding, std::ostream& sink) const override { sink << "ICH_VTR_EL2"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Interrupt Controller VGIC Type Register"; }
         } x; return &x;
       } break;

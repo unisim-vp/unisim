@@ -162,8 +162,8 @@ struct CPU
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
-  virtual unisim::service::interfaces::Register* GetRegister( const char* name );
-  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
+  virtual unisim::service::interfaces::Register* GetRegister( const char* name ) override;
+  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) override;
 
 		
   //=====================================================================
@@ -172,8 +172,8 @@ struct CPU
 
   void Setup(unisim::service::interfaces::Memory<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
-  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, (uint8_t*)buffer, size ); }
-  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, (uint8_t*)buffer, size ); }
+  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size ) override { return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, (uint8_t*)buffer, size ); }
+  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size ) override { return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, (uint8_t*)buffer, size ); }
 
   //=====================================================================
   //=                   Disassembly interface methods                   =
@@ -181,22 +181,22 @@ struct CPU
 
   void Setup(unisim::service::interfaces::Disassembly<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
-  virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
+  virtual std::string Disasm( uint64_t addr, uint64_t& next_addr ) override;
 
   //=====================================================================
   //=             Memory access reporting interface methods             =
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
+  virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report ) override;
 
   //=====================================================================
   //=                Memory injection interface methods                 =
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
-  virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size );
-  virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+  virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size ) override;
+  virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size ) override;
 
   //=====================================================================
   //=                          Service imports                          =
@@ -370,7 +370,7 @@ struct CPU
     unsigned const size = sizeof (T);
     uint8_t buffer[size];
     for (unsigned idx = 0; idx < size; ++idx)
-      { buffer[idx] = val; val >>= 8; }
+      { buffer[idx] = val; val = ((sizeof(T) > 1) ? (val >> 8) : 0); }
     MemWrite( addr, &buffer[0], size );
   }
 
