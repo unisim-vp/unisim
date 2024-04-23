@@ -172,6 +172,20 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     { /* Most of this operations have no side effect on instruction-level simulations. Thus, we provide a default empty implementation. */ }
   };
 
+  struct IDSysReg : public BaseSysReg
+  {
+    void CheckReadAccess(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const
+    {
+      if (cpu.pstate.GetEL() == 0)
+        {
+          if (cpu.FEAT_IDST)
+            throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+          else
+            throw AArch64::UndefinedInstructionException();
+        }
+    }
+  };
+
   switch (SYSENCODE( op0, op1, crn, crm, op2 ))
     {
     case SYSENCODE(0b11,0b011,0b0100,0b0010,0b000): // NZCV
@@ -322,11 +336,11 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             // ZID value should be so MMU page bounds are not crossed
             MMU::TLB::Entry entry(vaddr);
             cpu.translate_address(entry, cpu.pstate.GetEL(), mem_acc_type::write);
+            cpu.dbgmon.MemWrite(cpu.pstate.GetEL(), vaddr, zsize);
             uint8_t buffer[zsize];
             std::fill(&buffer[0], &buffer[zsize], uint8_t(0));
             if (cpu.get_page(entry.pa).write(entry.pa, &buffer[0], &buffer[0], zsize) != zsize)
               { struct Bad {}; raise( Bad () ); }
-            cpu.dbgmon.CacheMaintenance(cpu.pstate.GetEL(), vaddr);
           }
         } x; return &x;
       } break;
@@ -1126,13 +1140,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b001,0b0000,0b0000,0b001): // 2.15: CLIDR_EL1, Cache Level ID Register
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "CLIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Cache Level ID Register"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return
                U64(0b000) << 30| // ICB, Inner cache boundary
@@ -1651,13 +1664,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0101,0b000): // 2.37: ID_AA64DFR0_EL1, AArch64 Debug Feature Register 0
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64DFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Debug Feature Register 0"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return
               U64(DebugMonitor::CTX_CMPS - 1) << 28 | // Number of hardware breakpoints - 1 that (the last ones) can be used for context matching
@@ -1679,16 +1691,15 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0110,0b000): // 2.39: ID_AA64ISAR0_EL1, AArch64 Instruction Set Attribute Register 0
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ISAR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 0"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return
-              U64(0b0001)                           << 60 | // Indicates support for Random Number instructions
+              U64(cpu.FEAT_RNG ? 0b0001 : 0b0000)   << 60 | // Indicates support for Random Number instructions
               U64(0b0000)                           << 56 | // Indicates support for Outer shareable and TLB range maintenance instructions
               U64(0b0000)                           << 52 | // Indicates support for flag manipulation instructions
               U64(0b0000)                           << 48 | // Indicates support for FMLAL and FMLSL instructions
@@ -1698,8 +1709,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(0b0000)                           << 32 | // Indicates support for SHA3 instructions
               U64(0b0000)                           << 28 | // Indicates support for SQRDMLAH and SQRDMLSH instructions
               cpu.PartlyDefined<uint64_t>(0,0b1111) << 24 | // Reserved, RES0.
-              U64(0b0010)                           << 20 | // Indicates support for Atomic instructions
-              U64(0b0001)                           << 16 | // Indicates support for CRC32 instructions
+              U64(cpu.FEAT_LSE ? 0b0010 : 0b0000)   << 20 | // Indicates support for Atomic instructions
+              U64(cpu.FEAT_CRC32 ? 0b0001 : 0b0000) << 16 | // Indicates support for CRC32 instructions
               U64(0b0000)                           << 12 | // Indicates support for SHA2 instructions (TODO)
               U64(0b0000)                           <<  8 | // Indicates support for SHA1 instructions (TODO)
               U64(0b0000)                           <<  4 | // Indicates support for AES instructions (TODO)
@@ -1710,13 +1721,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0110,0b001): // 2.40: ID_AA64ISAR1_EL1, AArch64 Instruction Set Attribute Register 1
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ISAR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 1"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return U64(0);
           }
@@ -1725,13 +1735,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0110,0b010): // 2.40: ID_AA64ISAR2_EL1, AArch64 Instruction Set Attribute Register 2
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ISAR2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Instruction Set Attribute Register 2"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return U64(0);
           }
@@ -1752,13 +1761,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b000): // 2.41: ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 0"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return
               U64(0)                << 32 | // RES0
@@ -1776,13 +1784,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b001): // 2.42: ID_AA64MMFR1_EL1, AArch64 Memory Model Feature Register 1
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 1"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             /* RES0, Reserved for future expansion of the information
              * about the implemented memory model and memory
@@ -1794,18 +1801,17 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0111,0b010): // 2.42: ID_AA64MMFR2_EL1, AArch64 Memory Model Feature Register 2
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64MMFR2_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Memory Model Feature Register 2"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             /* RES0, Reserved for future expansion of the information
              * about the implemented memory model and memory
              * management support in AArch64. */
-            return U64(0);
+            return U64(cpu.FEAT_IDST ? 0b0001 : 0b0000) << 36; // All exceptions generated by an AArch64 read access to the feature ID space are reported by ESR_ELx.EC == 0x18.
           }
         } x; return &x;
       } break;
@@ -1838,44 +1844,42 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b000): // 2.43: ID_AA64PFR0_EL1, AArch64 Processor Feature Register 0
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64PFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Processor Feature Register 0"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return
-              U64(0b0000)                          << 60 | // Speculative use of faulting data
-              U64(0b0000)                          << 56 | // Speculative use of out of context branch targets
-              cpu.PartlyDefined<uint64_t>(0,0b1111) << 52 | // RES0
-              U64(0b0000)                          << 48 | // Data Independent Timing
-              U64(0b0000)                          << 44 | // Indicates support for Activity Monitors Extension
-              U64(0b0000)                          << 40 | // Indicates support for MPAM Extension
-              U64(0b0000)                          << 36 | // Secure EL2
-              U64(0b0000)                          << 32 | // Scalable Vector Extension
-              U64(0b0000)                          << 28 | // RAS Extension version
-              U64(0b0000)                          << 24 | // System register GIC CPU interface
-              U64(0b0001)                          << 20 | // Advanced SIMD (implemented and also includes support for half-precision floating-point arithmetic)
-              U64(0b0001)                          << 16 | // Floating-point (implemented and also includes support for half-precision floating-point arithmetic)
-              U64(0b0000)                          << 12 | // EL3 Exception level handling (not implemented)
-              U64(0b0001)                          <<  8 | // EL2 Exception level handling (executed in AArch64 state only)
-              U64(0b0001)                          <<  4 | // EL1 Exception level handling (executed in AArch64 state only) 
-              U64(0b0001)                          <<  0;  // EL0 Exception level handling (executed in AArch64 state only) 
+              U64(0b0000)                              << 60 | // Speculative use of faulting data
+              U64(0b0000)                              << 56 | // Speculative use of out of context branch targets
+              cpu.PartlyDefined<uint64_t>(0,0b1111)    << 52 | // RES0
+              U64(0b0000)                              << 48 | // Data Independent Timing
+              U64(0b0000)                              << 44 | // Indicates support for Activity Monitors Extension
+              U64(0b0000)                              << 40 | // Indicates support for MPAM Extension
+              U64(0b0000)                              << 36 | // Secure EL2
+              U64(0b0000)                              << 32 | // Scalable Vector Extension
+              U64(0b0000)                              << 28 | // RAS Extension version
+              U64(0b0000)                              << 24 | // System register GIC CPU interface
+              U64(cpu.FEAT_FP16 ? 0b0001 : 0b0000)     << 20 | // Advanced SIMD (implemented and also includes support for half-precision floating-point arithmetic)
+              U64(cpu.FEAT_FP16 ? 0b0001 : 0b0000)     << 16 | // Floating-point (implemented and also includes support for half-precision floating-point arithmetic)
+              U64(0b0000)                              << 12 | // EL3 Exception level handling (not implemented)
+              U64(0b0001)                              <<  8 | // EL2 Exception level handling (executed in AArch64 state only)
+              U64(0b0001)                              <<  4 | // EL1 Exception level handling (executed in AArch64 state only) 
+              U64(0b0001)                              <<  0;  // EL0 Exception level handling (executed in AArch64 state only) 
           }
         } x; return &x;
       } break;
 
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b001): // 2.44: ID_AA64PFR1_EL1, AArch64 Processor Feature Register 1
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64PFR1_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 Processor Feature Register 1"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return
               cpu.PartlyDefined<uint64_t>(0,-1) << 20 | // Reserved, RES0
@@ -1898,13 +1902,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b100): // 2.44: ID_AA64ZFR0_EL1, SVE Feature ID register 0
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64ZFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 SVE Processor Feature Register"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return U64(0);
           }
@@ -1913,13 +1916,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0100,0b101): // ID_AA64SMFR0_EL1, SME Feature ID register 0
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "ID_AA64SMFR0_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "AArch64 SME Feature ID register 0"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return U64(0);
           }
@@ -2123,13 +2125,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0000,0b000): // 2.64: MIDR_EL1, Main ID Register
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Main ID Register"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             if (cpu.current_insn_addr == 0xffffffc010c94bc8)
               return U64(0xaceface5);
@@ -2146,13 +2147,12 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
     case SYSENCODE(0b11,0b000,0b0000,0b0000,0b101): // 2.65: MPIDR_EL1, Multiprocessor Affinity Register
       {
-        static struct : public BaseSysReg {
+        static struct : public IDSysReg {
           void Name(Encoding, std::ostream& sink) const override { sink << "MPIDR_EL1"; }
           void Describe(Encoding, std::ostream& sink) const override { sink << "Multiprocessor Affinity Register"; }
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override
           {
-            if (cpu.pstate.GetEL() == 0)
-              throw AArch64::SystemAccessTrapException(op0, op1, crn, crm, op2, rt, /* direction */ 1);
+            CheckReadAccess(op0, op1, crn, crm, op2, rt, cpu);
 
             return U64(0)
               | cpu.PartlyDefined<uint64_t>(0, 0xffffff) << 40  // Reserved, RES0.
@@ -2498,11 +2498,18 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE(0b11,0b011,0b0010,0b0100,0b000): // RNDR, Random Number
     case SYSENCODE(0b11,0b011,0b0010,0b0100,0b001): // RNDRRS, Reseeded Random Number
       {
-        static struct : public BaseSysReg {
-          void Name(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 0 ? "rndr" : e.op2 == 0 ? "rndrrs" : "?"); }
-          void Describe(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 1 ? "Reseeded " : "") << "Random Number"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { return cpu.RNDR(); }
-        } x; return &x;
+        if(AArch64::FEAT_RNG)
+          {
+            static struct : public BaseSysReg {
+              void Name(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 0 ? "rndr" : e.op2 == 0 ? "rndrrs" : "?"); }
+              void Describe(Encoding e, std::ostream& sink) const override { sink << (e.op2 == 1 ? "Reseeded " : "") << "Random Number"; }
+              U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { return cpu.RNDR(); }
+            } x; return &x;
+          }
+        else
+          {
+            static BaseSysReg x; return &x;
+          }
       }
 
     case SYSENCODE(0b11,0b011,0b1101,0b0000,0b010): // 2.87: TPIDR_EL0, Thread Pointer / ID Register (EL0)
@@ -2538,6 +2545,9 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const override { return cpu.TPIDRRO; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override
           {
+            if (cpu.pstate.GetEL() == 0)
+              throw AArch64::UndefinedInstructionException();
+
             cpu.TPIDRRO = value;
           }
         } x; return &x;

@@ -108,6 +108,32 @@ void AArch64::DebugMonitor::SetExceptionTakenPSTATE_SS(AArch64& cpu, uint64_t pr
     }
 }
 
+void AArch64::DebugMonitor::IntBeforeStep(AArch64& cpu)
+{
+  stepping = true;
+  if (DEBUG) std::cerr << "DebugMonitor: before stepping at 0x" << std::hex << cpu.current_insn_addr << std::dec << ", in " << SoftwareStepStateName(cpu) << " state" << std::endl;
+  bool _ss_ldex = ss_ldex;
+  ss_ldex = false;
+  if (not cpu.pstate.D and not cpu.pstate.SS) // active-pending state?
+    {
+      if (DEBUG) std::cerr << "DebugMonitor: software step exception at 0x" << std::hex << cpu.current_insn_addr << std::dec << std::endl;
+      throw SoftwareStepException(_ss_ldex);
+    }
+}
+
+void AArch64::DebugMonitor::IntAfterStep(AArch64& cpu)
+{
+  if (not cpu.pstate.D and cpu.pstate.SS and stepping) // active-not-pending state?
+    {
+      if (DEBUG) std::cerr << "DebugMonitor: step completed at 0x" << std::hex << cpu.current_insn_addr << std::dec << ", PSTATE.SS <- 0" << std::endl;
+      cpu.pstate.SS = 0; // enter active-pending state
+
+      DebugSoftwareStepStateMachine(cpu, std::cerr);
+    }
+
+  stepping = false;
+}
+
 bool AArch64::DebugMonitor::CheckBreakpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pmc, unsigned sec_state)
 {
   struct Bad {};

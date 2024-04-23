@@ -101,9 +101,12 @@ AArch64::AArch64(char const* name)
   , CPACR()
   , tvreg(-1)
   , bdaddr(0)
-  , random(0)
+  , rng("rng", this)
   , terminate(false)
   , disasm(false)
+  , param_disasm("disasm", this, disasm, "enable instruction disassembly before executing instructions")
+  , debug_el_mask(3)
+  , param_debug_el_mask("debug-el-mask", this, debug_el_mask, "EL mask (one bit per EL) for filtering debug events")
   , suspend(false)
   , tfpstats_filename()
   , param_tfpstats_filename("tfpstats_filename", this, tfpstats_filename, "filename of tfpstats dump")
@@ -648,7 +651,7 @@ AArch64::TakeUndefinedInstruction(unisim::component::cxx::processor::arm::isa::a
 void
 AArch64::TakeUndefinedInstruction()
 {
-  if (unlikely(enable_exception_trap and trap_reporting_import))
+  if (unlikely(enable_exception_trap and trap_reporting_import and ((1 << pstate.GetEL()) & debug_el_mask)))
     trap_reporting_import->ReportTrap(*this,"Undefined instruction");
   else if(unlikely(linux_os_import))
     terminate = true;
@@ -657,10 +660,11 @@ AArch64::TakeUndefinedInstruction()
       unsigned const target_el = 1;
 
       get_el(target_el).ESR = U32(0)
-        | U32(pstate.GetEL() ? 0x21 : 0x20) << 26 // EC: instruction abort in EL0 or EL1
-        | U32(1) << 25; // IL Instruction Length == 32 bits
+        | U32(0) << 26 // EC: Unknown reason
+        | U32(1) << 25 // IL Instruction Length == 32 bits
+        | PartlyDefined<uint32_t>(0,0b1111111111111111111111111); // ISS: Res0
 
-      TakeException(target_el, 0x0, next_insn_addr);
+      TakeException(target_el, 0x0, current_insn_addr);
     }
 }
 
@@ -1374,7 +1378,7 @@ AArch64::ExceptionReturn()
   SetPSTATEFromPSR(spsr);
   // if (pstate.GetEL() == 0)
   //   std::cerr << "ERET(" << pstate.GetEL() << ") " << std::hex << current_insn_addr << " => " << elr.value << std::endl;
-  // ClearExclusiveLocal();
+  ClearExclusiveLocal();
   // SendEventLocal();
 
   BranchTo(elr, B_ERET);
@@ -2245,20 +2249,69 @@ AArch64::reload_next_event()
     next_event = insn_timer + 0x1000000;
 }
 
+AArch64::RNG::RNG(char const* name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object(name, parent)
+  , seed_x(SEED_X)
+  , seed_y(SEED_Y)
+  , seed_z(SEED_Z)
+  , seed_c(SEED_C)
+  , param_seed_x("seed-x", this, seed_x, "Seed for X of George Marsaglia's 64-bit KISS random number generator")
+  , param_seed_y("seed-y", this, seed_y, "Seed for Y of George Marsaglia's 64-bit KISS random number generator")
+  , param_seed_z("seed-z", this, seed_z, "Seed for Z of George Marsaglia's 64-bit KISS random number generator")
+  , param_seed_c("seed-c", this, seed_c, "Seed for C of George Marsaglia's 64-bit KISS random number generator")
+{
+  for (auto param : { &param_seed_x, &param_seed_y, &param_seed_z, &param_seed_c })
+    param->SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+
+  for( int self_test = 1; self_test >= 0; --self_test)
+    {
+      Seed(
+        self_test ? SEED_X : seed_x,
+        self_test ? SEED_Y : seed_y,
+        self_test ? SEED_Z : seed_z,
+        self_test ? SEED_C : seed_c
+      );
+      if (self_test)
+        SelfTest();
+    }
+}
+
+void AArch64::RNG::Seed(uint64_t _x, uint64_t _y, uint64_t _z, uint64_t _c)
+{
+  x = _x; y = _y; z = _z; c = _c; t = 0;
+}
+
+uint64_t AArch64::RNG::Get() { return t = KISS(); }
+
+uint64_t AArch64::RNG::MWC() { return t = (x << 58) + c, c = (x >> 6), x += t, c += (x < t), x; }
+
+uint64_t AArch64::RNG::XSH() { return y ^= (y << 13), y ^= (y >> 17), y ^= (y << 43); }
+
+uint64_t AArch64::RNG::CNG() { return z = 6906969069LL * z + 1234567; }
+
+uint64_t AArch64::RNG::KISS() { return MWC() + XSH() + CNG(); }
+
+void AArch64::RNG::SelfTest()
+{
+  for(unsigned i = 0; i < 100000000; Get(), ++i);
+
+  if (t != 1666297717051644203ULL)
+    { struct Bad {}; throw Bad(); }
+}
+
+void AArch64::RNG::sync( SnapShot& snapshot )
+{
+  for (auto var : { &x, &y, &z, &c, &t })
+    snapshot.sync(*var);
+}
+
 AArch64::U64
 AArch64::RNDR()
 {
-  uint64_t rval =       (random = random * 22695477 + 1);
-  rval = (rval << 32) | (random = random * 22695477 + 1);
+  uint64_t rval = rng.Get();
   nzcv = U8(0);
 
   return U64(rval);
-}
-
-void
-AArch64::update_random()
-{
-  random = random * 22695477 + 1;
 }
 
 void
@@ -2268,13 +2321,13 @@ AArch64::before_fetch()
     throw Suspend();
 
   /*** Handle debugging interface ***/
-  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import and ((1 << pstate.GetEL()) & debug_el_mask)))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
 
   // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
   //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
 
-  if (unlikely(debug_yielding_import))
+  if (unlikely(debug_yielding_import and ((1 << pstate.GetEL()) & debug_el_mask)))
     debug_yielding_import->DebugYield();
 }
 
@@ -2289,7 +2342,7 @@ AArch64::before_execute(Operation *op)
       // disasm = true;
     }
 
-  if (unlikely(disasm))
+  if (unlikely(disasm and ((1 << pstate.GetEL()) & debug_el_mask)))
     {
       // static std::ofstream dbgtrace("dbgtrace");
       std::ostream& sink( std::cerr );
@@ -2306,7 +2359,7 @@ AArch64::before_execute(Operation *op)
 void
 AArch64::after_execute()
 {
-  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import and ((1 << pstate.GetEL()) & debug_el_mask)))
     memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
 }
 
@@ -2316,7 +2369,7 @@ AArch64::before_except(Exception const& exception)
   if (RECORDER)
     recorder.Cancel();
 
-  if (unlikely(enable_exception_trap and trap_reporting_import)) {
+  if (unlikely(enable_exception_trap and trap_reporting_import and ((1 << pstate.GetEL()) & debug_el_mask))) {
     std::ostringstream sstr;
     exception.print(sstr);
     sstr << " at PC=0x" << std::hex << current_insn_addr << ", instruction #" << insn_counter;
@@ -2330,8 +2383,7 @@ AArch64::exec_loop()
 {
   for (;;)
     {
-      update_random();
-      insn_timer += 1;// + ((random >> 16 & 3) == 3);
+      insn_timer += 1;// + ((rng.Get() >> 16 & 3) == 3);
 
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
       this->current_insn_addr = this->next_insn_addr;
@@ -2989,7 +3041,6 @@ AArch64::sync(SnapShot& snapshot)
 
   tvsync(snapshot, fpcr);
   tvsync(snapshot, fpsr);
-  tvsync(snapshot, fpcr);
   tvsync(snapshot, sp_el[0]);
   tvsync(snapshot, sp_el[1]);
 
@@ -3009,7 +3060,7 @@ AArch64::sync(SnapShot& snapshot)
   tvsync(snapshot, TPIDR[1]);
   tvsync(snapshot, TPIDRRO);
   snapshot.sync(CPACR);
-  snapshot.sync(random);
+  rng.sync(snapshot);
 
   dbgmon.sync(snapshot);
 }

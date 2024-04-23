@@ -80,8 +80,6 @@
 
 #include <regex>
 
-#define INSN_PROFILE 0
-
 void force_throw();
 
 struct AArch64Types
@@ -104,7 +102,7 @@ struct AArch64Types
   typedef TaintedValue<   float> F32;
   typedef TaintedValue<  double> F64;
 #else
-#error "Support _Float16 type must be available"
+#error "Support for _Float16 type must be available"
 #endif
 
   typedef TaintedValue<  bool  > BOOL;
@@ -113,6 +111,15 @@ struct AArch64Types
   using  VectorTypeInfo = TaintedTypeInfo<T>;
   using  VectorByte = U8;
   struct VectorByteShadow { uint8_t data[sizeof (U8)]; };
+};
+
+struct Features
+{
+  enum { FEAT_IDST = 1 };
+  enum { FEAT_FP16 = 1 };
+  enum { FEAT_CRC32 = 1 };
+  enum { FEAT_RNG = 1 };
+  enum { FEAT_LSE = 1 }; // WARNING! partial support (cas and swp)
 };
 
 struct Zone
@@ -139,6 +146,7 @@ struct Zone
 
 struct AArch64
   : AArch64Types
+  , Features
   , public unisim::component::cxx::processor::arm::regs64::CPU<AArch64, AArch64Types>
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
   , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >
@@ -278,6 +286,7 @@ struct AArch64
 
   struct InstructionInfo
   {
+    InstructionInfo() : addr(-1), counter(-1), op(0) {}
     void assign( uint64_t _addr, uint64_t _counter, AArch64::Operation* _op ) { addr = _addr; counter = _counter; op = _op; }
     void dump(std::ostream& sink) const;
     friend std::ostream& operator << (std::ostream& sink, InstructionInfo const& ii) { ii.dump(sink); return sink; }
@@ -547,38 +556,8 @@ struct AArch64
     void SetExceptionTakenPSTATE_SS(AArch64& cpu, uint64_t preferred_exception_return);
 
     // Instrumentation for main loop
-    void BeforeStep(AArch64& cpu)
-    {
-      if (unlikely(ss))
-        {
-          stepping = true;
-          if (DEBUG) std::cerr << "DebugMonitor: before stepping at 0x" << std::hex << cpu.current_insn_addr << std::dec << ", in " << SoftwareStepStateName(cpu) << " state" << std::endl;
-          bool _ss_ldex = ss_ldex;
-          ss_ldex = false;
-          if (not cpu.pstate.D and not cpu.pstate.SS) // active-pending state?
-            {
-              if (DEBUG) std::cerr << "DebugMonitor: software step exception at 0x" << std::hex << cpu.current_insn_addr << std::dec << std::endl;
-              throw SoftwareStepException(_ss_ldex);
-            }
-        }
-    }
-
-    void AfterStep(AArch64& cpu)
-    {
-      if (unlikely(ss))
-      {
-        if (not cpu.pstate.D and cpu.pstate.SS and stepping) // active-not-pending state?
-          {
-            if (DEBUG) std::cerr << "DebugMonitor: step completed at 0x" << std::hex << cpu.current_insn_addr << std::dec << ", PSTATE.SS <- 0" << std::endl;
-            cpu.pstate.SS = 0; // enter active-pending state
-
-            DebugSoftwareStepStateMachine(cpu, std::cerr);
-          }
-
-        stepping = false;
-      }
-    }
-
+    void BeforeStep(AArch64& cpu) { if (unlikely(ss)) IntBeforeStep(cpu); }
+    void AfterStep(AArch64& cpu) { if (unlikely(ss)) IntAfterStep(cpu); }
     void BeforeExecute(AArch64& cpu, uint64_t vaddr) { if (unlikely(bpe)) IntBeforeExecute(cpu, vaddr); }
 
     // Instrumentation for data memory access
@@ -614,6 +593,9 @@ struct AArch64
     void DebugSoftwareStepStateMachine(AArch64 const& cpu, std::ostream& sink) { if (DEBUG and ss) sink << "DebugMonitor: " << SoftwareStepStateName(cpu) << " state" << std::endl; }
 
   private:
+    // Instrumentation for main loop
+    void IntBeforeStep(AArch64& cpu);
+    void IntAfterStep(AArch64& cpu);
     bool CheckBreakpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pmc, unsigned sec_state);
     void IntBeforeExecute(AArch64& cpu, uint64_t vaddr);
     bool CheckWatchpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pac, unsigned sec_state);
@@ -650,10 +632,18 @@ struct AArch64
   //=                      Control Transfer methods                     =
   //=====================================================================
 
+  uint64_t BranchAddr( uint64_t target_addr )
+  {
+    bool top = (target_addr >> 55) & 1;
+    bool tbi = top ? unisim::component::cxx::processor::arm::vmsav8::tcr::TBI1.Get(mmu.TCR_EL1) : unisim::component::cxx::processor::arm::vmsav8::tcr::TBI0.Get(mmu.TCR_EL1);
+    return tbi ? ((pstate.GetEL() < 2) ? (int64_t(target_addr << 8) >> 8) : ((target_addr << 8) >> 8)) : target_addr;
+  }
+
   /** Set the next Program Counter */
   void BranchTo( U64 addr, branch_type_t branch_type )
   {
-    next_insn_addr = untaint(AddrTV(), addr);
+    uint64_t target_addr = untaint(AddrTV(), addr);
+    next_insn_addr = BranchAddr( target_addr );
   }
 
   bool Test( bool cond ) { return cond; }
@@ -774,6 +764,13 @@ struct AArch64
     unsigned const size = sizeof (value_type);
 
     MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
+
+    if(unlikely(requires_memory_access_reporting and memory_access_reporting_import and ((1 << el) & debug_el_mask)))
+    {
+      if (not memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, entry.pa, sizeof(T)))
+        throw NotAnException();
+    }
+
     translate_address(entry, el, mem_acc_type::read);
 
     dbgmon.MemRead(el, addr.value, size);
@@ -841,6 +838,13 @@ struct AArch64
     unsigned const size = sizeof (typename T::value_type);
 
     MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
+
+    if(unlikely(requires_memory_access_reporting and memory_access_reporting_import and ((1 << el) & debug_el_mask)))
+    {
+      if (not memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, entry.pa, sizeof(T)))
+        throw NotAnException();
+    }
+
     translate_address(entry, el, mem_acc_type::write);
 
     dbgmon.MemWrite(el, addr.value, size);
@@ -1007,6 +1011,12 @@ struct AArch64
     virtual void proceed( AArch64& cpu ) const override;
     virtual char const* nature() const override { return "Watchpoint"; }
     uint64_t addr; unsigned wpt; bool cache_maintenance, write;
+  };
+
+  struct NotAnException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override { cpu.next_insn_addr = cpu.current_insn_addr; }
+    virtual char const* nature() const override { return "Not an exception"; }
   };
 
   /* AArch32 obsolete arguments
@@ -1192,7 +1202,6 @@ struct AArch64
 
   Operation* decode(uint64_t insn_addr, CodeType insn);
 
-  void update_random();
   void before_fetch();
   void before_execute(Operation *op);
   void after_execute();
@@ -1298,6 +1307,31 @@ struct AArch64
   };
 
   EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
+
+  struct RNG : unisim::kernel::Object
+  {
+    // see https://www.thecodingforums.com/threads/64-bit-kiss-rngs.673657/
+    RNG(char const* name, unisim::kernel::Object* parent);
+    void Seed(uint64_t _x, uint64_t _y, uint64_t _z, uint64_t _c);
+    uint64_t Get();
+    void sync( SnapShot& snapshot );
+  private:
+    static const uint64_t SEED_X = 1234567890987654321ULL;
+    static const uint64_t SEED_Y = 362436362436362436ULL;
+    static const uint64_t SEED_Z = 1066149217761810ULL;
+    static const uint64_t SEED_C = 123456123456123456ULL;
+    uint64_t MWC();
+    uint64_t XSH();
+    uint64_t CNG();
+    uint64_t KISS();
+    void SelfTest();
+    uint64_t x, y, z, c, t;
+    uint64_t seed_x, seed_y, seed_z, seed_c;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_x;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_y;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_z;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_c;
+  };
 
   U64 RNDR();
 
@@ -1468,9 +1502,12 @@ public:
 
   U64      tvreg;
   uint64_t bdaddr;
-  uint32_t random;
+  RNG      rng;
   bool     terminate;
   bool     disasm;
+  unisim::kernel::variable::Parameter<bool> param_disasm;
+  unsigned debug_el_mask;
+  unisim::kernel::variable::Parameter<unsigned> param_debug_el_mask;
   bool     suspend;
   // Tainted FP stats
   std::string tfpstats_filename;
@@ -1493,9 +1530,6 @@ public:
   // void checkvio(uint64_t base, unsigned size);
   // std::set<Zone, Zone::Above> diskpages;
   // static std::ofstream& ptlog();
-#if INSN_PROFILE
-  std::map<std::string, uint64_t> insn_profile;
-#endif
 };
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

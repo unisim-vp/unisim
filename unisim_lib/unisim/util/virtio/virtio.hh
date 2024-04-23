@@ -128,7 +128,7 @@ namespace virtio {
     virtual unsigned selected() const override { return selq - &queues[0]; }
     virtual Queue* select(unsigned sel) override { if (sel >= QCOUNT) return 0; selq = &queues[sel]; return selq; }
     virtual bool Read(Access const& vioa, QProc& proc) const override { return selq->ready and selq->Read(*this, vioa, proc); }
-    virtual bool Ready(Access const& vioa) const { return not selq->ready or selq->Start(vioa); }
+    virtual bool Ready(Access const& vioa) const override { return not selq->ready or selq->Start(vioa); }
 
     queue_type  queues[QCOUNT];
     queue_type* selq;
