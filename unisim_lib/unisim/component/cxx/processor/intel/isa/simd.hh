@@ -2738,6 +2738,49 @@ template <class ARCH> struct DC<ARCH,VPERMQ> { Operation<ARCH>* get( InputCode<A
   return 0;
 }};
 
+template <class ARCH, class VR>
+struct Vperm2i128 : public Operation<ARCH>
+{
+  Vperm2i128( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn, vn, oo;
+  void disasm( std::ostream& sink ) const
+  {
+    sink << "vperm2i128 " << DisasmI(oo) << ',' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), vn ) << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::u128_t u128_t;
+
+    u128_t tmp[4];
+
+    tmp[0] = arch.vmm_read( VR(), vn, 0, u128_t() );
+    tmp[1] = arch.vmm_read( VR(), vn, 1, u128_t() );
+    tmp[2] = arch.vmm_read( VR(), rm, 0, u128_t() );
+    tmp[3] = arch.vmm_read( VR(), rm, 1, u128_t() );
+
+    if (oo & 0b00001000)
+      arch.vmm_write( VR(), gn, 0, u128_t(0) );
+    else
+      arch.vmm_write( VR(), gn, 0, tmp[oo & 0b00000011] );
+    if (oo & 0b10000000)
+      arch.vmm_write( VR(), gn, 1, u128_t(0) );
+    else
+      arch.vmm_write( VR(), gn, 1, tmp[(oo & 0b00110000) >> 4] );
+  }
+};
+
+/* VPERM2I128 -- Permute Integer Values */
+template <class ARCH> struct DC<ARCH,VPERM2I128> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x46" ) & RM() & Imm<8>() ))
+    {
+      if (ic.vreg() == 0 || ic.w() == 1) return 0;
+      if (ic.vlen() == 256) return new Vperm2i128<ARCH,YMM>( _.opbase(), _.rmop(), _.vreg(), _.greg(), _.i(uint8_t()) );
+    }
+
+  return 0;
+}};
 
 template <class ARCH, class VR>
 struct Pshufd : public Operation<ARCH>
