@@ -51,30 +51,30 @@ bool getu( T& res, char const* arg )
 char const* usage()
 {
   return
-    "usage: <program> <address> <encoding>\n";
+    "usage: <program> <address> <encoding0> <encoding1>\n";
 }
 
 int
 main( int argc, char** argv )
 {
-  if (argc < 3)
+  if (argc < 4)
     {
       std::cerr << "Wrong number of CLI arguments.\n" << usage();
       return 1;
     }
 
   uint64_t addr;
-  uint32_t code;
+  uint32_t code0, code1;
 
-  if (not getu(addr, argv[argc-2]) or not getu(code, argv[argc-1]))
+  if (not getu(addr, argv[argc-3+0]) or not getu(code0, argv[argc-3+1]) or not getu(code1, argv[argc-3+2]))
     {
-      std::cerr << "<addr> and <code> should be, respectively, 64bits and 32bits numeric values.\n" << usage();
+      std::cerr << "<addr> <code0> and <code1> should be, respectively, 64bits, 32bits and 32bits numeric values.\n" << usage();
       return 1;
     }
 
   sparc::Decoder decoder;
 
-  decoder.process( std::cout, addr, code );
+  decoder.process( std::cout, addr, code0, code1 );
 
   return 0;
 }

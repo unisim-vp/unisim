@@ -111,7 +111,7 @@ ba.disasm = {
 };
 
 ba.execute = {
-  cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
+  cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22), ARCH::B_JMP);
   cpu.SetAnnul(annul);
 };
 
@@ -123,7 +123,7 @@ bc.disasm = {
 
 bc.execute = {
   if (cpu.TestCondition(cond))
-    cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
+    cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22), ARCH::B_JMP);
   else
     cpu.SetAnnul(annul);
 };
@@ -137,7 +137,7 @@ fba.disasm = {
 };
 
 fba.execute = {
-  cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
+  cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22), ARCH::B_JMP);
   cpu.SetAnnul(annul);
 };
   
@@ -149,7 +149,7 @@ fbc.disasm = {
 
 fbc.execute = {
   if (cpu.TestFCondition(cond))
-    cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22));
+    cpu.DelayBranch(cpu.GetPC() + typename ARCH::U32(disp22), ARCH::B_JMP);
   else
     cpu.SetAnnul(annul);
 }
@@ -263,7 +263,7 @@ call.disasm = {
 call.execute = {
   typedef typename ARCH::U32 U32;
 
-  cpu.DelayBranch( cpu.GetPC() + U32(disp30) );
+  cpu.DelayBranch( cpu.GetPC() + U32(disp30), ARCH::B_CALL );
   cpu.SetGPR(15, cpu.GetPC());
 }
 
@@ -276,7 +276,7 @@ jmpl.disasm = {
 }
 
 jmpl.execute = {
-  cpu.DelayBranch( cpu.GetGPR(rs1) + cpu.GetGPR(rs2) );
+  cpu.DelayBranch( cpu.GetGPR(rs1) + cpu.GetGPR(rs2), rd == 15 ? ARCH::B_CALL : ARCH::B_JMP );
   
   cpu.SetGPR(rd, cpu.GetPC());
 }
@@ -290,7 +290,7 @@ jmpli.disasm = {
 jmpli.execute = {
   typedef typename ARCH::U32 U32;
 
-  cpu.DelayBranch(cpu.GetGPR(rs1) + U32(simm13));
+  cpu.DelayBranch(cpu.GetGPR(rs1) + U32(simm13), rd == 15 ? ARCH::B_CALL : ARCH::B_JMP);
   cpu.SetGPR(rd, cpu.GetPC());
 }
 
@@ -326,7 +326,7 @@ rett.execute = {
     }
   
   cpu.SetET( BOOL(true) );
-  cpu.DelayBranch( address );
+  cpu.DelayBranch( address, ARCH::B_JMP );
   cpu.RotateWindow( +1 );
   cpu.SetS( cpu.GetPS() );
 }
@@ -361,7 +361,7 @@ retti.execute = {
     }
   
   cpu.SetET( BOOL(true) );
-  cpu.DelayBranch( address );
+  cpu.DelayBranch( address, ARCH::B_JMP );
   cpu.RotateWindow( +1 );
   cpu.SetS( cpu.GetPS() );
 }

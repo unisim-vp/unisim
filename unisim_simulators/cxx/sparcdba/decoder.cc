@@ -177,6 +177,9 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
     , branch_addr()
     , branch_type(B_JMP)
     , branch_annul(false)
+    , delay_slot(false)
+    , unpredictable(false)
+    , stores()
   {
     for (GPR reg; reg.next();)
       gpr[reg.idx()] = newRegRead(reg);
@@ -223,8 +226,9 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================
-    
-  void UndefinedInstruction(Operation const&) { throw 0; }
+
+  struct UIException {};
+  void UndefinedInstruction(Operation const&) { throw UIException(); }
     
   bool concretize( Expr cexp )
   {
@@ -286,35 +290,6 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   U32  GetFSR() { throw 0; return U32(); }
   void SetFSR( U32 const& ) { throw 0; }
 
-  //   U8  GetVU8 ( unsigned reg, unsigned sub ) { return VectorStorage<U8> (reg)[sub]; }
-  //   U16 GetVU16( unsigned reg, unsigned sub ) { return VectorStorage<U16>(reg)[sub]; }
-  //   U32 GetVU32( unsigned reg, unsigned sub ) { return VectorStorage<U32>(reg)[sub]; }
-  //   U64 GetVU64( unsigned reg, unsigned sub ) { return VectorStorage<U64>(reg)[sub]; }
-  //   S8  GetVS8 ( unsigned reg, unsigned sub ) { return VectorStorage<S8> (reg)[sub]; }
-  //   S16 GetVS16( unsigned reg, unsigned sub ) { return VectorStorage<S16>(reg)[sub]; }
-  //   S32 GetVS32( unsigned reg, unsigned sub ) { return VectorStorage<S32>(reg)[sub]; }
-  //   S64 GetVS64( unsigned reg, unsigned sub ) { return VectorStorage<S64>(reg)[sub]; }
-  
-  //   void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { VectorStorage<U8> (reg)[sub] = value; }
-  //   void SetVU16( unsigned reg, unsigned sub, U16 value ) { VectorStorage<U16>(reg)[sub] = value; }
-  //   void SetVU32( unsigned reg, unsigned sub, U32 value ) { VectorStorage<U32>(reg)[sub] = value; }
-  //   void SetVU64( unsigned reg, unsigned sub, U64 value ) { VectorStorage<U64>(reg)[sub] = value; }
-  //   void SetVS8 ( unsigned reg, unsigned sub, S8  value ) { VectorStorage<S8> (reg)[sub] = value; }
-  //   void SetVS16( unsigned reg, unsigned sub, S16 value ) { VectorStorage<S16>(reg)[sub] = value; }
-  //   void SetVS32( unsigned reg, unsigned sub, S32 value ) { VectorStorage<S32>(reg)[sub] = value; }
-  //   void SetVS64( unsigned reg, unsigned sub, S64 value ) { VectorStorage<S64>(reg)[sub] = value; }
-  
-  //   void SetVU8 ( unsigned reg, U8 value )  { VectorZeroedStorage<U8> (reg)[0] = value; }
-  //   void SetVU16( unsigned reg, U16 value ) { VectorZeroedStorage<U16>(reg)[0] = value; }
-  //   void SetVU32( unsigned reg, U32 value ) { VectorZeroedStorage<U32>(reg)[0] = value; }
-  //   void SetVU64( unsigned reg, U64 value ) { VectorZeroedStorage<U64>(reg)[0] = value; }
-  //   void SetVS8 ( unsigned reg, S8 value )  { VectorZeroedStorage<S8> (reg)[0] = value; }
-  //   void SetVS16( unsigned reg, S16 value ) { VectorZeroedStorage<S16>(reg)[0] = value; }
-  //   void SetVS32( unsigned reg, S32 value ) { VectorZeroedStorage<S32>(reg)[0] = value; }
-  //   void SetVS64( unsigned reg, S64 value ) { VectorZeroedStorage<S64>(reg)[0] = value; }
-  
-  //   void ClearHighV( unsigned reg, unsigned bytes ) { for (unsigned idx = bytes; idx < VUnion::BYTECOUNT; idx+=1 ) vector_data[reg][idx] = 0; }
-
   //   =====================================================================
   //   =              Special/System Registers access methods              =
   //   =====================================================================
@@ -342,8 +317,17 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   U32  GetPC() { return current_instruction_address; }
-  void DelayBranch(U32 target) { branch_addr = target; }
-  void SetAnnul(bool annul) { branch_annul = annul; }
+  void DelayBranch(U32 target, branch_type_t bt )
+  {
+    branch_addr = target;
+    branch_type = bt;
+    delay_slot = true;
+  }
+  void SetAnnul(bool annul)
+  {
+    branch_annul = annul;
+    delay_slot = true;
+  }
   
   void Abort( TrapType_t trap ) { throw 0; }
   void StopFetch() { throw 0; }
@@ -370,230 +354,6 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   template <typename T> void FMemWrite( ASI asi, U32 const& addr, T const& ) { throw 0; }
 
   unisim::component::cxx::processor::sparc::ASI rqasi() const { return ASI::user_data; }
-  
-  //   =====================================================================
-  //   =                         Processor Storage                         =
-  //   =====================================================================
-
-  // // typedef u64_t addr_t;
-  // typedef unisim::component::cxx::processor::sparc::ASI ASI;
-  // typedef unisim::component::cxx::processor::sparc::Trap_t Trap_t;
-  
-  // typedef SmartValue<float>       F32;
-  // typedef SmartValue<double>      F64;
-    
-  // struct ISA : public Decoder
-  // {
-  //   ISA();
-  //   ~ISA();
-  //   Operation* decode(uint32_t addr, uint32_t code, std::string& disasm);
-  // };
-
-  // typedef unisim::util::symbolic::Expr Expr;
-  // typedef unisim::util::symbolic::ExprNode ExprNode;
-  // typedef unisim::util::symbolic::ValueType ValueType;
-  // typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-  // typedef unisim::util::symbolic::EvalSpace EvalSpace;
-
-  // void noexec( Operation const& op )
-  // {
-  //   throw unisim::util::sav::Untestable("Not implemented");
-  // }
-
-  // struct Update : public ExprNode
-  // {
-  //   virtual ValueType const* GetType() const override { return unisim::util::symbolic::NoValueType(); }
-  // };
-
-  // struct RegReadBase : public unisim::util::symbolic::ExprNode
-  // {
-  //   virtual char const* GetRegName() const = 0;
-  //   virtual void Repr( std::ostream& sink ) const override { sink << "RegRead(" << GetRegName() << ")"; }
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegReadBase const&>( rhs ) ); };
-  //   int compare( RegReadBase const& rhs ) const { return 0; }
-  // };
-
-  // template <typename RID>
-  // struct RegRead : public RegReadBase
-  // {
-  //   RegRead( RID _id ) : id(_id) {}
-  //   virtual RegRead* Mutate() const override { return new RegRead( *this ); }
-  //   virtual char const* GetRegName() const override { return id.c_str(); };
-  //   virtual ValueType const* GetType() const { return RID::GetType(); }
-  //   virtual unsigned SubCount() const override { return 0; }
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
-  //   int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-  //   ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** cnbs) const override { return id.eval(evs, cnbs); }
-
-  //   RID id;
-  // };
-
-  // template <typename RID>
-  // Expr newRegRead( RID _id ) { return new RegRead<RID>(_id); }
-
-  // struct VRReadBase : public unisim::util::sav::VirtualRegister, public ExprNode
-  // {
-  //   typedef unisim::util::sav::VirtualRegister VirtualRegister;
-  //   VRReadBase( unsigned reg,  unsigned idx ) : VirtualRegister(reg, idx), ExprNode() {}
-  //   virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
-  //   virtual unsigned SubCount() const override { return 0; }
-  // };
-
-  // template <class T>
-  // struct VRRead : public VRReadBase
-  // {
-  //   typedef VRRead<T> this_type;
-  //   VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
-  //   virtual ExprNode* Mutate() const override { return new this_type(*this); }
-  //   virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
-  //   virtual ValueType const* GetType() const override { return T::GetType(); }
-  // };
-
-  // struct VRWriteBase : public unisim::util::sav::VirtualRegister, public Update
-  // {
-  //   typedef unisim::util::sav::VirtualRegister VirtualRegister;
-  //   VRWriteBase( unsigned reg, unsigned idx, Expr const& _val ) : VirtualRegister(reg, idx), Update(), val(_val) {}
-  //   virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
-  //   virtual unsigned SubCount() const override { return 1; }
-  //   virtual Expr const& GetSub(unsigned idx) const override { if (idx == 0) return val; return ExprNode::GetSub(idx); }
-  //   Expr val;
-  // };
-
-  // template <class T>
-  // struct VRWrite : public VRWriteBase
-  // {
-  //   typedef VRWrite<T> this_type;
-  //   VRWrite( unsigned reg,  unsigned idx, Expr const& val ) : VRWriteBase(reg, idx, val) {}
-  //   virtual ExprNode* Mutate() const override { return new this_type(*this); }
-  //   virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
-  // };
-
-  // struct GReg { static ValueType const* GetType() { return unisim::util::symbolic::CValueType(uint32_t()); } static char const* name() { return "GReg"; } };
-
-  // // typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
-  // // typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
-  // /**/                           typedef VRWrite<GReg> GRegWrite;
-
-  // struct Y : public unisim::util::symbolic::WithValueType<Y>
-  // {
-  //   typedef uint32_t value_type;
-  //   char const* c_str() const { return "%y"; }
-  //   int cmp( Y const& ) const { return 0; }
-  //   ConstNodeBase const* eval(EvalSpace const& evs, ConstNodeBase const**) const
-  //   {
-  //     if (dynamic_cast<AddrEval const*>( &evs ))
-  //       throw 0;
-  //     return 0;
-  //   }
-  // };
-    
-  // struct Load : public ExprNode
-  // {
-  //   Load( ValueType const* _tp, ASI _asi, Expr const& _addr ) : addr(_addr), asi(_asi), tp(_tp) {}
-  //   virtual Load* Mutate() const override { return new Load( *this ); }
-  //   virtual void Repr( std::ostream& sink ) const override { tp->GetName( sink << "Load" ); sink << "(" << addr << ")"; }
-  //   virtual unsigned SubCount() const override { return 1; }
-  //   virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
-  //   int compare( Load const& rhs ) const { return tp->cmp(*rhs.tp); }
-  //   virtual ValueType const* GetType() const { return tp; }
-
-  //   Expr addr;
-  //   ASI asi;
-  //   ValueType const* tp;
-  // };
-
-  // struct Store : public Update
-  // {
-  //   Store( ValueType const* _tp, Expr const& _addr, Expr const& _value )
-  //     : addr( _addr ), value( _value ), tp(_tp)
-  //   {}
-  //   virtual Store* Mutate() const override { return new Store( *this ); }
-  //   virtual void Repr( std::ostream& sink ) const override { tp->GetName( sink << "Store" ); sink << "( " << addr << ", " << value <<  " )"; }
-  //   virtual unsigned SubCount() const override { return 2; }
-  //   virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
-  //   int compare( Store const& rhs ) const { return tp->cmp(*rhs.tp); }
-      
-  //   Expr addr;
-  //   Expr value;
-  //   ValueType const* tp;
-  // };
-
-  // struct AddrEval : public EvalSpace {};
-  
-  // struct RelocEval : public EvalSpace
-  // {
-  //   RelocEval( uint32_t const* _regvalues, uint32_t _address ) : regvalues(_regvalues), address(_address) {}
-  //   uint32_t const* regvalues;
-  //   uint32_t address;
-  // };
-
-  // struct GRegRead : public VRRead<GReg>, public unisim::util::sav::Addressings::Source
-  // {
-  //   GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
-  //   virtual ConstNodeBase const* Eval( EvalSpace const& evs, ConstNodeBase const** ) const override
-  //   {
-  //     if (dynamic_cast<AddrEval const*>( &evs ))
-  //       return new unisim::util::symbolic::ConstNode<uint32_t>( uint32_t(reg) << 16 );
-  //     if (auto l = dynamic_cast<RelocEval const*>( &evs ))
-  //       return new unisim::util::symbolic::ConstNode<uint32_t>( l->regvalues[idx] );
-  //     return 0;
-  //   };
-  // };
-
-  // struct RegWriteBase : public Update
-  // {
-  //   RegWriteBase( Expr const& _value ) : value( _value ) {}
-  //   virtual unsigned SubCount() const override { return 1; }
-  //   virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-  //   virtual char const* GetRegName() const = 0;
-  //   virtual void Repr( std::ostream& sink ) const override { sink << GetRegName() << " := " << value; }
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
-  //   int compare( RegWriteBase const& rhs ) const { return 0; }
-  //   Expr value;
-  // };
-
-  // template <typename RID>
-  // struct RegWrite : public RegWriteBase
-  // {
-  //   typedef RegWrite<RID> this_type;
-  //   RegWrite( RID _id, Expr const& _value ) : RegWriteBase( _value ), id( _id ) {}
-  //   virtual this_type* Mutate() const override { return new this_type( *this ); }
-  //   virtual char const* GetRegName() const override { return id.c_str(); };
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-  //   int compare( this_type const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-
-  //   RID id;
-  // };
-
-  // template <typename RID> RegWrite<RID>* newRegWrite( RID _id, Expr const& _value ) { return new RegWrite<RID>(_id, _value); }
-
-  // ~Processor();
-
-  // void step( Operation const& op );
-  // bool close( Processor const& ref );
-
-  // static void dont(char const* reason) { throw unisim::util::sav::Untestable(reason); }
-
-  // /***************************/
-  // /*** Architectural state ***/
-  // /***************************/
-
-  // void UndefinedInstruction( Operation const& op ) { UndefinedInstruction(); }
-  // void UndefinedInstruction() { throw 0; }
-
-
-  // bool concretize( Expr cexp );
-  
-  // template <typename T>
-  // bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
-  // {
-  //   if (not cond.expr.good())
-  //     throw std::logic_error( "Not a valid condition" );
-
-  //   return concretize( BOOL(cond).expr );
-  // }
 
   ActionNode*      path;
   U32              gpr[32];
@@ -602,7 +362,7 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   U32              current_instruction_address;
   U32              branch_addr;
   branch_type_t    branch_type;
-  bool             branch_annul;
+  bool             branch_annul, delay_slot;
   bool             unpredictable;
   std::set<Expr>   stores;
 };
@@ -614,8 +374,8 @@ struct Translator
   
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
   
-  Translator( uint32_t _addr, uint32_t _code )
-    : coderoot(new ActionNode), addr(_addr), code(_code)
+  Translator( uint32_t _addr, uint32_t _code0, uint32_t _code1 )
+    : coderoot(new ActionNode), addr(_addr), code0(_code0), code1(_code1)
   {}
   ~Translator() { delete coderoot; }
    
@@ -623,9 +383,7 @@ struct Translator
   translate( std::ostream& sink )
   {
     sink << "(address . " << unisim::util::symbolic::binsec::dbx(8, addr) << ")\n";
-    sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code) << ")\n";
-    sink << "(size . 4)\n";
-    
+
     struct Instruction
     {
       Instruction(uint32_t addr, uint32_t code)
@@ -636,40 +394,80 @@ struct Translator
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
+      void disassemble(std::ostream& sink) const
+      {
+        try { operation->disasm( sink, operation->GetAddr() ); }
+        catch (...) { sink << "(bad)"; }
+      }
 
       Operation* operation;
     };
 
-    Instruction instruction(addr, code);
-
-    if (not instruction.operation)
-      {
-        sink << "(illegal)\n";
-        return;
-      }
+    Instruction instruction0(addr, code0), instruction1(addr+4, code1);
 
     Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
     // Processor::U64      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
     Processor reference( insn_addr );
 
-    // Disassemble
-    sink << "(mnemonic . \"";
-    try { instruction->disasm( sink, addr ); }
-    catch (...) { sink << "(bad)"; }
-    sink << "\")\n";
-
     // Get actions
     try
       {
+        unsigned ds_state = 0;
         for (bool end = false; not end;)
           {
             Processor state( reference );
             state.path = coderoot;
-            instruction->execute( state );
+            instruction0->execute( state );
+            ds_state |= 1 << state.delay_slot;
+            if (state.delay_slot)
+              {
+                if (not state.branch_addr.expr.node)
+                  state.branch_addr = insn_addr + Processor::U32(8);
+                if (not state.branch_annul)
+                  {
+                    state.delay_slot = false;
+                    instruction1->execute(state);
+                    if (state.delay_slot)
+                      throw Processor::UIException();
+                  }
+              }
+            else
+              {
+                if (state.branch_addr.expr.node)
+                  throw Processor::UIException();
+                state.branch_addr = insn_addr + Processor::U32(4);
+              }
             end = state.close( reference, addr + 4 );
+          }
+        // Dump Info
+        switch (ds_state)
+          {
+          case 0:
+            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code0) << ")\n";
+            sink << "(size . 4)\n";
+            sink << "(mnemonic . \"";
+            instruction0.disassemble(sink);
+            sink << "\")\n";
+            break;
+          case 1: case 2:
+            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(8, uint64_t(code0) << 32 | code1) << ")\n";
+            sink << "(size . 8)\n";
+            sink << "(mnemonic . \"";
+            instruction0.disassemble(sink);
+            sink << " | ";
+            instruction1.disassemble(sink);
+            sink << "\")\n";
+            break;
+          default:
+            throw Processor::UIException();
           }
         coderoot->simplify();
         coderoot->commit_stats();
+      }
+    catch (Processor::UIException const&)
+      {
+        sink << "(illegal)\n";
+        return;
       }
     catch (...)
       {
@@ -687,13 +485,13 @@ struct Translator
 
   ActionNode*               coderoot;
   uint32_t                  addr;
-  uint32_t                  code;
+  uint32_t                  code0, code1;
 };
 
 void
-Decoder::process( std::ostream& sink, uint32_t addr, uint32_t code )
+Decoder::process( std::ostream& sink, uint32_t addr, uint32_t code0, uint32_t code1 )
 {
-  Translator translator( addr, code );
+  Translator translator( addr, code0, code1 );
 
   translator.translate( sink );
 }
