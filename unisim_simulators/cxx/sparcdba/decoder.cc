@@ -442,14 +442,14 @@ struct Translator
         // Dump Info
         switch (ds_state)
           {
-          case 0:
+          case 1:
             sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code0) << ")\n";
             sink << "(size . 4)\n";
             sink << "(mnemonic . \"";
             instruction0.disassemble(sink);
             sink << "\")\n";
             break;
-          case 1: case 2:
+          case 2:
             sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(8, uint64_t(code0) << 32 | code1) << ")\n";
             sink << "(size . 8)\n";
             sink << "(mnemonic . \"";
