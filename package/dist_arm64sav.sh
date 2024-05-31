@@ -64,6 +64,10 @@ scanner.hh \
 runner.hh \
 "
 
+UNISIM_SIMULATOR_EXTRA_FILES="\
+all.tests \
+"
+
 UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
 README \
@@ -76,11 +80,12 @@ ChangeLog \
 UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \
 ${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_EXTRA_FILES} \
 ${UNISIM_SIMULATOR_DATA_FILES} \
 "
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-        dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
 # Simulator

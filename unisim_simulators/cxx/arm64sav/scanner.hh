@@ -314,7 +314,7 @@ struct Scanner
   static SysReg const* GetSystemRegister(int, int, int, int, int) { dont("system"); return 0; }
   void CheckSystemAccess(int) { dont("system"); }
 
-  enum AccessReport { report_simd_access = 1, report_gsr_access, report_gzr_access };
+  enum AccessReport { report_none = 0, report_simd_access, report_gsr_access, report_gzr_access };
   void report( AccessReport acc, unsigned reg, bool is_write );
   
   U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value);

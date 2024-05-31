@@ -128,7 +128,7 @@ struct AArch64
 
   enum { ZID=4 };
 
-  enum ReportAccess { report_simd_access = 0, report_gsr_access = 0, report_gzr_access = 0 };
+  enum ReportAccess { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
   void report( ReportAccess, unsigned, bool ) const {}
 
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>   A64Decoder;

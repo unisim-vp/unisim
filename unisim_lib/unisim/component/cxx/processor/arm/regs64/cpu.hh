@@ -91,14 +91,14 @@ struct CPU
   /// Get the value contained by a General-purpose or the Stack register.
   typename TYPES::U64 GetGSR(unsigned reg)
   {
-    if (int(CPU_IMPL::report_gsr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gsr_access, reg, false);
+    if (CPU_IMPL::report_gsr_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gsr_access, reg, false);
     return gpr[reg];
   }
 
   /// Get the value contained by a General-purpose or the Zero register.
   typename TYPES::U64 GetGZR(unsigned reg)
   {
-    if (int(CPU_IMPL::report_gzr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gzr_access, reg, false);
+    if (CPU_IMPL::report_gzr_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gzr_access, reg, false);
     return (reg != 31) ? gpr[reg] : typename TYPES::U64(0);
   }
 
@@ -107,7 +107,7 @@ struct CPU
   void SetGSR(unsigned reg, T val)
   {
     static_assert(SetGType<TYPES, T>::value, "T must be U32 or U64");
-    if (int(CPU_IMPL::report_gsr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gsr_access, reg, true);
+    if (CPU_IMPL::report_gsr_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gsr_access, reg, true);
     gpr[reg] = typename TYPES::U64(val);
   }
 
@@ -116,7 +116,7 @@ struct CPU
   void SetGZR(unsigned reg, T val)
   {
     static_assert(SetGType<TYPES, T>::value, "T must be U32 or U64");
-    if (int(CPU_IMPL::report_gzr_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gzr_access, reg, true);
+    if (CPU_IMPL::report_gzr_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_gzr_access, reg, true);
     if (reg != 31) gpr[reg] = typename TYPES::U64( val );
   }
 
@@ -125,7 +125,7 @@ struct CPU
   template <typename T>
   T vector_read(unsigned reg, unsigned sub)
   {
-    if (int(CPU_IMPL::report_simd_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, false);
+    if (CPU_IMPL::report_simd_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, false);
     return (vector_views[reg].GetConstStorage(&vectors[reg], T(), VUConfig::BYTECOUNT))[sub];
   }
 
@@ -143,7 +143,7 @@ struct CPU
   template <typename T>
   void vector_write(unsigned reg, unsigned sub, T value )
   {
-    if (int(CPU_IMPL::report_simd_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, true);
+    if (CPU_IMPL::report_simd_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, true);
     (vector_views[reg].GetStorage(&vectors[reg], value, VUConfig::BYTECOUNT))[sub] = value;
   }
 
@@ -161,7 +161,7 @@ struct CPU
   template <typename T>
   void vector_write(unsigned reg, T value )
   {
-    if (int(CPU_IMPL::report_simd_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, true);
+    if (CPU_IMPL::report_simd_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, true);
     *(vector_views[reg].GetStorage(&vectors[reg], value, VUConfig::template TypeInfo<T>::bytecount)) = value;
   }
 
@@ -178,7 +178,7 @@ struct CPU
 
   void ClearHighV( unsigned reg, unsigned bytes )
   {
-    if (int(CPU_IMPL::report_simd_access)) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, true);
+    if (CPU_IMPL::report_simd_access != CPU_IMPL::report_none) static_cast<CPU_IMPL*>(this)->report(CPU_IMPL::report_simd_access, reg, true);
     vector_views[reg].Truncate(bytes);
   }
 
