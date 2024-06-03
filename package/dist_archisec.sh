@@ -49,6 +49,10 @@ import unisim/component/cxx/processor/powerpc/isa/book_iii_e || exit
 import unisim/component/cxx/processor/powerpc/isa/book_e || exit
 import unisim/component/cxx/processor/powerpc/isa || exit
 
+# SPARC
+
+import unisim/component/cxx/processor/sparc/isa/sv8 || exit
+
 # Common
 
 import unisim/component/cxx/vector || exit
@@ -158,6 +162,29 @@ for isa in ${PPC64_ISA_FILES}; do
 done
 
 
+SPARC_SRCDIR=cxx/sparcdba
+SPARC_DSTDIR=sparc
+SPARC_SRC_FILES="\
+decoder.hh \
+decoder.cc \
+"
+SPARC_ISA_FILES="\
+sparc \
+"
+
+for file in ${SPARC_SRC_FILES}; do
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${SPARC_SRCDIR}/${file}" \
+              "${DEST_DIR}/${SPARC_DSTDIR}/${file}"
+done
+
+for isa in ${SPARC_ISA_FILES}; do
+    ${UNISIM_TOOLS_DIR}/genisslib/genisslib.py \
+		       --prefix ${DEST_DIR} \
+		       -o ${SPARC_DSTDIR}/${isa} \
+		       -w 8 -I ${UNISIM_LIB_DIR} --source-lines off \
+		       ${UNISIM_SIMULATOR_DIR}/${SPARC_SRCDIR}/${isa}.isa
+done
+
 AMD64_SRCDIR=cxx/amd64dba
 AMD64_DSTDIR=amd64
 AMD64_ISA_FILES="\
@@ -177,6 +204,7 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 arm32dba.cc arm32dba.ml \
 aarch64dba.cc aarch64dba.ml \
 ppc64dba.cc ppc64dba.ml \
+sparcdba.cc sparcdba.ml \
 amd64dba.cc amd64dba.ml \
 unittest.ml \
 unittest.expected \
@@ -494,6 +522,44 @@ EOF
 
 echo >> "${DEST_DIR}/dune"
 
+SV8_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/sparc/isa/sv8)
+SPARC_INCLUDES=$(includes ${DEST_DIR} sparc)
+
+cat <<EOF >> "${DEST_DIR}/dune"
+(subdir
+ unisim/component/cxx/processor/sparc/isa/sv8
+ (foreign_library
+  (archive_name sv8)
+  (language cxx)
+  (names (:standard))
+  (flags (:standard -I../../../../../../..))
+  (extra_deps ${SV8_INCLUDES})))
+
+(subdir
+ sparc
+ (foreign_library
+  (archive_name sparc)
+  (language cxx)
+  (names (:standard))
+  (flags :standard -I. -I..)
+  (extra_deps ${SPARC_INCLUDES})))
+
+(library
+ (public_name unisim_archisec.sparcdba)
+ (name sparcdba)
+ (modules sparcdba)
+ (foreign_archives
+  sparc/sparc
+  unisim/component/cxx/processor/sparc/isa/sv8/sv8)
+ (foreign_stubs
+  (language cxx)
+  (names sparcdba)
+  (flags :standard -I.))
+ (libraries util))
+EOF
+
+echo >> "${DEST_DIR}/dune"
+
 INTEL_INCLUDES=$(includes ${DEST_DIR} unisim/component/cxx/processor/intel)
 AMD64_INCLUDES=$(includes ${DEST_DIR} amd64)
 
@@ -539,7 +605,7 @@ cat <<EOF >> "${DEST_DIR}/dune"
  (modes
   (best exe))
  (modules unittest)
- (libraries arm32dba aarch64dba ppc64dba amd64dba))
+ (libraries arm32dba aarch64dba ppc64dba amd64dba sparcdba))
 EOF
 
 dune format-dune-file ${DEST_DIR}/dune > ${DEST_DIR}/dune.formatted
