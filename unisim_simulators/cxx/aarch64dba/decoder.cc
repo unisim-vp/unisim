@@ -169,7 +169,10 @@ struct Processor
   //   =====================================================================
   void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
   {
-    flags[3] = N.expr; flags[2] = Z.expr; flags[1] = C.expr; flags[0] = V.expr;
+    flags[Flag::N] = N.expr;
+    flags[Flag::Z] = Z.expr;
+    flags[Flag::C] = C.expr;
+    flags[Flag::V] = V.expr;
   }
   U8   GetNZCV() const
   {
@@ -178,7 +181,7 @@ struct Processor
       res = res | (U8(BOOL(flags[idx])) << idx );
     return res;
   }
-  BOOL GetCarry() const { return BOOL(flags[1]); }
+  BOOL GetCarry() const { return BOOL(flags[Flag::C]); }
     
   //   ====================================================================
   //   =                 Vector  Registers access methods                 
@@ -308,12 +311,13 @@ struct Processor
     , unisim::util::symbolic::WithValueType<Flag>
   {
     typedef bool value_type;
-    enum Code { N, Z, C, V, end } code;
+    enum Code { V = 0, C = 1, Z = 2, N = 3, end } code;
 
     char const* c_str() const
     {
-      static char const* names[] = {"n", "z", "c", "v", "NA"};
-      return names[int(code)];
+      static char const* names[] = {"v", "c", "z", "n"};
+      unsigned i = idx();
+      return i < 4 ? names[i] : "NA";
     }
 
     void Repr(std::ostream& sink) const { sink << c_str(); }
