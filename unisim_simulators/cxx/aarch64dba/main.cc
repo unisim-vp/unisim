@@ -80,11 +80,11 @@ main( int argc, char** argv )
 {
   aarch64::Decoder decoder;
 
-  if (0 == strcmp(argv[1],"sav"))
+  if (3 == argc and 0 == strcmp(argv[1],"sav"))
     {
       // Special treatment of SAV files
       std::ifstream source(argv[2]);
-      
+
       if (not source.good()) { std::cerr << "Cannot open SAV file: " << argv[2] << "\n"; return 1; }
 
       std::string code, disasm;
@@ -100,6 +100,7 @@ main( int argc, char** argv )
               break;
             }
         }
+      return 0;
     }
 
   if (argc < 3)
@@ -114,6 +115,6 @@ main( int argc, char** argv )
       std::cerr << Usage{argv[0]};
       return 1;
     }
-  
+
   return 0;
 }
