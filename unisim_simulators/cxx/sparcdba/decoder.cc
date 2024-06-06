@@ -227,8 +227,9 @@ struct Processor : public unisim::component::cxx::processor::sparc::isa::sv8::Ar
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================
 
-  struct UIException {};
-  void UndefinedInstruction(Operation const&) { throw UIException(); }
+  struct Illegal {};
+  struct Unimplemented {};
+  void UndefinedInstruction(Operation const&) { throw Unimplemented(); }
     
   bool concretize( Expr cexp )
   {
@@ -382,7 +383,7 @@ struct Translator
   void
   translate( std::ostream& sink )
   {
-    sink << "(address . " << unisim::util::symbolic::binsec::dbx(8, addr) << ")\n";
+    sink << "(address . " << unisim::util::symbolic::binsec::dbx(4, addr) << ")\n";
 
     struct Instruction
     {
@@ -409,71 +410,94 @@ struct Translator
     // Processor::U64      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
     Processor reference( insn_addr );
 
+    struct 
+    {
+      uint32_t size;
+      Instruction& insn0;
+      Instruction& insn1;
+      uint32_t code0() { return insn0->GetEncoding(); }
+      uint32_t code1() { return insn1->GetEncoding(); }
+      void write(std::ostream& sink, char const* finish="")
+      {
+        switch (size)
+          {
+          default: 
+            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code0()) << ")\n";
+            sink << "(mnemonic . \"";
+            insn0.disassemble(sink);
+            sink << "\")\n";
+            break;
+          case 8:
+            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(8, uint64_t(code0()) << 32 | code1()) << ")\n";
+            sink << "(mnemonic . \"";
+            insn0.disassemble(sink);
+            sink << " | ";
+            insn1.disassemble(sink);
+            sink << "\")\n";
+            break;
+          }
+        sink << "(size . " << size << ")\n" << finish;
+      }
+    } headers{4, instruction0, instruction1};
+
     // Get actions
     try
       {
         unsigned ds_state = 0;
-        for (bool end = false; not end;)
+        try
           {
-            Processor state( reference );
-            state.path = coderoot;
-            instruction0->execute( state );
-            ds_state |= 1 << state.delay_slot;
-            if (state.delay_slot)
+            for (bool end = false; not end;)
               {
-                if (not state.branch_addr.expr.node)
-                  state.branch_addr = insn_addr + Processor::U32(8);
-                if (not state.branch_annul)
+                Processor state( reference );
+                state.path = coderoot;
+                instruction0->execute( state );
+                ds_state |= 1 << state.delay_slot;
+                if (state.delay_slot)
                   {
-                    state.delay_slot = false;
-                    instruction1->execute(state);
-                    if (state.delay_slot)
-                      throw Processor::UIException();
+                    if (not state.branch_addr.expr.node)
+                      state.branch_addr = insn_addr + Processor::U32(8);
+                    if (not state.branch_annul)
+                      {
+                        state.delay_slot = false;
+                        instruction1->execute(state);
+                        if (state.delay_slot)
+                          throw Processor::Illegal();
+                      }
                   }
+                else
+                  {
+                    if (state.branch_addr.expr.node)
+                      throw Processor::Illegal();
+                    state.branch_addr = insn_addr + Processor::U32(4);
+                  }
+                end = state.close( reference, addr + 4 );
               }
-            else
-              {
-                if (state.branch_addr.expr.node)
-                  throw Processor::UIException();
-                state.branch_addr = insn_addr + Processor::U32(4);
-              }
-            end = state.close( reference, addr + 4 );
           }
-        // Dump Info
+        catch (Processor::Illegal const&)
+          {
+            throw;
+          }
+        catch (...)
+          {
+            headers.write(sink, "(unimplemented)\n");
+            return;
+          }
         switch (ds_state)
           {
-          case 1:
-            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code0) << ")\n";
-            sink << "(size . 4)\n";
-            sink << "(mnemonic . \"";
-            instruction0.disassemble(sink);
-            sink << "\")\n";
-            break;
-          case 2:
-            sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(8, uint64_t(code0) << 32 | code1) << ")\n";
-            sink << "(size . 8)\n";
-            sink << "(mnemonic . \"";
-            instruction0.disassemble(sink);
-            sink << " | ";
-            instruction1.disassemble(sink);
-            sink << "\")\n";
-            break;
+          case 1: break;
+          case 2: headers.size = 8; break;
           default:
-            throw Processor::UIException();
+            throw Processor::Illegal();
           }
         coderoot->simplify();
         coderoot->commit_stats();
       }
-    catch (Processor::UIException const&)
-      {
-        sink << "(illegal)\n";
-        return;
-      }
     catch (...)
       {
-        sink << "(unimplemented)\n";
+        headers.write(sink, "(illegal)\n");
         return;
       }
+    headers.write(sink);
 
     // Translate to DBA
     unisim::util::symbolic::binsec::Program program;
