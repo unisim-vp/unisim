@@ -152,8 +152,6 @@ namespace symbolic {
     virtual void Repr( std::ostream& sink ) const override;
     virtual ValueType GetType() const override { return type; }
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
-    // virtual int cmp( ExprNode const& rhs ) const override { return compare(dunamic_cast<Zero const&>(rhs)); }
-    // int compare(Zero const& rhs) const { if (int delta = int(is_signed) - rhs.is_signed) return delta; return int(bitsize) - int (rhs.bitsize); }
     ValueType type;
   };
 
@@ -346,7 +344,7 @@ namespace symbolic {
   {
     if (CELLCOUNT & 1)
       res.cells[CELLCOUNT-1] = cst->GetBits(CELLCOUNT/2);
-    
+
     for (unsigned idx = CELLCOUNT/2; idx-- > 0;)
       {
         uint64_t bits = cst->GetBits(idx);
@@ -363,7 +361,7 @@ namespace symbolic {
     virtual ~Evaluator() {}
     virtual ConstNodeBase const* Simplify(unsigned, Expr&) const;
   };
-  
+
   struct Expr
   {
     Expr() : node() {} ExprNode const* node;
@@ -1096,17 +1094,17 @@ namespace symbolic {
 
   template <class PoolT, typename Merger>
   void
-  factorize( PoolT& dst, PoolT& lho, PoolT& rho, Merger merger )
+  factorize( PoolT& dst, PoolT& lho, PoolT& rho, Merger const& merger )
   {
     for (typename PoolT::iterator lhi = lho.begin(), rhi = rho.begin(), lie = lho.end(), rie = rho.end(); lhi != lie and rhi != rie; )
       {
-        if (lho.value_comp()(*lhi, *rhi))
-          ++lhi;
-        else if (lho.value_comp()(*rhi, *lhi))
-          ++rhi;
+        if (int delta = merger(dst, *lhi, *rhi))
+          {
+            if (delta < 0) ++lhi;
+            else           ++rhi;
+          }
         else
           {
-            merger( dst, *lhi, *rhi );
             lho.erase( lhi++ );
             rho.erase( rhi++ );
           }

@@ -49,7 +49,7 @@ struct Processor
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
-    
+
   typedef unisim::util::symbolic::SmartValue<double>   F64;
   typedef unisim::util::symbolic::SmartValue<float>    F32;
   typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
@@ -61,10 +61,10 @@ struct Processor
   typedef unisim::util::symbolic::SmartValue<int16_t>  S16;
   typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
   typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
-    
+
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
-  typedef unisim::util::symbolic::ValueType           ValueType;
+  typedef unisim::util::symbolic::ValueType            ValueType;
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
 
   template <typename RID>
@@ -76,7 +76,7 @@ struct Processor
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
-    
+
   struct StatusRegister
   {
     typedef unisim::util::symbolic::Expr       Expr;
@@ -98,7 +98,7 @@ struct Processor
     for (Flag flag; flag.next();)
       flags[flag.idx()] = newRegRead(flag);
   }
-  
+
   bool
   close( Processor const& ref, uint64_t linear_nia )
   {
@@ -112,28 +112,28 @@ struct Processor
         path->add_sink( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
         return complete;
       }
-    
+
     for (GPR reg; reg.next();)
       if (gpr[reg.idx()] != ref.gpr[reg.idx()])
         path->add_sink( Expr( newRegWrite( reg, gpr[reg.idx()] ) ) );
-    
+
     for (Flag flag; flag.next();)
       if (flags[flag.idx()] != ref.flags[flag.idx()])
         path->add_sink( Expr( newRegWrite( flag, flags[flag.idx()] ) ) );
 
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
       path->add_sink( *itr );
-    
+
     return complete;
   }
 
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================
-    
+
   template <typename OPER>
   void UndefinedInstruction(OPER const*) { throw unisim::component::cxx::processor::arm::isa::Reject(); }
-    
+
   bool concretize( Expr cexp )
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
@@ -143,7 +143,7 @@ struct Processor
     path = path->next( predicate );
     return predicate;
   }
-  
+
   template <typename T>
   bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
   {
@@ -156,14 +156,14 @@ struct Processor
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
-    
+
   U64  GetGSR(unsigned id) const { return U64(gpr[id]); }
   U64  GetGZR(unsigned id) const { return id == 31 ? U64(0) : U64(gpr[id]); }
   template <typename T>
   void SetGSR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val) { gpr[id] = U64(val).expr; }
   template <typename T>
   void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val) { if (id == 31) return; gpr[id] = U64(val).expr; }
-  
+
   //   =====================================================================
   //   =                  Arithmetic Flags access methods                  =
   //   =====================================================================
@@ -182,9 +182,9 @@ struct Processor
     return res;
   }
   BOOL GetCarry() const { return BOOL(flags[Flag::C]); }
-    
+
   //   ====================================================================
-  //   =                 Vector  Registers access methods                 
+  //   =                 Vector  Registers access methods
   //   ====================================================================
 
   //   U8  GetVU8 ( unsigned reg, unsigned sub ) { return VectorStorage<U8> (reg)[sub]; }
@@ -195,7 +195,7 @@ struct Processor
   //   S16 GetVS16( unsigned reg, unsigned sub ) { return VectorStorage<S16>(reg)[sub]; }
   //   S32 GetVS32( unsigned reg, unsigned sub ) { return VectorStorage<S32>(reg)[sub]; }
   //   S64 GetVS64( unsigned reg, unsigned sub ) { return VectorStorage<S64>(reg)[sub]; }
-  
+
   //   void SetVU8 ( unsigned reg, unsigned sub, U8  value ) { VectorStorage<U8> (reg)[sub] = value; }
   //   void SetVU16( unsigned reg, unsigned sub, U16 value ) { VectorStorage<U16>(reg)[sub] = value; }
   //   void SetVU32( unsigned reg, unsigned sub, U32 value ) { VectorStorage<U32>(reg)[sub] = value; }
@@ -204,7 +204,7 @@ struct Processor
   //   void SetVS16( unsigned reg, unsigned sub, S16 value ) { VectorStorage<S16>(reg)[sub] = value; }
   //   void SetVS32( unsigned reg, unsigned sub, S32 value ) { VectorStorage<S32>(reg)[sub] = value; }
   //   void SetVS64( unsigned reg, unsigned sub, S64 value ) { VectorStorage<S64>(reg)[sub] = value; }
-  
+
   //   void SetVU8 ( unsigned reg, U8 value )  { VectorZeroedStorage<U8> (reg)[0] = value; }
   //   void SetVU16( unsigned reg, U16 value ) { VectorZeroedStorage<U16>(reg)[0] = value; }
   //   void SetVU32( unsigned reg, U32 value ) { VectorZeroedStorage<U32>(reg)[0] = value; }
@@ -213,7 +213,7 @@ struct Processor
   //   void SetVS16( unsigned reg, S16 value ) { VectorZeroedStorage<S16>(reg)[0] = value; }
   //   void SetVS32( unsigned reg, S32 value ) { VectorZeroedStorage<S32>(reg)[0] = value; }
   //   void SetVS64( unsigned reg, S64 value ) { VectorZeroedStorage<S64>(reg)[0] = value; }
-  
+
   //   void ClearHighV( unsigned reg, unsigned bytes ) { for (unsigned idx = bytes; idx < VUnion::BYTECOUNT; idx+=1 ) vector_data[reg][idx] = 0; }
 
   //   =====================================================================
@@ -235,45 +235,45 @@ struct Processor
   {
     static SysReg sr; return &sr;
   }
-  
+
   void        CheckSystemAccess( uint8_t op1 ) { throw 0; }
-  
+
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
-  
+
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo(U64 const& npc, branch_type_t bt)
   {
     next_instruction_address = npc;
     branch_type = bt;
   }
-  
+
   void CallSupervisor( uint32_t imm ) { throw 0; }
   void CallHypervisor( uint32_t imm ) { throw 0; }
   void SoftwareBreakpoint( uint32_t imm ) { throw 0; }
   void ExceptionReturn() { throw 0; }
-  
+
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
-  
+
   U64  MemRead64(U64 addr) { return U64( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 8, 0, false ) ) ); }
   U32  MemRead32(U64 addr) { return U32( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 4, 0, false ) ) ); }
   U16  MemRead16(U64 addr) { return U16( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 2, 0, false ) ) ); }
   U8   MemRead8 (U64 addr) { return U8 ( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 1, 0, false ) ) ); }
-    
+
   void MemWrite64(U64 addr, U64 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 8, 0, false ) ); }
   void MemWrite32(U64 addr, U32 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 4, 0, false ) ); }
   void MemWrite16(U64 addr, U16 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 2, 0, false ) ); }
   void MemWrite8 (U64 addr, U8  value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 1, 0, false ) ); }
-    
+
   void ClearExclusiveLocal() { throw 0; }
   void SetExclusiveMonitors( U64, unsigned size ) { throw 0; }
   bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw 0; }
 
   void PrefetchMemory(unsigned, U64) { throw 0; }
-  
+
   //   =====================================================================
   //   =                         Processor Storage                         =
   //   =====================================================================
@@ -300,7 +300,7 @@ struct Processor
     }
 
     void Repr(std::ostream& sink) const { sink << c_str(); }
-    
+
     GPR() : code(end) {}
     GPR( Code _code ) : code(_code) {}
     GPR( char const* _code ) : code(end) { init( _code ); }
@@ -321,7 +321,7 @@ struct Processor
     }
 
     void Repr(std::ostream& sink) const { sink << c_str(); }
-    
+
     Flag() : code(end) {}
     Flag( Code _code ) : code(_code) {}
     Flag( char const* _code ) : code(end) { init( _code ); }
@@ -341,21 +341,21 @@ struct Translator
 {
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Processor> Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Processor> Operation;
-  
+
   typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
-  
+
   Translator( uint64_t _addr, uint32_t _code )
     : coderoot(new ActionNode), addr(_addr), code(_code)
   {}
   ~Translator() { delete coderoot; }
-   
+
   void
   translate( std::ostream& sink )
   {
     sink << "(address . " << unisim::util::symbolic::binsec::dbx(8, addr) << ")\n";
     sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code) << ")\n";
     sink << "(size . 4)\n";
-    
+
     struct Instruction
     {
       Instruction(uint32_t addr, uint32_t code)

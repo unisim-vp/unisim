@@ -38,7 +38,16 @@ namespace Mips
 {
   namespace {
     typedef unisim::util::symbolic::Expr Expr;
-    struct UpdatesMerger { void operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) { updates.insert( l ); } };
+    struct UpdatesMerger
+    {
+      int operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) const
+      {
+        if (int delta = l.compare(r))
+          return delta;
+        updates.insert( l );
+        return 0;
+      }
+    };
   }
 
   void
@@ -50,19 +59,19 @@ namespace Mips
     //     nupdates.insert( ASExprNode::Simplify( *itr ) );
     //   std::swap(nupdates, updates);
     // }
-    
+
     if (not cond.good())
       return;
 
     //    cond = ASExprNode::Simplify( cond );
-    
+
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         next->simplify();
-    
+
     factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
-    
-    
+
+
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
@@ -70,7 +79,7 @@ namespace Mips
           if (next->cond.good() or next->updates.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
-    
+
     if (leaf)
       cond = Expr();
     else if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
@@ -81,7 +90,7 @@ namespace Mips
           cond = onb->GetSub(0);
           std::swap( nexts[false], nexts[true] );
         }
-      
+
   }
 
   bool
@@ -103,7 +112,7 @@ namespace Mips
               return false;
             return Interpreter::INode::requiresOriginValue(expr->GetSub(1), iteration, requirementLevel);
           }
-        
+
         { struct NotYet {}; throw NotYet(); }
       }
     else if (auto node = dynamic_cast<Interpreter::INode const*>(expr.node))
@@ -168,13 +177,13 @@ namespace Mips
               default:
                 break;
               }
-            
+
           }
         else if (subcount == 2)
           {
             std::unique_ptr<ComputationResult> arg(res.Mutate());
             Interpreter::INode::ComputeForward(expr->GetSub(1), *arg);
-            
+
             auto valtype = node->GetType();
             switch (node->op.code)
               {
@@ -263,7 +272,7 @@ namespace Mips
               default: break;
               }
           }
-        
+
         { struct NotYet {}; throw NotYet(); }
       }
     else if (auto node = dynamic_cast<Interpreter::INode const*>(expr.node))
@@ -316,7 +325,7 @@ namespace Mips
     INode::ComputeForward(addr, res);
     res.loadValue(bytes*8);
   }
-  
+
   std::unique_ptr<Interpreter::SideEffect>
   Interpreter::Store::InterpretForward(ComputationResult& computationUnit) const
   {
@@ -337,10 +346,10 @@ namespace Mips
       std::unique_ptr<ComputationResult> addr, value;
       unsigned bytes;
     };
-    
+
     return std::make_unique<DoStore>(bytes,addr,value,computationUnit);
   }
-  
+
   void
   Interpreter::RegRead::Repr(std::ostream& sink) const
   {
@@ -358,7 +367,7 @@ namespace Mips
   {
     res.getRegisterValue(reg.idx());
   }
-  
+
   std::unique_ptr<Interpreter::SideEffect>
   Interpreter::RegWrite::InterpretForward(ComputationResult& computationUnit) const
   {
@@ -377,10 +386,10 @@ namespace Mips
       std::unique_ptr<ComputationResult> value;
       RegisterIndex reg;
     };
-    
+
     return std::make_unique<DoRegWrite>(reg, value, computationUnit);
   }
-  
+
   void
   Interpreter::Goto::Repr(std::ostream& sink) const
   {

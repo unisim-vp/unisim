@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_SYMBOLIC_BINSEC_BINSEC_HH__
 #define __UNISIM_UTIL_SYMBOLIC_BINSEC_BINSEC_HH__
 
@@ -125,7 +125,7 @@ namespace symbolic {
   };
 
 namespace binsec {
-  
+
   typedef FpSmartValue<double> F64;
   typedef FpSmartValue<float>  F32;
   typedef SmartValue<bool>     BOOL;
@@ -143,7 +143,7 @@ namespace binsec {
     dbx( unsigned _bytes, uint64_t _value ) : value(_value << (64 - 8 * _bytes) >> (64 - 8 * _bytes)), bytes(_bytes) {} uint64_t value; unsigned bytes;
     friend std::ostream& operator << ( std::ostream& sink, dbx const& _ );
   };
-  
+
   struct ActionNode : public Conditional<ActionNode>
   {
     ActionNode() : Conditional<ActionNode>(), sinks(), sestats() {}
@@ -164,11 +164,11 @@ namespace binsec {
     typedef std::map<int,std::string> MapType;
     typedef MapType::iterator iterator;
     typedef MapType::const_iterator const_iterator;
-    
+
     Program() : insn_count(0) {}
-    
+
     void        Generate( ActionNode const* action_tree );
-    
+
     int         next_insn() const { return insn_count; }
     int         allocate() { return insn_count++; }
     iterator    write(int idx, std::string const& s)
@@ -178,27 +178,27 @@ namespace binsec {
         throw std::runtime_error("overwriting statement");
       return insert( itr, std::make_pair(idx,s) );
     }
-    
+
     int insn_count;
   };
-  
+
   struct Label
   {
     Label( Program& _program ) : program(_program), id(-1) {}
-    
+
     Label& operator= (Label const& l)
     {
       if (&program != &l.program) throw std::runtime_error("label programs must aggree");
       id = l.id;
       return *this;
     }
-    
+
     int allocate() { return (id = program.allocate()); }
-    
+
     bool valid() const { return id >= 0; }
-    
+
     static bool subst_next( std::string& s, int next );
-    
+
     int write( std::string const& src )
     {
       Program::iterator insn = program.write( id, src );
@@ -206,16 +206,16 @@ namespace binsec {
         id = program.allocate();
       return insn->first;
     }
-    
+
     int GetID() const { return id; }
-    
+
   private:
     Program& program;
     int id;
   };
-  
+
   typedef std::map<Expr,std::pair<std::string,int>> Variables;
-  
+
   struct ASExprNode : public ExprNode
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
@@ -294,7 +294,7 @@ namespace binsec {
     GetCode(Expr const& _expr, Variables& _vars, Label& _label, int _expected)
       : expr(_expr), vars(_vars), label(_label), expected(_expected)
     {}
-    
+
     friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
     {
       int size = ASExprNode::GenerateCode( gc.expr, gc.vars, gc.label, sink );
@@ -333,32 +333,32 @@ namespace binsec {
   struct Assignment : public ExprNode
   {
     Assignment( Expr const& _value ) : value(_value) {}
-    
+
     virtual ValueType GetType() const { return NoValueType(); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    
+
     Expr value;
   };
-  
+
   struct RegWriteBase : public Assignment
   {
-    RegWriteBase( Expr const& _value, int _size ) : Assignment(_value), size(_size), rbase(0), rsize(_size) {}
-    RegWriteBase( Expr const& _value, int _size, int _rbase, int _rsize ) : Assignment(_value), size(_size), rbase(_rbase), rsize(_rsize) {}
-    
+    RegWriteBase( Expr const& _value, int _size ) : Assignment(_value), reg_size(_size), slice_base(0), slice_size(_size) {}
+    RegWriteBase( Expr const& _value, int _size, int _slice_base, int _slice_size ) : Assignment(_value), reg_size(_size), slice_base(_slice_base), slice_size(_slice_size) {}
+
     virtual void GetRegName( std::ostream& ) const = 0;
-    
+
     int GenerateCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
     int compare( RegWriteBase const& rhs ) const
     {
-      if (int delta = size - rhs.size) return delta;
-      if (int delta = rbase - rhs.rbase) return delta;
-      return rsize - rhs.rsize;
+      if (int delta = reg_size - rhs.reg_size) return delta;
+      if (int delta = slice_base - rhs.slice_base) return delta;
+      return slice_size - rhs.slice_size;
     }
-    
-    int size, rbase, rsize;
+
+    int reg_size, slice_base, slice_size;
   };
 
   template <typename RID>
@@ -367,7 +367,7 @@ namespace binsec {
     typedef RegWrite<RID> this_type;
     typedef RegWriteBase Super;
     RegWrite( RID _id, Expr const& _value ) : Super(_value, TypeInfo<typename RID::value_type>::BITSIZE), id(_id) {}
-    RegWrite( RID _id, int rbase, int rsize, Expr const& _value ) : Super(_value, RID::GetType().bitsize, rbase, rsize), id(_id) {}
+    RegWrite( RID _id, int slice_base, int slice_size, Expr const& _value ) : Super(_value, RID::GetType().bitsize, slice_base, slice_size), id(_id) {}
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
@@ -428,7 +428,7 @@ namespace binsec {
       sink << ")";
     }
   };
-  
+
   struct AssertFalse : public ASExprNode
   {
     AssertFalse() {}
@@ -459,14 +459,14 @@ namespace binsec {
       if (int delta = int(alignment) - int(rhs.alignment)) return delta;
       return (int(bigendian) - int(rhs.bigendian));
     }
-    
+
     Expr addr;
     uint32_t lastbyte  : 16; // size in bytes [1,..;65536]
     uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
     uint32_t bigendian :  1; // 0=little-endian
     uint32_t reserved  : 11; // reserved
   };
-    
+
   struct Load : public MemAccess
   {
     Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
@@ -491,10 +491,10 @@ namespace binsec {
     virtual void Repr( std::ostream& sink ) const override;
     virtual unsigned SubCount() const override { return 2; }
     virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
-      
+
     Expr value;
   };
-    
+
   struct UndefinedValueBase : public ASExprNode
   {
     UndefinedValueBase() {}
