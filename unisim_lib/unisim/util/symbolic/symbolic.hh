@@ -40,6 +40,7 @@
 #include <unisim/util/identifier/identifier.hh>
 #include <stdexcept>
 #include <map>
+#include <set>
 #include <limits>
 #include <typeinfo>
 #include <cstring>
@@ -1075,11 +1076,15 @@ namespace symbolic {
   template <class T>
   struct Conditional : public Choice<T>
   {
-    Conditional() : Choice<T>(), cond() {}
+    Conditional() : Choice<T>(), cond(), updates() {}
 
     bool  proceed( Expr const& _cond );
+    void  add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
+    void  factorize();
+    bool  merge(int, Expr const&, Expr const&) { return false; }
 
     Expr  cond;
+    std::set<Expr> updates;
   };
 
   template <class T>
@@ -1092,21 +1097,42 @@ namespace symbolic {
     return Choice<T>::proceed();
   }
 
-  template <class PoolT, typename Merger>
+  template <class T>
   void
-  factorize( PoolT& dst, PoolT& lho, PoolT& rho, Merger const& merger )
+  Conditional<T>::factorize()
   {
-    for (typename PoolT::iterator lhi = lho.begin(), rhi = rho.begin(), lie = lho.end(), rie = rho.end(); lhi != lie and rhi != rie; )
+    T* self = static_cast<T*>(this);
+    std::set<Expr>::iterator
+      lhi = self->nexts[0]->updates.begin(),
+      lhe = self->nexts[0]->updates.end(),
+      rhi = self->nexts[1]->updates.begin(),
+      rhe = self->nexts[1]->updates.end();
+
+    for (;;)
       {
-        if (int delta = merger(dst, *lhi, *rhi))
+        bool lstop = lhi == lhe;
+        bool rstop = rhi == rhe;
+        if (lstop and rstop)
+          break;
+
+        if (int delta = rstop ? -1 : lstop ? +1 : lhi->compare(*rhi))
           {
-            if (delta < 0) ++lhi;
-            else           ++rhi;
+            if (self->merge(delta, lstop ? Expr() : *lhi, rstop ? Expr() : *rhi))
+              {
+                if (delta <= 0) self->nexts[0]->updates.erase( lhi++ );
+                if (delta >= 0) self->nexts[1]->updates.erase( rhi++ );
+              }
+            else
+              {
+                if (delta < 0) ++lhi;
+                else           ++rhi;
+              }
           }
         else
           {
-            lho.erase( lhi++ );
-            rho.erase( rhi++ );
+            self->updates.insert( *lhi );
+            self->nexts[0]->updates.erase( lhi++ );
+            self->nexts[1]->updates.erase( rhi++ );
           }
       }
   }

@@ -41,6 +41,7 @@
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <iomanip>
+#include <array>
 
 AArch64::AArch64(char const* name)
   : unisim::kernel::Object(name, 0)
@@ -116,7 +117,7 @@ AArch64::AArch64(char const* name)
   };
 
   regmap["pc"] = new ProgramCounterRegister( *this );
-  
+
   /** Specific Current Program Status Register Debugging Accessor */
   struct CurrentProgramStatusRegister : public unisim::service::interfaces::Register
   {
@@ -1349,8 +1350,8 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
           // convenience method to handle sub register accesses (TODO: host endianness)
           struct { uint32_t& sub32(uint64_t& reg, unsigned addr) { return (reinterpret_cast<uint32_t*>(&reg))[addr >> 2 & 1]; } } r64;
           uint32_t tmp;
-          
-          
+
+
           switch (req.addr)
             {
             case 0x00:  return req.ro<uint32_t>(0x74726976); /* ____________________________________________ Magic Value: 'virt' */
@@ -1369,7 +1370,7 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
             case 0x60:  return req.ro(viodisk.InterruptStatus); /* _________________________________________ Interrupt status */
             case 0x64:  return req.wo(tmp) and viodisk.InterruptAck(tmp); /* _______________________________ Interrupt acknowledgment */
             case 0x70:  return req.rw(viodisk.Status) and (req.rd() or viodisk.CheckStatus()); /* __________ Device status */
-            case 0x80: 
+            case 0x80:
             case 0x84:  return req.wo(r64.sub32(viodisk.QueueDesc(), req.addr)); /* ________________________ Descriptor Area */
             case 0x90:
             case 0x94:  return req.wo(r64.sub32(viodisk.QueueDriver(), req.addr)); /* ______________________ Driver Area */
@@ -1835,7 +1836,7 @@ AArch64::write_tfpstats()
 {
   if (tfpstats_filename.size() == 0)
     return;
-  
+
   std::ofstream sink(tfpstats_filename.c_str());
   sink << "opsize,count\n";
   sink << "32," << tfp32count << '\n';

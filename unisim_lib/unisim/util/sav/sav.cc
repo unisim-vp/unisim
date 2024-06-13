@@ -38,20 +38,6 @@
 namespace unisim {
 namespace util {
 namespace sav {
-  namespace {
-    struct UpdatesMerger
-    {
-      typedef unisim::util::symbolic::Expr Expr;
-      int operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) const
-      {
-        if (int delta = l.compare(r))
-          return delta;
-        updates.insert( l );
-        return 0;
-      }
-    };
-  }
-
   std::ostream& operator << (std::ostream& sink, ActionNode const& an)
   {
     for (auto && update : an.updates)
@@ -85,7 +71,7 @@ namespace sav {
       if (ActionNode* next = nexts[choice])
         next->simplify();
 
-    factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
+    factorize();
 
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
@@ -96,7 +82,7 @@ namespace sav {
         }
 
     if (leaf)
-      cond = Expr();
+      cond = unisim::util::symbolic::Expr();
     else if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
       if (onb->op.code == onb->op.Not)
         {

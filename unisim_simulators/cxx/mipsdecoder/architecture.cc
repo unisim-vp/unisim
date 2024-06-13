@@ -36,20 +36,6 @@
 
 namespace Mips
 {
-  namespace {
-    typedef unisim::util::symbolic::Expr Expr;
-    struct UpdatesMerger
-    {
-      int operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) const
-      {
-        if (int delta = l.compare(r))
-          return delta;
-        updates.insert( l );
-        return 0;
-      }
-    };
-  }
-
   void
   Interpreter::ActionNode::simplify()
   {
@@ -69,7 +55,7 @@ namespace Mips
       if (ActionNode* next = nexts[choice])
         next->simplify();
 
-    factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
+    factorize();
 
 
     bool leaf = true;

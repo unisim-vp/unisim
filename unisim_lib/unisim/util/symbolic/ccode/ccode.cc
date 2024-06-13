@@ -54,19 +54,6 @@ namespace ccode {
     sink << "\n}\n";
   }
 
-  namespace {
-    struct SinksMerger
-    {
-      int operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) const
-      {
-        if (int delta = l.compare(r))
-          return delta;
-        sinks.insert( l );
-        return 0;
-      }
-    };
-  }
-
   void
   ActionNode::simplify()
   {
@@ -78,7 +65,7 @@ namespace ccode {
         next->simplify();
 
     if (nexts[0] and nexts[1])
-      factorize( updates, nexts[0]->updates, nexts[1]->updates, SinksMerger() );
+      factorize();
 
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)

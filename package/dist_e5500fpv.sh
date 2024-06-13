@@ -28,6 +28,7 @@ import unisim/service/debug/debugger || exit
 import unisim/service/debug/inline_debugger || exit
 import unisim/service/debug/gdb_server || exit
 
+import unisim/component/cxx/processor/powerpc/isa
 import unisim/component/cxx/processor/powerpc/isa/book_i/branch || exit
 import unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg || exit
 import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit

@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_SYMBOLIC_CCODE_CCODE_HH__
 #define __UNISIM_UTIL_SYMBOLIC_CCODE_CCODE_HH__
 
@@ -42,7 +42,7 @@ namespace unisim {
 namespace util {
 namespace symbolic {
 namespace ccode {
-  
+
   typedef SmartValue<double>   F64;
   typedef SmartValue<float>    F32;
   typedef SmartValue<bool>     BOOL;
@@ -57,32 +57,31 @@ namespace ccode {
 
   struct ActionNode : public Conditional<ActionNode>
   {
-    ActionNode() : Conditional<ActionNode>(), updates() {}
+    ActionNode() : Conditional<ActionNode>() {}
+
     void                     Repr( std::ostream& sink ) const;
-    
     void                     simplify();
     void                     commit_stats();
-    
-    std::set<Expr>           updates;
+
     std::map<Expr,unsigned>  sestats;
   };
-    
+
   struct SrcMgr
   {
     enum exception_t { IndentError, TextFormatingError };
-  
+
     SrcMgr( std::ostream& _sink ) : sink( _sink ), indent( 0 ) {}
-  
+
     void                  putchar( char );
 
     SrcMgr&               operator << ( char ch ) { putchar( ch ); return *this; }
     SrcMgr&               operator << ( char const* p ) { while (*p) putchar(*p++); return *this; }
     SrcMgr&               operator << ( std::string const& s ) { for (auto && ch : s) putchar( ch ); return *this; }
-    
+
   private:
     // Text buffers
     std::ostream&         sink;
-  
+
     // Buffering, Formatting and Indentation
     std::string           line, blank;
     int                   indent;
@@ -110,7 +109,7 @@ namespace ccode {
       uint64_t value;
       if (h.value >= 0) value =  h.value;
       else  { s << '-'; value = -h.value; }
-        
+
       struct { void _( SrcMgr& s, uint64_t v ) { if (uint64_t u = v / 10) _(s, u); s.putchar( "0123456789"[v % 10] ); } } rec;
       rec._(s,value);
       return s;
@@ -118,9 +117,9 @@ namespace ccode {
   };
   template <typename T> Dec<T> dec( T value ) { return Dec<T>( value ); }
   struct fpt { fpt(long double _value) : value(_value) {} long double value; };
-  
+
   SrcMgr& operator << (SrcMgr& s, fpt f);
-  
+
 
   struct Variable
   {
@@ -139,11 +138,11 @@ namespace ccode {
   {
     friend SrcMgr& operator << (SrcMgr&, Variables const&);
   };
-  
+
   struct CCode
   {
     CCode() : tmps() {}
-    
+
     struct ExprPrinter
     {
       ExprPrinter(CCode& c, Expr const& e) : ccode(c), expr(e) {}
@@ -154,7 +153,7 @@ namespace ccode {
 
     std::map<Expr,Variable> tmps;
   };
-  
+
   struct CNode : public ExprNode
   {
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const = 0;
@@ -166,7 +165,7 @@ namespace ccode {
   {
     virtual ValueType GetType() const override { return NoValueType(); }
   };
-    
+
   struct RegReadBase : public CNode
   {
     virtual void GetRegName(std::ostream&) const = 0;
@@ -196,7 +195,7 @@ namespace ccode {
     virtual unsigned SubCount() const { return 1; }
     virtual void Repr( std::ostream& sink ) const override;
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const override;
-      
+
     Expr value;
   };
 

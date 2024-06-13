@@ -559,30 +559,22 @@ namespace binsec {
     sink << " := " << value;
   }
 
-  namespace {
-    struct SinksMerger
-    {
-      SinksMerger(Expr const& _cond) : cond(_cond) {} Expr const& cond;
+  bool
+  ActionNode::merge( int& cmp, Expr const& l, Expr const& r )
+  {
+    RegWriteBase const* rw[] = { dynamic_cast<RegWriteBase const*>( l.node ), dynamic_cast<RegWriteBase const*>( r.node ) };
 
-      int operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) const
+    if (rw[0] and rw[1] and (&typeid(*rw[0]) == &typeid(*rw[1])) and (rw[0]->cmp(*rw[1]) == 0))
       {
-        if (int delta = l.compare(r))
-          {
-            RegWriteBase const* rw[] = { dynamic_cast<RegWriteBase const*>( l.node ), dynamic_cast<RegWriteBase const*>( r.node ) };
-            if (rw[0] and rw[1] and (&typeid(*rw[0]) == &typeid(*rw[1])) and (rw[0]->cmp(*rw[1]) == 0))
-              {
-                Assignment*  assignment = dynamic_cast<Assignment*>(rw[0]->Mutate());
-                assignment->value = make_operation( Op::CMov, rw[true]->value, rw[false]->value, cond );
-                sinks.insert(Expr(assignment));
-                return 0;
-              }
-            return delta;
-          }
-
-        sinks.insert( l );
-        return 0;
+        // Mergeable assignments
+        Assignment* assignment = dynamic_cast<Assignment*>(rw[0]->Mutate());
+        assignment->value = make_operation( Op::CMov, rw[true]->value, rw[false]->value, cond );
+        add_sink(Expr(assignment));
+        cmp = 0;
+        return true;
       }
-    };
+    // Force merge
+    return false;
   }
 
   void
@@ -604,7 +596,7 @@ namespace binsec {
                 always->nexts[idx] = 0;
               }
             cond = always->cond;
-            sinks.insert(always->sinks.begin(), always->sinks.end());
+            updates.insert(always->updates.begin(), always->updates.end());
             delete always;
           }
         else
@@ -619,7 +611,7 @@ namespace binsec {
           BitSimplify::Do(x);
           nsinks.insert( x );
         }
-      std::swap(nsinks, sinks);
+      std::swap(nsinks, updates);
     }
 
     if (not cond.good())
@@ -629,13 +621,13 @@ namespace binsec {
       if (ActionNode* next = nexts[choice])
         next->simplify();
 
-    factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger(cond) );
+    factorize();
 
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         {
-          if (next->cond.good() or next->sinks.size()) leaf = false;
+          if (next->cond.good() or next->updates.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
 
@@ -676,7 +668,7 @@ namespace binsec {
         : stats(node->sestats), up(_up)
       {
         // First level of expression is not functionnal (architectural side effect)
-        for (auto const& sink : node->sinks)
+        for (auto const& sink : node->get_sinks())
           this->Flood( sink );
         for (unsigned choice = 0; choice < 2; ++choice)
           if (ActionNode* next = node->nexts[choice])

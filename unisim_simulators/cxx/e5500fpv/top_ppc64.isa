@@ -58,6 +58,7 @@ impl {
 #include <iostream>
 
   using unisim::util::arithmetic::BitScanReverse;
+  using unisim::util::arithmetic::ConditionalMove;
 
 }
 
