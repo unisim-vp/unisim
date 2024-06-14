@@ -1,3 +1,4 @@
+std/cstdint
 std/string
 unisim/kernel
 unisim/service/interfaces/register

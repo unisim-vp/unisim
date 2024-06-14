@@ -35,6 +35,11 @@
 		<register dw_reg_num="30" arch_reg="x30"/>
 		<register dw_reg_num="31" arch_reg="sp"/>
 		<register dw_reg_num="33" arch_reg="elr"/>
+		<register dw_reg_num="35" arch_reg="tpidrro_el0"/>
+		<register dw_reg_num="36" arch_reg="tpidr_el0"/>
+		<register dw_reg_num="37" arch_reg="tpidr_el1"/>
+		<register dw_reg_num="38" arch_reg="tpidr_el2"/>
+		<register dw_reg_num="39" arch_reg="tpidr_el3"/>
 		<register dw_reg_num="64" arch_reg="v0"/>
 		<register dw_reg_num="65" arch_reg="v1"/>
 		<register dw_reg_num="66" arch_reg="v2"/>

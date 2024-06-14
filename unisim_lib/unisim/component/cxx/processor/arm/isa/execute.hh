@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
@@ -40,7 +41,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <inttypes.h>
 #include <stdexcept>
-
+#include <cmath>
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -70,6 +71,7 @@ namespace arm {
   bool
   CheckCondition( coreT& core, uint32_t cond )
   {
+    if (int(coreT::report_nzcv_access) != 0) core.report(coreT::report_nzcv_access, 0, false);
     util::truth_table::InBit<uint16_t,3> const N;
     util::truth_table::InBit<uint16_t,2> const Z;
     util::truth_table::InBit<uint16_t,1> const C;
@@ -357,32 +359,64 @@ namespace arm {
     int32_t  m_dir, m_reg;
   };
 
-  template <typename T> struct OverShift {};
-  template <> struct OverShift<int8_t>   { static int8_t const size = 8; };
-  template <> struct OverShift<int16_t>  { static int8_t const size = 16; };
-  template <> struct OverShift<int32_t>  { static int8_t const size = 32; };
-  template <> struct OverShift<int64_t>  { static int8_t const size = 64; };
-  template <> struct OverShift<uint8_t>  { static int8_t const size = 8; };
-  template <> struct OverShift<uint16_t> { static int8_t const size = 16; };
-  template <> struct OverShift<uint32_t> { static int8_t const size = 32; };
-  template <> struct OverShift<uint64_t> { static int8_t const size = 64; };
+  template <typename T> struct OverShift { static int8_t const size = std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed; };
   
-  template <class OP>
-  OP NeonSHL( OP op, int8_t sh )
+  template <class ARCH, class OP, class SH>
+  OP NeonSHL( ARCH& core, OP op, SH sh, bool round = false, bool sat = false)
   {
-    if (sh >= OverShift<OP>::size)
-      return OP(0);
-
-    if (sh >= 0)
-      return op << sh;
-
-    if (sh <= -OverShift<OP>::size)
+    if (core.Test(sh >= SH(OverShift<OP>::size)))
       {
-        if (std::numeric_limits<OP>::is_signed)
-          return op >> (OverShift<OP>::size-1);
-        else
-          return OP(0);
+        if (sat && core.Test(op != OP(0)))
+          {
+            core.SetQC();
+            return (std::numeric_limits<OP>::is_signed && core.Test(op < OP(0))) ? std::numeric_limits<OP>::min() : std::numeric_limits<OP>::max();
+          }
+          
+        return OP(0);
       }
+
+    if (core.Test(sh >= SH(0)))
+      {
+        OP res = op << sh;
+        if (sat && core.Test((res >> sh) != op))
+          {
+            core.SetQC();
+            return (std::numeric_limits<OP>::is_signed && core.Test(op < OP(0))) ? std::numeric_limits<OP>::min() : std::numeric_limits<OP>::max();
+          }
+          
+        return res;
+      }
+
+    if (std::numeric_limits<OP>::is_signed)
+      {
+        if (core.Test(sh <= SH(-OverShift<OP>::size)))
+          {
+            if (round)
+              return OP(0);
+            else
+              return op >> (OverShift<OP>::size-1);
+          }
+      }
+    else
+      {
+        if (round)
+          {
+            if (core.Test(sh <= SH(-OverShift<OP>::size - 1)))
+              return OP(0);
+          }
+        else
+          {
+            if (core.Test(sh <= SH(-OverShift<OP>::size)))
+              return OP(0);
+          }
+      }
+      
+    if ( round )
+      {
+        op >>= -sh - SH(1);
+        return (op >> 1) + (op & OP(1));
+      }
+    
     return op >> -sh;
   }
   

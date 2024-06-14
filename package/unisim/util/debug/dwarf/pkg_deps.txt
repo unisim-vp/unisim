@@ -2,12 +2,14 @@ libc/inttypes
 libc/stdlib
 libc/string
 std/cassert
+std/cstdint
 std/cstdlib
 std/cstring
 std/deque
 std/fstream
 std/iosfwd
 std/iostream
+std/limits
 std/list
 std/map
 std/set

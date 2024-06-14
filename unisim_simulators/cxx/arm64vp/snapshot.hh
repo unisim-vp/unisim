@@ -66,14 +66,14 @@ struct SnapShot
       {
         load(&buf[0], size);
         for (unsigned idx = size; idx-- > 0;)
-          tmp = (tmp << 8) | T(buf[idx]);
+          tmp = ((sizeof(T) > 1) ? (tmp << 8) : 0) | T(buf[idx]);
         value = tmp;
       }
     else
       {
         tmp = value;
         for (unsigned idx = 0; idx < size; ++idx)
-          { buf[idx] = tmp; tmp >>= 8; }
+          { buf[idx] = tmp; tmp = ((sizeof(T) > 1) ? (tmp >> 8) : 0); }
         save(&buf[0], size);
       }
   }

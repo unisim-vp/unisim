@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 //unisim/util/debug/coff_symtab/coff_symtab.tcc
@@ -51,7 +52,7 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>
 
-Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
+Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   : unisim::kernel::Object(name, 0)
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>(name, 0)
   , debug_hub("debug-hub", this)
@@ -59,7 +60,10 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
   , enable_inline_debugger()
   , param_enable_gdb_server("enable-gdb-server", this, enable_gdb_server, "enable the gdb-server debug sessions")
   , param_enable_inline_debugger("enable-inline-debugger", this, enable_inline_debugger, "enable the inline-debugger debug sessions")
+  , blob(0)
 {
+  if(!enable_inline_debugger && !enable_gdb_server && !sink.is_open()) return;
+
   // DebHub <-> ARCH connections
   arch.debug_yielding_import                           >> *debug_hub.debug_yielding_export[0];
   arch.trap_reporting_import                           >> *debug_hub.trap_reporting_export[0];
@@ -105,6 +109,8 @@ Debugger::Debugger(char const* name, AArch64& arch, std::istream& sink)
     gdb_server->registers_import              >> *debug_hub.registers_export             [i];
   }
   
+  if(!sink.is_open()) return;
+
   // DebugHub <-> Loader connections
   bool const verbose = false, debug_dwarf = false, parse_dwarf = false;
   unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader loader;

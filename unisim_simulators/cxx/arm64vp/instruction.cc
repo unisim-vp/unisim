@@ -34,7 +34,6 @@
 
 #include <architecture.hh>
 #include <cmath>
-using std::isnan;
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
@@ -47,7 +46,7 @@ AArch64::Operation*
 AArch64::decode(uint64_t insn_addr, CodeType insn)
 {
   /* Decode current PC. */
-  Operation* op = decoder.Decode(insn_addr, insn);
+  Operation* op = decoder.Decode<unisim::component::cxx::processor::arm::isa::Reject>(insn_addr, insn);
 
   return op;
 }

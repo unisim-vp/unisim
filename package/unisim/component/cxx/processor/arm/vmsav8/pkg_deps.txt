@@ -24,6 +24,8 @@ unisim/service/interfaces/trap_reporting
 unisim/util/arithmetic
 unisim/util/debug
 unisim/util/endian
+unisim/util/floating_point
+unisim/util/floating_point/softfloat_emu
 unisim/util/inlining
 unisim/util/likely
 unisim/component/cxx/processor/arm/isa/arm64

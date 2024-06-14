@@ -478,6 +478,8 @@ public:
   U32  GetCPSR()                                 { return cpsr.GetBits(); }
   void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
 
+  void SetQC() {}
+
   U32& SPSR() { throw Unimplemented(); static U32 spsr_dummy; return spsr_dummy; }
 
   ITCond itcond() const { return ITCond(); }

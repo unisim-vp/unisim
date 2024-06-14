@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #include "architecture.hh"
@@ -39,6 +40,7 @@
 #include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
+#include <unisim/util/host_time/time.hh>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -48,6 +50,16 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+
+struct MemoryMapping
+{
+  static const uint64_t memory_base_addr = 0x40000000;
+  static const uint64_t initrd_start     = 0x44000000;
+  static const uint64_t gic_base_addr    = 0x08000000;
+  static const uint64_t uart_base_addr   = 0x09000000;
+  static const uint64_t rtc_base_addr    = 0x09010000;
+  static const uint64_t virtio_base_addr = 0x0a000000;
+};
 
 struct MMapped : AArch64::Page::Free
 {
@@ -143,7 +155,7 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename, cha
       }
     } le64;
     lseek(linux_image->fd,8,SEEK_SET);
-    uint64_t base = le64.read(linux_image->fd), kernel_size = le64.read(linux_image->fd);
+    uint64_t base = MemoryMapping::memory_base_addr + le64.read(linux_image->fd), kernel_size = le64.read(linux_image->fd);
     lseek(linux_image->fd,0,SEEK_SET);
     if (base % 64) { std::cerr << "Bad base: " << std::hex << base << std::endl; return 1; }
     if (size % 64) { std::cerr << "Bad size: " << std::hex << size << std::endl; return 1; }
@@ -197,8 +209,8 @@ load_linux(AArch64& arch, char const* img_filename, char const* dt_filename, cha
     struct stat f_stat;
     if (not initrd->get(f_stat))
       return 1;
-    uint64_t initrd_start = 0x03000000, initrd_end = initrd_start+f_stat.st_size;
-    AArch64::Page page(initrd_start,initrd_end-1,0,0,initrd);
+    uint64_t initrd_end = MemoryMapping::initrd_start+f_stat.st_size;
+    AArch64::Page page(MemoryMapping::initrd_start,initrd_end-1,0,0,initrd);
     initrd->dump_load( std::cerr, "initrd", page );
     if (not initrd->get(page))
       return 1;
@@ -218,7 +230,7 @@ AArch64* core_instance(AArch64* new_arch)
   return instance;
 }
 
-void usr_handler(int signum)
+void signal_handler(int signum)
 {
   struct Bad {};
   switch (signum)
@@ -228,6 +240,7 @@ void usr_handler(int signum)
       core_instance(0)->suspend = true;
       break;
     case SIGUSR2:
+    case SIGINT:
       core_instance(0)->terminate = true;
       break;
     }
@@ -310,7 +323,7 @@ struct StreamSpy
   virtual void PutChar(char ch) override
   {
     char_io_import->PutChar(ch);
-    if (not ch) return;
+    if (not ch or !expect) return;
     if (incoming and *expect != ch) { expect = incoming; return; }
     if (*++expect) return;
     (this->*step)();
@@ -326,35 +339,80 @@ struct StreamSpy
 
   AArch64& arch;
 };
-  
 
 int
 main(int argc, char *argv[])
 {
   char const* disk_filename = "root.fs";
 
-  unisim::kernel::Simulator simulator(argc, argv, &simdefault);
+  struct Simulator : unisim::kernel::Simulator
+  {
+    bool enable_linux_os;
+    unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
+
+    Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator) = 0)
+      : unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
+      , enable_linux_os(false)
+      , param_enable_linux_os("enable-linux-os", 0, enable_linux_os, "enable Linux OS emulation")
+    {
+    }
+
+    virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false) override
+    {
+      AArch64 *arch = core_instance(0);
+      if (arch)
+        {
+          arch->terminate = true;
+          unisim::kernel::Simulator::Kill();
+        }
+      else
+        {
+          unisim::kernel::Simulator::Kill();
+          exit(0);
+        }
+    }
+  };
+
+  Simulator simulator(argc, argv, &simdefault);
   unisim::kernel::logger::console::Printer printer;
   // unisim::service::http_server::HttpServer http_server("http-server");
   // unisim::service::web_terminal::WebTerminal web_terminal("web-terminal");
-  unisim::service::netstreamer::NetStreamer netstreamer("netstreamer");
 
   AArch64 arch("arm64vp");
 
-  StreamSpy stream_spy("stream-spy", 0, arch);
+  std::unique_ptr<unisim::service::netstreamer::NetStreamer> netstreamer;
+  std::unique_ptr<StreamSpy> stream_spy;
 
-  arch.uart.char_io_import >> stream_spy.char_io_export;
-  stream_spy.char_io_import >> netstreamer.char_io_export;
-  // arch.uart.char_io_import >> netstreamer.char_io_export;
+  if (not simulator.enable_linux_os)
+    {
+      netstreamer = std::make_unique<unisim::service::netstreamer::NetStreamer>("netstreamer");
+      stream_spy = std::make_unique<StreamSpy>("stream-spy", (unisim::kernel::Object*) 0, arch);
+      arch.uart.char_io_import >> stream_spy->char_io_export;
+      stream_spy->char_io_import >> netstreamer->char_io_export;
+      // arch.uart.char_io_import >> netstreamer->char_io_export;
+    }
+
   // *http_server.http_server_import[0] >> web_terminal.http_server_export;
 
-  std::unique_ptr<Debugger> dbg;
+  std::ifstream linux_elf;
+
+  std::unique_ptr<unisim::service::os::linux_os::ArmLinux64> linux_os; 
+  if (simulator.enable_linux_os)
   {
-    // if a vmlinux file is given, start the debugger
-    std::ifstream linux_elf ("linux.elf");
-    if (linux_elf)
-      dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf );
+    linux_os = std::make_unique<unisim::service::os::linux_os::ArmLinux64>("linux-os");
+
+    // ARCH <-> LinuxOS connections
+    arch.linux_os_import >> linux_os->linux_os_export_;
+    linux_os->memory_import_ >> arch.memory_export;
+    linux_os->memory_injection_import_ >> arch.memory_injection_export;
+    linux_os->registers_import_ >> arch.registers_export;
   }
+  else
+  {
+    linux_elf.open("linux.elf");
+  }
+
+  std::unique_ptr<Debugger> dbg = std::make_unique<Debugger>( "debugger", arch, linux_elf);
   
   switch (simulator.Setup())
     {
@@ -363,31 +421,39 @@ main(int argc, char *argv[])
     default: break;
     }
 
-  /* Start asynchronous reception loop */
-  // host_term.Start();
-  
-  arch.map_gic(0x48000000);
-  arch.map_uart(0x49000000);
-  arch.map_rtc(0x49010000);
+  if (not simulator.enable_linux_os)
+  {
+    /* Start asynchronous reception loop */
+    // host_term.Start();
 
-  for (unsigned int idx = 0; idx < 32; ++idx)
-    {
-      uint64_t base_addr = 0x4a000000 + 0x200*idx;
-      unsigned irq = 32 + 16 + idx;
-      switch (idx)
-        {
-        default: arch.map_virtio_placeholder(idx, base_addr); break;
-     // case 30: arch.map_virtio_console(base_addr, irq); break;
-        case 31: arch.map_virtio_disk(disk_filename, base_addr, irq); break;
-        }
-    }
+    arch.map_gic(MemoryMapping::gic_base_addr);
+    arch.map_uart(MemoryMapping::uart_base_addr);
+    arch.map_rtc(MemoryMapping::rtc_base_addr);
 
-  // Loading image
-  if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb", "initrd.img"))
-    return 1;
+    for (unsigned int idx = 0; idx < 32; ++idx)
+      {
+        uint64_t base_addr = MemoryMapping::virtio_base_addr + 0x200*idx;
+        unsigned irq = 32 + 16 + idx;
+        switch (idx)
+          {
+          default: arch.map_virtio_placeholder(idx, base_addr); break;
+      // case 30: arch.map_virtio_console(base_addr, irq); break;
+          case 31: arch.map_virtio_disk(disk_filename, base_addr, irq); break;
+          }
+      }
 
-  signal(SIGUSR1, usr_handler);
-  signal(SIGUSR2, usr_handler);
+    // Loading image
+    if (not load_snapshot(arch, "uvp.shot") and not load_linux(arch, "Image", "device_tree.dtb", "initrd.img"))
+      return 1;
+
+    signal(SIGUSR1, signal_handler);
+  }
+
+  signal(SIGUSR2, signal_handler);
+
+  if (not dbg->enable_inline_debugger)
+    signal(SIGINT, signal_handler);
+
   core_instance(&arch);
   arch.silence( &AArch64::handle_suspend );
   arch.notify( 0, &AArch64::handle_suspend );
@@ -399,13 +465,14 @@ main(int argc, char *argv[])
 
   std::cerr << "\n*** Run ***" << std::endl;
 
+  double time_start = unisim::util::host_time::GetHostTime();
+  uint64_t insn_counter_start = arch.insn_counter;
+  uint64_t insn_timer_start = arch.insn_timer;
   try
     {
-      uint64_t suspend_at;
-      if (char const* arg = getenv("SUSPEND_AT")) suspend_at = strtoull(arg,0,0);
-      else                                        suspend_at = uint64_t(-1);
+      if (char const* arg = getenv("SUSPEND_AT")) arch.suspend_at = strtoull(arg,0,0);
       //else                                        suspend_at = arch.insn_counter + 0x1000000000ull;
-      arch.run( suspend_at );
+      arch.run();
       arch.show_exec_stats(std::cerr);
       arch.write_tfpstats();
     }
@@ -415,11 +482,40 @@ main(int argc, char *argv[])
       std::ofstream tail("tail");
       for (unsigned idx = 1; idx <= arch.histsize; ++idx)
         if (arch.last_insn(idx).op)
-          tail << arch.last_insn(idx) << std::endl;
+          {
+            AArch64::InstructionInfo const& last_insn = arch.last_insn(idx);
+            unisim::util::debug::Statement<uint64_t> const* stmt = dbg->debug_hub.FindStatement(
+              last_insn.addr,
+              /* any filename */ 0,
+              unisim::service::interfaces::StatementLookup<uint64_t>::OPT_FIND_EXACT_STMT
+            );
+            if (stmt)
+              {
+                char const* source_filename = stmt->GetSourceFilename();
+                if (source_filename)
+                  {
+                    tail << "-> ";
+                    unsigned lineno = stmt->GetLineNo();
+                    char const* source_dirname = stmt->GetSourceDirname();
+                    if (source_dirname)
+                      {
+                        tail << source_dirname << "/";
+                      }
+                    tail << source_filename << "#" << std::dec << lineno << ":" << std::endl;
+                  }
+              }
+
+            tail << last_insn << std::endl;
+          }
       throw;
     }
+  double time_stop = unisim::util::host_time::GetHostTime();
+  double spent_time = time_stop - time_start;
+  double run_time = (double) (arch.insn_timer - insn_timer_start) / (arch.get_freq() * arch.get_ipc());
 
-
+  std::cerr << "Run time: " << run_time << " seconds" << std::endl;
+  std::cerr << "Host simulation speed: " << ((double) (arch.insn_counter - insn_counter_start) / spent_time / 1e6) << " MIPS" << std::endl;
+  std::cerr << "Time dilation: " << spent_time / run_time << " times slower than target machine" << std::endl;
   return 0;
 }
 

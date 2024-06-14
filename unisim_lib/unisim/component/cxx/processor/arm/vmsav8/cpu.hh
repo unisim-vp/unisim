@@ -30,11 +30,15 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/component/cxx/processor/opcache/opcache.hh>
@@ -45,6 +49,11 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
+#if HAVE_SOFTFLOAT_EMU
+#include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
+#else
+#include <unisim/util/floating_point/floating_point.hh>
+#endif
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
@@ -80,8 +89,17 @@ struct ArchTypes
   typedef int32_t      S32;
   typedef int64_t      S64;
   typedef bool         BOOL;
-  typedef float        F32;
-  typedef double       F64;
+#if HAVE_SOFTFLOAT_EMU
+  typedef unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Half F16;
+  typedef unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Single F32;
+  typedef unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Double F64;
+#elif HAVE_FLOAT16
+  typedef _Float16 F16;
+  typedef float F32;
+  typedef double F64;
+#else
+#error "Support _Float16 type must be available"
+#endif
 
   template <typename T>
   using VectorTypeInfo = unisim::component::cxx::vector::VectorTypeInfo<T,0>;
@@ -113,6 +131,9 @@ struct CPU
 {
   typedef CPU<CPU_IMPL> this_type;
   
+  enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
+  enum { FPSR_MASK=0xf800009f };
+  
   typedef isa::arm64::Operation<CPU_IMPL> Operation;
   typedef isa::arm64::Decoder<CPU_IMPL> A64Decoder;
   typedef opcache::OpCache<A64Decoder>  Decoder;
@@ -141,8 +162,8 @@ struct CPU
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
-  virtual unisim::service::interfaces::Register* GetRegister( const char* name );
-  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
+  virtual unisim::service::interfaces::Register* GetRegister( const char* name ) override;
+  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) override;
 
 		
   //=====================================================================
@@ -151,8 +172,8 @@ struct CPU
 
   void Setup(unisim::service::interfaces::Memory<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
-  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, (uint8_t*)buffer, size ); }
-  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size ) { return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, (uint8_t*)buffer, size ); }
+  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size ) override { return static_cast<CPU_IMPL*>(this)->ExternalReadMemory( addr, (uint8_t*)buffer, size ); }
+  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size ) override { return static_cast<CPU_IMPL*>(this)->ExternalWriteMemory( addr, (uint8_t*)buffer, size ); }
 
   //=====================================================================
   //=                   Disassembly interface methods                   =
@@ -160,22 +181,22 @@ struct CPU
 
   void Setup(unisim::service::interfaces::Disassembly<uint64_t>*) override { memory_import.RequireSetup(); }
   unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
-  virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
+  virtual std::string Disasm( uint64_t addr, uint64_t& next_addr ) override;
 
   //=====================================================================
   //=             Memory access reporting interface methods             =
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
+  virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report ) override;
 
   //=====================================================================
   //=                Memory injection interface methods                 =
   //=====================================================================
 
   unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
-  virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size );
-  virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+  virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size ) override;
+  virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size ) override;
 
   //=====================================================================
   //=                          Service imports                          =
@@ -203,7 +224,7 @@ struct CPU
   //=                    Registers access methods
   //====================================================================
 
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
   void report(AccessReport, unsigned, bool) const {}
 
   U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? this->GetVU8((r0 + r) % 32, idx % elts) : oob; }
@@ -232,6 +253,8 @@ struct CPU
   
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
+  
+  U32& FPCR() { return fpcr; }
   
   /* Get FPCR Floating-point control bits */
   BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
@@ -269,6 +292,10 @@ struct CPU
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
   
+  U32& FPSR() { return fpsr; }
+  
+  void SetQC() { fpsr |= U32(1) << 27; }
+  
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
 
@@ -284,8 +311,8 @@ struct CPU
     virtual void Describe(Encoding, char const* prefix, std::ostream&) const;
     virtual char const* ReadOperation() const { return "mrs"; }
     virtual char const* WriteOperation() const { return "msr"; };
-    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU_IMPL& cpu, U64 value) const;
-    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  CPU_IMPL& cpu) const;
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU_IMPL& cpu, U64 value) const;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt,  CPU_IMPL& cpu) const;
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
     virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const;
   };
@@ -309,6 +336,8 @@ struct CPU
   //=                       Memory access methods                       =
   //=====================================================================
 
+  void CheckSPAlignment(uint64_t addr) {}
+
   template <typename T>
   T
   MemReadT(uint64_t addr)
@@ -327,6 +356,11 @@ struct CPU
   uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
   uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
 
+  uint64_t MemReadUnprivileged64(uint64_t addr) { return MemRead64(addr); }
+  uint32_t MemReadUnprivileged32(uint64_t addr) { return MemRead32(addr); }
+  uint16_t MemReadUnprivileged16(uint64_t addr) { return MemRead16(addr); }
+  uint8_t  MemReadUnprivileged8 (uint64_t addr) { return MemRead8 (addr); }
+  
   void MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
 
   template <typename T>
@@ -336,7 +370,7 @@ struct CPU
     unsigned const size = sizeof (T);
     uint8_t buffer[size];
     for (unsigned idx = 0; idx < size; ++idx)
-      { buffer[idx] = val; val >>= 8; }
+      { buffer[idx] = val; val = ((sizeof(T) > 1) ? (val >> 8) : 0); }
     MemWrite( addr, &buffer[0], size );
   }
 
@@ -345,12 +379,17 @@ struct CPU
   void MemWrite16(uint64_t addr, uint16_t val) { MemWriteT(addr, val); }
   void MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
 
+  void MemWriteUnprivileged64(uint64_t addr, uint64_t val) { MemWrite64(addr, val); }
+  void MemWriteUnprivileged32(uint64_t addr, uint32_t val) { MemWrite32(addr, val); }
+  void MemWriteUnprivileged16(uint64_t addr, uint16_t val) { MemWrite16(addr, val); }
+  void MemWriteUnprivileged8 (uint64_t addr, uint8_t  val) { MemWrite8 (addr, val); }
+  
   void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
 
   void     SetExclusiveMonitors( uint64_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint64_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
-
+  
 protected:
 
   /**********************************************************************
@@ -430,18 +469,6 @@ protected:
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
 };
-
-template <typename CPU, typename T>
-T FPMulAdd(CPU& cpu, T acc, T op1, T op2)
-{
-  return acc + (op1 * op2);
-}
-
-template <typename CPU, typename T>
-T FPMulSub(CPU& cpu, T acc, T op1, T op2)
-{
-  return acc - (op1 * op2);
-}
 
 } // end of namespace vmsav8
 } // end of namespace arm

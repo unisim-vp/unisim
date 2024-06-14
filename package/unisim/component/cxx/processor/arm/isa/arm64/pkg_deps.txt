@@ -3,6 +3,7 @@ libc/stdint
 std/cmath
 std/iosfwd
 std/iostream
+std/limits
 std/sstream
 unisim/component/cxx/processor/arm/isa
 unisim/util/arithmetic

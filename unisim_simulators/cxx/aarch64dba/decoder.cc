@@ -36,6 +36,9 @@
 
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
+#include <unisim/util/floating_point/floating_point.hh>
+template <class F> F DefaultNaN() { return F(); }
+
 #include <aarch64dec.tcc>
 #include <iostream>
 #include <iomanip>
@@ -153,6 +156,9 @@ struct Processor
     return concretize( BOOL(cond).expr );
   }
 
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
+
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
@@ -225,8 +231,8 @@ struct Processor
 
   struct SysReg
   {
-    void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, Processor& cpu, U64 value) const  { throw 0; }
-    U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, Processor& cpu) const  { throw 0; return U64(); }
+    void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu, U64 value) const  { throw 0; }
+    U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, Processor& cpu) const  { throw 0; return U64(); }
     void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
     void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const { throw 0; }
   };
@@ -268,11 +274,22 @@ struct Processor
   void MemWrite16(U64 addr, U16 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 2, 0, false ) ); }
   void MemWrite8 (U64 addr, U8  value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 1, 0, false ) ); }
 
+  U64  MemReadUnprivileged64(U64 addr) { return U64( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 8, 0, false ) ) ); }
+  U32  MemReadUnprivileged32(U64 addr) { return U32( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 4, 0, false ) ) ); }
+  U16  MemReadUnprivileged16(U64 addr) { return U16( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 2, 0, false ) ) ); }
+  U8   MemReadUnprivileged8 (U64 addr) { return U8 ( Expr( new unisim::util::symbolic::binsec::Load( addr.expr, 1, 0, false ) ) ); }
+
+  void MemWriteUnprivileged64(U64 addr, U64 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 8, 0, false ) ); }
+  void MemWriteUnprivileged32(U64 addr, U32 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 4, 0, false ) ); }
+  void MemWriteUnprivileged16(U64 addr, U16 value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 2, 0, false ) ); }
+  void MemWriteUnprivileged8 (U64 addr, U8  value) { stores.insert( new unisim::util::symbolic::binsec::Store( addr.expr, value.expr, 1, 0, false ) ); }
+
   void ClearExclusiveLocal() { throw 0; }
   void SetExclusiveMonitors( U64, unsigned size ) { throw 0; }
   bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw 0; }
 
   void PrefetchMemory(unsigned, U64) { throw 0; }
+  void CheckSPAlignment(U64) {}
 
   //   =====================================================================
   //   =                         Processor Storage                         =

@@ -592,16 +592,16 @@ void Debugger<CONFIG>::SetupDebugInfo()
 		dw_mach_state[front_end_num].Initialize();
 	}
 	
-	if(!blob_import)
+	if(blob_import)
 	{
-		logger << DebugError << "Blob import is not connected" << EndDebugError;
-		throw unisim::kernel::ServiceAgent::SetupError();
+		blob_import.RequireSetup();
+		const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
+		if(blob)
+		{
+			if(!SetupDebugInfo(blob))
+				throw unisim::kernel::ServiceAgent::SetupError();
+		}
 	}
-	blob_import.RequireSetup();
-	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-	if(!blob) return; // no blob
-	if(!SetupDebugInfo(blob))
-		throw unisim::kernel::ServiceAgent::SetupError();
 	setup_debug_info_done = true;
 }
 

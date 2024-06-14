@@ -30,10 +30,15 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __ARM64VP_ARCHITECTURE_HH__
 #define __ARM64VP_ARCHITECTURE_HH__
+
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "taint.hh"
 #include "viodisk.hh"
@@ -56,12 +61,24 @@
 #include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/char_io.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/os/linux_os/arm_linux64.hh>
+#if HAVE_SOFTFLOAT_EMU
+#include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
+#else
+#include <unisim/util/floating_point/floating_point.hh>
+#endif
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/inlining/inlining.hh>
 #include <serial.hh>
 #include <iosfwd>
 #include <set>
 #include <map>
 #include <algorithm>
 #include <inttypes.h>
+#include <unordered_map>
+
+#include <regex>
 
 void force_throw();
 
@@ -76,8 +93,17 @@ struct AArch64Types
   typedef TaintedValue< int32_t> S32;
   typedef TaintedValue< int64_t> S64;
 
+#if HAVE_SOFTFLOAT_EMU
+  typedef TaintedValue<  unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Half> F16;
+  typedef TaintedValue<unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Single> F32;
+  typedef TaintedValue<unisim::util::floating_point::softfloat_emu::arm_vfpv2_ddn::Double> F64;
+#elif HAVE_FLOAT16
+  typedef TaintedValue<_Float16> F16;
   typedef TaintedValue<   float> F32;
   typedef TaintedValue<  double> F64;
+#else
+#error "Support for _Float16 type must be available"
+#endif
 
   typedef TaintedValue<  bool  > BOOL;
 
@@ -85,6 +111,15 @@ struct AArch64Types
   using  VectorTypeInfo = TaintedTypeInfo<T>;
   using  VectorByte = U8;
   struct VectorByteShadow { uint8_t data[sizeof (U8)]; };
+};
+
+struct Features
+{
+  enum { FEAT_IDST = 1 };
+  enum { FEAT_FP16 = 1 };
+  enum { FEAT_CRC32 = 1 };
+  enum { FEAT_RNG = 1 };
+  enum { FEAT_LSE = 1 }; // WARNING! partial support (cas and swp)
 };
 
 struct Zone
@@ -111,6 +146,7 @@ struct Zone
 
 struct AArch64
   : AArch64Types
+  , Features
   , public unisim::component::cxx::processor::arm::regs64::CPU<AArch64, AArch64Types>
   , public unisim::kernel::Service<unisim::service::interfaces::Registers>
   , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >
@@ -127,17 +163,130 @@ struct AArch64
   struct DisasmState {};
 
   enum { ZID=4 };
-
-  enum ReportAccess { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
-  void report( ReportAccess, unsigned, bool ) const {}
+  // enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
+  enum { FPCR_MASK=0x7C80000 }; /* FIXME: this is for cortex-a53 + fp16 */
+  enum { FPSR_MASK=0xf800009f };
+  enum { IminLine = 4 }; // Log2 of the number of words in the smallest cache line
+                         // of all the instruction caches and unified caches that are controlled by the PE.
+  enum { DminLine = 4 }; // Log2 of the number of words in the smallest cache line
+                         // of all the data caches and unified caches that are controlled by the PE.
 
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<AArch64>   A64Decoder;
   typedef unisim::component::cxx::processor::opcache::OpCache<A64Decoder>        Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> Operation;
   typedef unisim::component::cxx::processor::arm::isa::arm64::CodeType           CodeType;
 
+  enum { RECORDER = 0 };
+  enum ReportAccess { report_none = 0, report_simd_access = !!RECORDER * 1, report_gsr_access = !!RECORDER * 2, report_gzr_access = !!RECORDER * 3, report_nzcv_access = !!RECORDER * 4 };
+
+  struct Recorder : virtual unisim::kernel::Object
+  {
+    struct Operand
+    {
+      struct Value
+      {
+        Value();
+        void Output(std::ostream& sink, unsigned length);
+
+        unsigned valid;
+        uint64_t values[2];
+      };
+
+      enum { INPUT = 1, OUTPUT = 2 };
+      enum { GPR = 1, SP = 2, VR = 3, NZCV_IN = 4, FPCR_IN = 5, FPSR_IN = 6, NZCV_OUT = 7, FPSR_OUT = 8 };
+
+      unsigned type;
+      unsigned storage_type;
+      unsigned reg;
+      int id;
+      int save_id;
+
+      typedef std::vector<Value> Values;
+      Values values;
+
+      Operand(unsigned _type, unsigned _storage_type, unsigned _reg, unsigned length);
+      void Begin(unsigned length);
+      void Cancel();
+      void Merge(Operand const& o);
+      bool Match(unsigned _storage_type) const;
+      bool Match(unsigned _storage_type, unsigned _reg) const;
+      bool Match(Operand const& o) const;
+      void ValueRead(uint64_t value_lo, uint64_t value_hi);
+      void ValueRead(uint64_t _value);
+      void ValueWrite();
+      void Output(std::ostream& sink, unsigned idx);
+    };
+
+    struct Record
+    {
+      std::string name;
+      std::string opname;
+      std::string disasm;
+      typedef std::vector<Operand> Operands;
+      Operands operands;
+      unsigned length;
+
+      Record(const std::string& _name, const std::string& _opname, const std::string& _disasm);
+      std::string Instruction() const;
+      void Begin();
+      void Cancel();
+      void Merge(Record const& o);
+      Operand& GetOperand(unsigned storage_type, unsigned reg);
+      bool ParseNumber(const std::string &s, std::size_t& pos, unsigned& value);
+      bool ParseHexNumber(const std::string &s, std::size_t& pos, std::string& r);
+      void Output(std::ostream& pattern_file, std::ostream& input_file);
+      void ValueRead(unsigned storage_type, unsigned reg, uint64_t value_lo, uint64_t value_hi);
+      void ValueRead(unsigned storage_type, unsigned reg, uint64_t value);
+      void ValueRead(unsigned storage_type, uint64_t value);
+      void ValueWrite(unsigned storage_type, unsigned reg);
+      void ValueWrite(unsigned storage_type);
+    };
+
+    bool enable;
+    unisim::kernel::variable::Parameter<bool> param_enable;
+    std::string output_dir;
+    unisim::kernel::variable::Parameter<std::string> param_output_dir;
+    std::string arch;
+    unisim::kernel::variable::Parameter<std::string> param_arch;
+    typedef std::map<std::string, Record *> Records;
+    Records records;
+    Record *record;
+    std::regex xr_regex;
+    std::regex wr_regex;
+    std::regex vr_regex;
+    std::regex vr_scalar_regex;
+    std::regex include_regex;
+    std::regex exclude_regex;
+
+    Recorder(char const* name, unisim::kernel::Object* parent);
+    ~Recorder();
+    std::string RegisterAnonymizer(std::string s);
+    std::string MakeRecordName(std::string disasm);
+    void mkdir_p(const std::string& dirname, mode_t mode);
+    void Begin(Operation *op);
+    void Cancel();
+    void Output();
+    void VRValueRead(unsigned reg, uint64_t value_lo, uint64_t value_hi);
+    void GPRValueRead(unsigned reg, uint64_t value);
+    void SPValueRead(unsigned reg, uint64_t value);
+    void NZCVValueRead(uint64_t value);
+    void FPCRValueRead(uint64_t value);
+    void FPSRValueRead(uint64_t value);
+    void GPRValueWrite(unsigned reg);
+    void SPValueWrite();
+    void VRValueWrite(unsigned reg);
+    void NZCVValueWrite();
+    void FPSRValueWrite();
+    void report(AArch64& cpu, ReportAccess report_access, unsigned reg, bool write);
+  };
+
+  Recorder recorder;
+
+  void report( ReportAccess report_access, unsigned reg, bool write) { if (RECORDER) recorder.report(*this, report_access, reg, write); }
+
   struct InstructionInfo
   {
+    InstructionInfo() : addr(-1), counter(-1), op(0) {}
     void assign( uint64_t _addr, uint64_t _counter, AArch64::Operation* _op ) { addr = _addr; counter = _counter; op = _op; }
     void dump(std::ostream& sink) const;
     friend std::ostream& operator << (std::ostream& sink, InstructionInfo const& ii) { ii.dump(sink); return sink; }
@@ -154,17 +303,17 @@ struct AArch64
   virtual void ResetMemory() override {}
   virtual bool ReadMemory(uint64_t addr, void* buffer, unsigned size) override;
   virtual bool WriteMemory(uint64_t addr, void const* buffer, unsigned size) override;
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
 
   // unisim::service::interfaces::Registers
   virtual unisim::service::interfaces::Register* GetRegister(char const* name) override;
   virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) override;
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
   // unisim::service::interfaces::MemoryInjection<uint64_t>
   virtual bool InjectReadMemory(uint64_t addr, void* buffer, unsigned size) override;
   virtual bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size) override;
-  // unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
 
   // unisim::service::interfaces::Disassembly<uint64_t>
   virtual std::string Disasm(uint64_t addr, uint64_t& next_addr) override;
@@ -172,7 +321,7 @@ struct AArch64
   //  disasm_export_t disasm_export() { return disasm_export_t("disasm-export",this); };
 
   // unisim::service::interfaces::MemoryAccessReportingControl
-  virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
+  virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report) override;
   // unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
@@ -187,8 +336,14 @@ struct AArch64
   // unisim::service::interfaces::TrapReporting
   unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
 
-  void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
+  // unisim::service::interfaces::LinuxOS
+  unisim::kernel::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
+
   void UndefinedInstruction();
+  void UndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
+
+  void TakeUndefinedInstruction(unisim::component::cxx::processor::arm::isa::arm64::Operation<AArch64> const*);
+  void TakeUndefinedInstruction();
 
   InstructionInfo const& last_insn(int idx) const;
   void show_exec_stats(std::ostream&);
@@ -294,6 +449,7 @@ struct AArch64
   template <typename N, typename Z, typename C, typename V>
   void SetNZCV( N const& n, Z const& z, C const& c, V const& v )
   {
+    if (int(report_nzcv_access) != 0) report(report_nzcv_access, 0, true);
     nzcv = (U8(n) << 3) | (U8(z) << 2) | (U8(c) << 1) | (U8(v) << 0);
   }
 
@@ -305,6 +461,13 @@ struct AArch64
   
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
+  
+  U32& FPCR() { return fpcr; }
+  
+  void SetQC() { fpsr |= U32(1) << 27; }
+  
+  template <typename T>
+  U32 GetFPCR( T const& rf ) const { return rf.Get(fpcr); }
 
   /* Get FPCR Floating-point control bits */
   BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
@@ -343,6 +506,11 @@ struct AArch64
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
   
+  U32& FPSR() { return fpsr; }
+  
+  template <typename T>
+  U32 GetFPSR( T const& rf ) const { return rf.Get(fpsr); }
+  
   /** Get the current Program Counter */
   U64 GetPC() { return U64(current_insn_addr); }
 
@@ -353,8 +521,8 @@ struct AArch64
   struct SysReg
   {
     static unsigned GetExceptionLevel( uint8_t op1 ) { switch (op1) { case 0: case 1: case 2: return 1; case 4: return 2; case 6: return 3; } return 0; }
-    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, AArch64& cpu, U64 value) const = 0;
-    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2,  AArch64& cpu) const = 0;
+    virtual void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const = 0;
+    virtual U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu) const = 0;
     virtual void DisasmRead(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
     virtual void DisasmWrite(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, std::ostream& sink) const = 0;
   };
@@ -363,20 +531,135 @@ struct AArch64
   void                 CheckSystemAccess( uint8_t op1 );
 
   //=====================================================================
+  //=                           Debug Monitor                           =
+  //=====================================================================
+
+  struct DebugMonitor
+  {
+    // Architectural configuration
+    enum { BRPS = 6 }; // Number of hardware breakpoints. FIXME: this is for Cortex-A57
+    enum { WRPS = 4 }; // Number of hardware watchpoints. FIXME: this is for Cortex-A57
+    enum { CTX_CMPS = 2 }; // Number of hardware breakpoints that (the last ones) can be used for context matching. FIXME: this is for Cortex-A57
+
+    // Debugging flag
+    enum { DEBUG = 0 };
+
+    DebugMonitor();
+
+    // Notifications
+    void NotifyLoadExclusive() { ss_ldex = true; }
+
+    // Instrumentation for exception return
+    uint32_t ExceptionReturnSPSR(unsigned from_el, bool pstate_d, uint32_t spsr);
+
+    // Instrumentation when taking an exception
+    void SetExceptionTakenPSTATE_SS(AArch64& cpu, uint64_t preferred_exception_return);
+
+    // Instrumentation for main loop
+    void BeforeStep(AArch64& cpu) { if (unlikely(ss)) IntBeforeStep(cpu); }
+    void AfterStep(AArch64& cpu) { if (unlikely(ss)) IntAfterStep(cpu); }
+    void BeforeExecute(AArch64& cpu, uint64_t vaddr) { if (unlikely(bpe)) IntBeforeExecute(cpu, vaddr); }
+
+    // Instrumentation for data memory access
+    void CacheMaintenance(unsigned el, uint64_t addr)        { if (unlikely(wpe)) IntMemAccess(el, addr & -(4 << DminLine), addr, 4 << DminLine, true, true); }
+    void MemRead(unsigned el, uint64_t addr, unsigned size)  { if (unlikely(wpe)) IntMemAccess(el, addr, addr, size, false, false); }
+    void MemWrite(unsigned el, uint64_t addr, unsigned size) { if (unlikely(wpe)) IntMemAccess(el, addr, addr, size, false, true); }
+
+    // Getters
+    uint64_t const& DBGBCR_EL1(unsigned idx) const { return regs.DBGBCR_EL1[idx]; }
+    uint64_t const& DBGBVR_EL1(unsigned idx) const { return regs.DBGBVR_EL1[idx]; }
+    uint64_t const& DBGWCR_EL1(unsigned idx) const { return regs.DBGWCR_EL1[idx]; }
+    uint64_t const& DBGWVR_EL1(unsigned idx) const { return regs.DBGWVR_EL1[idx]; }
+    uint64_t const& MDSCR_EL1() const              { return regs.MDSCR_EL1; }
+    uint64_t const& CONTEXTIDR_EL1() const         { return regs.CONTEXTIDR_EL1; }
+
+    bool SoftwareStepEnabled() const     { return regs.MDSCR_EL1 & 1; }         // MDSCR_EL1.SS
+    bool LocalKernelDebugEnabled() const { return (regs.MDSCR_EL1 >> 13) & 1; } // MDSCR_EL1.KDE
+    bool MonitorDebugEvents() const      { return (regs.MDSCR_EL1 >> 15) & 1; } // MDSCR_EL1.MDE
+
+    // Setters
+    void SetDBGBCR_EL1(unsigned idx, uint64_t value);
+    void SetDBGBVR_EL1(unsigned idx, uint64_t value) { regs.DBGBVR_EL1[idx] = value; }
+    void SetDBGWCR_EL1(unsigned idx, uint64_t value);
+    void SetDBGWVR_EL1(unsigned idx, uint64_t value) { regs.DBGWVR_EL1[idx] = value; }
+    void SetMDSCR_EL1(uint64_t value);
+    void SetCONTEXTIDR_EL1(uint64_t value) { regs.CONTEXTIDR_EL1 = uint32_t(value); }
+
+    // snapshot
+    void sync(SnapShot& snapshot);
+
+    // debugging stuff
+    const char *SoftwareStepStateName(AArch64 const& cpu) const;
+    void DebugSoftwareStepStateMachine(AArch64 const& cpu, std::ostream& sink) { if (DEBUG and ss) sink << "DebugMonitor: " << SoftwareStepStateName(cpu) << " state" << std::endl; }
+
+  private:
+    // Instrumentation for main loop
+    void IntBeforeStep(AArch64& cpu);
+    void IntAfterStep(AArch64& cpu);
+    bool CheckBreakpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pmc, unsigned sec_state);
+    void IntBeforeExecute(AArch64& cpu, uint64_t vaddr);
+    bool CheckWatchpointExecutionCondition(unsigned el, unsigned hmc, unsigned ssce, unsigned ssc, unsigned pac, unsigned sec_state);
+    void IntMemAccess(unsigned el, uint64_t vaddr, uint64_t syndrome_vaddr, unsigned size, bool cache_maintenance, bool write);
+    void Status(std::ostream& sink);
+
+    // for optimization
+    bool ss;       //< software step (mirror of MDSCR_EL1.SS)
+    uint64_t bpe;  //< breakpoint enables (mirror of DBGBCR_EL1[n].E)
+    uint64_t wpe;  //< watchpoint enables (mirror of DBGWCR_EL1[n].E)
+
+    // software step events
+    bool ss_ldex;     //< ldex event
+
+    // for internal use
+    bool stepping;                //< whether a software step has started
+    uint64_t linked_ctx_bp_conds; //< linked context-aware breakpoint conditions
+
+    struct
+    {
+      uint64_t MDSCR_EL1;        //< Monitor Debug System Control Register
+      uint64_t CONTEXTIDR_EL1;   //< Context ID Register
+
+      uint64_t DBGBCR_EL1[BRPS]; //< Debug Breakpoint Control Registers
+      uint64_t DBGBVR_EL1[BRPS]; //< Debug Breakpoint Value Registers
+
+      uint64_t DBGWCR_EL1[WRPS]; //< Debug Watchpoint Control Registers
+      uint64_t DBGWVR_EL1[WRPS]; //< Debug Watchpoint Value Registers
+    }
+    regs;
+  };
+
+  //=====================================================================
   //=                      Control Transfer methods                     =
   //=====================================================================
+
+  uint64_t BranchAddr( uint64_t target_addr )
+  {
+    bool top = (target_addr >> 55) & 1;
+    bool tbi = top ? unisim::component::cxx::processor::arm::vmsav8::tcr::TBI1.Get(mmu.TCR_EL1) : unisim::component::cxx::processor::arm::vmsav8::tcr::TBI0.Get(mmu.TCR_EL1);
+    return tbi ? ((pstate.GetEL() < 2) ? (int64_t(target_addr << 8) >> 8) : ((target_addr << 8) >> 8)) : target_addr;
+  }
 
   /** Set the next Program Counter */
   void BranchTo( U64 addr, branch_type_t branch_type )
   {
-    next_insn_addr = untaint(AddrTV(), addr);
+    uint64_t target_addr = untaint(AddrTV(), addr);
+    next_insn_addr = BranchAddr( target_addr );
   }
+
   bool Test( bool cond ) { return cond; }
 
   bool Test( BOOL const& cond ) { return untaint(CondTV(), cond); }
   void CallSupervisor( uint32_t imm );
   void CallHypervisor( uint32_t imm );
+  void IllegalState();
+  void PCAlignmentFault();
+  void SPAlignmentFault();
+  void Fault();
   void SoftwareBreakpoint( uint32_t imm );
+  void SystemAccessTrap( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, uint8_t direction );
+  void Breakpoint();
+  void SoftwareStep(bool ldex);
+  void Watchpoint(uint64_t addr, unsigned wpt, bool cache_maintenance, bool write);
 
   //=====================================================================
   //=                       Memory access methods                       =
@@ -446,7 +729,7 @@ struct AArch64
       bool GetTranslation( Entry& tlbe, uint64_t vaddr, unsigned asid, bool update );
       void AddTranslation( Entry const& tlbe, uint64_t vaddr, unsigned asid );
 
-      enum { khibit = 12, klobit = 5, kcount = 1 << (khibit-klobit) };
+      enum { kcount = 1 << 10, assoc = 1 << 2, sets = kcount / assoc };
       void Invalidate(AArch64& cpu, bool nis, bool ll, unsigned cond, U64 const& arg);
 
       TLB();
@@ -456,9 +739,9 @@ struct AArch64
        * asid[16] : varange[1] : input bits[36] : ?[4] : global[1] : significant[6]
        *   asid   :   va<48>   :   va<47:12>    :      :  !nG      :  blocksize-1
        */
-      uint64_t keys[kcount];
-      unsigned indices[kcount];
-      Entry    entries[kcount];
+      uint64_t keys[sets][assoc];
+      uint8_t  indices[sets][assoc];
+      Entry    entries[sets][assoc];
     } tlb;
   };
 
@@ -467,6 +750,8 @@ struct AArch64
   void translate_address(MMU::TLB::Entry& entry, unsigned el, mem_acc_type::Code mat);
 
   void CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsigned el, mem_acc_type::Code mat);
+
+  void CheckSPAlignment(U64 const& addr);
 
   struct MemFault { MemFault(char const* _op) : op(_op) {} MemFault() : op() {} char const* op; };
   void memory_fault(MemFault const& mf, char const* operation, uint64_t vaddr, uint64_t paddr, unsigned size);
@@ -479,13 +764,22 @@ struct AArch64
     unsigned const size = sizeof (value_type);
 
     MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
+
+    if(unlikely(requires_memory_access_reporting and memory_access_reporting_import and ((1 << el) & debug_el_mask)))
+    {
+      if (not memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, entry.pa, sizeof(T)))
+        throw NotAnException();
+    }
+
     translate_address(entry, el, mem_acc_type::read);
+
+    dbgmon.MemRead(el, addr.value, size);
 
     uint8_t dbuf[size], ubuf[size];
 
     try
       {
-        if (entry.size_after() < size or get_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        if (unlikely(entry.size_after() < size or get_page(entry.pa).read(entry.pa,&dbuf[0],&ubuf[0],size) != size))
           {
             for (unsigned byte = 0; byte < size; ++byte)
               {
@@ -507,11 +801,15 @@ struct AArch64
     typedef typename TX<value_type>::as_mask bits_type;
 
     bits_type value = 0, ubits = 0;
-    for (unsigned idx = size; idx-- > 0;)
-      {
-        value <<= 8; value |= bits_type( dbuf[idx] );
-        ubits <<= 8; ubits |= bits_type( ubuf[idx] );
-      }
+    // for (unsigned idx = size; idx-- > 0;)
+    //   {
+    //     value <<= 8; value |= bits_type( dbuf[idx] );
+    //     ubits <<= 8; ubits |= bits_type( ubuf[idx] );
+    //   }
+    ::memcpy(&value, &dbuf[0], size);
+    value = unisim::util::endian::LittleEndian2Host(value);
+    ::memcpy(&ubits, &ubuf[0], size);
+    ubits = unisim::util::endian::LittleEndian2Host(ubits);
 
     T res(*reinterpret_cast<value_type const*>(&value));
     res.ubits = ubits;
@@ -526,6 +824,11 @@ struct AArch64
   U16 MemRead16(U64 addr) { return memory_read<U16>(pstate.GetEL(), addr); }
   U8  MemRead8 (U64 addr) { return memory_read<U8> (pstate.GetEL(), addr); }
 
+  U64 MemReadUnprivileged64(U64 addr) { return memory_read<U64>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  U32 MemReadUnprivileged32(U64 addr) { return memory_read<U32>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  U16 MemReadUnprivileged16(U64 addr) { return memory_read<U16>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  U8  MemReadUnprivileged8 (U64 addr) { return memory_read<U8> ((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
+  
   void MemRead( U8* buffer, U64 addr, unsigned size );
 
   template <typename T>
@@ -535,21 +838,34 @@ struct AArch64
     unsigned const size = sizeof (typename T::value_type);
 
     MMU::TLB::Entry entry( untaint(AddrTV(), addr) );
+
+    if(unlikely(requires_memory_access_reporting and memory_access_reporting_import and ((1 << el) & debug_el_mask)))
+    {
+      if (not memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, entry.pa, sizeof(T)))
+        throw NotAnException();
+    }
+
     translate_address(entry, el, mem_acc_type::write);
+
+    dbgmon.MemWrite(el, addr.value, size);
 
     typedef typename TX<typename T::value_type>::as_mask bits_type;
 
     bits_type value = *reinterpret_cast<bits_type const*>(&src.value), ubits = src.ubits;
     uint8_t dbuf[size], ubuf[size];
-    for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
-      {
-        dbuf[idx] = value & 0xff; value >>= 8;
-        ubuf[idx] = ubits & 0xff; ubits >>= 8;
-      }
+    // for (unsigned idx = 0; idx < sizeof (bits_type); ++idx)
+    //   {
+    //     dbuf[idx] = value & 0xff; value >>= 8;
+    //     ubuf[idx] = ubits & 0xff; ubits >>= 8;
+    //   }
+    value = unisim::util::endian::Host2LittleEndian(value);
+    ::memcpy(&dbuf[0], &value, sizeof(bits_type));
+    ubits = unisim::util::endian::Host2LittleEndian(ubits);
+    ::memcpy(&ubuf[0], &ubits, sizeof(bits_type));
 
     try
       {
-        if (entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size)
+        if (unlikely(entry.size_after() < size or get_page(entry.pa).write(entry.pa,&dbuf[0],&ubuf[0],size) != size))
           {
             for (unsigned byte = 0; byte < size; ++byte)
               {
@@ -571,6 +887,11 @@ struct AArch64
   void MemWrite16(U64 addr, U16 val) { memory_write(pstate.GetEL(), addr, val); }
   void MemWrite8 (U64 addr, U8  val) { memory_write(pstate.GetEL(), addr, val); }
 
+  void MemWriteUnprivileged64(U64 addr, U64 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  void MemWriteUnprivileged32(U64 addr, U32 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  void MemWriteUnprivileged16(U64 addr, U16 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  void MemWriteUnprivileged8 (U64 addr, U8  val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
+  
   void MemWrite( U64 addr, U8 const* buffer, unsigned size );
 
   void PrefetchMemory(unsigned op, U64 addr)
@@ -584,13 +905,14 @@ struct AArch64
 
   struct ExcMon
   {
-    ExcMon() : addr(), size(), valid(false) {}
-    void set(uint64_t _addr, unsigned _size) { valid = true; addr = _addr; size = _size; }
-    bool pass(uint64_t _addr, unsigned _size) { return valid and size >= _size and (_addr & -size) == addr; }
+    enum { ERG=4 }; // Exclusives Reservation Granule.
+    enum { ERG_ADDR_MASK=~uint64_t(0)<<(ERG+2) };
+    ExcMon() : addr(), valid(false) {}
+    void set(uint64_t _addr) { valid = true; addr = _addr & ERG_ADDR_MASK; }
+    bool pass(uint64_t _addr) { return valid and ((_addr & ERG_ADDR_MASK) == addr); }
     void clear() { valid = false; }
 
     uint64_t addr;
-    uint8_t size;
     bool    valid;
   };
 
@@ -603,6 +925,7 @@ struct AArch64
     virtual ~Exception() {}
     virtual void proceed( AArch64& cpu ) const {}
     virtual char const* nature() const = 0;
+    virtual void print(std::ostream& sink) const { sink << nature(); }
   };
 
   struct DataAbort : public Exception
@@ -615,6 +938,7 @@ struct AArch64
     {}
     virtual void proceed( AArch64& cpu ) const override;
     virtual char const* nature() const override { return "Data Abort"; }
+    virtual void print(std::ostream& sink) const override { std::ostringstream va_sstr; va_sstr << "0x" << std::hex << va; sink << nature() << " (" << type << ", level " << level << ") accessing to " << va_sstr.str(); }
     unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
     bool ipavalid, secondstage, s2fs1walk;
   };
@@ -623,6 +947,76 @@ struct AArch64
   {
     virtual void proceed(AArch64& cpu ) const override;
     virtual char const* nature() const override { return "Physical IRQ"; }
+  };
+
+  struct UndefinedInstructionException : Exception
+  {
+    UndefinedInstructionException() : op(0) {}
+    UndefinedInstructionException(Operation const *_op) : op(_op) {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Undefined Instruction"; }
+    Operation const *op;
+  };
+
+  struct IllegalStateException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Illegal State"; }
+  };
+
+  struct PCAlignmentException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "PC Alignment Fault"; }
+  };
+
+  struct SPAlignmentException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "SP Alignment Fault"; }
+  };
+
+  struct SystemAccessTrapException : Exception
+  {
+    SystemAccessTrapException(uint8_t _op0, uint8_t _op1, uint8_t _crn, uint8_t _crm,
+                              uint8_t _op2, uint8_t _rt, uint8_t _direction)
+      : op0(_op0), op1(_op1), crn(_crn), crm(_crm),
+        op2(_op2), rt(_rt), direction(_direction)
+    {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "System Access Trap"; }
+    uint8_t op0; uint8_t op1; uint8_t crn; uint8_t crm;
+    uint8_t op2; uint8_t rt; uint8_t direction;
+  };
+
+  struct BreakpointException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Breakpoint"; }
+  };
+
+  struct SoftwareStepException : Exception
+  {
+    SoftwareStepException(bool _ldex) : ldex(_ldex) {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Software Step"; }
+    bool ldex;
+  };
+
+  struct WatchpointException : Exception
+  {
+    WatchpointException(uint64_t _addr, unsigned _wpt, bool _cache_maintenance, bool _write)
+      : addr(_addr), wpt(_wpt), cache_maintenance(_cache_maintenance), write(_write)
+    {}
+    virtual void proceed( AArch64& cpu ) const override;
+    virtual char const* nature() const override { return "Watchpoint"; }
+    uint64_t addr; unsigned wpt; bool cache_maintenance, write;
+  };
+
+  struct NotAnException : Exception
+  {
+    virtual void proceed( AArch64& cpu ) const override { cpu.next_insn_addr = cpu.current_insn_addr; }
+    virtual char const* nature() const override { return "Not an exception"; }
   };
 
   /* AArch32 obsolete arguments
@@ -767,6 +1161,7 @@ struct AArch64
 
   typedef std::set<Page, Page::Above> Pages;
   typedef std::set<Device, Device::Above> Devices;
+  Pages::iterator pi;
 
   // Page const& access_page( uint64_t addr )
   // {
@@ -783,15 +1178,18 @@ struct AArch64
   // Page const& modify_page(uint64_t addr)
   Page const& get_page( uint64_t addr )
   {
+    if (mru_pi != pages.end() and addr >= mru_pi->base and addr <= mru_pi->last) return *mru_pi;
+
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->last < addr)
       {
         auto di = devices.lower_bound(addr);
         if (di != devices.end() and addr <= di->last)
           throw *di;
-        return alloc_page(pi, addr);
+        return mru_pi = pi, alloc_page(pi, addr);
       }
-    return *pi;
+
+    return *(mru_pi = pi);
   }
 
   Page const& alloc_page(Pages::iterator pi, uint64_t addr);
@@ -804,15 +1202,45 @@ struct AArch64
 
   Operation* decode(uint64_t insn_addr, CodeType insn);
 
-  void run( uint64_t suspend_at );
+  void before_fetch();
+  void before_execute(Operation *op);
+  void after_execute();
+  void before_except(Exception const& exception);
+  template <bool HEAVY_EXEC_LOOP> void exec_loop();
+  void run();
 
   struct IPB
   {
-    static unsigned const LINE_SIZE = 32; //< IPB size
-    uint8_t  bytes[LINE_SIZE];            //< The IPB content
-    uint64_t base_address;                //< base address of IPB content (cache line size aligned if valid)
-    IPB() : bytes(), base_address( -1 ) {}
-    uint8_t* access(AArch64& core, uint64_t address);
+    IPB();
+    ~IPB();
+    Operation *access(AArch64& core, uint64_t vaddr);
+    void invalidate();
+
+  private:
+    enum { LINE_SIZE = 4 << IminLine }; //< IPB size
+    enum { BUCKETS = 2048 };            //< Number of buckets in hashtable
+    struct Block
+    {
+      Block();
+      Block(uint64_t base_vaddress, unsigned exec_perm);
+
+      uint64_t base_vaddress;        //< base address of block
+      unsigned exec_perm;            //< execution permission (one bit per EL)
+      Operation *ops[LINE_SIZE / 4]; //< Decoded instructions
+      Block *next;                   //< next block (next sequential block)
+      Block *remote;                 //< remote block (last branch target)
+      uint8_t  bytes[LINE_SIZE];     //< block content
+    };
+
+    typedef std::unordered_map<uint64_t, Block *> Blocks; // hashtable
+    typedef std::vector<Block *> FreeBlocks;
+
+    Block *current_block;            //< current block
+    Blocks blocks;                   //< block cache
+    FreeBlocks free_blocks;          //< free blocks ready for reuse
+    uint8_t const zeroes[LINE_SIZE];
+
+    Block *allocate_block( uint64_t base_vaddress, unsigned exec_perm );
   };
 
   struct PState
@@ -874,10 +1302,36 @@ struct AArch64
     void SetSCTLR(AArch64& cpu, uint32_t value)
     {
       SCTLR = value;
+      cpu.ipb.invalidate();
     }
   };
 
   EL& get_el(unsigned level) { if (level != 1) { struct No {}; throw No {}; } return el1; }
+
+  struct RNG : unisim::kernel::Object
+  {
+    // see https://www.thecodingforums.com/threads/64-bit-kiss-rngs.673657/
+    RNG(char const* name, unisim::kernel::Object* parent);
+    void Seed(uint64_t _x, uint64_t _y, uint64_t _z, uint64_t _c);
+    uint64_t Get();
+    void sync( SnapShot& snapshot );
+  private:
+    static const uint64_t SEED_X = 1234567890987654321ULL;
+    static const uint64_t SEED_Y = 362436362436362436ULL;
+    static const uint64_t SEED_Z = 1066149217761810ULL;
+    static const uint64_t SEED_C = 123456123456123456ULL;
+    uint64_t MWC();
+    uint64_t XSH();
+    uint64_t CNG();
+    uint64_t KISS();
+    void SelfTest();
+    uint64_t x, y, z, c, t;
+    uint64_t seed_x, seed_y, seed_z, seed_c;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_x;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_y;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_z;
+    unisim::kernel::variable::Parameter<uint64_t> param_seed_c;
+  };
 
   U64 RNDR();
 
@@ -916,7 +1370,7 @@ struct AArch64
     RTC() : LR(0), MR(), load_insn_time(0), started(false), masked(true) {}
     void     sync(SnapShot&);
     uint32_t get_counter(AArch64& cpu) const { return LR + get_gap(cpu); }
-    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / (cpu.get_freq() / get_cntfrq()); }
+    uint64_t get_gap(AArch64& cpu) const { return (cpu.insn_timer - load_insn_time) / ((cpu.get_freq() * cpu.get_ipc()) / get_cntfrq()); }
     uint64_t get_cntfrq() const { return 1; }
     void     flush_lr(AArch64& cpu) { load_insn_time = cpu.insn_timer; }
     void     program(AArch64& cpu);
@@ -963,7 +1417,7 @@ struct AArch64
     bool activated() const;
     void program(AArch64& cpu);
     uint64_t get_cntfrq() const { return 33600000; }
-    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / (cpu.get_freq() / get_cntfrq()); }
+    uint64_t get_pcount(AArch64& cpu) const { return cpu.insn_timer / ((cpu.get_freq() * cpu.get_ipc())/ get_cntfrq()); }
     uint64_t read_ctl(AArch64& cpu) const { return ctl | ((read_tval(cpu) <= 0) << 2); }
     void write_ctl(AArch64& cpu, uint64_t v) { ctl = v & 3; program(cpu); }
     void write_kctl(AArch64& cpu, uint64_t v) { kctl = v & 0x203ff; program(cpu); }
@@ -976,6 +1430,7 @@ struct AArch64
   };
   void handle_vtimer();
   uint64_t get_freq() const { return 1075200000; }
+  uint64_t get_ipc() const { return 1; }
 
   void map_virtio_placeholder(unsigned id, uint64_t base_addr);
   void map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq);
@@ -1013,13 +1468,17 @@ public:
   Timer    vt;
   RTC      rtc;
 
+  bool persistent_disk;
+  unisim::kernel::variable::Parameter<bool> param_persistent_disk;
   VIODisk  disk;
   Transfer transfer;
   //VIOConsole  vioconsole;
 
   Pages    pages;
+  Pages::iterator mru_pi;
   ExcMon   excmon;
 
+  DebugMonitor dbgmon;
   MMU      mmu;
   IPB      ipb;
   Decoder  decoder;
@@ -1030,20 +1489,25 @@ public:
   EL       el1;
   PState   pstate;
   U8       nzcv;
-  uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer;
+  uint64_t current_insn_addr, next_insn_addr, insn_counter, insn_timer, suspend_at;
+
+  unisim::kernel::variable::Parameter<uint64_t> param_suspend_at;
 
   static unsigned const histsize = 1024;
-  InstructionInfo last_insns[histsize];
+  InstructionInfo *last_insns;
 
-  U64      TPIDR[2]; //<  Thread Pointer / ID Register
+  U64      TPIDR[4]; //<  Thread Pointer / ID Register
   U64      TPIDRRO;
   uint32_t CPACR;
 
   U64      tvreg;
   uint64_t bdaddr;
-  uint32_t random;
+  RNG      rng;
   bool     terminate;
   bool     disasm;
+  unisim::kernel::variable::Parameter<bool> param_disasm;
+  unsigned debug_el_mask;
+  unisim::kernel::variable::Parameter<unsigned> param_debug_el_mask;
   bool     suspend;
   // Tainted FP stats
   std::string tfpstats_filename;
@@ -1053,6 +1517,12 @@ public:
   unsigned tfp32loss, tfp64loss;
   unisim::kernel::variable::Parameter<unsigned> param_tfp32loss, param_tfp64loss;
   std::map<char const*, uint64_t> tfpinsncount;
+  bool enable_sleep;
+  unisim::kernel::variable::Parameter<bool> param_enable_sleep;
+  bool enable_exception_trap;
+  unisim::kernel::variable::Parameter<bool> param_enable_exception_trap;
+  bool enable_strace;
+  unisim::kernel::variable::Parameter<bool> param_enable_strace;
   // /*QESCAPTURE*/
   // bool QESCapture();
   // struct QES { uint16_t desc; uint16_t flags; } qes[2];
@@ -1061,32 +1531,5 @@ public:
   // std::set<Zone, Zone::Above> diskpages;
   // static std::ofstream& ptlog();
 };
-
-struct OutNaN
-{
-  operator bool () const { return false; }
-  template <typename T>
-  operator TaintedValue<T> () const { return TaintedValue<T>(T(0)); }
-};
-
-template <typename operT>
-OutNaN FPProcessNaNs(AArch64& arch, std::initializer_list<operT> l)
-{
-  return OutNaN();
-}
-
-template <typename T>
-T FPMulAdd(AArch64& cpu, T const& acc, T const& op1, T const& op2)
-{
-  return acc + (op1 * op2);
-}
-
-template <typename T>
-T FPMulSub(AArch64& cpu, T const& acc, T const& op1, T const& op2)
-{
-  return acc - (op1 * op2);
-}
-
-template <unsigned posT> void FPProcessException( AArch64&, unisim::util::arithmetic::BitField<posT,1> const& ) {}
 
 #endif /* __ARM64VP_ARCHITECTURE_HH__ */

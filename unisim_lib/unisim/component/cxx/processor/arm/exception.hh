@@ -37,6 +37,7 @@
 
 #include <inttypes.h>
 #include <stdexcept>
+#include <iosfwd>
 
 namespace unisim {
 namespace component {
@@ -111,6 +112,31 @@ inline unsigned EncodeLDFSC(DAbort type, unsigned level)
   return result;
 }
   
+inline std::ostream& operator << (std::ostream& sink, DAbort dabt)
+{
+  switch(dabt)
+   {
+    case DAbort_AccessFlag        : return sink << "AccessFlag";
+    case DAbort_Alignment         : return sink << "Alignment";
+    case DAbort_Background        : return sink << "Background";
+    case DAbort_Domain            : return sink << "Domain";
+    case DAbort_Permission        : return sink << "Permission";
+    case DAbort_Translation       : return sink << "Translation";
+    case DAbort_AddressSize       : return sink << "AddressSize";
+    case DAbort_SyncExternal      : return sink << "SyncExternal";
+    case DAbort_SyncExternalOnWalk: return sink << "SyncExternalOnWalk";
+    case DAbort_SyncParity        : return sink << "SyncParity";
+    case DAbort_SyncParityOnWalk  : return sink << "SyncParityOnWalk";
+    case DAbort_AsyncParity       : return sink << "AsyncParity";
+    case DAbort_AsyncExternal     : return sink << "AsyncExternal";
+    case DAbort_Debug             : return sink << "Debug";
+    case DAbort_TLBConflict       : return sink << "TLBConflict";
+    case DAbort_Lockdown          : return sink << "Lockdown";
+    case DAbort_Coproc            : return sink << "Coproc";
+    case DAbort_ICacheMaint       : return sink << "ICacheMaint";
+   }
+  return sink << "?";
+}
 
 } // end of namespace arm
 } // end of namespace processor

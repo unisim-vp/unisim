@@ -12,6 +12,7 @@ import unisim/util/symbolic/binsec || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
+import unisim/util/floating_point || exit
 
 import libc/stdint || exit
 import std/cstdlib || exit

@@ -2,6 +2,7 @@ libc/time
 m4/hla_rti1516e
 std/cstring
 std/iostream
+std/limits
 std/map
 std/sstream
 std/stdexcept

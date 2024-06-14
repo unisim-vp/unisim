@@ -30,11 +30,18 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
-#include <cmath>
-using std::isnan;
+#if HAVE_SOFTFLOAT_EMU
+#include <unisim/util/floating_point/softfloat_emu/softfloat_emu.hh>
+#else
+#include <unisim/util/floating_point/floating_point.hh>
+#endif
 
 #include <unisim/component/cxx/processor/arm/vmsav8/cpu.tcc>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -43,6 +50,47 @@ using std::isnan;
 
 #include <systemc>
 #include <tlm>
+
+#if HAVE_SOFTFLOAT_EMU
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace vector {
+
+template <unsigned E> struct VectorTypeInfo<typename unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F16,E>
+{
+	enum bytecount_t { bytecount = 2 };
+	static void ToBytes( uint8_t* dst, unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F16 const& src ) { VectorTypeInfo<uint16_t,E>::ToBytes( dst, ToPacked( src ) ); }
+	static void FromBytes( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F16& dst, uint8_t const* src ) { uint16_t packed;  VectorTypeInfo<uint16_t,E>::FromBytes(packed , src ); dst = FromPacked<unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F16>( packed ); }
+	static void Destroy( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F16& obj ) {}
+	static void Allocate( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F16& obj ) {}
+};
+
+template <unsigned E> struct VectorTypeInfo<typename unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F32,E>
+{
+	enum bytecount_t { bytecount = 4 };
+	static void ToBytes( uint8_t* dst, unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F32 const& src ) { VectorTypeInfo<uint32_t,E>::ToBytes( dst, ToPacked( src ) ); }
+	static void FromBytes( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F32& dst, uint8_t const* src ) { uint32_t packed;  VectorTypeInfo<uint32_t,E>::FromBytes(packed , src ); dst = FromPacked<unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F32>( packed ); }
+	static void Destroy( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F32& obj ) {}
+	static void Allocate( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F32& obj ) {}
+};
+
+template <unsigned E> struct VectorTypeInfo<typename unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F64,E>
+{
+	enum bytecount_t { bytecount = 8 };
+	static void ToBytes( uint8_t* dst, unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F64 const& src ) { VectorTypeInfo<uint64_t,E>::ToBytes( dst, ToPacked( src ) ); }
+	static void FromBytes( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F64& dst, uint8_t const* src ) { uint64_t packed;  VectorTypeInfo<uint64_t,E>::FromBytes(packed , src ); dst = FromPacked<unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F64>( packed ); }
+	static void Destroy( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F64& obj ) {}
+	static void Allocate( unisim::component::cxx::processor::arm::vmsav8::ArchTypes::F64& obj ) {}
+};
+
+} // end of namespace vector
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif
 
 namespace unisim {
 namespace component {
@@ -597,7 +645,7 @@ CPU::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint
         static struct : public SysReg {
           void Name(Encoding e, std::ostream& sink) const override { sink << "DCZID_EL0"; }
           void Describe(Encoding e, std::ostream& sink) const override { sink << "Data Cache Zero ID register"; }
-          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, CPU& cpu) const override
+          U64 Read(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, CPU& cpu) const override
           { return 4; /* TODO: DZP should depend on SCTLR_EL1 and HCR_EL2 */ }
         } x; return &x;
       } break;

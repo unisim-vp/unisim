@@ -3,4 +3,5 @@ libc/float
 std/cassert
 std/cmath
 std/cstdlib
+std/limits
 unisim/component/cxx/processor/tesla

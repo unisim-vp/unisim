@@ -721,6 +721,10 @@ namespace symbolic {
     this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( make_operation( "Lsl", expr, SmartValue<shift_type>(sh).expr ) ); }
     template <typename SHT>
     this_type operator >> ( SmartValue<SHT> const& sh ) const {return this_type( make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<shift_type>(sh).expr ) ); }
+    template <typename SHT>
+    this_type& operator <<= ( SmartValue<SHT> const& sh ) { expr = make_operation( "Lsl", expr, SmartValue<shift_type>(sh).expr ); return *this; }
+    template <typename SHT>
+    this_type& operator >>= ( SmartValue<SHT> const& sh ) { expr = make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<shift_type>(sh).expr ); return *this; }
 
     this_type operator - () const { return this_type( make_operation( "Neg", expr ) ); }
     this_type operator ~ () const { return this_type( make_operation( "Not", expr ) ); }

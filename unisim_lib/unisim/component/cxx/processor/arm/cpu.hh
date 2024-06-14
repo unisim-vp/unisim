@@ -443,6 +443,8 @@ public:
   U32 RoundToNearestFPSCR() const   { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundToNearest) ); return fpscr; }
   U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
   
+  void SetQC() { FPSCR |= U32(1) << 27; }
+  
   static unsigned const VECTORCOUNT = 32;
 
   struct VUConfig

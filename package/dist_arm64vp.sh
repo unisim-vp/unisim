@@ -22,6 +22,8 @@ import unisim/util/virtio || exit
 import unisim/util/os/linux_os || exit
 import unisim/util/likely || exit
 import unisim/util/random || exit
+import unisim/util/host_time || exit
+import unisim/service/os/linux_os || exit
 import unisim/service/trap_handler || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
@@ -67,6 +69,8 @@ system.cc \
 instruction.cc \
 main.cc \
 debugger.cc \
+dbgmon.cc \
+recorder.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
@@ -129,6 +133,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+test "x\$unisim_cv_softfloat_emu" = "xyes" || test "x\$unisim_cv_have_float16" = "xyes" || AC_MSG_ERROR([Support for type _Float16 or the softfloat-emu library is required])
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

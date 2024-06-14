@@ -45,6 +45,7 @@ struct BaseConfig
 {
   static unsigned const DECODE_HASH_TABLE_ENTRIES = 4096;
   static unsigned const OPERATIONS_PER_PAGE = 4096;
+  struct DECODE_EXCEPTION {};
 };
 
 template <typename DECODER, typename CONFIG = BaseConfig>
@@ -68,7 +69,7 @@ struct OpCache : public DECODER
     operation_type* operation[CONFIG::OPERATIONS_PER_PAGE];
   };
 
-  operation_type* Decode(address_type addr, code_type insn);
+  template <typename EXCEPTION = typename CONFIG::DECODE_EXCEPTION> operation_type* Decode(address_type addr, code_type insn);
   void InvalidateDecodingCacheEntry(address_type addr);
   void InvalidateDecodingCache();
   DecodeMapPage* FindPage(address_type page_key);

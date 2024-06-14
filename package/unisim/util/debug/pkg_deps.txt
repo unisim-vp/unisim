@@ -2,6 +2,7 @@ libc/inttypes
 libc/string
 std/cassert
 std/cctype
+std/cstdint
 std/cstring
 std/iosfwd
 std/iostream

@@ -160,7 +160,7 @@ public:
 	}
 
 	virtual void Set( TYPE const& value ) { if (not WriteBack(value)) Variable<TYPE>::Set( value ); }
-	virtual TYPE Get() const { TYPE value; if (not ReadBack(value)) return Variable<TYPE>::Get(); return value; }
+	virtual TYPE Get() const { TYPE value = TYPE(); if (not ReadBack(value)) return Variable<TYPE>::Get(); return value; }
 
 //	using Variable<TYPE>::operator=;
 

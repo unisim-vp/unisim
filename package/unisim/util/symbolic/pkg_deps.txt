@@ -1,9 +1,13 @@
 libc/inttypes
 std/algorithm
 std/cstring
+std/iomanip
+std/iosfwd
 std/iostream
+std/limits
 std/map
-std/ostream
+std/set
+std/sstream
 std/stdexcept
 std/vector
 unisim/util/arithmetic
