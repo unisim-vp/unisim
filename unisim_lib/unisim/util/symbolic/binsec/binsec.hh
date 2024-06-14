@@ -334,9 +334,10 @@ namespace binsec {
   {
     Assignment( Expr const& _value ) : value(_value) {}
 
-    virtual ValueType GetType() const { return NoValueType(); }
-    virtual unsigned SubCount() const { return 1; }
-    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+    virtual ValueType GetType() const override { return NoValueType(); }
+    virtual unsigned SubCount() const override { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+    virtual Expr SourceRead() const = 0;
 
     Expr value;
   };
@@ -349,8 +350,9 @@ namespace binsec {
     virtual void GetRegName( std::ostream& ) const = 0;
 
     int GenerateCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual void Repr( std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const override;
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
+    Expr source_read( RegReadBase* reg_read ) const;
     int compare( RegWriteBase const& rhs ) const
     {
       if (int delta = reg_size - rhs.reg_size) return delta;
@@ -371,6 +373,7 @@ namespace binsec {
     virtual this_type* Mutate() const override { return new this_type( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { id.Repr(sink); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    virtual Expr SourceRead() const override { return source_read(new RegRead<RID>(id)); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
 
     RID id;
@@ -382,7 +385,8 @@ namespace binsec {
     virtual Branch* Mutate() const override { return new Branch( *this ); }
     virtual void annotate(std::ostream& sink) const {};
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
-    virtual void Repr( std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const override;
+    virtual Expr SourceRead() const override { return Expr(); }
   };
 
   template <typename T>

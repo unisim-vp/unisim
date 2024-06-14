@@ -486,6 +486,14 @@ namespace binsec {
     sink << " )";
   }
 
+  Expr
+  RegWriteBase::source_read( RegReadBase* reg_read ) const
+  {
+    if (slice_size != reg_size)
+      return BitFilter::mksimple(reg_read, reg_size, slice_base, slice_size, slice_size, false);
+    return reg_read;
+  }
+
   int
   RegWriteBase::GenerateCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
@@ -566,14 +574,25 @@ namespace binsec {
 
     if (rw[0] and rw[1] and (&typeid(*rw[0]) == &typeid(*rw[1])) and (rw[0]->cmp(*rw[1]) == 0))
       {
-        // Mergeable assignments
+        // If-conversion of two-way conditional assignments
         Assignment* assignment = dynamic_cast<Assignment*>(rw[0]->Mutate());
         assignment->value = make_operation( Op::CMov, rw[true]->value, rw[false]->value, cond );
         add_sink(Expr(assignment));
         cmp = 0;
         return true;
       }
-    // Force merge
+
+    // Force if-conversion of one-way contitional assignments
+    bool side = cmp>0;
+    if (rw[side])
+      {
+        Assignment* assignment = dynamic_cast<Assignment*>(rw[side]->Mutate());
+        Expr values[2] = {assignment->SourceRead(), assignment->value};
+        assignment->value = make_operation( Op::CMov, values[side], values[not side], cond );
+        add_sink(Expr(assignment));
+        return true;
+
+      }
     return false;
   }
 
