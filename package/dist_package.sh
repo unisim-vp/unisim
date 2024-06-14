@@ -703,9 +703,6 @@ for PKG in "$@"; do
 				share/unisim-armemu-${PKG_VERSION}/INSTALL.txt \
 				share/unisim-armemu-${PKG_VERSION}/NEWS.txt \
 				share/unisim-armemu-${PKG_VERSION}/README.txt \
-				share/unisim-armemu-${PKG_VERSION}/test/src/CMakeLists.txt \
-				share/unisim-armemu-${PKG_VERSION}/test/src/main.c \
-				share/unisim-armemu-${PKG_VERSION}/test/src/toolchain-armv5l.cmake \
 				share/unisim-armemu-${PKG_VERSION}/gdb_server/gdb_arm_with_fpa.xml \
 				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml \
 				share/applications/unisim-armemu-${PKG_VERSION}.desktop \
@@ -716,7 +713,6 @@ for PKG in "$@"; do
 				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim256.png \
 				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim32.png \
 				share/unisim-armemu-${PKG_VERSION}/logo/unisim.ico \
-				share/unisim-armemu-${PKG_VERSION}/test/install/test.armv5l" \
 				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
 				"share/unisim-armemu-${PKG_VERSION}/logo/unisim.ico" \
 				"bin/unisim-armemu-${PKG_VERSION}${EXE_SUFFIX}" \

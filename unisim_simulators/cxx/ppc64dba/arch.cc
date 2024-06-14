@@ -93,7 +93,7 @@ namespace ppc64 {
 
     unisim::util::symbolic::shift_type pos = __builtin_ctz(maskval);
     Expr scratch = new BitRead( path, CRBIT(31^pos) );
-    scratch = unisim::util::symbolic::binsec::BitFilter::mksimple(scratch, 1, 0, 32, 32, false);
+    scratch = unisim::util::symbolic::binsec::BitFilter::mksimple(scratch, 1, 0, 1, 32, false);
     expr = unisim::util::symbolic::make_operation(unisim::util::symbolic::Op::Lsl, scratch, unisim::util::symbolic::make_const(pos));
 
     return 0;
