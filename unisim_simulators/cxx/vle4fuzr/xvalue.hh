@@ -2,7 +2,7 @@
  *  Copyright (c) 2019-2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
- *  
+ *
  * FUZR RENAULT CEA FILE
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
@@ -40,6 +40,8 @@ namespace x
     template <typename SHT> this_type& operator >>= ( SHT sh ) { value >>= sh; return *this; }
     template <typename SHT> this_type operator << ( XValue<SHT> const& sh ) const { return this_type( value << sh.value, determined and sh.determined ); }
     template <typename SHT> this_type operator >> ( XValue<SHT> const& sh ) const { return this_type( value >> sh.value, determined and sh.determined ); }
+    template <typename SHT> this_type& operator <<= ( XValue<SHT> const&  sh ) { value <<= sh.value; return *this; }
+    template <typename SHT> this_type& operator >>= ( XValue<SHT> const&  sh ) { value >>= sh.value; return *this; }
 
     this_type operator - () const { return this_type( -value, determined ); }
     this_type operator ~ () const { return this_type( ~value, determined ); }
@@ -61,7 +63,7 @@ namespace x
     this_type operator ^ ( this_type const& other ) const { return this_type( value ^ other.value, determined and other.determined ); }
     this_type operator & ( this_type const& other ) const { return this_type( value & other.value, determined and other.determined ); }
     this_type operator | ( this_type const& other ) const { return this_type( value | other.value, determined and other.determined ); }
-  
+
     XValue<bool> operator == ( this_type const& other ) const { return XValue<bool>( value == other.value, determined and other.determined ); }
     XValue<bool> operator != ( this_type const& other ) const { return XValue<bool>( value != other.value, determined and other.determined ); }
     XValue<bool> operator <= ( this_type const& other ) const { return XValue<bool>( value <= other.value, determined and other.determined ); }
@@ -74,14 +76,14 @@ namespace x
     XValue<bool> operator && ( XValue<bool> const& other ) const { AssertBool<value_type>::check(); return XValue<bool>( value and other.value, determined and other.determined ); }
 
     XValue<bool> operator || ( XValue<bool> const& other ) const { AssertBool<value_type>::check(); return XValue<bool>( value or other.value, determined and other.determined ); }
-  
+
     value_type value;
     bool determined;
   };
 
   template <typename T, class F>
   XValue<T> XApply( F const& f, XValue<T> const& l, XValue<T> const& r ) { return XValue<T>( f(l.value, r.value), l.determined and r.determined ); }
-  
+
   template <typename T, class F>
   XValue<T> XApply( F const& f, XValue<T> const& v ) { return XValue<T>( f(v.value), v.determined ); }
 

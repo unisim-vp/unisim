@@ -81,6 +81,9 @@
 struct CPU : public  unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU>
 {
   CPU(const sc_core::sc_module_name& name, unisim::kernel::Object* parent = 0);
+
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
 };
 
 class Simulator
@@ -119,12 +122,12 @@ class Simulator
     /* gdb_server, inline_debugger and/or monitor */
     static const unsigned int MAX_FRONT_ENDS = 4;
   };
-  
+
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::monitor::Monitor<uint32_t>          MONITOR;
   typedef unisim::service::time::sc_time::ScTime                      ScTime;
   typedef unisim::service::time::host_time::HostTime                  HostTime;
-  
+
   CPU                   cpu;
   MEMORY                memory;
   ScTime                time;
@@ -146,14 +149,14 @@ class Simulator
   LOGGER_HTTP_WRITER*      logger_http_writer;
   LOGGER_XML_FILE_WRITER*  logger_xml_file_writer;
   LOGGER_NETSTREAM_WRITER* logger_netstream_writer;
-  
+
   bool                                     enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
   unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
   bool                                     enable_profiler;
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
-  
+
   virtual void SigInt();
   static bool enable_monitor;
 };

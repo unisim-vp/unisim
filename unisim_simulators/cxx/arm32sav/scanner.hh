@@ -413,6 +413,7 @@ struct Scanner
   bool IntegerZeroDivide( BOOL const& condition ) { return false; }
 
   void CheckAlignment(U32 const&, uint32_t alignement) { if (alignement > 4) dont("alignement"); }
+  void SetQC() {}
 
   static unsigned const VREGCOUNT = 32;
 
@@ -449,7 +450,7 @@ struct Scanner
   {
     return ELEMT( vector_read<ELEMT>(reg, idx) );
   }
-  
+
   U8 GetTVU8(unsigned reg0, unsigned elements, unsigned regs, Scanner::U8 const& index, Scanner::U8 const& oob_value);
 
   template <typename T>
@@ -468,7 +469,7 @@ struct Scanner
   {
     vector_write(reg, idx, value);
   }
-  
+
   uint32_t itcond() const { return 14; }
   bool itblock() { interface.itsensitive = true; return false; }
   void ITSetState( uint32_t cond, uint32_t mask ) { dont("cpsr"); }
@@ -512,6 +513,8 @@ struct Scanner
   };
 
   static CP15Reg* CP15GetRegister(uint8_t, uint8_t, uint8_t, uint8_t) { static CP15Reg _; return &_; }
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
 
   Interface&     interface;
   unisim::util::sav::ActionNode*    path;

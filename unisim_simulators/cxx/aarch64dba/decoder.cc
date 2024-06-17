@@ -37,7 +37,6 @@
 #include <unisim/util/symbolic/binsec/binsec.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/floating_point/floating_point.hh>
-template <class F> F DefaultNaN() { return F(); }
 
 #include <aarch64dec.tcc>
 #include <iostream>

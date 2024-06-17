@@ -34,11 +34,12 @@
 
 #include <runner.hh>
 #include <cmath>
+#include <unisim/util/floating_point/floating_point.hh>
 using std::isnan;
 using std::min;
 using std::max;
 
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <arm64sav.tcc>
 #include <unisim/component/cxx/processor/opcache/opcache.tcc>
 
 std::unique_ptr<Runner::Operation>

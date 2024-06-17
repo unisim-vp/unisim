@@ -458,14 +458,14 @@ struct AArch64
 
   /** Set FPCR */
   void SetFPCR( U32 v ) { fpcr = v; }
-  
+
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
-  
+
   U32& FPCR() { return fpcr; }
-  
+
   void SetQC() { fpsr |= U32(1) << 27; }
-  
+
   template <typename T>
   U32 GetFPCR( T const& rf ) const { return rf.Get(fpcr); }
 
@@ -483,12 +483,12 @@ struct AArch64
   BOOL OFE() const { return ((fpcr >> 10) & U32(1)) != U32(0); }
   BOOL DZE() const { return ((fpcr >> 9) & U32(1)) != U32(0); }
   BOOL IOE() const { return ((fpcr >> 9) & U32(1)) != U32(0); }
-  
+
   /** Set FPSR */
   void SetFPSR( U32 v ) { fpsr = v; }
-  
+
   /** Set FPSR cumulative bits
-   * 
+   *
    * @param q Saturation flag
    * @param id Input Denormal flag
    * @param ix Inexact flag
@@ -502,15 +502,15 @@ struct AArch64
   {
     fpsr |= (U32(q) << 27) | (U32(id) << 7) | (U32(ix) << 4) | (U32(uf) << 3) | (U32(of) << 2) | (U32(dz) << 1) | (U32(io) << 0);
   }
-  
+
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
-  
+
   U32& FPSR() { return fpsr; }
-  
+
   template <typename T>
   U32 GetFPSR( T const& rf ) const { return rf.Get(fpsr); }
-  
+
   /** Get the current Program Counter */
   U64 GetPC() { return U64(current_insn_addr); }
 
@@ -828,7 +828,7 @@ struct AArch64
   U32 MemReadUnprivileged32(U64 addr) { return memory_read<U32>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
   U16 MemReadUnprivileged16(U64 addr) { return memory_read<U16>((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
   U8  MemReadUnprivileged8 (U64 addr) { return memory_read<U8> ((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr); }
-  
+
   void MemRead( U8* buffer, U64 addr, unsigned size );
 
   template <typename T>
@@ -891,7 +891,7 @@ struct AArch64
   void MemWriteUnprivileged32(U64 addr, U32 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
   void MemWriteUnprivileged16(U64 addr, U16 val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
   void MemWriteUnprivileged8 (U64 addr, U8  val) { memory_write((pstate.GetEL() != 1) ? pstate.GetEL() : 0, addr, val); }
-  
+
   void MemWrite( U64 addr, U8 const* buffer, unsigned size );
 
   void PrefetchMemory(unsigned op, U64 addr)
@@ -938,7 +938,7 @@ struct AArch64
     {}
     virtual void proceed( AArch64& cpu ) const override;
     virtual char const* nature() const override { return "Data Abort"; }
-    virtual void print(std::ostream& sink) const override { std::ostringstream va_sstr; va_sstr << "0x" << std::hex << va; sink << nature() << " (" << type << ", level " << level << ") accessing to " << va_sstr.str(); }
+    virtual void print(std::ostream& sink) const override { std::ostringstream va_sstr; va_sstr << "0x" << std::hex << va; sink << nature() << " (" << type.c_str() << ", level " << level << ") accessing to " << va_sstr.str(); }
     unisim::component::cxx::processor::arm::DAbort type; uint64_t va; uint64_t ipa;  mem_acc_type::Code mat; unsigned level;
     bool ipavalid, secondstage, s2fs1walk;
   };
@@ -1131,7 +1131,7 @@ struct AArch64
     uint64_t ptr, left;
     mem_acc_type::Code mat;
   };
-  
+
   struct Device : public Zone
   {
     struct Effect;

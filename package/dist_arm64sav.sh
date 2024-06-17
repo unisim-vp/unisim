@@ -9,12 +9,12 @@ import_genisslib || exit
 
 import unisim/component/cxx/processor/arm/vmsav8 || exit
 import unisim/component/cxx/processor/arm/regs64 || exit
-import unisim/util/sav || exit
-import unisim/util/arithmetic || exit
-import unisim/util/endian || exit
-import unisim/util/random || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic || exit
+import unisim/util/sav || exit
+import unisim/util/endian || exit
+import unisim/util/random || exit
+import unisim/util/arithmetic || exit
 
 import libc/inttypes || exit
 import sys/mman || exit
@@ -49,6 +49,8 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
+UNISIM_SIMULATOR_TOP_ISA="arm64sav.isa"
+
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 test.cc \
@@ -59,6 +61,7 @@ runner.ops.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+${UNISIM_SIMULATOR_TOP_ISA} \
 test.hh \
 scanner.hh \
 runner.hh \
@@ -131,30 +134,31 @@ libtool: \$(LIBTOOL_DEPS)
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
 unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
 unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library
 noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
-#libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
-nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc
+	\$(top_builddir)/arm64sav.hh\
+	\$(top_builddir)/arm64sav.tcc
 
 CLEANFILES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc
+	\$(top_builddir)/arm64sav.hh\
+	\$(top_builddir)/arm64sav.tcc
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa
+\$(top_builddir)/arm64sav.tcc: \$(top_builddir)/arm64sav.hh
+\$(top_builddir)/arm64sav.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_TOP_ISA}
+	\$(PYTHON_BIN) \$(top_srcdir)/genisslib.py -o \$(top_builddir)/arm64sav -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ISA}
 
 EOF
 )

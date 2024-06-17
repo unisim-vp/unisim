@@ -1115,7 +1115,7 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
     | U32(mat == mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
     | U32(mat == mem_acc_type::write or mat == mem_acc_type::cache_maintenance) << 6
-    | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
+    | U32(type.EncodeLDFSC(level)) << 0;
 
   // Print(std::cerr << "DataAbort: ", esr);
   // std::cerr << std::endl;
@@ -1254,7 +1254,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         desc = descriptor.read(tbladdr + 8*index);
 
         if (not (desc & 1))
-          throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
+          throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
 
         if (not (desc & 2))
           {
@@ -2604,7 +2604,7 @@ AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
 
   uint64_t va = untaint(AddrTV(), addr);
   if (unlikely((size | va) & (size - 1)))
-    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Alignment,
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Alignment,
                     va, 0, mem_acc_type::read, /*level (don't care)*/ 0, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::read);
@@ -2620,7 +2620,7 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
 
   uint64_t va = untaint(AddrTV(), addr);
   if (unlikely((size | va) & (size - 1)))
-    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Alignment,
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Alignment,
                     va, 0, mem_acc_type::write, /*level (don't care)*/ 0, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::write);
@@ -2734,7 +2734,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     }
 
   if (unlikely(fail))
-    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Permission,
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Permission,
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 

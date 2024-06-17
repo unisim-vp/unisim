@@ -838,6 +838,14 @@ public:
         DomainMultiBitValue<SHT>(sht), fun);
     }
 
+  template <typename SHT>
+  DomainMultiBitValue& operator >>= (const DomainMultiBitValue<SHT>& sht)
+    { std::function<VALUE_TYPE(VALUE_TYPE, SHT)> fun
+        = [](VALUE_TYPE fst, SHT snd) { return fst >> snd; };
+      return applyBinaryAssign(DMBBOArithmeticRightShift, DMBBOLogicalRightShift,
+        sht, fun);
+    }
+
   DomainBitValue operator==(const DomainMultiBitValue& source) const
     { return applyCompare(DMBCOCompareEqual, source,
         [](VALUE_TYPE fst, VALUE_TYPE snd) { return fst == snd; });
@@ -2006,6 +2014,8 @@ public:
   Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
 
   static CP15Reg const* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
 
   // U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
   // { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
@@ -2124,6 +2134,7 @@ public:
   void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
   bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
   void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
+  void SetQC() {}
 
   //   =====================================================================
   //   =                         Processor Storage                         =

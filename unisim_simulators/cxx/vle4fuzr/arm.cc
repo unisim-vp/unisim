@@ -98,6 +98,10 @@ struct ArmBranch
   bool thumb, has_branch;
   BOOL next_thumb;
 
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
+  void SetQC() {}
+
   U32 GetGPR(int idx) { if (idx != 15) return U32(); return r15; }
   void SetGPR(int idx, U32 val)
   {
@@ -116,13 +120,13 @@ struct ArmBranch
     next_thumb = BOOL(target & U32(1));
     this->Branch( target, branch_type );
   }
-	
+
   void Branch(U32 target, branch_type_t branch_type)
   {
     this->next_insn_addr = target & U32(thumb ? -2 : -4);
     has_branch = true;
   }
-	
+
   U32 GetCIA() { return this->insn_addr; }
   U32 GetNIA() { return this->next_insn_addr; }
 

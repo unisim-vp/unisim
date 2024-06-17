@@ -799,6 +799,7 @@ namespace symbolic {
   FTP fmodulo( FTP const& left, FTP const& right ) { return FTP( make_operation( "FMod", left.expr, right.expr ) ); }
 
   template <typename FTP>  FTP fabs( FTP const& value ) { return FTP( make_operation( "FAbs", value.expr ) ); }
+  template <typename FTP>  FTP FAbs( FTP const& value ) { return fabs<FTP>( value ); }
   template <typename FTP>  FTP ceil( FTP const& value ) { return FTP( make_operation( "FCeil", value.expr ) ); }
   template <typename FTP>  FTP floor( FTP const& value ) { return FTP( make_operation( "FFloor", value.expr ) ); }
   template <typename FTP>  FTP trunc( FTP const& value ) { return FTP( make_operation( "FTrunc", value.expr ) ); }
@@ -807,6 +808,7 @@ namespace symbolic {
   template <typename FTP>  FTP sqrt( FTP const& value ) { return FTP( make_operation( "FSqrt", value.expr ) ); }
   template <typename FTP>  FTP fmin( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMin", l.expr, r.expr ) ); }
   template <typename FTP>  FTP fmax( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMax", l.expr, r.expr ) ); }
+  template <typename FTP>  FTP FMax( FTP const& l, FTP const& r ) { return fmax<FTP>( l, r ); }
 
   struct FP
   {
@@ -1037,6 +1039,8 @@ namespace symbolic {
   {
     return SmartValue<bool>( Expr( new FP::IsNaNNode( op.expr, true, true ) ) );
   }
+
+  template <typename FTP> SmartValue<bool> IsNaN( FTP const& value ) { return isnan<FTP>( value ); }
 
   template <typename FTP>
   SmartValue<bool> issignaling( FTP const& op )

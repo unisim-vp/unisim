@@ -43,15 +43,15 @@ void
 Runner::step_instruction()
 {
   uint64_t insn_addr = this->current_insn_addr = this->next_insn_addr;
-    
+
   asm volatile ("operation_fetch:");
-  uint32_t code = MemRead32(insn_addr);
-    
+  uint32_t code = MemReadUnprivileged32(insn_addr);
+
   asm volatile ("operation_decode:");
   std::unique_ptr<Operation> op = decode(insn_addr, code);
-    
+
   this->next_insn_addr += 4;
-    
+
   asm volatile ("operation_execute:");
   op->execute( *this );
 }
@@ -66,14 +66,14 @@ Runner::run(Interface::testcode_t testcode, uint64_t* data)
   SetGSR(31, reinterpret_cast<uint64_t>( &sim_stack[0] ) + sizeof sim_stack);
   SetGZR(30, magic_return_address);
   BranchTo( reinterpret_cast<uint64_t>(testcode), B_CALL );
-    
+
   for (int ttl = 100; GetNPC() != magic_return_address;)
     {
       if (--ttl < 0) { struct Issue {}; throw Issue(); }
       step_instruction();
     }
 }
-  
+
 namespace { template <unsigned W> struct HEX { friend std::ostream& operator << (std::ostream& os, HEX&&) { return (os << std::hex << std::setfill('0') << std::setw(W)); } }; }
 
 void
@@ -86,7 +86,7 @@ Runner::UndefinedInstruction( Runner::Operation const* insn )
 }
 
 void Runner::dont( char const* reason ) { throw std::runtime_error(reason); }
-  
+
 Runner::SysReg const*
 Runner::GetSystemRegister(int op0, int op1, int crn, int crm, int op2)
 {
@@ -98,8 +98,8 @@ Runner::GetSystemRegister(int op0, int op1, int crn, int crm, int op2)
         { s << "msr\tNZCV, " << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt); }
         void DisasmRead(int, int, int, int, int, int rt, std::ostream& s) const override
         { s << "mrs\t" << unisim::component::cxx::processor::arm::isa::arm64::DisasmGZXR(rt) << ", NZCV"; }
-        U64 Read(int, int, int, int, int, Runner& cpu) const override { return U32(cpu.nzcv << 28); }
-        void Write(int, int, int, int, int, Runner& cpu, U64 value) const override { cpu.nzcv = U32(value) >> 28; }
+        U64 Read(int, int, int, int, int, int, Runner& cpu) const override { return U32(cpu.nzcv << 28); }
+        void Write(int, int, int, int, int, int, Runner& cpu, U64 value) const override { cpu.nzcv = U32(value) >> 28; }
       } x; return &x;
     }
   else
