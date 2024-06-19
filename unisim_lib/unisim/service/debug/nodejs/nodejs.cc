@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,17 +31,70 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/util/debug/watchpoint_registry.hh>
-#include <unisim/util/debug/watchpoint_registry.tcc>
+
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if HAVE_NODEJS
+
+#include <unisim/service/debug/nodejs/nodejs.hh>
 
 namespace unisim {
-namespace util {
+namespace service {
 namespace debug {
+namespace nodejs {
 
-template class WatchpointMapPage<uint32_t>;
-template class WatchpointRegistry<uint32_t>;
+using unisim::util::nodejs::ToString;
 
+bool ToMemoryAccessType(v8::Isolate *isolate, v8::Local<v8::Value> value, unisim::util::debug::MemoryAccessType& out)
+{
+	std::string str;
+	if(!ToString(isolate, value, str)) return false;
+	if(str == "read") out = unisim::util::debug::MAT_READ;
+	else if(str == "write") out = unisim::util::debug::MAT_WRITE;
+	else return false;
+	return true;
+}
+
+bool ToMemoryType(v8::Isolate *isolate, v8::Local<v8::Value> value, unisim::util::debug::MemoryType& out)
+{
+	std::string str;
+	if(!ToString(isolate, value, str)) return false;
+	if(str == "insn") out = unisim::util::debug::MT_INSN;
+	else if(str == "data") out = unisim::util::debug::MT_DATA;
+	else return false;
+	return true;
+}
+
+std::string ToString(unisim::util::debug::MemoryAccessType mat)
+{
+	switch(mat)
+	{
+		case unisim::util::debug::MAT_READ: return "read";
+		case unisim::util::debug::MAT_WRITE: return "write";
+		default: break;
+	}
+	struct Bad {};
+	throw Bad();
+	return std::string();
+}
+
+std::string ToString(unisim::util::debug::MemoryType mt)
+{
+	switch(mt)
+	{
+		case unisim::util::debug::MT_INSN: return "insn";
+		case unisim::util::debug::MT_DATA: return "data";
+	}
+	struct Bad {};
+	throw Bad();
+	return std::string();
+}
+
+} // end of namespace nodejs
 } // end of namespace debug
-} // end of namespace util
+} // end of namespace service
 } // end of namespace unisim
+
+#endif // HAVE_NODEJS

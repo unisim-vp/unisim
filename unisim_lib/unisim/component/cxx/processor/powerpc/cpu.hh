@@ -611,6 +611,21 @@ struct FPR : SoftDouble
 	using Super::operator =;
 };
 
+inline U8 FPCompare(SoftDouble const& a, SoftDouble const& b)
+{
+	unsigned c;
+	switch (a.compare(b))
+	{
+		case SoftDouble::CRNaN: c = 1; break;
+		case SoftDouble::CRLess: c = 8; break;
+		case SoftDouble::CREqual: c = 2; break;
+		case SoftDouble::CRGreater: c = 4; break;
+		default:
+			throw "Internal error";
+	}
+	return c;
+}
+
 ////////////////////////// Vector Register ////////////////////////////////////
 
 struct VR

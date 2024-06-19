@@ -40,14 +40,27 @@ namespace unisim {
 namespace util {
 namespace debug {
 
+SimpleRegisterRegistry::SimpleRegisterRegistry()
+	: registers_registry()
+	, owned_registers()
+{
+}
+
 SimpleRegisterRegistry::~SimpleRegisterRegistry()
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
+	Clear();
+}
 
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+void SimpleRegisterRegistry::Clear()
+{
+	OwnedRegisters::iterator reg_iter;
+
+	for(reg_iter = owned_registers.begin(); reg_iter != owned_registers.end(); reg_iter++)
 	{
-		delete reg_iter->second;
+		delete *reg_iter;
 	}
+	owned_registers.clear();
+	registers_registry.clear();
 }
 
 std::string SimpleRegisterRegistry::Key(const char *reg_name)
@@ -60,16 +73,17 @@ std::string SimpleRegisterRegistry::Key(const char *reg_name)
 	return key;
 }
 
-void SimpleRegisterRegistry::AddRegisterInterface(unisim::service::interfaces::Register *reg_if)
+void SimpleRegisterRegistry::AddRegisterInterface(unisim::service::interfaces::Register *reg_if, bool is_owner)
 {
 	std::string key(Key(reg_if->GetName()));
 	assert(registers_registry.find(key) == registers_registry.end());
 	registers_registry[key] = reg_if;
+	if(is_owner) owned_registers.push_back(reg_if);
 }
 
 unisim::service::interfaces::Register *SimpleRegisterRegistry::GetRegister(const char *name)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(Key(name));
+	RegistersRegistry::iterator reg_iter = registers_registry.find(Key(name));
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;
@@ -80,7 +94,7 @@ unisim::service::interfaces::Register *SimpleRegisterRegistry::GetRegister(const
 
 void SimpleRegisterRegistry::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
+	RegistersRegistry::iterator reg_iter;
 	
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{

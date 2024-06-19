@@ -139,11 +139,11 @@ function dist_copy() {
 
 function copy()
 {
-	local status=0
+	local status=1
 	for LIST_NAME in "$@"; do
 		for FILE in $(files ${LIST_NAME}); do
-				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${FILE}"; then
-					status=1
+				if dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${FILE}"; then
+					status=0
 				fi
 		done
 	done

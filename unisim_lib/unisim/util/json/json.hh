@@ -64,7 +64,6 @@ struct JSON_Null;
 struct JSON_Object;
 struct JSON_Member;
 struct JSON_Array;
-struct JSON_AST_Visitor;
 struct JSON_AST_Printer;
 struct JSON_AST_Builder;
 template <typename VISITOR> struct JSON_Lexer;
@@ -235,8 +234,8 @@ struct JSON_Value
 	
 	const Location& GetLocation() const { return loc; }
 	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
-	template <typename VISITOR> bool Visit(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Visit(VISITOR& visitor) const;
 protected:
 	friend struct JSON_Member;
 	friend struct JSON_Object;
@@ -308,10 +307,13 @@ protected:
 struct IntValue
 {
 	IntValue() : sign(false), abs_value(0) {}
+	IntValue(const IntValue& o) : sign(o.sign), abs_value(o.abs_value) {}
 	IntValue(int64_t v) : sign(v < 0), abs_value((v >= 0) ? v : -v) {}
 	IntValue(uint64_t v) : sign(false), abs_value(v) {}
 	IntValue(bool _sign, uint64_t _abs_value) : sign(_sign), abs_value(_abs_value) {}
 	
+	bool IsSigned() const { return sign; }
+	uint64_t AbsValue() const { return abs_value; }
 	operator char () const { return ToScalar<char>(); }
 	operator signed char () const { return ToScalar<signed char>(); }
 	operator short () const { return ToScalar<short>(); }
@@ -329,14 +331,15 @@ struct IntValue
 	IntValue& operator = (int64_t v) { sign = v < 0; abs_value = (v >= 0) ? v : -v; return *this; }
 	IntValue& operator = (uint64_t v) { sign = false; abs_value = v; return *this; }
 	IntValue& operator = (double v) { sign = v < 0.0; abs_value = (v >= 0.0) ? v : -v; return *this; }
-	
+	IntValue& operator = (const IntValue& o) { sign = o.sign; abs_value = o.abs_value; return *this; }
+private:
 	bool sign;
 	uint64_t abs_value;
-private:
+	
 	template <typename T> T ToScalar() const { return sign ? -T(abs_value) : T(abs_value); }
 };
 
-inline std::ostream& operator << (std::ostream& os, const IntValue& int_value) { if(int_value.sign) { os << '-'; } return os << int_value.abs_value; }
+inline std::ostream& operator << (std::ostream& os, const IntValue& int_value) { if(int_value.IsSigned()) { os << '-'; } return os << int_value.AbsValue(); }
 
 // JSON integer number
 struct JSON_Integer : JSON_Number
@@ -571,8 +574,7 @@ struct JSON_Member
 	JSON_Member& operator = (bool v) { Free(); value = new JSON_Boolean(v); return *this; }
 	JSON_Member& operator = (const JSON_Value& v) { Free(); value = v.IsUndefined() ? &undefined : (v.IsNull() ? &null : v.Clone()); return *this; }
 	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const { value->Visit(visitor); }
-	
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const { return value->template Visit<VISITOR, T>(visitor); }
 protected:
 	friend struct JSON_MemberRef;
 	friend struct JSON_MemberConstRef;
@@ -736,8 +738,7 @@ struct JSON_Object : JSON_Value
 	JSON_MemberRef operator [] (const std::wstring& member_name) { return this->operator [] (unisim::util::unicode::unicode_wstring_to_utf8_string(member_name).c_str()); }
 	JSON_MemberConstRef operator [] (const std::wstring& member_name) const { return this->operator [] (unisim::util::unicode::unicode_wstring_to_utf8_string(member_name).c_str()); }
 	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
-	
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	Members members;
 	
@@ -766,7 +767,7 @@ struct JSON_Array : JSON_Value
 	JSON_ValueConstRef operator [] (size_type index) const { return (index >= elements.size()) ? JSON_ValueConstRef(&undefined) : JSON_ValueConstRef(elements[index]); }
 	size_type Length() const { return elements.size(); }
 	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 private:
 	Elements elements;
 };

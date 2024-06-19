@@ -67,10 +67,14 @@ public:
 	BreakpointMapPage *next;	/*< next breakpoint map page with the same hash index */
 };
 
-template <typename ADDRESS, unsigned int NUM_PROCESSORS = 1, unsigned int MAX_FRONT_ENDS = 1>
+template <typename CONFIG>
 class BreakpointRegistry
 {
 public:
+	typedef typename CONFIG::ADDRESS ADDRESS;
+	typedef typename CONFIG::BREAKPOINT BREAKPOINT;
+	static const unsigned int NUM_PROCESSORS = CONFIG::NUM_PROCESSORS;
+	static const unsigned int MAX_FRONT_ENDS = CONFIG::MAX_FRONT_ENDS;
 	static const uint32_t NUM_HASH_TABLE_ENTRIES = 32; // MUST BE a power of two !
 
 	BreakpointRegistry();
@@ -78,23 +82,26 @@ public:
 
 	void Reset();
 	void Clear(unsigned int front_end_num);
-	Breakpoint<ADDRESS> *SetBreakpoint(ADDRESS addr, unsigned int prc_num = 0, unsigned int front_end_num = 0);
+	BREAKPOINT *SetBreakpoint(ADDRESS addr, unsigned int prc_num = 0, unsigned int front_end_num = 0);
 	bool RemoveBreakpoint(ADDRESS addr, unsigned int prc_num = 0, unsigned int front_end_num = 0);
-	bool SetBreakpoint(Breakpoint<ADDRESS> *brkp);
-	bool RemoveBreakpoint(Breakpoint<ADDRESS> *brkp);
-	bool HasBreakpoint(Breakpoint<ADDRESS> *brkp) const;
+	bool SetBreakpoint(BREAKPOINT *brkp);
+	bool RemoveBreakpoint(BREAKPOINT *brkp);
+	bool HasBreakpoint(BREAKPOINT *brkp) const;
 	bool HasBreakpoints(ADDRESS addr, unsigned int prc_num) const;
 	bool HasBreakpoints(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num) const;
 	bool HasBreakpoints(unsigned int prc_num) const;
 	bool HasBreakpoints() const;
-	void ScanBreakpoints(unsigned int prc_num, unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
-	void ScanBreakpoints(unsigned int front_end_num, unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
-	void ScanBreakpoints(unisim::service::interfaces::DebugEventScanner<ADDRESS>& scanner) const;
+	
+	/* struct Scanner { void Append(BREAKPOINT *) {} }; */
+	template <typename SCANNER> void ScanBreakpoints(unsigned int prc_num, unsigned int front_end_num, SCANNER& scanner) const;
+	template <typename SCANNER> void ScanBreakpoints(unsigned int front_end_num, SCANNER& scanner) const;
+	template <typename SCANNER> void ScanBreakpoints(SCANNER& scanner) const;
 
-	/* struct Visitor { void Visit(Breakpoint<ADDRESS> *) {} }; */
+	/* struct Visitor { void Visit(BREAKPOINT *) {} }; */
 	template <class VISITOR> bool FindBreakpoints(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num, VISITOR& visitor);
 private:
-	std::multimap<ADDRESS, Breakpoint<ADDRESS> *> breakpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
+	typedef std::multimap<ADDRESS, BREAKPOINT *> Breakpoints;
+	Breakpoints breakpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
 	unsigned int breakpoint_count[NUM_PROCESSORS];
 	mutable BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *mru_page[NUM_PROCESSORS];
 	mutable BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *hash_table[NUM_PROCESSORS][NUM_HASH_TABLE_ENTRIES];
@@ -102,7 +109,7 @@ private:
 	bool SetBreakpointIntoMap(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
 	bool RemoveBreakpointFromMap(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
 	void AllocatePage(ADDRESS addr, unsigned int prc_num);
-	BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *GetPage(ADDRESS addr, unsigned int prc_num) const;
+	BreakpointMapPage<typename CONFIG::ADDRESS, CONFIG::MAX_FRONT_ENDS> *GetPage(ADDRESS addr, unsigned int prc_num) const;
 };
 
 } // end of namespace debug

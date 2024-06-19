@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2022,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,17 +31,14 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/util/debug/breakpoint_registry.hh>
-#include <unisim/util/debug/breakpoint_registry.tcc>
 
-namespace unisim {
-namespace util {
-namespace debug {
+#include <config.hh>
 
-template class BreakpointMapPage<uint32_t>;
-template class BreakpointRegistry<uint32_t>;
+#if HAVE_HLA_RTI1516E
 
-} // end of namespace debug
-} // end of namespace util
-} // end of namespace unisim
+#include <unisim/service/debug/hla/federate.tcc>
+#include <unisim/util/hla/sc_time/sc_time.hh>
+
+template class unisim::service::debug::hla::Federate<Config::HLA_FEDERATE_CONFIG>;
+
+#endif

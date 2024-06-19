@@ -49,26 +49,34 @@ class Hook
 {
 public:
 	typedef unsigned int Type;
-	typedef unisim::util::debug::DataObjectRef<ADDRESS> ReturnValue;
 	
-	Hook(Type _type) : type(_type), id(next_id++), prc_num(-1) {}
+	Hook(Type _type) : type(_type), id(next_id++), ref_count(0) {}
 	virtual ~Hook() {}
 
 	Type GetType() const { return type; }
 	unsigned int GetId() const { return id; }
-	int GetProcessorNumber() const { return prc_num; }
-	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
 	
-	virtual bool Run(ReturnValue& return_value) = 0;
+	virtual void Run() = 0;
 
+	virtual void Print(std::ostream& stream) const = 0;
+	
+	void Catch() const { ref_count++; }
+	void Release() const { if(ref_count && (--ref_count == 0)) delete this; }
 private:
 	Type type;
 	unsigned int id;
-	int prc_num;
 	static unsigned int next_id;
+	mutable unsigned int ref_count;
 protected:
 	static Type AllocateCustomHookType() { static Type next_hook_type = 0; return next_hook_type++; }
 };
+
+template <typename ADDRESS>
+std::ostream& operator << (std::ostream& stream, const Hook<ADDRESS>& hook)
+{
+	hook.Print(stream);
+	return stream;
+}
 
 template <typename ADDRESS>
 unsigned int Hook<ADDRESS>::next_id;
@@ -78,6 +86,8 @@ class CustomHook : public Hook<ADDRESS>
 {
 public:
 	static const typename Hook<ADDRESS>::Type TYPE;
+	
+	static bool IsInstanceOf(const Hook<ADDRESS> *hook) { return hook->GetType() == TYPE; }
 	
 	CustomHook() : Hook<ADDRESS>(TYPE) {}
 };
@@ -89,12 +99,11 @@ template <typename ADDRESS>
 class AddressHook : public CustomHook<ADDRESS, AddressHook<ADDRESS> >
 {
 public:
-	typedef unisim::util::debug::DataObjectRef<ADDRESS> ReturnValue;
-	
 	AddressHook(ADDRESS _addr) : addr(_addr) {}
 	
 	ADDRESS GetAddress() const { return addr; }
 
+	virtual void Print(std::ostream& stream) const { stream << "Address hook at @0x" << std::hex << addr << std::dec; }
 private:
 	ADDRESS addr;
 };
@@ -110,6 +119,8 @@ public:
 	const unisim::util::debug::SourceCodeLocation& GetSourceCodeLocation() const { return source_code_location; }
 	const std::string& GetFilename() const { return filename; }
 	
+	virtual void Print(std::ostream& stream) const { stream << "Source code hook at " << source_code_location << " in File \"" << filename << "\""; }
+	
 private:
 	SourceCodeLocation source_code_location;
 	std::string filename;
@@ -123,6 +134,8 @@ public:
 	
 	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
 	
+	virtual void Print(std::ostream& stream) const { stream << "Source code hook at " << subprogram->GetName() << " in File \"" << subprogram->GetFilename() << "\""; }
+
 private:
 	const SubProgram<ADDRESS> *subprogram;
 };

@@ -37,6 +37,7 @@
 
 #include <ostream>
 #include <sstream>
+#include <limits>
 
 namespace unisim {
 namespace util {
@@ -54,6 +55,7 @@ public:
 	inline SourceCodeLocation(const char *source_code_filename, unsigned int lineno, unsigned int colno = 0);
 	
 	inline bool Parse(const char *source_code_location);
+	inline bool Parse(const std::string& source_code_location);
 	
 	const std::string& GetSourceCodeFilename() const { return source_code_filename; }
 	unsigned int GetLineNo() const { return lineno; }
@@ -112,7 +114,10 @@ inline bool SourceCodeLocation::Parse(const char *source_code_location)
 	}
 		
 	std::stringstream sstr_lineno(str_lineno);
-	if(!(sstr_lineno >> lineno)) return false;
+	int64_t _lineno;
+	if(!(sstr_lineno >> _lineno)) return false;
+	if((_lineno < 1) || (_lineno > std::numeric_limits<unsigned>::max())) return false;
+	lineno = _lineno;
 	
 	if(*s++ != ':')
 	{
@@ -128,9 +133,17 @@ inline bool SourceCodeLocation::Parse(const char *source_code_location)
 	}
 	
 	std::stringstream sstr_colno(str_colno);
-	if(!(sstr_colno >> colno)) return false;
+	int64_t _colno;
+	if(!(sstr_colno >> _colno)) return false;
+	if((_colno < 1) || (_colno > std::numeric_limits<unsigned>::max())) return false;
+	colno = _colno;
 	
 	return true;
+}
+
+inline bool SourceCodeLocation::Parse(const std::string& source_code_location)
+{
+	return Parse(source_code_location.c_str());
 }
 
 inline std::ostream& operator << (std::ostream& os, const SourceCodeLocation& src_code_loc)

@@ -43,6 +43,19 @@ namespace debug {
 namespace dwarf {
 
 template <class ADDRESS>
+DWARF_FormalParameter<ADDRESS>::DWARF_FormalParameter(const char *_name, const unisim::util::debug::Type *_type, const DWARF_DIE<ADDRESS> *_dw_die)
+	: unisim::util::debug::FormalParameter(_name, _type)
+	, dw_die(_dw_die)
+{
+}
+
+template <class ADDRESS>
+const DWARF_DIE<ADDRESS> *DWARF_FormalParameter<ADDRESS>::GetDIE() const
+{
+	return dw_die;
+}
+
+template <class ADDRESS>
 DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(const DWARF_DIE<ADDRESS> *_dw_subprogram_die)
 	: unisim::util::debug::SubProgram<ADDRESS>()
 	, dw_handler(_dw_subprogram_die->GetHandler())
@@ -84,7 +97,7 @@ DWARF_SubProgram<ADDRESS>::DWARF_SubProgram(const DWARF_DIE<ADDRESS> *_dw_subpro
 			const char *formal_param_name = child->GetName();
 			const DWARF_DIE<ADDRESS> *dw_die_formal_param_type = child->GetTypeDIE();
 			
-			formal_params.push_back(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->GetType(0) : new unisim::util::debug::UnspecifiedType()));
+			formal_params.push_back(new DWARF_FormalParameter<ADDRESS>(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->GetType(0) : new unisim::util::debug::UnspecifiedType(), child));
 		}
 	}
 	
@@ -130,6 +143,12 @@ template <class ADDRESS>
 const char *DWARF_SubProgram<ADDRESS>::GetName() const
 {
 	return name.c_str();
+}
+
+template <class ADDRESS>
+const char *DWARF_SubProgram<ADDRESS>::GetFilename() const
+{
+	return dw_handler->GetFilename();
 }
 
 template <class ADDRESS>
@@ -194,6 +213,13 @@ const DWARF_DIE<ADDRESS> *DWARF_SubProgram<ADDRESS>::GetReturnTypeDIE() const
 }
 
 template <class ADDRESS>
+const DWARF_DIE<ADDRESS> *DWARF_SubProgram<ADDRESS>::GetFormalParameterDIE(unsigned int idx) const
+{
+	if(idx >= formal_params.size()) return 0;
+	return formal_params[idx]->GetDIE();
+}
+
+template <class ADDRESS>
 bool DWARF_SubProgram<ADDRESS>::GetReturnValueLocation(const DWARF_MachineState<ADDRESS> *dw_mach_state, unsigned int prc_num, DWARF_Location<ADDRESS>& loc) const
 {
 	const unisim::util::debug::Type *resolved_returned_type = unisim::util::debug::TypeResolver::Resolve(return_type);
@@ -254,6 +280,32 @@ bool DWARF_SubProgram<ADDRESS>::GetReturnValueLocation(const DWARF_MachineState<
 			{
 				uint8_t expr_value[] = { DW_OP_breg3, 0 }; // @r3
 				dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+			}
+		}
+	}
+	if(architecture == "power64")
+	{
+		// 64-bit PowerPC ELF Application Binary Interface Supplement 1.9
+		if(resolved_returned_type->IsFloat())
+		{
+			uint8_t expr_value[] = { DW_OP_regx, 32 }; // f1
+			dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+		}
+		else
+		{
+			uint64_t dw_return_value_bit_size = 0;
+			if(dw_return_type_die->GetBitSize(dw_curr_frame, dw_return_value_bit_size))
+			{
+				if(dw_return_value_bit_size <= 64)
+				{
+					uint8_t expr_value[] = { DW_OP_reg3 }; // r3
+					dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+				}
+				else
+				{
+					uint8_t expr_value[] = { DW_OP_breg3, 0 }; // @r3
+					dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+				}
 			}
 		}
 	}
@@ -411,6 +463,76 @@ bool DWARF_SubProgram<ADDRESS>::GetReturnValueLocation(const DWARF_MachineState<
 			{
 				uint8_t expr_value[] = { DW_OP_breg14, 64, DW_OP_deref  }; // @(@(%sp + 64))    
 				dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+			}
+		}
+	}
+	else if(architecture == "68hc12")
+	{
+		// See M68HC12 Embedded Application Binary Interface version 1.0
+		//
+		// M68HC12 Register Number Mapping:
+		// Register Name             Number
+		// Accumulator A             0
+		// Accumulator B             1
+		// Accumulator D             3
+		// Index Register X          7
+		// Index Register Y          8
+		// Stack Pointer             15
+		// Program Counter           16
+		// Condition Code Register   17
+		
+		// See GCC for Motorola 68HC11 & 68HC12: https://www.gnu.org/software/m68hc11/m68hc11_gcc.html
+		// Section 1.1.
+		if(resolved_returned_type->IsFloat())
+		{
+			uint64_t dw_return_value_bit_size = 0;
+			if(dw_return_type_die->GetBitSize(dw_curr_frame, dw_return_value_bit_size))
+			{
+				if(dw_return_value_bit_size <= 32)
+				{
+					uint8_t expr_value[] = { DW_OP_reg7, DW_OP_piece, 2, DW_OP_reg3, DW_OP_piece, 2 }; // Low: D, High: X
+					dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+				}
+				else if(dw_return_value_bit_size <= 64)
+				{
+					uint8_t expr_value[] = { DW_OP_breg3, 0 }; // @D
+					dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+				}
+			}
+		}
+		else
+		{
+			uint64_t dw_return_value_bit_size = 0;
+			if(dw_return_type_die->GetBitSize(dw_curr_frame, dw_return_value_bit_size))
+			{
+				if(resolved_returned_type->IsBase())
+				{
+					if(dw_return_value_bit_size <= 8)
+					{
+						uint8_t expr_value[] = { DW_OP_reg1}; // B
+						dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+					}
+					else if(dw_return_value_bit_size <= 16)
+					{
+						uint8_t expr_value[] = { DW_OP_reg3}; // D
+						dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+					}
+					else if(dw_return_value_bit_size <= 32)
+					{
+						uint8_t expr_value[] = { DW_OP_reg7, DW_OP_piece, 2, DW_OP_reg3, DW_OP_piece, 2 }; // Low: D, High: X
+						dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+					}
+					else if(dw_return_value_bit_size <= 64)
+					{
+						uint8_t expr_value[] = { DW_OP_breg3, 0 }; // @D
+						dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+					}
+				}
+				else if(resolved_returned_type->IsComposite())
+				{
+					uint8_t expr_value[] = { DW_OP_breg3, 0 }; // @D
+					dw_loc_expr = new DWARF_Expression<ADDRESS>(dw_cu, sizeof(expr_value), expr_value);
+				}
 			}
 		}
 	}

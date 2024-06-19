@@ -175,6 +175,11 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, unisim::kernel::Obj
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::~CPU()
 {
+	if(bus_master_redirector)
+	{
+		delete bus_master_redirector;
+	}
+	
 	if(external_interrupt_redirector)
 	{
 		delete external_interrupt_redirector;

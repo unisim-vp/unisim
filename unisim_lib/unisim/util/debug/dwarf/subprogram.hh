@@ -48,6 +48,16 @@ namespace debug {
 namespace dwarf {
 
 template <class ADDRESS>
+class DWARF_FormalParameter : public unisim::util::debug::FormalParameter
+{
+public:
+	DWARF_FormalParameter(const char *name, const Type *type, const DWARF_DIE<ADDRESS> *dw_die);
+	const DWARF_DIE<ADDRESS> *GetDIE() const;
+private:
+	const DWARF_DIE<ADDRESS> *dw_die;
+};
+
+template <class ADDRESS>
 class DWARF_SubProgram : public unisim::util::debug::SubProgram<ADDRESS>
 {
 public:
@@ -55,6 +65,7 @@ public:
 	virtual ~DWARF_SubProgram();
 	
 	virtual const char *GetName() const;
+	virtual const char *GetFilename() const;
 	virtual bool IsExternal() const;
 	virtual bool IsDeclaration() const;
 	virtual bool IsInline() const;
@@ -66,6 +77,7 @@ public:
 	virtual ADDRESS GetAddress() const;
 	
 	const DWARF_DIE<ADDRESS> *GetReturnTypeDIE() const;
+	const DWARF_DIE<ADDRESS> *GetFormalParameterDIE(unsigned int idx) const;
 	bool GetReturnValueLocation(const DWARF_MachineState<ADDRESS> *dw_mach_state, unsigned int prc_num, DWARF_Location<ADDRESS>& loc) const;
 private:
 	const DWARF_Handler<ADDRESS> *dw_handler;
@@ -80,7 +92,7 @@ private:
 	uint8_t inline_code;
 	const DWARF_DIE<ADDRESS> *dw_return_type_die;
 	const Type *return_type;
-	std::vector<const unisim::util::debug::FormalParameter *> formal_params;
+	std::vector<const DWARF_FormalParameter<ADDRESS> *> formal_params;
 	const unisim::util::debug::DeclLocation *decl_location;
 	ADDRESS addr;
 };

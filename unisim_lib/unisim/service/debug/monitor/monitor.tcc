@@ -41,7 +41,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
@@ -221,7 +221,7 @@ Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(name, parent)
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
@@ -231,7 +231,7 @@ Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
-	, backtrace_import("backtrace-import", this)
+	, stack_frame_import("backtrace-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
 	, subprogram_lookup_import("subprogram-lookup-import", this)

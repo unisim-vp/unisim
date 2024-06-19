@@ -695,12 +695,15 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindParentDIE(unsigned int dw_tag) const;
 	
-	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindVariable(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataMemberDIE(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *name) const;
 
 	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
+	
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T ScanType(VISITOR& visitor) const;
 	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
@@ -722,11 +725,11 @@ public:
 	bool GetBitStride(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint64_t& bit_stride) const;
 	bool GetDataBitOffset(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, int64_t& data_bit_offset) const;
 	bool GetLocationExpression(uint16_t dw_at, const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool HasRanges() const;
 	bool GetRanges(const DWARF_RangeListEntry<MEMORY_ADDR> *& range_list_entry) const;
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetDataMemberLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetDataMemberLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
 	bool GetDeclarationFlag(bool& declaration_flag) const;
 	bool GetOrdering(uint8_t& ordering) const;
@@ -768,9 +771,6 @@ public:
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const;
 	bool GetAttributeStaticDynamicValue(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint16_t dw_at, uint64_t& value) const;
 	bool GetAttributeStaticDynamicValue(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint16_t dw_at, int64_t& value) const;
-	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
-	template <typename VISITOR> void ScanType(VISITOR& visitor) const;
 private:
 	template <typename T>
 	struct CachedValue

@@ -221,7 +221,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 			inline_debugger->registers_import              >> *debugger->registers_export[0];
 			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
 			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
 			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
 			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
 			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
@@ -249,7 +249,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 			profiler->registers_import                >> *debugger->registers_export[2];
 			profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[2];
 			profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[2];
-			profiler->backtrace_import                >> *debugger->backtrace_export[2];
+			profiler->stack_frame_import                >> *debugger->stack_frame_export[2];
 			profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[2];
 			profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
 			profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
@@ -378,6 +378,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
+	simulator->SetVariable("debugger.architecture[0]", "avr32");
 	
 	// - Http Server
 	simulator->SetVariable("http-server.http-port", 12360);

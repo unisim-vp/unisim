@@ -52,8 +52,12 @@ template <class ADDRESS>
 class CommitInsnEvent : public CustomEvent<ADDRESS, CommitInsnEvent<ADDRESS> >
 {
 public:
-	CommitInsnEvent()
-		: CustomEvent<ADDRESS, CommitInsnEvent<ADDRESS> >()
+	inline ADDRESS GetAddress() const { return addr; }
+	inline unsigned int GetLength() const { return length; }
+	
+protected:
+	CommitInsnEvent(unsigned int _prc_num)
+		: CustomEvent<ADDRESS, CommitInsnEvent<ADDRESS> >(_prc_num)
 		, addr(0)
 		, length(0)
 	{
@@ -61,12 +65,8 @@ public:
 
 	void SetAddress(ADDRESS _addr) { addr = _addr; }
 	void SetLength(unsigned int _length) { length = _length; }
-
-	inline ADDRESS GetAddress() const { return addr; }
-	inline unsigned int GetLength() const { return length; }
 	
-	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const CommitInsnEvent<ADDRESS>& cie);
-protected:
+private:
 	ADDRESS addr;
 	unsigned int length;
 };
@@ -74,7 +74,7 @@ protected:
 template <class ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const CommitInsnEvent<ADDRESS>& cie)
 {
-	os << "Instruction commit of " << cie.GetLength() << "-byte length at 0x" << std::hex << cie.addr << std::dec << " for processor #" << cie.GetProcessorNumber() << " and front-end #" << cie.GetFrontEndNumber();
+	os << "Instruction commit of " << cie.GetLength() << "-byte length at 0x" << std::hex << cie.GetAddress() << std::dec << " for processor #" << cie.GetProcessorNumber();
 	
 	return os;
 }

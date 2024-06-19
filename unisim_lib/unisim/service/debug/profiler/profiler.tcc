@@ -2032,7 +2032,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
@@ -2047,7 +2047,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
-	, backtrace_import("backtrace-import", this)
+	, stack_frame_import("backtrace-import", this)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
@@ -2094,9 +2094,6 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, mutex()
 {
 	pthread_mutex_init(&mutex, NULL);
-	
-	commit_insn_event = new unisim::util::debug::CommitInsnEvent<ADDRESS>();
-	commit_insn_event->Catch();
 }
 
 template <typename ADDRESS>
@@ -2223,6 +2220,9 @@ bool Profiler<ADDRESS>::EndSetup()
 			}
 		}
 	}
+	
+	commit_insn_event = debug_event_trigger_import->CreateCommitInsnEvent();
+	commit_insn_event->Catch();
 	
 	listening_commit = false;
 	pc = 0;

@@ -43,10 +43,10 @@ namespace util {
 namespace lexer {
 
 template <class TOKEN>
-Lexer<TOKEN>::Lexer(std::istream *_stream, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, bool _debug)
+Lexer<TOKEN>::Lexer()
 	: line()
 	, text()
-	, token_dictionnary(_debug_info_stream, _debug_warning_stream, _debug_error_stream, _debug)
+	, token_dictionnary()
 	, token_map()
 	, enable_ident_token(false)
 	, ident_token_id(0)
@@ -58,12 +58,11 @@ Lexer<TOKEN>::Lexer(std::istream *_stream, std::ostream& _debug_info_stream, std
 	, enable_eating_space(false)
 	, enable_eating_tab(false)
 	, enable_eating_eol(false)
-	, stream(_stream)
 	, loc()
-	, debug_info_stream(_debug_info_stream)
-	, debug_warning_stream(_debug_warning_stream)
-	, debug_error_stream(_debug_error_stream)
-	, debug(_debug)
+	, debug_info_stream(&std::cout)
+	, debug_warning_stream(&std::cerr)
+	, debug_error_stream(&std::cerr)
+	, debug(false)
 	, finished_scanning_line(false)
 	, lexer_error(false)
 {
@@ -72,6 +71,68 @@ Lexer<TOKEN>::Lexer(std::istream *_stream, std::ostream& _debug_info_stream, std
 template <class TOKEN>
 Lexer<TOKEN>::~Lexer()
 {
+}
+
+template <class TOKEN>
+void Lexer<TOKEN>::Reset()
+{
+	line.clear();
+	text.clear();
+	loc.Reset();
+	finished_scanning_line = false;
+	lexer_error = false;
+}
+
+template <class TOKEN>
+void Lexer<TOKEN>::SetDebug(bool flag)
+{
+	debug = flag;
+	token_dictionnary.SetDebug(flag);
+}
+
+template <class TOKEN>
+void Lexer<TOKEN>::SetDebugInfoStream(std::ostream& _debug_info_stream)
+{
+	debug_info_stream = &_debug_info_stream;
+	token_dictionnary.SetDebugInfoStream(_debug_info_stream);
+}
+
+template <class TOKEN>
+void Lexer<TOKEN>::SetDebugWarningStream(std::ostream& _debug_warning_stream)
+{
+	debug_warning_stream = &_debug_warning_stream;
+	token_dictionnary.SetDebugInfoStream(_debug_warning_stream);
+}
+
+template <class TOKEN>
+void Lexer<TOKEN>::SetDebugErrorStream(std::ostream& _debug_error_stream)
+{
+	debug_error_stream = &_debug_error_stream;
+	token_dictionnary.SetDebugInfoStream(_debug_error_stream);
+}
+
+template <class TOKEN>
+bool Lexer<TOKEN>::IsDebugging() const
+{
+	return debug;
+}
+
+template <class TOKEN>
+std::ostream& Lexer<TOKEN>::GetDebugInfoStream() const
+{
+	return *debug_info_stream;
+}
+
+template <class TOKEN>
+std::ostream& Lexer<TOKEN>::GetDebugWarningStream() const
+{
+	return *debug_warning_stream;
+}
+
+template <class TOKEN>
+std::ostream& Lexer<TOKEN>::GetDebugErrorStream() const
+{
+	return *debug_error_stream;
 }
 
 template <class TOKEN>
@@ -148,16 +209,16 @@ bool Lexer<TOKEN>::IsAlphaNumeric(char c) const
 }
 
 template <class TOKEN>
-TOKEN *Lexer<TOKEN>::Next()
+TOKEN *Lexer<TOKEN>::Next(std::istream& stream)
 {
 	text.clear();
 	
-	if(stream->eof())
+	if(stream.eof())
 	{
 		return CreateToken("end of input", TOK_EOF, loc);
 	}
 	
-	if(stream->fail())
+	if(stream.fail())
 	{
 		ErrorIO();
 		return 0;
@@ -198,28 +259,28 @@ TOKEN *Lexer<TOKEN>::Next()
 					
 					if(token) break;
 					
-					if(stream->get(c).eof())
+					if(stream.get(c).eof())
 					{
 						token =  CreateToken("end of input", TOK_EOF, loc);
 						break;
 					}
-					if(stream->fail())
+					if(stream.fail())
 					{
 						ErrorIO();
 						return 0;
 					}
-					if(debug)
+					if(IsDebugging())
 					{
-						debug_info_stream << state << ":get '" << c << "'" << std::endl;
+						GetDebugInfoStream() << state << ":get '" << c << "'" << std::endl;
 					}
 
 					if((enable_eating_space && (c == ' ')) ||
 					   (enable_eating_tab && (c == '\t')))
 					{
 						loc.IncColNo();
-						if(debug)
+						if(IsDebugging())
 						{
-							debug_info_stream << state << ":eat" << std::endl;
+							GetDebugInfoStream() << state << ":eat" << std::endl;
 						}
 						break;
 					}
@@ -229,9 +290,9 @@ TOKEN *Lexer<TOKEN>::Next()
 						line.clear();
 						loc.IncLineNo();
 						finished_scanning_line = false;
-						if(debug)
+						if(IsDebugging())
 						{
-							debug_info_stream << state << ":eat" << std::endl;
+							GetDebugInfoStream() << state << ":eat" << std::endl;
 						}
 						break;
 					}
@@ -268,25 +329,25 @@ TOKEN *Lexer<TOKEN>::Next()
 						break;
 					}
 
-					if(debug)
+					if(IsDebugging())
 					{
-						debug_info_stream << state << ":putback '" << c << "'" << std::endl;
+						GetDebugInfoStream() << state << ":putback '" << c << "'" << std::endl;
 					}
-					stream->putback(c);
+					stream.putback(c);
 				}
 				if(!token) unknown_token = true;
 				break;
 			case 1: // content of double quoted string
-				if(!stream->get(c).good())
+				if(!stream.get(c).good())
 				{
-					ErrorExpectedToken("\"");
+					ErrorExpectedToken(stream, "\"");
 					return 0; // unfinished character string
 				}
 				line += c;
 				text += c;
-				if(debug)
+				if(IsDebugging())
 				{
-					debug_info_stream << state << ":get '" << c << "'" << std::endl;
+					GetDebugInfoStream() << state << ":get '" << c << "'" << std::endl;
 				}
 				
 				if(c == '\"')
@@ -297,51 +358,51 @@ TOKEN *Lexer<TOKEN>::Next()
 				}
 				break;
 			case 2: // decimal integer
-				stream->get(c);
+				stream.get(c);
 
-				if(debug)
+				if(IsDebugging())
 				{
-					if(stream->good())
+					if(stream.good())
 					{
-						debug_info_stream << state << ":get '" << c << "'" << std::endl;
+						GetDebugInfoStream() << state << ":get '" << c << "'" << std::endl;
 					}
 
 				}
-				if(stream->good() && IsDecimalDigit(c))
+				if(stream.good() && IsDecimalDigit(c))
 				{
 					line += c;
 					text += c;
 				}
 				else
 				{
-					if(stream->good() && has_sign && (text.length() < 2))
+					if(stream.good() && has_sign && (text.length() < 2))
 					{
 						// a decimal digit is expected after '-'
-						stream->putback(c);
-						stream->putback('-');
+						stream.putback(c);
+						stream.putback('-');
 						c = '-';
 						unknown_token = true;
 						break;
 					}
 					
-					if(debug)
+					if(IsDebugging())
 					{
-						if(stream->good()) debug_info_stream << state << ":get '" << c << "'" << std::endl;
+						if(stream.good()) GetDebugInfoStream() << state << ":get '" << c << "'" << std::endl;
 					}
 
-					if(stream->eof())
+					if(stream.eof())
 					{
-						stream->clear(); // clear state if we encountered an eof
+						stream.clear(); // clear state if we encountered an eof
 					}
 					else
 					{
-						if(debug)
+						if(IsDebugging())
 						{
-							debug_info_stream << state << ":putback '" << c << "'" << std::endl;
+							GetDebugInfoStream() << state << ":putback '" << c << "'" << std::endl;
 						}
 
-						stream->putback(c);
-						if(stream->fail())
+						stream.putback(c);
+						if(stream.fail())
 						{
 							ErrorIO();
 							return 0;
@@ -353,13 +414,13 @@ TOKEN *Lexer<TOKEN>::Next()
 				}
 				break;
 			case 3: // identifier
-				stream->get(c);
+				stream.get(c);
 				
-				if(stream->good() && IsAlphaNumeric(c))
+				if(stream.good() && IsAlphaNumeric(c))
 				{
-					if(debug)
+					if(IsDebugging())
 					{
-						debug_info_stream << state << ":get '" << c << "'" << std::endl;
+						GetDebugInfoStream() << state << ":get '" << c << "'" << std::endl;
 					}
 					
 					line += c;
@@ -367,24 +428,24 @@ TOKEN *Lexer<TOKEN>::Next()
 				}
 				else
 				{
-					if(debug)
+					if(IsDebugging())
 					{
-						if(stream->good()) debug_info_stream << state << ":get '" << c << "'" << std::endl;
+						if(stream.good()) GetDebugInfoStream() << state << ":get '" << c << "'" << std::endl;
 					}
 					
-					if(stream->eof())
+					if(stream.eof())
 					{
-						stream->clear(); // clear state if we encountered an eof
+						stream.clear(); // clear state if we encountered an eof
 					}
 					else
 					{
-						if(debug)
+						if(IsDebugging())
 						{
-							debug_info_stream << state << ":putback '" << c << "'" << std::endl;
+							GetDebugInfoStream() << state << ":putback '" << c << "'" << std::endl;
 						}
 						
-						stream->putback(c);
-						if(stream->fail())
+						stream.putback(c);
+						if(stream.fail())
 						{
 							ErrorIO();
 							return 0;
@@ -400,7 +461,7 @@ TOKEN *Lexer<TOKEN>::Next()
 	
 	if(unknown_token)
 	{
-		ErrorUnknownToken(c);
+		ErrorUnknownToken(stream, c);
 	}
 
 	loc.IncColNo(text.length());
@@ -409,12 +470,12 @@ TOKEN *Lexer<TOKEN>::Next()
 }
 
 template <class TOKEN>
-void Lexer<TOKEN>::FinishScanningLine()
+void Lexer<TOKEN>::FinishScanningLine(std::istream& stream)
 {
 	if(!finished_scanning_line)
 	{
 		char c;
-		while(stream->get(c))
+		while(stream.get(c))
 		{
 			if((c == '\n') || (c == '\r')) break;
 			line += c;
@@ -451,31 +512,31 @@ const char *Lexer<TOKEN>::GetTokenText(unsigned int token_id) const
 template <class TOKEN>
 void Lexer<TOKEN>::PrintFriendlyLocation(const Location& _loc) const
 {
-	debug_info_stream << line << std::endl;
+	GetDebugInfoStream() << line << std::endl;
 	unsigned int colno = _loc.GetColNo();
 	while(--colno)
 	{
-		debug_info_stream << " ";
+		GetDebugInfoStream() << " ";
 	}
-	debug_info_stream << "^" << std::endl;
+	GetDebugInfoStream() << "^" << std::endl;
 }
 
 template <class TOKEN>
-void Lexer<TOKEN>::ErrorUnknownToken(char c)
+void Lexer<TOKEN>::ErrorUnknownToken(std::istream& stream, char c)
 {
-	FinishScanningLine();
+	FinishScanningLine(stream);
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
-	debug_error_stream << loc << ", unknown token '" << c << "'" << std::endl; 
+	GetDebugErrorStream() << loc << ", unknown token '" << c << "'" << std::endl; 
 }
 
 template <class TOKEN>
-void Lexer<TOKEN>::ErrorExpectedToken(const char *_text)
+void Lexer<TOKEN>::ErrorExpectedToken(std::istream& stream, const char *_text)
 {
-	FinishScanningLine();
+	FinishScanningLine(stream);
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
-	debug_error_stream << loc << ", expected token '" << _text << "'" << std::endl; 
+	GetDebugErrorStream() << loc << ", expected token '" << _text << "'" << std::endl; 
 }
 
 template <class TOKEN>
@@ -483,7 +544,7 @@ void Lexer<TOKEN>::ErrorIO()
 {
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
-	debug_error_stream << loc << ", I/O error" << std::endl; 
+	GetDebugErrorStream() << loc << ", I/O error" << std::endl; 
 }
 
 

@@ -57,9 +57,11 @@ class DWARF_LocationPiece
 public:
 	DWARF_LocationPiece(unsigned int dw_bit_size);
 	DWARF_LocationPiece(unsigned int dw_loc_type, unsigned int dw_bit_size);
+	DWARF_LocationPiece(const DWARF_LocationPiece<MEMORY_ADDR>& dw_loc_piece);
 	~DWARF_LocationPiece();
 	unsigned int GetType() const;
 	unsigned int GetBitSize() const;
+	DWARF_LocationPiece<MEMORY_ADDR>& operator = (const DWARF_LocationPiece<MEMORY_ADDR>& dw_loc_piece);
 private:
 	unsigned int dw_loc_piece_type;
 	unsigned int dw_bit_size;
@@ -71,9 +73,11 @@ class DWARF_MemoryLocationPiece : public DWARF_LocationPiece<MEMORY_ADDR>
 public:
 	DWARF_MemoryLocationPiece(MEMORY_ADDR dw_addr);
 	DWARF_MemoryLocationPiece(MEMORY_ADDR dw_addr, unsigned int dw_bit_offset, unsigned int dw_bit_size);
+	DWARF_MemoryLocationPiece(const DWARF_MemoryLocationPiece<MEMORY_ADDR>& dw_mem_loc_piece);
 	~DWARF_MemoryLocationPiece();
 	MEMORY_ADDR GetAddress() const;
 	unsigned int GetBitOffset() const;
+	DWARF_MemoryLocationPiece<MEMORY_ADDR>& operator = (const DWARF_MemoryLocationPiece<MEMORY_ADDR>& dw_mem_loc_piece);
 private:
 	MEMORY_ADDR dw_addr;
 	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
@@ -85,9 +89,11 @@ class DWARF_RegisterLocationPiece : public DWARF_LocationPiece<MEMORY_ADDR>
 public:
 	DWARF_RegisterLocationPiece(unsigned int dw_reg_num);
 	DWARF_RegisterLocationPiece(unsigned int dw_reg_num, unsigned int dw_bit_offset, unsigned int dw_bit_size);
+	DWARF_RegisterLocationPiece(const DWARF_RegisterLocationPiece<MEMORY_ADDR>& dw_reg_loc_piece);
 	~DWARF_RegisterLocationPiece();
 	unsigned int GetRegisterNumber() const;
 	unsigned int GetBitOffset() const;
+	DWARF_RegisterLocationPiece<MEMORY_ADDR>& operator = (const DWARF_RegisterLocationPiece<MEMORY_ADDR>& dw_reg_loc_piece);
 private:
 	unsigned int dw_reg_num;
 	unsigned int dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
@@ -108,6 +114,7 @@ class DWARF_Location
 {
 public:
 	DWARF_Location();
+	DWARF_Location(const DWARF_Location& dw_loc);
 	~DWARF_Location();
 	void Clear();
 	void ClearRanges();
@@ -135,6 +142,8 @@ public:
 	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges() const;
 	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges();
 	
+	DWARF_Location<MEMORY_ADDR>& operator = (const DWARF_Location& dw_loc);
+	
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc);
 private:
 	unsigned int dw_loc_type;
@@ -146,8 +155,10 @@ private:
 	int64_t dw_bit_offset; // bit offset of high order bit for big-endian target and low order bit for little-endian target
 	uint64_t dw_bit_size; // actual bit size (padding excluded)
 	uint8_t dw_encoding;
-	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
-	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
+	typedef std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> LocationPieces;
+	LocationPieces dw_location_pieces;
+	typedef std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > Ranges;
+	Ranges ranges;
 };
 
 template <class MEMORY_ADDR>
@@ -159,7 +170,6 @@ public:
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
-	void SetFrameBase(MEMORY_ADDR frame_base);
 	void SetObjectAddress(MEMORY_ADDR object_addr);
 	void Push(MEMORY_ADDR addr);
 private:
@@ -170,8 +180,6 @@ private:
 	unsigned int file_address_size;
 	unsigned int arch_address_size;
 	std::vector<MEMORY_ADDR> dw_stack;
-	MEMORY_ADDR frame_base;
-	bool has_frame_base;
 	MEMORY_ADDR object_addr;
 	bool has_object_addr;
 	const bool& debug;

@@ -360,6 +360,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	blob->Catch();
 	
 	blob->SetEntryPoint(entry_point * memory_atom_size);
+	blob->SetFilename(filename.c_str());
 	blob->SetArchitecture(file->GetArchitectureName());
 	blob->SetFileEndian(file_endianness);
 	blob->SetMemoryAtomSize(memory_atom_size);

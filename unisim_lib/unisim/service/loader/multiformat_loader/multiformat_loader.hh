@@ -42,7 +42,6 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/backtrace.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
 #include <unisim/service/loader/elf_loader/elf64_loader.hh>
@@ -53,7 +52,6 @@
 #include <unisim/service/tee/blob/tee.hh>
 #include <unisim/service/tee/symbol_table_lookup/tee.hh>
 #include <unisim/service/tee/stmt_lookup/tee.hh>
-#include <unisim/service/tee/backtrace/tee.hh>
 
 
 namespace unisim {
@@ -73,7 +71,7 @@ using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::BackTrace;
+using unisim::service::interfaces::StackFrame;
 using unisim::service::interfaces::Registers;
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::loader::elf_loader::Elf64Loader;
@@ -92,7 +90,6 @@ public:
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
-	ServiceExport<BackTrace<MEMORY_ADDR> > backtrace_export;
 	
 	ServiceImport<Memory<MEMORY_ADDR> > *memory_import[MAX_MEMORIES];
 	ServiceImport<Registers> registers_import;
@@ -110,7 +107,6 @@ private:
 	unisim::service::tee::blob::Tee<MEMORY_ADDR> *tee_blob;
 	unisim::service::tee::symbol_table_lookup::Tee<MEMORY_ADDR> *tee_symbol_table_lookup;
 	unisim::service::tee::stmt_lookup::Tee<MEMORY_ADDR> *tee_stmt_lookup;
-	unisim::service::tee::backtrace::Tee<MEMORY_ADDR> *tee_backtrace;
 	MemoryMapper<MEMORY_ADDR, MAX_MEMORIES> *memory_mapper;
 	std::string filename;
 	

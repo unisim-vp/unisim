@@ -43,6 +43,15 @@ namespace unisim {
 namespace util {
 namespace debug {
 
+class Variable;
+
+inline bool operator <  (Variable const& v1, Variable const& v2);
+inline bool operator <= (Variable const& v1, Variable const& v2);
+inline bool operator == (Variable const& v1, Variable const& v2);
+inline bool operator != (Variable const& v1, Variable const& v2);
+inline bool operator >= (Variable const& v1, Variable const& v2);
+inline bool operator >  (Variable const& v1, Variable const& v2);
+
 class Variable
 {
 public:
@@ -53,13 +62,20 @@ public:
 	virtual bool IsDeclaration() const = 0;
 	virtual const Type *GetType() const = 0;
 	virtual const DeclLocation *GetDeclLocation() const = 0;
-	const std::string& BuildCDecl() const;
+	const std::string& GetCDecl(bool no_array_subscripts = false) const;
 	void Catch() const;
 	void Release() const;
 private:
 	mutable unsigned int ref_count;
-	mutable std::string *cdecl;
+	mutable std::string *c_decl[2];
 };
+
+inline bool operator <  (Variable const& v1, Variable const& v2) { return v1.GetCDecl(true) < v2.GetCDecl(true); }
+inline bool operator <= (Variable const& v1, Variable const& v2) { return v1.GetCDecl(true) <= v2.GetCDecl(true); }
+inline bool operator == (Variable const& v1, Variable const& v2) { return v1.GetCDecl(true) == v2.GetCDecl(true); }
+inline bool operator != (Variable const& v1, Variable const& v2) { return v1.GetCDecl(true) != v2.GetCDecl(true); }
+inline bool operator >= (Variable const& v1, Variable const& v2) { return v1.GetCDecl(true) >= v2.GetCDecl(true); }
+inline bool operator >  (Variable const& v1, Variable const& v2) { return v1.GetCDecl(true) > v2.GetCDecl(true); }
 
 } // end of namespace debug
 } // end of namespace util

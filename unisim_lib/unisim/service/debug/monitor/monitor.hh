@@ -42,7 +42,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
@@ -146,7 +146,7 @@ class Monitor
 	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
 	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
-	, public unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
@@ -161,7 +161,7 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> registers_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> > stmt_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> > backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> > stack_frame_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading> debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_import;

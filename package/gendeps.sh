@@ -78,6 +78,12 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<softfloat_emu/.*\.h>' "${FILEPATH}"; then
 				echo "m4/softfloat_emu" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<v8\.h>' "${FILEPATH}"; then
+				echo "m4/v8js" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<node\.h>' "${FILEPATH}"; then
+				echo "m4/nodejs" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<editline/.*\.h>' "${FILEPATH}"; then
 				echo "m4/libedit" >> "${PKG_DEPS_TXT}"
 			fi
@@ -231,6 +237,9 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<set>' "${FILEPATH}"; then
 				echo "std/set" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<unordered_set>' "${FILEPATH}"; then
+				echo "std/unordered_set" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<algorithm>' "${FILEPATH}"; then
 				echo "std/algorithm" >> "${PKG_DEPS_TXT}"
 			fi
@@ -245,6 +254,9 @@ function discover_file_deps
 			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstdint>' "${FILEPATH}"; then
 				echo "std/cstdint" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<limits>' "${FILEPATH}"; then
+				echo "std/limits" >> "${PKG_DEPS_TXT}"
 			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<limits>' "${FILEPATH}"; then
 				echo "std/limits" >> "${PKG_DEPS_TXT}"

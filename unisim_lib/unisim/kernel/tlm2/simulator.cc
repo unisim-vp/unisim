@@ -111,7 +111,6 @@ void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asyn
 		{
 			std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 		}
-		std::cerr << "Program exited with status " << exit_status << std::endl;
 		if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
 		{
 			sc_core::sc_stop();

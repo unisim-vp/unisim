@@ -81,9 +81,10 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const char *data_object_name, const CLocOperationStream& c_loc_operation_stream, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const char *data_object_name, const CLocOperationStream *c_loc_operation_stream, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const DWARF_DIE<MEMORY_ADDR> *dw_die_type, unsigned int dim, const unisim::util::debug::Type *type);
 	virtual ~DWARF_DataObject();
 	const char *GetName() const;
+	unsigned int GetProcessorNumber() const;
 	MEMORY_ADDR GetBitSize() const;
 	unisim::util::endian::endian_type GetEndian() const;
 	const unisim::util::debug::Type *GetType() const;
@@ -109,13 +110,16 @@ private:
 	const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
 	unsigned int prc_num;
 	std::string data_object_name;
-	const CLocOperationStream c_loc_operation_stream;
+	const CLocOperationStream *c_loc_operation_stream;
 	mutable const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
+	mutable const DWARF_DIE<MEMORY_ADDR> *dw_die_type;
+	mutable unsigned int dim;
 	mutable const unisim::util::debug::Type *dw_data_object_type;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int arch_address_size;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	mutable DWARF_BitVector bv;
+	bool hold;
 	const bool& debug;
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
@@ -129,6 +133,7 @@ public:
 	DWARF_DataObjectProxy(DWARF_DataObject<ADDRESS> *dw_data_object);
 	virtual ~DWARF_DataObjectProxy();
 	virtual const char *GetName() const;
+	virtual unsigned int GetProcessorNumber() const;
 	virtual ADDRESS GetBitSize() const;
 	virtual const Type *GetType() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,16 +32,59 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/util/debug/breakpoint_registry.hh>
-#include <unisim/util/debug/breakpoint_registry.tcc>
+#ifndef __UNISIM_UTIL_OSTREAM_OSTREAM_HH__
+#define __UNISIM_UTIL_OSTREAM_OSTREAM_HH__
+
+#include <iostream>
+#include <sstream>
 
 namespace unisim {
 namespace util {
-namespace debug {
+namespace ostream {
 
-template class BreakpointMapPage<uint64_t>;
-template class BreakpointRegistry<uint64_t>;
+// Convert something into a string using the ostream << operator
+template <typename T>
+std::string ToString(const T& v)
+{
+	std::ostringstream sstr;
+	sstr << v;
+	return sstr.str();
+}
 
-} // end of namespace debug
+// Scope (automatic save and restore) printing format modifications of a ostream
+template <typename OSTREAM = std::ostream>
+struct Scope
+{
+	Scope(OSTREAM& _stream)
+		: stream(_stream)
+		, width(stream.width())
+		, fill(stream.fill())
+		, precision(stream.precision())
+		, flags(stream.flags())
+	{
+	}
+	
+	~Scope()
+	{
+		stream.width(width);
+		stream.fill(fill);
+		stream.precision(precision);
+		stream.flags(flags);
+	}
+	
+private:
+	OSTREAM& stream;
+	std::streamsize width;
+	typename OSTREAM::char_type fill;
+	std::streamsize precision;
+	std::ios_base::fmtflags flags;
+};
+
+typedef Scope<std::ostream> OutputStreamScope;
+typedef Scope<std::wostream> WideOutputStreamScope;
+
+} // end of namespace ostream
 } // end of namespace util
 } // end of namespace unisim
+
+#endif

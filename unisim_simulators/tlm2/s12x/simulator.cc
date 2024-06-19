@@ -527,7 +527,7 @@ Simulator::Simulator(int argc, char **argv)
             inline_debugger->registers_import              >> *debugger->registers_export[0];
             inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
             inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
-            inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+            inline_debugger->stack_frame_import              >> *debugger->stack_frame_export[0];
             inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
             inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
             inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
@@ -556,7 +556,7 @@ Simulator::Simulator(int argc, char **argv)
             monitor->registers_import                 >> *debugger->registers_export[2];
             // monitor->stmt_lookup_import               >> *debugger->stmt_lookup_export[2];
             // monitor->symbol_table_lookup_import       >> *debugger->symbol_table_lookup_export[2];
-            // monitor->backtrace_import                 >> *debugger->backtrace_export[2];
+            // monitor->stack_frame_import                 >> *debugger->stack_frame_export[2];
             // monitor->debug_info_loading_import        >> *debugger->debug_info_loading_export[2];
             // monitor->data_object_lookup_import        >> *debugger->data_object_lookup_export[2];
             // monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
@@ -573,7 +573,7 @@ Simulator::Simulator(int argc, char **argv)
 		profiler->registers_import                   >> *debugger->registers_export[4];
 		profiler->stmt_lookup_import                 >> *debugger->stmt_lookup_export[4];
 		profiler->symbol_table_lookup_import         >> *debugger->symbol_table_lookup_export[4];
-		profiler->backtrace_import                   >> *debugger->backtrace_export[4];
+		profiler->stack_frame_import                   >> *debugger->stack_frame_export[4];
 		profiler->debug_info_loading_import          >> *debugger->debug_info_loading_export[4];
 		profiler->data_object_lookup_import          >> *debugger->data_object_lookup_export[4];
 		profiler->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[4];
@@ -1011,6 +1011,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 
 	simulator->SetVariable("debugger.parse-dwarf", true);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/68hc12_dwarf_register_number_mapping.xml");
+	simulator->SetVariable("debugger.architecture[0]", "68hc12");
 
 	simulator->SetVariable("Monitor.xml-spec-file-path", "xml_spec_file_path.xml");
 	simulator->SetVariable("Monitor.property-list", "");

@@ -48,7 +48,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
@@ -84,7 +84,7 @@ struct UserInterface
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
@@ -103,7 +103,7 @@ struct UserInterface
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >    stmt_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >          backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> >          stack_frame_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >          profiling_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;

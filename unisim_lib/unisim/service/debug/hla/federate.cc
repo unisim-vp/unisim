@@ -32,6 +32,12 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if HAVE_HLA_RTI1516E
+
 #include <unisim/service/debug/hla/federate.hh>
 
 namespace unisim {
@@ -82,3 +88,5 @@ bool InstrumentBase::IsWrite() const
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
+
+#endif // HAVE_HLA_RTI1516E

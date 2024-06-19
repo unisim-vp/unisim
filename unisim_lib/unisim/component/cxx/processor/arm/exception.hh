@@ -37,7 +37,7 @@
 
 #include <inttypes.h>
 #include <stdexcept>
-#include <iosfwd>
+#include <iostream>
 
 namespace unisim {
 namespace component {

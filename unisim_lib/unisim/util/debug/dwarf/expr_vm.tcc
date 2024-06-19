@@ -67,6 +67,13 @@ DWARF_LocationPiece<MEMORY_ADDR>::DWARF_LocationPiece(unsigned int _dw_loc_piece
 }
 
 template <class MEMORY_ADDR>
+DWARF_LocationPiece<MEMORY_ADDR>::DWARF_LocationPiece(const DWARF_LocationPiece<MEMORY_ADDR>& dw_loc_piece)
+	: dw_loc_piece_type(dw_loc_piece.dw_loc_piece_type)
+	, dw_bit_size(dw_loc_piece.dw_bit_size)
+{
+}
+
+template <class MEMORY_ADDR>
 DWARF_LocationPiece<MEMORY_ADDR>::~DWARF_LocationPiece()
 {
 }
@@ -84,6 +91,14 @@ unsigned int DWARF_LocationPiece<MEMORY_ADDR>::GetBitSize() const
 }
 
 template <class MEMORY_ADDR>
+DWARF_LocationPiece<MEMORY_ADDR>& DWARF_LocationPiece<MEMORY_ADDR>::operator = (const DWARF_LocationPiece<MEMORY_ADDR>& dw_loc_piece)
+{
+	dw_loc_piece_type = dw_loc_piece.dw_loc_piece_type;
+	dw_bit_size = dw_loc_piece.dw_bit_size;
+	return *this;
+}
+
+template <class MEMORY_ADDR>
 DWARF_MemoryLocationPiece<MEMORY_ADDR>::DWARF_MemoryLocationPiece(MEMORY_ADDR _dw_addr)
 	: DWARF_LocationPiece<MEMORY_ADDR>(DW_LOC_PIECE_MEMORY, 0)
 	, dw_addr(_dw_addr)
@@ -96,6 +111,14 @@ DWARF_MemoryLocationPiece<MEMORY_ADDR>::DWARF_MemoryLocationPiece(MEMORY_ADDR _d
 	: DWARF_LocationPiece<MEMORY_ADDR>(DW_LOC_PIECE_MEMORY, _dw_bit_size)
 	, dw_addr(_dw_addr)
 	, dw_bit_offset(_dw_bit_offset)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_MemoryLocationPiece<MEMORY_ADDR>::DWARF_MemoryLocationPiece(const DWARF_MemoryLocationPiece<MEMORY_ADDR>& dw_mem_loc_piece)
+	: DWARF_LocationPiece<MEMORY_ADDR>(dw_mem_loc_piece)
+	, dw_addr(dw_mem_loc_piece.dw_addr)
+	, dw_bit_offset(dw_mem_loc_piece.dw_bit_offset)
 {
 }
 
@@ -116,6 +139,14 @@ unsigned int DWARF_MemoryLocationPiece<MEMORY_ADDR>::GetBitOffset() const
 	return dw_bit_offset;
 }
 
+template <class MEMORY_ADDR>
+DWARF_MemoryLocationPiece<MEMORY_ADDR>& DWARF_MemoryLocationPiece<MEMORY_ADDR>::operator =(const DWARF_MemoryLocationPiece<MEMORY_ADDR>& dw_mem_loc_piece)
+{
+	DWARF_LocationPiece<MEMORY_ADDR>::operator = (dw_mem_loc_piece);
+	dw_addr = dw_mem_loc_piece.dw_addr;
+	dw_bit_offset = dw_mem_loc_piece.dw_bit_offset;
+	return *this;
+}
 
 template <class MEMORY_ADDR>
 DWARF_RegisterLocationPiece<MEMORY_ADDR>::DWARF_RegisterLocationPiece(unsigned int _dw_reg_num)
@@ -130,6 +161,14 @@ DWARF_RegisterLocationPiece<MEMORY_ADDR>::DWARF_RegisterLocationPiece(unsigned i
 	: DWARF_LocationPiece<MEMORY_ADDR>(DW_LOC_PIECE_REGISTER, _dw_bit_size)
 	, dw_reg_num(_dw_reg_num)
 	, dw_bit_offset(_dw_bit_offset)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_RegisterLocationPiece<MEMORY_ADDR>::DWARF_RegisterLocationPiece(const DWARF_RegisterLocationPiece<MEMORY_ADDR>& dw_reg_loc_piece)
+	: DWARF_LocationPiece<MEMORY_ADDR>(dw_reg_loc_piece)
+	, dw_reg_num(dw_reg_loc_piece.dw_reg_num)
+	, dw_bit_offset(dw_reg_loc_piece.dw_bit_offset)
 {
 }
 
@@ -151,6 +190,15 @@ unsigned int DWARF_RegisterLocationPiece<MEMORY_ADDR>::GetBitOffset() const
 }
 
 template <class MEMORY_ADDR>
+DWARF_RegisterLocationPiece<MEMORY_ADDR>& DWARF_RegisterLocationPiece<MEMORY_ADDR>::operator = (const DWARF_RegisterLocationPiece<MEMORY_ADDR>& dw_reg_loc_piece)
+{
+	DWARF_LocationPiece<MEMORY_ADDR>::operator = (dw_reg_loc_piece);
+	dw_reg_num = dw_reg_loc_piece.dw_reg_num;
+	dw_bit_offset = dw_reg_loc_piece.dw_bit_offset;
+	return *this;
+}
+
+template <class MEMORY_ADDR>
 DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 	: dw_loc_type(DW_LOC_NULL)
 	, dw_reg_num(0)
@@ -161,7 +209,33 @@ DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 	, dw_bit_offset(0)
 	, dw_bit_size(0)
 	, dw_encoding(0)
+	, dw_location_pieces()
+	, ranges()
 {
+}
+
+template <class MEMORY_ADDR>
+DWARF_Location<MEMORY_ADDR>::DWARF_Location(const DWARF_Location& dw_loc)
+	: dw_loc_type(dw_loc.dw_loc_type)
+	, dw_reg_num(dw_loc.dw_reg_num)
+	, dw_addr(dw_loc.dw_addr)
+	, dw_implicit_simple_value(dw_loc.dw_implicit_simple_value)
+	, dw_implicit_block_value(dw_loc.dw_implicit_block_value ? new DWARF_Block<MEMORY_ADDR>(*dw_loc.dw_implicit_block_value) : 0)
+	, dw_byte_size(dw_loc.dw_byte_size)
+	, dw_bit_offset(dw_loc.dw_bit_offset)
+	, dw_bit_size(dw_loc.dw_bit_size)
+	, dw_encoding(dw_loc.dw_encoding)
+	, dw_location_pieces()
+	, ranges()
+{
+	for(typename LocationPieces::const_iterator it = dw_loc.dw_location_pieces.begin(); it != dw_loc.dw_location_pieces.end(); ++it)
+	{
+		dw_location_pieces.push_back(new DWARF_LocationPiece<MEMORY_ADDR>(**it));
+	}
+	for(typename Ranges::const_iterator it = dw_loc.ranges.begin(); it != dw_loc.ranges.end(); ++it)
+	{
+		ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(*it));
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -357,6 +431,33 @@ std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& DWARF_Location<MEMORY_ADDR>::Get
 }
 
 template <class MEMORY_ADDR>
+DWARF_Location<MEMORY_ADDR>& DWARF_Location<MEMORY_ADDR>::operator = (const DWARF_Location& dw_loc)
+{
+	Clear();
+	ClearRanges();
+
+	dw_loc_type = dw_loc.dw_loc_type;
+	dw_reg_num = dw_loc.dw_reg_num;
+	dw_addr = dw_loc.dw_addr;
+	dw_implicit_simple_value = dw_loc.dw_implicit_simple_value;
+	dw_implicit_block_value = dw_loc.dw_implicit_block_value ? new DWARF_Block<MEMORY_ADDR>(*dw_loc.dw_implicit_block_value) : 0;
+	dw_byte_size = dw_loc.dw_byte_size;
+	dw_bit_offset = dw_loc.dw_bit_offset;
+	dw_bit_size = dw_loc.dw_bit_size;
+	dw_encoding = dw_loc.dw_encoding;
+
+	for(typename LocationPieces::const_iterator it = dw_loc.dw_location_pieces.begin(); it != dw_loc.dw_location_pieces.end(); ++it)
+	{
+		dw_location_pieces.push_back(new DWARF_LocationPiece<MEMORY_ADDR>(**it));
+	}
+	
+	for(typename Ranges::const_iterator it = dw_loc.ranges.begin(); it != dw_loc.ranges.end(); ++it)
+	{
+		ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(*it));
+	}
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc)
 {
 	switch(dw_loc.GetType())
@@ -455,8 +556,6 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, arch_endianness(_dw_handler->GetArchEndianness())
 	, file_address_size(_dw_handler->GetFileAddressSize())
 	, arch_address_size(_dw_handler->GetArchAddressSize())
-	, frame_base(0)
-	, has_frame_base(false)
 	, object_addr(0)
 	, has_object_addr(false)
 	, debug(dw_handler->GetOptionFlag(OPT_DEBUG))
@@ -811,9 +910,10 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							if(executing)
 							{
 								// push onto the stack (frame base + offset)
-								if(!has_frame_base)
+								MEMORY_ADDR frame_base = 0;
+								if(!dw_handler->GetFrameBase(dw_frame, frame_base))
 								{
-									debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg " << offset << ": frame base address is not set" << std::endl;
+									debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg " << offset << ": can't determine frame base" << std::endl;
 									return false;
 								}
 								dw_stack.push_back(frame_base + offset);
@@ -2175,13 +2275,6 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMOR
 	}
 	if(!read_size) read_size = arch_address_size;
 	return dw_frame && dw_frame->template Load<MEMORY_ADDR>(addr, read_addr, read_size, arch_endianness, addr_space);
-}
-
-template <class MEMORY_ADDR>
-void DWARF_ExpressionVM<MEMORY_ADDR>::SetFrameBase(MEMORY_ADDR _frame_base)
-{
-	frame_base = _frame_base;
-	has_frame_base = true;
 }
 
 template <class MEMORY_ADDR>

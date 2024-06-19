@@ -41,32 +41,31 @@ namespace debug {
 
 Variable::Variable()
 	: ref_count(0)
-	, cdecl(0)
+	, c_decl()
 {
 }
 
 Variable::~Variable()
 {
-	if(cdecl) delete cdecl;
+	for(int i = 0; i < 2; ++i) if(c_decl[i]) delete c_decl[i];
 }
 
-const std::string& Variable::BuildCDecl() const
+const std::string& Variable::GetCDecl(bool no_array_subscripts) const
 {
-	if(!cdecl)
+	std::string *_c_decl = c_decl[no_array_subscripts];
+	if(_c_decl) return (*_c_decl);
+
+	std::stringstream sstr;
+	char const *variable_name = GetName();
+	Type const *variable_type = GetType();
+	std::string s(variable_type->BuildCDecl(&variable_name, true));
+	sstr << s;
+	if(variable_name)
 	{
-		std::stringstream sstr;
-		char const *variable_name = GetName();
-		Type const *variable_type = GetType();
-		std::string s(variable_type->BuildCDecl(&variable_name, true));
-		sstr << s;
-		if(variable_name)
-		{
-			if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
-			sstr << variable_name;
-		}
-		cdecl = new std::string(sstr.str());
+		if(!s.empty() && (s.back() != ' ') && (s.back() != '*')) sstr << " ";
+		sstr << variable_name;
 	}
-	return *cdecl;
+	return *(c_decl[no_array_subscripts] = new std::string(no_array_subscripts ? kill_array_subscripts(reorder_qualifiers(sstr.str())) : reorder_qualifiers(sstr.str())));
 }
 
 void Variable::Catch() const

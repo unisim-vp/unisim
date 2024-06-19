@@ -701,7 +701,10 @@ bool GDBRegister::SetValue(unsigned int prc_num, const std::string& hex)
 {
 	unisim::service::interfaces::Register* reg = GetRegisterInterface(prc_num);
 
-	if (not reg) return false;
+	if (not reg)
+	{
+		return false;
+	}
 
 	unsigned int len = hex.length(), pos = 0;
 	int size = bitsize / 8;

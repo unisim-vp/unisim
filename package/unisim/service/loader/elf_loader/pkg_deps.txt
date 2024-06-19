@@ -6,7 +6,6 @@ std/iostream
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable
-unisim/service/interfaces/backtrace
 unisim/service/interfaces/blob
 unisim/service/interfaces/loader
 unisim/service/interfaces/memory

@@ -107,12 +107,14 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 					switch(opt)
 					{
 						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() <= addr)
 							{
 								if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
 							}
 							break;
 						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() > addr)
 							{
 								if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
@@ -147,12 +149,14 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 					switch(opt)
 					{
 						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() <= addr)
 							{
 								if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
 							}
 							break;
 						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT_WITHIN_FUNCTION:
 							if(stmt->GetAddress() > addr)
 							{
 								if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;

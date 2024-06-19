@@ -22,11 +22,11 @@ sys/types
 unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/memory
 unisim/service/interfaces/registers
+unisim/service/interfaces/stack_frame
 unisim/service/interfaces/stmt_lookup
 unisim/util/arithmetic
 unisim/util/blob
 unisim/util/debug
 unisim/util/endian
-unisim/util/nat_sort
 unisim/util/parser
 unisim/util/xml

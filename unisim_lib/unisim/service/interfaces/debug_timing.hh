@@ -46,7 +46,6 @@ class DebugTiming : public ServiceInterface
 {
 public:
 	virtual const TIME_TYPE& DebugGetTime() const = 0;
-	virtual const TIME_TYPE& DebugGetTime(unsigned int prc_num) const { return DebugGetTime(); }
 };
 
 } // end of namespace interfaces

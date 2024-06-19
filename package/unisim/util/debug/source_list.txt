@@ -1,5 +1,3 @@
-unisim/util/debug/breakpoint_registry_32.cc
-unisim/util/debug/breakpoint_registry_64.cc
 unisim/util/debug/data_object_32.cc
 unisim/util/debug/data_object_64.cc
 unisim/util/debug/decl_location.cc
@@ -17,5 +15,3 @@ unisim/util/debug/symbol_32.cc
 unisim/util/debug/symbol_64.cc
 unisim/util/debug/type.cc
 unisim/util/debug/variable.cc
-unisim/util/debug/watchpoint_registry_32.cc
-unisim/util/debug/watchpoint_registry_64.cc

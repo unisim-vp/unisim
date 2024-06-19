@@ -64,7 +64,7 @@ UserInterface<ADDRESS>::UserInterface(const char *_name, unisim::kernel::Object 
 	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
@@ -80,7 +80,7 @@ UserInterface<ADDRESS>::UserInterface(const char *_name, unisim::kernel::Object 
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
-	, backtrace_import("backtrace-import", this)
+	, stack_frame_import("backtrace-import", this)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
@@ -154,10 +154,10 @@ bool UserInterface<ADDRESS>::EndSetup()
 	if(!registers_import) return false;
 	if(!debug_selecting_import) return false;
 	
-	curr_prc_num = debug_selecting_import->DebugGetSelected();
+	curr_prc_num = debug_selecting_import->GetSelectedProcessor();
 	
 	unsigned int prc_num;
-	for(prc_num = 0; debug_selecting_import->DebugSelect(prc_num); prc_num++)
+	for(prc_num = 0; debug_selecting_import->SelectProcessor(prc_num); prc_num++)
 	{
 		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
 		fetch_insn_event->SetProcessorNumber(prc_num);
@@ -169,7 +169,7 @@ bool UserInterface<ADDRESS>::EndSetup()
 	num_processors = prc_num;
 	listening_fetch.resize(num_processors);
 	prc_trap.resize(num_processors);
-	debug_selecting_import->DebugSelect(curr_prc_num);
+	debug_selecting_import->SelectProcessor(curr_prc_num);
 	
 	Interrupt();
 	

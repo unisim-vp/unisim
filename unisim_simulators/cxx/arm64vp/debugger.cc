@@ -52,6 +52,8 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>
 
+template class unisim::service::debug::debugger::Debugger<Debugger::DEBUGGER_CONFIG>;
+
 Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
   : unisim::kernel::Object(name, 0)
   , unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t>>(name, 0)
@@ -88,11 +90,10 @@ Debugger::Debugger(char const* name, AArch64& arch, std::ifstream& sink)
     inline_debugger->registers_import              >> *debug_hub.registers_export             [i];
     inline_debugger->stmt_lookup_import            >> *debug_hub.stmt_lookup_export           [i];
     inline_debugger->symbol_table_lookup_import    >> *debug_hub.symbol_table_lookup_export   [i];
-    inline_debugger->backtrace_import              >> *debug_hub.backtrace_export             [i];
+    inline_debugger->stack_frame_import            >> *debug_hub.stack_frame_export             [i];
     inline_debugger->debug_info_loading_import     >> *debug_hub.debug_info_loading_export    [i];
     inline_debugger->data_object_lookup_import     >> *debug_hub.data_object_lookup_export    [i];
     inline_debugger->subprogram_lookup_import      >> *debug_hub.subprogram_lookup_export     [i];
-    inline_debugger->stack_unwinding_import        >> *debug_hub.stack_unwinding_export       [i];
   }
 
   // GdbServer <-> DebugHub connections

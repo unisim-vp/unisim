@@ -1,0 +1,9 @@
+unisim/service/interfaces/disassembly
+unisim/service/interfaces/memory
+unisim/service/interfaces/debug_timing
+unisim/service/interfaces/registers
+unisim/service/interfaces/stack_frame
+unisim/service/interfaces/data_object_lookup
+unisim/service/interfaces/debug_event
+unisim/service/interfaces/stubbing
+unisim/service/interfaces/hooking

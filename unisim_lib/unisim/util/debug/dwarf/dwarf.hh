@@ -114,12 +114,15 @@ public:
 	// Option management
 	bool SetOption(Option opt, const char *s);
 	bool SetOption(Option opt, bool flag);
+	bool SetOption(Option opt, int value);
 
 	bool GetOption(Option opt, std::string& s) const;
 	bool GetOption(Option opt, bool& flag) const;
+	bool GetOption(Option opt, int& value) const;
 	
 	const bool& GetOptionFlag(Option opt) const;
 	const std::string& GetOptionString(Option opt) const;
+	const int& GetOptionInt(Option opt) const;
 
 	// Parsing/Deserialization of DWARF debug infos
 	void Parse();
@@ -129,7 +132,8 @@ public:
 	void to_HTML(const char *output_dir);
 
 	// Visitor pattern (CU and DIE)
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
+// 	template <typename T, typename VISITOR> T Scan(VISITOR& visitor) const;
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 	
 	// Usefull Low level methods for visitors
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *sub_program_name, const char *compilation_unit_name) const;
@@ -150,6 +154,10 @@ public:
 	void EnumerateDataObjectNames(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, std::set<std::string>& name_set, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	const DWARF_SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	const DWARF_SubProgram<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc, const char *filename = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetReturnValue(unsigned int prc_num) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetReturnValue(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetSubProgramParameter(unsigned int prc_num, unsigned int index) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetSubProgramParameter(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, unsigned int index) const;
 	
 private:
 	friend class DWARF_StatementProgram<MEMORY_ADDR>;
@@ -252,6 +260,9 @@ private:
 	// Machine state
 	mutable DWARF_MachineState<MEMORY_ADDR> auto_dw_mach_state;
 	
+	// C location expression parser
+	mutable CLocExprParser c_loc_expr_parser;
+	
 	// Registration methods of deserialized DWARF debug infos classes
 	void Register(DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog);
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
@@ -283,9 +294,31 @@ private:
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(MEMORY_ADDR pc) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const CLocOperationStream *c_loc_operation_stream) const;
+	struct FindDataObjectArguments
+	{
+		// inputs
+		CLocOperationStream c_loc_operation_stream; // Input/Output
+		
+		// intermediate result
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type; // Input/Output
+		bool match_or_optimized_out;               // Output
+		unsigned int dim;                          // Input/Output
+		
+		// outputs
+		std::string matched_data_object_name;
+		DWARF_Location<MEMORY_ADDR> *dw_data_object_loc; // Input/Output
+		const unisim::util::debug::Type *dw_data_object_type;
+		
+		FindDataObjectArguments() : c_loc_operation_stream(), dw_die_type(0), match_or_optimized_out(false), dim(0), matched_data_object_name(), dw_data_object_loc(0), dw_data_object_type(0) {}
+	};
+	bool FindDataObject(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
+	bool FindDataObjectProlog(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
+	bool FindDataObjectEpilog(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, FindDataObjectArguments& args) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const unisim::util::debug::SourceCodeLocation& source_code_location) const;
+	
+	bool GetFrameBase(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, MEMORY_ADDR& frame_base) const;
 	
 	// Architecture meta info (from blob)
 	endian_type GetFileEndianness() const;
@@ -315,8 +348,6 @@ private:
 	bool IsAbsolutePath(const char *filename) const;
 	
 	// Architectural state methods per processor
-// 	DWARF_Frame<MEMORY_ADDR> *GetInnerFrame(unsigned int prc_num) const;
-// 	DWARF_Frame<MEMORY_ADDR> *GetCurrentFrame(unsigned int prc_num) const;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num) const;
 
 	// Debug stuf

@@ -44,7 +44,8 @@ typedef enum
 {
 	OPT_REG_NUM_MAPPING_FILENAME,
 	OPT_VERBOSE,
-	OPT_DEBUG
+	OPT_DEBUG,
+	OPT_MAX_STACK_FRAMES
 } Option;
 
 } // end of namespace dwarf

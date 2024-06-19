@@ -53,6 +53,7 @@ class Location
 {
 public:
 	Location();
+	void Reset();
 	void IncLineNo(unsigned int delta = 1);
 	void IncColNo(unsigned int delta = 1);
 	void SetFilename(const char *filename);
@@ -75,8 +76,19 @@ class Lexer
 public:
 	static const unsigned int TOK_EOF = 256;
 	
-	Lexer(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
+	Lexer();
 	virtual ~Lexer();
+	
+	void Reset();
+	
+	void SetDebug(bool flag = true);
+	void SetDebugInfoStream(std::ostream& debug_info_stream);
+	void SetDebugWarningStream(std::ostream& debug_warning_stream);
+	void SetDebugErrorStream(std::ostream& debug_error_stream);
+	bool IsDebugging() const;
+	std::ostream& GetDebugInfoStream() const;
+	std::ostream& GetDebugWarningStream() const;
+	std::ostream& GetDebugErrorStream() const;
 	
 	void EnableToken(const char *text, unsigned int id = 0);
 	void EnableIdentifierToken(unsigned int id);
@@ -85,14 +97,14 @@ public:
 	void EnableEatingSpace();
 	void EnableEatingTab();
 	void EnableEatingEndOfLine();
-	void FinishScanningLine();
+	void FinishScanningLine(std::istream& stream);
 	const char *GetLine() const;
 	const char *GetText() const;
 	const Location& GetLocation() const;
 	const char *GetTokenText(unsigned int token_id) const;
 	void PrintFriendlyLocation(const Location& loc) const;
 	
-	TOKEN *Next();
+	TOKEN *Next(std::istream& stream);
 	
 	virtual TOKEN *CreateToken(const char *text, unsigned int id, const Location& loc) = 0;
 private:
@@ -110,11 +122,10 @@ private:
 	bool enable_eating_space;
 	bool enable_eating_tab;
 	bool enable_eating_eol;
-	std::istream *stream;
 	Location loc;
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
+	std::ostream *debug_info_stream;
+	std::ostream *debug_warning_stream;
+	std::ostream *debug_error_stream;
 	bool debug;
 	bool finished_scanning_line;
 	
@@ -122,8 +133,8 @@ private:
 	bool IsAlpha(char c) const;
 	bool IsAlphaNumeric(char c) const;
 
-	void ErrorUnknownToken(char c);
-	void ErrorExpectedToken(const char *text);
+	void ErrorUnknownToken(std::istream& stream, char c);
+	void ErrorExpectedToken(std::istream& stream, const char *text);
 	void ErrorIO();
 protected:
 	bool lexer_error;

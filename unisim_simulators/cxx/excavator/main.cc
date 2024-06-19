@@ -142,52 +142,12 @@ private:
 ///////////////////////////////// Utilities ///////////////////////////////////
 
 namespace {
-	// reorder_qualifiers: rewriting "const volatile" into "volatile const"
-	inline std::string reorder_qualifiers(const std::string& s)
-	{
-		std::string r(s);
-		std::size_t pos = 0;
-		do
-		{
-			std::size_t fpos = s.find("const volatile", pos);
-			if(fpos == std::string::npos) break;
-			r.replace(fpos, 14, "volatile const");
-			pos = fpos + 14;
-		}
-		while(pos < s.length());
-		return r;
-	}
-	
-	inline std::string kill_array_subscript(const std::string& s)
-	{
-		std::string r;
-		std::size_t pos = 0;
-		std::size_t len = s.length();
-		while(pos < len)
-		{
-			char c = s[pos++];
-			if(c == '[')
-			{
-				r += "[]";
-				std::size_t right_bracket_pos = s.find_first_of(']', pos);
-				assert(right_bracket_pos != std::string::npos);
-				pos = right_bracket_pos + 1;
-			}
-			else
-			{
-				r += c;
-			}
-		}
-		
-		return r;
-	}
-	
 	// Type comparator
 	struct TypeComparator
 	{
 		bool operator () (unisim::util::debug::Type const * const& t1, unisim::util::debug::Type const * const& t2) const
 		{
-			return reorder_qualifiers(t1->BuildCDecl()) < reorder_qualifiers(t2->BuildCDecl());
+			return (*t1) < (*t2);
 		}
 	};
 	
@@ -342,7 +302,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			const unisim::util::debug::Type *GetReturnType() const { return subprogram->GetReturnType(); }
 			unsigned int GetArity() const { return subprogram->GetArity(); }
 			const unisim::util::debug::FormalParameter *GetFormalParameter(unsigned int idx) const { return subprogram->GetFormalParameter(idx); }
-			std::string BuildCDecl() const { return subprogram->BuildCDecl(); }
+			const std::string& GetCDecl(bool no_array_subscripts = false) const { return subprogram->GetCDecl(no_array_subscripts); }
 			bool HasSymbol() const { return symbol != 0; }
 			MEMORY_ADDR GetAddress() const { return symbol ? symbol->GetAddress() : 0xdeadbeef; }
 			CompilationUnit *GetCompilationUnit() const { return comp_unit; }
@@ -423,7 +383,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			bool IsExternal() const { return variable->IsExternal(); }
 			bool IsDeclaration() const { return variable->IsDeclaration(); }
 			const unisim::util::debug::Type *GetType() const { return variable->GetType(); }
-			std::string BuildCDecl() const { return variable->BuildCDecl(); }
+			const std::string& GetCDecl(bool no_array_subscripts = false) const { return variable->GetCDecl(no_array_subscripts); }
 			bool HasSymbol() const { return symbol != 0; }
 			MEMORY_ADDR GetAddress() const { return symbol ? symbol->GetAddress() : 0xdeadbeef; }
 			CompilationUnit *GetCompilationUnit() const { return comp_unit; }
@@ -435,7 +395,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 		{
 			bool operator () (SubProgram const& sp1, SubProgram const& sp2) const
 			{
-				return reorder_qualifiers(kill_array_subscript(sp1.BuildCDecl())) < reorder_qualifiers(kill_array_subscript(sp2.BuildCDecl()));
+				return (*sp1.subprogram) < (*sp2.subprogram);
 			}
 		};
 
@@ -444,7 +404,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 		{
 			bool operator () (Variable const& v1, Variable const& v2) const
 			{
-				return reorder_qualifiers(kill_array_subscript(v1.BuildCDecl())) < reorder_qualifiers(kill_array_subscript(v2.BuildCDecl()));
+				return (*v1.variable) < (*v2.variable);
 			}
 		};
 
@@ -529,7 +489,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 				{
 					if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 					{
-						std::cout << "Discovering Type " << type->BuildCDecl() << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ")" << std::endl;
+						std::cout << "Discovering Type " << type->GetCDecl() << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ")" << std::endl;
 					}
 					type->Catch();
 					types.insert(type);
@@ -637,7 +597,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 				{
 					if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 					{
-						std::cout << "Pushing Type " << type->BuildCDecl() << std::endl;
+						std::cout << "Pushing Type " << type->GetCDecl() << std::endl;
 					}
 					pushed.insert(type);
 					type->Catch();
@@ -695,7 +655,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					unisim::util::debug::Type const *type = *it;
 					if(type)
 					{
-						file << type->BuildCDecl() << ";";
+						file << type->GetCDecl() << ";";
 						unisim::util::debug::DeclLocation const *decl_loc = type->GetDeclLocation();
 						if(decl_loc)
 						{
@@ -715,7 +675,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					SubProgram const& subprogram = *it;
 					if(!subprogram.IsExternal()) continue;
 					file << "extern ";
-					file << subprogram.BuildCDecl() << ";";
+					file << subprogram.GetCDecl() << ";";
 					const std::string& note = subprogram.GetNote();
 					if(!note.empty())
 					{
@@ -734,7 +694,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					Variable const& variable = *it;
 					if(!variable.IsExternal()) continue;
 					file << "extern ";
-					file << variable.BuildCDecl() << ";";
+					file << variable.GetCDecl() << ";";
 					const std::string& note = variable.GetNote();
 					if(!note.empty())
 					{
@@ -752,7 +712,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 				{
 					Variable const& variable = *it;
 					if(!variable.IsExternal()) continue;
-					file << variable.BuildCDecl() << ";";
+					file << variable.GetCDecl() << ";";
 					const std::string& note = variable.GetNote();
 					if(!note.empty())
 					{
@@ -778,7 +738,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						file << "inline ";
 					}
-					file << subprogram.BuildCDecl();
+					file << subprogram.GetCDecl();
 					const std::string& note = subprogram.GetNote();
 					if(!note.empty())
 					{
@@ -798,7 +758,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					Variable const& variable = *it;
 					if(variable.IsExternal()) continue;
 					file << "static ";
-					file << variable.BuildCDecl() << ";";
+					file << variable.GetCDecl() << ";";
 					const std::string& note = variable.GetNote();
 					if(!note.empty())
 					{
@@ -820,7 +780,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						file << "inline ";
 					}
-					file << subprogram.BuildCDecl();
+					file << subprogram.GetCDecl();
 					const std::string& note = subprogram.GetNote();
 					if(!note.empty())
 					{
@@ -1003,7 +963,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					std::cout << "Skipping Compilation Unit #" << dw_cu->GetId() << " (" << dw_cu_name << ")" << std::endl;
 				}
 			}
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> const *dw_die)
@@ -1038,7 +998,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 								unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram_def->GetSubProgram();
 								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
-									std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram_def->GetId() << " (" << dw_die->GetHREF() << "): looking for dependencies" << std::endl;
+									std::cout << "Found definition of " << subprogram_def->GetCDecl() << " in DIE #" << dw_die_subprogram_def->GetId() << " (" << dw_die->GetHREF() << "): looking for dependencies" << std::endl;
 								}
 								InsertDeclaration(subprogram_def, dw_die_subprogram_def);
 								dw_die_subprogram_def->ScanType(*this);
@@ -1056,7 +1016,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						{
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "Subprogram " << subprogram->BuildCDecl() << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ") is a definition: looking for dependencies" << std::endl;
+								std::cout << "Subprogram " << subprogram->GetCDecl() << " in DIE #" << dw_die->GetId() << " (" << dw_die->GetHREF() << ") is a definition: looking for dependencies" << std::endl;
 							}
 							InsertDefinition(subprogram, dw_die);
 							dw_die->ScanType(*this);
@@ -1079,7 +1039,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							unisim::util::debug::Variable const *variable = dw_die->GetVariable();
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "Discovering Variable " << variable->BuildCDecl() << std::endl;
+								std::cout << "Discovering Variable " << variable->GetCDecl() << std::endl;
 							}
 							if(variable->IsDeclaration())
 							{
@@ -1106,12 +1066,12 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			}
 			
 			dw_die->Scan(*this);
-			return true;
+			return false;
 		}
 		
 		bool VisitType(unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> const *dw_die)
 		{
-			if(curr_comp_unit->Visited(dw_die)) return true;
+			if(curr_comp_unit->Visited(dw_die)) return false;
 			
 			uint16_t dw_tag = dw_die->GetTag();
 			switch(dw_tag)
@@ -1185,13 +1145,13 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 				}
 			}
 			
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::Type const *type)
 		{
 			type->Scan(*this);
-			return true;
+			return false;
 		}
 
 		bool Visit(unisim::util::debug::CompositeType const *comp_type)
@@ -1201,7 +1161,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			{
 				Push(comp_type);
 			}
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::EnumType const *enum_type)
@@ -1211,7 +1171,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			{
 				Push(enum_type);
 			}
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::Typedef const *_typedef)
@@ -1221,24 +1181,24 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 			{
 				Push(_typedef);
 			}
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::Member const *member)
 		{
 			member->Scan(*this);
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::FormalParameter const *formal_param)
 		{
 			formal_param->Scan(*this);
-			return true;
+			return false;
 		}
 		
 		bool Visit(unisim::util::debug::Enumerator const *enumerator)
 		{
-			return true;
+			return false;
 		}
 		
 		bool Run()
@@ -1393,7 +1353,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						{
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "Subprogram " << subprogram.BuildCDecl() << " may need stubbing" << std::endl;
+								std::cout << "Subprogram " << subprogram.GetCDecl() << " may need stubbing" << std::endl;
 							}
 							const char *subprogram_name = subprogram.GetName();
 							const unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = dw_handler->FindSubProgramDIE(subprogram_name, 0);
@@ -1403,7 +1363,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 								
 								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
-									std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
+									std::cout << "Found definition of " << subprogram_def->GetCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
 								}
 								testbench->InsertDefinition(subprogram_def, symbol_table->FindSymbolByName(subprogram_def->GetName()), dw_die_subprogram);
 								dw_die_subprogram->ScanType(*this);
@@ -1442,7 +1402,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
-							std::cout << "Testbench may use " << subprogram.BuildCDecl();
+							std::cout << "Testbench may use " << subprogram.GetCDecl();
 							if(comp_unit_name)
 							{
 								std::cout << " provided by " << comp_unit_name;
@@ -1456,7 +1416,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							unisim::util::debug::SubProgram<MEMORY_ADDR> const *subprogram_def = dw_die_subprogram->GetSubProgram();
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "Found definition of " << subprogram_def->BuildCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
+								std::cout << "Found definition of " << subprogram_def->GetCDecl() << " in DIE #" << dw_die_subprogram->GetId() << " (" << dw_die_subprogram->GetHREF() << "): looking for dependencies" << std::endl;
 							}
 							testbench->InsertDeclaration(subprogram_def, symbol_table->FindSymbolByName(subprogram_def->GetName()), dw_die_subprogram);
 							dw_die_subprogram->ScanType(*this);
@@ -1499,7 +1459,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 						{
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "Variable " << variable.BuildCDecl() << " may need stubbing" << std::endl;
+								std::cout << "Variable " << variable.GetCDecl() << " may need stubbing" << std::endl;
 							}
 							const char *variable_name = variable.GetName();
 							const unisim::util::debug::dwarf::DWARF_DIE<MEMORY_ADDR> *dw_die_variable_def = dw_handler->FindVariableDIE(variable_name, 0);
@@ -1510,7 +1470,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 								
 								if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 								{
-									std::cout << "Found definition of " << variable_def->BuildCDecl() << " in DIE #" << dw_die_variable_def->GetId() << " (" << dw_die_variable_def->GetHREF() << "): looking for dependencies" << std::endl;
+									std::cout << "Found definition of " << variable_def->GetCDecl() << " in DIE #" << dw_die_variable_def->GetId() << " (" << dw_die_variable_def->GetHREF() << "): looking for dependencies" << std::endl;
 								}
 								testbench->InsertDefinition(variable_def, symbol_table->FindSymbolByName(variable_def->GetName()), dw_die_variable_def);
 								dw_die_variable_def->ScanType(*this);
@@ -1547,7 +1507,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							SubProgram const *subprogram_def = (*it).second;
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "SubProgram " << unresolved_subprogram->BuildCDecl() << " may be an alias of " << subprogram_def->BuildCDecl() << std::endl;
+								std::cout << "SubProgram " << unresolved_subprogram->GetCDecl() << " may be an alias of " << subprogram_def->GetCDecl() << std::endl;
 							}
 							std::stringstream note_sstr;
 							note_sstr << "at &" << subprogram_def->GetName() << "+0x" << std::hex << (unresolved_subprogram->GetAddress() - subprogram_def->GetAddress()) << " but subprogram definition is missing in source code: see linker script";
@@ -1558,7 +1518,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
-							std::cout << "Subprogram definition of " << unresolved_subprogram->BuildCDecl() << " is missing" << std::endl;
+							std::cout << "Subprogram definition of " << unresolved_subprogram->GetCDecl() << " is missing" << std::endl;
 						}
 						
 						unisim::util::debug::Symbol<MEMORY_ADDR> const *symbol = symbol_table->FindSymbolByName(unresolved_subprogram->GetName());
@@ -1598,7 +1558,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 							Variable const *variable_def = (*it).second;
 							if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 							{
-								std::cout << "Variable " << unresolved_variable->BuildCDecl() << " may be an alias of " << variable_def->BuildCDecl() << std::endl;
+								std::cout << "Variable " << unresolved_variable->GetCDecl() << " may be an alias of " << variable_def->GetCDecl() << std::endl;
 							}
 							std::stringstream note_sstr;
 							note_sstr << "at &" << variable_def->GetName() << "+0x" << std::hex << (unresolved_variable->GetAddress() - variable_def->GetAddress()) << " but variable definition is missing in source code: see linker script";
@@ -1609,7 +1569,7 @@ bool DWARF_Excavator<MEMORY_ADDR, CONFIG_READER>::Dig()
 					{
 						if(verbose >= VERBOSE_DEBUG_EXCAVATOR)
 						{
-							std::cout << "Variable definition of " << unresolved_variable->BuildCDecl() << " is missing" << std::endl;
+							std::cout << "Variable definition of " << unresolved_variable->GetCDecl() << " is missing" << std::endl;
 						}
 						
 						unisim::util::debug::Symbol<MEMORY_ADDR> const *symbol = symbol_table->FindSymbolByName(unresolved_variable->GetName());
@@ -1892,13 +1852,17 @@ bool JSON_ConfigReader::ParseUnsignedInteger(std::istream& stream, uint64_t& val
 	unisim::util::json::Token token = Lexer::Next(stream, *this);
 	if(token < 0) return false;
 	
-	if(token == unisim::util::json::TOK_UINT)
+	if(token == unisim::util::json::TOK_INT)
 	{
-		value = Lexer::GetUIntValue();
-		return true;
+		const unisim::util::json::IntValue& int_value = Lexer::GetIntValue();
+		if(!int_value.IsSigned())
+		{
+			value = (uint64_t) int_value;
+			return true;
+		}
 	}
 	
-	Lexer::ParseError(stream, *this, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_UINT));
+	Lexer::ParseError(stream, *this, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(unisim::util::json::TOK_INT) + " >= 0");
 	return false;
 }
 

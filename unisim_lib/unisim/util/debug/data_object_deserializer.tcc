@@ -60,7 +60,7 @@ unsigned int DataObjectDeserializer<ADDRESS>::Deserialize(std::istream& stream) 
 	
 	if(!root) return PARSE_ERROR;
 
-	typename DataObjectDeserializer<ADDRESS>::ContextStack ctx_stack(*this);
+	ContextStack ctx_stack(*this);
 	root->Visit(ctx_stack);
 	delete root;
 	
@@ -85,7 +85,7 @@ DataObjectDeserializer<ADDRESS>::ContextStack::ContextStack(const DataObjectDese
 template <class ADDRESS>
 bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Value& json_value)
 {
-	if(status != OK) return false;
+	if(status != OK) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_deserializer.data_object_lookup_if->FindDataObject(data_object_name);
 	
@@ -175,13 +175,13 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 	}
 	
 	if(InArray()) NextIndex();
-	return status == OK;
+	return status != OK;
 }
 
 template <class ADDRESS>
 bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_String& value)
 {
-	if(status != OK) return false;
+	if(status != OK) return true;
 	std::string data_object_name = DataObjectName();
 	DataObjectRef<ADDRESS> data_object = data_object_deserializer.data_object_lookup_if->FindDataObject(data_object_name);
 	
@@ -263,37 +263,37 @@ bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::js
 	}
 	
 	if(InArray()) NextIndex();
-	return status == OK;
+	return status != OK;
 }
 
 template <class ADDRESS>
 bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Object& object)
 {
-	if(status != OK) return false;
+	if(status != OK) return true;
 	object.Scan(*this);
 	if(InArray()) NextIndex();
-	return status == OK;
+	return status != OK;
 }
 
 template <class ADDRESS>
 bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Member& member)
 {
-	if(status != OK) return false;
+	if(status != OK) return true;
 	PushMemberContext(member.GetName());
 	member.Scan(*this);
 	PopContext();
-	return status == OK;
+	return status != OK;
 }
 
 template <class ADDRESS>
 bool DataObjectDeserializer<ADDRESS>::ContextStack::Visit(const unisim::util::json::JSON_Array& array)
 {
-	if(status != OK) return false;
+	if(status != OK) return true;
 	PushArrayContext();
 	array.Scan(*this);
 	PopContext();
 	if(InArray()) NextIndex();
-	return status == OK;
+	return status != OK;
 }
 
 template <class ADDRESS>

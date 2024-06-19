@@ -1,0 +1,11 @@
+unisim/service/debug/nodejs/breakpoint.hh
+unisim/service/debug/nodejs/data_object.hh
+unisim/service/debug/nodejs/event_bridge.hh
+unisim/service/debug/nodejs/fwd.hh
+unisim/service/debug/nodejs/hook.hh
+unisim/service/debug/nodejs/nodejs.hh
+unisim/service/debug/nodejs/pointer.hh
+unisim/service/debug/nodejs/processor.hh
+unisim/service/debug/nodejs/source_code_location.hh
+unisim/service/debug/nodejs/stub.hh
+unisim/service/debug/nodejs/watchpoint.hh

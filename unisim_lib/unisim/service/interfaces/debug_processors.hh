@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2023,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,16 +32,26 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/util/debug/watchpoint_registry.hh>
-#include <unisim/util/debug/watchpoint_registry.tcc>
+#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_PROCESSORS_HH__
+#define __UNISIM_SERVICE_INTERFACES_DEBUG_PROCESSORS_HH__
+
+#include <unisim/service/interfaces/interface.hh>
+#include <unisim/service/interfaces/debug_processor.hh>
 
 namespace unisim {
-namespace util {
-namespace debug {
+namespace service {
+namespace interfaces {
 
-template class WatchpointMapPage<uint64_t>;
-template class WatchpointRegistry<uint64_t>;
+template <typename ADDRESS, typename TIME_TYPE>
+struct DebugProcessors : ServiceInterface
+{
+	virtual unsigned int DebugGetProcessorCount() const = 0;
+	virtual DebugProcessor<ADDRESS, TIME_TYPE> *DebugGetProcessor(unsigned int prc_num) const = 0;
+};
 
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
+
+#endif
+ 

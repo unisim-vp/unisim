@@ -53,10 +53,6 @@ template <typename ADDRESS>
 class SourceCodeBreakpoint : public CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >
 {
 public:
-	SourceCodeBreakpoint(const SourceCodeLocation& source_code_location);
-	SourceCodeBreakpoint(const char *source_code_filename, unsigned int lineno, const char *filename = 0, unsigned int colno = 0);
-	virtual ~SourceCodeBreakpoint();
-	
 	int GetId() const { return id; }
 	const SourceCodeLocation& GetSourceCodeLocation() const { return source_code_location; }
 	const std::string& GetSourceCodeFilename() const { return source_code_location.GetSourceCodeFilename(); }
@@ -64,17 +60,12 @@ public:
 	unsigned int GetLineNo() const { return source_code_location.GetLineNo(); }
 	unsigned int GetColNo() const { return source_code_location.GetColNo(); }
 	
-	void Attach(Breakpoint<ADDRESS> *brkp);
-	void SetId(int _id) { id = _id; }
-	
-	/* struct Visitor { void Visit(Breakpoint<ADDRESS> *) {} }; */
-	template <class VISITOR> void Scan(VISITOR& visitor);
+protected:
+	SourceCodeBreakpoint(unsigned int prc_num, const SourceCodeLocation& source_code_location, const std::string& filename = std::string(), int id = -1);
 	
 private:
 	SourceCodeLocation source_code_location;
 	std::string filename;
-	typedef std::set<Breakpoint<ADDRESS> *> Breakpoints;
-	Breakpoints breakpoints;
 	int id;
 };
 
@@ -88,57 +79,21 @@ inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint<A
 template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const SourceCodeBreakpoint<ADDRESS>& src_code_brkp)
 {
-	os << "source code breakpoint #" << src_code_brkp.GetId() << " at " << src_code_brkp.GetSourceCodeLocation() << " for processor #" << src_code_brkp.GetProcessorNumber() << " and front-end #" << src_code_brkp.GetFrontEndNumber();
+	os << "source code breakpoint #" << src_code_brkp.GetId() << " at " << src_code_brkp.GetSourceCodeLocation() << " in " << src_code_brkp.GetFilename() << " for processor #" << src_code_brkp.GetProcessorNumber();
 	
 	return os;
 }
 
 template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const char *source_code_filename, unsigned int lineno, const char *_filename, unsigned int colno)
-	: CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >()
-	, source_code_location(source_code_filename, lineno, colno)
-	, filename(_filename)
-{
-}
-
-template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(const SourceCodeLocation& _source_code_location)
-	: CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >()
+SourceCodeBreakpoint<ADDRESS>::SourceCodeBreakpoint(unsigned int _prc_num, const SourceCodeLocation& _source_code_location, const std::string& _filename, int _id)
+	: CustomEvent<ADDRESS, SourceCodeBreakpoint<ADDRESS> >(_prc_num)
 	, source_code_location(_source_code_location)
+	, filename(_filename)
+	, id(_id)
 {
 }
 
-template <typename ADDRESS>
-SourceCodeBreakpoint<ADDRESS>::~SourceCodeBreakpoint()
-{
-	for(typename Breakpoints::iterator it = breakpoints.begin(); it != breakpoints.end(); ++it)
-	{
-		Breakpoint<ADDRESS> *breakpoint = *it;
-		breakpoint->Release();
-	}
-}
-
-template <typename ADDRESS>
-void SourceCodeBreakpoint<ADDRESS>::Attach(Breakpoint<ADDRESS> *brkp)
-{
-	std::pair<typename Breakpoints::iterator , bool> r = breakpoints.insert(brkp);
-	if(r.second)
-	{
-		brkp->Catch();
-	}
-}
-
-template <typename ADDRESS>
-template <class VISITOR>
-void SourceCodeBreakpoint<ADDRESS>::Scan(VISITOR& visitor)
-{
-	for(typename Breakpoints::iterator it = breakpoints.begin(); it != breakpoints.end(); ++it)
-	{
-		Breakpoint<ADDRESS> *breakpoint = *it;
-		visitor.Visit(breakpoint);
-	}
-}
-
+	
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim

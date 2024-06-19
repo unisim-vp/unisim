@@ -1411,7 +1411,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByName(unsigned int
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char *name) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObjectDIE(const char *name) const
 {
 	if(GetTag() == DW_TAG_GNU_call_site)
 	{
@@ -1419,7 +1419,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char 
 		
 		if(dw_at_abstract_origin)
 		{
-			return dw_at_abstract_origin->FindDataObject(name);
+			return dw_at_abstract_origin->FindDataObjectDIE(name);
 		}
 		
 		if(debug)
@@ -1440,7 +1440,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char 
 		
 		if(dw_at_abstract_origin)
 		{
-			return dw_at_abstract_origin->FindDataObject(name);
+			return dw_at_abstract_origin->FindDataObjectDIE(name);
 		}
 		
 		if(debug)
@@ -1484,7 +1484,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char 
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char *name) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMemberDIE(const char *name) const
 {
 	unsigned int num_children = children.size();
 	unsigned int i;
@@ -1520,7 +1520,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char 
 									if(!child_type_name || (*child_type_name == 0)) // struct/union has no name or name is an empty string (anonymous)
 									{
 										// behave as if members of anonymous struct are members of container
-										return dw_child_die_type->FindDataMember(name);
+										return dw_child_die_type->FindDataMemberDIE(name);
 									}
 								}
 								break;
@@ -1536,7 +1536,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char 
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindSubProgram(const char *name) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindSubProgramDIE(const char *name) const
 {
 	unsigned int num_children = children.size();
 	unsigned int i;
@@ -1565,7 +1565,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindSubProgram(const char 
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindVariable(const char *name) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindVariableDIE(const char *name) const
 {
 	uint16_t tag = GetTag();
 	switch(tag)
@@ -1604,7 +1604,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindVariable(const char *n
 				
 			default:
 			{
-				const DWARF_DIE<MEMORY_ADDR> *dw_die_variable = dw_child->FindVariable(name);
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_variable = dw_child->FindVariableDIE(name);
 				if(dw_die_variable) return dw_die_variable;
 				break;
 			}
@@ -1661,6 +1661,44 @@ void DWARF_DIE<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& nam
 				break;
 		}
 	}
+}
+
+template <class MEMORY_ADDR>
+template <typename VISITOR, typename T>
+T DWARF_DIE<MEMORY_ADDR>::Scan(VISITOR& visitor) const
+{
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+		
+		T ret = visitor.Visit(dw_child);
+		if(ret) return ret;
+	}
+
+	return T();
+}
+
+template <class MEMORY_ADDR>
+template <typename VISITOR, typename T>
+T DWARF_DIE<MEMORY_ADDR>::ScanType(VISITOR& visitor) const
+{
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = GetTypeDIE();
+	if(dw_die_type)
+	{
+		T ret = visitor.VisitType(dw_die_type);
+		if(ret) return ret;
+	}
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> const *dw_child = children[i];
+		T ret = visitor.VisitType(dw_child);
+		if(ret) return ret;
+	}
+	return T();
 }
 
 template <class MEMORY_ADDR>
@@ -2458,7 +2496,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocationExpression(uint16_t dw_at, const DWARF_F
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, DWARF_Location<MEMORY_ADDR>& loc) const
 {
 	const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
 	
@@ -2538,7 +2576,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr
 			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", defining DIE #" << dw_defining_die->GetId() << " for non-defining DIE #" << id << std::endl;
 		}
 		
-		return dw_defining_die->GetLocation(dw_curr_frame, has_frame_base, frame_base, loc);
+		return dw_defining_die->GetLocation(dw_curr_frame, loc);
 	}
 
 	if(!GetLocationExpression(DW_AT_location, dw_curr_frame, dw_loc_expr, loc.GetRanges()))
@@ -2561,7 +2599,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr
 	
 	MEMORY_ADDR addr;
 	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler, dw_curr_frame);
-	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
 	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
 	if(!dw_loc_expr_vm_status)
 	{
@@ -2606,7 +2643,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, DWARF_Location<MEMORY_ADDR>& loc) const
 {
 	uint64_t dw_byte_size = 0;
 	if(!GetByteSize(dw_curr_frame, dw_byte_size))
@@ -2648,7 +2685,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(const DWARF_Frame<MEMORY_ADDR
 			
 			MEMORY_ADDR addr;
 			DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler, dw_curr_frame);
-			if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
 			if(loc.GetType() == DW_LOC_SIMPLE_MEMORY)
 			{
 				MEMORY_ADDR object_addr = loc.GetAddress();
@@ -3931,37 +3967,6 @@ template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindParentDIE(unsigned int dw_tag) const
 {
 	return dw_parent_die ? ((dw_parent_die->GetTag() == dw_tag) ? dw_parent_die : dw_parent_die->FindParentDIE(dw_tag)) : 0;
-}
-
-template <class MEMORY_ADDR>
-template <typename VISITOR>
-void DWARF_DIE<MEMORY_ADDR>::Scan(VISITOR& visitor) const
-{
-	unsigned int num_children = children.size();
-	unsigned int i;
-	for(i = 0; i < num_children; i++)
-	{
-		DWARF_DIE<MEMORY_ADDR> const *dw_child = children[i];
-		if(!visitor.Visit(dw_child)) return;
-	}
-}
-
-template <class MEMORY_ADDR>
-template <typename VISITOR>
-void DWARF_DIE<MEMORY_ADDR>::ScanType(VISITOR& visitor) const
-{
-	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = GetTypeDIE();
-	if(dw_die_type)
-	{
-		if(!visitor.VisitType(dw_die_type)) return;
-	}
-	unsigned int num_children = children.size();
-	unsigned int i;
-	for(i = 0; i < num_children; i++)
-	{
-		DWARF_DIE<MEMORY_ADDR> const *dw_child = children[i];
-		if(!visitor.VisitType(dw_child)) return;
-	}
 }
 
 } // end of namespace dwarf

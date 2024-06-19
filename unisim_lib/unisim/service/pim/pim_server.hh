@@ -57,8 +57,8 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
-#include <unisim/util/debug/breakpoint_registry.hh>
-#include <unisim/util/debug/watchpoint_registry.hh>
+#include <unisim/util/debug/breakpoint.hh>
+#include <unisim/util/debug/watchpoint.hh>
 #include <unisim/service/interfaces/register.hh>
 
 #include <string>
@@ -93,8 +93,6 @@ using unisim::service::interfaces::Time;
 using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Monitor_if;
 
-using unisim::util::debug::BreakpointRegistry;
-using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
@@ -232,8 +230,6 @@ private:
 	bool trap;
 	const Watchpoint<ADDRESS> *watchpoint_hit;
 
-	BreakpointRegistry<ADDRESS> breakpoint_registry;
-	WatchpointRegistry<ADDRESS> watchpoint_registry;
 	GDBServerRunningMode running_mode;
 	bool extended_mode;
 	int32_t counter;

@@ -43,6 +43,15 @@ namespace unisim {
 namespace util {
 namespace debug {
 
+template <class ADDRESS> class SubProgram;
+
+template <class ADDRESS> bool operator <  (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2);
+template <class ADDRESS> bool operator <= (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2);
+template <class ADDRESS> bool operator == (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2);
+template <class ADDRESS> bool operator != (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2);
+template <class ADDRESS> bool operator >= (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2);
+template <class ADDRESS> bool operator >  (SubProgram<ADDRESS> const& sp1, SubProgram<ADDRESS> const& sp2);
+
 template <class ADDRESS>
 class SubProgram
 {
@@ -50,6 +59,7 @@ public:
 	SubProgram();
 	virtual ~SubProgram();
 	virtual const char *GetName() const = 0;
+	virtual const char *GetFilename() const = 0;
 	virtual bool IsExternal() const = 0;
 	virtual bool IsDeclaration() const = 0;
 	virtual bool IsInline() const = 0;
@@ -59,13 +69,13 @@ public:
 	virtual const FormalParameter *GetFormalParameter(unsigned int idx) const = 0;
 	virtual const DeclLocation *GetDeclLocation() const = 0;
 	virtual ADDRESS GetAddress() const = 0;
-	const std::string& BuildCDecl() const;
+	const std::string& GetCDecl(bool no_array_subscripts = false) const;
 	void Catch() const;
 	void Release() const;
 	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:
 	mutable unsigned int ref_count;
-	mutable std::string *cdecl;
+	mutable std::string *c_decl[2];
 };
 
 } // end of namespace debug

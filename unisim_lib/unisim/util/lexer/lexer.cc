@@ -58,6 +58,13 @@ Location::Location()
 {
 }
 
+void Location::Reset()
+{
+	filename.clear();
+	lineno = 1;
+	colno = 1;
+}
+
 void Location::IncLineNo(unsigned int delta)
 {
 	lineno += delta;

@@ -42,6 +42,7 @@ import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
 import unisim/service/debug/profiler || exit
 import unisim/service/debug/hla || exit
+import unisim/service/debug/nodejs || exit
 import unisim/service/loader/multiformat_loader || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/time/host_time || exit
@@ -62,7 +63,6 @@ import m4/ax_cflags_warn_all || exit
 
 copy source isa isa_vle header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
-
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
 UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa) $(files isa_vle)"
@@ -79,6 +79,7 @@ simulator.cc \
 config.cc \
 debugger.cc \
 hla_federate.cc \
+nodejs.cc \
 xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \
@@ -211,6 +212,21 @@ soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \
 soft/libsys/src/fs/lfs_util.c \
+sim_config.xml \
+gtkwave_init_script.tcl \
+bandwidth_gtkwave_init_script.tcl \
+.gtkwaverc \
+gtkwave.ini \
+config.t32 \
+baf.bin \
+trace32-core0.cmm.in \
+trace32-core1.cmm.in \
+trace32-core2.cmm.in \
+trace32-multi.cmm.in \
+sim_gtkwave.sh.in \
+"
+
+UNISIM_SIMULATOR_SCRIPTS_FILES="\
 soft/libsys/bin/small/common/gcc-wrapper \
 soft/libsys/bin/small/Z4_2/bin/powerpc-eabivle-ranlib \
 soft/libsys/bin/small/Z4_2/bin/powerpc-eabivle-gcc \
@@ -243,24 +259,13 @@ soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-gcc \
 soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-ld \
 soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-strip \
 soft/libsys/bin/large/Z7_1/bin/powerpc-eabivle-ar \
-sim_config.xml \
-gtkwave_init_script.tcl \
-bandwidth_gtkwave_init_script.tcl \
-.gtkwaverc \
-gtkwave.ini \
-config.t32 \
-baf.bin \
-trace32-core0.cmm.in \
-trace32-core1.cmm.in \
-trace32-core2.cmm.in \
-trace32-multi.cmm.in \
-sim_gtkwave.sh.in \
 "
 
 UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \
 ${UNISIM_SIMULATOR_HEADER_FILES} \
 ${UNISIM_SIMULATOR_DATA_FILES} \
+${UNISIM_SIMULATOR_SCRIPTS_FILES} \
 "
 
 for file in ${UNISIM_SIMULATOR_FILES}; do

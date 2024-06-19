@@ -71,6 +71,8 @@
 #include "unisim/util/xml/xml.hh"
 #include "unisim/util/debug/memory_access_type.hh"
 
+
+
 namespace unisim {
 namespace service {
 namespace pim {
@@ -140,8 +142,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 	, watchpoint_hit(NULL)
 
-	, breakpoint_registry()
-	, watchpoint_registry()
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
 	, extended_mode(false)
 	, counter(0)

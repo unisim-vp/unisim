@@ -36,14 +36,37 @@
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
 
 #include <unisim/service/interfaces/interface.hh>
-#include <unisim/util/debug/event.hh>
 #include <unisim/util/debug/memory_access_type.hh>
+#include <unisim/util/debug/source_code_location.hh>
+#include <unisim/util/debug/subprogram.hh>
+#include <inttypes.h>
 #include <list>
+
+namespace unisim {
+namespace util {
+namespace debug {
+
+template <typename ADDRESS> class Event;
+template <typename ADDRESS> class Breakpoint;
+template <typename ADDRESS> class Watchpoint;
+template <typename ADDRESS> class FetchInsnEvent;
+template <typename ADDRESS> class FetchStmtEvent;
+template <typename ADDRESS> class CommitInsnEvent;
+template <typename ADDRESS> class TrapEvent;
+template <typename ADDRESS> class NextInsnEvent;
+template <typename ADDRESS> class NextStmtEvent;
+template <typename ADDRESS> class FinishEvent;
+template <typename ADDRESS> class SourceCodeBreakpoint;
+template <typename ADDRESS> class SubProgramBreakpoint;
+
+} // end of namespace debug
+} // end of namespace util
+} // end of namespace unisim
 
 namespace unisim {
 namespace service {
 namespace interfaces {
-	
+
 template <class ADDRESS>
 class DebugEventScanner : public ServiceInterface
 {
@@ -63,7 +86,24 @@ template <class ADDRESS, class CONTAINER> detail::DebugEventScannerFrontInserter
 template <class ADDRESS, class CONTAINER> detail::DebugEventScannerBackInserter<ADDRESS, CONTAINER> DebugEventScannerBackInserter(CONTAINER& container, typename CONTAINER::iterator iter);
 
 template <class ADDRESS>
-class DebugEventTrigger : public ServiceInterface
+class DebugEventFactory : public ServiceInterface
+{
+public:
+	virtual unisim::util::debug::Breakpoint<ADDRESS> *CreateBreakpoint(ADDRESS addr) = 0;
+	virtual unisim::util::debug::Watchpoint<ADDRESS> *CreateWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook) = 0;
+	virtual unisim::util::debug::FetchInsnEvent<ADDRESS> *CreateFetchInsnEvent() = 0;
+	virtual unisim::util::debug::FetchStmtEvent<ADDRESS> *CreateFetchStmtEvent() = 0;
+	virtual unisim::util::debug::CommitInsnEvent<ADDRESS> *CreateCommitInsnEvent() = 0;
+	virtual unisim::util::debug::NextInsnEvent<ADDRESS> *CreateNextInsnEvent() = 0;
+	virtual unisim::util::debug::NextStmtEvent<ADDRESS> *CreateNextStmtEvent() = 0;
+	virtual unisim::util::debug::FinishEvent<ADDRESS> *CreateFinishEvent() = 0;
+	virtual unisim::util::debug::TrapEvent<ADDRESS> *CreateTrapEvent() = 0;
+	virtual unisim::util::debug::SourceCodeBreakpoint<ADDRESS> *CreateSourceCodeBreakpoint(const unisim::util::debug::SourceCodeLocation& source_code_location, const std::string& filename = std::string()) = 0;
+	virtual unisim::util::debug::SubProgramBreakpoint<ADDRESS> *CreateSubProgramBreakpoint(const unisim::util::debug::SubProgram<ADDRESS> *subprogram) = 0;
+};
+
+template <class ADDRESS>
+class DebugEventTrigger : public DebugEventFactory<ADDRESS>
 {
 public:
 	// "named" events

@@ -35,6 +35,10 @@
 #ifndef __MPC5777M_CONFIG_HH__
 #define __MPC5777M_CONFIG_HH__
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/programmable_router/config.hh>
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/config.hh>
@@ -56,7 +60,12 @@ struct Config
 	static const unsigned int MAX_FRONT_ENDS = NUM_PROCESSORS // for gdb-server
 	                                         + NUM_PROCESSORS // for inline-debugger
 	                                         + NUM_PROCESSORS // for profiler
+#if HAVE_HLA_RTI1516E
 	                                         + 1              // for HLA federate
+#endif
+#if HAVE_NODEJS
+	                                         + 1              // for Node.js JavaScript runtime environment
+#endif
 	                                         ;
 	static const unsigned int NUM_DMA_CHANNELS  = 128;
 	static const unsigned int NUM_DMA_TRIGGERS  = 8;
@@ -77,6 +86,7 @@ struct Config
 		static const unsigned int MAX_FRONT_ENDS = Config::MAX_FRONT_ENDS;
 	};
 	
+#if HAVE_HLA_RTI1516E
 	struct HLA_FEDERATE_CONFIG
 	{
 		typedef uint32_t ADDRESS;
@@ -86,6 +96,15 @@ struct Config
 			typedef uint64_t SCALAR_TYPE;
 		};
 	};
+#endif
+	
+#if HAVE_NODEJS
+	struct NODEJS_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		typedef sc_core::sc_time TIME_TYPE;
+	};
+#endif
 
 	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::Config
 	{

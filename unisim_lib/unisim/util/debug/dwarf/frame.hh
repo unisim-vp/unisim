@@ -166,35 +166,36 @@ public:
 	DWARF_Frame(const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state, unsigned int prc_num, const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, unsigned int dw_ret_addr_reg_num);
 	~DWARF_Frame();
 	
+	void ClearCFA();
 	bool LoadArchRegs();
-	bool ComputeCFA(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame);
 	bool Unwind();
-	MEMORY_ADDR ReadCFA() const;
+	MEMORY_ADDR ReadCFA() const; // returns frame own CFA
 	DWARF_Register<MEMORY_ADDR> *GetRegister(unsigned int reg_num) const; 
 	DWARF_Register<MEMORY_ADDR> *GetProgramCounterRegister() const;
 	template <typename T> bool ReadRegister(unsigned int reg_num, T& reg_value) const;
 	template <typename T> bool WriteRegister(unsigned int dw_reg_num, T value);
-	unsigned int GetRegisterSize(unsigned int reg_num) const;
-	const char *GetRegisterName(unsigned int reg_num) const;
 	bool ReadProgramCounterRegister(MEMORY_ADDR& pc) const;
 	const DWARF_RegSet<MEMORY_ADDR>& GetRegSet() const;
 	const DWARF_MachineState<MEMORY_ADDR> *GetMachineState() const;
 	unsigned int GetProcessorNumber() const;
-	const DWARF_Frame<MEMORY_ADDR> *GetInnerFrame() const;
+	DWARF_Frame<MEMORY_ADDR> *GetInnerFrame() const;
 	template <class VALUE_TYPE> bool Load(MEMORY_ADDR addr, VALUE_TYPE& value, unsigned int read_size, unisim::util::endian::endian_type endianness, unsigned int addr_space) const;
 	bool Commit();
 private:
 	const DWARF_MachineState<MEMORY_ADDR> *dw_mach_state;
 	unsigned int prc_num;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	MEMORY_ADDR cfa;
+	MEMORY_ADDR cfa; // own CFA, computed when calling Unwind of outer frame
 	mutable DWARF_RegSet<MEMORY_ADDR> dw_reg_set;
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
-	const DWARF_CFIRow<MEMORY_ADDR> *cfi_row;
-	unsigned int dw_ret_addr_reg_num;
+	const DWARF_CFIRow<MEMORY_ADDR> *cfi_row; // CFI row to compute CFA of inner frame, and all virtual registers in current frame
+	unsigned int dw_ret_addr_reg_num; // return address virtual register number in the inner frame, used to compute PC in the current frame
 	bool has_sp_reg_num;
 	unsigned int sp_reg_num;
+	
+	MEMORY_ADDR CFA() const; // returns inner frame CFA
+	void SetCFA(MEMORY_ADDR value); // Set inner frame CFA
 };
 
 } // end of namespace dwarf

@@ -40,6 +40,7 @@
 #include <unisim/util/nat_sort/nat_sort.hh>
 #include <string>
 #include <map>
+#include <vector>
 
 namespace unisim {
 namespace util {
@@ -48,12 +49,17 @@ namespace debug {
 class SimpleRegisterRegistry
 {
 public:
+	SimpleRegisterRegistry();
 	virtual ~SimpleRegisterRegistry();
-	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if);
+	void Clear();
+	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if, bool is_owner = true);
 	unisim::service::interfaces::Register *GetRegister(const char *name);
 	void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 private:
-	std::map<std::string, unisim::service::interfaces::Register *, unisim::util::nat_sort::nat_ltstr> registers_registry;
+	typedef std::map<std::string, unisim::service::interfaces::Register *, unisim::util::nat_sort::nat_ltstr> RegistersRegistry;
+	RegistersRegistry registers_registry;
+	typedef std::vector<unisim::service::interfaces::Register *> OwnedRegisters;
+	OwnedRegisters owned_registers;
 	
 	static std::string Key(const char *reg_name);
 };

@@ -85,7 +85,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
-	bool GetFrameBase(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, MEMORY_ADDR& frame_base) const;
+// 	bool GetFrameBase(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, MEMORY_ADDR& frame_base) const;
 	const char *GetName() const;
 	uint16_t GetLanguage() const;
 	const char *GetProducer() const;
@@ -93,11 +93,13 @@ public:
 	bool GetDefaultLowerBound(int64_t& lower_bound) const;
 	const DWARF_StatementProgram<MEMORY_ADDR> *GetStmtList() const;
 
-	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, bool local_only) const;
 	
-	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindVariable(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindVariableDIE(const char *name) const;
+	
+	template <typename VISITOR, typename T = bool> T Scan(VISITOR& visitor) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;
@@ -117,7 +119,6 @@ public:
 	bool GetAttributeStaticDynamicValue(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint16_t dw_at, uint64_t& value) const;
 	bool GetAttributeStaticDynamicValue(const DWARF_Frame<MEMORY_ADDR> *dw_curr_frame, uint16_t dw_at, int64_t& value) const;
 	
-	template <typename VISITOR> void Scan(VISITOR& visitor) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	std::ostream& debug_info_stream;

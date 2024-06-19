@@ -58,7 +58,9 @@ public:
 	
 	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
 	virtual unisim::util::debug::DataObjectRef<ADDRESS> FindDataObject(const char *data_object_name) const = 0;
-	
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> GetReturnValue() const = 0;
+	virtual unisim::util::debug::DataObjectRef<ADDRESS> GetSubProgramParameter(unsigned int index) const = 0;
+
 	inline unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const char *data_object_name) const;
 	inline unisim::util::debug::DataObjectRef<ADDRESS> operator [] (const std::string& data_object_name) const;
 };

@@ -164,6 +164,9 @@ struct CPU
     AddressDescriptor( uint32_t addr ) : address(addr), attributes(0) {}
   };
 
+  enum ReportAccess { report_vde_access=0, report_gpr_access=0, report_nzcv_access=0 };
+
+  void report(ReportAccess report_access, unsigned reg, bool write) const {}
 
   //=====================================================================
   //=                  public service imports/exports                   =

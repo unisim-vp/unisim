@@ -43,13 +43,12 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
-#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/stack_frame.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/subprogram_lookup.hh>
-#include <unisim/service/interfaces/stack_unwinding.hh>
 #include <unisim/service/interfaces/stubbing.hh>
 #include <unisim/service/interfaces/hooking.hh>
 #include <unisim/service/interfaces/debug_selecting.hh>
@@ -59,8 +58,12 @@
 #include <unisim/util/debug/watchpoint.hh>
 #include <unisim/util/debug/fetch_insn_event.hh>
 #include <unisim/util/debug/commit_insn_event.hh>
+#include <unisim/util/debug/next_insn_event.hh>
 #include <unisim/util/debug/trap_event.hh>
+#include <unisim/util/debug/fetch_stmt_event.hh>
 #include <unisim/util/debug/source_code_breakpoint.hh>
+#include <unisim/util/debug/next_stmt_event.hh>
+#include <unisim/util/debug/finish_event.hh>
 #include <unisim/util/ieee754/ieee754.hh>
 
 #include <unisim/kernel/kernel.hh>
@@ -84,9 +87,12 @@ typedef enum
 {
 	INLINE_DEBUGGER_MODE_WAITING_USER,
 	INLINE_DEBUGGER_MODE_STEP_INSTRUCTION,
+	INLINE_DEBUGGER_MODE_NEXT_INSTRUCTION,
 	INLINE_DEBUGGER_MODE_STEP,
 	INLINE_DEBUGGER_MODE_CONTINUE,
 	INLINE_DEBUGGER_MODE_CONTINUE_UNTIL,
+	INLINE_DEBUGGER_MODE_NEXT,
+	INLINE_DEBUGGER_MODE_FINISH,
 	INLINE_DEBUGGER_MODE_RESET,
 	INLINE_DEBUGGER_MODE_TRAVERSE
 } InlineDebuggerRunningMode;
@@ -121,12 +127,11 @@ class InlineDebugger
 	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
 	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
-	, public unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::StackFrame<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
 	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
-	, public unisim::kernel::Client<unisim::service::interfaces::StackUnwinding>
 	, public unisim::kernel::Client<unisim::service::interfaces::Stubbing<ADDRESS> >
 	, public unisim::kernel::Client<unisim::service::interfaces::Hooking<ADDRESS> >
 {
@@ -142,12 +147,11 @@ public:
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >    stmt_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >          backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StackFrame<ADDRESS> >          stack_frame_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >          profiling_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >   subprogram_lookup_import;
-	unisim::kernel::ServiceImport<unisim::service::interfaces::StackUnwinding>               stack_unwinding_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Stubbing<ADDRESS> >           stubbing_import;
 	unisim::kernel::ServiceImport<unisim::service::interfaces::Hooking<ADDRESS> >            hooking_import;
 	
@@ -178,8 +182,12 @@ private:
 	unisim::kernel::variable::Parameter<std::string> param_program_counter_name;
 
 	unisim::service::interfaces::Register *program_counter;
-	bool listening_fetch;
+	bool listening_fetch_insn;
+	bool listening_next_insn;
 	bool listening_trap;
+	bool listening_fetch_stmt;
+	bool listening_next_stmt;
+	bool listening_finish;
 	bool trap;
 	InlineDebuggerRunningMode running_mode;
 
@@ -201,7 +209,11 @@ private:
 	std::list<unisim::util::debug::DataObjectRef<ADDRESS> > tracked_data_objects;
 	
 	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
+	unisim::util::debug::NextInsnEvent<ADDRESS> *next_insn_event;
 	unisim::util::debug::TrapEvent<ADDRESS> *trap_event;
+	unisim::util::debug::FetchStmtEvent<ADDRESS> *fetch_stmt_event;
+	unisim::util::debug::NextStmtEvent<ADDRESS> *next_stmt_event;
+	unisim::util::debug::FinishEvent<ADDRESS> *finish_event;
 	
 	class VisitedInstructionPage
 	{
@@ -232,6 +244,7 @@ private:
 	bool IsStepInstructionCommand(const char *cmd) const;
 	bool IsTraverseCommand(const char *cmd) const;
 	bool IsStepCommand(const char *cmd) const;
+	bool IsNextCommand(const char *cmd) const;
 	bool IsNextInstructionCommand(const char *cmd) const;
 	bool IsContinueCommand(const char *cmd) const;
 	bool IsDisasmCommand(const char *cmd) const;
@@ -269,14 +282,22 @@ private:
 	bool IsTrackDataObjectCommand(const char *cmd) const;
 	bool IsUntrackDataObjectCommand(const char *cmd) const;
 	bool IsWhatIsCommand(const char *cmd) const;
-	bool IsInfoSubProgramCommand(const char *cmd) const;
+	bool IsInfoCommand(const char *cmd) const;
 	bool IsProcessorCommand(const char *cmd) const;
 	bool IsFrameCommand(const char *cmd) const;
 	bool IsReturnCommand(const char *cmd) const;
 
 	void Help();
-	bool ListenFetch();
-	bool UnlistenFetch();
+	bool ListenFetchInstruction();
+	bool UnlistenFetchInstruction();
+	bool ListenNextInstruction();
+	bool UnlistenNextInstruction();
+	bool ListenFetchStatement();
+	bool UnlistenFetchStatement();
+	bool ListenNextStatement();
+	bool UnlistenNextStatement();
+	bool ListenFinish();
+	bool UnlistenFinish();
 	void Disasm(ADDRESS addr, int count, ADDRESS& next_addr);
 	bool HasBreakpoint(ADDRESS addr);
 	void SetBreakpoint(ADDRESS addr);
@@ -304,7 +325,6 @@ private:
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace();
 	bool GetReturnAddress(ADDRESS& ret_addr) const;
-	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt = unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT) const;
 	void EnableProgramProfiling();
 	void EnableDataReadProfiling();
 	void EnableDataWriteProfiling();
@@ -341,10 +361,11 @@ private:
 	void PrintDataObjectType(const char *data_object_name);
 	void InfoSubProgram(const char *subprogram_name);
 	void SelectProcessor(unsigned int prc_num);
-	void SelectFrame(unsigned int frame_num);
+	void SelectStackFrame(unsigned int frame_num);
 	void Return(const char *literal = 0);
 	void InfoSelectedProcessor();
 	void InfoSelectedFrame();
+	void InfoFrame(int frame_num = -1);
 	bool IsVisited(ADDRESS _cia);
 };
 

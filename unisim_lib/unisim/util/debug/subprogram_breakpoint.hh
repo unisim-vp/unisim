@@ -52,21 +52,14 @@ template <typename ADDRESS>
 class SubProgramBreakpoint : public CustomEvent<ADDRESS, SubProgramBreakpoint<ADDRESS> >
 {
 public:
-	SubProgramBreakpoint(const SubProgram<ADDRESS> *subprogram);
-	virtual ~SubProgramBreakpoint();
-	
 	int GetId() const { return id; }
 	const SubProgram<ADDRESS> *GetSubProgram() const { return subprogram; }
 	
-	void Attach(Breakpoint<ADDRESS> *brkp);
-	void SetId(int _id) { id = _id; }
-	
-	/* struct Visitor { void Visit(Breakpoint<ADDRESS> *) {} }; */
-	template <class VISITOR> void Scan(VISITOR& visitor);
+protected:
+	SubProgramBreakpoint(unsigned int prc_num, const SubProgram<ADDRESS> *subprogram, int id = -1);
 	
 private:
 	const SubProgram<ADDRESS> *subprogram;
-	Breakpoint<ADDRESS> *breakpoint;
 	int id;
 };
 
@@ -80,36 +73,17 @@ inline std::ostream& operator << (std::ostream& os, const SubProgramBreakpoint<A
 template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const SubProgramBreakpoint<ADDRESS>& subprogram_brkp)
 {
-	os << "subprogram breakpoint #" << subprogram_brkp.GetId() << " at " << subprogram_brkp.GetSubProgram()->GetName() << " for processor #" << subprogram_brkp.GetProcessorNumber() << " and front-end #" << subprogram_brkp.GetFrontEndNumber();
+	os << "subprogram breakpoint #" << subprogram_brkp.GetId() << " at " << subprogram_brkp.GetSubProgram()->GetName() << " in " << subprogram_brkp.GetSubProgram()->GetFilename() << " for processor #" << subprogram_brkp.GetProcessorNumber();
 	
 	return os;
 }
 
 template <typename ADDRESS>
-SubProgramBreakpoint<ADDRESS>::SubProgramBreakpoint(const SubProgram<ADDRESS> *_subprogram)
-	: CustomEvent<ADDRESS, SubProgramBreakpoint<ADDRESS> >()
+SubProgramBreakpoint<ADDRESS>::SubProgramBreakpoint(unsigned int _prc_num, const SubProgram<ADDRESS> *_subprogram, int _id)
+	: CustomEvent<ADDRESS, SubProgramBreakpoint<ADDRESS> >(_prc_num)
 	, subprogram(_subprogram)
+	, id(_id)
 {
-}
-
-template <typename ADDRESS>
-SubProgramBreakpoint<ADDRESS>::~SubProgramBreakpoint()
-{
-	breakpoint->Release();
-}
-
-template <typename ADDRESS>
-void SubProgramBreakpoint<ADDRESS>::Attach(Breakpoint<ADDRESS> *brkp)
-{
-	breakpoint = brkp;
-	brkp->Catch();
-}
-
-template <typename ADDRESS>
-template <class VISITOR>
-void SubProgramBreakpoint<ADDRESS>::Scan(VISITOR& visitor)
-{
-	visitor.Visit(breakpoint);
 }
 
 } // end of namespace debug
