@@ -5,6 +5,7 @@
 #include <unisim/util/identifier/identifier.hh>
 #include <unisim/util/likely/likely.hh>
 #include <functional>
+#include <memory>
 #include <cmath>
 #include "top_thumb.tcc"
 
@@ -28,7 +29,7 @@ private:
   unsigned uLastIncBit = 0;
   bool uLastResult = false;
   bool uLastLogCases = false;
- 
+
   void clearHigh(unsigned bitPosition)
     { assert(0 <= bitPosition && bitPosition<=2*8*sizeof(uint64_t));
       if (bitPosition%(8*sizeof(uint64_t)) > 0)
@@ -165,7 +166,7 @@ char const* debugPrint(const unisim::util::forbint::contract::DomainValue* value
   if (value and value->isValid())
     if (char* s = value->write())
       return s;
-  
+
   return "...";
 }
 
@@ -384,7 +385,7 @@ private:
 
 public:
   typedef VALUE_TYPE value_type;
-  
+
   DomainMultiBitValue() : uConstant(0) {}
 
   explicit DomainMultiBitValue( value_type value ) : uConstant(value) {}
@@ -466,7 +467,7 @@ public:
   DomainMultiFloatValue<ResultType> castToMultiFloat() const
     {
       if (inherited::isValid())
-        return DomainMultiFloatValue<ResultType>((*functionTable().multibit_create_cast_multifloat)(value(), size, 
+        return DomainMultiFloatValue<ResultType>((*functionTable().multibit_create_cast_multifloat)(value(), size,
             std::numeric_limits<VALUE_TYPE>::is_signed, env()), *this);
       else
         return DomainMultiFloatValue<ResultType>((ResultType) uConstant);
@@ -556,7 +557,7 @@ public:
         constantFunction(uConstant);
       return *this;
     }
-    
+
   template <typename IntType>
   this_type applyBinary(DomainMultiBitBinaryOperation signedOperation,
       DomainMultiBitBinaryOperation unsignedOperation,
@@ -835,6 +836,14 @@ public:
         = [](VALUE_TYPE fst, SHT snd) { return fst >> snd; };
       return applyBinaryAssign(DMBBOArithmeticRightShift, DMBBOLogicalRightShift,
         DomainMultiBitValue<SHT>(sht), fun);
+    }
+
+  template <typename SHT>
+  DomainMultiBitValue& operator >>= (const DomainMultiBitValue<SHT>& sht)
+    { std::function<VALUE_TYPE(VALUE_TYPE, SHT)> fun
+        = [](VALUE_TYPE fst, SHT snd) { return fst >> snd; };
+      return applyBinaryAssign(DMBBOArithmeticRightShift, DMBBOLogicalRightShift,
+        sht, fun);
     }
 
   DomainBitValue operator==(const DomainMultiBitValue& source) const
@@ -1207,7 +1216,7 @@ struct FP
   template <typename FLOAT>
   static void SetQuietBit( FLOAT& result )
     { result.setQuietBit(); }
-  
+
   template <typename FLOAT> static DomainBitValue
   FlushToZero( FLOAT& op, DomainMultiBitValue<uint32_t> const& fpscr_val )
     { return op.setFlushToZero(); }
@@ -1220,7 +1229,7 @@ struct FP
     { return op.queryIsSNaN(); }
   template <typename FLOAT> static DomainBitValue IsQNaN( FLOAT const& op )
     { return op.queryIsQNaN(); }
-  
+
   template <typename FLOAT, class ARCH> static
   void Add( FLOAT& acc, FLOAT const& op2, ARCH& arch, DomainMultiBitValue<uint32_t> const& fpscr_val )
     { acc += op2; }
@@ -1310,7 +1319,7 @@ struct Processor
   struct Unimplemented {};
   struct Undefined {};
   typedef ::FP FP;
-    
+
   struct Config
   {
     // Following a standard armv7-a configuration
@@ -1324,7 +1333,7 @@ struct Processor
     static bool const     insnsT2 = true;
     static bool const     insns7  = true;
   };
-    
+
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
@@ -1341,7 +1350,7 @@ struct Processor
   typedef DomainMultiBitValue<int64_t> S64;
 
   struct ITCond {};
-    
+
   struct Mode
   {
     Mode() {}
@@ -1351,7 +1360,7 @@ struct Processor
     U32      GetSPSR() { throw Unimplemented(); return U32(); }
     void     Swap( Processor& ) {}
   };
-    
+
   struct CP15Reg
   {
     void CheckPermissions( uint8_t, uint8_t, uint8_t, uint8_t, Processor& cpu, bool ) const { /*cpu.RequiresPL(1);*/ }
@@ -1366,11 +1375,11 @@ struct Processor
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
-  
+
   struct StatusRegister
   {
     enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE };
-      
+
     StatusRegister()
       : iset(Arm)                               // Default is ARM instruction set
       , bigendian(false)                        // Default is Little Endian
@@ -1379,13 +1388,13 @@ struct Processor
     {}
 
     bool IsThumb() const { return iset == Thumb; }
-      
+
     InstructionSet iset;
     bool bigendian;
     uint8_t mode;
     bool outitb;
   };
-  
+
   struct _FPSCR;
   struct PSR : public StatusRegister
   {
@@ -1394,23 +1403,23 @@ struct Processor
     typedef unisim::util::arithmetic::BitField<29,1> CRF; /* Carry    Integer Condition Flag */
     typedef unisim::util::arithmetic::BitField<28,1> VRF; /* Overflow Integer Condition Flag */
     //typedef unisim::util::arithmetic::BitField<27,1> QRF; /* Cumulative saturation flag */
-      
+
     typedef unisim::util::arithmetic::BitField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
-      
-      
+
+
     typedef unisim::util::arithmetic::BitField<24,1> JRF; /* Jazelle execution state bit */
     typedef unisim::util::arithmetic::BitField< 9,1> ERF; /* Endianness execution state */
     typedef unisim::util::arithmetic::BitField< 5,1> TRF; /* Thumb execution state bit */
-      
+
     typedef unisim::util::arithmetic::BitField< 0,5> MRF; /* Mode field */
-      
+
     typedef unisim::util::arithmetic::BitField<10,6> ITHIRF;
     typedef unisim::util::arithmetic::BitField<25,2> ITLORF;
-      
+
     typedef unisim::util::arithmetic::BitField< 0,32> ALLRF;
-      
+
     static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
-      
+
   private:
     PSR( PSR const& );
   public:
@@ -1442,7 +1451,7 @@ struct Processor
       reg.bitset(RF::pos, RF::pos+RF::size-1, val);
       SetBits( reg, -1 );
     }
-      
+
     template <typename RF>
     U32    Get( RF const& _ )
     {
@@ -1455,7 +1464,7 @@ struct Processor
       val.extendWithZero(32-RF::size);
       return val;
     }
-      
+
     void   SetBits( U32 const& bits, uint32_t mask );
     U32    GetBits() const { return U32(proc.memoryState->getRegisterValueAsElement(CPSR_ID), proc); }
     // BOOL   n() const { return proc.memoryState->getRegisterValueAsBit(RegID("n").code); }
@@ -1463,7 +1472,7 @@ struct Processor
     // BOOL   c() const { return proc.memoryState->getRegisterValueAsBit(RegID("c").code); }
     // BOOL   v() const { return proc.memoryState->getRegisterValueAsBit(RegID("v").code); }
     U8     GetITState() const
-    { 
+    {
       U8 result(0);
       if (!outitb) {
         U32 reg = GetBits();
@@ -1492,11 +1501,11 @@ struct Processor
 
     U32    Get( JRF const& _ ) { return U32(GetJ()); }
     U32    Get( TRF const& _ ) { return U32(GetT()); }
-      
+
     /* Endianness */
     U32    Get( ERF const& _ ) { return U32(bigendian); }
     U32    Get( MRF const& _ ) { return U32(mode); }
-      
+
     Processor& proc;
   };
 
@@ -1506,7 +1515,7 @@ private:
 public:
   typedef unisim::util::forbint::contract::MemoryState      MemoryState;
   typedef unisim::util::forbint::contract::MemoryStateOwner MemoryStateOwner;
-  
+
   DomainEvaluationEnvironment       domainEnvironment;
   struct _DomainElementFunctions    domainFunctions;
   InterpretParameters*              interpretParameters;
@@ -1521,7 +1530,7 @@ public:
     auto bg = DomainMultiBitValue<uint32_t>(0x13 /* SUPERVISOR_MODE */ | ((0x60 >> 6) << 10) | ((0x60 & 0x3) << 25) );
     bg.moveToRegisterValue(memoryState, CPSR_ID, domainFunctions);
   }
-  
+
   struct SRegID : public unisim::util::identifier::Identifier<SRegID>
   {
     enum Code {
@@ -1590,7 +1599,7 @@ public:
     SRegID( Code _code ) : code(_code) {}
     SRegID( char const* _code ) : code(end) { init(_code); }
   };
-  
+
   struct RegID : public unisim::util::identifier::Identifier<RegID>
   {
     enum Code
@@ -1683,13 +1692,13 @@ public:
         }
       return "NA";
     }
-      
+
     RegID() : code(end) {}
     RegID( Code _code ) : code(_code) {}
     RegID( char const* _code ) : code(end) { init( _code ); }
   };
 public:
-  
+
   enum RegisterLimits
     {
       RLStart=0,
@@ -1720,7 +1729,7 @@ public:
         memory.setNumberOfRegisters(RLEnd);
         memory.setEvaluationEnvironment(domainEnvironment);
      }
-  
+
   bool close()
     { bool result = path.close();
       doesFollow = !result;
@@ -1760,12 +1769,12 @@ public:
   //   =====================================================================
   //   =                 Internal Instruction Control Flow                 =
   //   =====================================================================
-  
+
   void UnpredictableInsnBehaviour() { unpredictable = true; }
-  
+
   template <typename OP>
   void UndefinedInstruction( OP* op ) { throw Undefined(); }
-    
+
   bool Test( DomainBitValue const& cond, bool* multipleTarget=nullptr )
     {
       bool result;
@@ -1805,16 +1814,16 @@ public:
       ++path.currentStackPosition();
       return result;
     }
-  
+
   void FPTrap( unsigned exc )
   {
     throw Unimplemented();
   }
-    
+
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
-    
+
   U32  GetGPR( uint32_t id )
     { assert(memoryState);
       if (id != 15)
@@ -1822,7 +1831,7 @@ public:
       else
         return U32(branch_address);
     }
-  
+
   // TODO: interworking branches are not correctly handled
   void addJumpTargetAddress(uint32_t val)
     {  if (has_set_target) {
@@ -1884,7 +1893,7 @@ public:
   }
   void SetGPR_usr( uint32_t id, U32 const& value ) { /* system mode */ throw Unimplemented(); }
   U32  GetGPR_usr( uint32_t id ) { /* system mode */ throw Unimplemented(); return U32(); }
-    
+
   U32  GetNIA() { return U32(current_target); }
   void SetNIA( U32 const& nia, branch_type_t bt )
   {
@@ -1947,7 +1956,7 @@ public:
       return RegisterAccess( idx, *this );
     return U32( GetForeignRegister( foreign_mode, idx ) );
   }
-    
+
   void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value )
   {
     if ((cpsr.mode == foreign_mode) or
@@ -1958,18 +1967,18 @@ public:
       return SetGPR( idx, value );
     GetForeignRegister( foreign_mode, idx ) = value;
   }
-    
+
   //   =====================================================================
   //   =              Special/System Registers access methods              =
   //   =====================================================================
 
   PSR& CPSR() { return cpsr; }
-  
+
   U32  GetCPSR()                                 { return cpsr.GetBits(); }
   void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
-    
+
   U32& SPSR() { throw Unimplemented(); static U32 spsr_dummy; return spsr_dummy; }
-  
+
   ITCond itcond() const { return ITCond(); }
   bool itblock()
     { bool defaultMultipleValue = false;
@@ -1978,13 +1987,13 @@ public:
         UnpredictableInsnBehaviour();
       return res;
     }
-  
+
   void ITSetState( uint32_t cond, uint32_t mask )
   {
     cpsr.SetITState( (cond << 4) | mask, *this );
     is_it_assigned = true;
   }
-  
+
   void ITAdvance()
   {
     if (is_it_assigned)
@@ -2000,12 +2009,14 @@ public:
         cpsr.SetITState(std::move(itstate));
       }
   }
-  
+
   Mode&  CurrentMode() { /* throw Unimplemented(); */ return mode; }
   Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
-  
+
   static CP15Reg const* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
+
   // U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
   // { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
   // void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value )
@@ -2023,14 +2034,14 @@ public:
     unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
     return fpscr;
   }
-    
+
   U32 RoundToNearestFPSCR()
   {
     U32 fpscr( memoryState->getRegisterValueAsElement(RegID("fpscr").code), *this );
     unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundToNearest) );
     return fpscr;
   }
-    
+
   U64 eneonread( unsigned reg, unsigned size, unsigned pos )
   {
     U64 res( memoryState->getRegisterValueAsElement(RLStartNeonRegs + reg), *this );
@@ -2076,7 +2087,7 @@ public:
   ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait )
   {
     typedef TTP<Processor, ELEMT> TTP;
-    unsigned const usz = TTP::size/8; 
+    unsigned const usz = TTP::size/8;
     return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) );
   }
 
@@ -2096,23 +2107,23 @@ public:
   void BranchExchange( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
   void Branch( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
 
-    
+
   void WaitForInterrupt() { throw Unimplemented(); }
   void SWI( uint32_t imm ) { throw Unimplemented(); }
   void BKPT( uint32_t imm ) { throw Unimplemented(); }
   void CallSupervisor( uint32_t imm ) { throw Unimplemented(); }
   bool IntegerZeroDivide( BOOL const& condition ) { return false; }
-  
+
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
-  
+
   U32  MemURead32( U32 const& addr )   { return U32( memoryState->loadMultiBit(addr,4), *this); }
   U16  MemURead16( U32 const& addr )   { return U16( memoryState->loadMultiBit(addr,2), *this); }
   U32  MemRead32( U32 const& addr )    { return U32( memoryState->loadMultiBit(addr,4), *this); }
   U16  MemRead16( U32 const& addr )    { return U16( memoryState->loadMultiBit(addr,2), *this); }
   U8   MemRead8( U32 const& addr )     { return U8 ( memoryState->loadMultiBit(addr,1), *this); }
-  
+
   void MemUWrite32( U32 const& addr, U32 const& value )    { return memoryState->valueStore(addr, value); }
   void MemUWrite16( U32 const& addr, U16 const& value )    { return memoryState->valueStore(addr, value); }
   void MemWrite32( U32 const& addr, U32 const& value )     { return memoryState->valueStore(addr, value); }
@@ -2123,11 +2134,12 @@ public:
   void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
   bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
   void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
-  
+  void SetQC() {}
+
   //   =====================================================================
   //   =                         Processor Storage                         =
   //   =====================================================================
-  
+
   static const unsigned PC_reg = 15;
   static const unsigned LR_reg = 14;
   static const unsigned SP_reg = 13;
@@ -2159,7 +2171,7 @@ public:
   static uint32_t const COND_GT = 0x0c;
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
-    
+
   PSR              cpsr;
   struct _FPSCR {
     _FPSCR(Processor& aproc) : proc(&aproc) {}
@@ -2237,15 +2249,15 @@ inline
 DomainBitValue::DomainBitValue(bool value, Processor& processor)
    :  unisim::util::forbint::contract::DomainValue(unisim::util::forbint::contract::DomainValue::Empty(), &processor.domainFunctions, &processor.domainEnvironment), fConstant(false)
 { svalue() = (*functionTable().bit_create_constant)(value); }
-   
+
 inline
 DomainBitValue::DomainBitValue(Processor& processor)
    :  unisim::util::forbint::contract::DomainValue(unisim::util::forbint::contract::DomainValue::Empty(), &processor.domainFunctions, &processor.domainEnvironment) {}
-   
+
 inline
 DomainBitValue::DomainBitValue(DomainBitElement&& value, Processor& processor)
    :  unisim::util::forbint::contract::DomainValue(std::move(value), &processor.domainFunctions, &processor.domainEnvironment) {}
-   
+
 inline
 DomainBitValue::DomainBitValue(DomainBitElement&& value, const unisim::util::forbint::contract::DomainValue& source)
    :  unisim::util::forbint::contract::DomainValue(std::move(value), source) {}
@@ -2272,7 +2284,7 @@ DomainBitValue::castToMultiBit() const {
 // DomainMultiBitValue::DomainMultiBitValue(DomainMultiBitElement&& value,
 //       Processor& processor, bool isSigned)
 //    :  unisim::util::forbint::contract::DomainValue(std::move(value), processor), fSigned(isSigned) {}
-   
+
 template < typename FLOAT >
 inline
 DomainMultiFloatValue<FLOAT>::DomainMultiFloatValue(Processor& processor)
@@ -2290,7 +2302,7 @@ bool CheckCondition( Processor& state, unsigned cond )
   typedef Processor::BOOL BOOL;
   BOOL result(false);
   BOOL N = cpsr.Get(Processor::PSR::NRF()), Z = cpsr.Get(Processor::PSR::ZRF()), C = cpsr.Get(Processor::PSR::CRF()), V = cpsr.Get(Processor::PSR::VRF());
-  
+
   switch (cond) {
   case  0: result =                   Z; break; // eq; equal
   case  1: result =               not Z; break; // ne; not equal
@@ -2360,7 +2372,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 0, 0, 0, 5 ):
       {
         static struct : public CP15Reg
@@ -2371,7 +2383,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 0, 0, 1, 0 ):
       {
         static struct : public CP15Reg
@@ -2382,7 +2394,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 0, 1, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -2417,7 +2429,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-      
+
       /****************************
        * System control registers *
        ****************************/
@@ -2587,7 +2599,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       /***************************************************************
        * Cache maintenance, address translation, and other functions *
        ***************************************************************/
-          
+
     case CP15ENCODE( 7, 0, 1, 0 ):
       {
         static struct : public CP15Reg
@@ -2678,7 +2690,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 7, 0, 10, 1 ):
       {
         static struct : public CP15Reg
@@ -2704,7 +2716,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 7, 0, 11, 1 ):
       {
         static struct : public CP15Reg
@@ -2730,7 +2742,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
       /******************************
        * TLB maintenance operations *
        ******************************/
@@ -2773,7 +2785,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 12, 0, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -2786,7 +2798,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
       /***********************************/
       /* Context and thread ID registers */
       /***********************************/
@@ -2805,7 +2817,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       } break;
 
       /* BOARD specific */
-          
+
     case CP15ENCODE( 15, 0, 0, 1 ):
       {
         static struct : public CP15Reg
@@ -2818,7 +2830,7 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
         } x;
         return &x;
       } break;
-          
+
     case CP15ENCODE( 15, 4, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -2859,7 +2871,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
   //   { proc.memoryState->setRegisterValue(RegID("v").code, BOOL( VRF().Get(bits) ).castToMultiBit<char, 1>(), proc.domainFunctions);
   //     VRF().Set(mask, 0u);
   //   }
-        
+
   // if (ITHIRF().Get(mask) or ITLORF().Get(mask))
   //   {
   //     SetITState(U8((ITHIRF().Get(bits) << 2) | ITLORF().Get(bits)));
@@ -2869,7 +2881,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
   //     mask &= ~itmask;
   //     ITHIRF().Set(mask, 0u); ITLORF().Set(mask, 0u);
   //   }
-        
+
   if (MRF().Get(mask))
     {
       if (MRF().Get(mask) != 0x1f)
@@ -2881,7 +2893,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
         proc.UnpredictableInsnBehaviour();
       MRF().Set(mask, 0u);
     }
-        
+
   if (JRF().Get(mask))
     { bool defaultMultipleValue = true;
       U32 jrf = bits;
@@ -2906,7 +2918,7 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
         { proc.UnpredictableInsnBehaviour(); }
       ERF().Set(mask, 0u);
     }
-        
+
   U32 bg = GetBits();
   if (mask != 0) {
     int packet_pos = unisim::util::arithmetic::BitScanForward(mask);
@@ -2948,7 +2960,7 @@ struct Translator
 {
   Translator( uint32_t _addr, uint32_t _code )
     : addr(_addr), code(_code) {}
-  
+
   template <class ISA>
   void
   extract( ISA& isa , Processor& state)
@@ -2961,26 +2973,26 @@ struct Translator
         : operation(0), bytecount(0)
       {
         operation = isa.NCDecode( addr, ISA::mkcode( code ) );
-        unsigned bitlength = operation->GetLength(); 
+        unsigned bitlength = operation->GetLength();
         if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
           { delete operation; operation = 0; }
         bytecount = bitlength/8;
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
-      
+
       Operation* operation;
       unsigned   bytecount;
     };
-    
+
     Instruction instruction( isa, addr, code );
-    
+
     {
       uint32_t encoding = instruction->GetEncoding();
       if (instruction.bytecount == 2)
         encoding &= 0xffff;
     }
-    
+
     // Get actions
     bool is_thumb = status.IsThumb();
     if (state.is_verbose) {
@@ -3158,10 +3170,10 @@ namespace
           return -1;
         return Processor::RegID::end + code;
       }
-    
+
     return code;
   }
-  
+
   const char* arm_get_register_name(struct _Processor* processor, int register_index)
   {
     if (register_index < 0)
@@ -3171,7 +3183,7 @@ namespace
                                (register_index-Processor::RegID::end)).c_str();
     return Processor::RegID((Processor::RegID::Code) register_index).c_str();
   }
-  
+
   struct _DecisionVector* arm_create_decision_vector(struct _Processor* processor)
   {
     return reinterpret_cast<struct _DecisionVector*>(new DecisionVector());
@@ -3266,6 +3278,6 @@ extern "C"
 
     return 1;
   }
-    
+
 }
 

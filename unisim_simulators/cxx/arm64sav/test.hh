@@ -35,7 +35,7 @@
 #ifndef ARM64SAV_REVIEW_HH
 #define ARM64SAV_REVIEW_HH
 
-#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <arm64sav.hh>
 #include <unisim/util/sav/sav.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <string>
@@ -71,7 +71,7 @@ struct Interface
 };
 
 struct TestLess { bool operator () ( Interface const& a, Interface const& b ) const; };
-  
+
 typedef std::multiset<Interface, TestLess> TestDB;
 
 #endif // ARM64SAV_REVIEW_HH

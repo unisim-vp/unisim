@@ -55,7 +55,7 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
     //=====================================================================
     //=                  ARM architecture model description               =
     //=====================================================================
-    
+
     // Following a standard armv7 configuration
     static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
     static bool const     insns4T = true;
@@ -91,10 +91,10 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
 
     Operation* decode(uint32_t addr, uint32_t code);
   };
-  
+
   Runner( char const* name );
   ~Runner();
-  
+
   void  run(Interface::testcode_t code, uint32_t*);
   void  step_instruction();
 
@@ -102,6 +102,7 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
   unisim::util::endian::endian_type endianess();
 
   void CheckAlignment(U32 addr, uint32_t alignment) { if (alignment and (addr & (alignment-1))) { struct AlignmentError {}; throw AlignmentError(); } }
+  void SetQC() {}
 
   template <typename T> T MemReadT(U32 addr, bool aligned)
   {
@@ -147,7 +148,7 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
   void     SetExclusiveMonitors( U32 addr, unsigned size ) { dont("mp"); }
   bool     ExclusiveMonitorsPass( U32 addr, unsigned size ) { dont("mp"); return false; }
   void     ClearExclusiveLocal() { dont("mp"); }
-  
+
   struct CP15Reg
   {
     void CheckPermissions( uint8_t, uint8_t, uint8_t, uint8_t, CPU&, bool ) const { dont("cp15"); }
@@ -160,7 +161,9 @@ struct Runner : public unisim::component::cxx::processor::arm::CPU<unisim::compo
   };
 
   static CP15Reg* CP15GetRegister(uint8_t, uint8_t, uint8_t, uint8_t) { static CP15Reg _; return &_; }
-  
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
+
   Arm32 arm32iset;
   Thumb2 thumb2iset;
 };

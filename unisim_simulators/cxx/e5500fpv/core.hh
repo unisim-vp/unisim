@@ -64,13 +64,13 @@ template <typename REGISTER>
 struct Register
 {
   typedef UINT TYPE;
-  
+
   Register(TYPE _value) : value(_value) {}
-  
+
   template <typename FIELD> void Set( TYPE field_value ) {  FIELD::Set(value, field_value); }
   template <typename FIELD> TYPE Get() const { return FIELD::Get(value); }
   operator TYPE () const { return value; }
-  
+
   TYPE value;
 };
 
@@ -123,7 +123,7 @@ struct FPSCR : Register<FPSCR>
   struct XE     : Field<XE,     60> {};     // Floating-Point Inexact Exception Enable
   struct NI     : Field<NI,     61> {};     // Floating-Point Non-IEEE Mode
   struct RN     : Field<RN,     62, 63> {}; // Floating-Point Rounding Control
-  
+
   FPSCR(UINT _value, Core& _core) : Super(_value), core(_core) {} Core& core;
 
   template <class FIELD>
@@ -140,7 +140,7 @@ struct FPSCR : Register<FPSCR>
     if (i)
       SetException( XX() );
   }
-  
+
   template <class FIELD>
   void SetInvalid( FIELD const& vxfield )
   {
@@ -200,7 +200,7 @@ struct XER : Register<XER>
   struct OV         : Field<OV,        33> {};     // Overflow
   struct CA         : Field<CA,        34> {};     // Carry
   struct BYTE_COUNT : Field<BYTE_COUNT,57, 63> {}; // Byte count
-   
+
   struct _0_3       : Field<_0_3,32,35> {}; // XER[0-3]
 	
   XER(UINT _value) : Super(_value) {}
@@ -238,15 +238,15 @@ struct Core
     struct UnimplementedInstruction { typedef ProgramInterrupt Interrupt; };
     struct FloatingPoint { typedef ProgramInterrupt Interrupt; };
   };
-  
+
   struct FloatingPointUnavailableInterrupt
   {
     FloatingPointUnavailableInterrupt(Core&) {}
     struct FloatingPointUnavailable { typedef FloatingPointUnavailableInterrupt Interrupt; };
   };
-  
+
   Core();
-  
+
   template <class EXC>
   typename EXC::Interrupt ThrowException() { return typename EXC::Interrupt(*this); }
 
@@ -255,10 +255,10 @@ struct Core
   U64& GetCTR() { return ctr; }
   U64  GetCIA() { return cia; }
   void Branch( U64 addr ) { nia = addr; }
-  
+
   XER& GetXER() { return xer; }
   MSR& GetMSR() { return msr; }
-  
+
   U64  GetGPR( unsigned id ) { return gprs[id]; }
   void SetGPR( unsigned id, U64 value ) { gprs[id] = value; }
 
@@ -284,10 +284,10 @@ struct Core
   XER             xer;
   CR              cr;
   MSR             msr;
-  
+
   SoftDouble      fprs[32];
   FPSCR           fpscr;
-  
+
   struct FPShuffler
   {
     FPShuffler() : random(), addr_range() {}
@@ -303,6 +303,12 @@ struct Core
   static bool const HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS = true;
   static bool const HAS_FLOATING_POINT_SQRT = true;
 };
+
+template <class FP>
+U8 FPCompare( FP const& lhs, FP const& rhs )
+{
+  return lhs.compare(rhs);
+}
 
 U64 UnsignedMultiplyHigh( U64 lop, U64 rop );
 S64 SignedMultiplyHigh( S64 lop, S64 rop );

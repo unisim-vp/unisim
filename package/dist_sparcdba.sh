@@ -47,6 +47,7 @@ decoder.hh \
 
 UNISIM_SIMULATOR_EXTRA_FILES="\
 significant_tests.sh \
+all_tests.sh \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\

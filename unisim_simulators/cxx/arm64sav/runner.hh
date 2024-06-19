@@ -36,7 +36,7 @@
 #define __ARM64SAV_RUNNER_HH__
 
 #include <test.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <arm64sav.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/util/arithmetic/bitfield.hh>
 #include <iosfwd>
@@ -55,6 +55,7 @@ struct RunnerTypes
   typedef int32_t      S32;
   typedef int64_t      S64;
   typedef bool         BOOL;
+  typedef _Float16     F16;
   typedef float        F32;
   typedef double       F64;
 
@@ -73,7 +74,7 @@ struct Runner
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Runner> Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Runner> Operation;
 
-  enum ReportAccess { report_simd_access = 0, report_gzr_access = 0, report_gsr_access = 0 };
+  enum ReportAccess { report_none = 0, report_simd_access = report_none, report_gzr_access = report_none, report_gsr_access = report_none, report_nzcv_access = report_none };
   void report(ReportAccess, unsigned, bool) {}
 
   void step_instruction();
@@ -87,8 +88,8 @@ struct Runner
   struct SysReg
   {
     virtual ~SysReg() {}
-    virtual void Write(int, int, int, int, int, Runner&, U64) const = 0;
-    virtual U64 Read(int, int, int, int, int, Runner&) const = 0;
+    virtual void Write(int, int, int, int, int, int, Runner&, U64) const = 0;
+    virtual U64 Read(int, int, int, int, int, int, Runner&) const = 0;
     virtual void DisasmWrite(int, int, int, int, int, int, std::ostream&) const = 0;
     virtual void DisasmRead(int, int, int, int, int, int, std::ostream&) const = 0;
     void dont() const { Runner::dont("system"); }
@@ -113,23 +114,35 @@ struct Runner
   void CallSupervisor( uint32_t imm ) { dont("system"); }
   void CallHypervisor( uint32_t imm ) { dont("system"); }
   void ExceptionReturn() { dont("system"); }
+  void CheckSPAlignment(U64 addr) {}
 
   template <typename T> T MemReadT(U64 addr) { return *reinterpret_cast<T const*>(addr); }
   U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
   U32 MemRead32(U64 addr) { return MemReadT<uint32_t>(addr); }
   U16 MemRead16(U64 addr) { return MemReadT<uint16_t>(addr); }
   U8  MemRead8 (U64 addr) { return MemReadT<uint8_t> (addr); }
+  U64 MemReadUnprivileged64(U64 addr) { return MemReadT<U64>(addr); }
+  U32 MemReadUnprivileged32(U64 addr) { return MemReadT<uint32_t>(addr); }
+  U16 MemReadUnprivileged16(U64 addr) { return MemReadT<uint16_t>(addr); }
+  U8  MemReadUnprivileged8 (U64 addr) { return MemReadT<uint8_t> (addr); }
 
   template <typename T> void MemWriteT(U64 addr, T val) { *reinterpret_cast<T*>(addr) = val; }
   void MemWrite64(U64 addr, U64 val) { MemWriteT(addr, val); }
   void MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }
   void MemWrite16(U64 addr, U16 val) { MemWriteT(addr, val); }
   void MemWrite8 (U64 addr, U8  val) { MemWriteT(addr, val); }
+  void MemWriteUnprivileged64(U64 addr, U64 val) { MemWriteT(addr, val); }
+  void MemWriteUnprivileged32(U64 addr, U32 val) { MemWriteT(addr, val); }
+  void MemWriteUnprivileged16(U64 addr, U16 val) { MemWriteT(addr, val); }
+  void MemWriteUnprivileged8 (U64 addr, U8  val) { MemWriteT(addr, val); }
 
   void     SetExclusiveMonitors( U64 addr, unsigned size ) { dont("mp"); }
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { dont("mp"); return false; }
   void     ClearExclusiveLocal() { dont("mp"); }
   void     PrefetchMemory( int, U64 ) { dont("prefetch"); }
+
+  void SetQC() { dont("floating-point"); }
+  U32 FPCR() { dont("floating-point"); return U32(); }
 
   Decoder    decoder;
   Operation* current_instruction;

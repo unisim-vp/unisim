@@ -149,7 +149,7 @@ AArch64::AArch64(char const* name)
   };
 
   regmap["pc"] = new ProgramCounterRegister( *this );
-  
+
   /** Specific Current Program Status Register Debugging Accessor */
   struct CurrentProgramStatusRegister : public unisim::service::interfaces::Register
   {
@@ -1115,7 +1115,7 @@ AArch64::DataAbort::proceed( AArch64& cpu ) const
     | U32(mat == mem_acc_type::cache_maintenance) << 8 // IN {AccType_DC, AccType_IC} Cache maintenance
     | U32(s2fs1walk) << 7
     | U32(mat == mem_acc_type::write or mat == mem_acc_type::cache_maintenance) << 6
-    | U32(unisim::component::cxx::processor::arm::EncodeLDFSC(type, level)) << 0;
+    | U32(type.EncodeLDFSC(level)) << 0;
 
   // Print(std::cerr << "DataAbort: ", esr);
   // std::cerr << std::endl;
@@ -1254,7 +1254,7 @@ AArch64::translation_table_walk( AArch64::MMU::TLB::Entry& entry, uint64_t vaddr
         desc = descriptor.read(tbladdr + 8*index);
 
         if (not (desc & 1))
-          throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
+          throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Translation, vaddr, 0, mat, level, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
 
         if (not (desc & 2))
           {
@@ -1892,8 +1892,8 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
           // convenience method to handle sub register accesses (TODO: host endianness)
           struct { uint32_t& sub32(uint64_t& reg, unsigned addr) { return (reinterpret_cast<uint32_t*>(&reg))[addr >> 2 & 1]; } } r64;
           uint32_t tmp;
-          
-          
+
+
           switch (req.addr)
             {
             case 0x00:  return req.ro<uint32_t>(0x74726976); /* ____________________________________________ Magic Value: 'virt' */
@@ -1912,7 +1912,7 @@ AArch64::map_virtio_disk(char const* filename, uint64_t base_addr, unsigned irq)
             case 0x60:  return req.ro(viodisk.InterruptStatus); /* _________________________________________ Interrupt status */
             case 0x64:  return req.wo(tmp) and viodisk.InterruptAck(tmp); /* _______________________________ Interrupt acknowledgment */
             case 0x70:  return req.rw(viodisk.Status) and (req.rd() or viodisk.CheckStatus()); /* __________ Device status */
-            case 0x80: 
+            case 0x80:
             case 0x84:  return req.wo(r64.sub32(viodisk.QueueDesc(), req.addr)); /* ________________________ Descriptor Area */
             case 0x90:
             case 0x94:  return req.wo(r64.sub32(viodisk.QueueDriver(), req.addr)); /* ______________________ Driver Area */
@@ -2498,7 +2498,7 @@ AArch64::write_tfpstats()
 {
   if (tfpstats_filename.size() == 0)
     return;
-  
+
   std::ofstream sink(tfpstats_filename.c_str());
   sink << "opsize,count\n";
   sink << "32," << tfp32count << '\n';
@@ -2604,7 +2604,7 @@ AArch64::SetExclusiveMonitors( U64 addr, unsigned size )
 
   uint64_t va = untaint(AddrTV(), addr);
   if (unlikely((size | va) & (size - 1)))
-    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Alignment,
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Alignment,
                     va, 0, mem_acc_type::read, /*level (don't care)*/ 0, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::read);
@@ -2620,7 +2620,7 @@ AArch64::ExclusiveMonitorsPass( U64 addr, unsigned size )
 
   uint64_t va = untaint(AddrTV(), addr);
   if (unlikely((size | va) & (size - 1)))
-    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Alignment,
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Alignment,
                     va, 0, mem_acc_type::write, /*level (don't care)*/ 0, /*ipavalid*/false, /*secondstage*/false, /*s2fs1walk*/false);
   MMU::TLB::Entry entry(va);
   translate_address(entry, pstate.GetEL(), mem_acc_type::write);
@@ -2734,7 +2734,7 @@ AArch64::CheckPermission(MMU::TLB::Entry const& trans, uint64_t vaddress, unsign
     }
 
   if (unlikely(fail))
-    throw DataAbort(unisim::component::cxx::processor::arm::DAbort_Permission,
+    throw DataAbort(unisim::component::cxx::processor::arm::DAbort::Permission,
                     vaddress, trans.pa, mat, trans.level, /*ipavalid*/true, /*secondstage*/false, /*s2fs1walk*/false);
 }
 

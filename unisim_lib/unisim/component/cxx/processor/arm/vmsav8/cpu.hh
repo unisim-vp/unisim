@@ -224,7 +224,7 @@ struct CPU
   //=                    Registers access methods
   //====================================================================
 
-  enum AccessReport { report_simd_access=0, report_gsr_access=0, report_gzr_access=0, report_nzcv_access=0 };
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
   void report(AccessReport, unsigned, bool) const {}
 
   U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? this->GetVU8((r0 + r) % 32, idx % elts) : oob; }

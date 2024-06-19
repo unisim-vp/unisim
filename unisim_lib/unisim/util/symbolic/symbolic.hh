@@ -40,6 +40,7 @@
 #include <unisim/util/identifier/identifier.hh>
 #include <stdexcept>
 #include <map>
+#include <set>
 #include <limits>
 #include <typeinfo>
 #include <cstring>
@@ -152,8 +153,6 @@ namespace symbolic {
     virtual void Repr( std::ostream& sink ) const override;
     virtual ValueType GetType() const override { return type; }
     virtual int cmp( ExprNode const& rhs ) const override { return 0; }
-    // virtual int cmp( ExprNode const& rhs ) const override { return compare(dunamic_cast<Zero const&>(rhs)); }
-    // int compare(Zero const& rhs) const { if (int delta = int(is_signed) - rhs.is_signed) return delta; return int(bitsize) - int (rhs.bitsize); }
     ValueType type;
   };
 
@@ -346,7 +345,7 @@ namespace symbolic {
   {
     if (CELLCOUNT & 1)
       res.cells[CELLCOUNT-1] = cst->GetBits(CELLCOUNT/2);
-    
+
     for (unsigned idx = CELLCOUNT/2; idx-- > 0;)
       {
         uint64_t bits = cst->GetBits(idx);
@@ -363,7 +362,7 @@ namespace symbolic {
     virtual ~Evaluator() {}
     virtual ConstNodeBase const* Simplify(unsigned, Expr&) const;
   };
-  
+
   struct Expr
   {
     Expr() : node() {} ExprNode const* node;
@@ -722,6 +721,10 @@ namespace symbolic {
     this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( make_operation( "Lsl", expr, SmartValue<shift_type>(sh).expr ) ); }
     template <typename SHT>
     this_type operator >> ( SmartValue<SHT> const& sh ) const {return this_type( make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<shift_type>(sh).expr ) ); }
+    template <typename SHT>
+    this_type& operator <<= ( SmartValue<SHT> const& sh ) { expr = make_operation( "Lsl", expr, SmartValue<shift_type>(sh).expr ); return *this; }
+    template <typename SHT>
+    this_type& operator >>= ( SmartValue<SHT> const& sh ) { expr = make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<shift_type>(sh).expr ); return *this; }
 
     this_type operator - () const { return this_type( make_operation( "Neg", expr ) ); }
     this_type operator ~ () const { return this_type( make_operation( "Not", expr ) ); }
@@ -796,6 +799,7 @@ namespace symbolic {
   FTP fmodulo( FTP const& left, FTP const& right ) { return FTP( make_operation( "FMod", left.expr, right.expr ) ); }
 
   template <typename FTP>  FTP fabs( FTP const& value ) { return FTP( make_operation( "FAbs", value.expr ) ); }
+  template <typename FTP>  FTP FAbs( FTP const& value ) { return fabs<FTP>( value ); }
   template <typename FTP>  FTP ceil( FTP const& value ) { return FTP( make_operation( "FCeil", value.expr ) ); }
   template <typename FTP>  FTP floor( FTP const& value ) { return FTP( make_operation( "FFloor", value.expr ) ); }
   template <typename FTP>  FTP trunc( FTP const& value ) { return FTP( make_operation( "FTrunc", value.expr ) ); }
@@ -804,6 +808,7 @@ namespace symbolic {
   template <typename FTP>  FTP sqrt( FTP const& value ) { return FTP( make_operation( "FSqrt", value.expr ) ); }
   template <typename FTP>  FTP fmin( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMin", l.expr, r.expr ) ); }
   template <typename FTP>  FTP fmax( FTP const& l, FTP const& r ) { return FTP( make_operation( "FMax", l.expr, r.expr ) ); }
+  template <typename FTP>  FTP FMax( FTP const& l, FTP const& r ) { return fmax<FTP>( l, r ); }
 
   struct FP
   {
@@ -1035,6 +1040,8 @@ namespace symbolic {
     return SmartValue<bool>( Expr( new FP::IsNaNNode( op.expr, true, true ) ) );
   }
 
+  template <typename FTP> SmartValue<bool> IsNaN( FTP const& value ) { return isnan<FTP>( value ); }
+
   template <typename FTP>
   SmartValue<bool> issignaling( FTP const& op )
   {
@@ -1077,11 +1084,15 @@ namespace symbolic {
   template <class T>
   struct Conditional : public Choice<T>
   {
-    Conditional() : Choice<T>(), cond() {}
+    Conditional() : Choice<T>(), cond(), updates() {}
 
     bool  proceed( Expr const& _cond );
+    void  add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
+    void  factorize();
+    bool  merge(int, Expr const&, Expr const&) { return false; }
 
     Expr  cond;
+    std::set<Expr> updates;
   };
 
   template <class T>
@@ -1094,21 +1105,42 @@ namespace symbolic {
     return Choice<T>::proceed();
   }
 
-  template <class PoolT, typename Merger>
+  template <class T>
   void
-  factorize( PoolT& dst, PoolT& lho, PoolT& rho, Merger merger )
+  Conditional<T>::factorize()
   {
-    for (typename PoolT::iterator lhi = lho.begin(), rhi = rho.begin(), lie = lho.end(), rie = rho.end(); lhi != lie and rhi != rie; )
+    T* self = static_cast<T*>(this);
+    std::set<Expr>::iterator
+      lhi = self->nexts[0]->updates.begin(),
+      lhe = self->nexts[0]->updates.end(),
+      rhi = self->nexts[1]->updates.begin(),
+      rhe = self->nexts[1]->updates.end();
+
+    for (;;)
       {
-        if (lho.value_comp()(*lhi, *rhi))
-          ++lhi;
-        else if (lho.value_comp()(*rhi, *lhi))
-          ++rhi;
+        bool lstop = lhi == lhe;
+        bool rstop = rhi == rhe;
+        if (lstop and rstop)
+          break;
+
+        if (int delta = rstop ? -1 : lstop ? +1 : lhi->compare(*rhi))
+          {
+            if (self->merge(delta, lstop ? Expr() : *lhi, rstop ? Expr() : *rhi))
+              {
+                if (delta <= 0) self->nexts[0]->updates.erase( lhi++ );
+                if (delta >= 0) self->nexts[1]->updates.erase( rhi++ );
+              }
+            else
+              {
+                if (delta < 0) ++lhi;
+                else           ++rhi;
+              }
+          }
         else
           {
-            merger( dst, *lhi, *rhi );
-            lho.erase( lhi++ );
-            rho.erase( rhi++ );
+            self->updates.insert( *lhi );
+            self->nexts[0]->updates.erase( lhi++ );
+            self->nexts[1]->updates.erase( rhi++ );
           }
       }
   }

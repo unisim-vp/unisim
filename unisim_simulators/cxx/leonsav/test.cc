@@ -168,7 +168,7 @@ Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
       ConstNodeBase const* Simplify( unsigned, Expr& expr ) const override
       {
         if (auto reg = dynamic_cast<Scanner::GRegRead const*>(expr.node))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg->reg) << 16 );
+          return new unisim::util::symbolic::ConstNode<uint32_t>( uint32_t(reg->reg) << 16 );
         if (dynamic_cast<Scanner::Y const*>(expr.node)) 
           Scanner::dont("y-relative addressing");
         if (dynamic_cast<Scanner::Flag const*>(expr.node)) 

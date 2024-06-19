@@ -31,10 +31,11 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 
+#include <unisim/util/identifier/identifier.hh>
 #include <inttypes.h>
 #include <stdexcept>
 #include <iostream>
@@ -44,14 +45,14 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-  
+
   /** struct Exception
-   *  
+   *
    * Base class used to abort normal execution of an instruction and
    * take processor to related handler (using a throw).
    */
   struct Exception : public std::exception { Exception() {} virtual const char* what() const throw() { return "Exception"; } };
-  
+
   struct UndefInstrException : Exception { UndefInstrException() {} virtual const char* what() const throw() { return "UndefInstrException"; } };
   struct HypTrapException : Exception { HypTrapException() {} virtual const char* what() const throw() { return "HypTrapException"; } };
   struct SVCException : Exception  { SVCException() {} virtual const char* what() const throw() { return "SVCException"; } };
@@ -60,83 +61,91 @@ namespace arm {
   struct PrefetchAbortException : Exception { PrefetchAbortException() {} virtual const char* what() const throw() { return "PrefetchAbortException"; } };
   struct DataAbortException : Exception { DataAbortException() {} virtual const char* what() const throw() { return "DataAbortException"; } };
   struct VirtualAbortException : Exception { VirtualAbortException() {} virtual const char* what() const throw() { return "VirtualAbortException"; } };
-  
-  // Data Abort Types
-  enum DAbort {
-    DAbort_AccessFlag,
-    DAbort_Alignment,
-    DAbort_Background,
-    DAbort_Domain,
-    DAbort_Permission,
-    DAbort_Translation,
-    DAbort_AddressSize,
-    DAbort_SyncExternal,
-    DAbort_SyncExternalOnWalk,
-    DAbort_SyncParity,
-    DAbort_SyncParityOnWalk,
-    DAbort_AsyncParity,
-    DAbort_AsyncExternal,
-    DAbort_Debug,
-    DAbort_TLBConflict,
-    DAbort_Lockdown,
-    DAbort_Coproc,
-    DAbort_ICacheMaint
-  };
 
-// EncodeLDFSC()
-// =============
-// Function that gives the Long-descriptor FSC code for types of Fault
-  
-inline unsigned EncodeLDFSC(DAbort type, unsigned level)
-{
-  unsigned result;
-  switch (type)
+  // Data Abort Types
+  struct DAbort : public unisim::util::identifier::Identifier<DAbort>
+  {
+    enum Code {
+      AccessFlag,
+      Alignment,
+      Background,
+      Domain,
+      Permission,
+      Translation,
+      AddressSize,
+      SyncExternal,
+      SyncExternalOnWalk,
+      SyncParity,
+      SyncParityOnWalk,
+      AsyncParity,
+      AsyncExternal,
+      Debug,
+      TLBConflict,
+      Lockdown,
+      Coproc,
+      ICacheMaint,
+      end
+    } code;
+
+    char const* c_str() const
     {
-    case DAbort_AddressSize:        return 0b000000 | level;
-    case DAbort_Translation:        return 0b000100 | level;
-    case DAbort_AccessFlag:         return 0b001000 | level;
-    case DAbort_Permission:         return 0b001100 | level;
-    case DAbort_SyncExternal:       return 0b010000;
-    case DAbort_SyncExternalOnWalk: return 0b010100 | level;
-    case DAbort_SyncParity:         return 0b011000;
-    case DAbort_SyncParityOnWalk:   return 0b011100 | level;
-    case DAbort_AsyncParity:        return 0b011001;
-    case DAbort_AsyncExternal:      return 0b010001;
-    case DAbort_Alignment:          return 0b100001;
-    case DAbort_Debug:              return 0b100010;
-    case DAbort_TLBConflict:        return 0b110000;
-    case DAbort_Lockdown:           return 0b110100;
-    case DAbort_Coproc:             return 0b111010;
-    default: { struct Bad{}; throw Bad(); }
+      switch (code)
+        {
+        default: break;
+        case AccessFlag:         return "AccessFlag";
+        case Alignment:          return "Alignment";
+        case Background:         return "Background";
+        case Domain:             return "Domain";
+        case Permission:         return "Permission";
+        case Translation:        return "Translation";
+        case AddressSize:        return "AddressSize";
+        case SyncExternal:       return "SyncExternal";
+        case SyncExternalOnWalk: return "SyncExternalOnWalk";
+        case SyncParity:         return "SyncParity";
+        case SyncParityOnWalk:   return "SyncParityOnWalk";
+        case AsyncParity:        return "AsyncParity";
+        case AsyncExternal:      return "AsyncExternal";
+        case Debug:              return "Debug";
+        case TLBConflict:        return "TLBConflict";
+        case Lockdown:           return "Lockdown";
+        case Coproc:             return "Coproc";
+        case ICacheMaint:        return "ICacheMaint";
+        }
+      return "<bad:DAbort>";
     }
-  return result;
-}
-  
-inline std::ostream& operator << (std::ostream& sink, DAbort dabt)
-{
-  switch(dabt)
-   {
-    case DAbort_AccessFlag        : return sink << "AccessFlag";
-    case DAbort_Alignment         : return sink << "Alignment";
-    case DAbort_Background        : return sink << "Background";
-    case DAbort_Domain            : return sink << "Domain";
-    case DAbort_Permission        : return sink << "Permission";
-    case DAbort_Translation       : return sink << "Translation";
-    case DAbort_AddressSize       : return sink << "AddressSize";
-    case DAbort_SyncExternal      : return sink << "SyncExternal";
-    case DAbort_SyncExternalOnWalk: return sink << "SyncExternalOnWalk";
-    case DAbort_SyncParity        : return sink << "SyncParity";
-    case DAbort_SyncParityOnWalk  : return sink << "SyncParityOnWalk";
-    case DAbort_AsyncParity       : return sink << "AsyncParity";
-    case DAbort_AsyncExternal     : return sink << "AsyncExternal";
-    case DAbort_Debug             : return sink << "Debug";
-    case DAbort_TLBConflict       : return sink << "TLBConflict";
-    case DAbort_Lockdown          : return sink << "Lockdown";
-    case DAbort_Coproc            : return sink << "Coproc";
-    case DAbort_ICacheMaint       : return sink << "ICacheMaint";
-   }
-  return sink << "?";
-}
+
+    DAbort() : code(end) {}
+    DAbort( Code _code ) : code(_code) {}
+    DAbort( char const* _code ) : code(end) { init(_code); }
+
+    // EncodeLDFSC()
+    // =============
+    // Function that gives the Long-descriptor FSC code for types of Fault
+    unsigned EncodeLDFSC(unsigned level) const
+    {
+      unsigned result;
+      switch (code)
+        {
+        case AddressSize:        return 0b000000 | level;
+        case Translation:        return 0b000100 | level;
+        case AccessFlag:         return 0b001000 | level;
+        case Permission:         return 0b001100 | level;
+        case SyncExternal:       return 0b010000;
+        case SyncExternalOnWalk: return 0b010100 | level;
+        case SyncParity:         return 0b011000;
+        case SyncParityOnWalk:   return 0b011100 | level;
+        case AsyncParity:        return 0b011001;
+        case AsyncExternal:      return 0b010001;
+        case Alignment:          return 0b100001;
+        case Debug:              return 0b100010;
+        case TLBConflict:        return 0b110000;
+        case Lockdown:           return 0b110100;
+        case Coproc:             return 0b111010;
+        default: { struct Bad{}; throw Bad(); }
+        }
+      return result;
+    }
+  };
 
 } // end of namespace arm
 } // end of namespace processor

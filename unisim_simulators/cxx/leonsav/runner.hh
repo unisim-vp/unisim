@@ -162,8 +162,9 @@ struct Runner : public unisim::component::cxx::processor::sparc::isa::sv8::Arch<
   bool InvalidWindow(int) { return false; }
   void RotateWindow(int) { dont("register-window"); }
 
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   U32  GetPC() { return pc; }
-  void DelayBranch(U32 target) { nnpc = target; }
+  void DelayBranch(U32 target, branch_type_t) { nnpc = target; }
   void SetAnnul(bool annul) { dont("annul"); }
 
   bool asr_perm(unsigned) { return false; }

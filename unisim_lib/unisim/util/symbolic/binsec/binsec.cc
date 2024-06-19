@@ -140,7 +140,7 @@ namespace binsec {
               sink << ' ' << op << ' ' << GetCode( rhs, vars, label ) << ')';
               return lhs_size;
             };
-        
+
             switch (node->op.code)
               {
               default:          break;
@@ -319,7 +319,7 @@ namespace binsec {
               default: break;
 
               case Op::CMov:
-                
+
                 sink << "(if " << GetCode(node->GetSub(2), vars, label) << " then ";
                 int retsz = GenerateCode( node->GetSub(0), vars, label, sink );
                 sink << " else " << GetCode(node->GetSub(1), vars, label) << ")";
@@ -335,7 +335,7 @@ namespace binsec {
     else if (auto vt = dynamic_cast<vector::VTransBase const*>( expr.node ))
       {
         unsigned srcsize = 8*vt->srcsize, dstsize = vt->GetType().bitsize, srcpos = 8*vt->srcpos;
-        
+
         if (dstsize < srcsize)
           sink << "(" << GetCode(vt->src, vars, label) << " {" << std::dec << srcpos << ", " << (srcpos+dstsize-1) << "})";
         else
@@ -373,14 +373,14 @@ namespace binsec {
   {
     return expr.Simplify(BitSimplify());
   }
-  
+
   Expr
   BitFilter::mksimple( Expr const& input, unsigned source, unsigned rshift, unsigned select, unsigned extend, bool sxtend )
   {
     BitFilter bf( input, source, rshift, select, extend, sxtend );
 
     bf.Retain(); // Prevent deletion of this stack-allocated object
-    
+
     Expr sbf = &bf;
     BitSimplify::Do(sbf);
     return (sbf.node == &bf) ? new BitFilter( bf ) : sbf.node;
@@ -486,39 +486,46 @@ namespace binsec {
     sink << " )";
   }
 
+  Expr
+  RegWriteBase::source_read( RegReadBase* reg_read ) const
+  {
+    if (slice_size != reg_size)
+      return BitFilter::mksimple(reg_read, reg_size, slice_base, slice_size, slice_size, false);
+    return reg_read;
+  }
+
   int
   RegWriteBase::GenerateCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
     /* Name of the assigned register */
-    int lhsize = size, rhsize;
     GetRegName( sink );
-    sink << '<' << size << '>';
-    if (rsize != size)
-      {
-        sink << '{' << rbase << ',' << (rbase + rsize - 1) << '}';
-        lhsize = rsize;
-      }
+    sink << '<' << reg_size << '>';
+    if (slice_size != reg_size)
+      sink << '{' << slice_base << ',' << (slice_base + slice_size - 1) << '}';
+
     sink << " := ";
+
+    int value_size;
     if (value->AsConstNode())
-      rhsize = ASExprNode::GenerateCode( value, vars, label, sink );
+      value_size = ASExprNode::GenerateCode( value, vars, label, sink );
     else
       {
         auto const& var = vars[value];
         if (var.first.empty())
           throw std::logic_error( "corrupted sink" );
         sink << var.first;
-        rhsize = var.second;
+        value_size = var.second;
       }
-    if (lhsize != rhsize)
+    if (slice_size != value_size)
       throw std::logic_error( "none matching size in register assignment" );
-    return rsize;
+    return slice_size;
   }
 
   void RegWriteBase::Repr( std::ostream& sink ) const
   {
     sink << "RegWrite( ";
     GetRegName( sink );
-    sink << ", " << size << ", " << rbase << ", " << rsize << ", ";
+    sink << ", " << reg_size << ", " << slice_base << ", " << slice_size << ", ";
     value->Repr( sink );
     sink << " )";
   }
@@ -560,8 +567,33 @@ namespace binsec {
     sink << " := " << value;
   }
 
-  namespace {
-    struct SinksMerger { void operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) { sinks.insert( l ); } };
+  bool
+  ActionNode::merge( int& cmp, Expr const& l, Expr const& r )
+  {
+    RegWriteBase const* rw[] = { dynamic_cast<RegWriteBase const*>( l.node ), dynamic_cast<RegWriteBase const*>( r.node ) };
+
+    if (rw[0] and rw[1] and (&typeid(*rw[0]) == &typeid(*rw[1])) and (rw[0]->cmp(*rw[1]) == 0))
+      {
+        // If-conversion of two-way conditional assignments
+        Assignment* assignment = dynamic_cast<Assignment*>(rw[0]->Mutate());
+        assignment->value = make_operation( Op::CMov, rw[true]->value, rw[false]->value, cond );
+        add_sink(Expr(assignment));
+        cmp = 0;
+        return true;
+      }
+
+    // Force if-conversion of one-way contitional assignments
+    bool side = cmp>0;
+    if (rw[side])
+      {
+        Assignment* assignment = dynamic_cast<Assignment*>(rw[side]->Mutate());
+        Expr values[2] = {assignment->SourceRead(), assignment->value};
+        assignment->value = make_operation( Op::CMov, values[side], values[not side], cond );
+        add_sink(Expr(assignment));
+        return true;
+
+      }
+    return false;
   }
 
   void
@@ -583,7 +615,7 @@ namespace binsec {
                 always->nexts[idx] = 0;
               }
             cond = always->cond;
-            sinks.insert(always->sinks.begin(), always->sinks.end());
+            updates.insert(always->updates.begin(), always->updates.end());
             delete always;
           }
         else
@@ -598,7 +630,7 @@ namespace binsec {
           BitSimplify::Do(x);
           nsinks.insert( x );
         }
-      std::swap(nsinks, sinks);
+      std::swap(nsinks, updates);
     }
 
     if (not cond.good())
@@ -608,13 +640,13 @@ namespace binsec {
       if (ActionNode* next = nexts[choice])
         next->simplify();
 
-    factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger() );
+    factorize();
 
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         {
-          if (next->cond.good() or next->sinks.size()) leaf = false;
+          if (next->cond.good() or next->updates.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
 
@@ -655,7 +687,7 @@ namespace binsec {
         : stats(node->sestats), up(_up)
       {
         // First level of expression is not functionnal (architectural side effect)
-        for (auto const& sink : node->sinks)
+        for (auto const& sink : node->get_sinks())
           this->Flood( sink );
         for (unsigned choice = 0; choice < 2; ++choice)
           if (ActionNode* next = node->nexts[choice])
@@ -685,18 +717,18 @@ namespace binsec {
         auto itr = vars.lower_bound(expr);
         if (itr != vars.end() and itr->first == expr)
           throw std::logic_error( "multiple temporary definitions" );
-        
+
         std::string name;
         {
           std::ostringstream buf;
           buf << "%%" << vars.size() << "<" << size << ">";
           name = buf.str();
         }
-        
+
         itr = vars.emplace_hint(itr, std::piecewise_construct, std::forward_as_tuple(expr), std::forward_as_tuple(std::move(name), size) );
         return itr->second.first;
       }
-      
+
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
       {
         Branch const* nia = 0;
@@ -742,7 +774,7 @@ namespace binsec {
             this->write( buffer.str() );
             return retsize;
           }
-      
+
           Label cur;
           int after;
           std::string pending;
@@ -971,7 +1003,7 @@ namespace binsec {
           case Op::And: case Op::Or:
             expr = args[0];
             break;
-            
+
           case Op::Xor: case Op::Sub:
             expr = BitSimplify::make_zero(args[0]->GetType());
             break;
@@ -1025,7 +1057,7 @@ namespace binsec {
                           unsigned bitsize = src->GetType().bitsize, select = 0;
                           {
                             ConstNodeBase const* cst = dmask.ConstSimplify();
-                            
+
                             for (unsigned word = (bitsize+63)/64; word-->0;)
                               if (uint64_t bits = cst->GetBits(word))
                                 { select = word*64 + unisim::util::arithmetic::BitScanReverse(bits) + 1; break; }
@@ -1079,6 +1111,7 @@ namespace binsec {
                             if (shift >= bitsize) { struct Bad {}; throw Bad(); }
 
                             expr = BitFilter::mksimple( src, bitsize, shift, bitsize - shift, bitsize, op == Op::Asr );
+                            continue;
                           }
 
                         auto tp = expr->GetType();
@@ -1198,7 +1231,7 @@ namespace binsec {
           expr = src;
         return 0;
       }
-            
+
     struct BinBitSimplify : public BitSimplify
     {
       BinBitSimplify(Expr const* _masks) : masks(_masks) {}

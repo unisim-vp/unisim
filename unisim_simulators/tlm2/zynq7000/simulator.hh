@@ -77,7 +77,7 @@ struct MSSConfig
     STORAGE_ATTR( uint32_t _attributes ) : attributes(_attributes) {}
     uint32_t attributes;
   };
-  
+
   typedef uint32_t ADDRESS;
   typedef uint32_t PHYSICAL_ADDRESS;
 };
@@ -88,9 +88,12 @@ struct CPU
 {
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU<CPU> PCPU;
   typedef typename PCPU::CP15Reg CP15Reg;
-  
+
   CPU(const sc_core::sc_module_name& name, Object* parent = 0);
-  
+
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
+
   typedef CPU CACHE_CPU;
 
   template <class ACTUAL_CACHE>
@@ -104,13 +107,13 @@ struct CPU
       , stat_num_misses("num-misses", as_actual(), _num_misses, "number of cache misses")
       , formula_miss_rate("miss-rate", as_actual(), "/", &stat_num_misses, &stat_num_accesses, "cache miss rate")
     {}
-    
+
     CPU& cpu;
     unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
     unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
     unisim::kernel::variable::StatisticFormula<double> formula_miss_rate;
   };
-  
+
   struct L1D_CONFIG
   {
     static const unsigned int SIZE                                      = 4096;
@@ -121,13 +124,13 @@ struct CPU
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
     static const unsigned int BLOCKS_PER_LINE                           = 1;
-    
+
     typedef CACHE_CPU CPU;
     struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
     struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
     struct SET_STATUS : unisim::util::cache::CacheSetStatus { unisim::util::cache::LRU_ReplacementPolicy<ASSOCIATIVITY> lru; };
   };
-  
+
   struct L1D
     : public CacheCommons<L1D>
     , public unisim::util::cache::Cache<MSSConfig, L1D_CONFIG, L1D>
@@ -137,7 +140,7 @@ struct CPU
       , unisim::util::cache::Cache<MSSConfig, L1D_CONFIG, L1D>()
     {}
     static const char *GetCacheName() { return "L1D"; }
-    
+
     bool IsEnabled() const { return unisim::component::cxx::processor::arm::sctlr::C.Get( cpu.SCTLR ); }
 
     bool IsWriteAllocate(MSSConfig::STORAGE_ATTR storage_attr) const ALWAYS_INLINE
@@ -145,21 +148,21 @@ struct CPU
       using unisim::component::cxx::processor::arm::MemAttrs;
       return MemAttrs::Flagged( MemAttrs::Inner(), MemAttrs::WriteAllocate, storage_attr.attributes );
     }
-    
+
     bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
     {
       access.way = access.set->Status().lru.Select();
       return true;
     }
-    
+
     void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
     {
       access.set->Status().lru.UpdateOnAccess(access.way);
     }
   } l1d;
-  
+
   L1D* GetCache(const L1D* ) ALWAYS_INLINE { return &l1d; }
-  
+
   struct L1I_CONFIG
   {
     static const unsigned int SIZE                                      = 4096;
@@ -170,14 +173,14 @@ struct CPU
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
     static const unsigned int BLOCKS_PER_LINE                           = 1;
-    
+
     typedef CACHE_CPU CPU;
     struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
     struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
     struct SET_STATUS : unisim::util::cache::CacheSetStatus { unisim::util::cache::LRU_ReplacementPolicy<ASSOCIATIVITY> lru; };
   };
-  
-  
+
+
   struct L1I
     : public CacheCommons<L1I>
     , public unisim::util::cache::Cache<MSSConfig, L1I_CONFIG, L1I>
@@ -186,9 +189,9 @@ struct CPU
       : CacheCommons<L1I>("L1I", _cpu, num_accesses, num_misses)
       , unisim::util::cache::Cache<MSSConfig, L1I_CONFIG, L1I>()
     {}
-    
+
     static const char *GetCacheName() { return "L1I"; }
-    
+
     bool IsEnabled() const { return unisim::component::cxx::processor::arm::sctlr::I.Get( cpu.SCTLR ); }
 
     bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1I>& access)
@@ -196,27 +199,27 @@ struct CPU
       access.way = access.set->Status().lru.Select();
       return true;
     }
-    
+
     void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSSConfig, L1I>& access)
     {
       access.set->Status().lru.UpdateOnAccess(access.way);
     }
   } l1i;
-  
+
   L1I* GetCache(const L1I* ) ALWAYS_INLINE { return &l1i; }
-  
+
   typedef unisim::util::cache::LocalMemorySet<MSSConfig> DATA_LOCAL_MEMORIES;
   typedef unisim::util::cache::LocalMemorySet<MSSConfig> INSTRUCTION_LOCAL_MEMORIES;
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1D> DATA_CACHE_HIERARCHY;
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1I> INSTRUCTION_CACHE_HIERARCHY;
   typedef MSSConfig::STORAGE_ATTR STORAGE_ATTR;
-  
+
   bool IsStorageCacheable(STORAGE_ATTR storage_attr) const
   {
     using unisim::component::cxx::processor::arm::MemAttrs;
     return not MemAttrs::Is( MemAttrs::Inner(), MemAttrs::NonCacheable, storage_attr.attributes );
   }
-  
+
   mutable std::map<bool,uint64_t> wt_stats;
 
   bool IsDataStoreAccessWriteThrough(STORAGE_ATTR storage_attr) const
@@ -239,13 +242,13 @@ struct CPU
   {
     return PCPU::PhysicalWriteMemory(phys_addr, phys_addr, (uint8_t const*)buffer, size, storage_attr.attributes);
   }
-  
+
   bool PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
     STORAGE_ATTR storage_attr( attrs );
 	return DataLoad(addr, paddr, buffer, size, storage_attr);
   }
-	
+
   bool DataBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
   {
     return PCPU::PhysicalReadMemory(phys_addr, phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
@@ -261,17 +264,17 @@ struct CPU
   {
     return PCPU::PhysicalReadMemory(phys_addr, phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
   }
-  
+
   // virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size) { return DebugDataLoad(addr, buffer, size); }
   // virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { return DebugDataStore(addr, buffer, size); }
 
   /**************************/
   /* CP15 Interface   START */
   /**************************/
-  
+
 public:
   static CP15Reg* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  
+
   /**************************/
   /* CP15 Interface    END  */
   /**************************/
@@ -303,14 +306,14 @@ struct MMDevice
   , public tlm::tlm_fw_transport_if<>
 {
   static unsigned const BUSWIDTH = 32;
-    
+
   tlm::tlm_target_socket<BUSWIDTH> socket;
   unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   bool verbose, hardfail;
-  
-  
+
+
   MMDevice( sc_core::sc_module_name const& name, unisim::kernel::Object* parent );
-    
+
   struct Data
   {
     Data( uint8_t* _ptr, bool _wnr, unsigned _size )
@@ -340,7 +343,7 @@ struct MMDevice
       return val;
     }
   };
-  
+
   /*** TLM2 Slave methods ***/
   bool               get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data) { return false; }
   unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
@@ -358,10 +361,10 @@ struct MPCore : public MMDevice
   MPCore(sc_core::sc_module_name const& name, unisim::kernel::Object* parent = 0);
 
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
-  
+
   sc_core::sc_out<bool> nIRQ;
   sc_core::sc_out<bool> nFIQ;
-  
+
   static unsigned const ITLinesNumber = 2;
   static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
   static unsigned const state32_count = (ITLinesNumber+1);
@@ -375,14 +378,14 @@ struct MPCore : public MMDevice
   uint8_t  IPRIORITYR[ITLinesCount];
   uint8_t  ICDIPTR[ITLinesCount];
   uint32_t ICDICFR[ITLinesCount/16];
-  
+
   sc_core::sc_event interrupt_line_events[ITLinesCount];
   template <unsigned IDX> void ITProcess() { ITProcess( IDX ); }
   void ITProcess( unsigned idx );
-  
+
   sc_core::sc_event generate_exceptions_event;
   void GenerateExceptionsProcess();
-  
+
   unsigned HighestPriorityPendingInterrupt( uint8_t required, uint8_t enough );
   uint32_t ReadGICC_IAR();
 };
@@ -392,20 +395,20 @@ struct Simulator;
 struct SLCR : public MMDevice
 {
   SLCR( sc_core::sc_module_name const& name, Simulator& _simulator, unisim::kernel::Object* parent = 0 );
-  
+
   Simulator& simulator;
   uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, DDR_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
-  
+
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 };
 
 struct TTC : public MMDevice
 {
   TTC( sc_core::sc_module_name const& name, unisim::kernel::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
-  
+
   MPCore& mpcore;
   unsigned id, base_it;
-  
+
   uint32_t
     Clock_Control[3],
     Counter_Control[3],
@@ -413,17 +416,17 @@ struct TTC : public MMDevice
     Interval_Counter[3],
     Interrupt_Register[3],
     Interrupt_Enable[3];
-  
+
   uint64_t
     update_counters[3];
-  
+
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
-  
+
   sc_core::sc_event update_state_event;
   sc_core::sc_time  clock_period;
   sc_core::sc_time  last_state_update_time[3];
   int               it_lines[3];
-  
+
   void UpdateStateProcess();
   void UpdateState( sc_core::sc_time const& update_time );
   void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time );
@@ -432,7 +435,7 @@ struct TTC : public MMDevice
 struct PS_UART : public MMDevice, public unisim::kernel::Client<unisim::service::interfaces::CharIO>
 {
   PS_UART( sc_core::sc_module_name const& name, unisim::kernel::Object* parent, MPCore& _mpcore, int _it_line );
-  
+
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 
   unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
@@ -441,7 +444,7 @@ struct PS_UART : public MMDevice, public unisim::kernel::Client<unisim::service:
   bool              rx_timeout_active;
   MPCore&           mpcore;
   int               it_line;
-  
+
   struct FIFO {
     static unsigned const CAPACITY=64;
     FIFO() : head(0), size(0) {}
@@ -455,37 +458,37 @@ struct PS_UART : public MMDevice, public unisim::kernel::Client<unisim::service:
     bool Trig( unsigned level ) { return level and (size >= level); }
     void Clear() { size = 0; }
   };
-  
+
   FIFO TxFIFO;
   FIFO RxFIFO;
   unsigned CR, MR, IMR, ISR, BAUDGEN, RXTOUT, BDIV, TTRIG, RTRIG, FDEL;
-  
+
   void PutChar( Data const& d );
   void GetChar( Data const& d );
-  
+
   sc_dt::uint64 rx_timeout_ticks() const { return (RXTOUT*4+3); }
   void reload_rxtout( sc_core::sc_time const& );
-  
+
   void ExchangeProcess();
 };
 
 struct L2C : public MMDevice
 {
   L2C( sc_core::sc_module_name const& name, unisim::kernel::Object* parent );
-  
+
   uint32_t reg1_control;
-  
+
   typedef std::map<uint32_t,uint32_t> FastRegs;
   FastRegs fastregs;
   uint32_t& fastreg( uint32_t addr, uint32_t rval )
   {
     FastRegs::iterator itr = fastregs.lower_bound(addr);
-    // itr->first is greater than or equivalent to addr.                                                                                                   
+    // itr->first is greater than or equivalent to addr.
     if (itr == fastregs.end() or (addr != itr->first))
       itr = fastregs.insert(itr, std::make_pair( addr, rval ));
     return itr->second;
   }
-  
+
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 };
 
@@ -493,7 +496,7 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
 {
   Simulator( int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE" );
   virtual ~Simulator();
-  
+
   int Run();
   virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
@@ -503,10 +506,10 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MAIN_RAM;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> BOOT_ROM;
-  
+
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
   typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
-  
+
   struct DEBUGGER_CONFIG
   {
     typedef uint32_t ADDRESS;
@@ -515,7 +518,7 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
     /* gdb_server, inline_debugger and/or profiler */
     static const unsigned int MAX_FRONT_ENDS = 3;
   };
-  
+
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<DEBUGGER_CONFIG::ADDRESS> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<DEBUGGER_CONFIG::ADDRESS> INLINE_DEBUGGER;
@@ -532,8 +535,8 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
   typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
   typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
-  
-  
+
+
   sc_core::sc_time             ps_clk_period;
   CPU                          cpu;
   ZynqRouter                   router;
@@ -553,14 +556,14 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   HTTP_SERVER                  http_server;
   WEB_TERMINAL                 web_terminal0;
   WEB_TERMINAL                 web_terminal1;
-  
+
   ScTime                       time;
   HostTime                     host_time;
   //LINUX_OS*                    linux_os;
   LOADER                       loader;
-  
+
   double                       simulation_spent_time;
-  
+
   DEBUGGER*                    debugger;
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
@@ -571,7 +574,7 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   LOGGER_HTTP_WRITER*          logger_http_writer;
   LOGGER_XML_FILE_WRITER*      logger_xml_file_writer;
   LOGGER_NETSTREAM_WRITER*     logger_netstream_writer;
-  
+
   bool                                     enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;

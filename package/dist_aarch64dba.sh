@@ -12,6 +12,7 @@ import unisim/util/symbolic/binsec || exit
 import unisim/util/symbolic/vector || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
+import unisim/util/floating_point || exit
 
 import libc/stdint || exit
 import std/cstdlib || exit
@@ -22,7 +23,7 @@ import std/set || exit
 
 import m4/ax_cflags_warn_all || exit
 
-copy source isa header header template data
+copy source isa header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"

@@ -209,14 +209,14 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b010 ):
       {
         static struct : public WOOpSysReg {
-          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfe\t; Wait For Event"; } 
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfe\t; Wait For Event"; }
         } x; return &x;
       }
 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b011 ):
       {
         static struct : public WOOpSysReg {
-          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfi\t; Wait For Interrupt"; } 
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "wfi\t; Wait For Interrupt"; }
           void Write(uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint8_t rt, AArch64& cpu, U64 value) const override { cpu.notify(1,&AArch64::wfi); }
         } x; return &x;
       }
@@ -224,7 +224,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b100 ):
       {
         static struct : public WOOpSysReg {
-          void Disasm(Encoding, std::ostream& sink) const override { sink << "sev\t; Send Event"; } 
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "sev\t; Send Event"; }
         } x; return &x;
       }
 
@@ -239,7 +239,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
     case SYSENCODE( 0b00, 0b011, 0b0010, 0b0000, 0b111 ):
       {
         static struct : public WOOpSysReg {
-          void Disasm(Encoding, std::ostream& sink) const override { sink << "xpaclri\t; Strip Pointer Authentication Code from LR"; } 
+          void Disasm(Encoding, std::ostream& sink) const override { sink << "xpaclri\t; Strip Pointer Authentication Code from LR"; }
         } x; return &x;
       }
 
@@ -277,7 +277,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-      
+
 
       /*** Instruction Cache Maintenance ***/
     case SYSENCODE( 0b01, 0b000, 0b0111, 0b0101, 0b000 ):
@@ -702,7 +702,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
       /*** Adress translations ***/
-      
+
     case SYSENCODE(0b01,0b100,0b0111,0b1000,0b110):
       {
         static struct : public ATSysReg {
@@ -776,7 +776,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               }
             catch (AArch64::DataAbort const& x)
               {
-                cpu.el1.PAR = U64(0x801 | (unisim::component::cxx::processor::arm::EncodeLDFSC(x.type, x.level) << 1));
+                cpu.el1.PAR = U64(0x801 | (x.type.EncodeLDFSC(x.level) << 1));
               }
           }
         } x; return &x;
@@ -817,7 +817,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
         } x; return &x;
       } break;
 
-      
+
       /* ===== */
 
     case SYSENCODE(0b11,0b011,0b0100,0b0010,0b001): // DAIF, Interrupt Mask Bits
@@ -1149,7 +1149,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
 
             return
                U64(0b000) << 30| // ICB, Inner cache boundary
-               U64(0b001) << 27| // LoUU, Level of Unification Uniprocessor 
+               U64(0b001) << 27| // LoUU, Level of Unification Uniprocessor
                U64(0b010) << 24| // LoC, Level of Coherence
                U64(0b001) << 21| // LoUIS, Level of Unification Inner Shareable
                U64(0b000) << 18| // Cache Type #7
@@ -1866,8 +1866,8 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
               U64(cpu.FEAT_FP16 ? 0b0001 : 0b0000)     << 16 | // Floating-point (implemented and also includes support for half-precision floating-point arithmetic)
               U64(0b0000)                              << 12 | // EL3 Exception level handling (not implemented)
               U64(0b0001)                              <<  8 | // EL2 Exception level handling (executed in AArch64 state only)
-              U64(0b0001)                              <<  4 | // EL1 Exception level handling (executed in AArch64 state only) 
-              U64(0b0001)                              <<  0;  // EL0 Exception level handling (executed in AArch64 state only) 
+              U64(0b0001)                              <<  4 | // EL1 Exception level handling (executed in AArch64 state only)
+              U64(0b0001)                              <<  0;  // EL0 Exception level handling (executed in AArch64 state only)
           }
         } x; return &x;
       } break;
@@ -2980,7 +2980,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-    
+
     case SYSENCODE(0b11,0b101,0b1100,0b0000,0b000): // VBAR_EL1 (RW)
       {
         static struct : public BaseSysReg {
@@ -5179,7 +5179,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
             struct Bad {};
             uint64_t cmd_id = cpu.untaint(Bad(), value);
             struct Cmd { virtual ~Cmd() {} virtual char const* Name() const = 0; virtual void Run() const = 0; } *cmd = 0;
-            
+
             switch (cmd_id)
               {
               default: throw 0;
@@ -5279,7 +5279,7 @@ AArch64::GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, 
           }
         } x; return &x;
       } break;
-      
+
     case SYSENCODE(0b10,0b000,0b0000,0b0000,0b101): // 3.2: DBGBCR<n>_EL1, Debug Breakpoint Control Registers, n = 0 - 15
     case SYSENCODE(0b10,0b000,0b0000,0b0001,0b101):
     case SYSENCODE(0b10,0b000,0b0000,0b0010,0b101):

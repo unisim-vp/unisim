@@ -36,7 +36,7 @@
 #define ARM64SAV_SCANNER_HH
 
 #include <test.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
+#include <arm64sav.hh>
 #include <unisim/component/cxx/processor/arm/regs64/cpu.hh>
 #include <unisim/util/arithmetic/bitfield.hh>
 #include <unisim/util/sav/sav.hh>
@@ -61,6 +61,7 @@ struct ScannerTypes
   typedef SmartValue<int64_t>     S64;
   typedef SmartValue<bool>        BOOL;
 
+  typedef SmartValue<_Float16>    F16;
   typedef SmartValue<float>       F32;
   typedef SmartValue<double>      F64;
 
@@ -85,7 +86,7 @@ struct Scanner
   : ScannerTypes
   , unisim::component::cxx::processor::arm::regs64::CPU<Scanner, ScannerTypes>
 {
-    
+
   // typedef u64_t addr_t;
 
   struct DisasmState {};
@@ -190,7 +191,7 @@ struct Scanner
     char const* c_str() const { return "sp"; }
     int cmp( SP const& ) const { return 0; }
   };
-    
+
   struct PC
     : public unisim::util::symbolic::WithValueType<PC>
   {
@@ -248,7 +249,7 @@ struct Scanner
     Expr value;
     ValueType tp;
   };
-    
+
 
   //  typedef unisim::component::cxx::vector::VUnion<VUConfig> VectorView;
 
@@ -294,7 +295,7 @@ struct Scanner
     typedef unisim::util::symbolic::ValueType ValueType;
     virtual ValueType GetType() const override { return unisim::util::symbolic::CValueType(uint64_t()); }
   };
-      
+
   Scanner( Interface& iif );
   ~Scanner();
 
@@ -306,17 +307,17 @@ struct Scanner
   struct SysReg
   {
     void dont() const { Scanner::dont("system"); }
-    void Write(int, int, int, int, int, Scanner&, U64) const { dont(); }
-    U64 Read(int, int, int, int, int, Scanner&) const { dont(); return U64(0); }
+    void Write(int, int, int, int, int, int, Scanner&, U64) const { dont(); }
+    U64 Read(int, int, int, int, int, int, Scanner&) const { dont(); return U64(0); }
     void DisasmWrite(int, int, int, int, int, int, std::ostream&) const { dont(); }
     void DisasmRead(int, int, int, int, int, int, std::ostream&) const { dont(); }
   };
   static SysReg const* GetSystemRegister(int, int, int, int, int) { dont("system"); return 0; }
   void CheckSystemAccess(int) { dont("system"); }
 
-  enum AccessReport { report_simd_access = 1, report_gsr_access, report_gzr_access };
+  enum AccessReport { report_none = 0, report_simd_access, report_gsr_access, report_gzr_access, report_nzcv_access };
   void report( AccessReport acc, unsigned reg, bool is_write );
-  
+
   U8  GetTVU8(unsigned reg0, unsigned elements, unsigned regs, U8 const& index, U8 const& oob_value);
 
   void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
@@ -337,7 +338,7 @@ struct Scanner
 
   void BranchTo(U64 addr, branch_type_t) { dont("branch"); }
   bool concretize( Expr cexp );
-  
+
   template <typename T>
   bool Test( unisim::util::symbolic::SmartValue<T> const& cond )
   {
@@ -346,41 +347,57 @@ struct Scanner
 
     return concretize( BOOL(cond).expr );
   }
-  //bool     Test(bool cond) { return cond; }
+  bool     Test(bool cond) { return cond; }
 
   void SoftwareBreakpoint( uint32_t imm ) { dont("system"); }
   void CallSupervisor( uint32_t imm ) { dont("system"); }
   void CallHypervisor( uint32_t imm ) { dont("system"); }
   void ExceptionReturn() { dont("system"); }
 
+  void CheckSPAlignment(U64 addr) {}
   Expr MemRead(ValueType tp, Expr const& addr)
   {
     interface.memaccess( addr, false );
     return new Load( tp, addr );
   }
+
   template <typename T>
   T MemReadT( U64 const& addr ) { return MemRead(T::GetType(), addr.expr); }
+
   U64 MemRead64(U64 addr) { return MemReadT<U64>(addr); }
   U32 MemRead32(U64 addr) { return MemReadT<U32>(addr); }
   U16 MemRead16(U64 addr) { return MemReadT<U16>(addr); }
   U8  MemRead8 (U64 addr) { return MemReadT<U8> (addr); }
+  U64 MemReadUnprivileged64(U64 addr) { return MemReadT<U64>(addr); }
+  U32 MemReadUnprivileged32(U64 addr) { return MemReadT<U32>(addr); }
+  U16 MemReadUnprivileged16(U64 addr) { return MemReadT<U16>(addr); }
+  U8  MemReadUnprivileged8 (U64 addr) { return MemReadT<U8> (addr); }
 
   void MemWrite(ValueType tp, Expr const& addr, Expr const& data)
   {
     interface.memaccess( addr, true );
     stores.insert( new Store( tp, addr, data ) );
   }
+
   template <typename T> void MemWriteT(U64 const& addr, T const& data) { MemWrite(T::GetType(), addr.expr, data.expr); }
-  
+
   void     MemWrite64(U64 addr, U64 val) { MemWriteT(addr, val); }
   void     MemWrite32(U64 addr, U32 val) { MemWriteT(addr, val); }
   void     MemWrite16(U64 addr, U16 val) { MemWriteT(addr, val); }
   void     MemWrite8 (U64 addr, U8  val) { MemWriteT(addr, val); }
 
+  void     MemWriteUnprivileged64(U64 addr, U64 val) { MemWriteT(addr, val); }
+  void     MemWriteUnprivileged32(U64 addr, U32 val) { MemWriteT(addr, val); }
+  void     MemWriteUnprivileged16(U64 addr, U16 val) { MemWriteT(addr, val); }
+  void     MemWriteUnprivileged8 (U64 addr, U8  val) { MemWriteT(addr, val); }
+
   void     SetExclusiveMonitors( U64 addr, unsigned size ) { dont("mp"); }
   bool     ExclusiveMonitorsPass( U64 addr, unsigned size ) { dont("mp"); return false; }
   void     ClearExclusiveLocal() { dont("mp"); }
   void     PrefetchMemory( int, U64 ) { dont("prefetch"); }
+
+  void SetQC() { dont("floating-point"); }
+  U32 FPCR() { dont("floating-point"); return U32(); }
 
   bool     close( Scanner const& ref );
 
@@ -388,9 +405,9 @@ struct Scanner
   step( Operation const& op )
   {
     U64 insn_addr =  this->current_insn_addr = this->next_insn_addr;
-      
+
     this->next_insn_addr += U64(4);
-      
+
     op.execute( *this );
   }
 
@@ -423,14 +440,14 @@ struct PM2
 namespace unisim {
 namespace util {
 namespace symbolic {
-  
+
   // Poly32Mod2 on a bitstring does a polynomial Modulus over {0,1} operation
   template <typename OUT, unsigned S, typename TIN>
   OUT PolyMod2(SmartValue<TIN> const& value, uint32_t _poly) { return sav::make_weirdop<OUT>(PM2(S,_poly),value); }
 
   template <typename OP>
   OP NeonSHL(OP const& op, SmartValue<int8_t> const& sh) { return sav::make_weirdop<OP>("NeonSHL", op, sh); }
-  
+
 }
 }
 }

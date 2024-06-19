@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #include <unisim/util/symbolic/ccode/ccode.hh>
 #include <ostream>
 #include <sstream>
@@ -41,7 +41,7 @@ namespace unisim {
 namespace util {
 namespace symbolic {
 namespace ccode {
-  
+
   void
   ActionNode::Repr( std::ostream& sink ) const
   {
@@ -53,13 +53,6 @@ namespace ccode {
         next->Repr( sink << "\n  nexts[" << choice << "]: " );
     sink << "\n}\n";
   }
-  
-  namespace {
-    struct SinksMerger
-    {
-      void operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) { sinks.insert( l ); }
-    };
-  }  
 
   void
   ActionNode::simplify()
@@ -72,7 +65,7 @@ namespace ccode {
         next->simplify();
 
     if (nexts[0] and nexts[1])
-      factorize( updates, nexts[0]->updates, nexts[1]->updates, SinksMerger() );
+      factorize();
 
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
@@ -81,7 +74,7 @@ namespace ccode {
           if (next->cond.good() or next->updates.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
-    
+
     if (leaf)
       {
         cond = Expr();
@@ -103,7 +96,7 @@ namespace ccode {
         std::swap( nexts[false], nexts[true] );
       }
   }
-  
+
   void
   ActionNode::commit_stats()
   {
@@ -143,7 +136,7 @@ namespace ccode {
   {
     if      (_ch == '\0')
       { throw TextFormatingError; }
-    
+
     else if (_ch == '\n')
       {
         // Unconditionally skipping last blank characters
@@ -166,7 +159,7 @@ namespace ccode {
           }
         }
         if (indent < 0) throw IndentError;
-    
+
         // writing line (with indentation)
         sink << blank << line << '\n';
         blank.clear();
@@ -177,7 +170,7 @@ namespace ccode {
       {
         blank += _ch;
       }
-    
+
     else
       {
         if (blank.length())
@@ -198,14 +191,14 @@ namespace ccode {
     s << buf.str();
     return s;
   }
-  
+
   char const*
   Variable::GetType() const
   {
     char tp = name[0];
     if (tp == 's')
       tp = name[1];
-    
+
     switch (tp)
       {
       case 'l': return "bool";
@@ -215,7 +208,7 @@ namespace ccode {
       case 'q': return "uint64_t";
       case 'f': return "float";
       case 'g': return "double";
-        
+
       }
     char const* inv = "invalid type";
     throw inv;
@@ -227,7 +220,7 @@ namespace ccode {
   {
     char const* last_type = 0;
     char const* sep = "";
-    
+
     for (auto && var : vars)
       {
         char const* that_type = var.GetType();
@@ -242,10 +235,10 @@ namespace ccode {
         srcmgr << ' ' << var.GetName() <<  "=0";
       }
     srcmgr << sep;
-    
+
     return srcmgr;
   }
-  
+
   SrcMgr& operator << (SrcMgr& srcmgr, CCode::ExprPrinter const& ep)
   {
     /*** Pre expression process ***/
@@ -257,7 +250,7 @@ namespace ccode {
           return srcmgr;
         }
     }
-    
+
     /*** Sub expression process ***/
     Expr constant = ep.expr;
     if (ConstNodeBase const* node = constant.ConstSimplify())
@@ -306,7 +299,7 @@ namespace ccode {
           case 2: {
             Expr const& lhs(node->GetSub(0));
             Expr const& rhs(node->GetSub(1));
-            
+
             struct
             {
               void operator () (SrcMgr& srcmgr, CCode& ccode, Expr const& lhs, Expr const& rhs, char const* op )
@@ -316,7 +309,7 @@ namespace ccode {
             switch (node->op.code)
               {
               default:                srcmgr << '(' << ep.ccode(lhs) << " [" << node->op.c_str() << "] " << ep.ccode(rhs) << ')'; break;
-            
+
               case Op::Add:     cbinop( srcmgr, ep.ccode, lhs, rhs, " + " ); break;
               case Op::Sub:     cbinop( srcmgr, ep.ccode, lhs, rhs, " - " ); break;
               case Op::Mul:     cbinop( srcmgr, ep.ccode, lhs, rhs, " * " ); break;
@@ -324,23 +317,23 @@ namespace ccode {
               case Op::Mod:     cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
               case Op::Divu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " / " ); break;
               case Op::Modu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " % " ); break;
-        
+
               case Op::Xor:     cbinop( srcmgr, ep.ccode, lhs, rhs, " xor " ); break;
               case Op::Or:      cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType().bitsize == 1) ? " or " : " | " ); break;
               case Op::And:     cbinop( srcmgr, ep.ccode, lhs, rhs, (lhs->GetType().bitsize == 1) ? " and " : " & " ); break;
-        
+
               case Op::Teq:     cbinop( srcmgr, ep.ccode, lhs, rhs, " == " ); break;
               case Op::Tne:     cbinop( srcmgr, ep.ccode, lhs, rhs, " != " ); break;
-        
+
               case Op::Tle:     cbinop( srcmgr, ep.ccode, lhs, rhs, " <= " ); break;
               case Op::Tleu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " <= " ); break;
-        
+
               case Op::Tge:     cbinop( srcmgr, ep.ccode, lhs, rhs, " >= " ); break;
               case Op::Tgeu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " >= " ); break;
-        
+
               case Op::Tlt:     cbinop( srcmgr, ep.ccode, lhs, rhs, " < " ); break;
               case Op::Tltu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " < " ); break;
-        
+
               case Op::Tgt:     cbinop( srcmgr, ep.ccode, lhs, rhs, " > " ); break;
               case Op::Tgtu:    cbinop( srcmgr, ep.ccode, lhs, rhs, " > " ); break;
 
@@ -350,24 +343,24 @@ namespace ccode {
               case Op::Ror:     srcmgr << "Rotate( " << ep.ccode(lhs) << ", " << ep.ccode(rhs) << " )"; break;
               }
           } break;
-            
+
           case 1: {
             Expr operand( node->GetSub(0) );
-            
+
             switch (node->op.code)
               {
               default:         srcmgr << "([" << node->op.c_str() << "] " << ep.ccode(operand) << ")"; break;
-        
+
               case Op::Not:    srcmgr << (operand->GetType().bitsize == 1 ? "(not " : "(~") << ep.ccode(operand) << ")"; break;
               case Op::Neg:    srcmgr << "(-" << ep.ccode(operand) << ")"; break;
-        
+
                 // case Op::BSwp:  break;
                 // case Op::BSF:   break;
-            
+
               case Op::BSR:
                 srcmgr << "BitScanReverse( " << ep.ccode(operand) << " )";
                 break;
-                
+
               case Op::Cast:
                 {
                   auto tp = node->GetType();
@@ -383,7 +376,7 @@ namespace ccode {
                 } break;
               }
           } break;
-            
+
           default: throw std::logic_error("cast error");
           }
       }
@@ -393,7 +386,7 @@ namespace ccode {
       }
     else
       throw std::logic_error("No C generation available");
-      
+
     return srcmgr;
   }
 
@@ -439,7 +432,7 @@ namespace ccode {
   {
     GetRegName(sink);
   }
-  
+
   void
   RegWriteBase::translate( SrcMgr& srcmgr, CCode& ccode ) const
   {
@@ -455,8 +448,8 @@ namespace ccode {
     sink << " := ";
     value->Repr(sink);
   }
-  
-  
+
+
 
 } /* end of namespace ccode */
 } /* end of namespace symbolic */

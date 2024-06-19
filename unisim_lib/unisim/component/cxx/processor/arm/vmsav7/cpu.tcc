@@ -443,7 +443,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_write, DAbort::Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -490,7 +490,7 @@ CPU<CPU_IMPL>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
 
   // Send the request to the memory interface
   if (not static_cast<CPU_IMPL*>(this)->PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
-    DataAbort(addr, loc.address, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
+    DataAbort(addr, loc.address, 0, 0, mat_write, DAbort::SyncExternal, false, false, true, false, false);
   }
 
   /* report read memory access if necessary */
@@ -544,7 +544,7 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
       // TODO: provide correct alignment fault mva (va + FCSE
       // translation) + provide correct LDFSRformat (see ARM Doc
       // AlignmentFaultV)
-      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
+      DataAbort( addr, 0, 0, 0, mat_read, DAbort::Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -557,7 +557,7 @@ CPU<CPU_IMPL>::PerformReadAccess(	uint32_t addr, uint32_t size )
 
   // just read the data from the memory system
   if (not static_cast<CPU_IMPL*>(this)->PhysicalReadMemory(mva, loc.address, &data[0], size, loc.attributes)) {
-    DataAbort(addr, loc.address, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
+    DataAbort(addr, loc.address, 0, 0, mat_read, DAbort::SyncExternal, false, false, true, false, false);
   }
 
   /* report read memory access if necessary */
@@ -618,9 +618,10 @@ CPU<CPU_IMPL>::StepInstruction()
       next_insn_addr = insn_addr + insn_length;
 
       /* Execute instruction */
+      CPU_IMPL& self = static_cast<CPU_IMPL&>(*this);
       asm volatile( "thumb_operation_execute:" );
-      if (likely(CheckCondition(*this, this->itcond())))
-        op->execute( static_cast<CPU_IMPL&>(*this) );
+      if (likely(CheckCondition(self, this->itcond())))
+        op->execute( self );
 
       this->ITAdvance();
       //op->profile(profile);
@@ -642,10 +643,11 @@ CPU<CPU_IMPL>::StepInstruction()
       next_insn_addr = insn_addr + insn_length;
 
       /* Execute instruction */
+      CPU_IMPL& self = static_cast<CPU_IMPL&>(*this);
       asm volatile( "arm32_operation_execute:" );
-      if (likely(CheckCondition(*this, (insn >> 28) & 0xf)))
-        op->execute( static_cast<CPU_IMPL&>(*this) );
-      
+      if (likely(CheckCondition(self, (insn >> 28) & 0xf)))
+        op->execute( self );
+
       //op->profile(profile);
     }
 
@@ -980,7 +982,7 @@ CPU<CPU_IMPL>::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& l
   // No instruction cache present, just request the insn to the
   // memory system.
   if (not static_cast<CPU_IMPL*>(this)->PhysicalFetchMemory(mva & -(IPB_LINE_SIZE), line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
-    DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
+    DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort::SyncExternal, false, false, true, false, false);
   }
 
   this->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
@@ -1154,16 +1156,16 @@ CPU<CPU_IMPL>::DataAbort(uint32_t va, uint64_t ipa,
     // UFAR = bits(32) UNKNOWN;
 
     // Asynchronous abort don't update DFAR. Synchronous Watchpoint
-    // (DAbort_DebugEvent) update DFAR since debug v7.1.
-    switch (type) {
+    // (DAbort::DebugEvent) update DFAR since debug v7.1.
+    switch (type.code) {
     default: UFAR = va; break;
-    case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
+    case DAbort::AsyncParity: case DAbort::AsyncExternal: break;
     }
     if (LDFSRformat) {
       throw std::logic_error("Long descriptors format not supported");
       // // new format
       // UFSR<13> = TLBLookupCameFromCacheMaintenance();
-      // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
+      // if (type IN (DAbort::AsyncExternal,DAbort::SyncExternal))
       //   UFSR<12> = IMPLEMENTATION_DEFINED;
       // else
       //   UFSR<12> = '0';
@@ -1176,17 +1178,17 @@ CPU<CPU_IMPL>::DataAbort(uint32_t va, uint64_t ipa,
     else { // Short descriptor format
       // UFSR<13> = TLBLookupCameFromCacheMaintenance();
       unisim::util::arithmetic::BitField<13,1>().Set( UFSR, 0 );
-      if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
+      if ((type != DAbort::SyncExternal) and (type != DAbort::AsyncExternal))
         unisim::util::arithmetic::BitField<12,1>().Set( UFSR, 0 );
       unisim::util::arithmetic::BitField<11,1>().Set( UFSR, (mat == mat_write) ? 1 : 0 );
       unisim::util::arithmetic::BitField<9,1>().Set( UFSR, 0 );
       // UFSR<8> = bit UNKNOWN;
       unisim::util::arithmetic::BitField<8,1>().Set( UFSR, 0 );
-      // domain_valid = ((type == DAbort_Domain) ||
+      // domain_valid = ((type == DAbort::Domain) ||
       //                 ((level == 2) &&
-      //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
-      //                      DAbort_SyncExternalonWalk, DAbort_SyncParityonWalk})) ||
-      //                 (!HaveLPAE() && (type == DAbort_Permission)));
+      //                  (type IN {DAbort::Translation, DAbort::AccessFlag,
+      //                      DAbort::SyncExternalonWalk, DAbort::SyncParityonWalk})) ||
+      //                 (!HaveLPAE() && (type == DAbort::Permission)));
       // if (domain_valid)   UFSR<7:4> = domain;
       // else                UFSR<7:4> = bits(4) UNKNOWN;
       unisim::util::arithmetic::BitField<4,4>().Set( UFSR, domain );
@@ -1197,23 +1199,23 @@ CPU<CPU_IMPL>::DataAbort(uint32_t va, uint64_t ipa,
           unisim::util::arithmetic::BitField<0,4>() .Set( dfsr, value >> 0 );
         }
       } fault_status( UFSR );
-      switch (type) {
-      case DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
-      case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
-      case DAbort_Permission:         fault_status.Set( 0b01101 | (level&2) ); break;
-      case DAbort_Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
-      case DAbort_Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
-      case DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
-      case DAbort_SyncExternalOnWalk: fault_status.Set( 0b01100 | (level&2) ); break;
-      case DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
-      case DAbort_SyncParityOnWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
-      case DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
-      case DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
-      case DAbort_Debug:              fault_status.Set( 0b00010 ); break;
-      case DAbort_TLBConflict:        fault_status.Set( 0b10000 ); break;
-      case DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
-      case DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
-      case DAbort_ICacheMaint:        fault_status.Set( 0b00100 ); break;
+      switch (type.code) {
+      case DAbort::AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
+      case DAbort::Alignment:          fault_status.Set( 0b00001 ); break;
+      case DAbort::Permission:         fault_status.Set( 0b01101 | (level&2) ); break;
+      case DAbort::Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
+      case DAbort::Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
+      case DAbort::SyncExternal:       fault_status.Set( 0b01000 ); break;
+      case DAbort::SyncExternalOnWalk: fault_status.Set( 0b01100 | (level&2) ); break;
+      case DAbort::SyncParity:         fault_status.Set( 0b11001 ); break;
+      case DAbort::SyncParityOnWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
+      case DAbort::AsyncParity:        fault_status.Set( 0b11000 ); break;
+      case DAbort::AsyncExternal:      fault_status.Set( 0b10110 ); break;
+      case DAbort::Debug:              fault_status.Set( 0b00010 ); break;
+      case DAbort::TLBConflict:        fault_status.Set( 0b10000 ); break;
+      case DAbort::Lockdown:           fault_status.Set( 0b10100 ); break;
+      case DAbort::Coproc:             fault_status.Set( 0b11010 ); break;
+      case DAbort::ICacheMaint:        fault_status.Set( 0b00100 ); break;
       default: throw std::logic_error("Unhandled case");
       }
     }
@@ -1232,7 +1234,7 @@ CPU<CPU_IMPL>::DataAbort(uint32_t va, uint64_t ipa,
     //   ec = '100101';
     //   HSRString<24> = '0'; // Instruction syndrome not valid
     // }
-    // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
+    // if (type IN (DAbort::AsyncExternal,DAbort::SyncExternal))
     //   HSRString<9> = IMPLEMENTATION_DEFINED;
     // else
     //   HSRString<9> = '0';
@@ -1330,7 +1332,7 @@ TLB::GetTranslation( TLB::Entry& tlbe, uint32_t mva, uint32_t asid )
   unsigned lsb = 0, hit;
   uint32_t key = 0;
   Entry*   matching_tlbe = 0;
-  
+
   for (hit = 0; hit < entry_count; ++hit)
     {
       key = keys[hit];
@@ -1351,7 +1353,7 @@ TLB::GetTranslation( TLB::Entry& tlbe, uint32_t mva, uint32_t asid )
       keys[idx] = keys[idx-1];
     keys[0] = key;
   }
-  
+
   // Address translation and attributes
   tlbe = *matching_tlbe;
   uint32_t himask = uint32_t(-1) << lsb;
@@ -1415,13 +1417,13 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
     if (POLICY::DEBUG) success = static_cast<CPU_IMPL*>(this)->ExternalReadMemory( l1descaddr, erd.data(), 4 );
     else               success = static_cast<CPU_IMPL*>(this)->PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
     if (not success)
-      DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalOnWalk, false, false, false, false, false);
+      DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort::SyncExternalOnWalk, false, false, false, false, false);
   }
   uint32_t l1desc = erd.Get();
   switch (l1desc&3) {
   case 0: {
     // Fault, Reserved
-    DataAbort(mva, 0, 0, 1, mat, DAbort_Translation, false, false, false, false, false);
+    DataAbort(mva, 0, 0, 1, mat, DAbort::Translation, false, false, false, false, false);
   } break;
 
   case 1: {
@@ -1438,13 +1440,13 @@ CPU<CPU_IMPL>::TranslationTableWalk( TLB::Entry& tlbe, uint32_t mva, mem_acc_typ
       if (POLICY::DEBUG) success = static_cast<CPU_IMPL*>(this)->ExternalReadMemory( l2descaddr, erd.data(), 4 );
       else               success = static_cast<CPU_IMPL*>(this)->PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
       if (not success)
-        DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalOnWalk, false,false,false,false,false);
+        DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort::SyncExternalOnWalk, false,false,false,false,false);
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if (unisim::util::arithmetic::BitField<0,2>().Get(l2desc) == 0)
       {
-        DataAbort(mva, 0, tlbe.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
+        DataAbort(mva, 0, tlbe.domain, 2, mat, DAbort::Translation, false, false, false, false, false);
       }
     tlbe.memattrs = (unisim::util::arithmetic::BitField<10,1>().Get( l2desc ) << 5) | unisim::util::arithmetic::BitField<2,2>().Get( l2desc ); /* S[1] : ?[3] : CB[2]*/
     tlbe.ap = (unisim::util::arithmetic::BitField<9,1>().Get( l2desc ) << 2) | unisim::util::arithmetic::BitField<4,2>().Get( l2desc );
@@ -1589,7 +1591,7 @@ CPU<CPU_IMPL>::TranslateAddress( AddressDescriptor& loc, bool ispriv, mem_acc_ty
       }
     } else {
       if (unlikely((dac & 1) == 0))
-        DataAbort( mva, 0, tlbe.domain, (tlbe.lsb <= 16 ? 2 : 1), mat, DAbort_Domain, false, false, false, false, false );
+        DataAbort( mva, 0, tlbe.domain, (tlbe.lsb <= 16 ? 2 : 1), mat, DAbort::Domain, false, false, false, false, false );
 
       unisim::util::truth_table::InBit<uint32_t,1> const P;
       unisim::util::truth_table::InBit<uint32_t,0> const W;
@@ -1620,7 +1622,7 @@ CPU<CPU_IMPL>::TranslateAddress( AddressDescriptor& loc, bool ispriv, mem_acc_ty
 
       /* TODO: Long descriptor format + (Hardware flags ? really deprecated ? at least sw AFE ?) */
       if (unlikely((abort | xabort) & 1))
-        DataAbort( mva, 0, tlbe.domain, (tlbe.lsb <= 16 ? 2 : 1), mat, DAbort_Permission, ishyp, false, false, false, false );
+        DataAbort( mva, 0, tlbe.domain, (tlbe.lsb <= 16 ? 2 : 1), mat, DAbort::Permission, ishyp, false, false, false, false );
     }
 
     loc.address = tlbe.pa;

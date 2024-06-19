@@ -42,7 +42,7 @@ namespace sparc {
   
   struct Decoder
   {
-    void process( std::ostream& sink, uint32_t addr, uint32_t code );
+    void process( std::ostream& sink, uint32_t addr, uint32_t code0, uint32_t code1 );
   };
 }
 

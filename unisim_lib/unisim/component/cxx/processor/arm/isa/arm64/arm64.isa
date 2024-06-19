@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2023,
+ *  Copyright (c) 2007-2024,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 /**********************************************
 
              ARM64 TOP ISA DESCRIPTION
@@ -52,6 +52,7 @@ impl {
 #include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/floating_point/floating_point.hh>
 #include <iostream>
 #include <cmath>
 

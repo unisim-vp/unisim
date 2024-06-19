@@ -31,7 +31,7 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_SAV_SAV_HH__
 #define __UNISIM_UTIL_SAV_SAV_HH__
 
@@ -54,17 +54,11 @@ namespace sav {
 
   struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
   {
-    typedef unisim::util::symbolic::Expr Expr;
-
-    ActionNode() : unisim::util::symbolic::Conditional<ActionNode>(), updates() {}
+    ActionNode() : unisim::util::symbolic::Conditional<ActionNode>() {}
 
     friend std::ostream& operator << (std::ostream& sink, ActionNode const& an);
 
-    void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
-
     void simplify();
-
-    std::set<Expr>           updates;
   };
 
   template <typename T>
@@ -149,7 +143,7 @@ namespace sav {
       return int(reg) - int(rhs.reg);
     }
   };
-  
+
   struct Comparator
   {
     int process( unisim::util::sav::ActionNode const& a, unisim::util::sav::ActionNode const& b ) const
@@ -158,7 +152,7 @@ namespace sav {
       auto rci = b.updates.begin();
       for (Expr const& update : a.updates)
         { if (int delta = process( update,  *rci )) return delta; ++rci; }
-          
+
       if (int delta = process( a.cond, b.cond )) return delta;
       for (int idx = 0; idx < 2; ++idx)
         {
@@ -177,13 +171,13 @@ namespace sav {
       // Do not compare null expressions
       if (not b.node) return a.node ?  1 : 0;
       if (not a.node) return b.node ? -1 : 0;
-      
+
       /* First compare actual types */
       const std::type_info* til = &typeid(*a.node);
       const std::type_info* tir = &typeid(*b.node);
       if (til < tir) return -1;
       if (til > tir) return +1;
-        
+
       /* Same types, call derived comparator except for Constants (compare popcount)*/
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
       if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
@@ -206,7 +200,7 @@ namespace sav {
         }
       else if (int delta = a.node->cmp( *b.node ))
         return delta;
-      
+
       /* Compare sub operands recursively */
       unsigned subcount = a.node->SubCount();
       if (int delta = int(subcount) - int(b.node->SubCount()))
@@ -219,18 +213,18 @@ namespace sav {
       return 0;
     }
   };
-  
+
   struct Addressings
   {
     typedef unisim::util::symbolic::Expr Expr;
     typedef std::map<Expr,Expr> Solutions;
 
     struct Source {};
-    
+
     Addressings() {}
-    
+
     bool solve( Expr const& base_addr, Expr const& expected_address );
-    
+
     Solutions solutions;
   };
 
@@ -257,7 +251,7 @@ namespace sav {
     {
       typedef typename opcfg<UOP>::flips_t flips_t;
       enum { logsize = opcfg<UOP>::logsize, flipshift = (1<<logsize) - 1 };
-      
+
       flips_t flips = generate<UOP>();
       UOP value = 0;
       for (int idx = 0; idx < logsize; ++idx)

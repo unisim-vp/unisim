@@ -77,7 +77,7 @@ struct Processor
     static bool const     insns5J = true;
     static bool const     insns5T = true;
     static bool const     insns6  = true;
-    static bool const     insnsRM = false;
+    static bool const     insnsRM = true;
     static bool const     insnsT2 = true;
     static bool const     insns7  = true;
   };
@@ -478,6 +478,8 @@ public:
   U32  GetCPSR()                                 { return cpsr.GetBits(); }
   void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
 
+  void SetQC() {}
+
   U32& SPSR() { throw Unimplemented(); static U32 spsr_dummy; return spsr_dummy; }
 
   ITCond itcond() const { return ITCond(); }
@@ -751,7 +753,7 @@ public:
   void SWI( uint32_t imm ) { throw Unimplemented(); }
   void BKPT( uint32_t imm ) { throw Unimplemented(); }
   void CallSupervisor( uint32_t imm ) { throw Unimplemented(); }
-  bool IntegerZeroDivide( BOOL const& condition ) { return false; }
+  bool IntegerZeroDivide( BOOL const& condition ) { return Test(condition); }
 
   //   =====================================================================
   //   =                       Memory access methods                       =

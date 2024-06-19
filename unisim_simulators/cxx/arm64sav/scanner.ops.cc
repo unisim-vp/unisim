@@ -33,7 +33,8 @@
  */
 
 #include <scanner.hh>
-#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
+#include <unisim/util/floating_point/floating_point.hh>
+#include <arm64sav.tcc>
 #include <sstream>
 
 Scanner::ISA::ISA()
@@ -50,7 +51,7 @@ Scanner::ISA::decode(uint64_t addr, uint32_t code, std::string& disasm)
   Scanner::Operation* op = 0;
   try { op = NCDecode(addr,code); }
   catch (unisim::component::cxx::processor::arm::isa::Reject const&) { throw unisim::util::sav::Untestable("misencoded"); }
-      
+
   Scanner::DisasmState das;
   op->disasm(das, buf);
   disasm = buf.str();

@@ -26,7 +26,7 @@ struct ArmProcessor
   , public unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::simfloat::FP,ArmProcessor>
 {
   typedef unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::simfloat::FP, ArmProcessor> CP15CPU;
-  
+
   struct Config
   {
     //=====================================================================
@@ -47,18 +47,21 @@ struct ArmProcessor
     static bool const     hasAdvSIMD = false;
   };
 
-  
+
   //  typedef typename CP15CPU::CP15Reg CP15Reg;
   typedef BranchInfo InsnBranch;
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();
 
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  void report(AccessReport, unsigned, bool) const {}
+
   virtual void Sync() override { struct No {}; throw No(); }
-  
+
   static unisim::component::cxx::processor::arm::isa::arm32::Decoder<ArmProcessor> arm32_decoder;
   static unisim::component::cxx::processor::arm::isa::thumb::Decoder<ArmProcessor> thumb_decoder;
-  
+
   static ArmProcessor& Self( Processor& proc ) { return dynamic_cast<ArmProcessor&>( proc ); }
 
   Processor::RegView const* get_reg(char const* id, uintptr_t size, int regid) override;
@@ -98,7 +101,7 @@ struct ArmProcessor
   void     CheckAlignment( uint32_t addr, unsigned alignment ) {}
 
   uint32_t ReadInsn( uint32_t address );
-  
+
   virtual void run( uint64_t begin, uint64_t until, uint64_t count ) override;
   virtual unsigned endian_mask(unsigned size) const override
   { return (size-1)*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN); }
@@ -118,7 +121,7 @@ struct ArmProcessor
   // SetCPSR => CPSRSetByInstriction
   // CP15 functions have access to CPU (already do privilege checks enough)
   // Huge issues with Mode system (gives access to system behavior) { checked by nature ? }
-  
+
 };
 
 

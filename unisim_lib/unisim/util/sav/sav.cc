@@ -31,21 +31,13 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 #include <unisim/util/sav/sav.hh>
 #include <iostream>
 
 namespace unisim {
 namespace util {
 namespace sav {
-  namespace {
-    struct UpdatesMerger
-    {
-      typedef unisim::util::symbolic::Expr Expr;
-      void operator () ( std::set<Expr>& updates, Expr const& l, Expr const& r ) { updates.insert( l ); }
-    };
-  }
-
   std::ostream& operator << (std::ostream& sink, ActionNode const& an)
   {
     for (auto && update : an.updates)
@@ -69,18 +61,18 @@ namespace sav {
     //     nupdates.insert( ASExprNode::Simplify( *itr ) );
     //   std::swap(nupdates, updates);
     // }
-    
+
     if (not cond.good())
       return;
 
     //    cond = ASExprNode::Simplify( cond );
-    
+
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         next->simplify();
-    
-    factorize( updates, nexts[0]->updates, nexts[1]->updates, UpdatesMerger() );
-    
+
+    factorize();
+
     bool leaf = true;
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
@@ -88,9 +80,9 @@ namespace sav {
           if (next->cond.good() or next->updates.size()) leaf = false;
           else { delete next; nexts[choice] = 0; }
         }
-    
+
     if (leaf)
-      cond = Expr();
+      cond = unisim::util::symbolic::Expr();
     else if (unisim::util::symbolic::OpNodeBase const* onb = cond->AsOpNode())
       if (onb->op.code == onb->op.Not)
         {
@@ -99,7 +91,7 @@ namespace sav {
           cond = onb->GetSub(0);
           std::swap( nexts[false], nexts[true] );
         }
-      
+
   }
 
   namespace
@@ -154,7 +146,7 @@ namespace sav {
       HexStore( sink, elems[idx] );
     HexStore( sink, counter );
   }
-  
+
   bool
   Addressings::solve( Expr const& base_addr, Expr const& expected_address )
   {
@@ -173,7 +165,7 @@ namespace sav {
         for (unsigned idx = 0, end = front->SubCount(); idx < end; ++idx)
           check( front->GetSub(idx) );
       }
-      
+
       void process (Expr const& front, Expr const& back)
       {
         if (dynamic_cast<Source const*>(front.node))
@@ -203,12 +195,12 @@ namespace sav {
         else
           check( front );
       }
-          
+
       AG(Solutions& _solutions) : solutions(_solutions) {} Solutions& solutions;
     } ag(solutions);
-        
+
     ag.process( base_addr, expected_address );
-        
+
     // Remove the invalid solutions
     for (Solutions::iterator itr = solutions.begin(), end = solutions.end(); itr != end;)
       {
@@ -217,7 +209,7 @@ namespace sav {
 
     return solutions.size() != 0;
   }
-  
+
 } /* end of namespace sav */
 } /* end of namespace util */
 } /* end of namespace unisim */
