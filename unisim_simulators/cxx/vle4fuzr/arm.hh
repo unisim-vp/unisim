@@ -54,9 +54,6 @@ struct ArmProcessor
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();
 
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
-  void report(AccessReport, unsigned, bool) const {}
-
   virtual void Sync() override { struct No {}; throw No(); }
 
   static unisim::component::cxx::processor::arm::isa::arm32::Decoder<ArmProcessor> arm32_decoder;

@@ -2741,7 +2741,7 @@ template <class ARCH> struct DC<ARCH,VPERMQ> { Operation<ARCH>* get( InputCode<A
 template <class ARCH, class VR>
 struct Vperm2i128 : public Operation<ARCH>
 {
-  Vperm2i128( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn, vn, oo;
+  Vperm2i128( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), vn(_vn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn, vn, oo;
   void disasm( std::ostream& sink ) const
   {
     sink << "vperm2i128 " << DisasmI(oo) << ',' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), vn ) << ',' << DisasmV( VR(), gn );

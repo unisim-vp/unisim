@@ -74,8 +74,8 @@ struct Runner
   typedef unisim::component::cxx::processor::arm::isa::arm64::Decoder<Runner> Decoder;
   typedef unisim::component::cxx::processor::arm::isa::arm64::Operation<Runner> Operation;
 
-  enum ReportAccess { report_none = 0, report_simd_access = report_none, report_gzr_access = report_none, report_gsr_access = report_none, report_nzcv_access = report_none };
-  void report(ReportAccess, unsigned, bool) {}
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gzr_access = report_none, report_gsr_access = report_none };
+  void report(AccessReport, unsigned, bool) {}
 
   void step_instruction();
   std::unique_ptr<Operation> decode(uint64_t insn_addr, uint32_t code);

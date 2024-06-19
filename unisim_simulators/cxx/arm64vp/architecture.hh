@@ -449,11 +449,15 @@ struct AArch64
   template <typename N, typename Z, typename C, typename V>
   void SetNZCV( N const& n, Z const& z, C const& c, V const& v )
   {
-    if (int(report_nzcv_access) != 0) report(report_nzcv_access, 0, true);
+    if (report_nzcv_access != report_none) report(report_nzcv_access, 0, true);
     nzcv = (U8(n) << 3) | (U8(z) << 2) | (U8(c) << 1) | (U8(v) << 0);
   }
 
-  U8 GetNZCV() const { return nzcv; }
+  U8 GetNZCV()
+  {
+    if (report_nzcv_access != report_none) report(report_nzcv_access, 0, false);
+    return nzcv;
+  }
   U8 GetCarry() const { return (nzcv >> 1) & U8(1); }
 
   /** Set FPCR */

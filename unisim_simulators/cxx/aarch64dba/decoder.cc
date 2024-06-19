@@ -155,7 +155,7 @@ struct Processor
     return concretize( BOOL(cond).expr );
   }
 
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
   void report(AccessReport, unsigned, bool) const {}
 
   //   =====================================================================

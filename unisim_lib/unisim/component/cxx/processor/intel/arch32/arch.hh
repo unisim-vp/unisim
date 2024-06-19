@@ -3,10 +3,10 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/vector/vector.hh>
+#include <unisim/util/arithmetic/integer.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -58,68 +59,53 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
-  
+
   template <class ARCH> struct Operation;
-  
-  // // TODO: should handle twice of 64-bit types
-  // template <typename T>
-  // struct Twice
-  // {
-  //   struct Error {};
-  //   Twice() {}
-  //   Twice( T const& val ) {}
-  //   template <typename X>    Twice operator <<  (X) { throw Error(); return Twice(); }
-  //   template <typename X>     void operator <<= (X) { throw Error(); }
-  //   template <typename X>    Twice operator >>  (X) { throw Error(); return Twice(); }
-  //   template <typename X>     void operator >>= (X) { throw Error(); }
-  //   Twice operator | (Twice const& val) { throw Error(); return Twice(); }
-    
-  //   Twice& operator |= (Twice const& val) { return *this; }
-  //   operator T () { throw Error(); return T(); }
-  //   void unimplented();
-  // };
 
   struct Arch
   {
+    template <unsigned W> using UInteger = unisim::util::arithmetic::Integer<W, false>;
+    template <unsigned W> using SInteger = unisim::util::arithmetic::Integer<W, true>;
+
     typedef uint8_t      u8_t;
     typedef uint16_t     u16_t;
     typedef uint32_t     u32_t;
     typedef uint64_t     u64_t;
-    typedef void         u128_t;
+    typedef UInteger<4>  u128_t;
     typedef int8_t       s8_t;
     typedef int16_t      s16_t;
     typedef int32_t      s32_t;
     typedef int64_t      s64_t;
-    typedef void         s128_t;
+    typedef SInteger<4>  s128_t;
     typedef bool         bit_t;
     typedef uint32_t     addr_t;
-    
+
     typedef float        f32_t;
     typedef double       f64_t;
     typedef long double  f80_t;
-    
+
     typedef GOq   GR;
     typedef u64_t gr_type;
-  
+
     struct OpHeader
     {
       OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
     };
-    
+
     // CONSTRUCTORS/DESTRUCTORS
     Arch();
     ~Arch();
-  
+
     // PROCESSOR META STATE
     bool                        m_running;      ///< Processors on/off
     int64_t                     m_instcount;    ///< Instruction count from the start
     bool                        m_disasm;       ///< Instruction disassembly on/off
     Operation<Arch>*            m_latest_insn;  ///< latest (current) instruction
-    
+
     void                        stop() { m_running = false; }
 
     Operation<Arch>*            fetch();
-    
+
     virtual void ExecuteSystemCall( unsigned id ) = 0;
 
     void                        syscall()
@@ -133,19 +119,19 @@ namespace intel {
         case 0x80: {
           this->ExecuteSystemCall( m_regs[0] );
         } break;
-      
+
       default:
         std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( op ) << ", 0x" << uint32_t( code ) << ").\n";
         exit( 0 );
       }
     }
-    
+
     void  noexec( Operation<Arch> const& op );
-    
+
     // PROCESSOR STATE
   protected:
     uint32_t                    m_EIP;
-    
+
   public:
     enum ipproc_t { ipjmp = 0, ipcall, ipret };
     addr_t                      getnip() { return m_EIP; }
@@ -163,32 +149,32 @@ namespace intel {
         end
       };
     };
-    
+
   protected:
     bool                        m_flags[FLAG::end];
-    
+
   public:
     bit_t                       flagread( FLAG::Code flag ) { return m_flags[flag]; }
     void                        flagwrite( FLAG::Code flag, bit_t fval ) { m_flags[flag] = fval; }
     void                        flagwrite( FLAG::Code flag, bit_t fval, bit_t ) { m_flags[flag] = fval; }
-    
+
     // Registers
   protected:
     uint32_t                    m_regs[8]; ///< extended reg
-    
+
   public:
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
     {
       return typename TypeFor<Arch,GOP::SIZE>::u( m_regs[idx] );
     }
-    
+
     u8_t regread( GObLH const&, unsigned idx )
     {
       unsigned reg = idx%4, sh = idx*2 & 8;
       return u8_t( m_regs[reg] >> sh );
     }
-    
+
     template <class GOP>
     void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
@@ -201,31 +187,31 @@ namespace intel {
       unsigned reg = idx%4, sh = idx*2 & 8;
       m_regs[reg] = (m_regs[reg] & ~gr_type(0xff << sh)) | (gr_type(value) << sh);
     }
-    
+
     // low level register access routines
     uint32_t                    lla_regread32( uint32_t idx ) const { return m_regs[idx]; }
     void                        lla_regwrite32( uint32_t idx, uint32_t value ) { m_regs[idx] = value; }
-    
+
     // MEMORY STATE
     // Segment Registers
     intel::SegmentReg            m_srs[8];
-    
+
     uint32_t m_gdt_bases[4]; // fake GDT registers used under Linux OS emulation
-    
+
     void                        segregwrite( uint32_t idx, uint16_t _value )
     {
       uint32_t id = (_value >> 3) & 0x1fff; // entry number
       uint32_t ti = (_value >> 2) & 0x0001; // global or local
       uint32_t pl = (_value >> 0) & 0x0003; // requested privilege level
-      
+
       //if (not GetLinuxOS()) throw 0;
       if ((idx >= 6) or (id == 0) or (id >= 4) or (ti != 0) or (pl != 3)) throw 0;
-      
+
       m_srs[idx].update( id, ti, pl, m_gdt_bases[id] );
     }
-    
+
     uint16_t                    segregread( unsigned num ) { throw 0; }
-    
+
     // Memory content
   protected:
     struct ClearMemSet {
@@ -237,7 +223,7 @@ namespace intel {
     Memory                      m_mem;
     // static uint32_t const       s_bits = 12;
     // Page*                       m_pages[1<<s_bits];
-    
+
   public:
     // Memory access functions
     uint32_t
@@ -253,7 +239,7 @@ namespace intel {
       uint32_t const pagesize = (1 << Memory::Page::s_bits);
       return (upperbound + pagesize) & -pagesize;
     }
-    
+
   public:
     f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
     {
@@ -276,7 +262,7 @@ namespace intel {
       {
         uint32_t last_addr = _addr, addr = _addr;
         typename Memory::Page* page = m_mem.getpage( addr );
-      
+
         for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
           {
             if ((last_addr ^ addr) >> Memory::Page::s_bits)
@@ -290,7 +276,7 @@ namespace intel {
       uint64_t mantissa = 0;
       for (uintptr_t idx = 0; idx < 8; ++idx) { mantissa |= uint64_t( buf[idx] ) << (idx*8); }
       union IEEE754_t { double as_f; uint64_t as_u; } word;
-    
+
       if (exponent != 0x7fff) {
         if (exponent == 0) {
           if (mantissa == 0) return sign ? -0.0 : 0.0;
@@ -316,7 +302,7 @@ namespace intel {
           word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
         }
       }
-    
+
       else /* (exponent == 0x7fff) */ {
         if (mantissa >> 63) {
           /* IEEE 754 compatible */
@@ -328,7 +314,7 @@ namespace intel {
           word.as_u = (uint64_t(0xfff) << 51) | (uint64_t(sign) << 63);
         }
       }
-    
+
       return word.as_f;
     }
 
@@ -341,9 +327,9 @@ namespace intel {
       if (OPSIZE==80) return this->fmemread80( seg, addr );
       throw 0;        return typename TypeFor<Arch,OPSIZE>::f();
     }
-    
+
     typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
-    
+
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::f
     frmread( RMOp const& rmop )
@@ -393,15 +379,15 @@ namespace intel {
 
       uintptr_t const buf_size = 10;
       uint8_t buf[buf_size];
-    
+
       buf[9] = (sign << 7) | (uint8_t( exponent >> 8 ) & 0x7f);
       buf[8] = uint8_t( exponent ) & 0xff;
       for ( uintptr_t idx = 0; idx < 8; ++idx)
         buf[idx] = uint8_t( mantissa >> (idx*8) );
-    
+
       uint32_t last_addr = _addr, addr = _addr;
       typename Memory::Page* page = m_mem.getpage( addr );
-      
+
       for (uintptr_t idx = 0; idx < buf_size; ++idx, ++addr)
         {
           uint8_t byte = buf[idx];
@@ -421,7 +407,7 @@ namespace intel {
       if (OPSIZE==80) return fmemwrite80( seg, addr, value );
       throw 0;
     }
-    
+
     template <unsigned OPSIZE>
     void
     frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
@@ -436,9 +422,9 @@ namespace intel {
     {
       uintptr_t const int_size = (OPSIZE/8);
       uint32_t addr = _addr + m_srs[_seg].m_base, last_addr = addr;
-      
+
       typename Memory::Page* page = m_mem.getpage( addr );
-      
+
       for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
         {
           uint8_t byte = (_val >> (idx*8)) & 0xff;
@@ -448,7 +434,7 @@ namespace intel {
           page->m_storage[offset] = byte;
         }
     }
-    
+
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     pop()
@@ -458,7 +444,7 @@ namespace intel {
       regwrite( GR(), 4, sptr + gr_type( OPSIZE/8 ) );
       return memread<OPSIZE>( SS, addr_t( sptr ) );
     }
-    
+
     template <unsigned OPSIZE>
     void
     push( typename TypeFor<Arch,OPSIZE>::u value )
@@ -471,27 +457,27 @@ namespace intel {
 
     void shrink_stack( addr_t offset ) { regwrite( GR(), 4, regread( GR(), 4 ) + offset ); }
     void grow_stack( addr_t offset ) { regwrite( GR(), 4, regread( GR(), 4 ) - offset ); }
-    
+
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u
     rmread( GOP const& g, RMOp const& rmop )
     {
       if (not rmop.ismem())
         return regread( g, rmop.ereg() );
-      
+
       return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
-    
+
     template <class GOP>
     void
     rmwrite( GOP const& g, RMOp const& rmop, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
       if (not rmop.ismem())
         return regwrite( g, rmop.ereg(), value );
-      
+
       return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
-    
+
     // void
     // Arch::fnanchk( f64_t value )
     // {
@@ -504,7 +490,7 @@ namespace intel {
     //   this->fpdump();
     //   throw FPException();
     // }
-  
+
     template<unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     memread( unsigned _seg, addr_t _addr )
@@ -512,10 +498,10 @@ namespace intel {
       uintptr_t const int_size = (OPSIZE/8);
       uint32_t addr = _addr + m_srs[_seg].m_base, last_addr = addr;
       typename Memory::Page* page = m_mem.getpage( addr );
-      
+
       typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-      u_type result = 0;
-      
+      u_type result = u_type(0);
+
       for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
         {
           if ((last_addr ^ addr) >> Memory::Page::s_bits)
@@ -523,10 +509,10 @@ namespace intel {
           uint32_t offset = addr % (1 << Memory::Page::s_bits);
           result |= (u_type( page->m_storage[offset] ) << (idx*8));
         }
-      
+
       return result;
     }
-    
+
     // Low level memory access routines
     enum LLAException_t { LLAError };
     void                        lla_memcpy( uint32_t addr, uint8_t const* buf, uint32_t size )
@@ -539,10 +525,10 @@ namespace intel {
     void                        lla_memwrite( uint32_t _addr, INT_t _val )
     {
       uintptr_t const int_size = sizeof( INT_t );
-      
+
       uint32_t last_addr = _addr, addr = _addr;
       typename Memory::Page* page = m_mem.getpage( addr );
-      
+
       for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
         {
           uint8_t byte = (_val >> (idx*8)) & 0xff;
@@ -552,17 +538,17 @@ namespace intel {
           page->m_storage[offset] = byte;
         }
     }
-    
+
     template<class INT_t>
     INT_t                       lla_memread( uint32_t _addr )
     {
       uintptr_t const int_size = sizeof( INT_t );
-      
+
       uint32_t last_addr = _addr, addr = _addr;
       typename Memory::Page* page = m_mem.getpage( addr );
-      
+
       INT_t result = 0;
-      
+
       for (uintptr_t idx = 0; idx < int_size; ++idx, ++ addr)
         {
           if ((last_addr ^ addr) >> Memory::Page::s_bits)
@@ -570,11 +556,11 @@ namespace intel {
           uint32_t offset = addr % (1 << Memory::Page::s_bits);
           result |= (INT_t( page->m_storage[offset] ) << (idx*8));
         }
-      
+
       return result;
 
     }
-    
+
     uint8_t                     lla_memread8( uint32_t _addr ) { return lla_memread<uint8_t>( _addr ); }
     uint16_t                    lla_memread16( uint32_t _addr ) { return lla_memread<uint16_t>( _addr ); }
     uint32_t                    lla_memread32( uint32_t _addr ) { return lla_memread<uint32_t>( _addr ); }
@@ -587,7 +573,7 @@ namespace intel {
     double                      m_fregs[8];
     uint32_t                    m_ftop;
     uint16_t                    m_fcw;
-    
+
   public:
     void                        fnanchk( f64_t value ) {};
     uint32_t                    ftopread() { return m_ftop; }
@@ -609,14 +595,14 @@ namespace intel {
       flagwrite( FLAG::C2, 0 );
       flagwrite( FLAG::C3, 0 );
     }
-    
+
     void
     fxam()
     {
       double val = this->fread( 0 );
-      
+
       flagwrite( FLAG::C1, __signbit( val ) );
-      
+
       switch (__fpclassify( val )) {
       case FP_NAN:
         flagwrite( FLAG::C3, 0 );
@@ -645,7 +631,7 @@ namespace intel {
         break;
       }
     }
-    
+
     u16_t
     fcwread()
     {
@@ -660,7 +646,7 @@ namespace intel {
       //               (0 << 10/*RC*/) |
       //               (0 << 12/*X*/) );
     }
-    
+
     void
     fcwwrite( u16_t _value )
     {
@@ -690,12 +676,12 @@ namespace intel {
                     << " value: " << field_val << ".\n";
         }
     }
-    
+
     u64_t tscread() { return m_instcount; }
     void  xgetbv();
     void  cpuid();
     void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
-    
+
     // void                        fpdump()
     // {
     //   std::cerr << ": #insn: " << std::dec << m_instcount
@@ -704,18 +690,18 @@ namespace intel {
     //   m_latest_insn->disasm( std::cerr );
     //   std::cerr << " (" << m_latest_insn->GetEncoding() << ")" << std::endl;
     // }
-    
+
     void unimplemented() { throw std::runtime_error("unimplemented"); }
-    
+
     bool Test( bool b ) const { return b; }
-    
+
     // Debug methods
   protected:
     uint32_t                    m_dirtfregs;
-    
+
   public:
     uint32_t                    pop_dirtfregs() { uint32_t r = m_dirtfregs; m_dirtfregs = 0; return r; }
-    
+
   public:
     struct VUConfig
     {
@@ -732,10 +718,10 @@ namespace intel {
 
     void mxcswrite( uint32_t v ) { mxcsr = v; }
     uint32_t mxcsread() { return mxcsr; }
-    
+
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
-  
+
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
@@ -743,7 +729,7 @@ namespace intel {
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return elems[sub];
     }
-  
+
     template <class VR, class ELEM>
     void
     vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
@@ -759,27 +745,27 @@ namespace intel {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       return TYPE(memread<atpinfo::bitsize>(seg,addr));
     }
-  
+
     f32_t vmm_memread( unsigned seg, u64_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
     f64_t vmm_memread( unsigned seg, u64_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
     f80_t vmm_memread( unsigned seg, u64_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
-  
+
     // Integer case
     template <class TYPE> void vmm_memwrite( unsigned seg, u64_t addr, TYPE const& e )
     {
       typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
       memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
-    
+
     void vmm_memwrite( unsigned seg, u64_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, u64_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
     void vmm_memwrite( unsigned seg, u64_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
-    
+
     // void vmm_memwrite( unsigned seg, u64_t addr, u8_t  const& e ) { return memwrite< 8>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u16_t const& e ) { return memwrite<16>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u32_t const& e ) { return memwrite<32>( seg, addr, e ); }
     // void vmm_memwrite( unsigned seg, u64_t addr, u64_t const& e ) { return memwrite<64>( seg, addr, e ); }
-    
+
     template <class VR, class ELEM>
     ELEM
     vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
@@ -787,7 +773,7 @@ namespace intel {
       if (not rmop.ismem()) return vmm_read( vr, rmop.ereg(), sub, e );
       return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
     }
-    
+
     template <class VR, class ELEM>
     void
     vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
@@ -799,7 +785,7 @@ namespace intel {
     void xsave(XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
     void xrstor(XSaveMode, bool, u64_t, RMOp const&) { unimplemented(); }
   };
-  
+
 
   struct FPException : public std::exception {};
 

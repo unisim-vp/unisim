@@ -79,12 +79,12 @@ Scanner::close( Scanner const& ref )
 
   for (Expr const& store : stores)
     path->add_update( store );
-    
+
   return complete;
 }
-  
+
 void
-Scanner::report( AccessReport acc, unsigned reg, bool is_write )
+Scanner::report( ReportAccess acc, unsigned reg, bool is_write )
 {
   if (acc == report_simd_access)
     {

@@ -130,10 +130,10 @@ struct CPU
   , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef CPU<CPU_IMPL> this_type;
-  
+
   enum { FPCR_MASK=0x7C00000 }; /* FIXME: this is for cortex-a53 */
   enum { FPSR_MASK=0xf800009f };
-  
+
   typedef isa::arm64::Operation<CPU_IMPL> Operation;
   typedef isa::arm64::Decoder<CPU_IMPL> A64Decoder;
   typedef opcache::OpCache<A64Decoder>  Decoder;
@@ -224,7 +224,7 @@ struct CPU
   //=                    Registers access methods
   //====================================================================
 
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
   void report(AccessReport, unsigned, bool) const {}
 
   U8  GetTVU8(unsigned r0, unsigned elts, unsigned regs, U8 idx, U8 oob) { auto r = idx/elts; return r < regs ? this->GetVU8((r0 + r) % 32, idx % elts) : oob; }
@@ -247,15 +247,15 @@ struct CPU
 
   uint8_t GetNZCV() const { return nzcv; }
   uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
-  
+
   /** Set FPCR */
   void SetFPCR( U32 v ) { fpcr = v; }
-  
+
   /** Get FPCR */
   U32 GetFPCR() const { return fpcr; }
-  
+
   U32& FPCR() { return fpcr; }
-  
+
   /* Get FPCR Floating-point control bits */
   BOOL DN() const { return ((fpcr >> 25) & U32(1)) != U32(0); }
   BOOL FZ() const { return ((fpcr >> 24) & U32(1)) != U32(0); }
@@ -273,9 +273,9 @@ struct CPU
 
   /** Set FPSR */
   void SetFPSR( U32 v ) { fpsr = v; }
-  
+
   /** Set FPSR cumulative bits
-   * 
+   *
    * @param q Saturation flag
    * @param id Input Denormal flag
    * @param ix Inexact flag
@@ -288,14 +288,14 @@ struct CPU
   {
     fpsr |= (q << 27) | (id << 7) | (ix << 4) | (uf << 3) | (of << 2) | (dz << 1) | (io << 0);
   }
-  
+
   /** Get FPSR */
   U32 GetFPSR() const { return fpsr; }
-  
+
   U32& FPSR() { return fpsr; }
-  
+
   void SetQC() { fpsr |= U32(1) << 27; }
-  
+
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
 
@@ -360,7 +360,7 @@ struct CPU
   uint32_t MemReadUnprivileged32(uint64_t addr) { return MemRead32(addr); }
   uint16_t MemReadUnprivileged16(uint64_t addr) { return MemRead16(addr); }
   uint8_t  MemReadUnprivileged8 (uint64_t addr) { return MemRead8 (addr); }
-  
+
   void MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
 
   template <typename T>
@@ -383,13 +383,13 @@ struct CPU
   void MemWriteUnprivileged32(uint64_t addr, uint32_t val) { MemWrite32(addr, val); }
   void MemWriteUnprivileged16(uint64_t addr, uint16_t val) { MemWrite16(addr, val); }
   void MemWriteUnprivileged8 (uint64_t addr, uint8_t  val) { MemWrite8 (addr, val); }
-  
+
   void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
 
   void     SetExclusiveMonitors( uint64_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint64_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
   void     ClearExclusiveLocal() {}
-  
+
 protected:
 
   /**********************************************************************

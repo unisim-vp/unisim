@@ -2014,7 +2014,7 @@ public:
   Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
 
   static CP15Reg const* CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none, report_nzcv_access = report_none };
+  enum AccessReport { report_none = 0, report_simd_access = report_none, report_gsr_access = report_none, report_gzr_access = report_none };
   void report(AccessReport, unsigned, bool) const {}
 
   // U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
